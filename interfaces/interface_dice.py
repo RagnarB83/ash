@@ -17,6 +17,9 @@ import ash.settings_ash
 #Should be fixed but need to check
 #TODO: Test SHCI initial orbitals option, requires parameter options 
 #TODO: fix nevpt2
+#TODO: Add proper frozen core to mch object setup (instead of relying on nmax threshold)
+#Straightforward: https://pyscf.org/user/mcscf.html#frozen-orbital-mcscf 
+#Add also to pyscf part
 
 class DiceTheory:
     def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1, 

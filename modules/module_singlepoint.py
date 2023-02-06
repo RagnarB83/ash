@@ -60,6 +60,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
     else:
         print()
         print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
+        print(f"Charge: {charge} Mult: {mult}") #Charge/mult should have been defined so we print
         #Run
         energy = theory.run(current_coords=coords, elems=elems, charge=charge, mult=mult)
 

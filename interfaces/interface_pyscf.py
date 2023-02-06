@@ -10,7 +10,8 @@ import scipy
 
 #PySCF Theory object.
 # TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
-#TODO: Add support for AVAS
+#TODO: Add support for AVAS and DMET active space selection
+#Straightforward: https://pyscf.org/user/mcscf.html#frozen-orbital-mcscf  (scroll up)
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Remove PyQMC from pyscftheory. 
 
