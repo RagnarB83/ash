@@ -10,8 +10,6 @@ import scipy
 
 #PySCF Theory object.
 # TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
-#TODO: Add support for AVAS and DMET active space selection
-#Straightforward: https://pyscf.org/user/mcscf.html#frozen-orbital-mcscf  (scroll up)
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Remove PyQMC from pyscftheory. 
 
@@ -23,7 +21,8 @@ class PySCFTheory:
                   CAS=False, CASSCF=False, active_space=None, CAS_nocc_a=None, CAS_nocc_b=None,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   read_chkfile_name=None, write_chkfile_name=None,
-                  PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC'):
+                  PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
+                  AVAS=False, DMET_CAS=False, CAS_AO_labels=None):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -87,6 +86,10 @@ class PySCFTheory:
         self.CAS_nocc_a=CAS_nocc_a
         self.CAS_nocc_b=CAS_nocc_b
 
+        #Auto-CAS
+        self.AVAS=AVAS
+        self.DMET_CAS=DMET_CAS
+        self.CAS_AO_labels=CAS_AO_labels
         #PyQMC
         self.PyQMC=PyQMC
         self.PyQMC_nconfig=PyQMC_nconfig #integer. number of configurations in guess
@@ -99,6 +102,7 @@ class PySCFTheory:
         self.postSCF=False
         if self.CAS is True:
             self.postSCF=True
+
             if self.active_space == None or len(self.active_space) != 2:
                 print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
                 ashexit()
@@ -145,6 +149,9 @@ class PySCFTheory:
         print()
         print("CAS:", self.CAS)
         print("CASSCF:", self.CASSCF)
+        print("AVAS:", self.AVAS)
+        print("DMET_CAS:", self.DMET_CAS)
+        print("CAS_AO_labels (for AVAS/DMET_CAS)", self.CAS_AO_labels)
         print("PyQMC:", self.PyQMC)
         print()
         #TODO: Restart settings for PySCF
@@ -196,6 +203,10 @@ class PySCFTheory:
         self.uccsd_t_lambda=uccsd_t_lambda
         self.ccsd_t_rdm=ccsd_t_rdm
         self.uccsd_t_rdm=uccsd_t_rdm
+        #AVAS/DMET
+        from pyscf.mcscf import avas, dmet_cas
+        self.pyscf_avas=avas
+        self.pyscf_dmet_cas=dmet_cas
         #TODO: Needs to be revisited
         if self.pe==True:
             #import pyscf.solvent as solvent
@@ -562,6 +573,7 @@ class PySCFTheory:
             elif self.PyQMC_method == 'VMC':
                 #More options possible
                 df, configs = vmc(wf,configs)
+        
         #####################
         #CAS-CI and CASSCF
         #####################
@@ -570,51 +582,58 @@ class PySCFTheory:
             print("CAS run is on!")
             #First run SCF
             scf_result = self.mf.run()
-            print(f"Now running CAS job with active space of {self.active_space[0]} electrons in {self.active_space[1]} orbitals")
             
             #Initial orbitals for CAS-CI or CASSCF
-            #Default MP2 natural orbitals unless we read-in chkfile
-            if self.read_chkfile_name == None:
-                print("Will calculate MP2 natural orbitals to use as input in CAS job")
-                natocc, natorbs = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
-            else:
+            #Checking for AVAS; DMET_CAS and Chkfile options. Otherwise MP2 natural orbitals.
+            print("Checking for CAS initial orbital options.")
+            if self.AVAS is True:
+                print("AVAS automatic CAS option chosen")
+                norb_cas, nel_cas, orbitals = self.pyscf_avas.avas(self.mf, self.CAS_AO_labels)
+                print(f"AVAS determined an active space of: CAS({nel_cas},{norb_cas})")
+            elif self.DMET_CAS is True:
+                print("DMET_CAS automatic CAS option chosen")
+                norb_cas, nel_cas, orbitals = self.pyscf_avas.dmet_cas(self.mf, self.CAS_AO_labels)
+                print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
+            elif self.read_chkfile_name != None:
                 print("read_chkfile_name option was specified")
                 print("This means that SCF-orbitals are ignored and we will read MO coefficients from file:", self.read_chkfile_name)
-            
+                orbitals = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
+                norb_cas=self.active_space[1]
+                nel_cas=self.active_space[0]
+                print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
+            else:
+                #TODO: Have this be a keyword option also instead of just else-default
+                print("Will calculate MP2 natural orbitals to use as input in CAS job")
+                natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
+                #TODO: Check if natorb-threshold were specified instead
+                norb_cas=self.active_space[1]
+                nel_cas=self.active_space[0]
+                print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
+
+            print(f"Now running CAS job with active space of {nel_cas} electrons in {norb_cas} orbitals")
             if self.CASSCF is True:
                 print("Doing CASSCF (orbital optimization)")
                 #TODO: Orbital option for starting CASSCF calculation
-                casscf = self.mcscf.CASSCF(self.mf, self.active_space[1], self.active_space[0])
+                casscf = self.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
                 casscf.verbose=self.verbose_setting
+                #Writing of checkpointfile
                 if self.write_chkfile_name != None:
                     casscf.chkfile = self.write_chkfile_name
                 else:
                     casscf.chkfile = "casscf.chk"
                 print("Will write checkpointfile:", casscf.chkfile )
 
-                #CASSCF from chkpointfile orbitals if specfied
-                if self.read_chkfile_name != None:
-                    prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
-                    e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(prevmos)
-                else:
-                    #CASSCF starting from MP2 natural orbitals
-                    e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(natorbs)
-
-                print("CASSCF run done")
+                #CASSCF starting from AVAS/DMET_CAS/MP2 natural orbitals
+                e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(orbitals)
+                print("CASSCF run done\n")
             else:
                 print("Doing CAS-CI (no orbital optimization)")
-                casci = self.mcscf.CASCI(self.mf, self.active_space[1], self.active_space[0])
+                casci = self.mcscf.CASCI(self.mf, norb_cas, nel_cas)
                 casci.verbose=self.verbose_setting
-                #CAS-CI from chkpointfile orbitals if specfied
-                if self.read_chkfile_name != None:
-                    prevmos = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
-                    e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(prevmos)
-                else:
-                    #CAS-CI starting from MP2 natural orbitals
-                    e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(natorbs)
+                #CAS-CI from chosen orbitals above
+                e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(orbitals)
 
-                print("CAS-CI run done")
-                print("")
+                print("CAS-CI run done\n")
 
             print("e_tot:", e_tot)
             print("e_cas:", e_cas)

@@ -265,6 +265,9 @@ def Singlepoint_reaction(theory=None, reaction=None, orbitals_stored=None):
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         theory.cleanup()
         reaction.energies.append(energy)
+
+        #TODO: Change this so that instead we just grab whatever each Theory level deemed important
+        #theory.properties feature? 
         #Check if ORCATheory object contains ICE-CI info
         if isinstance(theory,ash.ORCATheory):
             print("theory.properties:", theory.properties)

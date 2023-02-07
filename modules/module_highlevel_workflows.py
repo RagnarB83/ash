@@ -34,6 +34,7 @@ TightPNO_thresholds={'TCutPNO': 1e-7, 'TCutPairs': 1e-5, 'TCutDO': 5e-3, 'TCutMK
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO']   pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO']    
 
+#TODO: CV correction. More general basis set for 3d TM and ligand systems. cc-pwCVTZ-DK (M) ? 
 class ORCA_CC_CBS_Theory:
     def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', guessmode='Cmatrix', memory=5000, numcores=1, 
             cardinals=None, basisfamily=None, Triplesextrapolation=False, SCFextrapolation=True, alpha=None, beta=None, 

@@ -13,8 +13,8 @@ from ash.interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output
 from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
 from ash.modules.module_coords import check_charge_mult
 
-#Reaction class. Used for benchmarking
-class Reaction:
+#BenchReaction class. Used for benchmarking
+class BenchReaction:
     def __init__(self, index, filenames, stoichiometry, refenergy, unit, correction=0.0):
         self.index = index
         self.filenames = filenames
@@ -100,9 +100,9 @@ def read_referencedata_file(benchmarksetpath):
                         filenames.append(word)
                 #New reaction
                 if corrections is True:
-                    newreaction = Reaction(index, filenames, stoichiometry, refenergy, unit, correction=corrections_dict[index])                    
+                    newreaction = BenchReaction(index, filenames, stoichiometry, refenergy, unit, correction=corrections_dict[index])                    
                 else:
-                    newreaction = Reaction(index, filenames, stoichiometry, refenergy, unit)
+                    newreaction = BenchReaction(index, filenames, stoichiometry, refenergy, unit)
                 
                 
                 #print("New reaction: ", newreaction.__dict__)
