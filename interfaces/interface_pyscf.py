@@ -320,6 +320,7 @@ class PySCFTheory:
         else:
             mo_coefficients=[natorb,natorb]
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
+        mo_coefficients=np.array(mo_coefficients)
         print("mo_coefficients:", mo_coefficients)
         print("type mo_coefficients", type(mo_coefficients))
         return natocc, mo_coefficients
