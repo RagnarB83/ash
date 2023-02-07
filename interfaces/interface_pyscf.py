@@ -103,7 +103,11 @@ class PySCFTheory:
         if self.CAS is True:
             self.postSCF=True
             print("CAS is True. Active_space keyword should be defined unless AVAS or DMET_CAS is True.")
-            if self.AVAS is True: print("AVAS is True")
+            if self.AVAS is True or self.DMET_CAS is True: 
+                print("AVAS/DMET_CAS is True")
+                if self.CAS_AO_labels is None:
+                    print("AVAS/DMET_CAS requires CAS_AO_labels keyword. Specify as e.g. CAS_AO_labels=['Fe 3d', 'Fe 4d', 'C 2pz']")
+                    ashexit()
             elif self.DMET_CAS is True: print("DMET_CAS is True")
             elif self.active_space == None or len(self.active_space) != 2:
                 print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
