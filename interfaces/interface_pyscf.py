@@ -136,7 +136,7 @@ class PySCFTheory:
         self.load_pyscf()
         self.set_numcores(numcores)
         if self.losc is True:
-            self.load_losc(loscpath)
+            self.load_losc()
 
         #PySCF scratch dir. Todo: Need to adapt
         #print("Setting PySCF scratchdir to ", os.getcwd())
@@ -193,7 +193,7 @@ class PySCFTheory:
         self.frozen_core_orbital_indices=[i for i in range(0,self.frozen_core_orbs)]
         print("List of frozen orbital indices:", self.frozen_core_orbital_indices)
 
-    def load_losc(self,loscpath):
+    def load_losc(self):
         #sys.path.insert(0, loscpath)
         try:
             import pyscf_losc
@@ -552,7 +552,7 @@ class PySCFTheory:
                     ashexit()
                 if self.functional != self.loscfunctional:
                     print("Warning: PySCF functional and LOSC-function not matching")
-                    
+
                 # Conduct the post-SCF LOC calculation
                 #window=[-30,10] optional energy window
                 a, b, losc_data = self.pyscf_losc.post_scf_losc(losc_func,
