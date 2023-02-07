@@ -639,6 +639,9 @@ class PySCFTheory:
                 print("Will write checkpointfile:", casscf.chkfile )
 
                 #CASSCF starting from AVAS/DMET_CAS/MP2 natural orbitals
+                #Making sure that we only feed in one set of orbitals into CAS (CC is OK with alpha and beta)
+                if type(orbitals) == list:
+                    orbitals = orbitals[0]
                 print("here")
                 print("orbitals:", orbitals)
                 print("type orbitals:", type(orbitals))
