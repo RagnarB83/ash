@@ -197,7 +197,7 @@ class PySCFTheory:
         try:
             import pyscf_losc
             self.pyscf_losc=pyscf_losc
-        except as e:
+        except ModuleNotFoundError as e:
             print("Problem importing pyscf_losc")
             print("e:", e)
             ashexit()
