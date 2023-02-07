@@ -193,7 +193,7 @@ class PySCFTheory:
         print("List of frozen orbital indices:", self.frozen_core_orbital_indices)
 
     def load_losc(self,loscpath):
-        sys.path.insert(0, loscpath=loscpath)
+        sys.path.insert(0, loscpath)
         import pyscf_losc
         self.pyscf_losc=pyscf_losc
 
