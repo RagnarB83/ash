@@ -320,6 +320,8 @@ class PySCFTheory:
         else:
             mo_coefficients=[natorb,natorb]
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
+        print("mo_coefficients:", mo_coefficients)
+        print("type mo_coefficients", type(mo_coefficients))
         return natocc, mo_coefficients
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
@@ -619,6 +621,7 @@ class PySCFTheory:
                 print("Neither AVAS, DMET_CAS or read_chkfile_name options chosen.")
                 print("Will calculate MP2 natural orbitals to use as input in CAS job")
                 natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
+
                 #TODO: Check if natorb-threshold were specified instead
                 norb_cas=self.active_space[1]
                 nel_cas=self.active_space[0]
