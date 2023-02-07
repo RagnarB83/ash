@@ -18,7 +18,7 @@ class PySCFTheory:
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
-                  CAS=False, CASSCF=False, active_space=None, CAS_nocc_a=None, CAS_nocc_b=None,
+                  CAS=False, CASSCF=False, active_space=None,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
@@ -84,8 +84,6 @@ class PySCFTheory:
         self.CAS=CAS
         self.CASSCF=CASSCF
         self.active_space=active_space
-        self.CAS_nocc_a=CAS_nocc_a
-        self.CAS_nocc_b=CAS_nocc_b
 
         #Auto-CAS options
         self.AVAS=AVAS
@@ -119,8 +117,6 @@ class PySCFTheory:
                 print("If neither AVAS,DMET_CAS or cas_nmin/cas_nmax options are chosen then")
                 print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
                 ashexit()
-            #print("CAS_nocc_a:", self.CAS_nocc_a)
-            #print("CAS_nocc_b:", self.CAS_nocc_b)
         if self.CC is True:
             self.postSCF=True
 
@@ -166,6 +162,9 @@ class PySCFTheory:
         print("DMET_CAS:", self.DMET_CAS)
         print("CAS_AO_labels (for AVAS/DMET_CAS)", self.CAS_AO_labels)
         print("PyQMC:", self.PyQMC)
+        print("CAS_nmin:", self.cas_nmin)
+        print("CAS_nmax:", self.cas_nmax)
+        print("Active space:", self.active_space)
         print()
         #TODO: Restart settings for PySCF
 
