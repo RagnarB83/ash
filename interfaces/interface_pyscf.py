@@ -24,7 +24,8 @@ class PySCFTheory:
                   read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
-                  cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None):
+                  cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None,
+                  loscpath=None):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -136,7 +137,7 @@ class PySCFTheory:
         self.load_pyscf()
         self.set_numcores(numcores)
         if self.losc is True:
-            self.load_losc()
+            self.load_losc(loscpath)
 
         #PySCF scratch dir. Todo: Need to adapt
         #print("Setting PySCF scratchdir to ", os.getcwd())
@@ -193,8 +194,9 @@ class PySCFTheory:
         self.frozen_core_orbital_indices=[i for i in range(0,self.frozen_core_orbs)]
         print("List of frozen orbital indices:", self.frozen_core_orbital_indices)
 
-    def load_losc(self):
-        #sys.path.insert(0, loscpath)
+    def load_losc(self,loscpath):
+        if loscpath != None:
+            sys.path.insert(0, loscpath)
         try:
             import pyscf_losc
             self.pyscf_losc=pyscf_losc
