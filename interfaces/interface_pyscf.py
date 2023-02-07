@@ -195,6 +195,7 @@ class PySCFTheory:
         print("List of frozen orbital indices:", self.frozen_core_orbital_indices)
 
     def load_losc(self,loscpath):
+        #Not sure if this works. Think PYTHONPATH is necessary
         if loscpath != None:
             sys.path.insert(0, loscpath)
         try:
@@ -565,6 +566,10 @@ class PySCFTheory:
                 #SCF-LOSC calculation
                 loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf)
                 print("loscmf:", loscmf)
+
+
+                #TODO: Create Molden file with orbitals
+                self.write_orbitals_to_Moldenfile(self,self.mol, self.mf.mo_coeff, self.mf.mo_occ, label="LOSC-orbs")
 
         #####################
         #COUPLED CLUSTER
