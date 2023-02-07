@@ -558,6 +558,7 @@ class PySCFTheory:
 
                 # Conduct the post-SCF LOC calculation
                 #window=[-30,10] optional energy window
+                #TODO: get output from program written to disk or as stdout
                 a, b, losc_data = self.pyscf_losc.post_scf_losc(losc_func,
                 self.mf, return_losc_data = True)    
                 print("losc_data:", losc_data)
@@ -569,7 +570,7 @@ class PySCFTheory:
 
 
                 #TODO: Create Molden file with orbitals
-                self.write_orbitals_to_Moldenfile(self,self.mol, self.mf.mo_coeff, self.mf.mo_occ, label="LOSC-orbs")
+                self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, label="LOSC-orbs")
 
         #####################
         #COUPLED CLUSTER
