@@ -648,10 +648,6 @@ class PySCFTheory:
                         print("Something wrong with orbitals:", orbitals)
                         print("Exiting")
                         ashexit()
-                print("here")
-                print("orbitals:", orbitals)
-                print("type orbitals:", type(orbitals))
-                exit()
                 e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(orbitals)
                 print("CASSCF run done\n")
             else:
