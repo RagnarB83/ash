@@ -23,7 +23,7 @@ class PySCFTheory:
                   read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
-                  cas_nmin=None, cas_nmax=None):
+                  cas_nmin=None, cas_nmax=None, losc=False, loscpath=None):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -98,6 +98,8 @@ class PySCFTheory:
         if self.PyQMC is True:
             self.postSCF=True
             self.load_pyqmc()
+        #LOSC
+        self.losc=losc
 
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
@@ -131,6 +133,8 @@ class PySCFTheory:
         #Attempting to load pyscf
         self.load_pyscf()
         self.set_numcores(numcores)
+        if self.losc is True:
+            self.load_losc(loscpath)
 
         #PySCF scratch dir. Todo: Need to adapt
         #print("Setting PySCF scratchdir to ", os.getcwd())
@@ -187,6 +191,10 @@ class PySCFTheory:
         self.frozen_core_orbital_indices=[i for i in range(0,self.frozen_core_orbs)]
         print("List of frozen orbital indices:", self.frozen_core_orbital_indices)
 
+    def load_losc(self,loscpath):
+        sys.path.insert(0, loscpath=loscpath)
+        import pyscf_losc
+        self.pyscf_losc=pyscf_losc
 
     def load_pyscf(self):
         try:
@@ -515,6 +523,26 @@ class PySCFTheory:
 
             #Get SCFenergy as initial total energy
             self.energy = scf_result.e_tot
+
+            #LOSC
+            if self.losc is True:
+                print("post-SCF LOSC option chosen")
+                # Configure LOC calculation settings.
+                self.pyscf_losc.options.set_param("localizer", "max_iter", 1000)
+                losc_func=self.pyscf_losc.BLYP
+                # Conduct the post-SCF LOC calculation
+                #window=[-30,10] optional energy window
+                a, b, losc_data = self.pyscf_losc.post_scf_losc(losc_func,
+                self.mf, return_losc_data = True)    
+                print("losc_data:", losc_data)
+                print("a:", a)
+                print("b:", b)
+                #SCF-LOSC calculation
+                loscmf = self.pyscf_losc.scf_losc(losc_func,
+                self.mf, return_losc_data = True)
+                print("losc_data:", losc_data)
+                print("loscmf:", loscmf)
+
         #####################
         #COUPLED CLUSTER
         #####################
