@@ -563,7 +563,7 @@ class PySCFTheory:
                 # Conduct the post-SCF LOC calculation
                 #window=[-30,10] optional energy window
                 #TODO: get output from program written to disk or as stdout
-                if self.LOSC_method='postSCF':
+                if self.LOSC_method=='postSCF':
                     print("postSCF LOSC_method chosen")
                     a, b, losc_data = self.pyscf_losc.post_scf_losc(losc_func,
                     self.mf, return_losc_data = True)
@@ -571,7 +571,7 @@ class PySCFTheory:
                     print("a:", a)
                     print("b:", b)
                     self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, label="LOSC-orbs")
-                elif self.LOSC_method='SCF': 
+                elif self.LOSC_method=='SCF': 
                     print("SCF LOSC_method chosen")
                     #SCF-LOSC calculation
                     loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf)
