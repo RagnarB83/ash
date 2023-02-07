@@ -263,9 +263,13 @@ class PySCFTheory:
             os.remove(self.filename+'.dat')
         except:
             pass
-    def write_orbitals_to_Moldenfile(self,mol, orbitals, occupations, label="orbs"):
+    def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies, label="orbs"):
         print("Writing orbitals to disk as Molden file")
-        self.pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
+        #self.pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
+        with open(f'pyscf_{label}.molden', 'w') as f1:
+            self.pyscf_molden.header(mol, f1)
+            self.pyscf_molden.orbital_coeff(mol, f1, mo_coeffs, ene=mo_energies, occ=occupations)
+
 
     def calculate_natural_orbitals(self,mol, mf, method='MP2'):
         module_init_time=time.time()
@@ -558,7 +562,7 @@ class PySCFTheory:
                     print("Warning: PySCF functional and LOSC-function not matching")
 
                 #Writing regular orbitals to disk
-                self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, label="CAN-orbs")
+                self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, self.mf.mo_energy, label="CAN-orbs")
 
                 # Conduct the post-SCF LOC calculation
                 #window=[-30,10] optional energy window
@@ -570,14 +574,14 @@ class PySCFTheory:
                     print("losc_data:", losc_data)
                     print("a:", a)
                     print("b:", b)
-                    self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, label="LOSC-orbs")
+                    self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, self.mf.mo_energy, label="LOSC-orbs")
                 elif self.LOSC_method=='SCF': 
                     print("SCF LOSC_method chosen")
                     #SCF-LOSC calculation
                     loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf)
                     print("loscmf:", loscmf)
                     #Create Molden file with orbitals
-                    self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, label="LOSC-SCF-orbs")
+                    self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
         #####################
         #COUPLED CLUSTER
