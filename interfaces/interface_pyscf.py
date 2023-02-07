@@ -641,7 +641,13 @@ class PySCFTheory:
                 #CASSCF starting from AVAS/DMET_CAS/MP2 natural orbitals
                 #Making sure that we only feed in one set of orbitals into CAS (CC is OK with alpha and beta)
                 if type(orbitals) == list:
-                    orbitals = orbitals[0]
+                    if len(orbitals) == 2:
+                        # Assuming list of [alphorbs-array,betaorbs-array]
+                        orbitals = orbitals[0]
+                    else:
+                        print("Something wrong with orbitals:", orbitals)
+                        print("Exiting")
+                        ashexit()
                 print("here")
                 print("orbitals:", orbitals)
                 print("type orbitals:", type(orbitals))
