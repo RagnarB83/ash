@@ -320,9 +320,6 @@ class PySCFTheory:
         else:
             mo_coefficients=[natorb,natorb]
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
-        mo_coefficients=np.array(mo_coefficients)
-        print("mo_coefficients:", mo_coefficients)
-        print("type mo_coefficients", type(mo_coefficients))
         return natocc, mo_coefficients
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
@@ -642,6 +639,10 @@ class PySCFTheory:
                 print("Will write checkpointfile:", casscf.chkfile )
 
                 #CASSCF starting from AVAS/DMET_CAS/MP2 natural orbitals
+                print("here")
+                print("orbitals:", orbitals)
+                print("type orbitals:", type(orbitals))
+                exit()
                 e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(orbitals)
                 print("CASSCF run done\n")
             else:
