@@ -22,7 +22,8 @@ class PySCFTheory:
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
-                  AVAS=False, DMET_CAS=False, CAS_AO_labels=None):
+                  AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
+                  cas_nmin=None, cas_nmax=None):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -86,10 +87,12 @@ class PySCFTheory:
         self.CAS_nocc_a=CAS_nocc_a
         self.CAS_nocc_b=CAS_nocc_b
 
-        #Auto-CAS
+        #Auto-CAS options
         self.AVAS=AVAS
         self.DMET_CAS=DMET_CAS
         self.CAS_AO_labels=CAS_AO_labels
+        self.cas_nmin=cas_nmin
+        self.cas_nmax=cas_nmax
         #PyQMC
         self.PyQMC=PyQMC
         self.PyQMC_nconfig=PyQMC_nconfig #integer. number of configurations in guess
@@ -108,8 +111,12 @@ class PySCFTheory:
                 if self.CAS_AO_labels is None:
                     print("AVAS/DMET_CAS requires CAS_AO_labels keyword. Specify as e.g. CAS_AO_labels=['Fe 3d', 'Fe 4d', 'C 2pz']")
                     ashexit()
-            elif self.DMET_CAS is True: print("DMET_CAS is True")
+            elif self.cas_nmin != None or self.cas_nmax != None
+                print("Keyword cas_nmin and cas_nmax provided")
+                print("Will use together with MP2 natural orbitals to choose CAS")
             elif self.active_space == None or len(self.active_space) != 2:
+                print("No option chosen for active space.")
+                print("If neither AVAS,DMET_CAS or cas_nmin/cas_nmax options are chosen then")
                 print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
                 ashexit()
             #print("CAS_nocc_a:", self.CAS_nocc_a)
@@ -615,14 +622,23 @@ class PySCFTheory:
                 nel_cas=self.active_space[0]
                 print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
             else:
-                #TODO: Have this be a keyword option also instead of just else-default
+                #TODO: Have this be a keyword option also instead of just else-default ?
                 print("Neither AVAS, DMET_CAS or read_chkfile_name options chosen.")
-                print("Will calculate MP2 natural orbitals to use as input in CAS job")
+                print("Will now calculate MP2 natural orbitals to use as input in CAS job")
                 natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
-
-                #TODO: Check if natorb-threshold were specified instead
-                norb_cas=self.active_space[1]
-                nel_cas=self.active_space[0]
+                print("Checking if cas_nmin/cas_nmax keyword were specified")
+                if self.cas_nmin != None and self.cas_nmax != None:
+                    print(f"Active space will be determined from MP2 natorbs. NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
+                    print("Note: Use active_space keyword if you want to select active space manually instead")
+                    # Determing active space from natorb thresholds
+                    nat_occs_for_thresholds=[i for i in natocc if i < self.cas_nmin and i > self.cas_nmax]
+                    norb_cas = len(nat_occs_for_thresholds)
+                    nel_cas = round(sum(nat_occs_for_thresholds))
+                    print(f"To get this same active space in another calculation you can also do: active_space=[{nel_cas},{norb_cas}]")
+                else:
+                    print("Using active_space keyword information")
+                    norb_cas=self.active_space[1]
+                    nel_cas=self.active_space[0]
                 print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
 
             print(f"Now running CAS job with active space of {nel_cas} electrons in {norb_cas} orbitals")
