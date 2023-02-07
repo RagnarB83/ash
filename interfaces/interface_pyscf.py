@@ -111,7 +111,7 @@ class PySCFTheory:
                 if self.CAS_AO_labels is None:
                     print("AVAS/DMET_CAS requires CAS_AO_labels keyword. Specify as e.g. CAS_AO_labels=['Fe 3d', 'Fe 4d', 'C 2pz']")
                     ashexit()
-            elif self.cas_nmin != None or self.cas_nmax != None
+            elif self.cas_nmin != None or self.cas_nmax != None:
                 print("Keyword cas_nmin and cas_nmax provided")
                 print("Will use together with MP2 natural orbitals to choose CAS")
             elif self.active_space == None or len(self.active_space) != 2:
