@@ -598,7 +598,7 @@ class PySCFTheory:
                 print(f"AVAS determined an active space of: CAS({nel_cas},{norb_cas})")
             elif self.DMET_CAS is True:
                 print("DMET_CAS automatic CAS option chosen")
-                norb_cas, nel_cas, orbitals = self.pyscf_avas.dmet_cas(self.mf, self.CAS_AO_labels)
+                norb_cas, nel_cas, orbitals = self.pyscf_dmet_cas(self.mf, self.CAS_AO_labels)
                 print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
             elif self.read_chkfile_name != None:
                 print("read_chkfile_name option was specified")
