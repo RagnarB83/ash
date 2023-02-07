@@ -24,7 +24,7 @@ class PySCFTheory:
                   read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
-                  cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None,
+                  cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None):
 
         self.theorytype="QM"
@@ -103,6 +103,7 @@ class PySCFTheory:
         #LOSC
         self.losc=losc
         self.loscfunctional=loscfunctional
+        self.LOSC_method=LOSC_method
 
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
@@ -556,21 +557,27 @@ class PySCFTheory:
                 if self.functional != self.loscfunctional:
                     print("Warning: PySCF functional and LOSC-function not matching")
 
+                #Writing regular orbitals to disk
+                self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, label="CAN-orbs")
+
                 # Conduct the post-SCF LOC calculation
                 #window=[-30,10] optional energy window
                 #TODO: get output from program written to disk or as stdout
-                a, b, losc_data = self.pyscf_losc.post_scf_losc(losc_func,
-                self.mf, return_losc_data = True)    
-                print("losc_data:", losc_data)
-                print("a:", a)
-                print("b:", b)
-                #SCF-LOSC calculation
-                loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf)
-                print("loscmf:", loscmf)
-
-
-                #TODO: Create Molden file with orbitals
-                self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, label="LOSC-orbs")
+                if self.LOSC_method='postSCF':
+                    print("postSCF LOSC_method chosen")
+                    a, b, losc_data = self.pyscf_losc.post_scf_losc(losc_func,
+                    self.mf, return_losc_data = True)
+                    print("losc_data:", losc_data)
+                    print("a:", a)
+                    print("b:", b)
+                    self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, label="LOSC-orbs")
+                elif self.LOSC_method='SCF': 
+                    print("SCF LOSC_method chosen")
+                    #SCF-LOSC calculation
+                    loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf)
+                    print("loscmf:", loscmf)
+                    #Create Molden file with orbitals
+                    self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, label="LOSC-SCF-orbs")
 
         #####################
         #COUPLED CLUSTER
