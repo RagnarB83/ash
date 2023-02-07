@@ -3,6 +3,7 @@ import time
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader
 import ash.modules.module_coords
 import os
+import sys
 import glob
 import numpy as np
 from functools import reduce
