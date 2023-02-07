@@ -480,9 +480,16 @@ class PySCFTheory:
                 #dm = self.mf.from_chk(self.mol, self.read_chkfile_name)
                 #e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(prevmos)
                 #scf_result = self.mf.run()
-                self.mf.__dict__.update(self.pyscf.scf.chkfile.load(self.read_chkfile_name, 'scf'))
-                dm = self.mf.make_rdm1()
-                scf_result = self.mf.run(dm)
+                try:
+                    print("Trying to read SCF-orbitals from checkpointfile")
+                    self.mf.__dict__.update(self.pyscf.scf.chkfile.load(self.read_chkfile_name, 'scf'))
+                    dm = self.mf.make_rdm1()
+                    scf_result = self.mf.run(dm)
+                except TypeError:
+                    print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
+                    print("Ignoring and continuing")
+                    scf_result = self.mf.run()
+
                 
             else:
                 print("Starting SCF from default guess orbitals")
@@ -609,6 +616,7 @@ class PySCFTheory:
                 print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
             else:
                 #TODO: Have this be a keyword option also instead of just else-default
+                print("Neither AVAS, DMET_CAS or read_chkfile_name options chosen.")
                 print("Will calculate MP2 natural orbitals to use as input in CAS job")
                 natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
                 #TODO: Check if natorb-threshold were specified instead
