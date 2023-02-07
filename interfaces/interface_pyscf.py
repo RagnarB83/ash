@@ -24,7 +24,7 @@ class PySCFTheory:
                   read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
-                  cas_nmin=None, cas_nmax=None, losc=False, loscpath=None):
+                  cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -101,6 +101,7 @@ class PySCFTheory:
             self.load_pyqmc()
         #LOSC
         self.losc=losc
+        self.loscfunctional=loscfunctional
 
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
@@ -534,7 +535,24 @@ class PySCFTheory:
                 print("post-SCF LOSC option chosen")
                 # Configure LOC calculation settings.
                 self.pyscf_losc.options.set_param("localizer", "max_iter", 1000)
-                losc_func=self.pyscf_losc.BLYP
+                if self.loscfunctional == 'BLYP':
+                    losc_func=self.pyscf_losc.BLYP
+                elif self.loscfunctional == 'B3LYP':
+                    losc_func=self.pyscf_losc.B3LYP
+                elif self.loscfunctional == 'PBE':
+                    losc_func=self.pyscf_losc.PBE
+                elif self.loscfunctional == 'PBE0':
+                    losc_func=self.pyscf_losc.PBE0
+                elif self.loscfunctional == 'SVWN':
+                    losc_func=self.pyscf_losc.SVWN
+                elif self.loscfunctional == 'GGA':
+                    losc_func=self.pyscf_losc.GGA
+                else:
+                    print("unknown loscfunctional")
+                    ashexit()
+                if self.functional != self.loscfunctional:
+                    print("Warning: PySCF functional and LOSC-function not matching")
+                    
                 # Conduct the post-SCF LOC calculation
                 #window=[-30,10] optional energy window
                 a, b, losc_data = self.pyscf_losc.post_scf_losc(losc_func,
@@ -543,9 +561,7 @@ class PySCFTheory:
                 print("a:", a)
                 print("b:", b)
                 #SCF-LOSC calculation
-                loscmf = self.pyscf_losc.scf_losc(losc_func,
-                self.mf, return_losc_data = True)
-                print("losc_data:", losc_data)
+                loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf)
                 print("loscmf:", loscmf)
 
         #####################
