@@ -29,7 +29,7 @@ class DiceTheory:
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None, SHCI_active_space_range=None,
-                read_chkfile_name=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None,
+                moreadfile=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None,
                 QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5,
                 memory=20000, initial_orbitals='MP2'):
 
@@ -111,11 +111,11 @@ class DiceTheory:
         self.AFQMC=AFQMC
         self.SHCI=SHCI
         self.Dice_SHCI_direct=Dice_SHCI_direct
-        self.read_chkfile_name=read_chkfile_name
+        self.moreadfile=moreadfile
         self.fcidumpfile=fcidumpfile
         self.refdeterminant=refdeterminant
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
-        self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless chkfile option)
+        self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
         #SHCI options
         if self.SHCI is True:
             self.SHCI_stochastic=SHCI_stochastic
@@ -157,7 +157,7 @@ class DiceTheory:
         print("NEVPT2:", self.NEVPT2)
         print("AFQMC:", self.AFQMC)
         print("Frozencore:", self.frozencore)
-        print("read_chkfile_name:", self.read_chkfile_name)
+        print("moreadfile:", self.moreadfile)
         print("Dice_SHCI_direct:", self.Dice_SHCI_direct)
         print("FCIDUMP file:", self.fcidumpfile)
         print("Reference det. string:", self.refdeterminant)
@@ -332,8 +332,8 @@ noio
             totnumborb=len(self.pyscftheoryobject.mf.mo_occ)
         print(f"There are {totnumborb} orbitals in the system")
         #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
-        if self.read_chkfile_name == None:
-            print("No checkpoint file given.")
+        if self.moreadfile == None:
+            print("No checkpoint file given (moreadfile option).")
             print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Dice CAS job")
             if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)', 'SHCI']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
@@ -366,9 +366,12 @@ noio
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals)
 
         else:
-            print("Will read MOs from checkpoint file")
-            mo_coefficients = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
-            occupations = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_occ')
+            print("Will read MOs from checkpoint file:", self.moreadfile)
+            if '.chk' not in self.moreadfile:
+                print("Error: not a PySCF chkfile")
+                ashexit()
+            mo_coefficients = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
+            occupations = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_occ')
             print("Chk-file occupations:", occupations)
             print("Length of occupations array:", len(occupations))
             if len(occupations) != totnumborb:
@@ -390,10 +393,11 @@ noio
             self.norb=self.SHCI_active_space[1]
         elif self.SHCI_active_space_range != None:
             #Convenvient when we have the orbitals we want but we can't define active_space because the electron-number changes (IEs)
+            #TODO: Problem: Occupations depend on the system CHK file we read in. Electrons not matching anymore
             print("Active space range:", self.SHCI_active_space_range)
             self.norb = len(occupations[self.SHCI_active_space_range[0]:self.SHCI_active_space_range[1]])
             self.nelec = round(sum(occupations[self.SHCI_active_space_range[0]:self.SHCI_active_space_range[1]]))
-            print(f"Selected active space from range:,CAS({self.nelec},{self.norb})")      
+            print(f"Selected active space from range: CAS({self.nelec},{self.norb})")      
         else:
             print(f"SHCI Active space determined from {self.initial_orbitals} NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
             print("Note: Use active_space keyword if you want to select active space manually instead")

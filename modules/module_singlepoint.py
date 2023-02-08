@@ -138,7 +138,7 @@ def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
 #Assuming fragments have charge,mult info defined.
 #If stoichiometry provided then print reaction energy
-def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relative_energies=False, unit='kcal/mol'):
+def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relative_energies=False, unit='kcal/mol', moreadfiles=None):
     print_line_with_mainheader("Singlepoint_fragments function")
     module_init_time=time.time()
     print("Will run single-point calculation on each fragment")
@@ -147,14 +147,20 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
     energies=[];filenames=[]
 
     #Looping through fragments
-    for frag in fragments:
+    for i,frag in enumerate(fragments):
 
         if frag.charge == None or frag.mult == None:
             print(BC.FAIL,"Error: Singlepoint_fragments requires charge/mult information to be associated with each fragment.", BC.END)
             ashexit()
         #Setting charge/mult  from fragment
         charge=frag.charge; mult=frag.mult
-        
+
+        #Setting orbital file for ORCATheory, PySCFTheory, DiceTheory or any other using moreadfile
+        try:
+            theory.moreadfile=moreadfiles[i]
+        except:
+            pass
+
         #Running single-point
         result = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
         
@@ -240,7 +246,7 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
 
 #Single-point energy function that runs calculations on an ASH reaction object
 #Assuming fragments have charge,mult info defined.
-def Singlepoint_reaction(theory=None, reaction=None, orbitals_stored=None):
+def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
     print_line_with_mainheader("Singlepoint_reaction function")
     module_init_time=time.time()
 
@@ -254,11 +260,14 @@ def Singlepoint_reaction(theory=None, reaction=None, orbitals_stored=None):
     list_of_componentsdicts=[]
     componentsdict={}
     for i,frag in enumerate(reaction.fragments):
-        #Orbital file for ORCATheory
+        #Orbital file for ORCATheory, PySCFTheory, DiceTheory or any other using moreadfile
         try:
-            theory.moreadfile=reaction.orbital_dictionary[orbitals_stored][i]
+            theory.moreadfile=reaction.orbital_dictionary[moreadfiles][i]
         except:
-            pass
+            try:
+                theory.moreadfile=moreadfiles[i]
+            except:
+                pass
         #Running single-point
         result = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
         energy = result.energy

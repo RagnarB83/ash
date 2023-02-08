@@ -21,7 +21,7 @@ class PySCFTheory:
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
                   CAS=False, CASSCF=False, active_space=None, stability_analysis=True,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
-                  read_chkfile_name=None, write_chkfile_name=None,
+                  moreadfile=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
@@ -80,7 +80,7 @@ class PySCFTheory:
 
         self.conv_tol=conv_tol
         self.verbose_setting=verbose_setting
-        self.read_chkfile_name=read_chkfile_name
+        self.moreadfile=moreadfile
         self.write_chkfile_name=write_chkfile_name
         self.symmetry=symmetry
         #CAS
@@ -555,11 +555,11 @@ class PySCFTheory:
             print("Will write checkpointfile:", self.mf.chkfile )
 
             #SCF from chkpointfile orbitals if specfied
-            if self.read_chkfile_name != None:
-                print("Will read guess orbitals from checkpointfile:", self.read_chkfile_name)
+            if self.moreadfile != None:
+                print("Will read guess orbitals from checkpointfile:", self.moreadfile)
                 try:
                     print("Trying to read SCF-orbitals from checkpointfile")
-                    self.mf.__dict__.update(self.pyscf.scf.chkfile.load(self.read_chkfile_name, 'scf'))
+                    self.mf.__dict__.update(self.pyscf.scf.chkfile.load(self.moreadfile, 'scf'))
                     dm = self.mf.make_rdm1()
                     scf_result = self.mf.run(dm)
                     print("SCF energy:", scf_result.e_tot)
@@ -743,16 +743,16 @@ class PySCFTheory:
                 print("DMET_CAS automatic CAS option chosen")
                 norb_cas, nel_cas, orbitals = self.pyscf_dmet_cas.guess_cas(self.mf, self.mf.make_rdm1(), self.CAS_AO_labels)
                 print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
-            elif self.read_chkfile_name != None:
-                print("read_chkfile_name option was specified")
-                print("This means that SCF-orbitals are ignored and we will read MO coefficients from file:", self.read_chkfile_name)
-                orbitals = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_coeff')
+            elif self.moreadfile != None:
+                print("moreadfile option was specified")
+                print("This means that SCF-orbitals are ignored and we will read MO coefficients from chkfile:", self.moreadfile)
+                orbitals = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
                 norb_cas=self.active_space[1]
                 nel_cas=self.active_space[0]
                 print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
             else:
                 #TODO: Have this be a keyword option also instead of just else-default ?
-                print("Neither AVAS, DMET_CAS or read_chkfile_name options chosen.")
+                print("Neither AVAS, DMET_CAS or moreadfile options chosen.")
                 print("Will now calculate MP2 natural orbitals to use as input in CAS job")
                 natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
                 print("Checking if cas_nmin/cas_nmax keyword were specified")
