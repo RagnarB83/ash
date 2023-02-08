@@ -25,7 +25,7 @@ class PySCFTheory:
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
-                  loscpath=None):
+                  loscpath=None, LOSC_window=None):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -104,6 +104,7 @@ class PySCFTheory:
         self.losc=losc
         self.loscfunctional=loscfunctional
         self.LOSC_method=LOSC_method
+        self.LOSC_window=LOSC_window
 
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
@@ -553,7 +554,7 @@ class PySCFTheory:
 
             #LOSC
             if self.losc is True:
-                print("post-SCF LOSC option chosen")
+                print("Now doing LOSC calculation")
                 # Configure LOC calculation settings.
                 self.pyscf_losc.options.set_param("localizer", "max_iter", 1000)
                 if self.loscfunctional == 'BLYP':
@@ -574,8 +575,8 @@ class PySCFTheory:
                 if self.functional != self.loscfunctional:
                     print("Warning: PySCF functional and LOSC-function not matching")
 
-                #Writing regular orbitals to disk
-                #self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, self.mf.mo_energy, label="CAN-orbs")
+                #Writing regular orbitals to disk as Moldenfile
+                self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, self.mf.mo_energy, label="CAN-orbs")
                 #Write HOMO and LUMO as cube files
                 #homo_idx = self.mol.nelectron // 2 - 1
                 #lumo_idx = homo_idx + 1
@@ -585,32 +586,25 @@ class PySCFTheory:
                 # Conduct the post-SCF LOC calculation
                 #window=[-30,10] optional energy window
                 #TODO: get output from program written to disk or as stdout
+                if self.LOSC_window != None:
+                    print("LOSC Energy window chosen:", self.LOSC_window)
                 if self.LOSC_method=='postSCF':
                     print("postSCF LOSC_method chosen")
                     a, b, losc_data = self.pyscf_losc.post_scf_losc(losc_func,
-                    self.mf, return_losc_data = True)
+                    self.mf, return_losc_data = True, orbital_energy_unit='eV', window=self.LOSC_window)
                     print("losc_data:", losc_data)
                     print("a:", a)
                     print("b:", b)
-
                     self.orbitalets = losc_data["C_lo"][0]
-                    self.orbitalets_energies=losc_data["losc_dfa_orbital_energy"][0]
+                    self.orbitalets_energies=losc_data["losc_dfa_orbital_energy"][0]/27.211386245988
                     print("orbitalets_energies:", self.orbitalets_energies)
-                    #self.write_orbitals_to_Moldenfile(self.mol, orbitalets, self.mf.mo_occ, orbitalets_energies, label="LOSC-orbs")
-                    #self.cubegen_orbital(self.mol, 'HOMO.cube', orbitalets[:,homo_idx], nx=60,ny=60,nz=60)
-                    #self.cubegen_orbital(self.mol, 'LUMO.cube', orbitalets[:,lumo_idx], nx=60,ny=60,nz=60)
+                    self.write_orbitals_to_Moldenfile(self.mol, orbitalets, self.mf.mo_occ, orbitalets_energies, label="LOSC-orbs")
                 elif self.LOSC_method=='SCF': 
                     print("SCF LOSC_method chosen")
                     #SCF-LOSC calculation
                     #Final 
-                    loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf)
+                    loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf, orbital_energy_unit='eV', window=self.LOSC_window)
                     print("loscmf:", loscmf)
-                    #Final orbitals should be in mf object
-                    #Create Molden file with orbitals
-                    #self.write_orbitals_to_Moldenfile(self.mol, loscmf.mo_coeff, loscmf.mo_occ, loscmf.mo_energy, label="LOSC-SCFx-orbs")
-                    #self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, self.mf.mo_energy, label="LOSC-SCFy-orbs")
-                    #self.cubegen_orbital(self, self.mol, 'HOMO.cube', self.mf.mo_coeff[:,homo_idx], nx=60,ny=60,nz=60)
-                    #self.cubegen_orbital(self, self.mol, 'LUMO.cube', self.mf.mo_coeff[:,lumo_idx], nx=60,ny=60,nz=60)
 
         #####################
         #COUPLED CLUSTER
