@@ -598,13 +598,15 @@ class PySCFTheory:
                     self.orbitalets = losc_data["C_lo"][0]
                     self.orbitalets_energies=losc_data["losc_dfa_orbital_energy"][0]/27.211386245988
                     print("orbitalets_energies:", self.orbitalets_energies)
-                    self.write_orbitals_to_Moldenfile(self.mol, orbitalets, self.mf.mo_occ, orbitalets_energies, label="LOSC-orbs")
+                    self.write_orbitals_to_Moldenfile(self.mol, self.orbitalets, self.mf.mo_occ, self.orbitalets_energies, label="LOSC-orbs")
                 elif self.LOSC_method=='SCF': 
                     print("SCF LOSC_method chosen")
                     #SCF-LOSC calculation
                     #Final 
                     loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf, orbital_energy_unit='eV', window=self.LOSC_window)
                     print("loscmf:", loscmf)
+                    self.loscmf=loscmf
+                    self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
         #####################
         #COUPLED CLUSTER
