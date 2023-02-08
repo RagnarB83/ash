@@ -371,6 +371,10 @@ noio
             occupations = self.pyscf.lib.chkfile.load(self.read_chkfile_name, 'mcscf/mo_occ')
             print("Chk-file occupations:", occupations)
             print("Length of occupations array:", len(occupations))
+            if len(occupations) != totnumborb:
+                print("Occupations array length does NOT match length of MO coefficients in PySCF object")
+                print("Is basis different? Exiting")
+                ashexit()
         print("Initial orbital step complete")
         print("----------------------------------")
         print()
