@@ -339,7 +339,7 @@ noio
             if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)', 'SHCI', 'AVAS-CASSCF', 'DMET_CASSCF','CASSCF']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
-            print("Options are: MP2, CCSD, CCSD(T), SHCI")
+            print("Options are: MP2, CCSD, CCSD(T), SHCI", "AVAS-CASSCF", "DMET-CASSCF")
             #Option to do small-eps SHCI step 
             if self.initial_orbitals == 'SHCI':
                 print("SHCI initial orbital option")
@@ -360,11 +360,16 @@ noio
                 print("Now making natural orbitals from SHCI WF")
                 occupations, mo_coefficients = self.pyscf.mcscf.addons.make_natural_orbitals(self.mch)
                 print("SHCI natural orbital occupations:", occupations)
+            elif self.initial_orbitals == 'AVAS-CASSCF' or self.initial_orbitals == 'DMET-CASSCF':
+                print("Calling calculate_natural_orbitals using AVAS/DMET method")
+                occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
+                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals, 
+                                                                CAS_AO_labels=self.CAS_AO_labels)
             else:
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals, CAS_AO_labels=self.CAS_AO_labels)
+                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals)
 
         else:
             print("Will read MOs from checkpoint file:", self.moreadfile)
