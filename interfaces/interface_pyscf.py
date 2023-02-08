@@ -369,7 +369,7 @@ class PySCFTheory:
     def run_stability_analysis(self):
         module_init_time=time.time()
         if self.stability_analysis is True:
-            print("Doing stability analysis")
+            print("Doing stability analysis (to turn off: stability_analysis=False)")
             mos_i, mos_e, stable_i, stable_e =  self.mf.stability(external=True, return_status=True, verbose=5)
             if stable_i is True:
                 print("SCF WF is internally STABLE")
