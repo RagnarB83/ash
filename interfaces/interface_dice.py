@@ -336,7 +336,7 @@ noio
         if self.moreadfile == None:
             print("No checkpoint file given (moreadfile option).")
             print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Dice CAS job")
-            if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)', 'SHCI', 'AVAS-CASSCF', 'DMET_CASSCF','CASSCF']:
+            if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)', 'SHCI', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
             print("Options are: MP2, CCSD, CCSD(T), SHCI", "AVAS-CASSCF", "DMET-CASSCF")
