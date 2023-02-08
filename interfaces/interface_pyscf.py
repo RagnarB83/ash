@@ -814,7 +814,7 @@ class PySCFTheory:
                         print("Something wrong with orbitals:", orbitals)
                         print("Exiting")
                         ashexit()
-                e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(orbitals)
+                e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(orbitals, natorb=True)
                 print("CASSCF run done\n")
             else:
                 print("Doing CAS-CI (no orbital optimization)")
