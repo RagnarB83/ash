@@ -558,17 +558,19 @@ class PySCFTheory:
                     self.mf.__dict__.update(self.pyscf.scf.chkfile.load(self.read_chkfile_name, 'scf'))
                     dm = self.mf.make_rdm1()
                     scf_result = self.mf.run(dm)
+                    print("SCF energy:", scf_result.e_tot)
                 except TypeError:
                     print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
                     print("Ignoring and continuing")
                     scf_result = self.mf.run()
+                    print("SCF energy:", scf_result.e_tot)
 
                 
             else:
                 print("Starting SCF from default guess orbitals")
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
-
+                print("SCF energy:", scf_result.e_tot)
             #Possible stability analysis
             self.run_stability_analysis()
             print("SCF energy:", scf_result.e_tot)
