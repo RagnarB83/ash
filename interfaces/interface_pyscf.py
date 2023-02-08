@@ -287,7 +287,7 @@ class PySCFTheory:
     def cubegen_mep(self, mol, name, dm, nx=60,ny=60,nz=60):
         self.pyscf_tools.cubegen.mep(mol, name, dm, nx=nx, ny=ny, nz=nz)
         print("cubegen_mep: Wrote file:", name)
-    def calculate_natural_orbitals(self,mol, mf, method='MP2'):
+    def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None):
         module_init_time=time.time()
         if method =='MP2':
             print("Running MP2 natural orbital calculation")
@@ -309,6 +309,25 @@ class PySCFTheory:
             nelec_a = 6
             nelec_b = 4
             dm1 = cisolver.make_rdm1(fcivec, norb, (nelec_a,nelec_b))
+        elif method == 'AVAS-CASSCF':
+            print("Doing AVAS and then CASSCF to get natural orbitals")
+            norb_cas, nel_cas, avasorbitals = self.pyscf_avas.avas(self.mf, CAS_AO_labels)
+            print(f"AVAS determined an active space of: CAS({nel_cas},{norb_cas})")
+            print(f"Now doing CASSCF using AVAS active space (CAS({nel_cas},{norb_cas})) and AVAS orbitals")
+            casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
+            casscf.verbose=self.verbose_setting
+            casscf.kernel(avasorbitals)
+            retun casscf.mo_occ, casscf.mo_coeff
+        elif method == 'DMET-CASSCF':
+            print("Doing DMET-CAS and then CASSCF to get natural orbitals")
+            print("DMET_CAS automatic CAS option chosen")
+            norb_cas, nel_cas, dmetorbitals = self.pyscf_dmet_cas.guess_cas(mf, mf.make_rdm1(), CAS_AO_labels)
+            print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
+            print("Now doing CASSCF using DMET-CAS active space (CAS({nel_cas},{norb_cas})) and DMET-CAS orbitals")
+            casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
+            casscf.verbose=self.verbose_setting
+            casscf.kernel(dmetorbitals)
+            retun casscf.mo_occ, casscf.mo_coeff
         elif method == 'CCSD':
             print("Running CCSD natural orbital calculation")
             ccsd = self.pyscf_cc.CCSD(mf)

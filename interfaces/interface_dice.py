@@ -31,7 +31,7 @@ class DiceTheory:
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None, SHCI_active_space_range=None,
                 moreadfile=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None,
                 QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5,
-                memory=20000, initial_orbitals='MP2'):
+                memory=20000, initial_orbitals='MP2', CAS_AO_labels=None):
 
         self.theorynamelabel="Dice"
         self.theorytype="QM"
@@ -116,6 +116,7 @@ class DiceTheory:
         self.refdeterminant=refdeterminant
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
+        self.CAS_AO_labels=CAS_AO_labels  #Used only if AVAS-CASSCF, DMET-CASSCF initial_orbitals option
         #SHCI options
         if self.SHCI is True:
             self.SHCI_stochastic=SHCI_stochastic
@@ -335,7 +336,7 @@ noio
         if self.moreadfile == None:
             print("No checkpoint file given (moreadfile option).")
             print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Dice CAS job")
-            if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)', 'SHCI']:
+            if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)', 'SHCI', 'AVAS-CASSCF', 'DMET_CASSCF','CASSCF']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
             print("Options are: MP2, CCSD, CCSD(T), SHCI")
@@ -363,7 +364,7 @@ noio
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals)
+                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals, CAS_AO_labels=self.CAS_AO_labels)
 
         else:
             print("Will read MOs from checkpoint file:", self.moreadfile)
