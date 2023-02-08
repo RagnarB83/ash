@@ -396,6 +396,8 @@ class PySCFTheory:
             cyc += 1
         if not stable:
             print(f'Stability Opt failed after {cyc} attempts')
+            return
+        print("Stability analysis loop succeeded in finding stable internal solution!")
         return mf
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
