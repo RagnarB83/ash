@@ -387,7 +387,7 @@ noio
     #Determine active space based on either natural occupations of initial orbitals or 
     def setup_active_space(self, occupations=None):
         print("Inside setup_active_space")
-        print("Occupdations:", occupations)
+        print("Occupations:", occupations)
         # If SHCI_active_space defined then this takes priority over natural occupations
         if self.SHCI_active_space != None:
             print("Active space given as user-input: active_space=", self.SHCI_active_space)
