@@ -400,7 +400,7 @@ class PySCFTheory:
             cyc += 1
         if not stable:
             print(f'Stability Opt failed after {cyc} attempts')
-            return
+            return mf
         print("Stability analysis loop succeeded in finding stable internal solution!")
         return mf
 
