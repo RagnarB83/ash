@@ -567,7 +567,7 @@ class PySCFTheory:
                 scf_result = self.mf.run()
 
             #Possible stability analysis
-            run_stability_analysis()
+            self.run_stability_analysis()
             print("SCF energy:", scf_result.e_tot)
             print("SCF energy components:", scf_result.scf_summary)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
