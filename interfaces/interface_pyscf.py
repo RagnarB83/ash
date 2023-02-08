@@ -214,6 +214,8 @@ class PySCFTheory:
             ashexit(code=9)
         self.pyscf=pyscf
         print("\nPySCF version:", self.pyscf.__version__)
+        import pyscf.tools
+        self.pyscf_tools=pyscf.tools
         from pyscf.tools import molden
         self.pyscf_molden=molden
         #Always importing MP2 for convenience
@@ -269,8 +271,19 @@ class PySCFTheory:
         with open(f'pyscf_{label}.molden', 'w') as f1:
             self.pyscf_molden.header(mol, f1)
             self.pyscf_molden.orbital_coeff(mol, f1, mo_coeffs, ene=mo_energies, occ=occupations)
-
-
+    
+    #Write Cube files for a list of orbital indices
+    def cubegen_orbital(self, mol, name, coeffs, nx=60,ny=60,nz=60):
+        self.pyscf_tools.cubegen.orbital(mol, name, coeffs, nx=nx, ny=ny, nz=nz)
+        print("cubegen_orbital: Wrote file:", name)
+    #Write Cube file for density
+    def cubegen_density(self, mol, name, dm, nx=60,ny=60,nz=60):
+        self.pyscf_tools.cubegen.density(mol, name, dm, nx=nx, ny=ny, nz=nz)
+        print("cubegen_density: Wrote file:", name)
+    #Write Cube file for MEP
+    def cubegen_mep(self, mol, name, dm, nx=60,ny=60,nz=60):
+        self.pyscf_tools.cubegen.mep(mol, name, dm, nx=nx, ny=ny, nz=nz)
+        print("cubegen_mep: Wrote file:", name)
     def calculate_natural_orbitals(self,mol, mf, method='MP2'):
         module_init_time=time.time()
         if method =='MP2':
@@ -563,7 +576,12 @@ class PySCFTheory:
 
                 #Writing regular orbitals to disk
                 self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, self.mf.mo_energy, label="CAN-orbs")
-
+                #Write HOMO and LUMO as cube files
+                homo_idx = self.mol.nelectron // 2 - 1
+                lumo_idx = homo_idx + 1
+                self.cubegen_orbital(self, self.mol, 'HOMO.cube', self.mf.mo_coeff[:,homo_idx], nx=60,ny=60,nz=60)
+                self.cubegen_orbital(self, self.mol, 'LUMO.cube', self.mf.mo_coeff[:,lumo_idx], nx=60,ny=60,nz=60)
+                
                 # Conduct the post-SCF LOC calculation
                 #window=[-30,10] optional energy window
                 #TODO: get output from program written to disk or as stdout
@@ -574,14 +592,24 @@ class PySCFTheory:
                     print("losc_data:", losc_data)
                     print("a:", a)
                     print("b:", b)
-                    self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, self.mf.mo_energy, label="LOSC-orbs")
+
+                    orbitalets = losc_data["C_lo"][0]
+                    #TODO: orbitals MO energies fix 
+                    self.write_orbitals_to_Moldenfile(self.mol, orbitalets, self.mf.mo_occ, self.mf.mo_energy, label="LOSC-orbs")
+                    self.cubegen_orbital(self, self.mol, 'HOMO.cube', orbitalets[:,homo_idx], nx=60,ny=60,nz=60)
+                    self.cubegen_orbital(self, self.mol, 'LUMO.cube', orbitalets[:,lumo_idx], nx=60,ny=60,nz=60)
                 elif self.LOSC_method=='SCF': 
                     print("SCF LOSC_method chosen")
                     #SCF-LOSC calculation
+                    #Final 
                     loscmf = self.pyscf_losc.scf_losc(losc_func, self.mf)
                     print("loscmf:", loscmf)
+                    #Final orbitals should be in mf object
                     #Create Molden file with orbitals
-                    self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
+                    self.write_orbitals_to_Moldenfile(self.mol, loscmf.mo_coeff, loscmf.mo_occ, loscmf.mo_energy, label="LOSC-SCFx-orbs")
+                    self.write_orbitals_to_Moldenfile(self.mol, self.mf.mo_coeff, self.mf.mo_occ, self.mf.mo_energy, label="LOSC-SCFy-orbs")
+                    self.cubegen_orbital(self, self.mol, 'HOMO.cube', self.mf.mo_coeff[:,homo_idx], nx=60,ny=60,nz=60)
+                    self.cubegen_orbital(self, self.mol, 'LUMO.cube', self.mf.mo_coeff[:,lumo_idx], nx=60,ny=60,nz=60)
 
         #####################
         #COUPLED CLUSTER
