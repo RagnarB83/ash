@@ -579,8 +579,8 @@ class PySCFTheory:
                 #Write HOMO and LUMO as cube files
                 homo_idx = self.mol.nelectron // 2 - 1
                 lumo_idx = homo_idx + 1
-                self.cubegen_orbital(self, self.mol, 'HOMO.cube', self.mf.mo_coeff[:,homo_idx], nx=60,ny=60,nz=60)
-                self.cubegen_orbital(self, self.mol, 'LUMO.cube', self.mf.mo_coeff[:,lumo_idx], nx=60,ny=60,nz=60)
+                self.cubegen_orbital(self.mol, 'HOMO.cube', self.mf.mo_coeff[:,homo_idx], nx=60,ny=60,nz=60)
+                self.cubegen_orbital(self.mol, 'LUMO.cube', self.mf.mo_coeff[:,lumo_idx], nx=60,ny=60,nz=60)
                 
                 # Conduct the post-SCF LOC calculation
                 #window=[-30,10] optional energy window
@@ -596,8 +596,8 @@ class PySCFTheory:
                     orbitalets = losc_data["C_lo"][0]
                     #TODO: orbitals MO energies fix 
                     self.write_orbitals_to_Moldenfile(self.mol, orbitalets, self.mf.mo_occ, self.mf.mo_energy, label="LOSC-orbs")
-                    self.cubegen_orbital(self, self.mol, 'HOMO.cube', orbitalets[:,homo_idx], nx=60,ny=60,nz=60)
-                    self.cubegen_orbital(self, self.mol, 'LUMO.cube', orbitalets[:,lumo_idx], nx=60,ny=60,nz=60)
+                    self.cubegen_orbital(self.mol, 'HOMO.cube', orbitalets[:,homo_idx], nx=60,ny=60,nz=60)
+                    self.cubegen_orbital(self.mol, 'LUMO.cube', orbitalets[:,lumo_idx], nx=60,ny=60,nz=60)
                 elif self.LOSC_method=='SCF': 
                     print("SCF LOSC_method chosen")
                     #SCF-LOSC calculation
