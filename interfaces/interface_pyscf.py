@@ -366,6 +366,37 @@ class PySCFTheory:
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
         return natocc, mo_coefficients
 
+    def run_stability_analysis(self):
+        if self.stability_analysis is True:
+            print("Doing stability analysis")
+            mos_i, mos_e, stable_i, stable_e =  self.mf.stability(external=True, return_status=True, verbose=5)
+            if stable_i is True:
+                print("SCF WF is internally STABLE")
+            else:
+                print("SCF WF is internally UNSTABLE")
+            if stable_e is True:
+                print("SCF WF is externally STABLE")
+            else:
+                print("SCF WF is externally UNSTABLE")
+            if stable_i is False:
+                print("Doing internal stability analysis loop")
+                self.mf = self.stability_analysis_loop(self.mf,mos_i)
+        else:
+            print("No stability analysis requested")
+    #Stability analysis loop for any mf object
+    def stability_analysis_loop(self,mf,mos,maxcyc=10):
+        #Looping until internal stability is reached
+        cyc=0
+        while (not stable and cyc < maxcyc):
+            print(f'Try to optimize orbitals until stable, attempt {cyc}')
+            dm1 = mf.make_rdm1(mos, mf.mo_occ)
+            mf = mf.run(dm1)
+            mo1, _, stable, _ = mf.stability(return_status=True)
+            cyc += 1
+        if not stable:
+            print(f'Stability Opt failed after {cyc} attempts')
+        return mf
+
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
@@ -519,20 +550,11 @@ class PySCFTheory:
             #SCF from chkpointfile orbitals if specfied
             if self.read_chkfile_name != None:
                 print("Will read guess orbitals from checkpointfile:", self.read_chkfile_name)
-                #self.mf.chkfile = self.read_chkfile_name
-                #self.mf.init_guess = 'chk'
-                #dm = self.mf.from_chk(self.mol, self.read_chkfile_name)
-                #e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(prevmos)
-                #scf_result = self.mf.run()
                 try:
                     print("Trying to read SCF-orbitals from checkpointfile")
                     self.mf.__dict__.update(self.pyscf.scf.chkfile.load(self.read_chkfile_name, 'scf'))
                     dm = self.mf.make_rdm1()
                     scf_result = self.mf.run(dm)
-                    if self.stability_analysis is True:
-                        self.mf.verbose=5
-                        print("Doing stability analysis")
-                        self.mf.stability()
                 except TypeError:
                     print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
                     print("Ignoring and continuing")
@@ -543,12 +565,9 @@ class PySCFTheory:
                 print("Starting SCF from default guess orbitals")
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
-                if self.stability_analysis is True:
-                    self.mf.verbose=5
-                    print("Doing stability analysis")
-                    self.mf.stability()
 
-            
+            #Possible stability analysis
+            run_stability_analysis()
             print("SCF energy:", scf_result.e_tot)
             print("SCF energy components:", scf_result.scf_summary)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
