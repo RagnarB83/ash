@@ -28,7 +28,7 @@ class DiceTheory:
                 SHCI_DoRDM=False, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
-                SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None,
+                SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None, SHCI_active_space_range=None,
                 read_chkfile_name=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None,
                 QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5,
                 memory=20000, initial_orbitals='MP2'):
@@ -135,6 +135,7 @@ class DiceTheory:
             self.SHCI_cas_nmin=SHCI_cas_nmin
             self.SHCI_cas_nmax=SHCI_cas_nmax
             self.SHCI_active_space=SHCI_active_space #Alternative to SHCI_cas_nmin/SHCI_cas_nmax
+            self.SHCI_active_space_range=SHCI_active_space_range #Alternative (suitable when el-number changes)
         #QMC options
         self.QMC_trialWF=QMC_trialWF
         self.QMC_SHCI_numdets=QMC_SHCI_numdets
@@ -379,6 +380,12 @@ noio
             # Number of orbital and electrons from active_space keyword!
             self.nelec=self.SHCI_active_space[0]
             self.norb=self.SHCI_active_space[1]
+        elif self.SHCI_active_space_range != None:
+            #Convenvient when we have the orbitals we want but we can't define active_space because the electron-number changes (IEs)
+            print("Active space range:", self.SHCI_active_space_range)
+            self.norb = len(occupations[self.SHCI_active_space_range[0]:self.SHCI_active_space_range[1]])
+            self.nelec = round(sum(occupations[self.SHCI_active_space_range[0]:self.SHCI_active_space_range[1]]))
+            print(f"Selected active space from range:,CAS({self.nelec},{self.norb})")      
         else:
             print(f"SHCI Active space determined from {self.initial_orbitals} NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
             print("Note: Use active_space keyword if you want to select active space manually instead")
