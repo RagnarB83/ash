@@ -392,7 +392,7 @@ class PySCFTheory:
             print(f'Try to optimize orbitals until stable, attempt {cyc}')
             dm1 = mf.make_rdm1(mos, mf.mo_occ)
             mf = mf.run(dm1)
-            mo1, _, stable, _ = mf.stability(return_status=True)
+            mos, _, stable, _ = mf.stability(return_status=True)
             cyc += 1
         if not stable:
             print(f'Stability Opt failed after {cyc} attempts')
