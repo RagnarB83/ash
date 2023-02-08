@@ -387,6 +387,7 @@ class PySCFTheory:
     def stability_analysis_loop(self,mf,mos,maxcyc=10):
         #Looping until internal stability is reached
         cyc=0
+        stable=False
         while (not stable and cyc < maxcyc):
             print(f'Try to optimize orbitals until stable, attempt {cyc}')
             dm1 = mf.make_rdm1(mos, mf.mo_occ)
