@@ -530,6 +530,7 @@ class PySCFTheory:
                     dm = self.mf.make_rdm1()
                     scf_result = self.mf.run(dm)
                     if self.stability_analysis is True:
+                        self.mf.verbose=5
                         print("Doing stability analysis")
                         self.mf.stability()
                 except TypeError:
@@ -543,6 +544,7 @@ class PySCFTheory:
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
                 if self.stability_analysis is True:
+                    self.mf.verbose=5
                     print("Doing stability analysis")
                     self.mf.stability()
 
