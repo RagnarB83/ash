@@ -367,6 +367,7 @@ class PySCFTheory:
         return natocc, mo_coefficients
 
     def run_stability_analysis(self):
+        module_init_time=time.time()
         if self.stability_analysis is True:
             print("Doing stability analysis")
             mos_i, mos_e, stable_i, stable_e =  self.mf.stability(external=True, return_status=True, verbose=5)
@@ -381,8 +382,10 @@ class PySCFTheory:
             if stable_i is False:
                 print("Doing internal stability analysis loop")
                 self.mf = self.stability_analysis_loop(self.mf,mos_i)
+            print_time_rel(module_init_time, modulename='Stability analysis', moduleindex=2)
         else:
             print("No stability analysis requested")
+        
     #Stability analysis loop for any mf object
     def stability_analysis_loop(self,mf,mos,maxcyc=10):
         #Looping until internal stability is reached
