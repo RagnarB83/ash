@@ -317,8 +317,7 @@ class PySCFTheory:
             casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
             casscf.verbose=self.verbose_setting
             cas_result = casscf.run(avasorbitals, natorb=True)
-            print("cas_result:", cas_result)
-            print("cas_result.mo_occ:", cas_result.mo_occ)
+            print("CASSCF occupations", cas_result.mo_occ)
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'DMET-CASSCF':
             print("Doing DMET-CAS and then CASSCF to get natural orbitals")
@@ -329,6 +328,7 @@ class PySCFTheory:
             casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
             casscf.verbose=self.verbose_setting
             cas_result = casscf.run(dmetorbitals, natorb=True)
+            print("CASSCF occupations", cas_result.mo_occ)
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'CCSD':
             print("Running CCSD natural orbital calculation")
