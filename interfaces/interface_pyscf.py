@@ -19,7 +19,7 @@ class PySCFTheory:
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
-                  CAS=False, CASSCF=False, active_space=None,
+                  CAS=False, CASSCF=False, active_space=None, stability_analysis=True,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   read_chkfile_name=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
@@ -65,6 +65,7 @@ class PySCFTheory:
 
         #
         self.scf_type=scf_type
+        self.stability_analysis=stability_analysis
         self.basis=basis
         self.functional=functional
         self.x2c=x2c
@@ -154,6 +155,7 @@ class PySCFTheory:
         print("Grid level:", self.gridlevel)
         print("verbose_setting:", self.verbose_setting)
         print("Basis:", self.basis)
+        print("SCF stability analysis:", self.stability_analysis)
         print("Functional:", self.functional)
         print("Coupled cluster:", self.CC)
         print("CC method:", self.CCmethod)
@@ -527,6 +529,9 @@ class PySCFTheory:
                     self.mf.__dict__.update(self.pyscf.scf.chkfile.load(self.read_chkfile_name, 'scf'))
                     dm = self.mf.make_rdm1()
                     scf_result = self.mf.run(dm)
+                    if self.stability_analysis is True:
+                        print("Doing stability analysis")
+                        self.mf.stability()
                 except TypeError:
                     print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
                     print("Ignoring and continuing")
@@ -537,7 +542,9 @@ class PySCFTheory:
                 print("Starting SCF from default guess orbitals")
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
-
+                if self.stability_analysis is True:
+                    print("Doing stability analysis")
+                    self.mf.stability()
 
             
             print("SCF energy:", scf_result.e_tot)
