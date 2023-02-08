@@ -316,7 +316,7 @@ class PySCFTheory:
             print(f"Now doing CASSCF using AVAS active space (CAS({nel_cas},{norb_cas})) and AVAS orbitals")
             casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
             casscf.verbose=self.verbose_setting
-            cas_result = casscf.kernel(avasorbitals, natorb=True)
+            cas_result = casscf.run(avasorbitals, natorb=True)
             print("cas_result:", cas_result)
             print("cas_result.mo_occ:", cas_result.mo_occ)
             return cas_result.mo_occ, cas_result.mo_coeff
@@ -328,7 +328,7 @@ class PySCFTheory:
             print("Now doing CASSCF using DMET-CAS active space (CAS({nel_cas},{norb_cas})) and DMET-CAS orbitals")
             casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
             casscf.verbose=self.verbose_setting
-            cas_result = casscf.kernel(dmetorbitals, natorb=True)
+            cas_result = casscf.run(dmetorbitals, natorb=True)
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'CCSD':
             print("Running CCSD natural orbital calculation")
@@ -814,7 +814,7 @@ class PySCFTheory:
                         print("Something wrong with orbitals:", orbitals)
                         print("Exiting")
                         ashexit()
-                e_tot, e_cas, fcivec, mo, mo_energy = casscf.kernel(orbitals, natorb=True)
+                e_tot, e_cas, fcivec, mo, mo_energy = casscf.run(orbitals, natorb=True)
                 print("CASSCF run done\n")
             else:
                 print("Doing CAS-CI (no orbital optimization)")
