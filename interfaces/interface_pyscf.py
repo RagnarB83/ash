@@ -594,8 +594,10 @@ class PySCFTheory:
                     print("b:", b)
 
                     orbitalets = losc_data["C_lo"][0]
+                    orbitalets_energies=losc_data["losc_dfa_orbital_energy"][0]
+                    print("orbitalets_energies:", orbitalets_energies)
                     #TODO: orbitals MO energies fix 
-                    self.write_orbitals_to_Moldenfile(self.mol, orbitalets, self.mf.mo_occ, self.mf.mo_energy, label="LOSC-orbs")
+                    self.write_orbitals_to_Moldenfile(self.mol, orbitalets, self.mf.mo_occ, orbitalets_energies, label="LOSC-orbs")
                     self.cubegen_orbital(self.mol, 'HOMO.cube', orbitalets[:,homo_idx], nx=60,ny=60,nz=60)
                     self.cubegen_orbital(self.mol, 'LUMO.cube', orbitalets[:,lumo_idx], nx=60,ny=60,nz=60)
                 elif self.LOSC_method=='SCF': 
