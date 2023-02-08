@@ -326,7 +326,10 @@ noio
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC/SHCI job
     def setup_initial_orbitals(self):
         print("\n INITIAL ORBITAL OPTION")
-        totnumborb=len(self.pyscftheoryobject.mf.mo_occ)
+        if len(self.pyscftheoryobject.mf.mo_occ) == 2:
+            totnumborb=len(self.pyscftheoryobject.mf.mo_occ[0])
+        else:
+            totnumborb=len(self.pyscftheoryobject.mf.mo_occ)
         print(f"There are {totnumborb} orbitals in the system")
         #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
         if self.read_chkfile_name == None:
