@@ -386,12 +386,10 @@ class PySCFTheory:
             mo_coefficients=[natorb,natorb]
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
         return natocc, mo_coefficients
+    
 
     def run_stability_analysis(self):
-        module_init_time=time.time()
-        if self.stability_analysis is True:
-            print("Doing stability analysis (to turn off: stability_analysis=False)")
-            mos_i, mos_e, stable_i, stable_e =  self.mf.stability(external=True, return_status=True, verbose=5)
+        def stableprint(stable_i,stable_e):
             if stable_i is True:
                 print("SCF WF is internally STABLE")
             else:
@@ -400,9 +398,18 @@ class PySCFTheory:
                 print("SCF WF is externally STABLE")
             else:
                 print("SCF WF is externally UNSTABLE")
+        module_init_time=time.time()
+        if self.stability_analysis is True:
+            print("Doing stability analysis (to turn off: stability_analysis=False)")
+            mos_i, mos_e, stable_i, stable_e =  self.mf.stability(external=True, return_status=True, verbose=5)
+            stableprint(stable_i, stable_e)
             if stable_i is False:
                 print("Doing internal stability analysis loop")
                 self.mf = self.stability_analysis_loop(self.mf,mos_i)
+                print("Doing final stability analysis with external=True")
+                mos_i, mos_e, stable_i, stable_e =  self.mf.stability(external=True, return_status=True, verbose=5)
+                print("Now done with stability analysis")
+                stableprint(stable_i, stable_e)
             print_time_rel(module_init_time, modulename='Stability analysis', moduleindex=2)
         else:
             print("No stability analysis requested")
