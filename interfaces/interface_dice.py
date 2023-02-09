@@ -326,6 +326,7 @@ noio
     #Set up initial orbitals
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC/SHCI job
     def setup_initial_orbitals(self):
+        module_init_time=time.time()
         print("\n INITIAL ORBITAL OPTION")
         if len(self.pyscftheoryobject.mf.mo_occ) == 2:
             totnumborb=len(self.pyscftheoryobject.mf.mo_occ[0])
@@ -387,6 +388,7 @@ noio
         print("Initial orbital step complete")
         print("----------------------------------")
         print()
+        print_time_rel(module_init_time, modulename='Dice-Intial-orbital-step', moduleindex=2)
         return mo_coefficients, occupations
 
     #Determine active space based on either natural occupations of initial orbitals or 
