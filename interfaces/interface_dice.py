@@ -23,15 +23,15 @@ import ash.settings_ash
 
 class DiceTheory:
     def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1, 
-                SHCI=False, NEVPT2=False, AFQMC=False, QMC_trialWF=None, frozencore=True,
+                moreadfile=None, initial_orbitals='MP2', CAS_AO_labels=None,memory=20000, frozencore=True,
+                SHCI=False, NEVPT2=False, AFQMC=False,  
                 SHCI_stochastic=True, SHCI_PTiter=200, SHCI_sweep_iter= [0,3],
                 SHCI_DoRDM=False, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None, SHCI_active_space_range=None,
-                moreadfile=None, Dice_SHCI_direct=None, fcidumpfile=None, refdeterminant=None,
-                QMC_SHCI_numdets=1000, dt=0.005, nsteps=50, nblocks=1000, nwalkers_per_proc=5,
-                memory=20000, initial_orbitals='MP2', CAS_AO_labels=None):
+                Dice_SHCI_direct=None, fcidumpfile=None, Dice_refdeterminant=None,
+                QMC_trialWF=None, QMC_SHCI_numdets=1000, QMC_dt=0.005, QMC_nsteps=50, QMC_nblocks=1000, QMC_nwalkers_per_proc=5):
 
         self.theorynamelabel="Dice"
         self.theorytype="QM"
@@ -113,7 +113,7 @@ class DiceTheory:
         self.Dice_SHCI_direct=Dice_SHCI_direct
         self.moreadfile=moreadfile
         self.fcidumpfile=fcidumpfile
-        self.refdeterminant=refdeterminant
+        self.Dice_refdeterminant=Dice_refdeterminant
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
         self.CAS_AO_labels=CAS_AO_labels  #Used only if AVAS-CASSCF, DMET-CASSCF initial_orbitals option
@@ -141,10 +141,10 @@ class DiceTheory:
         self.QMC_trialWF=QMC_trialWF
         self.QMC_SHCI_numdets=QMC_SHCI_numdets
         self.frozencore=frozencore
-        self.dt=dt
-        self.nsteps=nsteps
-        self.nblocks=nblocks
-        self.nwalkers_per_proc=nwalkers_per_proc
+        self.QMC_dt=QMC_dt
+        self.QMC_nsteps=QMC_nsteps
+        self.QMC_nblocks=QMC_nblocks
+        self.QMC_nwalkers_per_proc=QMC_nwalkers_per_proc
         #If SHCI is used as trial WF we turn off PT stage (timeconsuming)
         if self.AFQMC is True and self.QMC_trialWF == 'SHCI':
             print("AFQMC with SHCI trial WF. Turning off PT stage (not needed)")
@@ -152,6 +152,7 @@ class DiceTheory:
             self.SHCI_PTiter=0 # PT skipped with this
         #Print stuff
         print("Printlevel:", self.printlevel)
+        print("Memory (MB):", self.memory)
         print("Num cores:", self.numcores)
         print("PySCF object:", self.pyscftheoryobject)
         print("SHCI:", self.SHCI)
@@ -159,16 +160,29 @@ class DiceTheory:
         print("AFQMC:", self.AFQMC)
         print("Frozencore:", self.frozencore)
         print("moreadfile:", self.moreadfile)
+        print("Initial orbitals:", self.initial_orbitals)
+        print("CAS_AO_labels:", self.CAS_AO_labels)
         print("Dice_SHCI_direct:", self.Dice_SHCI_direct)
-        print("FCIDUMP file:", self.fcidumpfile)
-        print("Reference det. string:", self.refdeterminant)
+        if self.Dice_SHCI_direct is True:
+            print("FCIDUMP file:", self.fcidumpfile)
+            print("Dice Reference det. string:", self.Dice_refdeterminant)
         if self.SHCI is True:
             print("SHCI_stochastic", self.SHCI_stochastic)
             print("SHCI_PTiter", self.SHCI_PTiter)
             print("SHCI_sweep_iter", self.SHCI_sweep_iter)
             print("SHCI_DoRDM", self.SHCI_DoRDM)
             print("SHCI_sweep_epsilon", self.SHCI_sweep_epsilon)
+            print("SHCI DavidsonTol:", self.SHCI_davidsonTol)
+            print("SHCI dE:", self.SHCI_dE)
+            print("SHCI_maxiter:", self.SHCI_maxiter)
             print("SHCI_macroiter", self.SHCI_macroiter)
+            print("SHCI_epsilon2:", self.SHCI_epsilon2)
+            print("SHCI_epsilon2Large:", self.SHCI_epsilon2Large)
+            print("SHCI_targetError:", self.SHCI_targetError)
+            print("SHCI_sampleN:", self.SHCI_sampleN)
+            print("SHCI_nroots:", self.SHCI_nroots)
+            print("SHCI_active_space_range:", self.SHCI_active_space_range)
+            print("SHCI_active_space:", self.SHCI_active_space)
             print("SHCI CAS NO nmin", self.SHCI_cas_nmin)
             print("SHCI CAS NO nmax", self.SHCI_cas_nmax)
         if self.AFQMC is True:
@@ -176,10 +190,10 @@ class DiceTheory:
             if self.QMC_trialWF == 'SHCI':
                 print("QMC_SHCI_numdets:", self.QMC_SHCI_numdets)
             print("QMC settings:")
-            print("dt:", self.dt)
-            print("Number of steps per block (nsteps):", self.nsteps)
-            print("Number of blocks (nblocks):", self.nblocks)
-            print("Number of walkers per proc:", self.nwalkers_per_proc)
+            print("QMC_dt:", self.QMC_dt)
+            print("Number of steps per block (QMC_nsteps):", self.QMC_nsteps)
+            print("Number of blocks (QMC_nblocks):", self.QMC_nblocks)
+            print("Number of walkers per proc:", self.QMC_nwalkers_per_proc)
     
     def load_pyscf(self):
         try:
@@ -265,7 +279,7 @@ MPIPREFIX=""
         nocc=self.SHCI_active_space[0] #how many electrons in active space
         #refdeterminant="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27"
         #what orbital indices the electrons occupy in the set of MOs in the FCIDUMP file
-        if self.refdeterminant == None:
+        if self.Dice_refdeterminant == None:
             print("Error: reference determinant string required!")
             ashexit()
         sweepschedule=""
@@ -277,7 +291,7 @@ MPIPREFIX=""
 
 # reference determinant
 nocc {nocc}
-{self.refdeterminant} 
+{self.Dice_refdeterminant} 
 end
 
 orbitals {self.fcidumpfile}
@@ -640,8 +654,8 @@ noio
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(self.mch, mpi_prefix=f"mpirun -np {numcores}",
                                 norb_frozen=self.frozen_core_orbs, chol_cut=1e-5,
                                 ndets=self.QMC_SHCI_numdets, nroot=0, seed=None,
-                                dt=self.dt, steps_per_block=self.nsteps, nwalk_per_proc=self.nwalkers_per_proc,
-                                nblocks=self.nblocks, ortho_steps=20, burn_in=50,
+                                dt=self.QMC_dt, steps_per_block=self.QMC_nsteps, nwalk_per_proc=self.QMC_nwalkers_per_proc,
+                                nblocks=self.QMC_nblocks, ortho_steps=20, burn_in=50,
                                 cholesky_threshold=1.0e-3, weight_cap=None, write_one_rdm=False,
                                 use_eri=False, dry_run=False)
                 e_afqmc=e_afqmc[0] 
@@ -653,8 +667,8 @@ noio
                 #Phaseless AFQMC with simple mf trial
                 module_init_time=time.time()
                 e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mf(self.pyscftheoryobject.mf, mpi_prefix=f"mpirun -np {numcores}",
-                    norb_frozen=self.frozen_core_orbs, chol_cut=1e-5, seed=None, dt=self.dt,
-                    steps_per_block=self.nsteps, nwalk_per_proc=self.nwalkers_per_proc, nblocks=self.nblocks,
+                    norb_frozen=self.frozen_core_orbs, chol_cut=1e-5, seed=None, dt=self.QMC_dt,
+                    steps_per_block=self.QMC_nsteps, nwalk_per_proc=self.QMC_nwalkers_per_proc, nblocks=self.QMC_nblocks,
                     ortho_steps=20, burn_in=50, cholesky_threshold=1.0e-3,
                     weight_cap=None, write_one_rdm=False, dry_run=False)
                 print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
