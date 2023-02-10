@@ -10,11 +10,11 @@ import ash
 from ash.functions.functions_general import ashexit, isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
 from ash.functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
 from ash.interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output
-from ash.modules.module_highlevel_workflows import CC_CBS_Theory
+from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
 from ash.modules.module_coords import check_charge_mult
 
-#Reaction class. Used for benchmarking
-class Reaction:
+#BenchReaction class. Used for benchmarking
+class BenchReaction:
     def __init__(self, index, filenames, stoichiometry, refenergy, unit, correction=0.0):
         self.index = index
         self.filenames = filenames
@@ -100,9 +100,9 @@ def read_referencedata_file(benchmarksetpath):
                         filenames.append(word)
                 #New reaction
                 if corrections is True:
-                    newreaction = Reaction(index, filenames, stoichiometry, refenergy, unit, correction=corrections_dict[index])                    
+                    newreaction = BenchReaction(index, filenames, stoichiometry, refenergy, unit, correction=corrections_dict[index])                    
                 else:
-                    newreaction = Reaction(index, filenames, stoichiometry, refenergy, unit)
+                    newreaction = BenchReaction(index, filenames, stoichiometry, refenergy, unit)
                 
                 
                 #print("New reaction: ", newreaction.__dict__)
@@ -179,6 +179,11 @@ def read_referencedata_property_file(benchmarksetpath):
 def get_reaction_string(filenames, stoichiometry):
     string =""
     
+    def convert_stoich_to_string(i):
+        if abs(i) == 1:
+            return ""
+        else:
+            return str(abs(i))
     #Check index for sign change from reactant to product or vice versa
     for i,file in enumerate(filenames):
         #Current index
@@ -191,14 +196,18 @@ def get_reaction_string(filenames, stoichiometry):
         
         #Sign changed => First right-hand side case
         if is_same_sign(currindex,beforeindex) is False:
-            string+=" ⟶   " + file
+            string+=" ⟶   "
+            stoich = convert_stoich_to_string(stoichiometry[i])
+            string+=stoich + " " + file
         else:
             #First reactant
             if i == 0:
-                string=file
+                stoich = convert_stoich_to_string(stoichiometry[i])
+                string=stoich + " " + file
             #Everything else
             else:
-                string+=" + " + file
+                stoich = convert_stoich_to_string(stoichiometry[i])
+                string+=" + "+stoich + " " + file
     return string
 
 
@@ -320,8 +329,8 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
             if property == 'EFG':
                 Proptype='EFG'
                 theory.propertyblock="\n%eprnmr\nnuclei = {} {{ fgrad }} \nend\n".format(system.atomindex+1)
-                energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
-
+                result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
+                energy = result.energy
                 efg =grab_EFG_from_ORCA_output(theory.filename+'.out')
                 print("efg:", efg)
                 propertyvalue=max(efg, key=abs)
@@ -331,8 +340,8 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 Proptype='Mossbauer'
                 theory.propertyblock="\n%eprnmr\nnuclei = all Fe {rho,fgrad}\n"
                 
-                energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
-
+                result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
+                energy = result.energy
                 #grab_Mossbauer_from_ORCA_output(theory.filename)
 
             elif property == 'NMR':
@@ -340,8 +349,8 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 Proptype='NMR'
                 theory.propertyblock="\n%eprnmr\nnuclei = all {} {fgrad}\n".format(property_element)
 
-                energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
-
+                result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
+                energy = result.energy
                 #grab_NMRshielding_from_ORCA_output(theory.filename)
             else:
                 print("Unrecognized property")
@@ -404,8 +413,8 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                     #Reducing numcores if few electrons, otherwise original value
                     theory.numcores = check_cores_vs_electrons(frag.elems,numcores,charge)
                     
-                    energy = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
-                    
+                    result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
+                    energy = result.energy
                     all_calc_energies[file] = energy
                     reaction.totalenergies.append(energy)
 
@@ -462,10 +471,10 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
         
         if property=='energy':
             reactionstring=get_reaction_string(r.filenames, r.stoichiometry)
-            print(" {:<7} {:<55s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, r.calcenergy_corrected, colorcode, r.error,BC.END))
+            print(" {:<7} {:<80s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, r.calcenergy_corrected, colorcode, r.error,BC.END))
         else:
             #print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, ' '.join(r.filenames), r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
-            print(" {:<7} {:<55}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, str(r.filename), r.refvalue, r.calcvalue, r.calcvalue_corrected, colorcode, r.error,BC.END))
+            print(" {:<7} {:<80s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, str(r.filename), r.refvalue, r.calcvalue, r.calcvalue_corrected, colorcode, r.error,BC.END))
         
     print("-"*120)
     print(" {:<10s} {:13.4f} {:<10s} ".format("MAE", MAE, unit))

@@ -24,7 +24,8 @@ fcicorrenergies=[]
 ccsdcorrenergies=[]
 ccsdtenergies=[]
 for species in specieslist:
-    e = Singlepoint(theory=cc, fragment=species)
+    result = Singlepoint(theory=cc, fragment=species)
+    e = result.energy
     #Grab energy components
     energycomponents=cc.energy_components
     core_corr_energy=energycomponents["E_corecorr_and_SR"]

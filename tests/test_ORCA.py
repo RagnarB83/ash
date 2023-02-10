@@ -18,7 +18,7 @@ def test_ORCA_SP():
 
     ORCASPcalculation = ORCATheory(orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
 
-    energy = Singlepoint(theory=ORCASPcalculation, fragment=HF_frag)
+    result = Singlepoint(theory=ORCASPcalculation, fragment=HF_frag)
 
     #Clean up
     ORCASPcalculation.cleanup()
@@ -26,7 +26,7 @@ def test_ORCA_SP():
     #Reference energy
     ref=-100.350611851152
     threshold=1e-9
-    assert abs(energy-ref) < threshold, "Energy-error above threshold"
+    assert abs(result.energy-ref) < threshold, "Energy-error above threshold"
 
 def test_ORCA_SP2():
     """
@@ -46,7 +46,7 @@ def test_ORCA_SP2():
 
     ORCASPcalculation = ORCATheory(orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
 
-    energy = Singlepoint(theory=ORCASPcalculation, fragment=HF_frag, charge=0, mult=1)
+    result = Singlepoint(theory=ORCASPcalculation, fragment=HF_frag, charge=0, mult=1)
 
     #Clean up
     ORCASPcalculation.cleanup()
@@ -54,7 +54,7 @@ def test_ORCA_SP2():
     #Reference energy
     ref=-100.350611851152
     threshold=1e-9
-    assert abs(energy-ref) < threshold, "Energy-error above threshold"
+    assert abs(result.energy-ref) < threshold, "Energy-error above threshold"
 
 def test_ORCA_BS_SP():
     """
@@ -80,12 +80,12 @@ def test_ORCA_BS_SP():
     ORCABScalc = ORCATheory(orcasimpleinput=orcasimpleinput, orcablocks=orcablocks,
                                     brokensym=True, HSmult=11, atomstoflip=[1])
     #Simple Energy SP calc
-    energy = Singlepoint(fragment=Fe2_frag, theory=ORCABScalc)
-    print("energy:", energy)
+    result = Singlepoint(fragment=Fe2_frag, theory=ORCABScalc)
+    print("energy:", result.energy)
     #Clean up
     ORCABScalc.cleanup()
 
     #Reference energy
     ref=-2521.60831655367
     threshold=1e-6
-    assert abs(energy-ref) < threshold, "Energy-error above threshold"
+    assert abs(result.energy-ref) < threshold, "Energy-error above threshold"

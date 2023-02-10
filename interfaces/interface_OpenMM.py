@@ -12,14 +12,15 @@ import ash.constants
 
 ashpath = os.path.dirname(ash.__file__)
 from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile
+    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
-    change_origin_to_centroid, get_centroid, check_charge_mult
+    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms
 from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
 from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
 from ash.modules.module_singlepoint import Singlepoint
+from ash.interfaces.interface_plumed import MTD_analyze
 
 
 class OpenMMTheory:
@@ -39,10 +40,12 @@ class OpenMMTheory:
                  constraints=None, restraints=None, frozen_atoms=None, fragment=None, dummysystem=False,
                  autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None):
 
-        print_line_with_mainheader("OpenMM Theory")
 
+        self.printlevel=printlevel
+        if self.printlevel > 0:
+            print_line_with_mainheader("OpenMM Theory")
         module_init_time = time.time()
-
+        timeA = time.time()
         #Indicate that this is a MMtheory
         self.theorytype="MM"
 
@@ -51,13 +54,13 @@ class OpenMMTheory:
             import openmm
             import openmm.app
             import openmm.unit
-            print("Imported OpenMM library version:", openmm.__version__)
+            if self.printlevel > 0:
+                print("Imported OpenMM library version:", openmm.__version__)
         except ImportError:
             raise ImportError(
                 "OpenMMTheory requires installing the OpenMM library. Try: conda install -c conda-forge openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
-        print_time_rel(module_init_time, modulename="import openMM")
-        timeA = time.time()
+
         # OpenMM variables
         self.openmm = openmm
         self.openmm_app = openmm.app
@@ -67,10 +70,9 @@ class OpenMMTheory:
         self.Vec3 = openmm.Vec3
 
         # print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
-        print_line_with_subheader1("Defining OpenMM object")
-        # Printlevel
-        self.printlevel = printlevel
-        print("self.printlevel:", self.printlevel)
+        if self.printlevel > 0:
+            print_line_with_subheader1("Defining OpenMM object")
+            print("Printlevel:", self.printlevel)
         # Initialize system
         self.system = None
         
@@ -91,21 +93,26 @@ class OpenMMTheory:
 
         # Autoconstraints when creating MM system: Default: None,  Options: Hbonds, AllBonds, HAng
         if autoconstraints == 'HBonds':
-            print("HBonds option: X-H bond lengths will automatically be constrained")
+            if self.printlevel > 0:
+                print("HBonds option: X-H bond lengths will automatically be constrained")
             self.autoconstraints = self.openmm.app.HBonds
         elif autoconstraints == 'AllBonds':
-            print("AllBonds option: All bond lengths will automatically be constrained")
+            if self.printlevel > 0:
+                print("AllBonds option: All bond lengths will automatically be constrained")
             self.autoconstraints = self.openmm.app.AllBonds
         elif autoconstraints == 'HAngles':
-            print("HAngles option: All bond lengths and H-X-H and H-O-X angles will automatically be constrained")
+            if self.printlevel > 0:
+                print("HAngles option: All bond lengths and H-X-H and H-O-X angles will automatically be constrained")
             self.autoconstraints = self.openmm.app.HAngles
         elif autoconstraints is None or autoconstraints == 'None':
-            print("No automatic constraints")
+            if self.printlevel > 0:
+                print("No automatic constraints")
             self.autoconstraints = None
         else:
             print("Unknown autoconstraints option")
             ashexit()
-        print("AutoConstraint setting:", self.autoconstraints)
+        if self.printlevel > 0:
+            print("AutoConstraint setting:", self.autoconstraints)
         
         # User constraints, restraints and frozen atoms
         self.user_frozen_atoms = []
@@ -114,13 +121,15 @@ class OpenMMTheory:
         
         # Rigidwater constraints are on by default. Can be turned off
         self.rigidwater = rigidwater
-        print("Rigidwater constraints:", self.rigidwater)
+        if self.printlevel > 0:
+            print("Rigidwater constraints:", self.rigidwater)
         # Modify hydrogenmass or not
         if hydrogenmass is not None:
             self.hydrogenmass = hydrogenmass * self.unit.amu
         else:
             self.hydrogenmass = None
-        print("Hydrogenmass option:", self.hydrogenmass)
+        if self.printlevel > 0:
+            print("Hydrogenmass option:", self.hydrogenmass)
 
         # Setting for controlling whether QM1-MM1 bonded terms are deleted or not in a QM/MM job
         # See modify_bonded_forces
@@ -132,25 +141,31 @@ class OpenMMTheory:
         # before running.
         self.properties = {}
         if self.platform_choice == 'CPU':
-            print("Using platform: CPU")
+            if self.printlevel > 0:
+                print("Using platform: CPU")
             if numcores is not None:
-                print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
+                if self.printlevel > 0:
+                    print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
                 self.properties["Threads"] = str(numcores)
-                print(BC.WARNING,"Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.",BC.END)
-                print("If OPENMM_CPU_THREADS was not set in jobscript, physical cores will probably be used.")
-                print("To be safe: check the running process on the node",BC.END)
+                if self.printlevel > 0:
+                    print(BC.WARNING,"Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.",BC.END)
+                    print("If OPENMM_CPU_THREADS was not set in jobscript, physical cores will probably be used.")
+                    print("To be safe: check the running process on the node",BC.END)
             else:
-                print("No numcores variable provided to OpenMM object")
-                print("Checking if OPENMM_CPU_THREADS shell variable is present")
+                if self.printlevel > 0:
+                    print("No numcores variable provided to OpenMM object")
+                    print("Checking if OPENMM_CPU_THREADS shell variable is present")
                 try:
-                    print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(
+                    if self.printlevel > 0:
+                        print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(
                         os.environ["OPENMM_CPU_THREADS"]))
                 except KeyError:
                     print(
                         "OPENMM_CPU_THREADS environment variable not set.\nOpenMM will choose number of physical cores "
                         "present.")
         else:
-            print("Using platform:", self.platform_choice)
+            if self.printlevel > 0:
+                print("Using platform:", self.platform_choice)
 
         # Whether to do energy decomposition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_decomposition = do_energy_decomposition
@@ -187,19 +202,23 @@ class OpenMMTheory:
         self.Forcefield = None
         # What type of forcefield files to read. Reads in different way.
         # print("Now reading forcefield files")
-        print_line_with_subheader1("Setting up force fields.")
-        print(
+        if self.printlevel > 0:
+            print_line_with_subheader1("Setting up force fields.")
+            print(
             "Note: OpenMM will fail in this step if parameters are missing in topology and\n"
             "      parameter files (e.g. nonbonded entries).\n")
 
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
-            print("Reading CHARMM files.")
+            if self.printlevel > 0:
+                print("Reading CHARMM files.")
             self.psffile = psffile
             if use_parmed is True:
-                print("Using Parmed.")
+                if self.printlevel > 0:
+                    print("Using Parmed.")
                 self.psf = parmed.charmm.CharmmPsfFile(psffile)
-                self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                #Permissive True means less restrictive about atomtypes
+                self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile, permissive=True)
                 # Grab resnames from psf-object. Different for parmed object
                 # Note: OpenMM uses 0-indexing
                 self.resnames = [self.psf.atoms[i].residue.name for i in range(0, len(self.psf.atoms))]
@@ -216,7 +235,7 @@ class OpenMMTheory:
             else:
                 # Load CHARMM PSF files via native routine.
                 self.psf = openmm.app.CharmmPsfFile(psffile)
-                self.params = openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile)
+                self.params = openmm.app.CharmmParameterSet(charmmtopfile, charmmprmfile, permissive=True)
                 # Grab resnames from psf-object
                 self.resnames = [self.psf.atom_list[i].residue.resname for i in range(0, len(self.psf.atom_list))]
                 self.resids = [self.psf.atom_list[i].residue.idx for i in range(0, len(self.psf.atom_list))]
@@ -230,16 +249,19 @@ class OpenMMTheory:
             self.forcefield = self.psf
 
         elif GROMACSfiles is True:
-            print("Reading Gromacs files.")
+            if self.printlevel > 0:
+                print("Reading Gromacs files.")
             # Reading grofile, not for coordinates but for periodic vectors
             if use_parmed is True:
-                print("Using Parmed.")
-                print("GROMACS top dir:", gromacstopdir)
+                if self.printlevel > 0:
+                    print("Using Parmed.")
+                    print("GROMACS top dir:", gromacstopdir)
                 parmed.gromacs.GROMACS_TOPDIR = gromacstopdir
-                print("Reading GROMACS GRO file:", grofile)
+                if self.printlevel > 0:
+                    print("Reading GROMACS GRO file:", grofile)
                 gmx_gro = parmed.gromacs.GromacsGroFile.parse(grofile)
-
-                print("Reading GROMACS topology file:", gromacstopfile)
+                if self.printlevel > 0:
+                    print("Reading GROMACS topology file:", gromacstopfile)
                 gmx_top = parmed.gromacs.GromacsTopologyFile(gromacstopfile)
 
                 # Getting PBC parameters
@@ -251,9 +273,10 @@ class OpenMMTheory:
                 self.forcefield = gmx_top
 
             else:
-                print("Using built-in OpenMM routines to read GROMACS topology.")
-                print("WARNING: may fail if virtual sites present (e.g. TIP4P residues).")
-                print("Use 'parmed=True'  to avoid")
+                if self.printlevel > 0:
+                    print("Using built-in OpenMM routines to read GROMACS topology.")
+                    print("WARNING: may fail if virtual sites present (e.g. TIP4P residues).")
+                    print("Use 'parmed=True'  to avoid")
                 gro = openmm.app.GromacsGroFile(grofile)
                 self.grotop = openmm.app.GromacsTopFile(gromacstopfile, periodicBoxVectors=gro.getPeriodicBoxVectors(),
                                                         includeDir=gromacstopdir)
@@ -268,14 +291,17 @@ class OpenMMTheory:
             #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
 
         elif Amberfiles is True:
-            print("Reading Amber files.")
-            print("WARNING: Only new-style Amber7 prmtop-file will work.")
-            print("WARNING: Will take periodic boundary conditions from prmtop file.")
+            if self.printlevel > 0:
+                print("Reading Amber files.")
+                print("WARNING: Only new-style Amber7 prmtop-file will work.")
+                print("WARNING: Will take periodic boundary conditions from prmtop file.")
             if use_parmed is True:
-                print("Using Parmed to read Amber files.")
+                if self.printlevel > 0:
+                    print("Using Parmed to read Amber files.")
                 self.prmtop = parmed.load_file(amberprmtopfile)
             else:
-                print("Using built-in OpenMM routines to read Amber files.")
+                if self.printlevel > 0:
+                    print("Using built-in OpenMM routines to read Amber files.")
                 # Note: Only new-style Amber7 prmtop files work
                 self.prmtop = openmm.app.AmberPrmtopFile(amberprmtopfile)
             self.topology = self.prmtop.topology
@@ -291,12 +317,14 @@ class OpenMMTheory:
 
 
         elif topoforce is True:
-            print("Using forcefield info from topology and forcefield keyword.")
+            if self.printlevel > 0:
+                print("Using forcefield info from topology and forcefield keyword.")
             self.topology = topology
             self.forcefield = forcefield
 
         elif ASH_FF_file is not None:
-            print("Reading ASH cluster fragment file and ASH Forcefield file.")
+            if self.printlevel > 0:
+                print("Reading ASH cluster fragment file and ASH Forcefield file.")
 
             # Converting ASH FF file to OpenMM XML file
             MM_forcefield = MMforcefield_read(ASH_FF_file)
@@ -358,11 +386,13 @@ class OpenMMTheory:
 
         # Load XMLfile for whole system
         elif xmlsystemfile is not None:
-            print("Reading system XML file:", xmlsystemfile)
+            if self.printlevel > 0:
+                print("Reading system XML file:", xmlsystemfile)
             xmlsystemfileobj = open(xmlsystemfile).read()
             # Deserialize the XML text to create a System object.
-            print("Now defining OpenMM system using information in file")
-            print("Warning: file may contain hardcoded constraints that can not be overridden.")
+            if self.printlevel > 0:
+                print("Now defining OpenMM system using information in file")
+                print("Warning: file may contain hardcoded constraints that can not be overridden.")
             self.system = openmm.XmlSerializer.deserializeSystem(xmlsystemfileobj)
             #self.forcefield = system_temp.forcefield
             #NOTE: Big drawback of xmlsystemfile is that constraints have been hardcoded and can
@@ -375,7 +405,8 @@ class OpenMMTheory:
             #otherwise system is not completely set
 
             # We still need topology from somewhere to using pdbfile
-            print("Reading topology from PDBfile:", pdbfile)
+            if self.printlevel > 0:
+                print("Reading topology from PDBfile:", pdbfile)
             pdb = openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
         # Simple OpenMM system without any forcefield defined. Requires ASH fragment
@@ -400,8 +431,12 @@ class OpenMMTheory:
 
         # Read topology from PDB-file and XML-forcefield files to define forcefield
         else:
-            print("Reading OpenMM XML forcefield files and PDB file")
-            print("xmlfiles:", str(xmlfiles).strip("[]"))
+            if self.printlevel > 0:
+                print("Reading OpenMM XML forcefield files and PDB file")
+                print("xmlfiles:", str(xmlfiles).strip("[]"))
+                if pdbfile == None:
+                    print("Error:No pdbfile input provided")
+                    ashexit()
             # This would be regular OpenMM Forcefield definition requiring XML file
             # Topology from PDBfile annoyingly enough
             pdb = openmm.app.PDBFile(pdbfile)
@@ -420,13 +455,14 @@ class OpenMMTheory:
         if self.system is None:
             # Periodic or non-periodic ystem
             if self.Periodic is True:
-                print_line_with_subheader1("Setting up periodicity.")
-
-                print("Nonbonded cutoff is {} Angstrom.".format(periodic_nonbonded_cutoff))
+                if self.printlevel > 0:
+                    print_line_with_subheader1("Setting up periodicity.")
+                    print("Nonbonded cutoff is {} Angstrom.".format(periodic_nonbonded_cutoff))
                 # Parameters here are based on OpenMM DHFR example
 
                 if CHARMMfiles is True:
-                    print("Using CHARMM files.")
+                    if self.printlevel > 0:
+                        print("Using CHARMM files.")
 
                     if charmm_periodic_cell_dimensions is None:
                         print(
@@ -437,7 +473,8 @@ class OpenMMTheory:
                             "degrees")
                         ashexit()
                     self.charmm_periodic_cell_dimensions = charmm_periodic_cell_dimensions
-                    print("Periodic cell dimensions:", charmm_periodic_cell_dimensions)
+                    if self.printlevel > 0:
+                        print("Periodic cell dimensions:", charmm_periodic_cell_dimensions)
                     self.a = charmm_periodic_cell_dimensions[0] * self.unit.angstroms
                     self.b = charmm_periodic_cell_dimensions[1] * self.unit.angstroms
                     self.c = charmm_periodic_cell_dimensions[2] * self.unit.angstroms
@@ -445,13 +482,14 @@ class OpenMMTheory:
                         self.forcefield.box = [self.a, self.b, self.c, charmm_periodic_cell_dimensions[3],
                                                charmm_periodic_cell_dimensions[4], charmm_periodic_cell_dimensions[5]]
                         # print("Set box vectors:", self.forcefield.box)
-                        print_line_with_subheader2("Set box vectors:")
-                        print("a:", self.a)
-                        print("b:", self.b)
-                        print("c:", self.c)
-                        print("alpha:", charmm_periodic_cell_dimensions[3])
-                        print("beta:", charmm_periodic_cell_dimensions[4])
-                        print("gamma:", charmm_periodic_cell_dimensions[5])
+                        if self.printlevel > 0:
+                            print_line_with_subheader2("Set box vectors:")
+                            print("a:", self.a)
+                            print("b:", self.b)
+                            print("c:", self.c)
+                            print("alpha:", charmm_periodic_cell_dimensions[3])
+                            print("beta:", charmm_periodic_cell_dimensions[4])
+                            print("gamma:", charmm_periodic_cell_dimensions[5])
                     else:
                         self.forcefield.setBox(self.a, self.b, self.c,
                                                alpha=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3],
@@ -460,7 +498,8 @@ class OpenMMTheory:
                                                                        unit=self.unit.degree),
                                                gamma=self.unit.Quantity(value=charmm_periodic_cell_dimensions[3],
                                                                         unit=self.unit.degree))
-                        print("Set box vectors:", self.forcefield.box_vectors)
+                        if self.printlevel > 0:
+                            print("Set box vectors:", self.forcefield.box_vectors)
 
 
                     # ashexit()
@@ -472,7 +511,8 @@ class OpenMMTheory:
                                                                switchDistance=switching_function_distance * self.unit.angstroms)
                 elif GROMACSfiles is True:
                     # NOTE: Gromacs has read PBC info from Gro file already
-                    print("Ewald Error tolerance:", self.ewalderrortolerance)
+                    if self.printlevel > 0:
+                        print("Ewald Error tolerance:", self.ewalderrortolerance)
                     # Note: Turned off switchDistance. Not available for GROMACS?
                     #
                     self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME,
@@ -490,7 +530,8 @@ class OpenMMTheory:
 
                     # print("self.system num con", self.system.getNumConstraints())
                 else:
-                    print("Setting up periodic system here.")
+                    if self.printlevel > 0:
+                        print("Setting up periodic system here.")
                     # Modeller and manual xmlfiles
                     self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=openmm.app.PME,
                                                                constraints=self.autoconstraints,
@@ -505,24 +546,27 @@ class OpenMMTheory:
 
                 if PBCvectors is not None:
                     # pbcvectors_mod = PBCvectors
-                    print("Setting PBC vectors by user request.")
-                    print("Assuming list of lists or list of Vec3 objects.")
-                    print("Assuming vectors in nanometers.")
+                    if self.printlevel > 0:
+                        print("Setting PBC vectors by user request.")
+                        print("Assuming list of lists or list of Vec3 objects.")
+                        print("Assuming vectors in nanometers.")
                     self.system.setDefaultPeriodicBoxVectors(*PBCvectors)
 
                 a, b, c = self.system.getDefaultPeriodicBoxVectors()
-                print_line_with_subheader2("Periodic vectors:")
-                print(a)
-                print(b)
-                print(c)
+                if self.printlevel > 0:
+                    print_line_with_subheader2("Periodic vectors:")
+                    print(a)
+                    print(b)
+                    print(c)
                 # print("Periodic vectors:", self.system.getDefaultPeriodicBoxVectors())
                 print("")
                 # Force modification here
                 # print("OpenMM Forces defined:", self.system.getForces())
-                print_line_with_subheader2("OpenMM Forces defined:")
+                if self.printlevel > 0:
+                    print_line_with_subheader2("OpenMM Forces defined:")
                 for force in self.system.getForces():
-                    print(force.getName())
-
+                    if self.printlevel > 0:
+                        print(force.getName())
                     #NONBONDED FORCE 
                     if isinstance(force, openmm.CustomNonbondedForce):
                         # NOTE: THIS IS CURRENTLY NOT USED
@@ -535,7 +579,8 @@ class OpenMMTheory:
                         # Modify PME Parameters if desired
                         # force.setPMEParameters(1.0/0.34, fftx, ffty, fftz)
                         if PMEparameters is not None:
-                            print("Changing PME parameters")
+                            if self.printlevel > 0:
+                                print("Changing PME parameters")
                             force.setPMEParameters(PMEparameters[0], PMEparameters[1], PMEparameters[2],
                                                    PMEparameters[3])
                         # force.setSwitchingDistance(switching_function_distance)
@@ -544,21 +589,25 @@ class OpenMMTheory:
                         #    #Switching distance in nm. To be looked at further
                         #   force.setSwitchingDistance(switching_function_distance)
                         #    print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
-                        print_line_with_subheader2("Nonbonded force settings (after all modifications):")
-                        print("Periodic cutoff distance: {}".format(force.getCutoffDistance()))
-                        print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
+                        if self.printlevel > 0:
+                            print_line_with_subheader2("Nonbonded force settings (after all modifications):")
+                            print("Periodic cutoff distance: {}".format(force.getCutoffDistance()))
+                            print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
                         if force.getUseSwitchingFunction() is True:
-                            print('SwitchingFunction distance: {}'.format(force.getSwitchingDistance()))
-                        print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
-                        print("PME Parameters:", force.getPMEParameters())
-                        print("Ewald error tolerance:", force.getEwaldErrorTolerance())
+                            if self.printlevel > 0:
+                                print('SwitchingFunction distance: {}'.format(force.getSwitchingDistance()))
+                        if self.printlevel > 0:
+                            print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
+                            print("PME Parameters:", force.getPMEParameters())
+                            print("Ewald error tolerance:", force.getEwaldErrorTolerance())
 
-
-                print_line_with_subheader2("OpenMM system created.")
+                if self.printlevel > 0:
+                    print_line_with_subheader2("OpenMM system created.")
 
             # Non-Periodic
             else:
-                print("System is non-periodic.")
+                if self.printlevel > 0:
+                    print("System is non-periodic.")
 
                 if CHARMMfiles is True:
                     self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.NoCutoff,
@@ -581,10 +630,10 @@ class OpenMMTheory:
                                                                rigidWater=self.rigidwater,
                                                                nonbondedCutoff=1000 * openmm.unit.angstroms,
                                                                hydrogenMass=self.hydrogenmass)
-
-                print_line_with_subheader2("OpenMM system created.")
-                print("OpenMM Forces defined:", self.system.getForces())
-                print("")
+                if self.printlevel > 0:
+                    print_line_with_subheader2("OpenMM system created.")
+                    print("OpenMM Forces defined:", self.system.getForces())
+                    print("")
                 # for i,force in enumerate(self.system.getForces()):
                 #    if isinstance(force, openmm.NonbondedForce):
                 #        self.getatomcharges()
@@ -637,14 +686,16 @@ class OpenMMTheory:
                 self.nonbonded_force = force
 
         # Set charges in OpenMMobject by taking from Force (used by QM/MM)
-        print("Setting charges")
+        if self.printlevel > 0:
+            print("Setting charges")
         # self.getatomcharges(self.nonbonded_force)
         self.getatomcharges()
 
         # Storing numatoms and list of all atoms
         self.numatoms = int(self.system.getNumParticles())
         self.allatoms = list(range(0, self.numatoms))
-        print("Number of atoms in OpenMM system:", self.numatoms)
+        if self.printlevel > 0:
+            print("Number of atoms in OpenMM system:", self.numatoms)
 
         # Preserve original masses before any mass modifications or frozen atoms (set mass to 0)
         #NOTE: Creates list of Quantity objects (value, unit attributes)
@@ -655,11 +706,13 @@ class OpenMMTheory:
 
 
         if constraints or frozen_atoms or restraints:
-            print_line_with_subheader1("Adding user constraints, restraints or frozen atoms.")
+            if self.printlevel > 0:
+                print_line_with_subheader1("Adding user constraints, restraints or frozen atoms.")
         # Now adding user-defined system constraints (only bond-constraints supported for now)
         if constraints is not None:
-            print("Before adding user constraints, system contains {} constraints".format(self.system.getNumConstraints()))
-            print("")
+            if self.printlevel > 0:
+                print("Before adding user constraints, system contains {} constraints".format(self.system.getNumConstraints()))
+                print("")
 
             if len(constraints) < 50:
                 print("User-constraints to add:", constraints)
@@ -685,7 +738,8 @@ class OpenMMTheory:
             self.add_bondconstraints(constraints=constraints)
             print("")
             # print("After adding user constraints, system contains {} constraints".format(self.system.getNumConstraints()))
-            print(f"{len(self.user_constraints)} user-defined constraints added.")
+            if self.printlevel > 0:
+                print(f"{len(self.user_constraints)} user-defined constraints added.")
         # Now adding user-defined frozen atoms
         if frozen_atoms is not None:
             self.user_frozen_atoms = frozen_atoms
@@ -708,17 +762,18 @@ class OpenMMTheory:
 
         #Now changing masses if requested
         if changed_masses is not None:
-            print("Modified masses")
+            if self.printlevel > 0:
+                print("Modified masses")
             #changed_masses should be a dict of : atomindex: mass
             self.modify_masses(changed_masses=changed_masses)
 
-
-        print("\nSystem constraints defined upon system creation:", self.system.getNumConstraints())
-        print("Use printlevel =>3 to see list of all constraints")
+        if self.printlevel > 0:
+            print("\nSystem constraints defined upon system creation:", self.system.getNumConstraints())
+            print("Use printlevel =>3 to see list of all constraints")
         if self.printlevel >= 3:
             for i in range(0, self.system.getNumConstraints()):
                 print("Defined constraints:", self.system.getConstraintParameters(i))
-        print_time_rel(timeA, modulename="system create")
+        #print_time_rel(timeA, modulename="system create")
         timeA = time.time()
 
         # Platform
@@ -733,9 +788,16 @@ class OpenMMTheory:
         # NOTE: If self.system is modified then we have to remake self.simulation
         # self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
         # self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
-        print_time_rel(timeA, modulename="simulation setup")
+        #print_time_rel(timeA, modulename="simulation setup")
         # timeA = time.time()
         print_time_rel(module_init_time, modulename="OpenMM object creation")
+
+    #Set numcores method: currently inactive. Included for completeness
+    def set_numcores(self,numcores):
+        self.numcores=numcores
+    #Set numcores method
+    def cleanup(self):
+        print("Cleanup for OpenMMTheory called")
 
     # add force that restrains atoms to a fixed point:
     # https://github.com/openmm/openmm/issues/2568
@@ -1076,13 +1138,14 @@ class OpenMMTheory:
     def update_simulation(self):
         #Keeping variables
         timeA = time.time()
-        print_line_with_subheader1("Creating/updating OpenMM simulation object")
-        print("Integrator name:", self.integrator_name)
-        print("Timestep:", self.timestep)
-        print("Temperature:", self.temperature)
-        print("Coupling frequency:", self.coupling_frequency)
-        print("Properties:", self.properties)
-        print("Topology:", self.topology)
+        if self.printlevel > 0:
+            print_line_with_subheader1("Creating/updating OpenMM simulation object")
+            print("Integrator name:", self.integrator_name)
+            print("Timestep:", self.timestep)
+            print("Temperature:", self.temperature)
+            print("Coupling frequency:", self.coupling_frequency)
+            print("Properties:", self.properties)
+            print("Topology:", self.topology)
         printdebug("self.system.getForces() ", self.system.getForces())
         #NOTE: Integrator definition has to be here (instead of set_simulation_parameters) as it has to be recreated for each updated simulation
         # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
@@ -1123,7 +1186,7 @@ class OpenMMTheory:
         #Now calling function to compute the actual degrees of freedom.
         #NOTE: Better place for this? Just needs to be called once, after constraints and frozen atoms are done.
         self.compute_DOF()
-        print_time_rel(timeA, modulename="creating/updating simulation")
+        #print_time_rel(timeA, modulename="creating/updating simulation")
 
     # Functions for energy decompositions
     def forcegroupify(self):
@@ -1968,6 +2031,10 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     if watermodel == "tip3p":
         # Possible Problem: this only has water, no ions.
         waterxmlfile = "tip3p.xml"
+        modeller_solvent_name="tip3p" #Used when adding solvent
+    elif watermodel == "tip3p_charmm":
+        waterxmlfile = "charmm36/water.xml"
+        modeller_solvent_name="tip3p" #Used when adding solvent
     elif waterxmlfile is not None:
         # Problem: we need to define watermodel also
         print("Using waterxmlfile:", waterxmlfile)
@@ -1985,6 +2052,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
             xmlfile = "amber14-all.xml"
             # Using specific Amber FB version of TIP3P
             if watermodel == "tip3p":
+                modeller_solvent_name="tip3p" #Used when adding solvent
                 waterxmlfile = "amber14/tip3pfb.xml"
         elif forcefield == 'Amber96':
             xmlfile = "amber96.xml"
@@ -1992,6 +2060,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
             xmlfile = "charmm36.xml"
             # Using specific CHARMM36 version of TIP3P
             watermodel="tip3p"
+            modeller_solvent_name="tip3p" #Used when adding solvent
             waterxmlfile = "charmm36/water.xml"
         elif forcefield == 'CHARMM2013':
             xmlfile = "charmm_polar_2013.xml"
@@ -2009,20 +2078,31 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Forcefield:", forcefield)
     print("XMfile:", xmlfile)
     print("Water model:", watermodel)
-    print("Xmlfile:", waterxmlfile)
+    print("Water xmlfile:", waterxmlfile)
     print("pH:", pH)
 
     print("User-provided dictionary of residue_variants:", residue_variants)
-    # Define a forcefield
-    if extraxmlfile is None:
-        forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile)
-    else:
+    #Basic checks
+    if extraxmlfile is not None:
         print("Using extra XML file:", extraxmlfile)
-        #Checking if file exists first
+        #Checking if file exists first before continuing
         if os.path.isfile(extraxmlfile) is not True:
             print(BC.FAIL,"File {} can not be found. Exiting.".format(extraxmlfile),BC.END)
             ashexit()
-        forcefield = openmm_app.forcefield.ForceField(xmlfile, waterxmlfile, extraxmlfile)
+    if xmlfile is None:
+        print("xmlfile is none. Something went wrong. Exiting")
+        ashexit()
+
+    ############
+    # Define a forcefield based on defined xml-files
+    if extraxmlfile is None and waterxmlfile is None:
+        forcefield = openmm_app.forcefield.ForceField(xmlfile)
+    elif extraxmlfile is not None and waterxmlfile is None:
+        forcefield = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile)
+    elif extraxmlfile is None and waterxmlfile is not None:
+        forcefield = openmm_app.forcefield.ForceField(xmlfile,waterxmlfile)
+    elif extraxmlfile is not None and waterxmlfile is not None:
+        forcefield = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile,waterxmlfile)
 
 
     print("\nNow checking PDB-file for alternate locations, i.e. multiple occupancies:\n")
@@ -2142,14 +2222,14 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print_systemsize()
 
     # Adding Solvent
-    print("Adding solvent, watermodel:", watermodel)
+    print("Adding solvent, modeller_solvent_name:", modeller_solvent_name)
     if solvent_boxdims is not None:
         print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
         modeller.addSolvent(forcefield, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
                                                             solvent_boxdims[2]) * openmm_unit.angstrom)
     else:
         print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
-        modeller.addSolvent(forcefield, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=watermodel)
+        modeller.addSolvent(forcefield, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=modeller_solvent_name)
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
     print_systemsize()
 
@@ -2175,7 +2255,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Creating OpenMMTheory object")
     openmmobject =OpenMMTheory(platform=platform, forcefield=forcefield, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True,
-                        autoconstraints='HBonds', rigidwater=True)
+                        autoconstraints='HBonds', rigidwater=True, printlevel=0)
     #Write out System XMLfile
     #TODO: Disable ?
     systemxmlfile="system_full.xml"
@@ -2208,6 +2288,17 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
 
     print(BC.OKMAGENTA,"2. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
         "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)\n",BC.END)
+    print()
+    print()
+    #Check system for atoms with large gradient and print warning
+    #TODO: Can we avoid re-creating the omm object ?
+    print("Now running single-point MM job to check for bad contacts")
+    omm =OpenMMTheory(platform=platform, forcefield=forcefield, topoforce=True,
+                        topology=modeller.topology, pdbfile=None, periodic=True,
+                        autoconstraints=None, rigidwater=False, printlevel=0)
+    SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True)
+    check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=45000)
+    
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
     
     #Return openmmobject. Could be used directly
@@ -2286,6 +2377,44 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
 
     return lastframe
 
+
+# Slicing trajectory. Mostly to grab specific snapshot
+#TODO: allow option to grab by ps? Requires information about timestep and traj-frequency
+def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
+
+    if frames is None:
+        print("frames needs to be set")
+        ashexit()
+
+    #Trajectory basename
+    traj_basename = os.path.splitext(trajectory)[0]
+    
+    #Import mdtraj library
+    mdtraj = MDtraj_import_()
+
+    # Load trajectory
+    print("Loading trajectory using mdtraj.")
+    traj = mdtraj.load(trajectory, top=pdbtopology)
+    print(f"This trajectory contains {traj.n_frames} frames")
+    #Slicing trajectory
+    print("Slicing trajectory using frame selection:", frames)
+    tslice = traj[frames[0]:frames[1]]
+    print(f"Trajectory slice contains {tslice.n_frames} frames")
+    if tslice.n_frames == 0:
+        print(f"0 frames found when slicing. You probably should do: frames=[{frames[0]},{frames[1]+1}] instead")
+        print("Exiting")
+        ashexit()
+
+    # Save trajectory in format
+    if format == 'DCD':
+        tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.dcd')
+        print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.dcd')
+    elif format == 'PDB':
+        tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.pdb')
+        print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.pdb')
+    else:
+        print("Unknown trajectory format.")
+    return
 
 def MDAnalysis_transform(topfile, trajfile, solute_indices=None, trajoutputformat='PDB', trajname="MDAnalysis_traj"):
     # Load traj
@@ -2672,7 +2801,7 @@ class OpenMM_MDclass:
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
                  center_force_atoms=None, centerforce_constant=1.0,
-                 barostat_frequency=25, specialbox=False):
+                 barostat_frequency=25, specialbox=False,):
         module_init_time = time.time()
 
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
@@ -3006,7 +3135,7 @@ class OpenMM_MDclass:
             print_time_rel(module_init_time, modulename="OpenMM_MD setup", moduleindex=1)
 
     # Simulation loop
-    def run(self, simulation_steps=None, simulation_time=None):
+    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, meta_object=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
         if simulation_steps is None and simulation_time is None:
@@ -3205,11 +3334,16 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
         else:
-            print("Regular classical OpenMM MD option chosen.")
-            #This is the fastest option as getState is never called in each loop iteration like above
-            # Running all steps in one go
-            # TODO: If we wanted to support plumed then we would have to do step 1-by-1 instead
-            self.openmmobject.simulation.step(simulation_steps)
+            #OpenMM metadynamics
+            if metadynamics == True:
+                print("Now calling OpenMM native metadynamics")
+                meta_object.step(self.openmmobject.simulation, simulation_steps)
+            else:
+                print("Regular classical OpenMM MD option chosen.")
+                #This is the fastest option as getState is never called in each loop iteration like above
+                # Running all steps in one go
+                # TODO: If we wanted to support plumed then we would have to do step 1-by-1 instead
+                self.openmmobject.simulation.step(simulation_steps)
 
         print_line_with_subheader2("OpenMM MD simulation finished!")
 
@@ -3401,7 +3535,6 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
     #Looping through PDB-file
     with open(pdbfile) as pfile:
         for line in pfile:
-            #Only keep ATOM/HETATM lines
             if line.startswith("ATOM") or line.startswith("HETATM"):
                 altloc=line[16]
                 #Adding info to dicts and adding marker if alternate location info present for atom
@@ -3428,6 +3561,9 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
                 #Use unmodifed ATOM line
                 else:
                     pdb_atomlines.append(line)
+            else:
+                #Still keeping unmodified line
+                pdb_atomlines.append(line)
     #For debugging
     #for k,v in altloc_dict.items():
     #    print(k, v)
@@ -3565,3 +3701,248 @@ def write_nonbonded_FF_for_ligand(fragment=None, xyzfile=None, charge=None, mult
                                         sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename=resname+".xml",
                                         coulomb14scale=coulomb14scale, lj14scale=lj14scale, charmm=charmm)
     return xmlfile
+
+
+
+################################
+# Native OpenMM metadynamics
+################################
+
+# Metadynamics written as a wrapper function around OpenMM_MDclass
+def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
+              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              coupling_frequency=1, charge=None, mult=None,
+              anderson_thermostat=False,
+              enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
+              datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
+              center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
+              use_plumed=False, plumed_input_string=None,
+              CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, height=1, 
+              biaswidth_cv1=0.5, biaswidth_cv2=0.5,
+              frequency=1, savefrequency=10,
+              biasdir='.'):
+    print_line_with_mainheader("OpenMM metadynamics")
+    
+    if CV1_atoms == None or CV1_type == None:
+        print("Error: You must specify both CV1_atoms and CV1_type keywords")
+        ashexit()
+
+    if CV2_atoms == None or CV2_type == None:
+        print("CV2 not specified. Assuming only 1 CV in simulation.")
+        numCVs=1
+    else:
+        numCVs=2
+
+    if use_plumed is True:
+        print("Using metadynamics via OpenMM Plumed plugin (use_plumed=True)")
+
+        #TODO: Trying to load plumed, test for plugin and also plumed package
+        try:
+            #from openmmplumed import PlumedForce
+            import openmmplumed
+        except ModuleNotFoundError:
+            print("openmmplumed module plugin not found. See https://github.com/openmm/openmm-plumed \nYou can install via conda: \nconda install -c conda-forge openmm-plumed")
+            ashexit()
+    else:
+        print("Using OpenMM built-in metadynamics option (use_plumed=False)")
+
+
+    #Creating MDclass
+    md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
+                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
+                        enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
+                        datafilename=datafilename, dummy_MM=dummy_MM,
+                        plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
+                        center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
+                        barostat_frequency=barostat_frequency, specialbox=specialbox)
+
+    #Access to system object via md (if QM theory then it was created)
+    system = md.openmmobject.system
+
+    #Setting up collective variables for native case or plumed case
+    if use_plumed is False:
+        native_MTD=True
+        if numCVs == 1:
+            # Create metadynamics object for 1 CV
+            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,biaswidth_cv1,md)
+            meta_object = md.openmmobject.openmm_app.Metadynamics(system, [CV1_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
+        elif numCVs == 2:
+            # Create metadynamics object for 2 CVs
+            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,biaswidth_cv1,md)
+            CV2_bias = create_CV_bias(CV2_type,CV2_atoms,biaswidth_cv2,md)
+            meta_object = md.openmmobject.openmm_app.Metadynamics(system, [CV1_bias, CV2_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
+    else:
+        print("Setting up Plumed")
+        #Setting native_MTD Boolean to False and metaobject to None
+        native_MTD=False
+        meta_object=None
+
+        #OPTION to provide the full Plumed input as string instead
+        if plumed_input_string != None:
+            print("plumed_input_string provided. Will read all options from this string (make sure to provide atom indices in 1-based indexing)")
+            writestringtofile(plumed_input_string,"plumedinput.in")
+            system.addForce(openmmplumed.PlumedForce(plumed_input_string))
+        #CREATE Plumed input strings based on provided keyword options
+        else:
+            #TODO: pi ?
+            #Defining inputscript
+            #NOTE: SIGMA. Possible unit conversion needed here?
+            strideval=savefrequency #allow different ?
+            paceval=savefrequency # allow different ?
+
+            #1 CVs
+            if numCVs == 1:
+                if CV1_type == "dihedral" or CV1_type == "torsion":
+                    cvlabel="TORSION"
+                    grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+                    atom_defsline=str(CV1_atoms[0]+1)+","+str(CV1_atoms[1]+1)+","+str(CV1_atoms[2]+1)+","+str(CV1_atoms[3]+1)
+                elif CV1_type == "angle":
+                    cvlabel="ANGLE"
+                    ashexit()
+                    grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+                    atom_defsline=str(CV1_atoms[0]+1)+","+str(CV1_atoms[1]+1)+","+str(CV1_atoms[2]+1)
+                elif CV1_type == "bond" or CV1_type == "distance":
+                    bond="DISTANCE"
+                    ashexit()
+                    grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+                    atom_defsline=str(CV1_atoms[0]+1)+","+str(CV1_atoms[1]+1)
+                else:
+                    print("Error:Unknown CV1_type option")
+                    ashexit()
+
+                plumedinput = f"""
+        CV1: {cvlabel} ATOMS={atom_defsline}
+
+        metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN=-{grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+        PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
+                """
+            #2 CVs
+            elif numCVs == 2:
+                if CV2_type == "dihedral" or CV2_type == "torsion":
+                    grid_min2="pi"
+                    grid_max2="pi"
+                    sigma_cv2=biaswidth_cv2
+                plumedinput = f"""
+        CV1: TORSION ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1},{CV1_atoms[3]+1} 
+        CV2: TORSION ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1},{CV2_atoms[3]+1} 
+
+        metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN=-{grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+        PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
+                """
+
+            writestringtofile(plumedinput,"plumedinput.in")
+            system.addForce(openmmplumed.PlumedForce(plumedinput))
+
+
+
+    #Updating simulation context as the CustomCVForce needs to be added
+    md.openmmobject.update_simulation()
+
+    #Calling md.run with either native option active or false
+    print("Now starting metadynamics simulation")
+    if simulation_steps is not None:
+        md.run(simulation_steps=simulation_steps, metadynamics=native_MTD, meta_object=meta_object)
+    elif simulation_time is not None:
+        md.run(simulation_time=simulation_time, metadynamics=native_MTD, meta_object=meta_object)
+    else:
+        print("Either simulation_steps or simulation_time need to be defined (not both).")
+        ashexit()
+    print("Metadynamics simulation done")
+
+    #Possible data analysis ??
+    if use_plumed is False:
+        print("Now analyzing data")
+        CV_data = meta_object.getCollectiveVariables(md.openmmobject.simulation)
+        print("CV_data", CV_data)
+        print("len of CV_data", len(CV_data))
+        print("CV1_bias gridWidth:", CV1_bias.gridWidth)
+        #print("CV2_bias gridWidth:", CV2_bias.gridWidth)
+        print("CV1_bias biasWidth:", CV1_bias.biasWidth)
+        #print("CV2_bias biasWidth:", CV2_bias.biasWidth)
+        free_energy = meta_object.getFreeEnergy()
+        print("free_energy:", free_energy)
+        print("len free energy", len(free_energy))
+
+        np.savetxt("MTD_free_energy.txt", free_energy)
+        print("Attemping to plot:")
+        try:
+            import matplotlib.pyplot as plot
+            plot.imshow(free_energy)
+            plot.show()
+        except ModuleNotFoundError:
+            print("Matplotlib module not available. Please install first")
+
+    else:
+        path_to_plumed=os.path.dirname(os.path.dirname(os.path.dirname(openmmplumed.mm.pluginLoadedLibNames[0])))
+        print("You can now call MTD_analyze in a separate ASH script to analyze/plot data (requires presence of HILLS and COLVAR files in directory)")
+        print("Example:")
+        if numCVs == 1:
+            print(f"MTD_analyze(path_to_plumed={path_to_plumed}, CV1_type='{CV1_type}', temperature={temperature}, \
+CV1_indices={CV1_atoms}, plumed_energy_unit='kj/mol', Plot_To_Screen=False)")        
+        elif numCVs == 2:
+            print(f"MTD_analyze(path_to_plumed={path_to_plumed}, CV1_type='{CV1_type}', CV2_type='{CV2_type}', temperature={temperature}, \
+CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', Plot_To_Screen=False)")
+        print("\n")
+        #print("Disabled MTD_analyze call as HILLS/COLVAR  files may not have been flushed")
+
+    return
+
+#
+def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], temperatures=[1,10,300]):
+    print_line_with_mainheader("Gentle_warm_up_MD")
+    if theory is None or fragment is None:
+        print("Gentle_warm_up_MD requires theory (OpenMM object) and fragment")
+        ashexit()
+
+    if len(time_steps) != len(steps) or len(time_steps) != len(temperatures):
+        print("Error: Lists time_steps, steps and temperatures all need to be the same length. Exiting")
+        ashexit()
+
+    print(f"{len(steps)} MD-runs have been defined")
+    for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
+        print(f"MD-step {num} Number of simulation steps: {step} with timestep:{ts} and temperature: {temp} K")
+
+    print();print()
+    #Gentle heating up protocol
+    for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
+        print(f"Now running MD-run {num}. Number of steps: {step} with timestep:{ts} and temperature: {temp} K")
+        print("Will write trajectory to file:", 'NVTtrajectorystep_'+str(num)+'.dcd')
+        OpenMM_MD(fragment=fragment, theory=theory, timestep=ts, simulation_steps=step, traj_frequency=1, temperature=temp,
+            integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajfilename='NVTtrajectorystep_'+str(num), trajectory_file_option='DCD')
+    
+    print("Gentle_warm_up_MD finished successfully!")
+
+    return
+
+#Function to create CV biases in native OpenMM metadynamics
+def create_CV_bias(CV_type,CV_atoms,biaswidth_cv, md):
+    # Define collective variables for CV1 and CV2.
+    if CV_type == "dihedral" or CV_type == "torsion":
+        if len(CV_atoms) != 4:
+            print("Error: CV_atoms list must contain 4 atom indices")
+            ashexit()
+        cv = md.openmmobject.openmm.CustomTorsionForce('theta')
+        cv.addTorsion(*CV_atoms)
+        CV_bias = md.openmmobject.openmm_app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, periodic=False, gridWidth=None)
+    elif CV_type == "angle":
+        if len(CV_atoms) != 3:
+            print("Error: CV_atoms list must contain 3 atom indices")
+            ashexit()
+        cv = md.openmmobject.openmm.CustomAngleForce('theta')
+        cv.addAngle(*CV_atoms)
+        CV_bias = md.openmmobject.openmm_app.BiasVariable(cv, 0, 180, biaswidth_cv, periodic=False, gridWidth=None)
+    elif CV_type == "distance" or CV_type == "bond":
+        if len(CV_atoms) != 2:
+            print("Error: CV_atoms list must contain 2 atom indices")
+            ashexit()
+        cv = md.openmmobject.openmm.CustomBondForce('r')
+        cv.addBond(*CV_atoms)
+        #NOTE: not sure about distances:
+        CV_bias = md.openmmobject.openmm_app.BiasVariable(cv, 0, 100, biaswidth_cv, periodic=False, gridWidth=None)
+    else:
+        print("unsupported CV_type for native OpenMM metadynamics implementation")
+        ashexit()
+    return CV_bias

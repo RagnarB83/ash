@@ -21,12 +21,16 @@ import ash
 
 # Adding modules,interfaces directories to sys.path
 ashpath = os.path.dirname(ash.__file__)
-# sys.path.insert(1, ashpath+'/modules')
-# sys.path.insert(1, ashpath+'/interfaces')
-# sys.path.insert(1, ashpath+'/functions')
+
+#Add local geometric dir to syspath
+sys.path.insert(0, ashpath+"/geometric-master")
+
 
 from ash.functions.functions_general import blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
     printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile
+
+#Results dataclass 
+from ash.modules.module_results import ASH_Results
 
 # Fragment class and coordinate functions
 import ash.modules.module_coords
@@ -45,7 +49,7 @@ import ash.functions.functions_parallel
 from ash.functions.functions_parallel import Singlepoint_parallel, run_QMMM_SP_in_parallel
 
 # Freq
-from ash.modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants,get_dominant_atoms_in_mode, write_normalmode
+from ash.modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants,get_dominant_atoms_in_mode, write_normalmode,calc_hessian_xtb
 
 # Constants
 import ash.constants
@@ -59,6 +63,8 @@ import ash.interfaces.interface_multiwfn
 from ash.interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from ash.modules.module_spinprojection import SpinProjectionTheory
+#DualTheory
+from ash.modules.module_dualtheory import DualTheory
 
 # Surface
 from ash.modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, \
@@ -66,19 +72,27 @@ from ash.modules.module_surface import calc_surface, calc_surface_fromXYZ, read_
 
 # QMcode interfaces
 from ash.interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, \
-        run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output
+        run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size
 import ash.interfaces.interface_ORCA
 
 from ash.interfaces.interface_Psi4 import Psi4Theory
 from ash.interfaces.interface_dalton import DaltonTheory
 from ash.interfaces.interface_pyscf import PySCFTheory
+from ash .interfaces.interface_ipie import ipieTheory
+from ash .interfaces.interface_dice import DiceTheory
 from ash.interfaces.interface_MRCC import MRCCTheory
+from ash.interfaces.interface_QUICK import QUICKTheory
+from ash.interfaces.interface_TeraChem import TeraChemTheory
+from ash.interfaces.interface_sparrow import SparrowTheory
+
 from ash.interfaces.interface_CFour import CFourTheory
 from ash.interfaces.interface_xtb import xTBTheory
+from ash.interfaces.interface_PyMBE import PyMBETheory
 
 # MM: external and internal
 from ash.interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
-    MDtraj_imagetraj, solvate_small_molecule, MDAnalysis_transform, OpenMM_box_relaxation, write_nonbonded_FF_for_ligand
+    MDtraj_imagetraj, MDtraj_slice, solvate_small_molecule, MDAnalysis_transform, OpenMM_box_relaxation, write_nonbonded_FF_for_ligand, \
+        OpenMM_metadynamics, Gentle_warm_up_MD
 from ash.modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy, coulombcharge, LennardJones, \
     LJCoulombv2, LJCoulomb, MMforcefield_read
 
@@ -87,7 +101,7 @@ from ash.modules.module_QMMM import QMMMTheory, actregiondefine
 from ash.modules.module_polembed import PolEmbedTheory
 
 # Knarr
-from ash.interfaces.interface_knarr import NEB
+from ash.interfaces.interface_knarr import NEB, NEBTS
 
 # ASE-Dynamics
 from ash.interfaces.interface_ASE import Dynamics_ASE
@@ -106,7 +120,8 @@ from ash.modules.module_molcrys import molcrys, Fragmenttype
 # Geometry optimization
 from ash.functions.functions_optimization import SimpleOpt, BernyOpt
 from ash.interfaces.interface_geometric import geomeTRICOptimizer
-
+Optimizer = geomeTRICOptimizer
+Opt = geomeTRICOptimizer
 # PES
 import ash.modules.module_PES
 from ash.modules.module_PES import PhotoElectronSpectrum, potential_adjustor_DFT
@@ -114,7 +129,10 @@ from ash.modules.module_PES import PhotoElectronSpectrum, potential_adjustor_DFT
 # Workflows, benchmarking etc
 import ash.modules.module_workflows
 import ash.modules.module_highlevel_workflows
-from ash.modules.module_highlevel_workflows import CC_CBS_Theory, ORCA_CC_CBS_Theory
+from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory, Reaction_FCI_Analysis, make_ICE_theory
+
+CC_CBS_Theory = ORCA_CC_CBS_Theory #TODO: Temporary alias
+
 from ash.modules.module_workflows import ReactionEnergy, thermochemprotocol_reaction, thermochemprotocol_single, \
     confsampler_protocol, auto_active_space, calc_xyzfiles, ProjectResults, Reaction_Highlevel_Analysis, FormationEnthalpy, \
     AutoNonAufbau, ExcitedStateSCFOptimizer

@@ -18,8 +18,8 @@ openmmobject_parmed = OpenMMTheory(GROMACSfiles=True, gromacstopfile=topfile, gr
                periodic=True, applyconstraints=True, use_parmed=True, do_energy_decomposition=True, dispersion_correction=True, periodic_nonbonded_cutoff=9,
                 ewalderrortolerance=5e-5)
 
-energy_parmed = Singlepoint(theory=openmmobject_parmed, fragment=frag)
-
+result = Singlepoint(theory=openmmobject_parmed, fragment=frag)
+energy_parmed = result.energy
 
 #Comparing energy components to reference values (kJ/mol):
 threshold=0.1

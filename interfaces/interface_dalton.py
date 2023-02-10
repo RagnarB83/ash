@@ -54,6 +54,8 @@ class DaltonTheory:
             print("")
             print("Creating DaltonTheory object")
             print("Dalton dir:", self.daltondir)
+    def set_numcores(self,numcores):
+        self.numcores=numcores
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old Dalton files")

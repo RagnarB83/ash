@@ -14,8 +14,9 @@ def test_geometric_dummy():
     zerotheorycalc = ZeroTheory()
 
     #Optimize with dummy theory
-    result = geomeTRICOptimizer(fragment=H2Ofragment, theory=zerotheorycalc)
+    result = Optimizer(fragment=H2Ofragment, theory=zerotheorycalc)
 
-    if result == 0.0:
+    if result.energy == 0.0:
         print("ASH and geometric finished. Everything looks good")
+
 

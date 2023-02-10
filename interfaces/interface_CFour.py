@@ -88,12 +88,14 @@ class CFourTheory:
         
         #Clean-up of possible old Cfour files before beginning
         #TODO: Skip cleanup of chosen files?
-        self.cfour_clean_full()
-        
+        self.cleanup()
+    #Set numcores method
+    def set_numcores(self,numcores):
+        self.numcores=numcores
     def cfour_call(self):
         with open(self.filename+'.out', 'w') as ofile:
             process = sp.run([self.cfourdir + '/xcfour'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-    def cfour_clean_full(self):
+    def cleanup(self):
         print("Cleaning up old Cfour files")
         files=['MOABCD', 'MOINTS', 'JOBARC', 'NEWMOS', 'BASINFO.DATA', 'den.dat', 'DIPOL', 'DPTDIPOL', 'DPTEFG', 'ERREX', 'EFG','FILES', 'GAMLAM', 'IIII', 'JAINDX',
                'NEWFOCK', 'NTOTAL', 'NATMOS', 'MOLDEN', 'MOLDEN_NAT', 'MOLECULE.INP', 'MOL', 'JMOLplot', 'OPTARC', 'THETA', 'VPOUT']
@@ -205,7 +207,7 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
             self.S2=self.cfour_grab_spinexpect()
 
         #Full cleanup (except OLDMOS and GRD)
-        self.cfour_clean_full()
+        self.cleanup()
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING CFOUR INTERFACE-------------", BC.END)
         if Grad == True:

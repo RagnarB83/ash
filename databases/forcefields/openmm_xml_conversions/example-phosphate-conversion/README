@@ -1,0 +1,7 @@
+Working example on how to convert CHARMM parameters for phosphates to OpenMM XML format.
+
+Phosphate topologies taken from : 
+toppar_all36_moreions.str
+with parameters taken from: par_all36_cgenff.prm
+
+

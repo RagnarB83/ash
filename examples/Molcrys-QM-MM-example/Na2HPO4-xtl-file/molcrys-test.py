@@ -10,7 +10,7 @@ sphereradius=12
 numcores=1
 
 #Theory level for charge iterations
-orcasimpleinput="! BP86 def2-SVP def2/J Grid5 Finalgrid6 tightscf"
+orcasimpleinput="! BP86 def2-SVP def2/J tightscf"
 orcablocks="%scf maxiter 200 end"
 ORCAcalc = ORCATheory(
         orcasimpleinput=orcasimpleinput,
@@ -99,7 +99,7 @@ QMMM_object = QMMMTheory(
         numcores=numcores,
         )
 
-geomeTRICOptimizer(
+Optimizer(
         theory=QMMM_object,
         fragment=Cluster,
         coordsystem='tric',

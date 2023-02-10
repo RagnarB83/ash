@@ -1,5 +1,6 @@
 
 import os
+import sys
 import numpy as np
 import time
 from functools import wraps
@@ -45,14 +46,15 @@ def ashexit(errormessage=None, code=1):
     print(BC.FAIL,"ASH exiting with code:", code, BC.END)
     if errormessage != None:
         print(BC.FAIL,"Error message:", errormessage, BC.END)
-    raise SystemExit(code)
+    #raise SystemExit(code)
+    sys.exit(1)
 
 
 def load_pythoncall():
     print("Now trying pythoncall/juliacall package. This will fail if :\n\
-            - Juliacall Python package has not been installed (via pip)\n\
-            - PythonCall julia packages has not been installed (via Julia Pkg)\n\
-            - Julia Hungarian package has not been installed")
+            - Juliacall Python package has not been installed (via pip)\n")
+            #- PythonCall julia packages has not been installed (via Julia Pkg)\n")
+            #- Julia Hungarian package has not been installed")
     from juliacall import Main as JuliaMain
     JuliaMain.include(ashpath + "/functions/functions_julia.jl")
     return JuliaMain
@@ -61,8 +63,8 @@ def load_pyjulia():
     print("Now loading PyJulia. This will fail if :\n\
         - PyJulia Python package has not been installed\n\
         - Julia PyCall package has not been installed\n\
-        - python-jl/python3_ash interpreter not used (necessary for static libpython)\n\
-        - Julia Hungarian package has not been installed")
+        - python-jl/python3_ash interpreter not used (necessary for static libpython)\n")
+        #- Julia Hungarian package has not been installed")
 
     from julia import Main as JuliaMain
     #NOTE: Reading old Pyjulia function file here instead.
@@ -115,7 +117,7 @@ def load_julia_interface(julia_library=None):
                 print("Problem loading pyjulia")
                 ashexit()
         else:
-            print("Unknown Julia library")
+            print("Unknown Julia library:", julia_library)
             ashexit()
         julia_loaded = True  #Means an attempt was made to load Julia.
         print_time_rel(currtime, modulename='loading julia interface', moduleindex=4)
@@ -252,7 +254,7 @@ def print_line_with_mainheader(line):
     print(inner_line.center(80))
     print(midline.center(80))
     print(outer_line.center(80))
-    print("\n")
+    #print("\n")
 
 
 # Submodule header

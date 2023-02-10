@@ -1,0 +1,3 @@
+## docs/requirements.txt 
+
+sphinx>=3.2.1

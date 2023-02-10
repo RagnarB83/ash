@@ -17,7 +17,7 @@ HF_frag=Fragment(coordsstring=fragcoords)
 xtbcalc = xTBTheory(xtbdir, fragment=HF_frag, charge=0, mult=1, xtbmethod=xtbmethod)
 
 #Using geomeTRIC optimization from Github
-geomeTRICOptimizer(xtbcalc,HF_frag)
+Optimizer(xtbcalc,HF_frag)
 
 print(HF_frag.energy)
 print("Optimized coordinates:")

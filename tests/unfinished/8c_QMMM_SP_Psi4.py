@@ -33,8 +33,8 @@ QMMM_SP = QMMMTheory(fragment=H2O_MeOH, qm_theory=Psi4QMpart,
                                        embedding='Elstat')
 
 #Simple Energy SP calc
-energy=Singlepoint(theory=QMMM_SP,fragment=H2O_MeOH)
-print("energy:", energy)
+result=Singlepoint(theory=QMMM_SP,fragment=H2O_MeOH)
+print("energy:", result.energy)
 
 
 sys.exit(0)

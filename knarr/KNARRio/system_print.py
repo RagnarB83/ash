@@ -91,7 +91,7 @@ def PrintJob(strengur):
 
 def PrintJobDone(jobtype, time):
     print('')
-    print('%s finished successfully in %s seconds!' % (jobtype, round(time, 2)))
+    print('%s finished in %s seconds!' % (jobtype, round(time, 2)))
 
 
 def PrintCallBack(fname, calculator=None, atoms=None, optimizer=None, parameters=None):

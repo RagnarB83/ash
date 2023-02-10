@@ -14,7 +14,7 @@ import ash.interfaces.interface_geometric
 import ash.interfaces.interface_crest
 from ash.functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep, ashexit,n_max_values
 #from ash.modules.module_singlepoint import Singlepoint_fragments
-from ash.modules.module_highlevel_workflows import CC_CBS_Theory
+from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
 from ash.modules.module_coords import read_xyzfiles
 import ash.functions.functions_elstructure
 from ash.modules.module_plotting import ASH_plot
@@ -23,6 +23,7 @@ from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_freq import thermochemcalc
 
 #Simple class to keep track of results. To be extended
+#Deprecated?. Use ASH_Results instead?
 class ProjectResults():
     def __init__(self,name=None):
         self.name=name
@@ -96,8 +97,8 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing High-level calculation for ML-optimized Conformer ", index)
-        HLenergy = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
-
+        HLresult = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
+        HLenergy = HLresult.energy
         HL_energies.append(HLenergy)
 
 
@@ -164,11 +165,13 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
 
             #DFT-FREQ
             if analyticHessian == True:
-                thermochem = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores, charge=charge, mult=mult)                
+                freq_result = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores, charge=charge, mult=mult)
+                thermochem = freq_result.thermochemistry              
             else:
-                thermochem = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial', charge=charge, mult=mult)
+                freq_result = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial', charge=charge, mult=mult)
+                thermochem = freq_result.thermochemistry     
         else:
-            print("Opt_theory is None. Skipping optimization and frequency calculation.\n")
+            print("Opt_theory is set to None. Skipping optimization and frequency calculation.\n")
             #If Opt_theory == None => No Opt, no freq
             thermochem={'ZPVE':0.0,'Gcorr':0.0,'Hcorr':0.0}
     else:
@@ -179,9 +182,10 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
 
-    FinalE = ash.Singlepoint(fragment=fragment, theory=SP_theory, charge=charge, mult=mult)
+    result_step3 = ash.Singlepoint(fragment=fragment, theory=SP_theory, charge=charge, mult=mult)
+    FinalE = result_step3.energy
     #Get energy components
-    if isinstance(SP_theory,CC_CBS_Theory):
+    if isinstance(SP_theory,ORCA_CC_CBS_Theory):
         componentsdict=SP_theory.energy_components
     else:
         componentsdict={}
@@ -194,7 +198,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
 #Thermochemistry protocol. Take list of fragments, stoichiometry, and 2 theory levels
 #Requires orcadir, and Opt_theory level (typically an ORCATheory object), SP_theory (either ORCATTheory or workflow.
 def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, fraglist=None, stoichiometry=None, numcores=1, memory=5000,
-                       analyticHessian=True, temp=298.15, pressure=1.0):
+                       analyticHessian=True, temp=298.15, pressure=1.0, unit='kcal/mol'):
     """[summary]
 
     Args:
@@ -218,9 +222,9 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
         fraglist = reaction.fragments
         stoichiometry = reaction.stoichiometry
 
-    print("Running thermochemprotocol function for fragment list:")
+    print("Running thermochemprotocol function for fragments:")
     for i,frag in enumerate(fraglist):
-        print("Fragment {} Formula: {}  Label: {}".format(i,frag.prettyformula,frag.label))
+        print(f"Fragment {i} Formula: {frag.prettyformula}  Label: {frag.label} Charge: {frag.charge} Mult: {frag.mult}")
     print("Stoichiometry:", stoichiometry)
     print("")
     FinalEnergies_el = []; FinalEnergies_zpve = []; FinalEnthalpies = []; FinalFreeEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
@@ -255,51 +259,51 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
     print("FINAL REACTION ENERGY:")
     print("Enthalpy and Gibbs Energies for  T={} and P={}".format(temp,pressure))
     print("-"*80)
-    deltaE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_el, unit='kcal/mol', label='Total ΔE_el')[0]
-    deltaE_0=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_zpve, unit='kcal/mol', label='Total Δ(E+ZPVE)')[0]
-    deltaH=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnthalpies, unit='kcal/mol', label='Total ΔH(T={}'.format(temp))[0]
-    deltaG=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalFreeEnergies, unit='kcal/mol', label='Total ΔG(T={}'.format(temp))[0]
+    deltaE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_el, unit=unit, label='Total ΔE_el')[0]
+    deltaE_0=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnergies_zpve, unit=unit, label='Total Δ(E+ZPVE)')[0]
+    deltaH=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalEnthalpies, unit=unit, label='Total ΔH(T={}'.format(temp))[0]
+    deltaG=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=FinalFreeEnergies, unit=unit, label='Total ΔG(T={}'.format(temp))[0]
     print("-"*80)
     print("Individual contributions")
     #Print individual contributions if available
     #ZPVE, Hcorr, gcorr
-    deltaZPVE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit='kcal/mol', label='ΔZPVE')[0]
-    deltaHcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit='kcal/mol', label='ΔHcorr')[0]
-    deltaGcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit='kcal/mol', label='ΔGcorr')[0]
+    deltaZPVE=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ZPVE_Energies, unit=unit, label='ΔZPVE')[0]
+    deltaHcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Hcorr_Energies, unit=unit, label='ΔHcorr')[0]
+    deltaGcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=Gcorr_Energies, unit=unit, label='ΔGcorr')[0]
     print("-"*80)
     finaldict={'deltaE':deltaE, 'deltaE_0':deltaE_0, 'deltaH':deltaH, 'deltaG':deltaG, 'deltaZPVE':deltaZPVE, 'deltaHcorr':deltaHcorr, 'deltaGcorr':deltaGcorr}
     #Contributions to CCSD(T) energies
     if 'E_SCF_CBS' in componentsdict:
-        scf_parts=[dict['E_SCF_CBS'] for dict in list_of_dicts]
-        deltaSCF=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit='kcal/mol', label='ΔSCF')[0]
+        scf_parts=[d['E_SCF_CBS'] for d in list_of_dicts]
+        deltaSCF=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=scf_parts, unit=unit, label='ΔSCF')[0]
         finaldict['deltaSCF']=deltaSCF
     if 'E_corrCCSD_CBS' in componentsdict:
-        ccsd_parts=[dict['E_corrCCSD_CBS'] for dict in list_of_dicts]
-        delta_CCSDcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit='kcal/mol', label='ΔCCSD')[0]
+        ccsd_parts=[d['E_corrCCSD_CBS'] for d in list_of_dicts]
+        delta_CCSDcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=ccsd_parts, unit=unit, label='ΔCCSD')[0]
         finaldict['delta_CCSDcorr']=delta_CCSDcorr
     if 'E_corrCCT_CBS' in componentsdict:
-        triples_parts=[dict['E_corrCCT_CBS'] for dict in list_of_dicts]
-        delta_Tcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit='kcal/mol', label='Δ(T)')[0]
+        triples_parts=[d['E_corrCCT_CBS'] for d in list_of_dicts]
+        delta_Tcorr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=triples_parts, unit=unit, label='Δ(T)')[0]
         finaldict['delta_Tcorr']=delta_Tcorr
     if 'E_corr_CBS' in componentsdict:
-        valencecorr_parts=[dict['E_corr_CBS'] for dict in list_of_dicts]
-        delta_CC_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=valencecorr_parts, unit='kcal/mol', label='ΔCCSD+Δ(T) corr')[0]
+        valencecorr_parts=[d['E_corr_CBS'] for d in list_of_dicts]
+        delta_CC_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=valencecorr_parts, unit=unit, label='ΔCCSD+Δ(T) corr')[0]
         finaldict['delta_CC_corr']=delta_CC_corr
     if 'E_SO' in componentsdict:
-        SO_parts=[dict['E_SO'] for dict in list_of_dicts]
-        delta_SO_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit='kcal/mol', label='ΔSO')[0]
+        SO_parts=[d['E_SO'] for d in list_of_dicts]
+        delta_SO_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit=unit, label='ΔSO')[0]
         finaldict['delta_SO_corr']=delta_SO_corr
     if 'E_corecorr_and_SR' in componentsdict:
-        CV_SR_parts=[dict['E_corecorr_and_SR'] for dict in list_of_dicts]
-        delta_CVSR_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit='kcal/mol', label='ΔCV+SR')[0]
+        CV_SR_parts=[d['E_corecorr_and_SR'] for d in list_of_dicts]
+        delta_CVSR_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit=unit, label='ΔCV+SR')[0]
         finaldict['delta_CVSR_corr']=delta_CVSR_corr
     if 'T1energycorr' in componentsdict:
-        T1corr_parts=[dict['T1energycorr'] for dict in list_of_dicts]
-        delta_T1_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=T1corr_parts, unit='kcal/mol', label='ΔΔT1corr')[0]
+        T1corr_parts=[d['T1energycorr'] for d in list_of_dicts]
+        delta_T1_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=T1corr_parts, unit=unit, label='ΔΔT1corr')[0]
         finaldict['delta_T1_corr']=delta_T1_corr
     if 'E_FCIcorrection' in componentsdict:
-        fcicorr_parts=[dict['E_FCIcorrection'] for dict in list_of_dicts]
-        delta_FCI_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=fcicorr_parts, unit='kcal/mol', label='ΔFCIcorr')[0]
+        fcicorr_parts=[delta_SO_corr['E_FCIcorrection'] for d in list_of_dicts]
+        delta_FCI_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=fcicorr_parts, unit=unit, label='ΔFCIcorr')[0]
         finaldict['delta_FCI_corr']=delta_FCI_corr
     print("-"*80)
     print("")
@@ -586,12 +590,14 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
                 theory.cleanup()
             if Highlevel is True:
                 print("Performing Highlevel on Optimized fragment.")
-                hlenergy = ash.Singlepoint(theory=HL_theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
+                hl_result = ash.Singlepoint(theory=HL_theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
+                hlenergy = hl_result.energy
                 energy=hlenergy
                 hlenergies.append(hlenergy)
                 HL_theory.cleanup()
         else:
-            energy = ash.Singlepoint(theory=theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
+            result_reg = ash.Singlepoint(theory=theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
+            energy = result_reg.energy
             theory.cleanup()
         
         energies.append(energy)
@@ -615,20 +621,16 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     return energies
 
 
-def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, memory=7000, reactionlabel='Reactionlabel', energy_unit='kcal/mol',
-                                def2_family=True, cc_family=True, aug_cc_family=False, F12_family=True, DLPNO=False, extrapolation=True, highest_cardinal=6,
-                                plot=True ):
+def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=True,
+                                def2_family=True, cc_family=True, aug_cc_family=False, 
+                                F12_family=True, DLPNO=False, extrapolation=True, highest_cardinal=6):
     """Function to perform high-level CCSD(T) calculations for a reaction with associated plots.
        Performs CCSD(T) with cc and def2 basis sets, CCSD(T)-F12 and CCSD(T)/CBS extrapolations
 
     Args:
-        fragment ([type], optional): [description]. Defaults to None.
-        fraglist ([type], optional): [description]. Defaults to None.
-        stoichiometry ([type], optional): [description]. Defaults to None.
+        reaction (ASH Reaction): ASH Reaction object. 
         numcores (int, optional): [description]. Defaults to 1.
         memory (int, optional): [description]. Defaults to 7000.
-        reactionlabel (str, optional): [description]. Defaults to 'Reactionlabel'.
-        energy_unit (str): Energy unit for ReactionEnergy. Options: 'kcal/mol', 'kJ/mol', 'eV', 'cm-1'. Default: 'kcal/mol'
         def2_family (bool, optional): [description]. Defaults to True.
         cc_family (bool, optional): [description]. Defaults to True.
         F12_family (bool, optional): [description]. Defaults to True.
@@ -636,6 +638,16 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
         plot (Boolean): whether to plot the results or not (requires Matplotlib). Defaults to True. 
     """
     elements_involved=[]
+
+    if reaction is None:
+        print("Error: No ASH reaction object given")
+        ashexit()
+    
+    fraglist=reaction.fragments
+    stoichiometry=reaction.stoichiometry
+    reactionlabel=reaction.label
+    energy_unit=reaction.unit
+
     for frag in fraglist:
         if frag.charge ==None or frag.mult ==None or frag.label == None:
             print("All fragments provided must have charge, mult defined and a label.")
@@ -673,9 +685,10 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=cardinal
             CCSDT_def2_bases_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_def2_basis=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_def2_basis.energies
             for species,e in zip(specieslist,energies):
                 CCSDT_def2_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -716,9 +729,10 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=cardinal
             CCSDT_cc_bases_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_cc_basis=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_cc_basis.energies
             for species,e in zip(specieslist,energies):
                 CCSDT_cc_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -759,9 +773,10 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=cardinal
             CCSDT_aug_cc_bases_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_augcc_basis=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_cc_basis.energies
             for species,e in zip(specieslist,energies):
                 CCSDT_aug_cc_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -805,9 +820,10 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=str(cardinal)
             CCSDTF12_bases_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc-f12", F12=True, DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = [cardinal], basisfamily="cc-f12", F12=True, DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_f12 = ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_f12.energies
             for species,e in zip(specieslist,energies):
                 CCSDTF12_bases_proj.species_energies_dict[species.label].append(e)
 
@@ -854,9 +870,10 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=str(cardinal)
             CCSDTextrap_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_cc_extrap = ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_cc_extrap.energies
             for species,e in zip(specieslist,energies):
                 CCSDTextrap_proj.species_energies_dict[species.label].append(e)
 
@@ -905,9 +922,10 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
                 label=str(cardinal)
                 CCSDTextrapaugcc_proj.labels.append(label)
                 #Define theory level
-                cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
+                cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="aug-cc", DLPNO=DLPNO, numcores=numcores, memory=memory)
                 #Single-point calcs on all fragments
-                energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+                result_augcc_extrap = ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+                energies = result_augcc_extrap.energies
                 for species,e in zip(specieslist,energies):
                     CCSDTextrapaugcc_proj.species_energies_dict[species.label].append(e)
 
@@ -952,9 +970,10 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             label=str(cardinal)
             CCSDTextrapdef2_proj.labels.append(label)
             #Define theory level
-            cc = CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
+            cc = ORCA_CC_CBS_Theory(elements=elements_involved, cardinals = cardinals, basisfamily="def2", DLPNO=DLPNO, numcores=numcores, memory=memory)
             #Single-point calcs on all fragments
-            energies=ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            result_def2_extrap = ash.Singlepoint_fragments(fragments=specieslist, theory=cc)
+            energies = result_def2_extrap.energies
             for species,e in zip(specieslist,energies):
                 CCSDTextrapdef2_proj.species_energies_dict[species.label].append(e)
 
@@ -980,6 +999,11 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
         for species in specieslist:
             specieslabel=species.label
             eplot = ASH_plot('{} energy plot'.format(specieslabel), num_subplots=1, x_axislabel="Cardinal", y_axislabel='Energy (Eh)', title='{} Energy'.format(specieslabel))
+            print("eplot:", eplot)
+            if eplot.working is False:
+                print("ASH_plot not working. Exiting")
+                ashexit()
+            
             if cc_family is True:
                 eplot.addseries(0, x_list=CCSDT_cc_bases_proj.cardinals, y_list=CCSDT_cc_bases_proj.species_energies_dict[specieslabel], label='cc-pVnZ', color='blue')
             if aug_cc_family is True:
@@ -989,21 +1013,21 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
             if F12_family is True:
                 eplot.addseries(0, x_list=CCSDTF12_bases_proj.cardinals, y_list=CCSDTF12_bases_proj.species_energies_dict[specieslabel], label='cc-pVnZ-F12', color='purple')
             if extrapolation is True:
-                eplot.addseries(0, x_list=[2.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][0], label='CBS-cc-23', line=False,  marker='x', color='gray')
-                eplot.addseries(0, x_list=[3.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][1], label='CBS-cc-34', line=False, marker='x', color='green')
+                eplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][0]], label='CBS-cc-23', line=False,  marker='x', color='gray')
+                eplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][1]], label='CBS-cc-34', line=False, marker='x', color='green')
                 if aug_cc_family is True:
-                    eplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][0], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
-                    eplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][1], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen') 
+                    eplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][0]], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
+                    eplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][1]], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen') 
                 if highest_cardinal > 4:
-                    eplot.addseries(0, x_list=[4.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][2], label='CBS-cc-45', line=False, marker='x', color='black')
+                    eplot.addseries(0, x_list=[4.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][2]], label='CBS-cc-45', line=False, marker='x', color='black')
                     if aug_cc_family is True:
-                        eplot.addseries(0, x_list=[4.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][2], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
+                        eplot.addseries(0, x_list=[4.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][2]], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
                     if highest_cardinal > 5:
-                        eplot.addseries(0, x_list=[5.5], y_list=CCSDTextrap_proj.species_energies_dict[specieslabel][3], label='CBS-cc-56', line=False, marker='x', color='orange')
+                        eplot.addseries(0, x_list=[5.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][3]], label='CBS-cc-56', line=False, marker='x', color='orange')
                         if aug_cc_family is True:
-                            eplot.addseries(0, x_list=[5.5], y_list=CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][3], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
-                eplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapdef2_proj.species_energies_dict[specieslabel][0], label='CBS-def2-23', line=False,  marker='x', color='cyan')
-                eplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapdef2_proj.species_energies_dict[specieslabel][1], label='CBS-def2-34', line=False, marker='x', color='pink')
+                            eplot.addseries(0, x_list=[5.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][3]], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
+                eplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrapdef2_proj.species_energies_dict[specieslabel][0]], label='CBS-def2-23', line=False,  marker='x', color='cyan')
+                eplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapdef2_proj.species_energies_dict[specieslabel][1]], label='CBS-def2-34', line=False, marker='x', color='pink')
             eplot.savefig('{}_Energy'.format(specieslabel))
 
         #Reaction energy plot
@@ -1017,21 +1041,21 @@ def Reaction_Highlevel_Analysis(fraglist=None, stoichiometry=None, numcores=1, m
         if F12_family is True:
             reactionenergyplot.addseries(0, x_list = CCSDTF12_bases_proj.cardinals, y_list=CCSDTF12_bases_proj.reaction_energy_list, label='cc-pVnZ-F12', color='purple')
         if extrapolation is True:
-            reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrap_proj.reaction_energy_list[0], label='CBS-cc-23', line=False,  marker='x', color='gray')
-            reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrap_proj.reaction_energy_list[1], label='CBS-cc-34', line=False, marker='x', color='green')
+            reactionenergyplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrap_proj.reaction_energy_list[0]], label='CBS-cc-23', line=False,  marker='x', color='gray')
+            reactionenergyplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrap_proj.reaction_energy_list[1]], label='CBS-cc-34', line=False, marker='x', color='green')
             if aug_cc_family is True:
-                reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[0], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
-                reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[1], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen')
+                reactionenergyplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrapaugcc_proj.reaction_energy_list[0]], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
+                reactionenergyplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapaugcc_proj.reaction_energy_list[1]], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen')
             if highest_cardinal > 4:
-                reactionenergyplot.addseries(0, x_list=[4.5], y_list=CCSDTextrap_proj.reaction_energy_list[2], label='CBS-cc-45', line=False, marker='x', color='black')
+                reactionenergyplot.addseries(0, x_list=[4.5], y_list=[CCSDTextrap_proj.reaction_energy_list[2]], label='CBS-cc-45', line=False, marker='x', color='black')
                 if aug_cc_family is True:
-                    reactionenergyplot.addseries(0, x_list=[4.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[2], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
+                    reactionenergyplot.addseries(0, x_list=[4.5], y_list=[CCSDTextrapaugcc_proj.reaction_energy_list[2]], label='CBS-aug-cc-45', line=False, marker='x', color='silver')
                 if highest_cardinal > 5:
-                    reactionenergyplot.addseries(0, x_list=[5.5], y_list=CCSDTextrap_proj.reaction_energy_list[3], label='CBS-cc-56', line=False, marker='x', color='orange')
+                    reactionenergyplot.addseries(0, x_list=[5.5], y_list=[CCSDTextrap_proj.reaction_energy_list[3]], label='CBS-cc-56', line=False, marker='x', color='orange')
                     if aug_cc_family is True:
-                        reactionenergyplot.addseries(0, x_list=[5.5], y_list=CCSDTextrapaugcc_proj.reaction_energy_list[3], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
-            reactionenergyplot.addseries(0, x_list=[2.5], y_list=CCSDTextrapdef2_proj.reaction_energy_list[0], label='CBS-def2-23', line=False, marker='x', color='cyan')
-            reactionenergyplot.addseries(0, x_list=[3.5], y_list=CCSDTextrapdef2_proj.reaction_energy_list[1], label='CBS-def2-34', line=False, marker='x', color='pink')
+                        reactionenergyplot.addseries(0, x_list=[5.5], y_list=[CCSDTextrapaugcc_proj.reaction_energy_list[3]], label='CBS-aug-cc-56', line=False, marker='x', color='maroon')
+            reactionenergyplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrapdef2_proj.reaction_energy_list[0]], label='CBS-def2-23', line=False, marker='x', color='cyan')
+            reactionenergyplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapdef2_proj.reaction_energy_list[1]], label='CBS-def2-34', line=False, marker='x', color='pink')
         reactionenergyplot.savefig('Reaction energy')
 
 
@@ -1184,8 +1208,8 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
     #If stability_analysis_GS is True then do on GroundState
     if stability_analysis_GS == True:
         theory.orcablocks=theory.orcablocks+"%scf stabperform true end"
-    E_GS=ash.Singlepoint(fragment=fragment, theory=theory)
-
+    result_GS = ash.Singlepoint(fragment=fragment, theory=theory)
+    E_GS = result_GS.energy
     #Keep copy of GS file
     GS_GBW=theory.filename+'_GS.gbw'
     shutil.copy(theory.filename+'.gbw', GS_GBW)
@@ -1398,7 +1422,8 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
         #Now new SP with previous orbitals, SCF rotation and levelshift
         theory.moreadfile=GS_GBW
         print("Now doing SCF calculation with rotated MOs and levelshift")
-        E_ES=ash.Singlepoint(fragment=fragment, theory=theory, charge=cfg.charge, mult=cfg.mult)
+        result_ES = ash.Singlepoint(fragment=fragment, theory=theory, charge=cfg.charge, mult=cfg.mult)
+        E_ES = result_ES.energy
         print("GS/ES state energy gap: {:3.2f} eV".format((E_ES-E_GS)*27.211399))
         if abs((E_ES-E_GS)*27.211399) > 0.04:
             print("Found something different than ground state")
@@ -1488,9 +1513,9 @@ def ExcitedStateSCFOptimizer(theory=None, fragment=None, autononaufbaudict=None,
         """.format(maxiter, lshift )
     print("Will now run optimization on excited state no:", state)
 
-    optenergy = ash.geomeTRICOptimizer(theory=theory, fragment=fragment, charge=charge, mult=mult)
-
+    result_opt = ash.geomeTRICOptimizer(theory=theory, fragment=fragment, charge=charge, mult=mult)
+    optenergy = result_opt.energy
     #Excited state frequencies
     if Freq:
         print("Freq true. Doing excited state numerical frequencies")
-        thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, runmode='serial', charge=charge, mult=mult)
+        result_freq = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, runmode='serial', charge=charge, mult=mult)

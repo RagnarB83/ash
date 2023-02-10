@@ -12,15 +12,15 @@ from ash.modules.module_coords import check_charge_mult
 from ash.functions.functions_elstructure import xdm_run, calc_cm5
 import ash.constants
 import ash.settings_ash
-
+from ash.functions.functions_parallel import check_OpenMPI
 
 
 #ORCA Theory object.
 class ORCATheory:
-    def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
+    def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
                  moreadfile=None, moreadfile_always=False,
-                 autostart=True, propertyblock=None, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
+                 autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
 
@@ -52,8 +52,14 @@ class ORCATheory:
         #Counter for how often ORCATheory.run is called
         self.runcalls=0
 
-        #Whether to keep the ORCA outputfile for each run
+        #Whether to keep the ORCA outputfile for each run as orca_runX.out
         self.keep_each_run_output=keep_each_run_output
+        #Whether to save ORCA outputfile with given label
+        if save_output_with_label is True and label is None:
+            print("Error: save_output_with_label option requires a label keyword also")
+            ashexit()
+        else:
+            self.save_output_with_label=save_output_with_label
 
         #Print population_analysis in each run
         self.print_population_analysis=print_population_analysis
@@ -96,6 +102,9 @@ class ORCATheory:
         #Property block. Added after coordinates unless None
         self.propertyblock=propertyblock
 
+        #Store optional properties of ORCA run job in a dict
+        self.properties ={}
+
         
         #Adding NoAutostart keyword to extraline if requested
         if self.autostart == False:
@@ -123,6 +132,10 @@ class ORCATheory:
             self.atomstoflip=atomstoflip
         else:
             self.atomstoflip=[]
+        #Basis sets per element
+        self.basis_per_element=basis_per_element
+        if self.basis_per_element != None:
+            print("Basis set dictionary for each element provided:", basis_per_element)
         #Extrabasis
         if extrabasisatoms != None:
             self.extrabasisatoms=extrabasisatoms
@@ -158,6 +171,9 @@ class ORCATheory:
             print(self.orcasimpleinput)
             print(self.orcablocks)
         print("\nORCATheory object created!")
+    #Set numcores method
+    def set_numcores(self,numcores):
+        self.numcores=numcores
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old ORCA files")
@@ -322,6 +338,17 @@ class ORCATheory:
         if numcores==None:
             numcores=self.numcores
         
+        #Basis set definition per element from input dict
+        if self.basis_per_element != None:
+            basisstring=""
+            for el,b in self.basis_per_element.items():
+                basisstring += f"newgto {el} \"{b}\" end\n"
+            basisblock=f"""
+%basis
+{basisstring} 
+end"""
+            self.orcablocks = self.orcablocks + basisblock
+
         if self.printlevel >= 2:
             print("Running ORCA object with {} cores available".format(numcores))
             print("Job label:", label)
@@ -437,6 +464,10 @@ class ORCATheory:
         engradfile=self.filename+'.engrad'
         pcgradfile=self.filename+'.pcgrad'
 
+        #Optional save ORCA output with filename according to label
+        if self.save_output_with_label is True:
+            shutil.copy(self.filename+'.out', self.filename+f'_{self.label}_{charge}_{mult}.out')
+
         #Keep outputfile from each run if requested
         if self.keep_each_run_output is True:
             print("\nkeep_each_run_output is True")
@@ -464,14 +495,29 @@ class ORCATheory:
                 print("Spin populations:")
                 charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
                 spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
+                self.properties["Mulliken_charges"] = charges
+                self.properties["Mulliken_spinpops"] = spinpops
                 print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
                 for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
-                    print("{:<2} {:<2}: {:>10} {:>10}".format(i,el,ch,sp))
+                    print("{:<2} {:<2}: {:>10.4f} {:>10.4f}".format(i,el,ch,sp))
 
         #Grab energy
         self.energy=ORCAfinalenergygrab(outfile)
         if self.printlevel >= 1:
             print("ORCA energy:", self.energy)
+
+        #Grab possible properties
+        #ICE-CI
+        try:
+            E_PT2_rest = float(pygrep("\'rest\' energy", self.filename+'.out')[-1])
+            num_genCFGs,num_selected_CFGs,num_after_SD_CFGs = ICE_WF_CFG_CI_size(self.filename+'.out')
+            self.properties["E_var"] = self.energy
+            self.properties["E_PT2_rest"] = E_PT2_rest
+            self.properties["num_genCFGs"] = num_genCFGs
+            self.properties["num_selected_CFGs"] = num_selected_CFGs
+            self.properties["num_after_SD_CFGs"] = num_after_SD_CFGs
+        except:
+            pass
 
         #Grab timings from ORCA output
         orca_timings = ORCAtimingsgrab(outfile)
@@ -551,42 +597,19 @@ def check_ORCAbinary(orcadir):
         orcadir ([type]): [description]
     """
     print("Checking if ORCA binary works...",end="")
-    p = sp.Popen([orcadir+"/orca"], stdout = sp.PIPE)
-    out, err = p.communicate()
-    if 'This program requires the name of a parameterfile' in str(out):
-        print(BC.OKGREEN,"yes", BC.END)
-        return True
-    else:
-        print(BC.FAIL,"Problem: ORCA binary: {} does not work. Exiting!".format(orcadir+'/orca'), BC.END)
-        ashexit()
-
-###############################################
-#CHECKS FOR OPENMPI
-#NOTE: Perhaps to be moved to other location
-###############################################
-def check_OpenMPI():
-    #Find mpirun and take path
     try:
-        openmpibindir = os.path.dirname(shutil.which('mpirun'))
-    except:
-        print(BC.FAIL,"No mpirun found in PATH. Make sure to add OpenMPI to PATH in your environment/jobscript", BC.END)
+        p = sp.Popen([orcadir+"/orca"], stdout = sp.PIPE)
+        out, err = p.communicate()
+        if 'This program requires the name of a parameterfile' in str(out):
+            print(BC.OKGREEN,"yes", BC.END)
+            return True
+        else:
+            print(BC.FAIL,"Problem: ORCA binary: {} does not work. Exiting!".format(orcadir+'/orca'), BC.END)
+            ashexit()
+    except FileNotFoundError:
+        print("ORCA binary was not found")
         ashexit()
-    print("OpenMPI binary directory found:", openmpibindir)
-    #Test that mpirun is executable and grab OpenMPI version number for printout
-    test_OpenMPI()
-    #NOTE: Not sure if we should do more here
-    #Inspect LD_LIBRARY_PATH
-    #openmpilibdir= os.environ.get("LD_LIBRARY_PATH")
-    #print("OpenMPI library directory:", openmpilibdir)
-    return
 
-def test_OpenMPI():
-    print("Testing that mpirun is executable...", end="")
-    p = sp.Popen(["mpirun", "-V"], stdout = sp.PIPE)
-    out, err = p.communicate()
-    mpiversion=out.split()[3].decode()
-    print(BC.OKGREEN,"yes",BC.END)
-    print("OpenMPI version:", mpiversion)
 
 
 # Once inputfiles are ready, organize them. We want open-shell calculation (e.g. oxidized) to reuse closed-shell GBW file
@@ -667,7 +690,7 @@ def grab_ORCA_warnings(filename):
     warnings=[]
     #Lines that are not useful warnings
     ignore_lines=['                       Please study these wa','                                        WARNINGS', 
-        ' Warning: in a DFT calculation', 'WARNING: Old DensityContainer' ]
+        'Warning: in a DFT calculation', 'WARNING: Old DensityContainer', 'WARNING: your system is open-shell' ]
     for warn in warning_lines:
         false_positive = any(warn.startswith(ign) for ign in ignore_lines)
         if false_positive is False:
@@ -697,7 +720,7 @@ def grab_ORCA_errors(filename):
         if false_positive is False:
             errors.append(err)
     if len(errors):
-        print("Found error messages in ORCA outputfile:")
+        print("Found possible error messages in ORCA outputfile:")
         print(*errors)
 
 #Check if ORCA finished.
@@ -1894,6 +1917,7 @@ def QRO_occ_energies_grab(filename):
             if 'Orbital Energies of Quasi-Restricted' in line:
                 occgrab=True
 
+#Grab ICE-WF info from CASSCF job
 def ICE_WF_size(filename):
     after_SD_numCFGs=0
     num_genCFGs=0
@@ -1905,6 +1929,22 @@ def ICE_WF_size(filename):
                 num_genCFGs=int(line.split()[-1])
             if 'Final CASSCF energy       :' in line:
                 return num_genCFGs,after_SD_numCFGs
+
+#Grab ICE-WF CFG info from CI job
+def ICE_WF_CFG_CI_size(filename):
+    num_after_SD_CFGs=0
+    num_genCFGs=0
+    num_selected_CFGs=0
+    with open(filename) as g:
+        for line in g:
+            if '# of configurations after S+D' in line:
+                num_after_SD_CFGs=int(line.split()[-1])
+            if '# of configurations after Selection' in line:
+                num_selected_CFGs=int(line.split()[-1])
+            if ' # of generator configurations' in line:
+                num_genCFGs=int(line.split()[5])
+    return num_genCFGs,num_selected_CFGs,num_after_SD_CFGs
+
 
 
 def grab_EFG_from_ORCA_output(filename):
@@ -1996,25 +2036,29 @@ H    2.453295744  -1.445998564  -1.389381355
     
     #Run dimer
     print("\nRunning dimer calculation")
-    dimer_energy=Singlepoint(theory=theory,fragment=dimer)
+    dimer_result=Singlepoint(theory=theory,fragment=dimer)
+    dimer_energy = dimer_result.energy
     theory.cleanup()
     #Run monomers
     print("\nRunning monomer1 calculation")
-    monomer1_energy=Singlepoint(theory=theory,fragment=monomer1)
+    monomer1_result=Singlepoint(theory=theory,fragment=monomer1)
+    monomer1_energy = monomer1_result.energy
     theory.cleanup()
     print("\nRunning monomer2 calculation")
-    monomer2_energy=Singlepoint(theory=theory,fragment=monomer2)
+    monomer2_result=Singlepoint(theory=theory,fragment=monomer2)
+    monomer2_energy = monomer2_result.energy
     theory.cleanup()
     print("\nUncorrected binding energy: {} kcal/mol".format((dimer_energy - monomer1_energy-monomer2_energy)*ash.constants.hartokcal))
     
     #Monomer calcs at dimer geometry
     print("\nRunning monomers at dimer geometry via dummy atoms")
     theory.dummyatoms=monomer1_indices
-    monomer1_in_dimergeo_energy=Singlepoint(theory=theory,fragment=dimer)
-
+    monomer1_in_dimergeo_result=Singlepoint(theory=theory,fragment=dimer)
+    monomer1_in_dimergeo_energy = monomer1_in_dimergeo_result.energy
     theory.cleanup()
     theory.dummyatoms=monomer2_indices
-    monomer2_in_dimergeo_energy=Singlepoint(theory=theory,fragment=dimer)
+    monomer2_in_dimergeo_result=Singlepoint(theory=theory,fragment=dimer)
+    monomer2_in_dimergeo_energy = monomer2_in_dimergeo_result.energy
     theory.cleanup()
 
     #Removing dummyatoms
@@ -2025,10 +2069,12 @@ H    2.453295744  -1.445998564  -1.389381355
     print("\nRunning monomers at dimer geometry with dimer basis set via ghostatoms")
     theory.ghostatoms=monomer1_indices
 
-    monomer1_in_dimer_dimerbasis_energy=Singlepoint(theory=theory,fragment=dimer)
+    monomer1_in_dimer_dimerbasis_result=Singlepoint(theory=theory,fragment=dimer)
+    monomer1_in_dimer_dimerbasis_energy = monomer1_in_dimer_dimerbasis_result.energy
     theory.cleanup()
     theory.ghostatoms=monomer2_indices
-    monomer2_in_dimer_dimerbasis_energy=Singlepoint(theory=theory,fragment=dimer)
+    monomer2_in_dimer_dimerbasis_result=Singlepoint(theory=theory,fragment=dimer)
+    monomer2_in_dimer_dimerbasis_energy = monomer2_in_dimer_dimerbasis_result.energy
     theory.cleanup()
 
     #Removing ghost atoms
@@ -2099,7 +2145,9 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None, charge
         otool.write("theory = pickle.load(open(\"{}\", \"rb\" ))\n".format(theoryfile))
         #otool.write("theory=ZeroTheory()\n")
         #otool.write("theory=ZeroTheory()\n")
-        otool.write("energy,gradient=Singlepoint(theory=theory,fragment=frag,Grad=True, charge={}, mult={})\n".format(charge,mult))
+        otool.write("result=Singlepoint(theory=theory,fragment=frag,Grad=True, charge={}, mult={})\n".format(charge,mult))
+        otool.write("energy = result.energy")
+        otool.write("gradient = result.gradient")
         otool.write("print(gradient)\n")
         otool.write("ash.interfaces.interface_ORCA.print_gradient_in_ORCAformat(energy,gradient,\"{}\")\n".format(basename))
     st = os.stat(scriptlocation+"/otool_external")

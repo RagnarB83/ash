@@ -22,7 +22,8 @@ def load_matplotlib():
         import matplotlib
     except:
         print("Loading MatplotLib failed. Probably not installed. Please install using conda: conda install matplotlib or pip: pip install matplotlib")
-        ashexit()
+        return None
+        #ashexit()
     print("Matplotlib loaded")
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt 
@@ -45,11 +46,18 @@ def Gaussian(x, mu, strength, sigma):
 class ASH_plot():
     def __init__(self, figuretitle='Plottyplot', num_subplots=1, dpi=200, imageformat='png', figsize=(9,5),
         x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title', 
-        subplot_titles=None, invert_x_axis=False, invert_y_axis=False, xlimit=None, ylimit=None,
-        legend_pos=None):
+        subplot_titles=None, xlimit=None, ylimit=None,
+        legend_pos=None, horizontal=False, tight_layout=True, padding=None):
         print_line_with_mainheader("ASH_energy_plot")
 
-        load_matplotlib() #Load Matplotlib
+        plt = load_matplotlib() #Load Matplotlib
+        if plt == None:
+            print("Matplotlib failed to load. Exiting ASH_plot")
+            #Making working attribute False so that we can check if ASH_plot instance is useful or not
+            self.working=False
+            return None
+        #If matplotlib loaded then all is good
+        self.working=True
         self.num_subplots=num_subplots
         self.imageformat=imageformat
         self.dpi=dpi
@@ -82,12 +90,6 @@ class ASH_plot():
             self.x_axislabels=x_axislabels
             self.y_axislabels=y_axislabels
 
-            #Invert axis if requested
-            if invert_x_axis:
-                self.axs[0].invert_xaxis()
-            if invert_y_axis:
-                self.axs[0].invert_yaxis()
-
             #X-limit and y-limit
             if xlimit != None:
                 self.axs[0].set_xlim(xlimit[0], xlimit[1])
@@ -95,8 +97,38 @@ class ASH_plot():
                 self.axs[0].set_ylim(ylimit[0], ylimit[1])
 
         elif self.num_subplots == 2:
-            self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
+            if horizontal is True:
+                print("Horizontal plot is true")
+                self.fig, self.axs = matplotlib.pyplot.subplots(1, 2, figsize=figsize)
+                if tight_layout is True:
+                    print("Tight layout True")
+                    self.fig.tight_layout()
+                #Subplot padding
+                if padding is not None:
+                    self.fig.subplots_adjust(wspace=padding)
+
+            else:
+                self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
+                if tight_layout is True:
+                    print("Tight layout True")
+                    self.fig.tight_layout()
+                #Subplot padding
+                if padding is not None:
+                    self.fig.subplots_adjust(hspace=padding)
+
             self.axiscount=0
+            
+            #X-limit and y-limit
+            #TODO: Allow different limits for each subplot
+            if xlimit != None:
+                self.axs[0].set_xlim(xlimit[0], xlimit[1])
+                self.axs[1].set_xlim(xlimit[0], xlimit[1])
+            if ylimit != None:
+                self.axs[0].set_ylim(ylimit[0], ylimit[1])
+                self.axs[1].set_ylim(ylimit[0], ylimit[1])
+
+
+
         elif self.num_subplots == 3:
             self.plotlistnames=['upleft','upright','low']
             self.fig, axs_dict = matplotlib.pyplot.subplot_mosaic([['upleft', 'upright'],
@@ -109,10 +141,13 @@ class ASH_plot():
             self.axiscount=0
 
         self.addplotcount=0
-        
-
-    def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, label='Series', color='blue', pointsize=40, 
-                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0):
+    def invert_x_axis(self,subplot):
+        self.axs[subplot].invert_xaxis()
+    def invert_y_axis(self,subplot):
+        self.axs[subplot].invert_yaxis()
+    def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
+                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
+                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False):
         print("Adding new series to ASH_plot object")
         self.addplotcount+=1
         curraxes=self.axs[subplot]
@@ -122,6 +157,8 @@ class ASH_plot():
             #If Python lists
             if (type(x_list) != list and type(x_list) != np.ndarray) or ((type(y_list) != list and type(y_list) != np.ndarray)):
                 print(BC.FAIL,"Please provide either a valid x_list and y_list (can be Python lists or Numpy arrays) or a surfacedictionary (Python dict)", BC.END)
+                print(f"x_list: {x_list}")
+                print(f"y_list: {y_list}")
                 ashexit()
             else:
                 x=list(x_list);y=list(y_list)
@@ -146,8 +183,25 @@ class ASH_plot():
             curraxes.scatter(x,y, color=color, marker = marker,  s=pointsize, linewidth=scatter_linewidth, label=label)
         #Lineplot
         if line is True:
+            #Avoid legend for line if scatter is enabled
+            if scatter is True:
+                label='_nolegend_'
+            else:
+                legendlabel=label
             curraxes.plot(x, y, linestyle='-', color=color, linewidth=line_linewidth, label=label)
         
+        #Add labels to x-axis if
+        if x_labels is not None:
+            print("Adding xticks labels using rotation parameter:", xticklabelrotation)
+            #curraxes.xticks(x,x_labels)
+            curraxes.set_xticks(x, minor=False)
+            curraxes.set_xticklabels(x_labels, fontdict=None, minor=False, rotation=xticklabelrotation)
+        #Log scale
+        if x_scale_log is True:
+            curraxes.set_xscale('log')
+        if y_scale_log is True:
+            curraxes.set_yscale('log')
+
         #Title/axis options for 1 vs multiple subplots
         if self.num_subplots == 1:
             curraxes.set_xlabel(self.x_axislabel)  # Add an x-label to the axes.

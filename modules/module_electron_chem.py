@@ -40,8 +40,8 @@ def ElectronImpact(fragment=None, theory=None, HLtheory=None, charge=None, mult=
     vibenergycorr=thermochem_neutral['vibenergycorr']
     E_vib=thermochem_neutral['E_vib']
     print("Now starting High-level singlepoint")
-    HL_energy_neut = Singlepoint(fragment=fragment, theory=HLtheory)
-
+    HL_neut = Singlepoint(fragment=fragment, theory=HLtheory)
+    HL_energy_neut = HL_neut.energy
     #######################
     #Direct Cation species
     #######################
@@ -53,7 +53,8 @@ def ElectronImpact(fragment=None, theory=None, HLtheory=None, charge=None, mult=
     print("Now starting optimization")
     geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=500, coordsystem='hdlc', charge=cation_charge, mult=cation_mult)
     #print("Now starting Numerical frequencies")
-    HL_energy_cation = Singlepoint(fragment=fragment, theory=HLtheory)
+    HL_cation = Singlepoint(fragment=fragment, theory=HLtheory)
+    HL_energy_cation = HL_cation.energy
     #thermochem = NumFreq(fragment=fragment, theory=theory, npoint=2, runmode='serial', charge=cation_charge, mult=cation_mult)
     #ZPVE_cation=thermochem["ZPVE"]
     #vibenergycorr=thermochem['vibenergycorr']
@@ -82,7 +83,8 @@ def ElectronImpact(fragment=None, theory=None, HLtheory=None, charge=None, mult=
             geomeTRICOptimizer(theory=theory, fragment=molfrag, maxiter=500, coordsystem='hdlc', charge=molfrag.charge, mult=molfrag.mult)
             thermochem = NumFreq(fragment=molfrag, theory=theory, npoint=2, runmode='serial', charge=molfrag.charge, mult=molfrag.mult)
 
-            HL_energy_molfrag = Singlepoint(fragment=fragment, theory=HLtheory)
+            HL_molfrag = Singlepoint(fragment=fragment, theory=HLtheory)
+            HL_energy_molfrag = HL_molfrag.energy
             molfrag_e_dict[label] = HL_energy_molfrag
 
 

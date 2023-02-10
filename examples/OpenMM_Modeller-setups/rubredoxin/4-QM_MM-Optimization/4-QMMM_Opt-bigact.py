@@ -30,5 +30,5 @@ waterconlist = getwaterconstraintslist(openmmtheoryobject=omm, atomlist=actatoms
 waterconstraints = {'bond': waterconlist}
 
 #Calling geomeTRICOptimizer with defined constraints
-geomeTRICOptimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200, constraints=waterconstraints,
+Optimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200, constraints=waterconstraints,
         charge=-1, mult=6)

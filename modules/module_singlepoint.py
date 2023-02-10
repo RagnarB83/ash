@@ -7,14 +7,16 @@
     """
 import numpy as np
 import time
-#import ash
+import ash
 from ash.functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_results import ASH_Results
+#from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
 
 #Single-point energy function
 def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
-    energy, gradient = Singlepoint(fragment=fragment, theory=theory, Grad=True, charge=charge, mult=mult)
-    return energy, gradient
+    result = Singlepoint(fragment=fragment, theory=theory, Grad=True, charge=charge, mult=mult)
+    return result
 
 #Single-point energy function
 def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
@@ -46,15 +48,19 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
 
     # Run a single-point energy job with gradient
     if Grad ==True:
+        print()
         print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True, charge=charge, mult=mult)
         print("Energy: ", energy)
         print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
-        return energy,gradient
+        result = ASH_Results(label="Singlepoint", energy=energy, gradient=gradient, charge=charge, mult=mult)
+        return result
     # Run a single-point energy job without gradient (default)
     else:
+        print()
         print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
+        print(f"Charge: {charge} Mult: {mult}") #Charge/mult should have been defined so we print
         #Run
         energy = theory.run(current_coords=coords, elems=elems, charge=charge, mult=mult)
 
@@ -68,7 +74,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
         #Now adding total energy to fragment
         fragment.set_energy(energy)
         print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
-        return energy
+        result = ASH_Results(label="Singlepoint", energy=energy, charge=charge, mult=mult)
+        return result
 
 
 
@@ -76,8 +83,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
 #TODO: allow Grad option?
 def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
     print_line_with_mainheader("Singlepoint_theories function")
-
-    print("Will run single-point calculation on the fragment with multiple theories and return a list of energies")
+    module_init_time=time.time()
+    print("Will run single-point calculation on the fragment with multiple theories")
 
     energies=[]
 
@@ -87,15 +94,17 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint_theories", theory=theory)
 
         #Running single-point. 
-        energy = Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
+        result = Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
         
-        print("Theory Label: {} Energy: {} Eh".format(theory.label, energy))
+        print("Theory Label: {} Energy: {} Eh".format(theory.label, result.energy))
         theory.cleanup()
-        energies.append(energy)
+        energies.append(result.energy)
 
     #Printing final table
     print_theories_table(theories,energies,fragment)
-    return energies
+    result = ASH_Results(label="Singlepoint_theories", energies=energies, charge=charge, mult=mult)
+    print_time_rel(module_init_time, modulename='Singlepoint_theories', moduleindex=1)
+    return result
 
 #Pretty table of fragments and theories
 def print_theories_table(theories,energies,fragment):
@@ -111,12 +120,12 @@ def print_theories_table(theories,energies,fragment):
     print()
 
 #Pretty table of fragments and energies
-def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: "):
+def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: ", unit='Eh'):
     print()
     print("="*70)
     print("{}Table of energies of each fragment:".format(tabletitle))
     print("="*70)
-    print("{:10} {:<20} {:>7} {:>7} {:>20}".format("Formula", "Label", "Charge","Mult", "Energy(Eh)"))
+    print("{:10} {:<20} {:>7} {:>7} {:>20}".format("Formula", "Label", "Charge","Mult", f"Energy({unit})"))
     print("-"*70)
     for frag, e in zip(fragments,energies):
         if frag.label==None:
@@ -129,41 +138,64 @@ def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
 #Assuming fragments have charge,mult info defined.
 #If stoichiometry provided then print reaction energy
-def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None):
+def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relative_energies=False, unit='kcal/mol', moreadfiles=None):
     print_line_with_mainheader("Singlepoint_fragments function")
-
-    print("Will run single-point calculation on each fragment and return a list of energies")
+    module_init_time=time.time()
+    print("Will run single-point calculation on each fragment")
     print("Theory:", theory.__class__.__name__)
 
     energies=[];filenames=[]
 
     #Looping through fragments
-    for frag in fragments:
+    for i,frag in enumerate(fragments):
 
         if frag.charge == None or frag.mult == None:
             print(BC.FAIL,"Error: Singlepoint_fragments requires charge/mult information to be associated with each fragment.", BC.END)
             ashexit()
         #Setting charge/mult  from fragment
         charge=frag.charge; mult=frag.mult
-        
+
+        #Setting orbital file for ORCATheory, PySCFTheory, DiceTheory or any other using moreadfile
+        try:
+            theory.moreadfile=moreadfiles[i]
+        except:
+            pass
+
         #Running single-point
-        energy = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
+        result = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
         
-        print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
+        print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, result.energy))
         theory.cleanup()
-        energies.append(energy)
+        energies.append(result.energy)
         #Adding energy as the fragment attribute
-        frag.set_energy(energy)
+        frag.set_energy(result.energy)
         print("")
+
+    #Create Results object
+    result = ASH_Results(label="Singlepoint_fragments", energies=energies, charge=charge, mult=mult)   
 
     #Print table
     print_fragments_table(fragments,energies)
-    
+
+    #Print table
+    if relative_energies is True:
+        print()
+        print("relative_energies option is True!")
+        conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
+        convfactor=conversionfactor[unit]
+        relenergies=[(i - min(energies)) * convfactor for i in energies]
+        print_fragments_table(fragments,relenergies, unit=unit)
+        result.relative_energies = relenergies
+        result.labels = [f.label for f in fragments]
+ 
     #Printing reaction energy if stoichiometry was provided
     if stoichiometry != None:
         print("Stoichiometry provided:", stoichiometry)
-        ReactionEnergy(list_of_energies=energies, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='ΔE')
-    return energies
+        r = ReactionEnergy(list_of_energies=energies, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='ΔE')
+        result.reaction_energy = r[0]
+    print_time_rel(module_init_time, modulename='Singlepoint_fragments', moduleindex=1)
+    return result
 
 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
@@ -171,7 +203,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None):
 def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiometry=None):
 
     print_line_with_mainheader("Singlepoint_fragments_and_theories")
-
+    module_init_time=time.time()
     #List of lists
     all_energies=[]
 
@@ -200,30 +232,67 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
             print("_"*60)
     print("\nFinal list of list of total energies:", all_energies)
 
+    result = ASH_Results(label="Singlepoint_fragments_and_theories", energies=all_energies)
     if stoichiometry != None:
         print("Final reaction energies:")
         for elist,t in zip(all_energies,theories):
-            ReactionEnergy(list_of_energies=elist, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='{}'.format(t.label))
+            r = ReactionEnergy(list_of_energies=elist, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='{}'.format(t.label))
+            result.reaction_energies.append(r[0])
     print()
-    return all_energies
+    #return all_energies
+    print_time_rel(module_init_time, modulename='Singlepoint_fragments_and_theories', moduleindex=1)
+    return result
 
 
 #Single-point energy function that runs calculations on an ASH reaction object
 #Assuming fragments have charge,mult info defined.
-def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol'):
+def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
     print_line_with_mainheader("Singlepoint_reaction function")
+    module_init_time=time.time()
 
-    print("Will run single-point calculation on each fragment defined in reaction and return the reaction energy")
+    print("Will run single-point calculation on each fragment defined in reaction")
     print("Theory:", theory.__class__.__name__)
+    print("Resetting energies in reaction object")
+    reaction.energies=[]
+    reaction.reset_energies()
 
     #Looping through fragments defined in Reaction object
-    for frag in reaction.fragments:
-        
+    list_of_componentsdicts=[]
+    componentsdict={}
+    for i,frag in enumerate(reaction.fragments):
+        #Orbital file for ORCATheory, PySCFTheory, DiceTheory or any other using moreadfile
+        try:
+            theory.moreadfile=reaction.orbital_dictionary[moreadfiles][i]
+        except:
+            try:
+                theory.moreadfile=moreadfiles[i]
+            except:
+                pass
         #Running single-point
-        energy = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
+        result = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
+        energy = result.energy
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         theory.cleanup()
         reaction.energies.append(energy)
+
+        #TODO: Change this so that instead we just grab whatever each Theory level deemed important
+        #theory.properties feature? 
+        #Check if ORCATheory object contains ICE-CI info
+        if isinstance(theory,ash.ORCATheory):
+            print("theory.properties:", theory.properties)
+            #Add selected properties to Reaction object
+            try:
+                reaction.properties["E_var"].append(theory.properties["E_var"])
+                reaction.properties["E_PT2_rest"].append(theory.properties["E_PT2_rest"])
+                reaction.properties["num_genCFGs"].append(theory.properties["num_genCFGs"])
+                reaction.properties["num_selected_CFGs"].append(theory.properties["num_selected_CFGs"])
+                reaction.properties["num_after_SD_CFGs"].append(theory.properties["num_after_SD_CFGs"])
+            except:
+                pass
+        # Keeping CC components if using ORCA_CC_CBS_Theory
+        if isinstance(theory,ash.ORCA_CC_CBS_Theory):
+            componentsdict=theory.energy_components
+            list_of_componentsdicts.append(componentsdict)
         #Adding energy as the fragment attribute
         frag.set_energy(energy)
         print("")
@@ -231,9 +300,58 @@ def Singlepoint_reaction(theory=None, reaction=None, unit='kcal/mol'):
     #Print table
     print_fragments_table(reaction.fragments,reaction.energies, tabletitle="Singlepoint_reaction: ")
 
-    reaction.calculate_reaction_energy(unit=unit)
+    #Setting unit of reaction if given (will override reaction.unit definition)
+    #NOTE: Needed?
+    #NOTE: Now just setting unit equal to reaction.unit. Used for components below
+    unit=reaction.unit
+
+    reaction.calculate_reaction_energy()
     
-    return reaction.reaction_energy
+    result = ASH_Results(label="Singlepoint_reaction", energies=reaction.energies,
+        reaction_energy=reaction.reaction_energy)
+
+    if isinstance(theory,ash.ORCA_CC_CBS_Theory):
+        print("-"*70)
+        print("CCSD(T)/CBS components")
+        print("-"*70)
+        finaldict={}
+        #Contributions to CCSD(T) energies
+        if 'E_SCF_CBS' in componentsdict:
+            scf_parts=[d['E_SCF_CBS'] for d in list_of_componentsdicts]
+            deltaSCF=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=scf_parts, unit=unit, label='ΔSCF')[0]
+            finaldict['deltaSCF']=deltaSCF
+        if 'E_corrCCSD_CBS' in componentsdict:
+            ccsd_parts=[d['E_corrCCSD_CBS'] for d in list_of_componentsdicts]
+            delta_CCSDcorr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=ccsd_parts, unit=unit, label='ΔCCSD')[0]
+            finaldict['delta_CCSDcorr']=delta_CCSDcorr
+        if 'E_corrCCT_CBS' in componentsdict:
+            triples_parts=[d['E_corrCCT_CBS'] for d in list_of_componentsdicts]
+            delta_Tcorr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=triples_parts, unit=unit, label='Δ(T)')[0]
+            finaldict['delta_Tcorr']=delta_Tcorr
+        if 'E_corr_CBS' in componentsdict:
+            valencecorr_parts=[d['E_corr_CBS'] for d in list_of_componentsdicts]
+            delta_CC_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=valencecorr_parts, unit=unit, label='ΔCCSD+Δ(T) corr')[0]
+            finaldict['delta_CC_corr']=delta_CC_corr
+        if 'E_SO' in componentsdict:
+            SO_parts=[d['E_SO'] for d in list_of_componentsdicts]
+            delta_SO_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=SO_parts, unit=unit, label='ΔSO')[0]
+            finaldict['delta_SO_corr']=delta_SO_corr
+        if 'E_corecorr_and_SR' in componentsdict:
+            CV_SR_parts=[d['E_corecorr_and_SR'] for d in list_of_componentsdicts]
+            delta_CVSR_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=CV_SR_parts, unit=unit, label='ΔCV+SR')[0]
+            finaldict['delta_CVSR_corr']=delta_CVSR_corr
+        if 'T1energycorr' in componentsdict:
+            T1corr_parts=[d['T1energycorr'] for d in list_of_componentsdicts]
+            delta_T1_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=T1corr_parts, unit=unit, label='ΔΔT1corr')[0]
+            finaldict['delta_T1_corr']=delta_T1_corr
+        if 'E_FCIcorrection' in componentsdict:
+            fcicorr_parts=[d['E_FCIcorrection'] for d in list_of_componentsdicts]
+            delta_FCI_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=fcicorr_parts, unit=unit, label='ΔFCIcorr')[0]
+            finaldict['delta_FCI_corr']=delta_FCI_corr
+        result.energy_contributions = finaldict
+    print_time_rel(module_init_time, modulename='Singlepoint_reaction', moduleindex=1)
+    return result
+    #return reaction.reaction_energy
 
 
 #Single-point energy function that communicates via fragment
@@ -330,8 +448,8 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
     Returns:
         tuple : energy and error in chosen unit
     """
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
-                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
+    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
     if label is None:
         label=''
     reactant_energy=0.0 #hartree
@@ -346,7 +464,8 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
 
         if len(list_of_energies) != len(stoichiometry):
             print("Number of energies not equal to number of stoichiometry values")
-            print("Check ")
+            print("Exiting.")
+            ashexit()
 
         for i,stoich in enumerate(stoichiometry):
             if stoich < 0:

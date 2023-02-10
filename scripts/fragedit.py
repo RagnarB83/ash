@@ -168,7 +168,7 @@ try:
     print("Reading file:", fragfile)
 except:
     print("Error:")
-    print("Please provide an Ash fragment file and atomindices file as argument:")
+    print("Please provide an ASH fragment file and atomindices file as argument:")
     print("Examples:")
     print("fragedit.py file.ygg qmatoms")
     print("fragedit.py file.xyz qmatoms")

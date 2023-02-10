@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 
+import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 
 #MRCC Theory object.
@@ -19,9 +20,9 @@ class MRCCTheory:
         if mrccdir == None:
             print(BC.WARNING, "No mrccdir argument passed to MRCCTheory. Attempting to find mrccdir variable inside settings_ash", BC.END)
             try:
-                print("settings_ash.settings_dict:", settings_ash.settings_dict)
-                self.mrccdir=settings_ash.settings_dict["mrccdir"]
-            except:
+                print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+                self.mrccdir=ash.settings_ash.settings_dict["mrccdir"]
+            except KeyError:
                 print(BC.WARNING,"Found no mrccdir variable in settings_ash module either.",BC.END)
                 try:
                     self.mrccdir = os.path.dirname(shutil.which('dmrcc'))
@@ -41,8 +42,10 @@ class MRCCTheory:
         self.filename=filename
         self.mrccinput=mrccinput
         self.numcores=numcores
-
-    def cleanup():
+    #Set numcores method
+    def set_numcores(self,numcores):
+        self.numcores=numcores
+    def cleanup(self):
         print("MRCC cleanup not yet implemented.")
     #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
 
@@ -92,12 +95,12 @@ class MRCCTheory:
         if Grad==True:
             print("Grad not ready")
             ashexit()
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
             run_mrcc(self.mrccdir,self.filename+'.out')
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc()
         else:
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
             run_mrcc(self.mrccdir,self.filename+'.out')
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
@@ -112,17 +115,17 @@ class MRCCTheory:
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
             return self.energy
 
-
-
-
 def run_mrcc(mrccdir,filename):
     with open(filename, 'w') as ofile:
         process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #TODO: Gradient option
-def write_mrcc_input(mrccinput,charge,mult,elems,coords):
+#NOTE: Now setting ccsdthreads and ptthreads to number of cores
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores):
     with open("MINP", 'w') as inpfile:
         inpfile.write(mrccinput + '\n')
+        inpfile.write(f'ccsdthreads={numcores}\n')
+        inpfile.write(f'ptthreads={numcores}\n')
         inpfile.write('unit=angs\n')
         inpfile.write('charge={}\n'.format(charge))
         inpfile.write('mult={}\n'.format(mult))
@@ -141,18 +144,6 @@ def grab_energy_mrcc(outfile):
         for line in f:
             if 'ENERGY' in line:
                 energy=float(line.split()[5])
-    
-    #linetograb="energy"
-    #with open(outfile) as f:
-    #    for line in f:
-    #        if linetograb.upper() in line.upper():
-    #            final=line
-    #print(final)
-    #try:
-    #    energy=float(final.split()[-1])
-    #except:
-    #    print("Problem reading energy from MRCC outputfile. Check:", outfile)
-    #    ashexit()
     return energy
 
 

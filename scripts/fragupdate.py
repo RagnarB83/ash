@@ -88,7 +88,7 @@ def read_xyzfile(filename):
 try:
     fragfile=sys.argv[1]
 except:
-    print("Please provide an ASH fragment file as argument")
+    print("Please provide an XYZ-file (or ASH .ygg file) as argument")
     exit(1)
 #Try to process a qmatoms file if provided
 try:
@@ -131,11 +131,11 @@ with open(fragfile, 'w') as newfile:
                 at=int(line.split()[0])
                 el=line.split()[1]
                 charge=float(line.split()[5])
-                label=int(line.split()[6])
+                label=line.split()[6]
                 atomtype=line.split()[7]
                 newcoords=xyz_coords.pop(0)
                 #print("newcoords:", newcoords)
-                line = "{:>6} {:>6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:12d} {:>21}\n".format(at, el, newcoords[0],
+                line = "{:>6} {:>6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:12} {:>21}\n".format(at, el, newcoords[0],
                                                                                                     newcoords[1], newcoords[2],
                                                                                                     charge, label, atomtype)
         if '-----------------------' in line:

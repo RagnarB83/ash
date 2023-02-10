@@ -1,23 +1,69 @@
 import copy
 import multiprocessing as mp
+import subprocess as sp
 import os
 import sys
 import time
+import shutil
 
 #import ash
 from ash.functions.functions_general import ashexit, BC,blankline,print_line_with_mainheader,print_line_with_subheader1
 from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_results import ASH_Results
+
+#OPENMPI
+###############################################
+#CHECKS FOR OPENMPI
+#NOTE: Perhaps to be moved to other location
+###############################################
+def check_OpenMPI():
+    #Find mpirun and take path
+    try:
+        openmpibindir = os.path.dirname(shutil.which('mpirun'))
+    except:
+        print(BC.FAIL,"No mpirun found in PATH. Make sure to add OpenMPI to PATH in your environment/jobscript", BC.END)
+        ashexit()
+    print("OpenMPI binary directory found:", openmpibindir)
+    #Test that mpirun is executable and grab OpenMPI version number for printout
+    test_OpenMPI()
+    #NOTE: Not sure if we should do more here
+    #Inspect LD_LIBRARY_PATH
+    #openmpilibdir= os.environ.get("LD_LIBRARY_PATH")
+    #print("OpenMPI library directory:", openmpilibdir)
+    return
+
+def test_OpenMPI():
+    print("Testing that mpirun is executable...", end="")
+    p = sp.Popen(["mpirun", "-V"], stdout = sp.PIPE)
+    out, err = p.communicate()
+    mpiversion=out.split()[3].decode()
+    print(BC.OKGREEN,"yes",BC.END)
+    print("OpenMPI version:", mpiversion)
+
+
+
+
+
+
+
+
 #Various calculation-functions run in parallel
 
 
-#Stripped down version of Singlepoint functffragment_fileion for Singlepoint_parallel.
+#Stripped down version of Singlepoint functffragment_file ion for Singlepoint_parallel.
 #NOTE: Version intended for apply_async
 #TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
-def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2):
+def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2, copytheory=False):
 
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
     #NOTE: Alternatively we can add an if-statement inside orca.run
-    theory=copy.deepcopy(theory)
+    #NOTE: Not compatible with Dualtheory
+    if copytheory == True:
+        print("copytheory True")
+        theory=copy.deepcopy(theory)
+    else:
+        print("copytheory False")
+
 
     if printlevel >= 2:
         print("Fragment:", fragment)
@@ -138,7 +184,8 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 #PARALLEL Single-point energy function
 #will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
-def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False, Grad=False, printlevel=2):
+#NOTE: Experimental copytheory option
+def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
@@ -241,7 +288,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             for fragment in fragments:
                 if printlevel >= 2:
                     print("fragment:", fragment)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
                     error_callback=Terminate_Pool_processes))
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
@@ -250,7 +297,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             for fragmentfile in fragmentfiles:
                 if printlevel >= 2:
                     print("fragmentfile:", fragmentfile)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
                     error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
@@ -261,7 +308,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         for theory in theories:
             if printlevel >= 2:
                 print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
                 error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragmentfile
     elif len(fragmentfiles) == 1:
@@ -271,7 +318,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         for theory in theories:
             if printlevel >= 2:
                 print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel), 
+            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
                 error_callback=Terminate_Pool_processes))
     else:
         print("Multiple theories and multiple fragments provided.")
@@ -297,20 +344,29 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
 
+    result = ASH_Results(label="Singlepoint_parallel", energies=[], gradients=[])
     if Grad == True:
         gradient_dict={}
         for i,r in enumerate(results):
             if r.ready() == True:
                 energy_dict[r.get()[0]] = r.get()[1]
                 gradient_dict[r.get()[0]] = r.get()[2]
-        return energy_dict,gradient_dict
+                result.energies.append(r.get()[1])
+                result.gradients.append(r.get()[2])
+        #return energy_dict,gradient_dict
+        result.gradients_dict = gradient_dict
     else:
         for i,r in enumerate(results):
             #print("Result {} ready: {}".format(i, r.ready()))
             if r.ready() == True:
                 energy_dict[r.get()[0]] = r.get()[1]
-        return energy_dict
+                result.energies.append(r.get()[1])
+        #return energy_dict
 
+    #Adding dictionary also
+    result.energies_dict = energy_dict
+
+    return result
 
 
 #Functions to run each displacement in parallel NumFreq run.

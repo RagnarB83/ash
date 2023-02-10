@@ -7,6 +7,8 @@ import time
 import numpy as np
 import os
 import subprocess as sp
+#Defaultdict used by Reaction
+from collections import defaultdict
 
 from ash.functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
     print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, pygrep2, load_julia_interface
@@ -14,6 +16,7 @@ from ash.functions.functions_general import ashexit, isint, listdiff, print_time
 import ash.dictionaries_lists
 import ash.settings_ash
 import ash.constants
+
 #import ash
 
 ashpath = os.path.dirname(ash.__file__)
@@ -29,7 +32,7 @@ ashpath = os.path.dirname(ash.__file__)
 # Optimizer ? Probably not
 
 class Reaction:
-    def __init__(self, fragments, stoichiometry, label=None):
+    def __init__(self, fragments, stoichiometry, label=None, unit='eV'):
         print_line_with_subheader1("New ASH reaction")
 
         #Reading fragments and checking for charge/mult
@@ -41,19 +44,37 @@ class Reaction:
 
         self.label=label
 
+        self.unit=unit
+
         #List of energies for each fragment
         self.energies = []
         #Reaction energy
         self.reaction_energy=None
+
+        #Keeping track of orbital-files: key: 'SCF':["frag1.gbw","frag2.gbw","frag3.gbw"], 'MP2nat':["frag1.gbw","frag2.gbw","frag3.gbw"]
+        self.orbital_dictionary=defaultdict(lambda: [])
+        #Keep track of various properties calculated
+        self.properties=defaultdict(lambda: [])
+    def reset_energies(self):
+        #Reset energies etc
+        self.energies = []
+        self.reaction_energy=None
+    def reset_all(self):
+        #Reset energies etc
+        self.energies = []
+        self.reaction_energy=None
+        self.properties=defaultdict(lambda: [])
+
 
     def check_fragments(self):
         for frag in self.fragments:
             if frag.charge == None or frag.mult == None:
                 print("Error: Missing charge/mult information in fragment:",frag.formula)
                 ashexit()
-    def calculate_reaction_energy(self, unit='kcal/mol'):
+    def calculate_reaction_energy(self):
         if len(self.energies) == len(self.fragments):
-            self.reaction_energy = ash.ReactionEnergy(list_of_energies=self.energies, stoichiometry=self.stoichiometry, unit=unit, silent=False, label=self.label)[0]
+            self.reaction_energy = ash.ReactionEnergy(list_of_energies=self.energies, stoichiometry=self.stoichiometry, unit=self.unit, silent=False, 
+                label=self.label)[0]
         else:
             print("Warning. Could not calculate reaction energy as we are missing energies for fragments")
 
@@ -125,6 +146,9 @@ class Fragment:
                 print(BC.FAIL,"diatomic option requires diatomic_bondlength to be set. Exiting!", BC.END)
                 ashexit()
             self.elems=molformulatolist(diatomic)
+            if len(self.elems) != 2:
+                print(f"Problem with molecular formula diatomic={diatomic} string!")
+                ashexit()
             self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(diatomic_bondlength)]])
             #self.update_attributes()
         # If coordsstring given, read elems and coords from it
@@ -994,7 +1018,6 @@ def print_coords_for_atoms(coords, elems, members, labels=None):
 
 
 # From lists of coords,elems and atom indices, write XYZ file coords with elem
-# Todo: make part of Fragment class
 
 def write_XYZ_for_atoms(coords, elems, members, name):
     subset_elems = [elems[i] for i in members]
@@ -1853,15 +1876,17 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
         segmentlabels = openmmobject.segmentnames
 
     # What to choose if keyword arguments not given
-    if atomnames is None:
+    if atomnames is None or len(atomnames) == 0:
+        print("Warning: using elements as atomnames")
         # Elements instead. Means VMD will display atoms properly at least
         atomnames = fragment.elems
-    if resnames is None:
+    if resnames is None or len(resnames) == 0:
         resnames = fragment.numatoms * [dummyname]
-    if residlabels is None:
+    if residlabels is None or len(residlabels) == 0:
         residlabels = fragment.numatoms * [1]
     # Note: choosing to make segment ID 3-letter-string (and then space)
-    if segmentlabels is None:
+    if segmentlabels is None or len(segmentlabels) == 0:
+        print("Warning: no segment labels")
         segmentlabels = fragment.numatoms * ['   ']
         #segmentlabels = fragment.numatoms * ['SEG']
 
@@ -2500,9 +2525,13 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             print(BC.FAIL,
                   "Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatom),
                   BC.END)
+            print("This typically either happens when your QM-region is badly defined or a QM-atom is clashing with an MM atom")
             print("QM atom : ", qmatom)
-            print("Boundaryatoms : ", boundaryatom)
+            print("MM Boundaryatoms (connected to QM-atom based on distance) : ", boundaryatom)
             print("Please define the QM-region so that only 1 linkatom would be required.")
+            print("MM Boundary atom coordinates (for debugging):")
+            for b in boundaryatom:
+                print(f"{b} {elems[b]} {coords[b][0]} {coords[b][1]} {coords[b][2]}")
             ashexit()
         elif len(boundaryatom) == 1:
 
@@ -2898,9 +2927,13 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
         ashexit()
 
     # Dummy segmentname. Can't be something existing. Using ADD1, ADD2 etc.
-    matches = pygrep2("ADD", psffile)
-    segname = "ADD" + str(len(matches) + 1)
-    print("segname:", segname)
+    import random
+    import string
+    dummysegname="AD" + random.choice(string.ascii_uppercase) + str(random.randint(0, 9))
+    #matches = pygrep2(dummysegname, psffile)
+    #segname = dummysegname + str(len(matches) + 1)
+    #print("segname:", segname)
+    print("dummysegname:", dummysegname)
     psf_script = """
     topology {}
     readpsf {}
@@ -2911,7 +2944,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
     writepsf x-plor cmap newsystem_XPLOR.psf
     #writepsf charmm cmap newsystem_CHARMM.psf
     writepdb new-system.pdb
-        """.format(topfile, psffile, segname, resgroup)
+        """.format(topfile, psffile, dummysegname, resgroup)
 
     # Creating PSF inputfile
     with open("psfinput.tcl", 'w') as f:
@@ -3040,7 +3073,7 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
 
 
 #Check whether spin multiplicity is consistent with the nuclear charge and total charge
-def check_multiplicity(elems,charge,mult):
+def check_multiplicity(elems,charge,mult, exit=True):
     def is_even(number):
         if number % 2 == 0:
             return True
@@ -3052,9 +3085,11 @@ def check_multiplicity(elems,charge,mult):
     result = list(map(is_even, (num_electrons,unpaired_electrons)))
     if result[0] != result[1]:
         print("The spin multiplicity {} ({} unpaired electrons) is incompatible with the total number of electrons {}".format(mult,unpaired_electrons,num_electrons))
-        print("Now exiting!")
-        ashexit()
-
+        if exit == True:
+            print("Now exiting!")
+            ashexit()
+        else:
+            return False
 #Check if charge/mult variables are not None. If None check fragment
 #Only done for QM theories not MM. Passing theorytype string (e.g. from theory.theorytype if available)
 def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, printlevel=2):
@@ -3062,11 +3097,11 @@ def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, 
     if theorytype == "QM":
         if charge == None or mult == None:
             if printlevel >= 2:
-                print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
+                print(BC.WARNING,f"Charge/mult was not provided to {jobtype}",BC.END)
             if fragment.charge != None and fragment.mult != None:
                 if printlevel >= 2:
-                    print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
-                    print(BC.WARNING,"Make sure this is what you want!", BC.END)
+                    print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {}  Using this.".format(fragment.charge,fragment.mult), BC.END)
+                    #print(BC.WARNING,"Make sure this is what you want!", BC.END)
                 charge=fragment.charge; mult=fragment.mult
             else:
                 print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
@@ -3093,3 +3128,25 @@ def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, 
         #Setting charge/mult to None if MM
         charge=None; mult=None
     return charge,mult
+
+
+#Get list of bad atoms based on supplied fragment and gradient
+def check_gradient_for_bad_atoms(fragment=None,gradient=None, threshold=45000):
+    indices=[]
+    print("Checking system total gradient for bad atoms")
+    print("Gradient threshold setting:", threshold)
+    for i,k in enumerate(gradient):
+        if any(abs(k) > threshold):
+            indices.append(i)
+    if len(indices) > 0:
+        print("The following atoms have abnormally high values, probably due to bad atom positions:")
+        print()
+        print("Index    Element           Coordinates                              Gradient")
+        for i in indices:
+            print(f"{i:7} {fragment.elems[i]:>5} {fragment.coords[i][0]:>12.6f} {fragment.coords[i][2]:>12.6f} {fragment.coords[i][2]:>12.6f}      {k[0]:>6.3f} {k[1]:>6.3f} {k[2]:>6.3f}")
+        print()
+        print("These atoms may need to be constrained (e.g. if metal-cofactor) or atom positions need to be corrected before starting simulation")
+    else:
+        print()
+        print(f"No atoms with gradients larger than threshold: {threshold}")
+    return indices

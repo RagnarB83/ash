@@ -2,7 +2,7 @@
 __precompile__()
 
 module Juliafunctions
-using Hungarian
+#using Hungarian
 
 
 ########################################################################

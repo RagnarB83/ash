@@ -12,7 +12,7 @@ using Pkg
 #Pkg.build("PyCall")
 
 # Hungarian assignment. https://github.com/Gnimuc/Hungarian.jl
-Pkg.add("Hungarian")
+#Pkg.add("Hungarian")
 #Distances package. https://github.com/JuliaStats/Distances.jl
 #Pkg.add("Distances")
 #LoopVectorization package. https://github.com/JuliaSIMD/LoopVectorization.jl

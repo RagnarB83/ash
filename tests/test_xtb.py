@@ -17,8 +17,12 @@ def test_xtb_load():
     assert xtb_default.xtbmethod=='GFN1'
 
     xtb_default.cleanup()
-    energy_inputfile = Singlepoint(theory=xtb_default,fragment=H2O)
-    energy_inputfile,grad_inputfile = Singlepoint(theory=xtb_default,fragment=H2O, Grad=True)
+    result_inp = Singlepoint(theory=xtb_default,fragment=H2O)
+    energy_inputfile = result_inp.energy
+    result_inp2 = Singlepoint(theory=xtb_default,fragment=H2O, Grad=True)
+    energy_inputfile = result_inp2.energy
+    grad_inputfile = result_inp2.gradient
+
     #Specifying dummy xtbdir and changing xtbmethod
     xtb_with_dir_gfn2 = xTBTheory(xtbdir='/path/to/xtb',
         xtbmethod='GFN2', runmode='inputfile')
@@ -28,8 +32,12 @@ def test_xtb_load():
     #Specifying library input
     xtb_library = xTBTheory(runmode='library')
 
-    energy_library = Singlepoint(theory=xtb_library,fragment=H2O)
-    energy_library,grad_library = Singlepoint(theory=xtb_library,fragment=H2O, Grad=True)
+    result_lib = Singlepoint(theory=xtb_library,fragment=H2O)
+    energy_library = result_lib.energy
+
+    result_lib2 = Singlepoint(theory=xtb_library,fragment=H2O, Grad=True)
+    energy_library = result_lib2.energy
+    grad_library = result_lib2.gradient
     refenergy=-5.768502689118895
     assert isclose(energy_library,energy_inputfile)
     assert isclose(energy_library,refenergy)

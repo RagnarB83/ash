@@ -1799,7 +1799,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
         if EOM is not True:
             print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
-            finalsinglepointenergy = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
+            InitSCF = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
+            finalsinglepointenergy = InitSCF.energy
             stability = check_stability_in_output(theory.filename+'.out')
             if stability is False and check_stability is True:
                 print("PES: Unstable initial state. Exiting...")
@@ -1927,7 +1928,8 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
                     shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
                 #NOTE: Using initial state charge/mult here because EOM
-                energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
+                init_EOM = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
+                energy = init_EOM.energy
                 stateI.energy= energy
 
 
@@ -2832,8 +2834,8 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     print("Potential-adjustor DFT")
     print("="*30)
     #Calculate initial state with N electron (e.g. neutral)
-    E_N = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
-    
+    init_state = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
+    E_N = init_state.energy
     #Orbitals in eV
     occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.filename+'.out')
     
@@ -2841,8 +2843,8 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     print("occorbs_beta (eV): ", occorbs_beta)
     
     #Calculate ionized state (N-1)
-    E_Nmin1 = ash.Singlepoint(fragment=fragment, theory=theory, charge=Ionizedstate_charge, mult=Ionizedstate_mult)
-    
+    result_Nmin1 = ash.Singlepoint(fragment=fragment, theory=theory, charge=Ionizedstate_charge, mult=Ionizedstate_mult)
+    E_Nmin1 = result_Nmin1.energy
     #delta-SCF IP in eV
     print("")
     print("-"*60)

@@ -24,10 +24,10 @@ QMMMobject = QMMMTheory(fragment=H2O_MeOH, qm_theory=ORCAQMpart, mm_theory=MMpar
                         charges=atomcharges, embedding='Elstat')
 
 #Single-point energy calculation of QM/MM object
-energy = Singlepoint(theory=QMMMobject, fragment=H2O_MeOH, charge=0, mult=1)
+result = Singlepoint(theory=QMMMobject, fragment=H2O_MeOH, charge=0, mult=1)
 
-print("Single-point QM/MM energy:", energy)
+print("Single-point QM/MM energy:", result.energy)
 
 #Geometry optimization of QM/MM object (this may not converge)
-energy2 = geomeTRICOptimizer(fragment=H2O_MeOH, theory=QMMMobject, coordsystem='tric', ActiveRegion=True, actatoms=[3,4,5,6,7,8], charge=0, mult=1)
-print("Optimized QM/MM energy:", energy2)
+result2 = Optimizer(fragment=H2O_MeOH, theory=QMMMobject, coordsystem='tric', ActiveRegion=True, actatoms=[3,4,5,6,7,8], charge=0, mult=1)
+print("Optimized QM/MM energy:", result2.energy)
