@@ -332,14 +332,18 @@ class PySCFTheory:
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'CCSD':
             print("Running CCSD natural orbital calculation")
-            ccsd = self.pyscf_cc.CCSD(mf, max_cycle=200, verbose=5)
+            ccsd = self.pyscf_cc.CCSD(mf)
+            ccsd.max_cycle=200
+            ccsd.verbose=5
             ccsd.run()
             natocc, natorb = self.mcscf.addons.make_natural_orbitals(ccsd)
         elif method == 'CCSD(T)':
             print("Running CCSD(T) natural orbital calculation")
             #No CCSD(T) object in pyscf. So manual approach. Slower algorithms
             #mycc = self.pyscf_cc.CCSD(mf).run()
-            mycc = self.pyscf_cc.CCSD(mf, max_cycle=200, verbose=5)
+            mycc = self.pyscf_cc.CCSD(mf)
+            mycc.max_cycle=200
+            mycc.verbose=5
             eris = mycc.ao2mo()
             #Make RDMs for ccsd(t) RHF and UHF
             #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF
