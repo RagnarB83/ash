@@ -304,7 +304,12 @@ class PySCFTheory:
             print("Warning: SCF-type of PySCF object appears to be a Kohn-Sham determinant")
             print("Kohn-Sham functional:", self.functional)
             print("Natural orbital calculation will use KS reference orbitals")
-
+            print("First converging RKS/UKS object to RHF/UHF object")
+            #Converting KS-DFT to HF object (orbitals untouched)
+            if self.scf_type == "RKS":
+                mf = mf.to_rhf()
+            elif self.scf_type == "UKS":
+                mf = mf.to_uhf()
         if method =='MP2':
             print("Running MP2 natural orbital calculation")
             # MP2 natural occupation numbers and natural orbitals
