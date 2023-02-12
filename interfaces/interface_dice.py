@@ -339,7 +339,7 @@ noio
     
     #Set up initial orbitals
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC/SHCI job
-    def setup_initial_orbitals(self):
+    def setup_initial_orbitals(self, elems):
         module_init_time=time.time()
         print("\n INITIAL ORBITAL OPTION")
         if len(self.pyscftheoryobject.mf.mo_occ) == 2:
@@ -361,7 +361,7 @@ noio
                 print("First calculating MP2 natural orbitals, then doing SHCI-job")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
                 MP2nat_occupations, MP2nat_mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                self.pyscftheoryobject.mf, method='MP2')
+                                                                self.pyscftheoryobject.mf, method='MP2', elems=elems)
                 self.setup_active_space(occupations=MP2nat_occupations)
                 self.setup_SHCI_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True
                 self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
@@ -384,12 +384,13 @@ noio
 
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals, 
-                                                                CAS_AO_labels=self.CAS_AO_labels)
+                                                                CAS_AO_labels=self.CAS_AO_labels, elems=elems)
             else:
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals)
+                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals,
+                                                                elems=elems)
 
         else:
             print("Will read MOs from checkpoint file:", self.moreadfile)
@@ -601,7 +602,7 @@ noio
 
             #Calling SHCI run to get the self.mch object
             print("First running SHCI CAS-CI/CASSCF step")
-            mo_coeffs, occupations = self.setup_initial_orbitals() #Returns mo-coeffs and occupations of initial orbitals
+            mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
             self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
             self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
             self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
@@ -629,7 +630,7 @@ noio
             if self.QMC_trialWF == 'SHCI':
                 print("Multi-determinant trial WF option via SHCI is on!")
 
-                mo_coeffs, occupations = self.setup_initial_orbitals() #Returns mo-coeffs and occupations of initial orbitals
+                mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
                 self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
                 self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
                 self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
@@ -688,7 +689,7 @@ noio
         else:
             if self.SHCI is True:
                 print("Regular SHCI option is active.")
-                mo_coeffs, occupations = self.setup_initial_orbitals() #Returns mo-coeffs and occupations of initial orbitals
+                mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
                 self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
                 self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
                 self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              

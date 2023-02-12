@@ -291,13 +291,26 @@ class PySCFTheory:
     def cubegen_mep(self, mol, name, dm, nx=60,ny=60,nz=60):
         self.pyscf_tools.cubegen.mep(mol, name, dm, nx=nx, ny=ny, nz=nz)
         print("cubegen_mep: Wrote file:", name)
-    def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None):
+    #Natural orbital at the RHF/UHF MP2, CCSD, CCSD(T), AVAS-CASSCF, DMET-CASSCF levels
+    #Also possible to do  KS-CC or KS-MP2
+    def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None, elems=None):
         module_init_time=time.time()
+
+        #Determine frozen core from element list
+        self.determine_frozen_core(elems)
+        self.frozen_orbital_indices=self.frozen_core_orbital_indices
+
+        if self.scf_type == "RKS" or self.scf_type == "UKS"
+            print("Warning: SCF-type of PySCF object appears to be a Kohn-Sham determinant")
+            print("Kohn-Sham functional:", self.functional)
+            print("Natural orbital calculation will use KS reference orbitals")
+
         if method =='MP2':
             print("Running MP2 natural orbital calculation")
             # MP2 natural occupation numbers and natural orbitals
             #natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs() Old
-            mp2 = self.pyscf.mp.MP2(mf).run()
+            mp2 = self.pyscf.mp.MP2(mf, frozen=self.frozen_orbital_indices)
+            mp2.run()
             natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
         elif method =='FCI':
             print("Running FCI natural orbital calculation")
@@ -329,7 +342,7 @@ class PySCFTheory:
             print("DMET_CAS automatic CAS option chosen")
             norb_cas, nel_cas, dmetorbitals = self.pyscf_dmet_cas.guess_cas(mf, mf.make_rdm1(), CAS_AO_labels)
             print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
-            print("Now doing CASSCF using DMET-CAS active space (CAS({nel_cas},{norb_cas})) and DMET-CAS orbitals")
+            print(f"Now doing CASSCF using DMET-CAS active space (CAS({nel_cas},{norb_cas})) and DMET-CAS orbitals")
             casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
             casscf.max_cycle_macro=self.casscf_maxcycle
             casscf.verbose=self.verbose_setting
@@ -338,7 +351,7 @@ class PySCFTheory:
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'CCSD':
             print("Running CCSD natural orbital calculation")
-            ccsd = self.pyscf_cc.CCSD(mf)
+            ccsd = self.pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
             ccsd.max_cycle=200
             ccsd.verbose=5
             ccsd.run()
@@ -346,23 +359,22 @@ class PySCFTheory:
         elif method == 'CCSD(T)':
             print("Running CCSD(T) natural orbital calculation")
             #No CCSD(T) object in pyscf. So manual approach. Slower algorithms
-            #mycc = self.pyscf_cc.CCSD(mf).run()
-            mycc = self.pyscf_cc.CCSD(mf)
-            mycc.max_cycle=200
-            mycc.verbose=5
-            mycc.run()
-            eris = mycc.ao2mo()
+            ccsd = self.pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
+            ccsd.max_cycle=200
+            ccsd.verbose=5
+            ccsd.run()
+            eris = ccsd.ao2mo()
             #Make RDMs for ccsd(t) RHF and UHF
             #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF
             # and hence UCCSD
-            if type(mycc) == self.pyscf.cc.uccsd.UCCSD:
+            if type(ccsd) == self.pyscf.cc.uccsd.UCCSD:
                 print("CCSD(T) lambda UHF")
-                conv, l1, l2 = self.uccsd_t_lambda.kernel(mycc, eris, mycc.t1, mycc.t2)
-                rdm1 = self.uccsd_t_rdm.make_rdm1(mycc, mycc.t1, mycc.t2, l1, l2, eris=eris, ao_repr=True)
+                conv, l1, l2 = self.uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+                rdm1 = self.uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
             else:
                 print("CCSD(T) lambda RHF")
-                conv, l1, l2 = self.ccsd_t_lambda.kernel(mycc, eris, mycc.t1, mycc.t2)
-                rdm1 = self.ccsd_t_rdm.make_rdm1(mycc, mycc.t1, mycc.t2, l1, l2, eris=eris, ao_repr=True)
+                conv, l1, l2 = self.ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+                rdm1 = self.ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
 
             S = mf.get_ovlp()
             # Slight difference for restricted vs. unrestriced case
@@ -699,7 +711,7 @@ class PySCFTheory:
                 print("FNO is True")
                 print("MP2 natural orbitals on!")
                 print("Will calculate MP2 natural orbitals to use as input in CC job")
-                natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
+                natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
 
                 #Optional natorb truncation if FNO_thresh is chosen
                 if self.FNO_thresh is not None:
@@ -799,7 +811,7 @@ class PySCFTheory:
                 #TODO: Have this be a keyword option also instead of just else-default ?
                 print("Neither AVAS, DMET_CAS or moreadfile options chosen.")
                 print("Will now calculate MP2 natural orbitals to use as input in CAS job")
-                natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2')
+                natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
                 print("Checking if cas_nmin/cas_nmax keyword were specified")
                 if self.cas_nmin != None and self.cas_nmax != None:
                     print(f"Active space will be determined from MP2 natorbs. NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
