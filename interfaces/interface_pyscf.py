@@ -344,6 +344,7 @@ class PySCFTheory:
             mycc = self.pyscf_cc.CCSD(mf)
             mycc.max_cycle=200
             mycc.verbose=5
+            mycc.run()
             eris = mycc.ao2mo()
             #Make RDMs for ccsd(t) RHF and UHF
             #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF
