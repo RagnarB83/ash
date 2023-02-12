@@ -408,10 +408,11 @@ noio
 
         #Check if occupations are sensible (may be nonsense if CCSD/CAS calc failed)
         if True in [i > 2.00001 for i in occupations]:
-            print("Problem. Occupation array contains occupations larger than 2.0. Something went wrong (bad convergence?)")
-            ashexit()
+            print("Warning! Occupation array contains occupations larger than 2.0. Something possibly wrong (bad convergence?)")
+            print("Continuing but these orbitals may be bad")
+            #ashexit()
         if True in [i < 0.0 for i in occupations]:
-            print("Problem. Occupation array contains negative occupations. Something possibly wrong (bad convergence?)")
+            print("Warning!. Occupation array contains negative occupations. Something possibly wrong (bad convergence?)")
             print("Continuing but these orbitals may be bad")
         #    ashexit()
         print("Initial orbital step complete")
