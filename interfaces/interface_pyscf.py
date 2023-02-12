@@ -300,7 +300,7 @@ class PySCFTheory:
         self.determine_frozen_core(elems)
         self.frozen_orbital_indices=self.frozen_core_orbital_indices
 
-        if self.scf_type == "RKS" or self.scf_type == "UKS"
+        if self.scf_type == "RKS" or self.scf_type == "UKS":
             print("Warning: SCF-type of PySCF object appears to be a Kohn-Sham determinant")
             print("Kohn-Sham functional:", self.functional)
             print("Natural orbital calculation will use KS reference orbitals")
