@@ -389,8 +389,9 @@ class PySCFTheory:
             # Flip NOONs (and NOs) since they're in increasing order
             natocc = np.flip(w)
             natorb = np.flip(v, axis=1)
-        with np.printoptions(precision=3, suppress=True):
+        with np.printoptions(precision=6, suppress=True):
             print(f"{method} natural orbital occupations:", natocc)
+        print(f"{method} natural orbital occupations:", natocc)
         #Choosing MO-coeffients to be
         if self.scf_type == 'RHF' or self.scf_type == 'RKS':
             mo_coefficients=natorb              
