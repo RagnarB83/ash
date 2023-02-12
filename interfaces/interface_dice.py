@@ -410,8 +410,9 @@ noio
             print("Problem. Occupation array contains occupations larger than 2.0. Something went wrong (bad convergence?)")
             ashexit()
         if True in [i < 0.0 for i in occupations]:
-            print("Problem. Occupation array contains negative occupations. Something went wrong (bad convergence?)")
-            ashexit()
+            print("Problem. Occupation array contains negative occupations. Something possibly wrong (bad convergence?)")
+            print("Continuing but these orbitals may be bad")
+        #    ashexit()
         print("Initial orbital step complete")
         print("----------------------------------")
         print()
