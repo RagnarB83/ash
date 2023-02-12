@@ -18,7 +18,7 @@ class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, 
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
-                  CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto',
+                  CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
                   CAS=False, CASSCF=False, active_space=None, stability_analysis=True,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name=None,
@@ -72,6 +72,7 @@ class PySCFTheory:
         self.CC=CC
         self.CCmethod=CCmethod
         self.CC_direct=CC_direct
+        self.self.cc_maxcycle=cc_maxcycle
         self.FNO=FNO
         self.FNO_thresh=FNO_thresh
         self.frozen_core_setting=frozen_core_setting
@@ -160,6 +161,7 @@ class PySCFTheory:
         print("Coupled cluster:", self.CC)
         print("CC method:", self.CCmethod)
         print("CC direct:", self.CC_direct)
+        print("CC maxcycles:", self.cc_maxcycle)
         print("FNO-CC:", self.FNO)
         print("FNO_thresh:", self.FNO_thresh)
 
@@ -724,7 +726,11 @@ class PySCFTheory:
             elif self.scf_type == "UKS":
                 print("Warning: CCSD on top of UKS determinant")
                 cc = self.pyscf_cc.UCCSD(self.mf.to_uhf(),self.frozen_orbital_indices,mo_coeff=mo_coefficients)
-            
+
+            #Setting CCSD maxcycles (default 200)
+            cc.max_cycle=self.cc_maxcycle
+            cc.verbose=5 #Shows CC iterations with 5
+
             #Switch to integral-direct CC if user-requested
             #NOTE: Faster but only possible for small/medium systems
             cc.direct = self.CC_direct
