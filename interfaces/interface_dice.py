@@ -354,7 +354,7 @@ noio
             if self.initial_orbitals not in ['MP2','CCSD','CCSD(T)', 'SHCI', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
-            print("Options are: MP2, CCSD, CCSD(T), SHCI", "AVAS-CASSCF", "DMET-CASSCF")
+            print("Options are: MP2, CCSD, CCSD(T), SHCI, AVAS-CASSCF, DMET-CASSCF")
             #Option to do small-eps SHCI step 
             if self.initial_orbitals == 'SHCI':
                 print("SHCI initial orbital option")
@@ -399,6 +399,14 @@ noio
                 print("Occupations array length does NOT match length of MO coefficients in PySCF object")
                 print("Is basis different? Exiting")
                 ashexit()
+
+        #Check if occupations are sensible (may be nonsense if CCSD/CAS calc failed)
+        if True in [i > 2.0 for i in occupations]:
+            print("Problem. Occupation array contains occupations larger than 2.0. Something went wrong (bad convergence?)")
+            ashexit()
+        if True in [i < 0.0 for i in occupations]:
+            print("Problem. Occupation array contains negative occupations. Something went wrong (bad convergence?)")
+            ashexit()
         print("Initial orbital step complete")
         print("----------------------------------")
         print()
@@ -408,7 +416,9 @@ noio
     #Determine active space based on either natural occupations of initial orbitals or 
     def setup_active_space(self, occupations=None):
         print("Inside setup_active_space")
-        print("Occupations:", occupations)
+        with np.printoptions(precision=3, suppress=True):
+            print("Occupations:", occupations)
+
         # If SHCI_active_space defined then this takes priority over natural occupations
         if self.SHCI_active_space != None:
             print("Active space given as user-input: active_space=", self.SHCI_active_space)
@@ -523,31 +533,8 @@ noio
         self.num_var_determinants = self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
         print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
-
-    #Runs the SHCI-MCSCF object (calls Dice)
-    #NOTE: energy not set
-    #def run_shci_directly(self):
-    #    print("Calling SHCI PySCF interface")
-    #    #Running Dice via SHCI-PySCF interface
-    #    print("Dice output can be monitored in output.dat on local scratch")
-    #    self.shci.executeSHCI(self.mch.fcisolver)
-    #    #Grab number of determinants
-    #    self.num_var_determinants= self.grab_num_dets()
-    #    print("Number of variational determinants:", self.num_var_determinants)
-
-    #Write dets.bin file. Requires running SHCI once more to get determinants
-    #NOTE: energy not set
-    #def run_and_write_dets(self,numdets):
-        #module_init_time=time.time()
-        #print("Calling run_and_write_dets")
-        #Run once more 
-        #self.shci.dryrun(self.mch)
-        #self.shci.writeSHCIConfFile(self.mch.fcisolver, self.mch.nelecas, False)
-        #with open(self.mch.fcisolver.configFile, 'a') as f:
-        #    f.write(f'writebestdeterminants {numdets}\n\n')
-        #self.run_shci_directly()
-
-        #print_time_rel(module_init_time, modulename='Dice-extra-step', moduleindex=2)
+        #TODO
+        #Grab actual number of stochastic PT iterations taken
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
