@@ -377,6 +377,11 @@ noio
                 print("SHCI natural orbital occupations:", occupations)
             elif self.initial_orbitals == 'AVAS-CASSCF' or self.initial_orbitals == 'DMET-CASSCF':
                 print("Calling calculate_natural_orbitals using AVAS/DMET method")
+
+                if self.CAS_AO_labels == None:
+                    print("Error: CAS_AO_labels are messing, provide keyword to DiceTheory!")
+                    ashexit()
+
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals, 
                                                                 CAS_AO_labels=self.CAS_AO_labels)
