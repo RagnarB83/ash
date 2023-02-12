@@ -19,7 +19,7 @@ class PySCFTheory:
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
-                  CAS=False, CASSCF=False, active_space=None, stability_analysis=True,
+                  CAS=False, CASSCF=False, active_space=None, stability_analysis=True,casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
@@ -72,7 +72,7 @@ class PySCFTheory:
         self.CC=CC
         self.CCmethod=CCmethod
         self.CC_direct=CC_direct
-        self.self.cc_maxcycle=cc_maxcycle
+        self.cc_maxcycle=cc_maxcycle
         self.FNO=FNO
         self.FNO_thresh=FNO_thresh
         self.frozen_core_setting=frozen_core_setting
@@ -88,6 +88,7 @@ class PySCFTheory:
         self.CAS=CAS
         self.CASSCF=CASSCF
         self.active_space=active_space
+        self.casscf_maxcycle=casscf_maxcycle
 
         #Auto-CAS options
         self.AVAS=AVAS
@@ -171,6 +172,7 @@ class PySCFTheory:
         print()
         print("CAS:", self.CAS)
         print("CASSCF:", self.CASSCF)
+        print("CASSCF maxcycles:", self.casscf_maxcycle)
         print("AVAS:", self.AVAS)
         print("DMET_CAS:", self.DMET_CAS)
         print("CAS_AO_labels (for AVAS/DMET_CAS)", self.CAS_AO_labels)
@@ -317,6 +319,7 @@ class PySCFTheory:
             print(f"AVAS determined an active space of: CAS({nel_cas},{norb_cas})")
             print(f"Now doing CASSCF using AVAS active space (CAS({nel_cas},{norb_cas})) and AVAS orbitals")
             casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
+            casscf.max_cycle_macro=self.casscf_maxcycle
             casscf.verbose=self.verbose_setting
             cas_result = casscf.run(avasorbitals, natorb=True)
             print("CASSCF occupations", cas_result.mo_occ)
@@ -328,6 +331,7 @@ class PySCFTheory:
             print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
             print("Now doing CASSCF using DMET-CAS active space (CAS({nel_cas},{norb_cas})) and DMET-CAS orbitals")
             casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
+            casscf.max_cycle_macro=self.casscf_maxcycle
             casscf.verbose=self.verbose_setting
             cas_result = casscf.run(dmetorbitals, natorb=True)
             print("CASSCF occupations", cas_result.mo_occ)
@@ -815,6 +819,7 @@ class PySCFTheory:
                 print("Doing CASSCF (orbital optimization)")
                 #TODO: Orbital option for starting CASSCF calculation
                 casscf = self.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
+                casscf.max_cycle_macro=self.casscf_maxcycle
                 casscf.verbose=self.verbose_setting
                 #Writing of checkpointfile
                 if self.write_chkfile_name != None:
