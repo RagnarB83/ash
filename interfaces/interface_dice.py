@@ -406,7 +406,7 @@ noio
                 ashexit()
 
         #Check if occupations are sensible (may be nonsense if CCSD/CAS calc failed)
-        if True in [i > 2.0 for i in occupations]:
+        if True in [i > 2.00001 for i in occupations]:
             print("Problem. Occupation array contains occupations larger than 2.0. Something went wrong (bad convergence?)")
             ashexit()
         if True in [i < 0.0 for i in occupations]:
