@@ -336,11 +336,9 @@ class PySCFTheory:
                 print("Making MP2 density matrix")
                 mp2_dm = mp2.make_rdm1()
                 if self.scf_type == "RKS" or self.scf_type == "RHF" :
-                    unrestricted=False
                     print("Mulliken analysis for RHF-MP2 density matrix")
                     self.run_population_analysis(mf, unrestricted=False, dm=mp2_dm, type='Mulliken', label='MP2')
                 else:
-                    unrestricted=True
                     print("Mulliken analysis for UHF-MP2 density matrix")
                     self.run_population_analysis(mf, unrestricted=True, dm=mp2_dm, type='Mulliken', label='MP2')
                 #TODO: Fix. Slightly silly, calling make_natural_orbitals will cause dm calculation again
@@ -348,11 +346,12 @@ class PySCFTheory:
             elif method == 'DFMP2' or method =='DFMP2relax':
                 #DF-MP2 scales better but syntax differs: https://pyscf.org/user/mp.html#dfmp2
                 if self.scf_type == "RKS" or self.scf_type == "RHF" :
+                    unrestricted=False
                     dmp2 = self.pyscf_dfrmp2(mf, frozen=self.frozen_orbital_indices)
                 else:
+                    unrestricted=True
                     dmp2 = self.pyscf_dfump2(mf, frozen=(self.frozen_orbital_indices,self.frozen_orbital_indices))
                 #Now run DMP2 object
-                print("dmp2:", dmp2)
                 dmp2.run()
                 #RDMs: Unrelaxed vs. Relaxed
                 if method =='DFMP2relax':
