@@ -293,6 +293,10 @@ class PySCFTheory:
         print("cubegen_mep: Wrote file:", name)
     #Natural orbital at the RHF/UHF MP2, CCSD, CCSD(T), AVAS-CASSCF, DMET-CASSCF levels
     #Also possible to do  KS-CC or KS-MP2
+    #TODO: Calling make_natural_orbitals calculated RDM1 for MP2 and CCSD but does not store it.
+    #For pop analysis we would have to calculate it again.
+    #Currently doing so for MP2 (cheap-ish) for pop-ana printout but not CCSD. CCSD(T) is fine since manual
+    #Make CCSD and MP2 manual also?
     def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None, elems=None):
         module_init_time=time.time()
 
@@ -315,7 +319,16 @@ class PySCFTheory:
             # MP2 natural occupation numbers and natural orbitals
             #natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs() Old
             mp2 = self.pyscf.mp.MP2(mf, frozen=self.frozen_orbital_indices)
+            print("Running MP2")
             mp2.run()
+            print("Making MP2 density matrix")
+            mp2_dm = mp2.make_rdm1()
+            if self.scf_type == "RKS" or self.scf_type == "RHF" :
+                print("Mulliken analysis for RHF-MP2 density matrix")
+                self.run_population_analysis(mf, unrestricted=False, dm=mp2_dm, type='Mulliken')
+            else:
+                print("Mulliken analysis for UHF-MP2 density matrix")
+                self.run_population_analysis(mf, unrestricted=True, dm=mp2_dm, type='Mulliken')
             natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
         elif method =='FCI':
             print("Running FCI natural orbital calculation")
@@ -376,10 +389,14 @@ class PySCFTheory:
                 print("CCSD(T) lambda UHF")
                 conv, l1, l2 = self.uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
                 rdm1 = self.uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
+                print("Mulliken analysis for UHF-CCSD(T) density matrix")
+                self.run_population_analysis(mf, unrestricted=True, dm=rdm1, type='Mulliken')
             else:
                 print("CCSD(T) lambda RHF")
                 conv, l1, l2 = self.ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
                 rdm1 = self.ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
+                print("Mulliken analysis for RHF-CCSD(T) density matrix")
+                self.run_population_analysis(mf, unrestricted=False, dm=rdm1, type='Mulliken')
 
             S = mf.get_ovlp()
             # Slight difference for restricted vs. unrestriced case
@@ -417,6 +434,27 @@ class PySCFTheory:
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
         return natocc, mo_coefficients
     
+    #Population analysis, requiring mf and dm objects
+    #Currently only Mulliken
+    def run_population_analysis(self, mf, unrestricted=True, dm=None, type='Mulliken'):
+        if type == 'Mulliken'
+            if unrestricted is False:
+                if dm==None:
+                    dm = mf.make_rdm1()
+                if overlap == None:
+                    overlap
+                mulliken_pop =self.pyscf.scf.rhf.mulliken_pop(self.mol,dm)
+                print("Mulliken charges:", mulliken_pop[1])
+            elif unrestricted is True:
+                if dm==None:
+                    dm = mf.make_rdm1()
+                if overlap == None:
+                    overlap
+                mulliken_pop =self.pyscf.scf.rhf.mulliken_pop(self.mol,dm)
+                mulliken_spinpop = pyscf.scf.uhf.mulliken_spin_pop(self.mol,dm)
+                print("Mulliken charges:", mulliken_pop[1])
+                print("Mulliken spin pops:", mulliken_spinpop[1])
+        return
 
     def run_stability_analysis(self):
         def stableprint(stable_i,stable_e):
@@ -637,12 +675,16 @@ class PySCFTheory:
             self.run_stability_analysis()
             print("SCF energy:", scf_result.e_tot)
             print("SCF energy components:", scf_result.scf_summary)
+
+            #Possible population analysis (if dm=None then taken from mf object)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
                 num_scf_orbitals_alpha=len(scf_result.mo_occ)
                 print("Total num. orbitals:", num_scf_orbitals_alpha)
+                self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken')
             else:
                 num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
                 print("Total num. orbitals:", num_scf_orbitals_alpha)
+                self.run_population_analysis(self.mf, dm=None, unrestricted=True, type='Mulliken')
 
             #Get SCFenergy as initial total energy
             self.energy = scf_result.e_tot
