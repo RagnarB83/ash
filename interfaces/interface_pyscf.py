@@ -357,11 +357,11 @@ class PySCFTheory:
                 if method =='DFMP2relax':
                     relaxed=True
                 if relaxed is True:
-                    dfmp2_dm = dmp2.make_rdm1_relaxed(ao_repr=True) #Relaxed
+                    dfmp2_dm = dmp2.make_rdm1_relaxed(ao_repr=False) #Relaxed
                     print("Mulliken analysis for restricted DF-MP2 relaxed density matrix")
                     self.run_population_analysis(mf, unrestricted=unrestricted, dm=dfmp2_dm, type='Mulliken', label='DFMP2-relaxed') 
                 else:
-                    dfmp2_dm = dmp2.make_rdm1_unrelaxed(ao_repr=True) #Unrelaxed
+                    dfmp2_dm = dmp2.make_rdm1_unrelaxed(ao_repr=False) #Unrelaxed
                     print("Mulliken analysis for restricted DF-MP2 unrelaxed density matrix")
                     self.run_population_analysis(mf, unrestricted=unrestricted, dm=dfmp2_dm, type='Mulliken', label='DFMP2-unrelaxed')
                    
