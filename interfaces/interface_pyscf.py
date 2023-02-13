@@ -447,7 +447,7 @@ class PySCFTheory:
                 if dm==None:
                     dm = mf.make_rdm1()
                 mulliken_pop =self.pyscf.scf.rhf.mulliken_pop(self.mol,dm)
-                mulliken_spinpop = pyscf.scf.uhf.mulliken_spin_pop(self.mol,dm)
+                mulliken_spinpop = self.pyscf.scf.uhf.mulliken_spin_pop(self.mol,dm)
                 print("Mulliken charges:", mulliken_pop[1])
                 print("Mulliken spin pops:", mulliken_spinpop[1])
         return
