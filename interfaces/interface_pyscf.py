@@ -437,7 +437,7 @@ class PySCFTheory:
     #Population analysis, requiring mf and dm objects
     #Currently only Mulliken
     def run_population_analysis(self, mf, unrestricted=True, dm=None, type='Mulliken'):
-        if type == 'Mulliken'
+        if type == 'Mulliken':
             if unrestricted is False:
                 if dm==None:
                     dm = mf.make_rdm1()
