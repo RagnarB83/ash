@@ -441,15 +441,11 @@ class PySCFTheory:
             if unrestricted is False:
                 if dm==None:
                     dm = mf.make_rdm1()
-                if overlap == None:
-                    overlap
                 mulliken_pop =self.pyscf.scf.rhf.mulliken_pop(self.mol,dm)
                 print("Mulliken charges:", mulliken_pop[1])
             elif unrestricted is True:
                 if dm==None:
                     dm = mf.make_rdm1()
-                if overlap == None:
-                    overlap
                 mulliken_pop =self.pyscf.scf.rhf.mulliken_pop(self.mol,dm)
                 mulliken_spinpop = pyscf.scf.uhf.mulliken_spin_pop(self.mol,dm)
                 print("Mulliken charges:", mulliken_pop[1])
