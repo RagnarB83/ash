@@ -343,7 +343,7 @@ class PySCFTheory:
                     self.run_population_analysis(mf, unrestricted=True, dm=mp2_dm, type='Mulliken', label='MP2')
                 #TODO: Fix. Slightly silly, calling make_natural_orbitals will cause dm calculation again
                 natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
-            elif method == 'DFMP2' or method =='DFMP2relax'
+            elif method == 'DFMP2' or method =='DFMP2relax':
                 #DF-MP2 scales better but syntax differs: https://pyscf.org/user/mp.html#dfmp2
                 if self.scf_type == "RKS" or self.scf_type == "RHF" :
                     dmp2 = self.pyscf_dfrmp2(mf, frozen=self.frozen_orbital_indices)
