@@ -226,8 +226,14 @@ class PySCFTheory:
         from pyscf.tools import molden
         self.pyscf_molden=molden
         #Always importing MP2 for convenience
-        from pyscf.mp.dfump2_native import DFMP2
-        self.pyscf_dmp2=DFMP2
+        #from pyscf.mp.dfump2_native import DFMP2
+
+        from pyscf.mp.dfmp2_native import DFRMP2
+        from pyscf.mp.dfump2_native import DFUMP2
+        self.pyscf_dfrmp2=DFRMP2
+        self.pyscf_dfump2=DFUMP2
+        #from pyscf.mp.dfmp2_native import DFRMP2
+        #from pyscf.mp.dfump2_native import DFUMP2
         #And mcsdcf (natural orbitals creation)
         from pyscf import mcscf
         self.mcscf=mcscf
@@ -297,7 +303,8 @@ class PySCFTheory:
     #For pop analysis we would have to calculate it again.
     #Currently doing so for MP2 (cheap-ish) for pop-ana printout but not CCSD. CCSD(T) is fine since manual
     #Make CCSD and MP2 manual also?
-    def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None, elems=None):
+    #Relaxed refers to DFMP2 only 
+    def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None, elems=None, relaxed=False):
         module_init_time=time.time()
 
         #Determine frozen core from element list
@@ -314,22 +321,54 @@ class PySCFTheory:
                 mf = mf.to_rhf()
             elif self.scf_type == "UKS":
                 mf = mf.to_uhf()
-        if method =='MP2':
+        if 'MP2' in method:
             print("Running MP2 natural orbital calculation")
             # MP2 natural occupation numbers and natural orbitals
             #natocc, natorb = self.pyscf_dmp2(mf.to_uhf()).make_natorbs() Old
-            mp2 = self.pyscf.mp.MP2(mf, frozen=self.frozen_orbital_indices)
-            print("Running MP2")
-            mp2.run()
-            print("Making MP2 density matrix")
-            mp2_dm = mp2.make_rdm1()
-            if self.scf_type == "RKS" or self.scf_type == "RHF" :
-                print("Mulliken analysis for RHF-MP2 density matrix")
-                self.run_population_analysis(mf, unrestricted=False, dm=mp2_dm, type='Mulliken', label='MP2')
-            else:
-                print("Mulliken analysis for UHF-MP2 density matrix")
-                self.run_population_analysis(mf, unrestricted=True, dm=mp2_dm, type='Mulliken', label='MP2')
-            natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
+            
+            #Simple canonical MP2 with unrelaxed density
+            #TODO: could be slow for large systems
+            #TODO: Later change MP2 to re-direct to DFMP2 ?
+            if method == 'MP2' or method == 'canMP2':
+                mp2 = self.pyscf.mp.MP2(mf, frozen=self.frozen_orbital_indices)
+                print("Running MP2")
+                mp2.run()
+                print("Making MP2 density matrix")
+                mp2_dm = mp2.make_rdm1()
+                if self.scf_type == "RKS" or self.scf_type == "RHF" :
+                    print("Mulliken analysis for RHF-MP2 density matrix")
+                    self.run_population_analysis(mf, unrestricted=False, dm=mp2_dm, type='Mulliken', label='MP2')
+                else:
+                    print("Mulliken analysis for UHF-MP2 density matrix")
+                    self.run_population_analysis(mf, unrestricted=True, dm=mp2_dm, type='Mulliken', label='MP2')
+                #TODO: Fix. Slightly silly, calling make_natural_orbitals will cause dm calculation again
+                natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
+            elif method == 'DFMP2' or method =='DFMP2relax'
+                #DF-MP2 scales better but syntax differs: https://pyscf.org/user/mp.html#dfmp2
+                if self.scf_type == "RKS" or self.scf_type == "RHF" :
+                    dmp2 = self.pyscf_dfrmp2(mf, frozen=self.frozen_orbital_indices)
+                else:
+                    dmp2 = self.pyscf_dfump2(mf, frozen=(self.frozen_orbital_indices,self.frozen_orbital_indices))
+                #Now run DMP2 object
+                dmp2.run()
+                #RDMs: Unrelaxed vs. Relaxed
+                if method =='DFMP2relax':
+                    relaxed=True
+                if relaxed is True:
+                    dfmp2_dm = dmp2.make_rdm1_relaxed(ao_repr=True) #Relaxed
+                    print("Mulliken analysis for restricted DF-MP2 relaxed density matrix")
+                    self.run_population_analysis(mf, unrestricted=False, dm=dfmp2_dm, type='Mulliken', label='DFMP2-relaxed') 
+                else:
+                    dfmp2_dm = dmp2.make_rdm1_unrelaxed(ao_repr=True) #Unrelaxed
+                    print("Mulliken analysis for restricted DF-MP2 unrelaxed density matrix")
+                    self.run_population_analysis(mf, unrestricted=False, dm=dfmp2_dm, type='Mulliken', label='DFMP2-unrelaxed')
+                   
+                #Make natorbs
+                #NOTE: Should not have to recalculate RDM here since provided
+                natocc, natorb = dmp2.make_natorbs(rdm1_mo=dfmp2_dm, relaxed=relaxed)
+                
+            #natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
+            #natocc, natorb = make_natorbs(rdm1_mo=mp2_dm, relaxed=True)
         elif method =='FCI':
             print("Running FCI natural orbital calculation")
             print("not ready")
