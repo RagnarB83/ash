@@ -480,12 +480,12 @@ class PySCFTheory:
             label=''
         if type == 'Mulliken':
             if unrestricted is False:
-                if dm==None:
+                if dm is None:
                     dm = mf.make_rdm1()
                 mulliken_pop =self.pyscf.scf.rhf.mulliken_pop(self.mol,dm, verbose=verbose)
                 print(f"{label} Mulliken charges:", mulliken_pop[1])
             elif unrestricted is True:
-                if dm==None:
+                if dm is None:
                     dm = mf.make_rdm1()
                 mulliken_pop =self.pyscf.scf.rhf.mulliken_pop(self.mol,dm, verbose=verbose)
                 mulliken_spinpop = self.pyscf.scf.uhf.mulliken_spin_pop(self.mol,dm, verbose=verbose)
