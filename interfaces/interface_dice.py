@@ -418,7 +418,7 @@ noio
         print("Initial orbital step complete")
         print("----------------------------------")
         print()
-        print_time_rel(module_init_time, modulename='Dice-Intial-orbital-step', moduleindex=2)
+        print_time_rel(module_init_time, modulename='Dice-Initial-orbital-step', moduleindex=2)
         return mo_coefficients, occupations
 
     #Determine active space based on either natural occupations of initial orbitals or 
