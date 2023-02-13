@@ -315,7 +315,7 @@ class PySCFTheory:
             print("Warning: SCF-type of PySCF object appears to be a Kohn-Sham determinant")
             print("Kohn-Sham functional:", self.functional)
             print("Natural orbital calculation will use KS reference orbitals")
-            print("First converging RKS/UKS object to RHF/UHF object")
+            print("First converting RKS/UKS object to RHF/UHF object")
             #Converting KS-DFT to HF object (orbitals untouched)
             if self.scf_type == "RKS":
                 mf = mf.to_rhf()
@@ -336,9 +336,11 @@ class PySCFTheory:
                 print("Making MP2 density matrix")
                 mp2_dm = mp2.make_rdm1()
                 if self.scf_type == "RKS" or self.scf_type == "RHF" :
+                    unrestricted=False
                     print("Mulliken analysis for RHF-MP2 density matrix")
                     self.run_population_analysis(mf, unrestricted=False, dm=mp2_dm, type='Mulliken', label='MP2')
                 else:
+                    unrestricted=True
                     print("Mulliken analysis for UHF-MP2 density matrix")
                     self.run_population_analysis(mf, unrestricted=True, dm=mp2_dm, type='Mulliken', label='MP2')
                 #TODO: Fix. Slightly silly, calling make_natural_orbitals will cause dm calculation again
@@ -350,6 +352,7 @@ class PySCFTheory:
                 else:
                     dmp2 = self.pyscf_dfump2(mf, frozen=(self.frozen_orbital_indices,self.frozen_orbital_indices))
                 #Now run DMP2 object
+                print("dmp2:", dmp2)
                 dmp2.run()
                 #RDMs: Unrelaxed vs. Relaxed
                 if method =='DFMP2relax':
@@ -357,11 +360,11 @@ class PySCFTheory:
                 if relaxed is True:
                     dfmp2_dm = dmp2.make_rdm1_relaxed(ao_repr=True) #Relaxed
                     print("Mulliken analysis for restricted DF-MP2 relaxed density matrix")
-                    self.run_population_analysis(mf, unrestricted=False, dm=dfmp2_dm, type='Mulliken', label='DFMP2-relaxed') 
+                    self.run_population_analysis(mf, unrestricted=unrestricted, dm=dfmp2_dm, type='Mulliken', label='DFMP2-relaxed') 
                 else:
                     dfmp2_dm = dmp2.make_rdm1_unrelaxed(ao_repr=True) #Unrelaxed
                     print("Mulliken analysis for restricted DF-MP2 unrelaxed density matrix")
-                    self.run_population_analysis(mf, unrestricted=False, dm=dfmp2_dm, type='Mulliken', label='DFMP2-unrelaxed')
+                    self.run_population_analysis(mf, unrestricted=unrestricted, dm=dfmp2_dm, type='Mulliken', label='DFMP2-unrelaxed')
                    
                 #Make natorbs
                 #NOTE: Should not have to recalculate RDM here since provided
