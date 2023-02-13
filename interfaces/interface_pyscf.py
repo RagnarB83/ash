@@ -367,8 +367,10 @@ class PySCFTheory:
                    
                 #Make natorbs
                 #NOTE: Should not have to recalculate RDM here since provided
-                natocc, natorb = dmp2.make_natorbs(rdm1_mo=dfmp2_dm, relaxed=relaxed)
-                
+                #natocc, natorb = dmp2.make_natorbs(rdm1_mo=dfmp2_dm, relaxed=relaxed)
+                #NOTE: Above gives weird occupations
+                #NOTE: Slightly silly, calling make_natural_orbitals will cause dm calculation again
+                natocc, natorb = self.mcscf.addons.make_natural_orbitals(dmp2)                
             #natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
             #natocc, natorb = make_natorbs(rdm1_mo=mp2_dm, relaxed=True)
         elif method =='FCI':
