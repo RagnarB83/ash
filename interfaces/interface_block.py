@@ -11,84 +11,64 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 
-#Interface to Dice: SHCI, QMC (single-det or SHCI multi-det) and NEVPT2
-#TODO: fix nevpt2
-#TODO: Add proper frozen core to mch object setup (instead of relying on nmax threshold)
-#Straightforward: https://pyscf.org/user/mcscf.html#frozen-orbital-mcscf 
-#Add also to pyscf part
+#Interface to Block: Block2 primarily via PySCF and also directly via FCIdump
+# Possibly later both Block 1.5 and Stackblock via PySCF
 
-class DiceTheory:
-    def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1, 
-                moreadfile=None, initial_orbitals='MP2', CAS_AO_labels=None,memory=20000, frozencore=True,
-                SHCI=False, NEVPT2=False, AFQMC=False,  
-                SHCI_stochastic=True, SHCI_PTiter=200, SHCI_sweep_iter= [0,3],
-                SHCI_DoRDM=False, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
-                SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
-                SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
-                SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None, SHCI_active_space_range=None,
-                Dice_SHCI_direct=None, fcidumpfile=None, Dice_refdeterminant=None,
-                QMC_trialWF=None, QMC_SHCI_numdets=1000, QMC_dt=0.005, QMC_nsteps=50, QMC_nblocks=1000, QMC_nwalkers_per_proc=5):
+#Block 2 docs: https://block2.readthedocs.io
+#BLock 1.5 docs: https://pyscf.org/Block/with-pyscf.html
 
-        self.theorynamelabel="Dice"
+
+class BlockTheory:
+    def __init__(self, blockdir=None, pyscftheoryobject=None, blockversion='Block2', filename='input.dat', printlevel=2, numcores=1, 
+                moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None,
+                Block_direct=False, maxM=1000, tol=1e-10):
+
+        self.theorynamelabel="Block"
         self.theorytype="QM"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
-        
 
-        if dicedir == None:
-            print(BC.WARNING, f"No dicedir argument passed to {self.theorynamelabel}Theory. Attempting to find dicedir variable inside settings_ash", BC.END)
+        print("Using Blockversion:", blockversion)
+        
+        if blockdir == None:
+            print(BC.WARNING, f"No blockdir argument passed to {self.theorynamelabel}Theory. Attempting to find blockdir variable inside settings_ash", BC.END)
             try:
                 print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
-                self.dicedir=ash.settings_ash.settings_dict["dicedir"]
+                self.blockdir=ash.settings_ash.settings_dict["blockdir"]
             except KeyError:
-                print(BC.WARNING,"Found no dicedir variable in settings_ash module either.",BC.END)
+                print(BC.WARNING,"Found no blockdir variable in settings_ash module either.",BC.END)
                 try:
-                    self.dicedir = os.path.dirname(os.path.dirname(shutil.which('Dice')))
-                    print(BC.OKGREEN,"Found Dice in PATH. Setting dicedir to:", self.dicedir, BC.END)
+                    self.blockdir = os.path.dirname(os.path.dirname(shutil.which('Block')))
+                    print(BC.OKGREEN,"Found Block in PATH. Setting blockdir to:", self.blockdir, BC.END)
                 except:
-                    print(BC.FAIL,"Found no Dice executable in PATH. Exiting... ", BC.END)
+                    print(BC.FAIL,"Found no Block executable in PATH. Exiting... ", BC.END)
                     ashexit()
         else:
-            self.dicedir = dicedir
+            self.blockdir = blockdir
         #Check if dir exists
-        if os.path.exists(self.dicedir):
-            print("Dice directory:", self.dicedir)
+        if os.path.exists(self.blockdir):
+            print("Block directory:", self.blockdir)
         else:
-            print(f"Chosen Dice directory : {self.dicedir} does not exist. Exiting...")
+            print(f"Chosen Block directory : {self.blockdir} does not exist. Exiting...")
             ashexit()
         #Check for PySCFTheory object 
         if pyscftheoryobject is None:
-            if Dice_SHCI_direct == None:
-                print("Error:No pyscftheoryobject was provided. This is required")
-                ashexit()
-        
-        #Check if conflicting options selected
-        if NEVPT2 is True and AFQMC is True:
-            print("NEVPT2 and AFQMC can not both be True")
-            ashexit()
-        if NEVPT2 is False and AFQMC is False and SHCI is False:
-            print("Either NEVPT2, SHCI or AFQMC option needs to be True")
-            ashexit()
-        if QMC_trialWF == 'SHCI' and SHCI is False:
-            print("QMC_trialWF='SHCI' requires SHCI to be True, turning on.")
-            SHCI=True
-        if NEVPT2 == True and SHCI is False:
-            print("NEVPT2 requires SHCI to be True, turning on.")
-            SHCI=True
-        if SHCI is True and AFQMC is True and QMC_trialWF != 'SHCI':
-            print("SHCI and AFQMC True but QMC_trialWF != \'SHCI\'.")
-            print("Probably not what you wanted. Either set SHCI to False or QMC_trialWF=\'SHCI\' ")
+            print("Error:No pyscftheoryobject was provided. This is required")
             ashexit()
 
-        #Path to Dice binary
-        self.dice_binary=self.dicedir+"/bin/Dice"
-        #Put Dice script dir in path
-        sys.path.insert(0, self.dicedir+"/scripts")
+        #Path to Block binary
+        self.block_binary=self.blockdir+"/bin/block"
+        #Put Block script dir in path
+        #sys.path.insert(0, self.blockdir+"/scripts")
 
-        #Now import pyscf, shciscf (plugin), qmcutils (Dice dir scripts)
-        if SHCI == True and Dice_SHCI_direct != True:
-            self.load_pyscf()
-            self.load_shciscf()
-        self.load_qmcutils()
+        #Now import block
+        self.load_pyscf()
+        self.load_dmrgscf()
+        #self.load_block_15()
+
+
+        #dmrgscf.settings.BLOCKEXE = os.popen("which block2main").read().strip()
+        #dmrgscf.settings.MPIPREFIX = ''
+
 
         if numcores > 1:
             try:
@@ -99,97 +79,34 @@ class DiceTheory:
                 ashexit()
         
         #Printlevel
+        self.blockversion=blockversion
         self.printlevel=printlevel
         self.filename=filename
         self.numcores=numcores
+        #SETTING NUMCORES by setting prefix
+        self.dmrgscf.settings.MPIPREFIX = f'mpirun -n {self.numcores} --bind-to none'
         self.pyscftheoryobject=pyscftheoryobject
-        self.NEVPT2=NEVPT2
-        self.AFQMC=AFQMC
-        self.SHCI=SHCI
-        self.Dice_SHCI_direct=Dice_SHCI_direct
+
         self.moreadfile=moreadfile
+        self.Block_direct=Block_direct
+        self.maxM=maxM
+        self.tol=tol
         self.fcidumpfile=fcidumpfile
-        self.Dice_refdeterminant=Dice_refdeterminant
+        self.frozencore=frozencore
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
-        self.CAS_AO_labels=CAS_AO_labels  #Used only if AVAS-CASSCF, DMET-CASSCF initial_orbitals option
-        #SHCI options
-        if self.SHCI is True:
-            self.SHCI_stochastic=SHCI_stochastic
-            self.SHCI_PTiter=SHCI_PTiter
-            self.SHCI_sweep_iter=SHCI_sweep_iter
-            self.SHCI_DoRDM=SHCI_DoRDM
-            self.SHCI_sweep_epsilon = SHCI_sweep_epsilon
-            self.SHCI_macroiter=SHCI_macroiter
-            self.SHCI_davidsonTol=SHCI_davidsonTol
-            self.SHCI_dE=SHCI_dE
-            self.SHCI_maxiter=SHCI_maxiter
-            self.SHCI_epsilon2=SHCI_epsilon2
-            self.SHCI_epsilon2Large=SHCI_epsilon2Large
-            self.SHCI_targetError=SHCI_targetError
-            self.SHCI_sampleN=SHCI_sampleN
-            self.SHCI_nroots=SHCI_nroots
-            self.SHCI_cas_nmin=SHCI_cas_nmin
-            self.SHCI_cas_nmax=SHCI_cas_nmax
-            self.SHCI_active_space=SHCI_active_space #Alternative to SHCI_cas_nmin/SHCI_cas_nmax
-            self.SHCI_active_space_range=SHCI_active_space_range #Alternative (suitable when el-number changes)
-        #QMC options
-        self.QMC_trialWF=QMC_trialWF
-        self.QMC_SHCI_numdets=QMC_SHCI_numdets
-        self.frozencore=frozencore
-        self.QMC_dt=QMC_dt
-        self.QMC_nsteps=QMC_nsteps
-        self.QMC_nblocks=QMC_nblocks
-        self.QMC_nwalkers_per_proc=QMC_nwalkers_per_proc
-        #If SHCI is used as trial WF we turn off PT stage (timeconsuming)
-        if self.AFQMC is True and self.QMC_trialWF == 'SHCI':
-            print("AFQMC with SHCI trial WF. Turning off PT stage (not needed)")
-            self.SHCI_stochastic=True #otherwise deterministic PT happens
-            self.SHCI_PTiter=0 # PT skipped with this
         #Print stuff
         print("Printlevel:", self.printlevel)
         print("Memory (MB):", self.memory)
         print("Num cores:", self.numcores)
         print("PySCF object:", self.pyscftheoryobject)
-        print("SHCI:", self.SHCI)
-        print("NEVPT2:", self.NEVPT2)
-        print("AFQMC:", self.AFQMC)
+
         print("Frozencore:", self.frozencore)
         print("moreadfile:", self.moreadfile)
         print("Initial orbitals:", self.initial_orbitals)
-        print("CAS_AO_labels:", self.CAS_AO_labels)
-        print("Dice_SHCI_direct:", self.Dice_SHCI_direct)
-        if self.Dice_SHCI_direct is True:
+        if self.Block_direct is True:
             print("FCIDUMP file:", self.fcidumpfile)
-            print("Dice Reference det. string:", self.Dice_refdeterminant)
-        if self.SHCI is True:
-            print("SHCI_stochastic", self.SHCI_stochastic)
-            print("SHCI_PTiter", self.SHCI_PTiter)
-            print("SHCI_sweep_iter", self.SHCI_sweep_iter)
-            print("SHCI_DoRDM", self.SHCI_DoRDM)
-            print("SHCI_sweep_epsilon", self.SHCI_sweep_epsilon)
-            print("SHCI DavidsonTol:", self.SHCI_davidsonTol)
-            print("SHCI dE:", self.SHCI_dE)
-            print("SHCI_maxiter:", self.SHCI_maxiter)
-            print("SHCI_macroiter", self.SHCI_macroiter)
-            print("SHCI_epsilon2:", self.SHCI_epsilon2)
-            print("SHCI_epsilon2Large:", self.SHCI_epsilon2Large)
-            print("SHCI_targetError:", self.SHCI_targetError)
-            print("SHCI_sampleN:", self.SHCI_sampleN)
-            print("SHCI_nroots:", self.SHCI_nroots)
-            print("SHCI_active_space_range:", self.SHCI_active_space_range)
-            print("SHCI_active_space:", self.SHCI_active_space)
-            print("SHCI CAS NO nmin", self.SHCI_cas_nmin)
-            print("SHCI CAS NO nmax", self.SHCI_cas_nmax)
-        if self.AFQMC is True:
-            print("QMC_trialWF:", self.QMC_trialWF)
-            if self.QMC_trialWF == 'SHCI':
-                print("QMC_SHCI_numdets:", self.QMC_SHCI_numdets)
-            print("QMC settings:")
-            print("QMC_dt:", self.QMC_dt)
-            print("Number of steps per block (QMC_nsteps):", self.QMC_nsteps)
-            print("Number of blocks (QMC_nblocks):", self.QMC_nblocks)
-            print("Number of walkers per proc:", self.QMC_nwalkers_per_proc)
+    
     
     def load_pyscf(self):
         try:
@@ -199,40 +116,32 @@ class DiceTheory:
             ashexit(code=9)
         self.pyscf=pyscf
         print("\nPySCF version:", self.pyscf.__version__)
-    def load_shciscf(self):
-        #SHCI pyscf plugin
+    def load_dmrgscf(self):
+        #DMRGSCF pyscf plugin
         try:
-            from pyscf.shciscf import shci
-            self.shci=shci
+            from pyscf import dmrgscf
+            self.dmrgscf=dmrgscf
         except ModuleNotFoundError:
-            print("Problem importing pyscf.shciscf (PySCF interface module to Dice)")
-            print("See: https://github.com/pyscf/shciscf on how to install shciscf module for pyscf")
-            print("Most likely: pip install git+https://github.com/pyscf/shciscf")
+            print("Problem importing dmrgscf (PySCF interface module to Block)")
+            print("See: https://github.com/pyscf/dmrgscf/ on how to install shciscf module for pyscf")
+            print("Most likely: pip install git+https://github.com/pyscf/dmrgscf")
             ashexit()
         except ImportError:
             print("Create settings.py file (see path in pyscf import error message, probably above) and add this:")
             m=f"""
-SHCIEXE = "{self.dicedir}/bin/Dice"
-SHCISCRATCHDIR= "."
-MPIPREFIX=""
+BLOCKEXE = "{self.blockdir}/bin/Block"
+BLOCKEXE_COMPRESS_NEVPT = "" #path to block.spin_adapted
+BLOCKSCRATCHDIR = "." #path to scratch dir. Best to keep at . (but make sure we execute on scratch)
+MPIPREFIX = "" # mpi-prefix. Leave blank
             """
             print(m)
             ashexit()
-    def load_qmcutils(self):
-        try:
-            import QMCUtils
-            self.QMCUtils=QMCUtils
-        except ModuleNotFoundError as me:
-            print("ModuleNotFoundError:")
-            print("Exception message:", me)
-            print("Either: QMCUtils requires another module (pandas?). Please install it via conda or pip.")
-            print("or: Problem importing QMCUtils. Dice directory is probably incorrectly set")
-            ashexit()
+
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cleanup(self):
-        print("Cleaning up Dice temporary files")
+        print("Cleaning up Block temporary files")
         if self.SHCI is True:
             bkpfiles=glob.glob('*.bkp')
             for bkpfile in bkpfiles:
@@ -294,71 +203,14 @@ MPIPREFIX=""
                     grab=True
         return numdet
 
-    #Run Dice-SHCI from FCIDUMP job without pyscf
-    #Assumes you have an external FCIDUMP file
-    #TODO: Currently the refdeterminant string has to be set manually. TO FIX
-    def run_Dice_SHCI_from_FCIDUMP(self):
-        #Create inputfile input.dat
-        nocc=self.SHCI_active_space[0] #how many electrons in active space
-        #refdeterminant="0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27"
-        #what orbital indices the electrons occupy in the set of MOs in the FCIDUMP file
-        if self.Dice_refdeterminant == None:
-            print("Error: reference determinant string required!")
-            ashexit()
-        sweepschedule=""
-        for it,eps in zip(self.SHCI_sweep_iter,self.SHCI_sweep_epsilon):
-            sweepschedule=sweepschedule+f"{it} {eps}\n"
-        sweepschedule=os.linesep.join([s for s in sweepschedule.splitlines() if s])
-        #Inputfile creation
-        inputstring=f"""
-
-# reference determinant
-nocc {nocc}
-{self.Dice_refdeterminant} 
-end
-
-orbitals {self.fcidumpfile}
-
-# Variational
-schedule
-{sweepschedule}
-end
-davidsontol {self.SHCI_davidsonTol}
-dE {self.SHCI_dE}
-maxiter {self.SHCI_maxiter}
-
-# PT
-epsilon2 {self.SHCI_epsilon2}
-epsilon2large {self.SHCI_epsilon2Large}
-sampleN {self.SHCI_sampleN}
-seed 200
-targeterror {self.SHCI_targetError}
-
-# Misc
-noio
-        """
-        with open("input.dat", 'w') as f:
-            f.write(inputstring)
-        
-        # Call Dice directly
-        self.call_dice_directly()
-        #Read energy and determinants from outputfile: output.dat
-        enresult = pygrep("PTEnergy:","output.dat")
-        print("enresult:", enresult)
-        self.energy = enresult[1]
-        self.error = enresult[-1]
-        self.num_var_determinants = self.grab_num_dets()
-        print("Number of variational determinants:", self.num_var_determinants)
-
-    # call_dice_directly : Call Dice directly if inputfile and FCIDUMP file already exists
-    def call_dice_directly(self):
+    # call_block_directly : Call block directly if inputfile and FCIDUMP file already exists
+    def call_block_directly(self):
         module_init_time=time.time()
-        print("Calling Dice executable directly")
-        #For calling Dice directly when needed
-        print(f"Running Dice with ({self.numcores} MPI processes)")
+        print("Calling Block executable directly")
+        print(f"Running Block with ({self.numcores} MPI processes)")
         with open('output.dat', "w") as outfile:
-            sp.call(['mpirun', '-np', str(self.numcores), self.dice_binary, self.filename], stdout=outfile)
-        print_time_rel(module_init_time, modulename='Dice-SHCI-direct-run', moduleindex=2)
+            sp.call(['mpirun', '-np', str(self.numcores), self.block_binary, self.filename], stdout=outfile)
+        print_time_rel(module_init_time, modulename='Block-direct-run', moduleindex=2)
     
     #Set up initial orbitals
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC/SHCI job
@@ -568,7 +420,7 @@ noio
         print("Number of variational determinants:", self.num_var_determinants)
         important_dets = self.grab_important_dets()
         print("Most important determinants:")
-        print("    Det           weight       Determinant string")
+        print("    Det     weight  Determinant string")
         print("State :   0")
         print(*important_dets)
         print()
@@ -577,17 +429,11 @@ noio
         pt_energies=pygrep2("PTEnergy", "output.dat")
         var_energy=self.grab_var_energy()
         det_PT_energy=float(pt_energies[0].split()[-1])
+        stoch_PT_energy=float(pt_energies[1].split()[1])
         print(f"Dice ref. energy: {ref_energy} Eh")
         print(f"Dice variational energy: {var_energy} Eh")
         print(f"Dice PT energy (deterministic): {det_PT_energy} Eh")
-        try:
-            stoch_PT_energy=float(pt_energies[1].split()[1])
-            print(f"Dice PT energy (stochastic): {stoch_PT_energy} Eh")
-        except IndexError:
-            print("Warning: No stochastic PT energy printed in Dice output")
-            print(f"This probably means that stochastic PT steps exceeded PT iterations {self.SHCI_PTiter}")
-            print("Be careful about using the results")
-
+        print(f"Dice PT energy (stochastic): {stoch_PT_energy} Eh")
         print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -624,7 +470,7 @@ noio
         self.cleanup()
 
         #Run PySCF to get integrals and MOs. This would probably only be an SCF
-        if self.Dice_SHCI_direct != True:
+        if self.Block_direct != True:
             self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
         #Get frozen-core
@@ -635,110 +481,32 @@ noio
             self.frozen_core_orbs=0
 
         # NOW RUNNING
-        #NEVPT2
-        if self.NEVPT2 is True:
-            #NOTE: Requires fixes to getDets function in QMCUtils.py
-            #TODO: Look at example. https://github.com/sanshar/Dice/blob/master/examples/NEVPT2/N2/n2nevpt.py
-            print("Running Dice NEVPT2 calculation on multiconfigurational WF")
+        #TODO: Distinguish between Block2, Stackblock, Block1.5. 
+        #TODO: Distinguish between direct run using FCIDUMP also
+        if self.blockversion =='Block2':
+            mc = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf, self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
+            #mc.fcisolver.runtimeDir = lib.param.TMPDIR
+            #mc.fcisolver.scratchDirectory = lib.param.TMPDIR
+            #mc.fcisolver.threads = int(os.environ.get("OMP_NUM_THREADS", 4)) #Needs more
+            mc.fcisolver.memory = int(self.memory / 1000) # mem in GB
 
-            #Calling SHCI run to get the self.mch object
-            print("First running SHCI CAS-CI/CASSCF step")
+            mc.canonicalization = True
+            mc.natorb = True
+            mc.kernel(coeff)
+
             mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
             self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
             self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
             self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
             self.SHCI_object_run() #Runs the self.mch object
-            #NOTE: Pretty sure we have to do full CASSCF here
-            
-            print(f"Now running NEVPT2 on SHCI reference WF: CAS({self.nelec},{self.norb})")
-            module_init_time=time.time()
-            self.QMCUtils.run_nevpt2(self.mch, nelecAct=self.nelec, numAct=self.norb, norbFrozen=self.frozen_core_orbs,
-               integrals="FCIDUMP.h5", nproc=numcores, seed=None, vmc_root=self.dicedir,
-               fname="nevpt2.json", foutname='nevpt2.out', nroot=0,
-               spatialRDMfile=None, spinRDMfile=None, stochasticIterNorms=1000,
-               nIterFindInitDets=100, numSCSamples=10000, stochasticIterEachSC=100,
-               fixedResTimeNEVPT_Ene=False, epsilon=1.0e-8, efficientNEVPT_2=True,
-               determCCVV=True, SCEnergiesBurnIn=50, SCNormsBurnIn=50,
-               diceoutfile="output.dat")
-            print_time_rel(module_init_time, modulename='Dice-NEVPT2-run', moduleindex=2)
-            #TODO: Grab energy from function call
-            self.energy=0.0
-            print("Final Dice NEVPT2 energy:", self.energy)
-        #AFQMC
-        elif self.AFQMC is True:
-            print("Running Dice AFQMC")
-            #SHCI trial wavefunction AFQMC
-            if self.QMC_trialWF == 'SHCI':
-                print("Multi-determinant trial WF option via SHCI is on!")
-
-                mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
-                self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
-                self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
-                self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
-                self.SHCI_object_run(write_det_CASCI=True, numdets=self.QMC_SHCI_numdets) #Runs the self.mch object with dets-printout
-
-                #Get dets.bin file
-                #print("\nRunning SHCI (via PySCFTheory object) once again to write dets.bin")
-                #self.run_and_write_dets(self.QMC_SHCI_numdets)
-                print("SHCI trial wavefunction prep complete.")
-                if self.QMC_SHCI_numdets > self.num_var_determinants:
-                    print(f"Error: QMC_SHCI_numdets ({self.QMC_SHCI_numdets}) larger than SHCI-calculated determinants ({self.num_var_determinants})")
-                    print("Increase SHCI-WF size: e.g. by increasing active space(SHCI_cas_nmin, SHCI_cas_nmax or SHCI_active_space) or reducing thresholds (SHCI_sweep_epsilon)")
-                    ashexit()
-                print(f"{self.num_var_determinants} variational determinants were calculated by SHCI")
-                print(f"{self.QMC_SHCI_numdets} variational determinants were written to disk (dets.bin)")
-                print(f"{self.QMC_SHCI_numdets} determinants will be used in multi-determinant AFQMC job")
-
-                #Phaseless AFQMC with hci trial
-                module_init_time=time.time()
-                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(self.mch, mpi_prefix=f"mpirun -np {numcores}",
-                                norb_frozen=self.frozen_core_orbs, chol_cut=1e-5,
-                                ndets=self.QMC_SHCI_numdets, nroot=0, seed=None,
-                                dt=self.QMC_dt, steps_per_block=self.QMC_nsteps, nwalk_per_proc=self.QMC_nwalkers_per_proc,
-                                nblocks=self.QMC_nblocks, ortho_steps=20, burn_in=50,
-                                cholesky_threshold=1.0e-3, weight_cap=None, write_one_rdm=False,
-                                use_eri=False, dry_run=False)
-                e_afqmc=e_afqmc[0] 
-                err_afqmc=err_afqmc[0]
-                print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
-            #Single determinant trial wavefunction
-            else:
-                print("Using single-determinant WF from PySCF object")
-                #Phaseless AFQMC with simple mf trial
-                module_init_time=time.time()
-                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mf(self.pyscftheoryobject.mf, mpi_prefix=f"mpirun -np {numcores}",
-                    norb_frozen=self.frozen_core_orbs, chol_cut=1e-5, seed=None, dt=self.QMC_dt,
-                    steps_per_block=self.QMC_nsteps, nwalk_per_proc=self.QMC_nwalkers_per_proc, nblocks=self.QMC_nblocks,
-                    ortho_steps=20, burn_in=50, cholesky_threshold=1.0e-3,
-                    weight_cap=None, write_one_rdm=False, dry_run=False)
-                print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
-            self.energy=e_afqmc
-            self.error=err_afqmc
-            ##Analysis
-            print("Final Dice AFQMC energy:", self.energy)
-            if self.error != None:
-                print(f"Error: {self.error} Eh ({self.error*harkcal} kcal/mol)")
-            else:
-                print(f"Error: Not available (problem with blocking?)")
-        #Dice-SHCI without pyscf interface. Can be useful
-        elif self.Dice_SHCI_direct is True:
-            print("Running SHCI option via Dice without pyscf and SHCI plugin")
-            self.run_Dice_SHCI_from_FCIDUMP()
-            print("Final Dice SHCI energy:", self.energy)
-            print("Final Dice SHCI PT error:", self.error)
-        #Just SHCI via PySCF
-        else:
-            if self.SHCI is True:
-                print("Regular SHCI option is active.")
-                mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
-                self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
-                self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
-                self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
-                self.SHCI_object_run() #Runs the self.mch object
-                print("Final Dice SHCI energy:", self.energy)
-
-        print("Dice is finished")
-        #Cleanup Dice scratch stuff (big files)
+        elif self.blockversion =='Stackblock':
+            #???
+            ashexit()
+        elif self.blockversion =='Block1_5':
+            #??
+            ashexit()
+        print("Block is finished")
+        #Cleanup Block scratch stuff (big files)
         self.cleanup()
 
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)

@@ -605,27 +605,8 @@ class Timings:
 
     def print(self, inittime):
         totalwalltime = time.time() - inittime
-
-        print("Note: module-timings are a work in progress (report bugs!)")
         print("To turn off timing output add to settings file: ~/ash_user_settings.ini")
         print("print_full_timings = False   ")
-        ######################
-        # Old way of printing
-        # Sort dict by value
-        # simple_dict_ordered=dict(sorted(self.simple_dict.items(), key=lambda item: item[1]))
-        # print("")
-        # idea: if module labelled submodule add ---> or something and dont't include in totalsumtime above ??
-        # print("{:35}{:>20}{:>20}{:>17}".format("Modulename", "Time (sec)", "Percentage of total", "Times called"))
-        # print("-"*100)
-        # for dictitem in simple_dict_ordered:
-        #    mmtime=simple_dict_ordered[dictitem]
-        #    time_per= 100*(mmtime/totalwalltime)
-        #    print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
-        # print("")
-        # print("{:35}{:>20.2f}".format("Sum of all moduletimes (flawed)", self.totalsumtime))
-        # print("{:35}{:>20.2f}{:>10}".format("Total walltime", totalwalltime, 100.0))
-        # print("-"*100)
-
         print("")
         print("{:35}{:>20}{:>20}{:>17}".format("Modulename", "Time (sec)", "Percentage of total", "Times called"))
         print("-" * 100)
