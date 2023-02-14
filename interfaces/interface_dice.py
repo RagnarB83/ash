@@ -12,10 +12,6 @@ from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 
 #Interface to Dice: SHCI, QMC (single-det or SHCI multi-det) and NEVPT2
-
-#TODO: Remove need for second-iteration print-det in AFQMC-SHCI
-#Should be fixed but need to check
-#TODO: Test SHCI initial orbitals option, requires parameter options 
 #TODO: fix nevpt2
 #TODO: Add proper frozen core to mch object setup (instead of relying on nmax threshold)
 #Straightforward: https://pyscf.org/user/mcscf.html#frozen-orbital-mcscf 
@@ -571,9 +567,10 @@ noio
         self.num_var_determinants = self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
         important_dets = self.grab_important_dets()
+        print("Most important determinants:\n")
         print(" Det     weight  Determinant string")
         print("State :   0")
-        print(important_dets)
+        print(*important_dets)
         print()
         #Grab actual number of stochastic PT iterations taken
         ref_energy=float(pygrep("Given Ref. Energy", "output.dat")[-1])
@@ -585,7 +582,6 @@ noio
         print(f"Dice variational energy: {var_energy} Eh")
         print(f"Dice PT energy (deterministic): {det_PT_energy} Eh")
         print(f"Dice PT energy (stochastic): {stoch_PT_energy} Eh")
-        print()
         print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
