@@ -465,9 +465,8 @@ class PySCFTheory:
             # Flip NOONs (and NOs) since they're in increasing order
             natocc = np.flip(w)
             natorb = np.flip(v, axis=1)
-        with np.printoptions(precision=6, suppress=True):
+        with np.printoptions(precision=5, suppress=True):
             print(f"{method} natural orbital occupations:", natocc)
-        print(f"{method} natural orbital occupations:", natocc)
         #Choosing MO-coeffients to be
         if self.scf_type == 'RHF' or self.scf_type == 'RKS':
             mo_coefficients=natorb              
@@ -479,6 +478,7 @@ class PySCFTheory:
     #Population analysis, requiring mf and dm objects
     #Currently only Mulliken
     def run_population_analysis(self, mf, unrestricted=True, dm=None, type='Mulliken', label=None, verbose=3):
+        print()
         if label==None:
             label=''
         if type == 'Mulliken':

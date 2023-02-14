@@ -7,7 +7,7 @@ import sys
 import glob
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
 from ash.constants import ang2bohr, harkcal
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep,pygrep2
 from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 
@@ -257,6 +257,33 @@ MPIPREFIX=""
         print("Total frozen electrons in system:", self.frozen_core_el)
         print("Total frozen orbitals in system:", self.frozen_core_orbs)
 
+    #Grabbing Dice variational energy
+    def grab_var_energy(self):
+        grab=False
+        with open("output.dat") as f:
+            for line in f:
+                if len(line.split()) < 3:
+                    grab=False
+                if grab is True:
+                    if len(line.split()) == 3:
+                        energy=float(line.split()[1])
+                if 'Root             Energy' in line:
+                    grab=True
+        return energy
+
+    def grab_important_dets(self):
+        grab=False
+        det_strings=[]
+        with open("output.dat") as f:
+            for line in f:
+                if len(line.split()) < 2:
+                    grab=False
+                if grab is True:
+                    if len(line.split()) > 10:
+                        det_strings.append(line)
+                if ' Det     weight  Determinant string' in line:
+                    grab=True
+        return det_strings
     def grab_num_dets(self):
         grab=False
         numdet=0
@@ -445,11 +472,9 @@ noio
             print("Note: Use active_space keyword if you want to select active space manually instead")
             # Determing active space from natorb thresholds
             nat_occs_for_thresholds=[i for i in occupations if i < self.SHCI_cas_nmin and i > self.SHCI_cas_nmax]
-            print("nat_occs_for_thresholds:", nat_occs_for_thresholds)
             indices_for_thresholds=[i for i,j in enumerate(occupations) if j < self.SHCI_cas_nmin and j > self.SHCI_cas_nmax]
             firstMO_index=indices_for_thresholds[0]
             lastMO_index=indices_for_thresholds[-1]
-            print("indices_for_thresholds:", indices_for_thresholds)
             self.norb = len(nat_occs_for_thresholds)
             self.nelec = round(sum(nat_occs_for_thresholds))
             print(f"To get this same active space in another calculation you can also do: \nSHCI_active_space=[{self.nelec},{self.norb}]")
@@ -545,10 +570,23 @@ noio
         #Grab number of determinants from Dice output
         self.num_var_determinants = self.grab_num_dets()
         print("Number of variational determinants:", self.num_var_determinants)
-        print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
-        #TODO
+        important_dets = self.grab_important_dets()
+        print(" Det     weight  Determinant string")
+        print("State :   0")
+        print(important_dets)
+        print()
         #Grab actual number of stochastic PT iterations taken
-
+        ref_energy=float(pygrep("Given Ref. Energy", "output.dat")[-1])
+        pt_energies=pygrep2("PTEnergy", "output.dat")
+        var_energy=self.grab_var_energy()
+        det_PT_energy=float(pt_energies[0].split()[-1])
+        stoch_PT_energy=float(pt_energies[1].split()[1])
+        print(f"Dice ref. energy: {ref_energy} Eh")
+        print(f"Dice variational energy: {var_energy} Eh")
+        print(f"Dice PT energy (deterministic): {det_PT_energy} Eh")
+        print(f"Dice PT energy (stochastic): {stoch_PT_energy} Eh")
+        print()
+        print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
