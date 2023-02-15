@@ -256,8 +256,12 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print()
         #Making sure MO coefficients are a Numpy array
         mo_coefficients = np.array(mo_coefficients)
-        print("mo_coefficients:",mo_coefficients)
-        print(type(mo_coefficients))
+        
+        if mo_coefficients.ndim != 2:
+            print("Error: MO coefficients array is not 2. This should not be")
+            print("mo_coefficients.ndim: ", mo_coefficients.ndim)
+            print("mo_coefficients.shape: "mo_coefficients.shape)
+            ashexit()
         print_time_rel(module_init_time, modulename='Block-Initial-orbital-step', moduleindex=2)
         return mo_coefficients, occupations
 
@@ -344,9 +348,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         module_init_time=time.time()
         #Run DMRGSCF object created above
         print("Running DMRG via DMRGSCF interface in pyscf")
-        print("mos:", mos)
-        print(type(mos))
-        print(mos.shape)
         result = self.mch.kernel(mos)
 
         print("result:", results)
