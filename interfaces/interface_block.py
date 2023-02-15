@@ -163,9 +163,17 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
     def cleanup(self):
         print("Cleaning up Block temporary files")
         print("not ready")
-        #bkpfiles=glob.glob('*.bkp')
-        #for bkpfile in bkpfiles:
-        #    os.remove(bkpfile)
+        mpsfiles=glob.glob('F.MPS.*')
+        f0partfiles=glob.glob('F0.PART.*')
+        fcidumpfiles=glob.glob('FCIDUMP*')
+        for mfile in mpsfiles:
+            os.remove(mfile)
+        for ffile in f0partfiles:
+            os.remove(ffile)
+        for dumpfile in fcidumpfiles:
+            os.remove(dumpfile)
+        #TODO: MPI-code produces directories per process
+
     def determine_frozen_core(self,elems):
         print("Determining frozen core based on system list of elements")
         #Main elements 
