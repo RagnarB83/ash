@@ -162,7 +162,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         self.numcores=numcores
     def cleanup(self):
         print("Cleaning up Block temporary files")
-        print("not ready")
         mpsfiles=glob.glob('F.MPS.*')
         f0partfiles=glob.glob('F0.PART.*')
         fcidumpfiles=glob.glob('FCIDUMP*')
@@ -349,7 +348,8 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("This is single-iteration CAS-CI via pyscf and DMRG")
 
             #self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
-            self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf, self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
+            self.mch = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
+            #self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf, self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
             print("Turning off canonicalization step in mcscf object")
             self.mch.canonicalization = False
         else:
@@ -459,7 +459,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
-        print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+        print_time_rel(module_init_time, modulename=f'{self.theorynamelabel}Theory run', moduleindex=2)
         return self.energy
 
 
