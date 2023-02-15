@@ -346,16 +346,20 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         if self.macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and DMRG")
-
+            #Creating pyscf CAS-CI object and setting fcisolver to DMRGCI
+            self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf, self.norb, self.nelec)
+            self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, maxM=self.maxM, tol=self.tol)
             #self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
-            self.mch = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
+            #self.mch = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
             #self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf, self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
-            print("Turning off canonicalization step in mcscf object")
-            self.mch.canonicalization = False
+            #print("Turning off canonicalization step in mcscf object")
+            #self.mch.canonicalization = False
+            #self.mch.natorb = True
         else:
             print("This is CASSCF via pyscf and DMRG (orbital optimization)")
-            self.mch = self.pyscf.mcscf.CASSCF(self.pyscftheoryobject.mf,self.norb, self.nelec)
-            self.mch.canonicalization = False
+            #
+            self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
+            self.mch.canonicalization = True
             self.mch.natorb = True
         #Settings
         #self.mch.fcisolver = self.shci.SHCI(self.pyscftheoryobject.mol)
@@ -379,10 +383,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         self.mch.verbose=verbose
         #Setting memory
+        #TODO: Does this definitely set the memory of BLock2???
         self.mch.max_memory= int(self.memory / 1000) # mem in GB
         print("Memory in pyscf object set to:", self.mch.max_memory)
-        #CASSCF iterations
-        self.mch.max_cycle_macro = self.macroiter        
+
 
     #Run the defined pyscf mch object
     def DMRG_run(self,mos):
