@@ -81,6 +81,8 @@ class BlockTheory:
         if self.block_parallelization == 'MPI':
             #TODO: Maybe this should be to be done later. For case Hybrid we need to revisit this
             self.dmrgscf.settings.MPIPREFIX = f'mpirun -n {self.numcores} --bind-to none'
+        else:
+            self.dmrgscf.settings.MPIPREFIX = f''
         self.dmrgscf.settings.BLOCKSCRATCHDIR = self.scratchdir
         self.pyscftheoryobject=pyscftheoryobject
 
