@@ -381,9 +381,11 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         module_init_time=time.time()
         #Run DMRGSCF object created above
         print("Running DMRG via DMRGSCF interface in pyscf")
-        result = self.mch.kernel(mos)
+        results = self.mch.kernel(mos)
 
         print("result:", results)
+        print("result dict:", results.__dict__)
+        print("mch dict", self.mch.__dict__)
         #Get final energy
         self.energy = result.energy
 
