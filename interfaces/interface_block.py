@@ -163,7 +163,7 @@ class BlockTheory:
             print("Errormessage:", err)
             print("Once dmrgscf is installed you have to create settings.py file (see path in pyscf import error message, probably above) and add this:")
             m=f"""
-BLOCKEXE = "{self.blockdir}/bin/Block"
+BLOCKEXE = "" #Will be set later
 BLOCKEXE_COMPRESS_NEVPT = "" #path to block.spin_adapted. Can be left blank for now
 BLOCKSCRATCHDIR = "." #path to scratch dir. Can be kept as . (but make sure you execute program in scratchdir)
 MPIPREFIX = "" # mpi-prefix. Best to leave blank
