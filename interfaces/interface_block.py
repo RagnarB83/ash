@@ -185,7 +185,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             os.remove(ffile)
         for dumpfile in fcidumpfiles:
             os.remove(dumpfile)
-        shutil.rmtree('node0')
+        try:
+            shutil.rmtree('node0')
+        except FileNotFoundError:
+            pass
 
     def determine_frozen_core(self,elems):
         print("Determining frozen core based on system list of elements")
