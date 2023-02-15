@@ -24,7 +24,7 @@ class BlockTheory:
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None, 
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
                 Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None,
-                block_parallelization='OpenMP', numcores=1):
+                block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
@@ -76,13 +76,27 @@ class BlockTheory:
         self.printlevel=printlevel
         self.filename=filename
         self.numcores=numcores
+        self.hybrid_num_mpi_procs=hybrid_num_mpi_procs
+        self.hybrid_num_threads=hybrid_num_threads
         #SETTING NUMCORES by setting prefix
         self.block_parallelization=block_parallelization
         if self.block_parallelization == 'MPI':
+            print("block_parallelization is: MPI. Setting MPI Prefix.")
             #TODO: Maybe this should be to be done later. For case Hybrid we need to revisit this
             self.dmrgscf.settings.MPIPREFIX = f'mpirun -n {self.numcores} --bind-to none'
-        else:
-            self.dmrgscf.settings.MPIPREFIX = f''
+        elif self.block_parallelization == 'OpenMP':
+            print("block_parallelization is: OpenMP. Disabling MPI settings")
+            self.dmrgscf.settings.MPIPREFIX = ''
+        elif self.block_parallelization == 'Hybrid':
+            print("block_parallelization is: Hybrid")
+            if self.hybrid_num_mpi_procs == None or self.hybrid_num_threads == None:
+                print("Error: Hybrid option requires setting hybrid_num_mpi_procs and hybrid_num_threads. Exiting")
+                ashexit()
+            if self.numcores == self.hybrid_num_mpi_procs*self.hybrid_num_threads:
+                print(f"Error: numcores={self.numcores} is not equal to hybrid_num_mpi_procs({self.hybrid_num_mpi_procs})*hybrid_num_threads({self.hybrid_num_threads}) = {self.hybrid_num_mpi_procs*self.hybrid_num_threads}")
+                ashexit()
+            print(f"Will launch {self.hybrid_num_mpi_procs} MPI processes with {self.hybrid_num_threads} threads each")
+            self.dmrgscf.settings.MPIPREFIX = f'mpirun -n {self.hybrid_num_mpi_procs} --bind-to none'
         self.dmrgscf.settings.BLOCKSCRATCHDIR = self.scratchdir
         self.pyscftheoryobject=pyscftheoryobject
 
@@ -366,7 +380,9 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.block_parallelization == 'MPI':
             print("blocblock_parallelization_mpi is set to MPI")
             print("block2-mpi version needs to be installed for this to work")
+            #dmrgscf.settings.MPIPREFIX = 'mpirun -n 7 --bind-to none'
             self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
+
         elif self.block_parallelization == 'OpenMP':
             print("block_parallelization is set to OpenMP.")
             print("Will parallelize Block2 by OpenMP multithreading")
@@ -376,6 +392,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("block_parallelization is set to Hybrid.")
             print("block2-mpi version needs to be installed for this to work")
             print("Not ready yet")
+            #How to divide numcores down to MPI-processes and threads?
+            #dmrgscf.settings.MPIPREFIX = 'mpirun -n 7 --bind-to none'
+            #self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
+            #self.mch.fcisolver.threads = self.numcores
             ashexit()    
         else:
             print("Erro: Wrong block_parallelization option chosen. Exiting")
