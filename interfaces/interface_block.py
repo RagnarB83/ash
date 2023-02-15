@@ -17,12 +17,14 @@ import ash.settings_ash
 #Block 2 docs: https://block2.readthedocs.io
 #BLock 1.5 docs: https://pyscf.org/Block/with-pyscf.html
 
+#TODO: Block direct from Fcidump file. Dryrun option also maybe??
 
 class BlockTheory:
-    def __init__(self, blockdir=None, pyscftheoryobject=None, blockversion='Block2', filename='input.dat', printlevel=2, numcores=1, 
+    def __init__(self, blockdir=None, pyscftheoryobject=None, blockversion='Block2', filename='input.dat', printlevel=2,
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None, 
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
-                Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None):
+                Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None,
+                block_parallelization='OpenMP', numcores=1):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
@@ -75,7 +77,10 @@ class BlockTheory:
         self.filename=filename
         self.numcores=numcores
         #SETTING NUMCORES by setting prefix
-        self.dmrgscf.settings.MPIPREFIX = f'mpirun -n {self.numcores} --bind-to none'
+        self.block_parallelization=block_parallelization
+        if self.block_parallelization == 'MPI':
+            #TODO: Maybe this should be to be done later. For case Hybrid we need to revisit this
+            self.dmrgscf.settings.MPIPREFIX = f'mpirun -n {self.numcores} --bind-to none'
         self.dmrgscf.settings.BLOCKSCRATCHDIR = self.scratchdir
         self.pyscftheoryobject=pyscftheoryobject
 
@@ -96,16 +101,26 @@ class BlockTheory:
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
         #Print stuff
         print("Printlevel:", self.printlevel)
-        print("Memory (MB):", self.memory)
-        print("Num cores:", self.numcores)
         print("PySCF object:", self.pyscftheoryobject)
-
+        print("blockversion:", self.blockversion)
+        print("Scratchdir:", self.scratchdir)
+        print("block_parallelization:", self.block_parallelization)
+        print("Num cores:", self.numcores)
+        print("Memory (MB)", self.memory)
+        print("Block_direct:", Block_direct)
+        if self.Block_direct is True:
+            print("FCIDUMP file:", self.fcidumpfile)
         print("Frozencore:", self.frozencore)
         print("moreadfile:", self.moreadfile)
         print("Initial orbitals:", self.initial_orbitals)
-        if self.Block_direct is True:
-            print("FCIDUMP file:", self.fcidumpfile)
-    
+        print("Active space:", self.active_space)
+        print("Active space_range:", self.active_space_range)
+        print("cas_nmin:", self.cas_nmin)
+        print("cas_nmax:", self.cas_nmax)
+        print("macroiter:", self.macroiter)
+        print("MaxM", self.maxM)
+        print("Tolerance", self.tol)
+
     
     def load_pyscf(self):
         try:
@@ -334,7 +349,23 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.mch.natorb = True
         #Settings
         #self.mch.fcisolver = self.shci.SHCI(self.pyscftheoryobject.mol)
-        self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
+        if self.block_parallelization == 'MPI':
+            print("blocblock_parallelization_mpi is set to MPI")
+            print("block2-mpi version needs to be installed for this to work")
+            self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
+        elif self.block_parallelization == 'OpenMP':
+            print("block_parallelization is set to OpenMP.")
+            print("Will parallelize Block2 by OpenMP multithreading")
+            print("Setting number of threads equal to numcores provided:", self.numcores)
+            self.mch.fcisolver.threads = self.numcores
+        elif self.block_parallelization == 'Hybrid':
+            print("block_parallelization is set to Hybrid.")
+            print("block2-mpi version needs to be installed for this to work")
+            print("Not ready yet")
+            ashexit()    
+        else:
+            print("Erro: Wrong block_parallelization option chosen. Exiting")
+            ashexit()
 
         self.mch.verbose=verbose
         #Setting memory
