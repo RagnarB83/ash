@@ -76,7 +76,7 @@ class BlockTheory:
         self.numcores=numcores
         #SETTING NUMCORES by setting prefix
         self.dmrgscf.settings.MPIPREFIX = f'mpirun -n {self.numcores} --bind-to none'
-        self.drmgscf.settings.BLOCKSCRATCHDIR = self.scratchdir
+        self.dmrgscf.settings.BLOCKSCRATCHDIR = self.scratchdir
         self.pyscftheoryobject=pyscftheoryobject
 
 
