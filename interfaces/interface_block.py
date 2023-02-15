@@ -295,6 +295,9 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("Initial orbital step complete")
         print("----------------------------------")
         print()
+        print("mo_coefficients:",mo_coefficients)
+        print(type(mo_coefficients))
+        exit()
         print_time_rel(module_init_time, modulename='Dice-Initial-orbital-step', moduleindex=2)
         return mo_coefficients, occupations
 
