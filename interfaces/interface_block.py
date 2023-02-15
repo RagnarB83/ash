@@ -22,7 +22,7 @@ class BlockTheory:
     def __init__(self, blockdir=None, pyscftheoryobject=None, blockversion='Block2', filename='input.dat', printlevel=2, numcores=1, 
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None, 
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
-                Block_direct=False, maxM=1000, tol=1e-10):
+                Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
@@ -65,20 +65,27 @@ class BlockTheory:
             except:
                 print("Problem with mpirun")
                 ashexit()
-        
+        if scratchdir == None:
+            print("Scratchdir not set")
+            print("Setting scratchdir to current dir (hopefully a local scratch drive)")
+            scratchdir='.'
         #Printlevel
+        self.scratchdir=scratchdir
         self.printlevel=printlevel
         self.filename=filename
         self.numcores=numcores
         #SETTING NUMCORES by setting prefix
         self.dmrgscf.settings.MPIPREFIX = f'mpirun -n {self.numcores} --bind-to none'
+        self.drmgscf.settings.BLOCKSCRATCHDIR = self.scratchdir
         self.pyscftheoryobject=pyscftheoryobject
+
 
         self.moreadfile=moreadfile
         self.macroiter=macroiter
         self.Block_direct=Block_direct
         self.maxM=maxM
         self.tol=tol
+
         self.fcidumpfile=fcidumpfile
         self.active_space=active_space
         self.active_space_range=active_space_range
