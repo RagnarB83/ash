@@ -92,7 +92,7 @@ class BlockTheory:
             if self.hybrid_num_mpi_procs == None or self.hybrid_num_threads == None:
                 print("Error: Hybrid option requires setting hybrid_num_mpi_procs and hybrid_num_threads. Exiting")
                 ashexit()
-            if self.numcores == self.hybrid_num_mpi_procs*self.hybrid_num_threads:
+            if self.numcores != self.hybrid_num_mpi_procs*self.hybrid_num_threads:
                 print(f"Error: numcores={self.numcores} is not equal to hybrid_num_mpi_procs({self.hybrid_num_mpi_procs})*hybrid_num_threads({self.hybrid_num_threads}) = {self.hybrid_num_mpi_procs*self.hybrid_num_threads}")
                 ashexit()
             print(f"Will launch {self.hybrid_num_mpi_procs} MPI processes with {self.hybrid_num_threads} threads each")
