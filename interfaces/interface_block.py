@@ -383,12 +383,9 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("Running DMRG via DMRGSCF interface in pyscf")
         results = self.mch.kernel(mos)
 
-        print("results:", results)
-        print("results 0:", results[0])
-        print("results 1:", results[1])
-        print("mch dict", self.mch.__dict__)
-        #Get final energy
-        self.energy = results.energy
+        #TODO: Grab other attributes from self.mch object
+        #Get final energy as first tuple element
+        self.energy = results[0]
 
         print_time_rel(module_init_time, modulename=f'{self.blockversion}-run', moduleindex=2)
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
