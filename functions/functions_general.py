@@ -49,6 +49,32 @@ def ashexit(errormessage=None, code=1):
     #raise SystemExit(code)
     sys.exit(1)
 
+#Attempt to generally find a 3rd-party program based on path, exename etc.
+#Either programdir variable is already set, else we try to find based on programdirname or exename
+def find_program(programdir,programdirname,exename,theorynamelabel):
+    if programdir == None:
+        print(BC.WARNING, f"No {programdirname} argument passed to {theorynamelabel}Theory. Attempting to find {programdir} variable inside settings_ash", BC.END)
+        try:
+            print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+            finalpath=ash.settings_ash.settings_dict[programdirname]
+        except KeyError:
+            print(BC.WARNING,f"Found no {programdirname} variable in settings_ash module either.",BC.END)
+            try:
+                finalpath = os.path.dirname(os.path.dirname(shutil.which(exename)))
+                print(BC.OKGREEN,f"Found {exename} executable in PATH. Setting {programdir} to:", finalpath, BC.END)
+            except:
+                print(BC.FAIL,f"Found no {exename} executable in PATH.", BC.END)
+                ashexit()
+    else:
+        print("Program directory chosen to be:", programdir)
+     #Check if dir exists
+        if os.path.exists(programdir):
+            print("It exists.")
+        else:
+            print(f"Chosen directory : {programdir} does not exist. Exiting...")
+            ashexit()
+        finalpath = programdir   
+    return finalpath
 
 def load_pythoncall():
     print("Now trying pythoncall/juliacall package. This will fail if :\n\
