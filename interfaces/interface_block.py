@@ -384,9 +384,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         self.mch.verbose=verbose
         #Setting memory
         #TODO: Does this definitely set the memory of BLock2???
-        self.mch.max_memory= int(self.memory / 1000) # mem in GB
+        self.mch.max_memory= self.memory # mem in MB
+        self.mch.fcisolver.memory= int(self.memory / 1000) # mem in GB
         print("Memory in pyscf object set to:", self.mch.max_memory)
-
+        print("Memory in dmrgscf object set to:", self.mch.fcisolver.memory)
 
     #Run the defined pyscf mch object
     def DMRG_run(self,mos):
