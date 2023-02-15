@@ -93,7 +93,7 @@ class BlockTheory:
                 print("Error: Hybrid option requires setting hybrid_num_mpi_procs and hybrid_num_threads. Exiting")
                 ashexit()
             if self.numcores != self.hybrid_num_mpi_procs*self.hybrid_num_threads:
-                print(f"Error: numcores={self.numcores} is not equal to hybrid_num_mpi_procs({self.hybrid_num_mpi_procs})*hybrid_num_threads({self.hybrid_num_threads}) = {self.hybrid_num_mpi_procs*self.hybrid_num_threads}")
+                print(f"Error: numcores={self.numcores} (This is total number of cores available) is not equal to hybrid_num_mpi_procs({self.hybrid_num_mpi_procs})*hybrid_num_threads({self.hybrid_num_threads}) = {self.hybrid_num_mpi_procs*self.hybrid_num_threads}")
                 ashexit()
             print(f"Will launch {self.hybrid_num_mpi_procs} MPI processes with {self.hybrid_num_threads} threads each")
             self.dmrgscf.settings.MPIPREFIX = f'mpirun -n {self.hybrid_num_mpi_procs} --bind-to none'
@@ -380,9 +380,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.block_parallelization == 'MPI':
             print("blocblock_parallelization_mpi is set to MPI")
             print("block2-mpi version needs to be installed for this to work")
-            #dmrgscf.settings.MPIPREFIX = 'mpirun -n 7 --bind-to none'
             self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
-
         elif self.block_parallelization == 'OpenMP':
             print("block_parallelization is set to OpenMP.")
             print("Will parallelize Block2 by OpenMP multithreading")
@@ -391,14 +389,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         elif self.block_parallelization == 'Hybrid':
             print("block_parallelization is set to Hybrid.")
             print("block2-mpi version needs to be installed for this to work")
-            print("Not ready yet")
-            #How to divide numcores down to MPI-processes and threads?
-            #dmrgscf.settings.MPIPREFIX = 'mpirun -n 7 --bind-to none'
-            #self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
-            #self.mch.fcisolver.threads = self.numcores
-            ashexit()    
+            self.mch.fcisolver.mpiprefix = f'mpirun -np {self.hybrid_num_mpi_procs}'
+            self.mch.fcisolver.threads = self.hybrid_num_threads
         else:
-            print("Erro: Wrong block_parallelization option chosen. Exiting")
+            print("Error: Wrong block_parallelization option chosen. Exiting")
             ashexit()
 
         self.mch.verbose=verbose
