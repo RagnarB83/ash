@@ -384,7 +384,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         results = self.mch.kernel(mos)
 
         print("result:", results)
-        print("result dict:", results.__dict__)
         print("mch dict", self.mch.__dict__)
         #Get final energy
         self.energy = result.energy
