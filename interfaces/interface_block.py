@@ -165,47 +165,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("Total frozen electrons in system:", self.frozen_core_el)
         print("Total frozen orbitals in system:", self.frozen_core_orbs)
 
-    #Grabbing Dice variational energy
-    def grab_var_energy(self):
-        grab=False
-        with open("output.dat") as f:
-            for line in f:
-                if len(line.split()) < 3:
-                    grab=False
-                if grab is True:
-                    if len(line.split()) == 3:
-                        energy=float(line.split()[1])
-                if 'Root             Energy' in line:
-                    grab=True
-        return energy
-
-    def grab_important_dets(self):
-        grab=False
-        det_strings=[]
-        with open("output.dat") as f:
-            for line in f:
-                if len(line.split()) < 2:
-                    grab=False
-                if grab is True:
-                    if len(line.split()) > 10:
-                        det_strings.append(line)
-                if ' Det     weight  Determinant string' in line:
-                    grab=True
-        return det_strings
-    def grab_num_dets(self):
-        grab=False
-        numdet=0
-        with open("output.dat") as f:
-            for line in f:
-                if 'Performing final tigh' in line:
-                    grab=False
-                if grab is True:
-                    if len(line.split()) == 7:
-                        numdet=int(line.split()[3])
-                if 'Iter Root       Eps1   #Var. Det.               Ener' in line:
-                    grab=True
-        return numdet
-
     # call_block_directly : Call block directly if inputfile and FCIDUMP file already exists
     def call_block_directly(self):
         module_init_time=time.time()
@@ -228,7 +187,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
         if self.moreadfile == None:
             print("No checkpoint file given (moreadfile option).")
-            print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Dice CAS job")
+            print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Block CAS job")
             if self.initial_orbitals not in ['canMP2','MP2','DFMP2', 'DFMP2relax', 'CCSD','CCSD(T)', 'DMRG', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
@@ -256,7 +215,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 print("Calling calculate_natural_orbitals using AVAS/DMET method")
 
                 if self.CAS_AO_labels == None:
-                    print("Error: CAS_AO_labels are messing, provide keyword to DiceTheory!")
+                    print("Error: CAS_AO_labels are messing, provide keyword to BlockTheory!")
                     ashexit()
 
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
@@ -299,7 +258,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         mo_coefficients = np.array(mo_coefficients)
         print("mo_coefficients:",mo_coefficients)
         print(type(mo_coefficients))
-        print_time_rel(module_init_time, modulename='Dice-Initial-orbital-step', moduleindex=2)
+        print_time_rel(module_init_time, modulename='Block-Initial-orbital-step', moduleindex=2)
         return mo_coefficients, occupations
 
     #Determine active space based on either natural occupations of initial orbitals or 
@@ -385,6 +344,9 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         module_init_time=time.time()
         #Run DMRGSCF object created above
         print("Running DMRG via DMRGSCF interface in pyscf")
+        print("mos:", mos)
+        print(type(mos))
+        print(mos.shape)
         result = self.mch.kernel(mos)
 
         print("result:", results)
