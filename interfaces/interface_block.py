@@ -302,7 +302,8 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("Error: MO coefficients array is not 2. This should not be")
             print("mo_coefficients.ndim: ", mo_coefficients.ndim)
             print("mo_coefficients.shape: ", mo_coefficients.shape)
-            ashexit()
+            print("Changing...")
+            mo_coefficients = mo_coefficients[0]
         print_time_rel(module_init_time, modulename='Block-Initial-orbital-step', moduleindex=2)
         return mo_coefficients, occupations
 
