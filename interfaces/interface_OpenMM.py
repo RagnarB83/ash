@@ -784,6 +784,11 @@ class OpenMMTheory:
         #self.create_simulation()
         self.set_simulation_parameters()
         self.update_simulation()
+
+        #Force run. Option to allow run even though constraints may be defined
+        #Used by GentlewarmupMD etc. to get a basic gradient
+        self.force_run=False
+
         # Old:
         # NOTE: If self.system is modified then we have to remake self.simulation
         # self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
@@ -1334,17 +1339,26 @@ class OpenMMTheory:
             print("Number of OpenMM system constraints defined:", defined_constraints)
 
         if self.autoconstraints != None or self.rigidwater==True:
-            print(BC.FAIL,"OpenMM autoconstraints (HBonds,AllBonds,HAngles) in OpemmTheory are not compatible with OpenMMTheory.run()", BC.END)
+            print(BC.FAIL,"OpenMM autoconstraints (HBonds,AllBonds,HAngles) in OpenMMTheory are not compatible with OpenMMTheory.run()", BC.END)
             print(BC.WARNING,"Please redefine OpenMMTheory object: autoconstraints=None, rigidwater=False", BC.END)
-            ashexit()
+            if self.force_run is True:
+                print("force_run is True. Will continue")
+            else:
+                ashexit()
             
         if self.user_frozen_atoms or self.user_constraints or self.user_restraints:
             print("User-defined frozen atoms/constraints/restraints in OpemmTheory are not compatible with OpenMMTheory.run()")
             print("Constraints must instead be defined inside the program that called OpenMMtheory.run(), e.g. geomeTRICOptimizer.")
-            ashexit()
+            if self.force_run is True:
+                print("force_run is True. Will continue")
+            else:
+                ashexit()
         if defined_constraints != 0:
             print(BC.FAIL,"OpenMM constraints not zero. Exiting.",BC.END)
-            ashexit()
+            if self.force_run is True:
+                print("force_run is True. Will continue")
+            else:
+                ashexit()
 
         print_time_rel(timeA, modulename="OpenMMTheory.run: constraints checking", currprintlevel=self.printlevel, currthreshold=1)
         # Making sure coords is np array and not list-of-lists
@@ -3891,7 +3905,8 @@ CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', P
     return
 
 #
-def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], temperatures=[1,10,300]):
+def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], 
+    temperatures=[1,10,300], check_gradient_first=False, gradient_threshold=100):
     print_line_with_mainheader("Gentle_warm_up_MD")
     if theory is None or fragment is None:
         print("Gentle_warm_up_MD requires theory (OpenMM object) and fragment")
@@ -3900,6 +3915,18 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
     if len(time_steps) != len(steps) or len(time_steps) != len(temperatures):
         print("Error: Lists time_steps, steps and temperatures all need to be the same length. Exiting")
         ashexit()
+
+    #Gradient check before we proceed
+    if check_gradient_first is True:
+        print("check_gradient_first is True")
+        print("Will run singlepoint gradient calculation to check for large forces")
+        theory.force_run=True
+        SP_result = Singlepoint(theory=theory, fragment=fragment, Grad=True)
+        badindices = check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=gradient_threshold)
+        if len(badindices) > 0:
+            print(f"Some bad gradients on atoms were found {len(badindices)}")
+            print("This may be an indication of a badly set up system or that constraints are needed for these atoms")
+            print("Gentle_warm_up_MD may not be able to warm up the system correctly but will try")
 
     print(f"{len(steps)} MD-runs have been defined")
     for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
