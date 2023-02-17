@@ -2607,12 +2607,12 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
                     #Doing spin-density Cubefilefor each cisr file
                     run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisspindensity',gridvalue=densgridvalue,
-                                  densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr' )
+                                  densityfilename=theory.filename+'.cisr' )
                     os.rename(theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
                     #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
 
                     run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisdensity',gridvalue=densgridvalue,
-                                  densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp' )
+                                  densityfilename=theory.filename+'.cisp' )
                     os.rename(theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
 
                     final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
