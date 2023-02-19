@@ -30,7 +30,6 @@ def PhotoElectron(theory=None, fragment=None, numcores=1, memory=40000,label=Non
     """
     Wrapper function around PhotoElectron Class
     """
-
     print_line_with_mainheader("PhotoElectron")
     timeA=time.time()
     photo=PhotoElectronClass(theory=theory, fragment=fragment, numcores=numcores, memory=memory,label=label, 
@@ -45,7 +44,6 @@ def PhotoElectron(theory=None, fragment=None, numcores=1, memory=40000,label=Non
                         path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson)
     result = photo.run()
     print_time_rel(timeA, modulename='PhotoElectron', moduleindex=1)
-
     return result
 
 
@@ -191,6 +189,7 @@ class PhotoElectronClass:
             print("Unknown type for Ionizedstate_mult value. Should be integer or list of integers")
 
         #PRINT SETTINGS
+        #TODO: print everything here
         print("")
         print("Number of threads to be used by WFoverlap: ", numcores)
         os.environ["OMP_NUM_THREADS"] = str(numcores)
@@ -227,29 +226,6 @@ class PhotoElectronClass:
             #Making sure UKS always present if brokensym feature active. Important for open-shell singlets
             if 'UKS' not in self.theory.orcasimpleinput.upper():
                 self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
-
-    #def calc_SCF_density(self,state):
-    #    print("Calling calc_SCF_density with state_label:", state.label)
-    #    os.chdir('Calculated_densities')
-    #    print(f"Density option active. Calling orca_plot to create Cube-file for {state.label} SCF.")
-    #    #shutil.move('../' + state_label + '.gbw', './'+ state_label + '.gbw')
-    #    #shutil.move('../' + state_label + '.densities', './'+state_label + '.densities')
-    #    shutil.move('../' + state.gbwfile, './'+ state.gbwfile)
-    #    shutil.move('../' + state.densitiesfile, './'+state.densitiesfile)
-    #    
-    #    if 'Final' in state.label:
-    #        print("Exiting")
-    #        exit()
-    #    #Electron density
-    #    run_orca_plot(orcadir=self.theory.orcadir,filename=state.gbwfile, option='density', gridvalue=self.densgridvalue)
-    #
-    #    # Read Initial-state-SCF density Cube file into memory
-    #    state.cubedict = read_cube(state.label+'.eldens.cube')
-    #
-    #    #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
-    #    if state.hftyp == "UHF":
-    #        run_orca_plot(orcadir=self.theory.orcadir,filename=state.gbwfile, option='spindensity', gridvalue=self.densgridvalue)
-    #    os.chdir('..')
 
     def run_tddft_densities(self):
         print("Inside run_tddft_densities")
@@ -293,11 +269,7 @@ class PhotoElectronClass:
                     print("Turning off stability analysis.")
                     self.theory.orcablocks=self.theory.orcablocks.replace("stabperform true", "stabperform false")
 
-
                 ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
-                # TDDFT state done. Renaming cisp and cisr files
-                #os.rename(theory.filename+'.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
-                #os.rename(theory.filename+'.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
                 print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                 #Doing spin-density Cubefile for each cisr file
@@ -305,17 +277,12 @@ class PhotoElectronClass:
                             densityfilename=self.theory.filename+'.cisr' )
                 os.rename(self.theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
                 #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
-
                 run_orca_plot(orcadir=self.theory.orcadir, filename=self.theory.filename + '.gbw', option='cisdensity',gridvalue=self.densgridvalue,
                             densityfilename=self.theory.filename+'.cisp' )
                 os.rename(self.theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
 
                 final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
-                #rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                #nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
                 cubedict2 = read_cube(final_dens)
-                #write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,
-                #        "Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
                 write_cube_diff(self.stateI.cubedict,cubedict2,"Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
                 print("Wrote Cube file containing density difference between Initial State and Final TDDFT State: ", tddftstate)
         self.theory.cleanup()
@@ -325,7 +292,6 @@ class PhotoElectronClass:
         os.chdir('Calculated_densities')
         # Read Initial-state-SCF density Cube file into memory
         self.stateI.cubedict = read_cube(f"{self.stateI.label}.eldens.cube")
-
         for fstate in self.Finalstates:
             if self.densities == 'SCF' or self.densities == 'All':
                 # Create difference density between Initial-SCF and Finalstate-SCFs
@@ -1130,18 +1096,13 @@ class PhotoElectronClass:
     def run(self):
         print_line_with_mainheader("PhotoElectron: run")
         module_init_time=time.time()
-        #Cleaning up old files to make sure no interference
-        self.cleanup()
 
         print("Printing coordinates")
         self.fragment.print_coords()
         blankline()
 
-
-        #######################################################
-        # SETUP
-        #######################################################
-
+        #Cleaning up old files to make sure no interference
+        self.cleanup()
 
         #######################################################
         # CALL EOM, MRCI/MREOM, CAS or TDDFT to get states
@@ -1154,34 +1115,26 @@ class PhotoElectronClass:
             self.mo_spectrum()
             #For wfoverlap
             self.prepare_mos_file()
-
-        if self.EOM is True:
+        elif self.EOM is True:
             print("Calling EOM")
             self.run_EOM()
 
-        if self.CAS is True:
+        elif self.CAS is True:
             print("CASSCF option active!")
             if self.CASCI is True:
                 print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
             #For wfoverlap
             self.prepare_mos_file()
         #Simplifies things. MREOM uses MRCI so let's use same logic.
-        if self.MRCI or self.MREOM is True:
+        elif self.MRCI or self.MREOM is True:
             self.run_MRCI()
             #For wfoverlap
             self.prepare_mos_file()
 
-
-        #########################
-        #FINAL STATES
-        ########################
-
         print("\nAll combined Final IPs:", self.FinalIPs)
         print("All combined Ion-state energies (au):", self.Finalionstates)
 
-        if self.noDyson is True:
-            print("NoDyson is True. Exiting...")
-            return self.FinalIPs, None
+
 
         #################################
         # PES intensities (Dyson norms)
@@ -1189,8 +1142,12 @@ class PhotoElectronClass:
         if self.TDDFT is True:
             self.TDDFT_dets_prep()
 
-        #self.run_dyson_calc()
-        self.finaldysonnorms=[0.0]*self.numionstates
+        if self.noDyson is True:
+            print("NoDyson is True. Setting all Dyson norms to 0.0")
+            self.finaldysonnorms=[0.0]*self.numionstates
+        else:
+            #Call Dyson orb calc
+            self.run_dyson_calc()
 
         print("")
         print(bcolors.OKBLUE, "Final combined Dyson norms ({}):".format(len(self.finaldysonnorms)), bcolors.ENDC)
@@ -1208,7 +1165,6 @@ class PhotoElectronClass:
         #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
         print("")
         print("Printing IPs, Dyson-norms, MOs to file: PES-Results.txt")
-        print("Can be read by PES.Read_old_results() function")
         #Writing file in Configparser format for easy read-in below
         with open("PES-Results.txt", 'w') as resultfile:
             resultfile.write("[Results]\n")
@@ -1234,7 +1190,7 @@ class PhotoElectronClass:
 #####################################################################################
 # Independent functions below
 ######################################################################################
-def Read_old_results():
+def Read_old_PES_results():
     print("Reading file PES-Results.txt ...")
     # Parsing of files
     import json
@@ -1251,9 +1207,6 @@ def Read_old_results():
     mos_beta = json.loads(parser.get("Results", "MOs_beta"))
 
     return IPs, dysonnorms, mos_alpha, mos_beta
-
-
-
 
 class bcolors:
     HEADER = '\033[95m' ; OKBLUE = '\033[94m'; OKGREEN = '\033[92m'; OKMAGENTA= '\033[95m'; WARNING = '\033[93m'; FAIL = '\033[91m'; ENDC = '\033[0m'; BOLD = '\033[1m'; UNDERLINE = '\033[4m'
@@ -2759,19 +2712,6 @@ def Read_old_results():
     dysonnorms = json.loads(parser.get("Results", "Dyson-norms"))
     mos_alpha = json.loads(parser.get("Results", "MOs_alpha"))
     mos_beta = json.loads(parser.get("Results", "MOs_beta"))
-
-    #with open("PES-Results.txt") as file:
-    #    for line in file:
-    #        if 'IPs' in line:
-    #            IPs = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
-    #        if 'Dyson' in line:
-    #            dysonnorms = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
-    #        if 'MOs_alpha' in line:
-    #            mos_alpha = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
-    #        if 'MOs_beta' in line:
-    #            mos_beta = [float(i) for i in line.split(':')[1].replace('[', '').replace(']', '').split(',')]
-
-
 
     return IPs, dysonnorms, mos_alpha, mos_beta
 
