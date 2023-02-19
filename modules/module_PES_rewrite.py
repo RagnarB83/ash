@@ -1,6 +1,5 @@
 #Module for calculating PhotoElectron/PhotoIonization Spectra
 #####################################
-import glob
 import numpy as np
 import os
 import sys
@@ -12,38 +11,58 @@ import shutil
 import math
 
 #import ash
-from ash.interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
-from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel
+from ash.interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output, ORCATheory
+from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel,print_line_with_mainheader
 from ash.functions.functions_elstructure import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
 import ash.constants
 
-
-
-
 #Wrapper function around PhotoElectron()
-def PhotoElectron():
+def PhotoElectron(theory=None, fragment=None, numcores=1, memory=40000,label=None, 
+                        Initialstate_charge=None, Initialstate_mult=None,
+                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, 
+                        initialorbitalfiles=None, densities='None', densgridvalue=100,
+                        CAS=False, MRCI=False, MREOM=False, TDDFT=False,
+                        tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
+                        CASCI=False, CAS_Initial=None, CAS_Final = None,
+                        MRCI_Initial=None, MRCI_Final = None, MRCI_CASCI_Final=True,
+                        EOM=False, btPNO=False, DLPNO=False, 
+                        path_wfoverlap=None, tprintwfvalue=1e-6, noDyson=False):
     """
     Wrapper function around PhotoElectron Class
     """
 
     print_line_with_mainheader("PhotoElectron")
     timeA=time.time()
-    photo=PhotoElectronClass()
+    photo=PhotoElectronClass(theory=theory, fragment=fragment, numcores=numcores, memory=memory,label=label, 
+                        Initialstate_charge=Initialstate_charge, Initialstate_mult=Initialstate_mult,
+                        Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates, 
+                        initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
+                        CAS=CAS, MRCI=MRCI, MREOM=MREOM, TDDFT=TDDFT,
+                        tda=tda,brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, check_stability=check_stability,
+                        CASCI=CASCI, CAS_Initial=CAS_Initial, CAS_Final = CAS_Final,
+                        MRCI_Initial=MRCI_Initial, MRCI_Final = MRCI_Final, MRCI_CASCI_Final=MRCI_CASCI_Final,
+                        EOM=EOM, btPNO=btPNO, DLPNO=DLPNO, 
+                        path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson)
     result = photo.run()
     print_time_rel(timeA, modulename='PhotoElectron', moduleindex=1)
 
     return result
-    #return finalenergy
 
 
-class PhotoElectron:
-    def __init__(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
-                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
-                        brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='None', densgridvalue=100,
-                        CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False, MREOM=False,
-                        MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, btPNO=False, DLPNO=False, label=None, check_stability=True):
+
+class PhotoElectronClass:
+    def __init__(self,theory=None, fragment=None, numcores=1, memory=40000,label=None, 
+                        Initialstate_charge=None, Initialstate_mult=None,
+                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, 
+                        initialorbitalfiles=None, densities='None', densgridvalue=100,
+                        CAS=False, MRCI=False, MREOM=False, TDDFT=False,
+                        tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
+                        CASCI=False, CAS_Initial=None, CAS_Final = None,
+                        MRCI_Initial=None, MRCI_Final = None, MRCI_CASCI_Final=True,
+                        EOM=False, btPNO=False, DLPNO=False, 
+                        path_wfoverlap=None, tprintwfvalue=1e-6, noDyson=False):
         """
-        photoelectron module
+        PhotoElectron module
         """
         module_init_time=time.time()
         blankline()
@@ -53,18 +72,24 @@ class PhotoElectron:
         #Early exits
         ################
         if CAS is True and MRCI is True:
-            print("Both CAS and MRCI can not both be True!")
-            print("You must previously optimize orbitals (e.g. with CASSCF) and feed into MRCI")
+            print("CAS and MRCI keywords can not both be True!")
+            print("Note for MRCI: You must previously optimize orbitals (e.g. with CASSCF) and feed into MRCI")
             ashexit()
         if Initialstate_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
             print("Provide charge and spin multiplicity of initial and ionized state: Initialstate_charge, Initialstate_mult, Ionizedstate_charge,Ionizedstate_mult ")
             ashexit()
-        if isinstance(theory, ash.ORCATheory):
+        if isinstance(theory, ORCATheory) is False:
             print("Theory not supported for PhotoElectronSpectrum")
-            print("Only ORCATheory supported right now")
+            print("Only ORCATheory supported for now")
             ashexit()
-        if CAS is False and MRCI is False and EOM is False:
-            self.TDDFT = True
+        #Setting TDDFT to True if CAS/MRCI/EOM is False
+        if CAS is False and MRCI is False and EOM is False and TDDFT is False:
+            print("No PES method chosen.")
+            print("You must choose between:  TDDFT=True, CAS=True, MRCI=True, MREOM=True and EOM=True")
+            ashexit()
+        if len(Ionizedstate_mult) != len(numionstates):
+            print("If 2 ionized state multiplicities are chosen (Ionizedstate_mult) then numionstates list must have 2 elements")
+            ashexit()
         ################
 
 
@@ -77,11 +102,11 @@ class PhotoElectron:
                 #A,B: first and second multiplicity in Ionizedstate_mult
                 self.numionstates_A=numionstates[0]
                 self.numionstates_B=numionstates[1]
-                self.numionstates=numionstates_A+numionstates_B
+                self.numionstates=self.numionstates_A+self.numionstates_B
             else:
                 #A,B: first and second multiplicity in Ionizedstate_mult
                 self.numionstates_A=numionstates[0]
-                self.numionstates=numionstates_A 
+                self.numionstates=self.numionstates_A 
 
         self.theory=theory
         self.fragment=fragment
@@ -95,8 +120,9 @@ class PhotoElectron:
         self.HSmult=HSmult
         self.atomstoflip=atomstoflip
         self.initialorbitalfiles=initialorbitalfiles
-        self.Densities=Densities
+        self.densities=densities
         self.densgridvalue=densgridvalue
+        self.TDDFT=TDDFT
         self.CAS=CAS
         self.CAS_Initial=CAS_Initial
         self.CAS_Final = CAS_Final
@@ -121,39 +147,43 @@ class PhotoElectron:
         self.totnuccharge=self.fragment.nuccharge
 
         # Always just one StateI object with one charge and one spin multiplicity
-        self.stateI = MolState(charge=self.Initialstate_charge, mult=self.Initialstate_mult,numionstates=1)
+        self.stateI = MolState(charge=self.Initialstate_charge, mult=self.Initialstate_mult,numionstates=1, label='Init_State')
         print(bcolors.OKBLUE, "StateI: Charge=", self.stateI.charge, "Multiplicity", self.stateI.mult, bcolors.ENDC)
 
 
         if type(self.Ionizedstate_mult) is int:
             #Only one mult for ionized-state. Using numionstates
-            stateF1 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult,numionstates=self.numionstates)
-            MultipleSpinStates = False
-            Finalstates=[stateF1]
-            print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult, bcolors.ENDC)
-            print(bcolors.OKBLUE, "StateF_1: Numionstates=", Finalstates[0].numionstates, bcolors.ENDC)        
+            self.stateF1 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult,
+                                        numionstates=self.numionstates, label=f'Final_State_mult{self.Ionizedstate_mult}')
+            self.MultipleSpinStates = False
+            self.Finalstates=[self.stateF1]
+            print(bcolors.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult, bcolors.ENDC)
+            print(bcolors.OKBLUE, "StateF_1: Numionstates=", self.Finalstates[0].numionstates, bcolors.ENDC)        
         #Case list provided for ionized state. Could mean multiple spin states: e.g.  Ionizedstate_mult=[5,7]
         elif type(self.Ionizedstate_mult) is list:
             if len(self.Ionizedstate_mult) == 1:
-                MultipleSpinStates = False
+                self.MultipleSpinStates = False
                 #Only one mult for ionized-state. Using numionstates
-                stateF1 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult[0],numionstates=self.numionstates)
-                Finalstates = [stateF1]
-                print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
+                self.stateF1 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult[0],
+                                            numionstates=self.numionstates, label=f'Final_State_mult{self.Ionizedstate_mult[0]}')
+                self.Finalstates = [self.stateF1]
+                print(bcolors.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult,
                     bcolors.ENDC)
-                print(bcolors.OKBLUE, "StateF_1: Numionstates=", numionstates_A, bcolors.ENDC)
+                print(bcolors.OKBLUE, "StateF_1: Numionstates=", self.numionstates_A, bcolors.ENDC)
             elif len(Ionizedstate_mult) == 2:
-                MultipleSpinStates = True
-                stateF1 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult[0],numionstates=self.numionstates_A)
-                stateF2 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult[1],numionstates=self.numionstates_B)
-                Finalstates = [stateF1,stateF2]
+                self.MultipleSpinStates = True
+                self.stateF1 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult[0],numionstates=self.numionstates_A,
+                                            label=f'Final_State_mult{self.Ionizedstate_mult[0]}')
+                self.stateF2 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult[1],numionstates=self.numionstates_B,
+                                            label=f'Final_State_mult{self.Ionizedstate_mult[1]}')
+                self.Finalstates = [self.stateF1,self.stateF2]
                 print("Multiple spin states for Final State:")
-                print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
+                print(bcolors.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult,
                     bcolors.ENDC)
-                print(bcolors.OKBLUE, "StateF_2: Charge=", Finalstates[1].charge, "Multiplicity", Finalstates[1].mult,
+                print(bcolors.OKBLUE, "StateF_2: Charge=", self.Finalstates[1].charge, "Multiplicity", self.Finalstates[1].mult,
                     bcolors.ENDC)
-                print(bcolors.OKBLUE, "StateF_1: Numionstates=", Finalstates[0].numionstates, bcolors.ENDC)
-                print(bcolors.OKBLUE, "StateF_2: Numionstates=", Finalstates[1].numionstates, bcolors.ENDC)
+                print(bcolors.OKBLUE, "StateF_1: Numionstates=", self.Finalstates[0].numionstates, bcolors.ENDC)
+                print(bcolors.OKBLUE, "StateF_2: Numionstates=", self.Finalstates[1].numionstates, bcolors.ENDC)
             else:
                 print("More than Two spin multiplicities are now allowed in Ionizedstate_mult argument")
                 ashexit()
@@ -168,17 +198,17 @@ class PhotoElectron:
         if brokensym is True:
             print("Brokensym True. Will find BS-solution for StateI via spin-flipping. HSMult: ", HSmult)
 
-        print("Densities option is: ", self.Densities, "(options are: SCF, All, None)")
-        if self.Densities == 'SCF':
+        print("densities option is: ", self.densities, "(options are: SCF, All, None)")
+        if self.densities == 'SCF':
             print("Will do densities (and difference densities) for Inital-state and Final-state SCF wavefunctions only.")
             shutil.rmtree('Calculated_densities', ignore_errors=True)
             os.mkdir('Calculated_densities')
-        elif self.Densities=='All':
+        elif self.densities=='All':
             print("Will do densities (and difference densities) for all states: SCF and TDDFT states")
             shutil.rmtree('Calculated_densities', ignore_errors=True)
             os.mkdir('Calculated_densities')
         else:
-            self.Densities=None
+            self.densities=None
             print("Will not calculate densities")
 
     #Modify ORCA object
@@ -198,8 +228,111 @@ class PhotoElectron:
             if 'UKS' not in self.theory.orcasimpleinput.upper():
                 self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
 
-    def run_EOM(self):
-        print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
+    #def calc_SCF_density(self,state):
+    #    print("Calling calc_SCF_density with state_label:", state.label)
+    #    os.chdir('Calculated_densities')
+    #    print(f"Density option active. Calling orca_plot to create Cube-file for {state.label} SCF.")
+    #    #shutil.move('../' + state_label + '.gbw', './'+ state_label + '.gbw')
+    #    #shutil.move('../' + state_label + '.densities', './'+state_label + '.densities')
+    #    shutil.move('../' + state.gbwfile, './'+ state.gbwfile)
+    #    shutil.move('../' + state.densitiesfile, './'+state.densitiesfile)
+    #    
+    #    if 'Final' in state.label:
+    #        print("Exiting")
+    #        exit()
+    #    #Electron density
+    #    run_orca_plot(orcadir=self.theory.orcadir,filename=state.gbwfile, option='density', gridvalue=self.densgridvalue)
+    #
+    #    # Read Initial-state-SCF density Cube file into memory
+    #    state.cubedict = read_cube(state.label+'.eldens.cube')
+    #
+    #    #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
+    #    if state.hftyp == "UHF":
+    #        run_orca_plot(orcadir=self.theory.orcadir,filename=state.gbwfile, option='spindensity', gridvalue=self.densgridvalue)
+    #    os.chdir('..')
+
+    def run_tddft_densities(self):
+        print("Inside run_tddft_densities")
+        #Here doing densities for each TDDFT-state. SCF-states already done.
+        print("")
+        print(bcolors.OKMAGENTA, "Densities option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", bcolors.ENDC)
+        os.chdir('Calculated_densities')
+
+        #Adding Keepdens and Engrad to do TDDFT gradient
+        self.theory.orcasimpleinput=self.theory.orcasimpleinput+' KeepDens Engrad'
+
+        if '/C' not in self.theory.orcasimpleinput:
+            self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' AutoAux'
+
+        for findex, fstate in enumerate(self.Finalstates):
+            print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+            shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
+            os.rename('Final_State_mult' + str(fstate.mult) + '.gbw', self.theory.filename + '.gbw')
+
+
+            #Looping over each TDDFT-state and doing TDDFT-calc
+            for tddftstate in range(1,self.numionstates):
+                print("-------------------------------------------------")
+                print("Running TDDFT-gradient for State: ", tddftstate)
+                #Adding Iroot to get state-specific gradient+density                                              ''
+                if self.tda == False:
+                    # Boolean for whether no_tda is on or not
+                    print("Not sure if Full-TDDFT density is available. TO BE CHECKED.")
+                    self.no_tda = True
+                    tddftstring = "%tddft\n" + "tda false\n" + "nroots " + str(
+                        self.numionstates - 1) + '\n' + "maxdim 25\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
+                else:
+                    tddftstring = "%tddft\n" + "tda true\n" + "nroots " + str(
+                        self.numionstates - 1) + '\n' + "maxdim 25\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
+                    # Boolean for whether no_tda is on or not
+                    self.no_tda = False
+                self.theory.extraline = "%method\n"+"frozencore FC_NONE\n"+"end\n" + tddftstring
+
+                #Turning off stability analysis. Not available for gradient run.
+                if 'stabperform true' in self.theory.orcablocks:
+                    print("Turning off stability analysis.")
+                    self.theory.orcablocks=self.theory.orcablocks.replace("stabperform true", "stabperform false")
+
+
+                ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
+                # TDDFT state done. Renaming cisp and cisr files
+                #os.rename(theory.filename+'.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
+                #os.rename(theory.filename+'.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
+                print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
+
+                #Doing spin-density Cubefile for each cisr file
+                run_orca_plot(orcadir=self.theory.orcadir, filename=self.theory.filename + '.gbw', option='cisspindensity',gridvalue=self.densgridvalue,
+                            densityfilename=self.theory.filename+'.cisr' )
+                os.rename(self.theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
+                #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
+
+                run_orca_plot(orcadir=self.theory.orcadir, filename=self.theory.filename + '.gbw', option='cisdensity',gridvalue=self.densgridvalue,
+                            densityfilename=self.theory.filename+'.cisp' )
+                os.rename(self.theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
+
+                final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
+                #rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
+                #nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
+                cubedict2 = read_cube(final_dens)
+                #write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,
+                #        "Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
+                write_cube_diff(self.stateI.cubedict,cubedict2,"Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
+                print("Wrote Cube file containing density difference between Initial State and Final TDDFT State: ", tddftstate)
+        self.theory.cleanup()
+        os.chdir('..')
+
+    def make_diffdensities_SCF(self):
+        os.chdir('Calculated_densities')
+        # Read Initial-state-SCF density Cube file into memory
+        self.stateI.cubedict = read_cube(f"{self.stateI.label}.eldens.cube")
+
+        for fstate in self.Finalstates:
+            if self.densities == 'SCF' or self.densities == 'All':
+                # Create difference density between Initial-SCF and Finalstate-SCFs
+                cubedict2 = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
+                write_cube_diff(self.stateI.cubedict,cubedict2,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
+                print("Wrote Cube file containing density difference between Initial State and Final State.")
+        os.chdir('..')
         
     def run_MRCI(self):
         print("MRCI/MREOM option active!")
@@ -271,311 +404,17 @@ class PhotoElectron:
                 if 'MRCI+Q' not in theory.orcasimpleinput:
                     theory.orcasimpleinput = theory.orcasimpleinput + ' MRCI+Q' 
 
+            #Calling SCF run
+            self.run_SCF_InitState()
 
-    def run_CAS(self):
-        print("Using TprintWF value of ", self.tprintwfvalue)
-        print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
-        print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
-
-        #Removing nel/norb/nroots lines if user added
-        for line in self.theory.orcablocks.split('\n'):
-            if 'nel' in line:
-                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
-            if 'norb' in line:
-                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
-            if 'nroots' in line:
-                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
-        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
-
-        #Add nel,norb and nroots lines back in. Also determinant printing option
-        self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n' + "printwf det\nci TPrintwf {} end\n".format(self.tprintwfvalue) + "nel {}\n".format(CAS_Initial[0]) +
-                                                    "norb {}\n".format(
-                                                        CAS_Initial[1]) + "nroots {}\n".format(1))
-        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
-        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
-
-    def run_densities(self):
-
-    def run_TDDFT(self):
-        print("TDDFT option chosen:")
-        print(bcolors.OKBLUE,"Total ion states:", numionstates, bcolors.ENDC)
-        print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates-1, bcolors.ENDC)
-    def run_EOM(self):
-
-    def run_SCF_InitState(self):
-        print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
-        self.InitSCF = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
-        finalsinglepointenergy = self.InitSCF.energy
-        stability = check_stability_in_output(self.theory.filename+'.out')
-        if stability is False and check_stability is True:
-            print("PES: Unstable initial state. Exiting...")
-            ashexit()
-    def run(self):
-        print("Printing coordinates")
-        self.fragment.print_coords()
-        blankline()
-
-
-        #######################################################
-        # SETUP
-        #######################################################
-
-
-        #######################################################
-        # CALL EOM, MRCI/MREOM, CAS or TDDFT to get states
-        #######################################################
-        if self.EOM is True:
-            print("Calling EOM")
-            self.run_EOM()
-
-        #Simplifies things. MREOM uses MRCI so let's use same logic.
-        if self.MRCI or self.MREOM is True:
-            self.run_MRCI()
-
-        if self.CAS is True:
-            print("CASSCF option active!")
-            if self.CASCI is True:
-                print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
-
-        if self.TDDFT is True:
-            self.run_TDDFT()
-
-        if self.EOM is True:
-            self.run_TDDFT()
-        #########################
-        #INITIAL STATE
-        ########################
-
-        if initialorbitalfiles is not None:
-            print("initialorbitalfiles keyword provided.")
-            print("Will use file {} as guess GBW file for Initial state".format(initialorbitalfiles[0]))
-            shutil.copyfile(initialorbitalfiles[0], theory.filename + '.gbw')
-
-        if EOM is not True:
-
-            
-        #Create Cube file of electron/spin density using orca_plot for INITIAL STATE
-        if Densities == 'SCF' or Densities =='All':
-            os.chdir('Calculated_densities')
-            print("Density option active. Calling orca_plot to create Cube-file for Initial state SCF.")
-            shutil.copyfile('../' + theory.filename + '.gbw', './'+theory.filename + '.gbw')
-            shutil.copyfile('../' + theory.filename + '.densities', './'+theory.filename + '.densities')
-            #Electron density
-            run_orca_plot(orcadir=theory.orcadir,filename=theory.filename + '.gbw', option='density', gridvalue=densgridvalue)
-            os.rename(theory.filename+'.densities','Init_State.scfp')
-            shutil.copyfile(theory.filename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
-
-            # Read Initial-state-SCF density Cube file into memory
-            cubedict = read_cube('Init_State.eldens.cube')
-
-            #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
-            if stateI.hftyp == "UHF":
-                run_orca_plot(orcadir=theory.orcadir,filename=theory.filename + '.gbw', option='spindensity', gridvalue=densgridvalue)
-                os.rename(theory.filename + '.scfr', 'Init_State.scfr')
-                shutil.copyfile(theory.filename + '.spindens.cube', './' + 'Init_State' + '.spindens.cube')
-            os.chdir('..')
-        #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
-        if CAS is True:
-            print("here")
-            stateI.energy=casscfenergygrab(theory.filename+'.out')
-            print("stateI.energy: ", stateI.energy)
+            self.stateI.energy=finalsinglepointenergy
+            print("stateI.energy: ", self.stateI.energy)
 
             #Get orbital ranges (stateI is sufficient)
             internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(theory.filename+'.out')
-        elif MRCI is True or MREOM is True:
-            stateI.energy=finalsinglepointenergy
-            print("stateI.energy: ", stateI.energy)
-
-            #Get orbital ranges (stateI is sufficient)
-            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(theory.filename+'.out')
-        elif EOM is True:
-            #No separate initial-state calc when doing EOM
-            pass
-        else:
-            stateI.energy=scfenergygrab(theory.filename+'.out')
 
 
-        #Saveing GBW/out/in files
-        if EOM is not True:
-            shutil.copyfile(theory.filename + '.gbw', './' + 'Init_State' + '.gbw')
-            shutil.copyfile(theory.filename + '.out', './' + 'Init_State' + '.out')
-            shutil.copyfile(theory.filename + '.inp', './' + 'Init_State' + '.inp')
 
-            stateI.gbwfile="Init_State"+".gbw"
-            stateI.outfile="Init_State"+".out"
-
-        # Initial state orbitals for MO-DOSplot
-        if CAS is True or MRCI is True:
-            stateI.hftyp='CASSCF'
-
-            #CASSCF wavefunction interpreted as restricted
-            stateI.restricted = True
-            for fstate in Finalstates:
-                fstate.restricted = True
-
-        elif EOM is True:
-            pass
-        else:
-            stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.filename+'.out')
-            print("stateI.occorbs_alpha:", stateI.occorbs_alpha)
-            print("stateI.hftyp:", stateI.hftyp)
-
-            # need to specify whether Initial/Final states are restricted or not.
-            if stateI.hftyp == "UHF":
-                stateI.restricted = False
-            elif stateI.hftyp == "RHF":
-                stateI.restricted = True
-            else:
-                print("hmmm")
-                ashexit()
-
-
-        #########################
-        #FINAL STATES
-        ########################
-        #Final-state  calc. TDDFT or CASSCF
-        #Adding TDDFT block to inputfile
-        ##CAS option: State-averaged calculation for both spin multiplicities.
-        if EOM == True:
-            
-            #Preserve old
-            orig_orcablocks=copy.copy(theory.orcablocks)
-            
-            #Will calculate IPs directly
-            print("Adding MDCI block for initial state")
-            
-            #Canonical EOM, btPNO or DLPNO
-            if btPNO == True:
-                if 'bt-PNO-IP-EOM-CCSD' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput =  theory.orcasimpleinput + ' bt-PNO-IP-EOM-CCSD '
-            elif DLPNO == True:
-                if 'IP-EOM-DLPNO-CCSD' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput =  theory.orcasimpleinput + ' IP-EOM-DLPNO-CCSD '
-            else:
-                if 'IP-EOM-CCSD' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput =  theory.orcasimpleinput + ' IP-EOM-CCSD '
-            
-            FinalIPs=[]
-            fstates_dict={}
-            for fstate in Finalstates:
-                print(bcolors.OKGREEN, "Calculating IPs directly via IP-EOM-CCSD. ", bcolors.ENDC)
-                if fstate.mult > stateI.mult:
-                    print("Final state mult {}, setting DoBeta true".format(fstate.mult))
-                    Electron_ion_line='DoBeta true'
-                else:
-                    print("Final state mult {}, setting DoAlpha true".format(fstate.mult))
-                    Electron_ion_line='DoAlpha true'
-                #Add nel,norb and nroots lines back in. Also determinant printing option
-                theory.orcablocks = orig_orcablocks + '\n%mdci\n' + 'nroots {}\n'.format(fstate.numionstates) + Electron_ion_line+'\n' + 'maxiter 200\n'+'end\n'
-                theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-                theory.orcablocks = theory.orcablocks.replace('\n\n','\n')        
-            
-
-                if initialorbitalfiles is not None:
-                    print("not tested for IP-EOM-CCSD...")
-                    print("initialorbitalfiles keyword provided.")
-                    print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-                    shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
-                #NOTE: Using initial state charge/mult here because EOM
-                init_EOM = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
-                energy = init_EOM.energy
-                stateI.energy= energy
-
-
-                #Grab EOM-IPs and dominant singles amplitudes
-                IPs, amplitudes = grabEOMIPs(theory.filename+'.out')
-                print("IPs:", IPs)
-                print("Dominant singles EOM amplitudes:", amplitudes)
-                
-                fstate.IPs=IPs
-                fstate.dysonnorms=amplitudes
-                
-                #Collecting list of all IPs
-                FinalIPs=FinalIPs+IPs
-                
-                
-                #State_energies are Inititial-state energy + transition energy
-                state_energies=[IP/ash.constants.hartoeV + stateI.energy for IP in IPs]
-                
-                #Equating the dominant singles amplitudes with dysonnorms.
-                
-                fstates_dict[fstate.mult] = state_energies
-                print("fstates_dict:", fstates_dict)
-                
-                fstate.ionstates = fstates_dict[fstate.mult]
-
-
-                # Saveing GBW and inp and outfiles
-                shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult)+'.gbw')
-                shutil.copyfile(theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult)+'.out')
-                shutil.copyfile(theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult)+ '.inp')
-
-                #Each fstate linked with same GBW file and outfile
-                fstate.gbwfile = 'Final_State_mult' + str(fstate.mult)+'.gbw'
-                fstate.outfile = 'Final_State_mult' + str(fstate.mult)+'.out'
-                print("")
-        
-        
-        elif CAS is True:
-            print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
-            print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
-            #Making sure multiplicties are sorted in ascending order and creating comma-sep string
-            CAS_mults=','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
-            print("CAS_mults:", CAS_mults)
-            #Removing nel/norb/nroots lines
-            for line in theory.orcablocks.split('\n'):
-                if 'nel' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'norb' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'nroots' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'mult' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-
-            #Add nel,norb and nroots lines back in.
-            # And both spin multiplicities. Nroots for each
-            #numionstates_string = ','.join(str(numionstates) for x in [f.numionstates for f in Finalstates])
-            numionstates_string = ','.join(str(f.numionstates) for f in Finalstates)
-            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Final[0]) +
-                                                        "norb {}\n".format(
-                                                            CAS_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(CAS_mults))
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            #CAS-CI option for Ionized FInalstate. CASSCF orb-opt done on Initial state but then CAS-CI using Init-state orbs on Final-states
-            if CASCI is True:
-                print("CASCI option on! Final ionized states performed at CAS-CI level using Initial-state orbitals.")
-                theory.orcasimpleinput = theory.orcasimpleinput + ' noiter'
-
-
-            print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
-
-            if initialorbitalfiles is not None:
-                print("not tested for CASSCF...")
-                print("initialorbitalfiles keyword provided.")
-                print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-                shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
-
-            ash.Singlepoint(fragment=fragment, theory=theory, charge=Finalstates[0].charge, mult=Finalstates[0].mult)
-
-            #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
-            fstates_dict = casscf_state_energies_grab(theory.filename+'.out')
-            print("fstates_dict: ", fstates_dict)
-
-            # Saveing GBW and CIS file
-            shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
-            shutil.copyfile(theory.filename + '.out', './' + 'Final_State' + '.out')
-            shutil.copyfile(theory.filename + '.inp', './' + 'Final_State' + '.inp')
-
-            #Each fstate linked with same GBW file and outfile
-            for fstate in Finalstates:
-                fstate.gbwfile = "Final_State" + ".gbw"
-                fstate.outfile = "Final_State" + ".out"
-
-            #TODO: Saving files for density Cube file creation for CASSCF
-
-        elif MRCI is True or MREOM is True:
             print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Final[0], MRCI_Final[1]))
             print("{} electrons in {} orbitals".format(MRCI_Final[0], MRCI_Final[1]))
             
@@ -635,558 +474,648 @@ class PhotoElectron:
             else:
                 fstates_dict = mrci_state_energies_grab(theory.filename+'.out')
             # Saveing GBW and CIS file
-            shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
-            shutil.copyfile(theory.filename + '.out', './' + 'Final_State' + '.out')
-            shutil.copyfile(theory.filename + '.inp', './' + 'Final_State' + '.inp')
+            shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
+            shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State' + '.out')
+            shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State' + '.inp')
 
             #Each fstate linked with same GBW file and outfile
-            for fstate in Finalstates:
+            for fstate in self.Finalstates:
                 fstate.gbwfile = "Final_State" + ".gbw"
                 fstate.outfile = "Final_State" + ".out"
 
             #TODO: Saving files for density Cube file creation for MRCI
 
+        self.FinalIPs = []
+        self.Finalionstates = []
+        FinalTDtransitionenergies =[]
+        print(bcolors.OKBLUE,"Initial State energy:", self.stateI.energy, "au",bcolors.ENDC)
+        print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
+        
+        for fstate in self.Finalstates:
+            fstate.ionstates = fstates_dict[fstate.mult]
+            for ionstate in fstate.ionstates:
+                fstate.IPs.append((ionstate-self.stateI.energy)*ash.constants.hartoeV)
+            print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
+            self.FinalIPs = self.FinalIPs + fstate.IPs
+            self.Finalionstates = self.Finalionstates + fstate.ionstates
+
+        #MRCI prepare determinants for Dyson
+        print("Grabbing determinants from Initial State output")
+        if SORCI is True:
+            init_state = grab_dets_from_MRCI_output(self.stateI.outfile,SORCI=True)                    
         else:
-            #TDDFT-option SCF+TDDFT for each spin multiplicity
-            #################################################
-            if tda==False:
-                # Boolean for whether no_tda is on or not
-                no_tda = True
-                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15"+"end\n"+"\n"
-            else:
-                tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
-                # Boolean for whether no_tda is on or not
-                no_tda = False
-            theory.extraline=theory.extraline+tddftstring
-            blankline()
+            init_state = grab_dets_from_MRCI_output(self.stateI.outfile)
+        
+        det_init = format_ci_vectors(init_state[self.Initialstate_mult])
 
-            for findex,fstate in enumerate(Finalstates):
-                print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-                if initialorbitalfiles is not None:
-                    print("initialorbitalfiles keyword provided.")
-                    print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex+1]))
-                    shutil.copyfile(initialorbitalfiles[findex+1], theory.filename + '.gbw')
+        writestringtofile(det_init, "dets_init")
+
+        #Checking if wrong determinant in file
+        delete_wrong_det("dets_init",self.stateI.mult)
 
 
-                ash.Singlepoint(fragment=fragment, theory=theory, charge=fstate.charge, mult=fstate.mult)
-                stability = check_stability_in_output(theory.filename+'.out')
-                if stability is False and check_stability is True:
-                    print("PES: Unstable final state. Exiting...")
-                    ashexit()
-                
-                
-                fstate.energy = scfenergygrab(theory.filename+'.out')
-                #Saveing GBW and CIS file
-                shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
-                shutil.copyfile(theory.filename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
-                shutil.copyfile(theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
-                shutil.copyfile(theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
-
-                fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
-                fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
-                fstate.cisfile="Final_State_mult"+str(fstate.mult)+".cis"
-
-
-                #Grab TDDFT states from ORCA file:
-                fstate.TDtransitionenergies = tddftgrab(theory.filename+'.out')
-                # Final state orbitals for MO-DOSplot
-                fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(theory.filename+'.out')
-
-                print(fstate.__dict__)
-                if fstate.hftyp == "UHF":
-                    fstate.restricted = False
-                elif fstate.hftyp == "RHF":
-                    fstate.restricted = True
-                else:
-                    print("hmmm")
-                    ashexit()
-
-
-                #Create Cube file of electron/spin density using orca_plot for FINAL STATE
-                if Densities == 'SCF' or Densities == 'All':
-                    print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
-                    os.chdir('Calculated_densities')
-                    shutil.copyfile('../' + theory.filename + '.gbw', './' + theory.filename + '.gbw')
-                    shutil.copyfile('../' + theory.filename + '.densities', './'+theory.filename + '.densities')
-                    #Electron density
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='density',
-                                gridvalue=densgridvalue)
-                    os.rename(theory.filename + '.densities', 'Final_State_mult' + str(fstate.mult) + '.scfp')
-                    shutil.copyfile(theory.filename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                    #Spin density
-                    if fstate.hftyp == "UHF":
-                        run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='spindensity',
-                                gridvalue=densgridvalue)
-                        #os.rename(theory.filename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
-                        shutil.copyfile(theory.filename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
-                    os.chdir('..')
-            blankline()
-            blankline()
-            print("All SCF and TDDFT calculations done (unless Densities=All)!")
-
-
-        blankline()
-        blankline()
-
-        if CAS is True or MRCI is True:
-            FinalIPs = []
-            Finalionstates = []
-            FinalTDtransitionenergies =[]
-            print(bcolors.OKBLUE,"Initial State energy:", stateI.energy, "au",bcolors.ENDC)
-            print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
+        print("Grabbing determinants from Final State output")
+        if SORCI is True:
+            final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile,SORCI=True)                    
+        else:
+            final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
+        
+        for fstate in self.Finalstates:
+            print("fstate: ", fstate)
+            print("fstate.mult :", fstate.mult)
+            det_final = format_ci_vectors(final_states[fstate.mult])
+            #print("det_final : ", det_final)
+            # Printing to file
+            writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
             
-            for fstate in Finalstates:
-                fstate.ionstates = fstates_dict[fstate.mult]
-                for ionstate in fstate.ionstates:
-                    fstate.IPs.append((ionstate-stateI.energy)*ash.constants.hartoeV)
-                print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
-                FinalIPs = FinalIPs + fstate.IPs
-                Finalionstates = Finalionstates + fstate.ionstates
-        elif EOM is True:
-            print(bcolors.OKBLUE,"Initial State CCSD energy:", stateI.energy, "au",bcolors.ENDC)
+            #Checking if wrong determinant in file and delete
+            delete_wrong_det("dets_final_mult" + str(fstate.mult),fstate.mult)
+
+    def run_CAS(self):
+        print("Using TprintWF value of ", self.tprintwfvalue)
+        print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
+        print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
+
+        #Removing nel/norb/nroots lines if user added
+        for line in self.theory.orcablocks.split('\n'):
+            if 'nel' in line:
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+            if 'norb' in line:
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+            if 'nroots' in line:
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
+
+        #Add nel,norb and nroots lines back in. Also determinant printing option
+        self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n' + "printwf det\nci TPrintwf {} end\n".format(self.tprintwfvalue) + "nel {}\n".format(CAS_Initial[0]) +
+                                                    "norb {}\n".format(
+                                                        CAS_Initial[1]) + "nroots {}\n".format(1))
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
+
+        #Calling SCF run
+        self.run_SCF_InitState()
+        #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
+        print("After CASSCF run")
+        self.stateI.energy=casscfenergygrab(theory.filename+'.out')
+        print("stateI.energy: ", self.stateI.energy)
+
+
+        # Initial state orbitals for MO-DOSplot
+        self.stateI.hftyp='CASSCF'
+
+        #CASSCF wavefunction interpreted as restricted
+        self.stateI.restricted = True
+        for fstate in self.Finalstates:
+            fstate.restricted = True
+
+
+        #Get orbital ranges (stateI is sufficient)
+        internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(self.theory.filename+'.out')
+
+        #FINAL
+        ##CAS option: State-averaged calculation for both spin multiplicities.
+
+
+        print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
+        print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
+        #Making sure multiplicties are sorted in ascending order and creating comma-sep string
+        CAS_mults=','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
+        print("CAS_mults:", CAS_mults)
+        #Removing nel/norb/nroots lines
+        for line in self.theory.orcablocks.split('\n'):
+            if 'nel' in line:
+                self.theory.orcablocks=theory.orcablocks.replace(line,'')
+            if 'norb' in line:
+                theory.orcablocks=theory.orcablocks.replace(line,'')
+            if 'nroots' in line:
+                theory.orcablocks=theory.orcablocks.replace(line,'')
+            if 'mult' in line:
+                theory.orcablocks=theory.orcablocks.replace(line,'')
+        theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+
+        #Add nel,norb and nroots lines back in.
+        # And both spin multiplicities. Nroots for each
+        #numionstates_string = ','.join(str(numionstates) for x in [f.numionstates for f in Finalstates])
+        numionstates_string = ','.join(str(f.numionstates) for f in Finalstates)
+        theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Final[0]) +
+                                                    "norb {}\n".format(
+                                                        CAS_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(CAS_mults))
+        theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+        theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+        #CAS-CI option for Ionized FInalstate. CASSCF orb-opt done on Initial state but then CAS-CI using Init-state orbs on Final-states
+        if CASCI is True:
+            print("CASCI option on! Final ionized states performed at CAS-CI level using Initial-state orbitals.")
+            theory.orcasimpleinput = theory.orcasimpleinput + ' noiter'
+
+
+        print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
+
+        if initialorbitalfiles is not None:
+            print("not tested for CASSCF...")
+            print("initialorbitalfiles keyword provided.")
+            print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
+            shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
+
+        ash.Singlepoint(fragment=fragment, theory=theory, charge=Finalstates[0].charge, mult=Finalstates[0].mult)
+
+        #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
+        fstates_dict = casscf_state_energies_grab(theory.filename+'.out')
+        print("fstates_dict: ", fstates_dict)
+
+        # Saveing GBW and CIS file
+        shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
+        shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State' + '.out')
+        shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State' + '.inp')
+
+        #Each fstate linked with same GBW file and outfile
+        for fstate in self.Finalstates:
+            fstate.gbwfile = "Final_State" + ".gbw"
+            fstate.outfile = "Final_State" + ".out"
+
+        #TODO: Saving files for density Cube file creation for CASSCF
+
+
+        self.FinalIPs = []
+        self.Finalionstates = []
+        FinalTDtransitionenergies =[]
+        print(bcolors.OKBLUE,"Initial State energy:", self.stateI.energy, "au",bcolors.ENDC)
+        print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
+        
+        for fstate in self.Finalstates:
+            fstate.ionstates = fstates_dict[fstate.mult]
+            for ionstate in fstate.ionstates:
+                fstate.IPs.append((ionstate-self.stateI.energy)*ash.constants.hartoeV)
+            print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
+            self.FinalIPs = self.FinalIPs + fstate.IPs
+            self.Finalionstates = self.Finalionstates + fstate.ionstates
+
+    # Calculate Ionized state via SCF+TDDFT approach
+    def run_TDDFT(self):
+        print("TDDFT option chosen:")
+        print(bcolors.OKBLUE,"Total ion states:", self.numionstates, bcolors.ENDC)
+        print(bcolors.OKBLUE,"TDDFT-calculated ion states:", self.numionstates-1, bcolors.ENDC)
+
+        #Run Initial-State SCF
+        self.run_SCF_InitState()
+
+        ###################
+        #FINAL STATE
+        ###################
+        #TDDFT-option SCF+TDDFT for each spin multiplicity
+        #################################################
+
+        #Looping over Finalstate-multiplicities (not individual states)
+        for findex,fstate in enumerate(self.Finalstates):
+            #Setting TDA/TDDFT states for each spin multiplicity
+            if self.tda==False:
+                # Boolean for whether no_tda is on or not
+                self.no_tda = True
+                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15"+"end\n"+"\n"
+            else:
+                tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
+                # Boolean for whether no_tda is on or not
+                self.no_tda = False
+            self.theory.extraline=self.theory.extraline+tddftstring
+
+            print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+            if self.initialorbitalfiles is not None:
+                print("Initial orbitals keyword provided.")
+                print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex+1]))
+                shutil.copyfile(self.initialorbitalfiles[findex+1], self.theory.filename + '.gbw')
+
+            #Run SCF+TDDDFT
+            ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
+            stability = check_stability_in_output(self.theory.filename+'.out')
+            if stability is False and check_stability is True:
+                print("PES: Unstable final state. Exiting...")
+                ashexit()
+            
+            #Grab SCF energy
+            fstate.energy = scfenergygrab(self.theory.filename+'.out')
+
+            #Grab TDDFT states from ORCA output
+            fstate.TDtransitionenergies = tddftgrab(self.theory.filename+'.out')
+
+            #Saving GBW and CIS files
+            shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
+            shutil.copyfile(self.theory.filename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
+            shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
+            shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
+            fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
+            fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
+            fstate.cisfile="Final_State_mult"+str(fstate.mult)+".cis"
+
+            # Final state orbitals for MO-DOSplot
+            fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(self.theory.filename+'.out')
+
+            #Calculate SCF eldensity and spindensity if requested
+            if self.densities == 'SCF' or self.densities == 'All':
+                #Electron density
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', gridvalue=self.densgridvalue)
+                #Move into Calculated_densities dir
+                shutil.move(f"{self.theory.filename}.eldens.cube", 'Calculated_densities/' + f"{fstate.label}.eldens.cube")
+                #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
+                if fstate.hftyp == "UHF":
+                    run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
+                    #Move into Calculated_densities dir
+                    shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{fstate.label}.spindens.cube")
+
+            print("Final state multiplicity properties:", fstate.__dict__)
+            if fstate.hftyp == "UHF":
+                fstate.restricted = False
+            elif fstate.hftyp == "RHF":
+                fstate.restricted = True
+
+        blankline()
+        blankline()
+        print("All SCF and TDDFT calculations are now done (unless Densities=All, then we will calculate TDDFT densities at the end)!")
+
+
+        #Printing initial results
+        self.FinalIPs = []; self.Finalionstates = []; self.FinalTDtransitionenergies =[]
+        print(bcolors.OKBLUE,"\nInitial State SCF energy:", self.stateI.energy, "au",bcolors.ENDC)
+        print("")
+        for fstate in self.Finalstates:
+            print("---------------------------------------------------------------------------")
+            print("SCF energy and TDDFT transition energies for FinalState mult: ", fstate.mult)
+            # 1st vertical IP via deltaSCF
+            GSIP=(fstate.energy-self.stateI.energy)*ash.constants.hartoeV
+            fstate.GSIP=GSIP
+            print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
+            print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
+            # TDDFT states
+            print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
+
+            # Adding GS-IP to IP-list and GS ion to ionstate
+            fstate.IPs.append(fstate.GSIP)
+            fstate.ionstates.append(fstate.energy)
+            for e in fstate.TDtransitionenergies:
+                fstate.ionstates.append(e / ash.constants.hartoeV + fstate.energy)
+                fstate.IPs.append((e / ash.constants.hartoeV + fstate.energy - self.stateI.energy) * ash.constants.hartoeV)
+            print("")
+            print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
+            print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
+            print("")
+            self.FinalIPs = self.FinalIPs + fstate.IPs
+            self.Finalionstates = self.Finalionstates + fstate.ionstates
+            self.FinalTDtransitionenergies = self.FinalTDtransitionenergies + fstate.TDtransitionenergies
+
+    def run_EOM(self):
+        print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
+
+        #NOTE: EOM will not call Init-State SCF
+        
+        #Preserve old
+        orig_orcablocks=copy.copy(theory.orcablocks)
+        
+        #Will calculate IPs directly
+        print("Adding MDCI block for initial state")
+        
+        #Canonical EOM, btPNO or DLPNO
+        if btPNO == True:
+            if 'bt-PNO-IP-EOM-CCSD' not in self.theory.orcasimpleinput:
+                self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' bt-PNO-IP-EOM-CCSD '
+        elif DLPNO == True:
+            if 'IP-EOM-DLPNO-CCSD' not in self.theory.orcasimpleinput:
+                self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' IP-EOM-DLPNO-CCSD '
+        else:
+            if 'IP-EOM-CCSD' not in self.theory.orcasimpleinput:
+                self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' IP-EOM-CCSD '
+        
+        self.FinalIPs=[]
+        fstates_dict={}
+        for fstate in self.Finalstates:
+            print(bcolors.OKGREEN, "Calculating IPs directly via IP-EOM-CCSD. ", bcolors.ENDC)
+            if fstate.mult > self.stateI.mult:
+                print("Final state mult {}, setting DoBeta true".format(fstate.mult))
+                Electron_ion_line='DoBeta true'
+            else:
+                print("Final state mult {}, setting DoAlpha true".format(fstate.mult))
+                Electron_ion_line='DoAlpha true'
+            #Add nel,norb and nroots lines back in. Also determinant printing option
+            self.theory.orcablocks = orig_orcablocks + '\n%mdci\n' + 'nroots {}\n'.format(fstate.numionstates) + Electron_ion_line+'\n' + 'maxiter 200\n'+'end\n'
+            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
+            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')        
+        
+
+            if self.initialorbitalfiles is not None:
+                print("not tested for IP-EOM-CCSD...")
+                print("initialorbitalfiles keyword provided.")
+                print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex + 1]))
+                shutil.copyfile(self.initialorbitalfiles[findex + 1], self.theory.filename + '.gbw')
+            #NOTE: Using initial state charge/mult here because EOM
+            init_EOM = ash.Singlepoint(fragment=fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
+            energy = init_EOM.energy
+            self.stateI.energy= energy
+
+
+            #Grab EOM-IPs and dominant singles amplitudes
+            IPs, amplitudes = grabEOMIPs(theory.filename+'.out')
+            print("IPs:", IPs)
+            print("Dominant singles EOM amplitudes:", amplitudes)
+            
+            fstate.IPs=IPs
+            fstate.dysonnorms=amplitudes
+            
+            #Collecting list of all IPs
+            self.FinalIPs=self.FinalIPs+IPs
+            
+            
+            #State_energies are Inititial-state energy + transition energy
+            state_energies=[IP/ash.constants.hartoeV + self.stateI.energy for IP in IPs]
+            
+            #Equating the dominant singles amplitudes with dysonnorms.
+            
+            fstates_dict[fstate.mult] = state_energies
+            print("fstates_dict:", fstates_dict)
+            
+            fstate.ionstates = fstates_dict[fstate.mult]
+
+
+            # Saveing GBW and inp and outfiles
+            shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult)+'.gbw')
+            shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult)+'.out')
+            shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult)+ '.inp')
+
+            #Each fstate linked with same GBW file and outfile
+            fstate.gbwfile = 'Final_State_mult' + str(fstate.mult)+'.gbw'
+            fstate.outfile = 'Final_State_mult' + str(fstate.mult)+'.out'
+            print("")
+
+            #Final states
+            print(bcolors.OKBLUE,"Initial State CCSD energy:", self.stateI.energy, "au",bcolors.ENDC)
             print(bcolors.OKBLUE,"Final State CCSD+EOM-IP energies:", fstates_dict, bcolors.ENDC)
             #IPs already calculated
-            print("FinalIPs:", FinalIPs)
-            Finalionstates = [];finaldysonnorms=[]
-            for fstate in Finalstates:
+            print("FinalIPs:", self.FinalIPs)
+            self.Finalionstates = []; self.finaldysonnorms=[]
+            for fstate in self.Finalstates:
                 print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))  
-                Finalionstates = Finalionstates + fstate.ionstates      
-                finaldysonnorms = finaldysonnorms + fstate.dysonnorms 
-        else:
-
-            FinalIPs = []
-            Finalionstates = []
-            FinalTDtransitionenergies =[]
-            print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
-            print("")
-            for fstate in Finalstates:
-                print("---------------------------------------------------------------------------")
-                print("Now going through SCF energy and TDDFT transitions for FinalState mult: ", fstate.mult)
-                # 1st vertical IP via deltaSCF
-                GSIP=(fstate.energy-stateI.energy)*ash.constants.hartoeV
-                fstate.GSIP=GSIP
-                print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
-                print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
-                print("")
-                # TDDFT states
-                print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
-
-                # Adding GS-IP to IP-list and GS ion to ionstate
-                fstate.IPs.append(fstate.GSIP)
-                fstate.ionstates.append(fstate.energy)
-                for e in fstate.TDtransitionenergies:
-                    fstate.ionstates.append(e / ash.constants.hartoeV + fstate.energy)
-                    fstate.IPs.append((e / ash.constants.hartoeV + fstate.energy - stateI.energy) * ash.constants.hartoeV)
-                print("")
-                print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
-                print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
-                print("")
-                FinalIPs = FinalIPs + fstate.IPs
-                Finalionstates = Finalionstates + fstate.ionstates
-                FinalTDtransitionenergies = FinalTDtransitionenergies + fstate.TDtransitionenergies
-
-        blankline()
-        blankline()
-        print("All combined Final IPs:", FinalIPs)
-        blankline()
-        print("All combined Ion-state energies (au):", Finalionstates)
-
-        if noDyson is True:
-            print("NoDyson is True. Exiting...")
-            return FinalIPs, None
+                self.Finalionstates = self.Finalionstates + fstate.ionstates      
+                self.finaldysonnorms = self.finaldysonnorms + fstate.dysonnorms 
 
 
-        if CAS is not True and MRCI is not True and EOM is not True:
-            #MO IP spectrum:
-            stk_alpha,stk_beta=modosplot(stateI.occorbs_alpha,stateI.occorbs_beta,stateI.hftyp)
-            moips=sorted(stk_alpha+stk_beta)
-            print(bcolors.OKBLUE,"MO IPs (negative of MO energies of State I):", bcolors.ENDC)
-            print(moips)
-            print("")
-            print("MO-IPs (alpha), eV : ", stk_alpha)
-            print("MO-IPs (beta), eV : ", stk_beta)
-            print("")
-            print("") 
-        else:
-            stk_alpha=[]
-            stk_beta=[]
+        print(bcolors.WARNING,"WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation",bcolors.ENDC)
+        print("Approximate Dyson norms: ", self.finaldysonnorms)
 
 
+    def run_SCF_InitState(self):
+        print(bcolors.OKGREEN, "\nCalculating Initial State SCF.",bcolors.ENDC)
 
-        ###########################################
-        # Dyson orbitals for TDDFT STATES/CAS STATES/MRCI STATES
-        ###########################################
-        if EOM is not True:
-            if theory.__class__.__name__ == "ORCATheory":
-                # Todo: Need to preserve this one as it has been deleted
-                #gbwfile_init = glob.glob('Init_State.gbw')[0]
-                # gbwfile_final = glob.glob('Final_State_mult.gbw')[0]
-                # cisfile_final = glob.glob('Final_State_mult.cis')[0]
-                print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and determinants from ORCA GBW file, CIS file (if TDDFT) or output (if CAS/MRCI)",
-                bcolors.ENDC)
-                print("")
-                # Get AO matrix from init state calculation
-                saveAOmatrix(stateI.gbwfile, orcadir=theory.orcadir)
-                # Specify frozencore or not.
-                frozencore = 0
+        if self.initialorbitalfiles is not None:
+            print("initialorbitalfiles keyword provided.")
+            print("Will use file {} as guess GBW file for Initial state".format(self.initialorbitalfiles[0]))
+            shutil.copyfile(self.initialorbitalfiles[0], self.theory.filename + '.gbw')
 
-                # Grab MO coefficients and write to files mos_init and mos_final
+        self.InitSCF = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
+        finalsinglepointenergy = self.InitSCF.energy
+        stability = check_stability_in_output(self.theory.filename+'.out')
+        if stability is False and check_stability is True:
+            print("PES: Unstable initial state. Exiting...")
+            ashexit()
 
-                #Delete old mos_init file
-                try:
-                    os.remove("mos_init")
-                except:
-                    pass
-                #if os.path.isfile('./mos_init') == True:
-                #    print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
-                #else:
-                print("stateI.gbwfile: ", stateI.gbwfile)
-                print("stateI.restricted :", stateI.restricted)
-                print("frozencore: ", frozencore)
-                mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore,theory.orcadir)
-                writestringtofile(mos_init, "mos_init")
+        #Grab energy of initial state
+        self.stateI.energy=scfenergygrab(self.theory.filename+'.out')
 
-                for fstate in Finalstates:
-                    print("here")
-                    print("fstate.restricted:", fstate.restricted)
-                    print("fstate.gbwfile:", fstate.gbwfile)
-                    mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, frozencore,theory.orcadir)
-                    writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
-                    #os.rename("mos_final","mos_final-mult"+str(fstate.mult))
+        # Initial state orbitals for MO-DOSplot
+        self.stateI.occorbs_alpha, self.stateI.occorbs_beta, self.stateI.hftyp = orbitalgrab(self.theory.filename+'.out')
+        print("Initial state occupied MO energies (alpha):", self.stateI.occorbs_alpha)
+        print("Initial state SCF-type:", self.stateI.hftyp)
 
-                # Create determinant file for ionized TDDFT states
-                # Needs Outputfile, CIS-file, restricted-option, XXX, GS multiplicity, number of ion states and states to skip
-                # States per Initial and Final options
-                #TDDFT-only:
-                statestoextract = [1, numionstates]
-                statestoskip = [0, 0]
+        # Specify whether Initial state is restricted or not.
+        if self.stateI.hftyp == "UHF":
+            self.stateI.restricted = False
+        elif self.stateI.hftyp == "RHF":
+            self.stateI.restricted = True
 
-                # Number of multiplicity blocks I think. Should be 2 in general, 1 for GS and 1 for ionized
-                # Not correct, should be actual multiplicites. Finalstate mult. If doing TDDFT-triplets then I guess we have more
+        #Keeping copy of input/outputfile and GBW file
+        shutil.copyfile(self.theory.filename + '.out', './' + self.stateI.label + '.out')
+        shutil.copyfile(self.theory.filename + '.inp', './' + self.stateI.label + '.inp')
+        shutil.copyfile(self.theory.filename + '.gbw', './' + self.stateI.label + '.gbw')
+        self.stateI.gbwfile=self.stateI.label+".gbw"
+        self.stateI.outfile=self.stateI.label+".out"
+        #Calculate SCF eldensity and spindensity if requested
+        if self.densities == 'SCF' or self.densities == 'All':
+            #Electron density
+            run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', gridvalue=self.densgridvalue)
+            #Move into Calculated_densities dir
+            shutil.move(f"{self.theory.filename}.eldens.cube", 'Calculated_densities/' + f"{self.stateI.label}.eldens.cube")
+            #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
+            if self.stateI.hftyp == "UHF":
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
+                #Move into Calculated_densities dir
+                shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{self.stateI.label}.spindens.cube")
 
+    def mo_spectrum(self):
+        #MO IP spectrum:
+        self.stk_alpha,self.stk_beta=modosplot(self.stateI.occorbs_alpha,self.stateI.occorbs_beta,self.stateI.hftyp)
+        moips=sorted(self.stk_alpha+self.stk_beta)
+        print(bcolors.OKBLUE,"MO IPs (negative of MO energies of State I):", bcolors.ENDC)
+        print(moips)
+        print("")
+        print("MO-IPs (alpha), eV : ", self.stk_alpha)
+        print("MO-IPs (beta), eV : ", self.stk_beta)
+        print("")
+        print("") 
 
-
-                # Threshold for WF.
-                wfthres = 2.0
-
-                if CAS is True:
-                    #CASSCF: GETTING GETERMINANTS FROM DETERMINANT-PRINTING OPTION in OUTPUTFILE
-                    #Combining with internal and external orbitals: internal_orbs,active_orbs,external_orbs
-                    #Initial
-                    print("Grabbing determinants from Initial State output")
-                    init_state = grab_dets_from_CASSCF_output(stateI.outfile)
-                    print("init_state:", init_state)
-                    #init_state_dict = [i.determinants for i in init_state]
-                    #init_state_dict2 = {Initialstate_mult : init_state_dict}
-                    #print("init_state_dict:", init_state_dict)
-                    #print("init_state_dict2:", init_state_dict2)
-                    det_init = format_ci_vectors(init_state[Initialstate_mult])
-                    #print("det_init:", det_init)
-                    # Printing to file
-                    writestringtofile(det_init, "dets_init")
-                    print("")
-                    #Final state. Just need to point to the one outputfile
-                    print("Grabbing determinants from Final State output")
-                    final_states = grab_dets_from_CASSCF_output(Finalstates[0].outfile)
-                    #print("final_states:", final_states)
-                    #final_states_dict = [i.determinants for i in final_states]
-                    #print("final_states_dict:", final_states_dict)
-                    #final_states_dict2 = {Initialstate_mult : final_states_dict}
-                    #print("final_states_dict2:", final_states_dict2)
-                    for fstate in Finalstates:
-                        #print("fstate: ", fstate)
-                        #print("fstate.mult :", fstate.mult)
-                        det_final = format_ci_vectors(final_states[fstate.mult])
-                        #print("det_final : ", det_final)
-                        # Printing to file
-                        writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
-                elif MRCI is True:
-
-                    print("Grabbing determinants from Initial State output")
-                    if SORCI is True:
-                        init_state = grab_dets_from_MRCI_output(stateI.outfile,SORCI=True)                    
-                    else:
-                        init_state = grab_dets_from_MRCI_output(stateI.outfile)
-                    
-                    det_init = format_ci_vectors(init_state[Initialstate_mult])
-
-                    writestringtofile(det_init, "dets_init")
-
-                    #Checking if wrong determinant in file
-                    delete_wrong_det("dets_init",stateI.mult)
-
-
-                    print("Grabbing determinants from Final State output")
-                    if SORCI is True:
-                        final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile,SORCI=True)                    
-                    else:
-                        final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
-                    
-                    for fstate in Finalstates:
-                        print("fstate: ", fstate)
-                        print("fstate.mult :", fstate.mult)
-                        det_final = format_ci_vectors(final_states[fstate.mult])
-                        #print("det_final : ", det_final)
-                        # Printing to file
-                        writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
-                        
-                        #Checking if wrong determinant in file and delete
-                        delete_wrong_det("dets_final_mult" + str(fstate.mult),fstate.mult)
-                        
-                else:
-                    #TDDFT: GETTING DETERMINANTS FROM CIS FILE
-                    # Final state. Create detfiles
-                    for fstate in Finalstates:
-                        # mults = [stateFmult]
-                        mults = [fstate.mult]
-                        det_final = get_dets_from_cis(fstate.outfile, fstate.cisfile, fstate.restricted, mults, fstate.charge, fstate.mult,
-                                                    totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
-                        # Printing to file
-                        for blockname, string in det_final.items():
-                            writestringtofile(string, "dets_final_mult"+str(fstate.mult))
-
-
-                    # Now doing initial state. Redefine necessary here.
-                    #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
-                    #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
-                    # RB simplification. Separate function for getting determinant-string for Initial State where only one.
-                    det_init = get_dets_from_single(stateI.outfile, stateI.restricted, stateI.charge, stateI.mult, totnuccharge, frozencore)
-                    # Printing to file
-                    for blockname, string in det_init.items():
-                        writestringtofile(string, "dets_init")
-
-                print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
-                    bcolors.ENDC)
-                # TODO
-                print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets_final_multX", bcolors.ENDC)
-
-                finaldysonnorms = []
-                for fstate in Finalstates:
-                    if Densities == 'SCF' or Densities == 'All':
-                        os.chdir('Calculated_densities')
-                        # Create difference density between Initial-SCF and Finalstate-SCFs
-                        #rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                        #nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                        cubedict2 = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                        #print("init value 0:  ", initial_values[0])
-                        #print("finalstate_values 0:  ", finalstate_values[0])
-                        write_cube_diff(cubedict,cubedict2,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
-
-                        print("Wrote Cube file containing density difference between Initial State and Final State.")
-                        os.chdir('..')
-                    ###################
-                    # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
-                    print("")
-
-                    # Check if binary exists
-                    if os.path.exists(path_wfoverlap) is False:
-                        print("Path {} does NOT exist !".format(path_wfoverlap))
-                        ashexit()
-
-                    print("Running WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
-                    # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
-                    #Poing to file in inputfile
-                    wfoverlapinput = """
-                    mix_aoovl=AO_overl
-                    a_mo=mos_final
-                    b_mo=mos_init
-                    a_det=dets_final
-                    b_det=dets_init
-                    a_mo_read=0
-                    b_mo_read=0
-                    ao_read=0
-                    moprint=1
-                    """
-                    wfoverlapinput = wfoverlapinput.replace("dets_final", "dets_final_mult"+str(fstate.mult))
-                    wfoverlapinput = wfoverlapinput.replace("mos_final", "mos_final-mult"+str(fstate.mult))
-
-                    run_wfoverlap(wfoverlapinput,path_wfoverlap,memory)
-
-                    #This grabs Dyson norms from wfovl.out file
-                    dysonnorms=grabDysonnorms()
-                    print("")
-                    print(bcolors.OKBLUE,"Dyson norms ({}):".format(len(dysonnorms)),bcolors.ENDC)
-                    print(dysonnorms)
-                    if len(dysonnorms) == 0:
-                        print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
-                        print("Setting Dyson norms to zero and continuing.")
-                        dysonnorms=len(fstate.IPs)*[0.0]
-                    print("")
-                    finaldysonnorms=finaldysonnorms+dysonnorms
-                print("")
-                print(bcolors.OKBLUE, "Final combined Dyson norms ({}):".format(len(finaldysonnorms)), bcolors.ENDC)
-                print(finaldysonnorms)
-                print("")
-        else:
-            print("")
-            print(bcolors.WARNING,"WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation",bcolors.ENDC)
-            print("Approximate Dyson norms: ", finaldysonnorms)
-
-            assert len(FinalIPs) == len(finaldysonnorms), "List of Dysonnorms not same size as list of IPs."
-
+    def print_final_table(self):
         #Print table with info
         print("-------------------------------------------------------------------------")
-        print("FINAL RESULTS for fragment (CalcLabel: {} FragLabel: {}  Formula: {})".format(label,fragment.label, fragment.prettyformula))
+        print("FINAL RESULTS for fragment (CalcLabel: {} FragLabel: {}  Formula: {})".format(self.label,self.fragment.label, self.fragment.prettyformula))
         print("-------------------------------------------------------------------------")
         print("Initial state:")
         print("{:>6} {:>7} {:^20} {:^5}".format("State no.", "Mult", "TotalE (Eh)", "State-type"))
-        if EOM is True:
-            print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "CCSD"))            
+        if self.EOM is True:
+            print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, self.stateI.mult, self.stateI.energy, "CCSD"))            
         else:
-            print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "SCF"))
+            print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, self.stateI.mult, self.stateI.energy, "SCF"))
         print("")
         print("Final ionized states:")
-        if CAS is True or MRCI is True:
+        if self.CAS is True or self.MRCI is True:
             stype='CI'
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
-            for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
+            for i, (E, IE, dys) in enumerate(zip(self.Finalionstates,self.FinalIPs,self.finaldysonnorms)):
                 #Getting spinmult
-                if MultipleSpinStates is True:
+                if self.MultipleSpinStates is True:
                     #Change test. what mult we are in.. TODO: Check this for correctness
-                    if i < Finalstates[0].numionstates:
-                        spinmult=Finalstates[0].mult
+                    if i < self.Finalstates[0].numionstates:
+                        spinmult=self.Finalstates[0].mult
                     else:
-                        spinmult=Finalstates[1].mult
+                        spinmult=self.Finalstates[1].mult
                 else:
-                    spinmult=stateF1.mult
+                    spinmult=self.stateF1.mult
                 print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))
-        elif EOM is True:
+        elif self.EOM is True:
             stype='EOM'
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
-            for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
+            for i, (E, IE, dys) in enumerate(zip(self.Finalionstates,self.FinalIPs,self.finaldysonnorms)):
                 #Getting spinmult
-                if MultipleSpinStates is True:
+                if self.MultipleSpinStates is True:
                     #Change test. what mult we are in.. TODO: Check this for correctness
-                    if i < Finalstates[0].numionstates:
-                        spinmult=Finalstates[0].mult
+                    if i < self.Finalstates[0].numionstates:
+                        spinmult=self.Finalstates[0].mult
                     else:
-                        spinmult=Finalstates[1].mult
+                        spinmult=self.Finalstates[1].mult
                 else:
-                    spinmult=stateF1.mult
+                    spinmult=self.stateF1.mult
                 print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))        
         
-        else:
+        elif self.TDDFT is True:
+            #Creating lists of all state labels and transition energies
+            if self.tda is True: 
+                tdtype = 'TDA'
+            else: 
+                tdtype = 'TDDFT'
+            statelabels=[]; tdtransitions=[];spinmults=[]
+            for fstate in self.Finalstates:
+                statelabels +=  ['SCF']+[tdtype]*(fstate.numionstates-1)
+                tdtransitions += [0.0]+fstate.TDtransitionenergies
+                spinmults += [fstate.mult]*fstate.numionstates
+            
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
-            for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
-                #Getting type of state
-                if i == 0:
-                    stype='SCF'
-                else:
-                    if tda is True:
-                        stype = 'TDA'
-                    else:
-                        stype = 'TDDFT'
-                    if MultipleSpinStates is True:
-                        if i == numionstates:
-                            stype='SCF'
-                #Getting spinmult
-                if MultipleSpinStates is True:
-                    if i < numionstates:
-                        spinmult=Finalstates[0].mult
-                    else:
-                        spinmult=Finalstates[1].mult
-                else:
-                    spinmult=stateF1.mult
-                #Getting TDDFT transition energy
-                if stype == "TDA" or stype == "TDDFT":
-                    if i < numionstates:
-                        TDtransenergy = Finalstates[0].TDtransitionenergies[i-1]
-                    else:
-                        #print("i:", i)
-                        index=i-numionstates-1
-                        #print("index:", index)
-                        #print("Finalstates[1].TDtransitionenergies: ", Finalstates[1].TDtransitionenergies)
-                        TDtransenergy = Finalstates[1].TDtransitionenergies[index]
+            fstate=self.Finalstates[0]
+            for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(self.Finalionstates,self.FinalIPs,self.finaldysonnorms,statelabels,tdtransitions,spinmults)):
+                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,statelabel, TDtransenergy))
 
-                else:
-                    TDtransenergy=0.0
-                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
-
-
-            #Here doing densities for each TDDFT-state. SCF-states already done.
-            if Densities == 'All':
-                print("")
-                print(bcolors.OKMAGENTA, "Densities option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", bcolors.ENDC)
-                os.chdir('Calculated_densities')
-
-                #Adding Keepdens and Engrad to do TDDFT gradient
-                theory.orcasimpleinput=theory.orcasimpleinput+' KeepDens Engrad'
-
-                if '/C' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput = theory.orcasimpleinput + ' AutoAux'
-
-                for findex, fstate in enumerate(Finalstates):
-                    print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-                    shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
-                    os.rename('Final_State_mult' + str(fstate.mult) + '.gbw', theory.filename + '.gbw')
-
-
-                    #Looping over each TDDFT-state and doing TDDFT-calc
-                    for tddftstate in range(1,numionstates):
-                        print("-------------------------------------------------")
-                        print("Running TDDFT-gradient for State: ", tddftstate)
-                        #Adding Iroot to get state-specific gradient+density                                              ''
-                        if tda == False:
-                            # Boolean for whether no_tda is on or not
-                            print("Not sure if Full-TDDFT density is available. TO BE CHECKED.")
-                            no_tda = True
-                            tddftstring = "%tddft\n" + "tda false\n" + "nroots " + str(
-                                numionstates - 1) + '\n' + "maxdim 25\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
-                        else:
-                            tddftstring = "%tddft\n" + "tda true\n" + "nroots " + str(
-                                numionstates - 1) + '\n' + "maxdim 25\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
-                            # Boolean for whether no_tda is on or not
-                            no_tda = False
-                        theory.extraline = "%method\n"+"frozencore FC_NONE\n"+"end\n" + tddftstring
-
-                        #Turning off stability analysis. Not available for gradient run.
-                        if 'stabperform true' in theory.orcablocks:
-                            print("Turning off stability analysis.")
-                            theory.orcablocks=theory.orcablocks.replace("stabperform true", "stabperform false")
-
-
-                        ash.Singlepoint(fragment=fragment, theory=theory, charge=fstate.charge, mult=fstate.mult)
-                        # TDDFT state done. Renaming cisp and cisr files
-                        #os.rename(theory.filename+'.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
-                        #os.rename(theory.filename+'.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
-                        print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
-
-                        #Doing spin-density Cubefilefor each cisr file
-                        run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisspindensity',gridvalue=densgridvalue,
-                                    densityfilename=theory.filename+'.cisr' )
-                        os.rename(theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
-                        #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
-
-                        run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisdensity',gridvalue=densgridvalue,
-                                    densityfilename=theory.filename+'.cisp' )
-                        os.rename(theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
-
-                        final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
-                        #rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                        #nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
-                        cubedict2 = read_cube(final_dens)
-                        #write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,
-                        #        "Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
-                        write_cube_diff(cubedict,cubedict2,"Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
-                        print("Wrote Cube file containing density difference between Initial State and Final TDDFT State: ", tddftstate)
-
-                os.chdir('..')
-
-
-        #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
+    def prepare_mos_file(self):
+        print("Inside prepare_mos_file")
+        print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and determinants from ORCA GBW file, CIS file (if TDDFT) or output (if CAS/MRCI)",
+        bcolors.ENDC)
+        # Specify frozencore or not.
+        self.frozencore = 0
         print("")
-        print("Printing IPs, Dyson-norms, MOs to file: PES-Results.txt")
-        print("Can be read by PES.Read_old_results() function")
-        #Writing file in Configparser format for easy read-in below
-        with open("PES-Results.txt", 'w') as resultfile:
-            resultfile.write("[Results]\n")
-            resultfile.write("IPs : {}\n".format(FinalIPs))
-            resultfile.write("Dyson-norms : {}\n".format(finaldysonnorms))
-            resultfile.write("MOs_alpha : {}\n".format(stk_alpha))
-            resultfile.write("MOs_beta : {}\n".format(stk_beta))
+        ####################
+        # Initial State MOs
+        ####################
+        print("Doing initial state")
+        # Get AO matrix from init state calculation
+        saveAOmatrix(self.stateI.gbwfile, orcadir=self.theory.orcadir)
 
-        print_time_rel(module_init_time, modulename='Photoelectronspectrum', moduleindex=0)
-        return FinalIPs, finaldysonnorms
+
+        # Grab MO coefficients and write to files mos_init and mos_final
+
+        #Delete old mos_init file
+        try:
+            os.remove("mos_init")
+        except:
+            pass
+        print("StateI GBW-file: ", self.stateI.gbwfile)
+        print("StateI Restricted :", self.stateI.restricted)
+        print("Frozencore: ", self.frozencore)
+        mos_init = get_MO_from_gbw(self.stateI.gbwfile, self.stateI.restricted, self.frozencore,self.theory.orcadir)
+        writestringtofile(mos_init, "mos_init")
+        print("Created file mos_init")
+        ####################
+        # Final State MOs
+        ####################
+        print("Doing Final state")
+        for fstate in self.Finalstates:
+            print("StateF GBW-file: ", fstate.gbwfile)
+            print("StateF Restricted :", fstate.restricted)
+            print("Frozencore: ", self.frozencore)
+            mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, self.frozencore,self.theory.orcadir)
+            writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
+
+    def TDDFT_dets_prep(self):
+        # Create determinant file for ionized TDDFT states
+        # Needs Outputfile, CIS-file, restricted-option, XXX, GS multiplicity, number of ion states and states to skip
+        # States per Initial and Final options
+        #TDDFT-only:
+        # Number of multiplicity blocks I think. Should be 2 in general, 1 for GS and 1 for ionized
+        # Not correct, should be actual multiplicites. Finalstate mult. If doing TDDFT-triplets then I guess we have more
+        # Threshold for WF.
+        self.wfthres = 2.0    
+        #TDDFT: GETTING DETERMINANTS FROM CIS FILE
+        # Final state. Create detfiles
+        statestoskip = [0, 0]
+        for fstate in self.Finalstates:
+            # mults = [stateFmult]
+            mults = [fstate.mult]
+            det_final = get_dets_from_cis(fstate.outfile, fstate.cisfile, fstate.restricted, mults, fstate.charge, fstate.mult,
+                                        self.totnuccharge, [1, fstate.numionstates], statestoskip, self.no_tda, self.frozencore, self.wfthres)
+            # Printing to file
+            for blockname, string in det_final.items():
+                writestringtofile(string, "dets_final_mult"+str(fstate.mult))
+
+
+        # Now doing initial state. Redefine necessary here.
+        #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
+        #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
+        # RB simplification. Separate function for getting determinant-string for Initial State where only one.
+        det_init = get_dets_from_single(self.stateI.outfile, self.stateI.restricted, self.stateI.charge, self.stateI.mult, self.totnuccharge, self.frozencore)
+        # Printing to file
+        for blockname, string in det_init.items():
+            writestringtofile(string, "dets_init")
+
+    def CAS_dets_prep(self):
+        #CASSCF: GETTING GETERMINANTS FROM DETERMINANT-PRINTING OPTION in OUTPUTFILE
+        #Combining with internal and external orbitals: internal_orbs,active_orbs,external_orbs
+        #Initial
+        print("Grabbing determinants from Initial State output")
+        init_state = grab_dets_from_CASSCF_output(self.stateI.outfile)
+        print("init_state:", init_state)
+        #init_state_dict = [i.determinants for i in init_state]
+        #init_state_dict2 = {Initialstate_mult : init_state_dict}
+        #print("init_state_dict:", init_state_dict)
+        #print("init_state_dict2:", init_state_dict2)
+        det_init = format_ci_vectors(init_state[self.Initialstate_mult])
+        #print("det_init:", det_init)
+        # Printing to file
+        writestringtofile(det_init, "dets_init")
+        print("")
+        #Final state. Just need to point to the one outputfile
+        print("Grabbing determinants from Final State output")
+        final_states = grab_dets_from_CASSCF_output(self.Finalstates[0].outfile)
+        #print("final_states:", final_states)
+        #final_states_dict = [i.determinants for i in final_states]
+        #print("final_states_dict:", final_states_dict)
+        #final_states_dict2 = {Initialstate_mult : final_states_dict}
+        #print("final_states_dict2:", final_states_dict2)
+        for fstate in self.Finalstates:
+            #print("fstate: ", fstate)
+            #print("fstate.mult :", fstate.mult)
+            det_final = format_ci_vectors(final_states[fstate.mult])
+            #print("det_final : ", det_final)
+            # Printing to file
+            writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
+
+    def run_dyson_calc(self):
+        print("Inside run_dyson_calc")
+        # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.
+        # Check if binary exists
+        if os.path.exists(self.path_wfoverlap) is False:
+            print("Path {} does NOT exist !".format(self.path_wfoverlap))
+            ashexit()
+        print("Looping over Finalstate multiplicities")
+        for fstate in self.Finalstates:
+            print("\nRunning WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
+            # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
+            wfoverlapinput = """
+            mix_aoovl=AO_overl
+            a_mo=mos_final
+            b_mo=mos_init
+            a_det=dets_final
+            b_det=dets_init
+            a_mo_read=0
+            b_mo_read=0
+            ao_read=0
+            moprint=1
+            """
+            wfoverlapinput = wfoverlapinput.replace("dets_final", "dets_final_mult"+str(fstate.mult))
+            wfoverlapinput = wfoverlapinput.replace("mos_final", "mos_final-mult"+str(fstate.mult))
+
+            #Calling wfoverlap
+            run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory)
+
+            #Grabbing Dyson norms from wfovl.out
+            dysonnorms=grabDysonnorms()
+            print(bcolors.OKBLUE,"\nDyson norms ({}):".format(len(dysonnorms)),bcolors.ENDC)
+            print(dysonnorms)
+            if len(dysonnorms) == 0:
+                print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
+                print("Setting Dyson norms to zero and continuing.")
+                dysonnorms=len(fstate.IPs)*[0.0]
+            self.finaldysonnorms=self.finaldysonnorms+dysonnorms
 
 
     def cleanup(self):
@@ -1198,13 +1127,113 @@ class PhotoElectron:
             except:
                 pass
 
+    def run(self):
+        print_line_with_mainheader("PhotoElectron: run")
+        module_init_time=time.time()
+        #Cleaning up old files to make sure no interference
+        self.cleanup()
+
+        print("Printing coordinates")
+        self.fragment.print_coords()
+        blankline()
 
 
+        #######################################################
+        # SETUP
+        #######################################################
 
 
+        #######################################################
+        # CALL EOM, MRCI/MREOM, CAS or TDDFT to get states
+        #######################################################
+        if self.TDDFT is True:
+            self.run_TDDFT()
+            #Diff density
+            self.make_diffdensities_SCF()
+            # MO-spectrum 
+            self.mo_spectrum()
+            #For wfoverlap
+            self.prepare_mos_file()
+
+        if self.EOM is True:
+            print("Calling EOM")
+            self.run_EOM()
+
+        if self.CAS is True:
+            print("CASSCF option active!")
+            if self.CASCI is True:
+                print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
+            #For wfoverlap
+            self.prepare_mos_file()
+        #Simplifies things. MREOM uses MRCI so let's use same logic.
+        if self.MRCI or self.MREOM is True:
+            self.run_MRCI()
+            #For wfoverlap
+            self.prepare_mos_file()
 
 
+        #########################
+        #FINAL STATES
+        ########################
 
+        print("\nAll combined Final IPs:", self.FinalIPs)
+        print("All combined Ion-state energies (au):", self.Finalionstates)
+
+        if self.noDyson is True:
+            print("NoDyson is True. Exiting...")
+            return self.FinalIPs, None
+
+        #################################
+        # PES intensities (Dyson norms)
+        #################################
+        if self.TDDFT is True:
+            self.TDDFT_dets_prep()
+
+        #self.run_dyson_calc()
+        self.finaldysonnorms=[0.0]*self.numionstates
+
+        print("")
+        print(bcolors.OKBLUE, "Final combined Dyson norms ({}):".format(len(self.finaldysonnorms)), bcolors.ENDC)
+        print(self.finaldysonnorms)
+        print("self.FinalIPs:", self.FinalIPs)
+        assert len(self.FinalIPs) == len(self.finaldysonnorms), "List of Dysonnorms not same size as list of IPs."
+        print("")
+
+        #########################
+        #FINAL OUTPUT
+        ########################
+        #PRINT FINAL TABLE
+        self.print_final_table()
+
+        #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
+        print("")
+        print("Printing IPs, Dyson-norms, MOs to file: PES-Results.txt")
+        print("Can be read by PES.Read_old_results() function")
+        #Writing file in Configparser format for easy read-in below
+        with open("PES-Results.txt", 'w') as resultfile:
+            resultfile.write("[Results]\n")
+            resultfile.write("IPs : {}\n".format(self.FinalIPs))
+            resultfile.write("Dyson-norms : {}\n".format(self.finaldysonnorms))
+            resultfile.write("MOs_alpha : {}\n".format(self.stk_alpha))
+            resultfile.write("MOs_beta : {}\n".format(self.stk_beta))
+
+        #################################
+        # TDDFT DENSITIES (expensive)
+        #################################
+        #SCF density for Init and SCF-Finalstates have already been calculated
+        #Here doing TDDFT-gradient calculation for each state if densities='All'
+        if self.TDDFT is True:
+            #Create Cube file of electron/spin density using orca_plot for INITIAL STATE
+            if self.densities =='All':
+                self.run_tddft_densities()
+
+        print_time_rel(module_init_time, modulename='Photoelectron-run', moduleindex=2)
+        return self.FinalIPs, self.finaldysonnorms
+
+
+#####################################################################################
+# Independent functions below
+######################################################################################
 def Read_old_results():
     print("Reading file PES-Results.txt ...")
     # Parsing of files
@@ -1256,7 +1285,12 @@ def saveAOmatrix(file, orcadir=None):
 
 #Get smat from GBW.
 def get_smat_from_gbw(file1, file2='', orcadir=None):
-
+    print("Inside get_smat_from_gbw")
+    if os.path.isfile(file1) is False:
+        print(f"file {file1} does exist")
+        ashexit()
+    print("file1:", file1)
+    print("file2:", file2)
     if not file2:
       file2=file1
 
@@ -1444,7 +1478,7 @@ mocoef
 #RB. New function
 #get determinant-string output for single-determinant case
 def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
-    print("Inside get_dets_from_single")
+    print("\nInside get_dets_from_single")
     # get infos from logfile
     data=readfile(logfile)
     infos={}
@@ -2710,1131 +2744,6 @@ def delete_wrong_det(file,reference_mult):
     shutil.copyfile("temp", './' + file)
 
 
-
-########################
-# MAIN program
-########################
-
-# Calculate PES spectra using the Dyson orbital approach.
-# Memory for WFoverlap in MB. Hardcoded
-def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
-                          Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
-                          brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='None', densgridvalue=100,
-                          CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False, MREOM=False,
-                          MRCI_Initial=None, MRCI_Final = None, tprintwfvalue=1e-6, MRCI_CASCI_Final=True, EOM=False, btPNO=False, DLPNO=False, label=None, check_stability=True):
-    module_init_time=time.time()
-    blankline()
-    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
-    print(bcolors.OKGREEN,"PhotoElectronSpectrum: Calculating PES spectra via TDDFT/CAS/MRCI/EOM/MREOM and Dyson-norm approach",bcolors.ENDC)
-    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
-    blankline()
-    print("Numcores used for WFoverlap: ", numcores)
-    os.environ["OMP_NUM_THREADS"] = str(numcores)
-    print("OMP_NUM_THREADS : ", os.environ["OMP_NUM_THREADS"])
-
-    #Numionstates can be number or list of numbers (states for each multiplicity for CAS/MRCI)
-    if isint(numionstates):
-        numionstates_A=numionstates
-        numionstates_B=numionstates
-    elif islist(numionstates):
-        if len(numionstates)==2:
-            #A,B: first and second multiplicity in Ionizedstate_mult
-            numionstates_A=numionstates[0]
-            numionstates_B=numionstates[1]
-            numionstates=numionstates_A+numionstates_B
-        else:
-            #A,B: first and second multiplicity in Ionizedstate_mult
-            numionstates_A=numionstates[0]
-            numionstates=numionstates_A 
-                        
-    if EOM is True:
-        print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
-
-    #Simplifies things. MREOM uses MRCI so let's use same logic.
-    if MREOM is True:
-        print("MREOM option. Setting MRCI to True.")
-        MRCI=True
-
-    if CAS is True and MRCI is True:
-        print("Both CAS and MRCI can not both be True!")
-        print("You must previously optimize orbitals (e.g. with CASSCF) and feed into MRCI")
-        ashexit()
-
-    if CAS is True:
-        print("CASSCF option active!")
-        if CASCI is True:
-            print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
-
-
-    if MRCI is True:
-        print("MRCI/MREOM option active!")
-        print("Will do CASSCF orbital optimization for initial-state, followed by MRCI/MREOM")
-        if MRCI_CASCI_Final is True:
-            print("Will do CAS-CI reference (using initial-state orbitals) for final-states")
-
-
-    if Initialstate_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
-        print("Provide charge and spin multiplicity of initial and ionized state: Initialstate_charge, Initialstate_mult, Ionizedstate_charge,Ionizedstate_mult ")
-        ashexit()
-
-    print("Densities option is: ", Densities, "(options are: SCF, All, None)")
-    if Densities == 'SCF':
-        print("Will do densities (and difference densities) for Inital-state and Final-state SCF wavefunctions only.")
-        shutil.rmtree('Calculated_densities', ignore_errors=True)
-        os.mkdir('Calculated_densities')
-    elif Densities=='All':
-        print("Will do densities (and difference densities) for all states: SCF and TDDFT states")
-        shutil.rmtree('Calculated_densities', ignore_errors=True)
-        os.mkdir('Calculated_densities')
-    else:
-        Densities=None
-        print("Will not calculate densities")
-
-    #Getting charge/mult of states from function argument
-    totnuccharge=fragment.nuccharge
-    fragment.print_coords()
-    blankline()
-
-    # new class for state (Initial, Final etc.) that may differ in charge or spin
-    #Will contain energies, MOs, transition energies, IPs etc.
-    class MolState:
-        def __init__(self,charge,mult,numionstates):
-
-            self.charge=charge
-            self.mult=mult
-            self.tddftstates=[]
-            self.dysonnorms=[]
-            self.energy=0.0
-            self.occorbs_alpha = []
-            self.occorbs_beta= []
-            self.hftyp = None
-            self.TDtransitionenergies=[]
-            self.restricted=None
-            self.GSIP=None
-            self.IPs=[]
-            #Energy
-            self.ionstates=[]
-            #Number of calculated states for each mult
-            self.numionstates=numionstates
-            self.gbwfile=None
-            self.outfile=None
-            self.cisfile=None
-
-    # Always just one StateI object with one charge and one spin multiplicity
-    stateI = MolState(charge=Initialstate_charge, mult=Initialstate_mult,numionstates=1)
-    print(bcolors.OKBLUE, "StateI: Charge=", stateI.charge, "Multiplicity", stateI.mult, bcolors.ENDC)
-
-    if brokensym is True:
-        print("Brokensym True. Will find BS-solution for StateI via spin-flipping. HSMult: ", HSmult)
-
-
-    if type(Ionizedstate_mult) is int:
-        #Only one mult for ionized-state. Using numionstates
-        stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult,numionstates=numionstates)
-        MultipleSpinStates = False
-        Finalstates=[stateF1]
-        print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
-          bcolors.ENDC)
-        print(bcolors.OKBLUE, "StateF_1: Numionstates=", Finalstates[0].numionstates, bcolors.ENDC)        
-    #Case list provided for ionized state. Could mean multiple spin states: e.g.  Ionizedstate_mult=[5,7]
-    elif type(Ionizedstate_mult) is list:
-
-        if len(Ionizedstate_mult) == 1:
-            MultipleSpinStates = False
-            #Only one mult for ionized-state. Using numionstates
-            stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[0],numionstates=numionstates)
-            Finalstates = [stateF1]
-            print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
-                  bcolors.ENDC)
-            print(bcolors.OKBLUE, "StateF_1: Numionstates=", numionstates_A, bcolors.ENDC)
-        elif len(Ionizedstate_mult) == 2:
-            MultipleSpinStates = True
-            stateF1 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[0],numionstates=numionstates_A)
-            stateF2 = MolState(charge=Ionizedstate_charge, mult=Ionizedstate_mult[1],numionstates=numionstates_B)
-            Finalstates = [stateF1,stateF2]
-            print("Multiple spin states for Final State:")
-            print(bcolors.OKBLUE, "StateF_1: Charge=", Finalstates[0].charge, "Multiplicity", Finalstates[0].mult,
-                  bcolors.ENDC)
-            print(bcolors.OKBLUE, "StateF_2: Charge=", Finalstates[1].charge, "Multiplicity", Finalstates[1].mult,
-                  bcolors.ENDC)
-            print(bcolors.OKBLUE, "StateF_1: Numionstates=", Finalstates[0].numionstates, bcolors.ENDC)
-            print(bcolors.OKBLUE, "StateF_2: Numionstates=", Finalstates[1].numionstates, bcolors.ENDC)
-        else:
-            print("More than Two spin multiplicities are now allowed in Ionizedstate_mult argument")
-            ashexit()
-
-    else:
-        print("Unknown type for Ionizedstate_mult value. Should be integer or list of integers")
-
-
-
-    print("")
-    print("CAS:", CAS)
-    print("MRCI:", MRCI)
-    print("MREOM:", MREOM)
-    print("EOM:", EOM)
-    if CAS is False and MRCI is False and EOM is False:
-        print("TDDFT option chosen:")
-        print(bcolors.OKBLUE,"Total ion states:", numionstates, bcolors.ENDC)
-        print(bcolors.OKBLUE,"TDDFT-calculated ion states:", numionstates-1, bcolors.ENDC)
-
-
-
-    #ORCA-theory
-    if theory.__class__.__name__ == "ORCATheory":
-        #########################
-        #INITIAL STATE
-        ########################
-        theory.extraline=theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
-
-        if CAS is True:
-            print("Using TprintWF value of ", tprintwfvalue)
-            print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
-            print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
-
-            #Removing nel/norb/nroots lines if user added
-            for line in theory.orcablocks.split('\n'):
-                if 'nel' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'norb' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'nroots' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-
-            #Add nel,norb and nroots lines back in. Also determinant printing option
-            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "printwf det\nci TPrintwf {} end\n".format(tprintwfvalue) + "nel {}\n".format(CAS_Initial[0]) +
-                                                          "norb {}\n".format(
-                                                              CAS_Initial[1]) + "nroots {}\n".format(1))
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-        if MRCI is True:
-            
-            print("Using TprintWF value of ", tprintwfvalue)
-            print("Modifying MRCI block for initial state, CAS({},{})".format(MRCI_Initial[0],MRCI_Initial[1]))
-            print("{} electrons in {} orbitals".format(MRCI_Initial[0],MRCI_Initial[1]))
-            print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
-            if 'SORCI' in theory.orcasimpleinput:
-                SORCI=True
-                print("SORCI is True!")
-            else:
-                SORCI=False
-                print("SORCI is False!")
-            #USING CASSCF block to define reference
-            #Add nel,norb and nroots lines back in. Also determinant printing option
-            print("theory.orcablocks :", theory.orcablocks)
-            
-            #If CASSCF block present, trim and replace
-            if '%casscf' in theory.orcablocks:
-                            #Removing nel/norb/nroots lines if user added
-                for line in theory.orcablocks.split('\n'):
-                    if 'nel' in line:
-                        theory.orcablocks=theory.orcablocks.replace(line,'')
-                    if 'norb' in line:
-                        theory.orcablocks=theory.orcablocks.replace(line,'')
-                    if 'nroots' in line:
-                        theory.orcablocks=theory.orcablocks.replace(line,'')
-                    if 'maxiter' in line:
-                        theory.orcablocks=theory.orcablocks.replace(line,'')
-                theory.orcablocks = theory.orcablocks.replace('\n\n','\n')    
-                theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) +
-                                                          "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\n".format(1))
-            else:
-                 theory.orcablocks= theory.orcablocks + '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) + "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
-            print("theory.orcablocks :", theory.orcablocks)
-            #Enforcing CAS-CI
-            #if 'noiter' not in theory.orcasimpleinput.lower():
-            #    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
-            if MREOM is True:
-                if '%mdci' not in theory.orcablocks:
-                    theory.orcablocks = theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n"
-                else:
-                    theory.orcablocks = theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n")
-                    
-            #Defining simple MRCI block. States defined
-            if '%mrci' not in theory.orcablocks:
-                theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(tprintwfvalue) + "end"
-            else:
-                theory.orcablocks = theory.orcablocks.replace("%mrci\n","%mrci\n"+"printwf det\nTPrintwf {}\n".format(tprintwfvalue))
-            
-            #theory.orcablocks = "%mrci\n" + "printwf det\nTPrintwf 1e-16\n" + "newblock {} *\n refs cas({},{}) end\n".format(stateI.mult,MRCI_Initial[0],MRCI_Initial[1])+ "nroots {}\n end\n".format(1) + "end"
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-
-            #Adding MRCI+Q to simpleinputline unless MREOM
-            #TODO: Remove as we may want another MRCI method ?
-            if MREOM is True:
-                if 'MREOM' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput = theory.orcasimpleinput + ' MR-EOM' 
-            else:
-                if 'MRCI+Q' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput = theory.orcasimpleinput + ' MRCI+Q' 
-
-
-
-        # For orbital analysis
-        if 'NORMALPRINT' not in theory.orcasimpleinput.upper():
-            theory.orcasimpleinput = theory.orcasimpleinput + ' Normalprint'
-            
-        if brokensym is True:
-            theory.brokensym=True
-            theory.HSmult=HSmult
-            theory.atomstoflip=atomstoflip
-            #Making sure UKS always present if brokensym feature active. Important for open-shell singlets
-            if 'UKS' not in theory.orcasimpleinput.upper():
-                theory.orcasimpleinput = theory.orcasimpleinput + ' UKS'
-
-
-        if initialorbitalfiles is not None:
-            print("initialorbitalfiles keyword provided.")
-            print("Will use file {} as guess GBW file for Initial state".format(initialorbitalfiles[0]))
-            shutil.copyfile(initialorbitalfiles[0], theory.filename + '.gbw')
-
-        if EOM is not True:
-            print(bcolors.OKGREEN, "Calculating Initial State SCF.",bcolors.ENDC)
-            InitSCF = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
-            finalsinglepointenergy = InitSCF.energy
-            stability = check_stability_in_output(theory.filename+'.out')
-            if stability is False and check_stability is True:
-                print("PES: Unstable initial state. Exiting...")
-                ashexit()
-            
-        #Create Cube file of electron/spin density using orca_plot for INITIAL STATE
-        if Densities == 'SCF' or Densities =='All':
-            os.chdir('Calculated_densities')
-            print("Density option active. Calling orca_plot to create Cube-file for Initial state SCF.")
-            shutil.copyfile('../' + theory.filename + '.gbw', './'+theory.filename + '.gbw')
-            shutil.copyfile('../' + theory.filename + '.densities', './'+theory.filename + '.densities')
-            #Electron density
-            run_orca_plot(orcadir=theory.orcadir,filename=theory.filename + '.gbw', option='density', gridvalue=densgridvalue)
-            os.rename(theory.filename+'.densities','Init_State.scfp')
-            shutil.copyfile(theory.filename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
-
-            # Read Initial-state-SCF density Cube file into memory
-            cubedict = read_cube('Init_State.eldens.cube')
-
-            #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
-            if stateI.hftyp == "UHF":
-                run_orca_plot(orcadir=theory.orcadir,filename=theory.filename + '.gbw', option='spindensity', gridvalue=densgridvalue)
-                os.rename(theory.filename + '.scfr', 'Init_State.scfr')
-                shutil.copyfile(theory.filename + '.spindens.cube', './' + 'Init_State' + '.spindens.cube')
-            os.chdir('..')
-        #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
-        if CAS is True:
-            print("here")
-            stateI.energy=casscfenergygrab(theory.filename+'.out')
-            print("stateI.energy: ", stateI.energy)
-
-            #Get orbital ranges (stateI is sufficient)
-            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(theory.filename+'.out')
-        elif MRCI is True or MREOM is True:
-            stateI.energy=finalsinglepointenergy
-            print("stateI.energy: ", stateI.energy)
-
-            #Get orbital ranges (stateI is sufficient)
-            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(theory.filename+'.out')
-        elif EOM is True:
-            #No separate initial-state calc when doing EOM
-            pass
-        else:
-            stateI.energy=scfenergygrab(theory.filename+'.out')
-
-
-        #Saveing GBW/out/in files
-        if EOM is not True:
-            shutil.copyfile(theory.filename + '.gbw', './' + 'Init_State' + '.gbw')
-            shutil.copyfile(theory.filename + '.out', './' + 'Init_State' + '.out')
-            shutil.copyfile(theory.filename + '.inp', './' + 'Init_State' + '.inp')
-
-            stateI.gbwfile="Init_State"+".gbw"
-            stateI.outfile="Init_State"+".out"
-
-        # Initial state orbitals for MO-DOSplot
-        if CAS is True or MRCI is True:
-            stateI.hftyp='CASSCF'
-
-            #CASSCF wavefunction interpreted as restricted
-            stateI.restricted = True
-            for fstate in Finalstates:
-                fstate.restricted = True
-
-        elif EOM is True:
-            pass
-        else:
-            stateI.occorbs_alpha, stateI.occorbs_beta, stateI.hftyp = orbitalgrab(theory.filename+'.out')
-            print("stateI.occorbs_alpha:", stateI.occorbs_alpha)
-            print("stateI.hftyp:", stateI.hftyp)
-
-            # need to specify whether Initial/Final states are restricted or not.
-            if stateI.hftyp == "UHF":
-                stateI.restricted = False
-            elif stateI.hftyp == "RHF":
-                stateI.restricted = True
-            else:
-                print("hmmm")
-                ashexit()
-
-
-        #########################
-        #FINAL STATES
-        ########################
-        #Final-state  calc. TDDFT or CASSCF
-        #Adding TDDFT block to inputfile
-        ##CAS option: State-averaged calculation for both spin multiplicities.
-        if EOM == True:
-            
-            #Preserve old
-            orig_orcablocks=copy.copy(theory.orcablocks)
-            
-            #Will calculate IPs directly
-            print("Adding MDCI block for initial state")
-            
-            #Canonical EOM, btPNO or DLPNO
-            if btPNO == True:
-                if 'bt-PNO-IP-EOM-CCSD' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput =  theory.orcasimpleinput + ' bt-PNO-IP-EOM-CCSD '
-            elif DLPNO == True:
-                if 'IP-EOM-DLPNO-CCSD' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput =  theory.orcasimpleinput + ' IP-EOM-DLPNO-CCSD '
-            else:
-                if 'IP-EOM-CCSD' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput =  theory.orcasimpleinput + ' IP-EOM-CCSD '
-            
-            FinalIPs=[]
-            fstates_dict={}
-            for fstate in Finalstates:
-                print(bcolors.OKGREEN, "Calculating IPs directly via IP-EOM-CCSD. ", bcolors.ENDC)
-                if fstate.mult > stateI.mult:
-                    print("Final state mult {}, setting DoBeta true".format(fstate.mult))
-                    Electron_ion_line='DoBeta true'
-                else:
-                    print("Final state mult {}, setting DoAlpha true".format(fstate.mult))
-                    Electron_ion_line='DoAlpha true'
-                #Add nel,norb and nroots lines back in. Also determinant printing option
-                theory.orcablocks = orig_orcablocks + '\n%mdci\n' + 'nroots {}\n'.format(fstate.numionstates) + Electron_ion_line+'\n' + 'maxiter 200\n'+'end\n'
-                theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-                theory.orcablocks = theory.orcablocks.replace('\n\n','\n')        
-            
-
-                if initialorbitalfiles is not None:
-                    print("not tested for IP-EOM-CCSD...")
-                    print("initialorbitalfiles keyword provided.")
-                    print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-                    shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
-                #NOTE: Using initial state charge/mult here because EOM
-                init_EOM = ash.Singlepoint(fragment=fragment, theory=theory, charge=Initialstate_charge, mult=Initialstate_mult)
-                energy = init_EOM.energy
-                stateI.energy= energy
-
-
-                #Grab EOM-IPs and dominant singles amplitudes
-                IPs, amplitudes = grabEOMIPs(theory.filename+'.out')
-                print("IPs:", IPs)
-                print("Dominant singles EOM amplitudes:", amplitudes)
-                
-                fstate.IPs=IPs
-                fstate.dysonnorms=amplitudes
-                
-                #Collecting list of all IPs
-                FinalIPs=FinalIPs+IPs
-                
-                
-                #State_energies are Inititial-state energy + transition energy
-                state_energies=[IP/ash.constants.hartoeV + stateI.energy for IP in IPs]
-                
-                #Equating the dominant singles amplitudes with dysonnorms.
-                
-                fstates_dict[fstate.mult] = state_energies
-                print("fstates_dict:", fstates_dict)
-                
-                fstate.ionstates = fstates_dict[fstate.mult]
-
-
-                # Saveing GBW and inp and outfiles
-                shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult)+'.gbw')
-                shutil.copyfile(theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult)+'.out')
-                shutil.copyfile(theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult)+ '.inp')
-
-                #Each fstate linked with same GBW file and outfile
-                fstate.gbwfile = 'Final_State_mult' + str(fstate.mult)+'.gbw'
-                fstate.outfile = 'Final_State_mult' + str(fstate.mult)+'.out'
-                print("")
-        
-        
-        elif CAS is True:
-            print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
-            print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
-            #Making sure multiplicties are sorted in ascending order and creating comma-sep string
-            CAS_mults=','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
-            print("CAS_mults:", CAS_mults)
-            #Removing nel/norb/nroots lines
-            for line in theory.orcablocks.split('\n'):
-                if 'nel' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'norb' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'nroots' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'mult' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-
-            #Add nel,norb and nroots lines back in.
-            # And both spin multiplicities. Nroots for each
-            #numionstates_string = ','.join(str(numionstates) for x in [f.numionstates for f in Finalstates])
-            numionstates_string = ','.join(str(f.numionstates) for f in Finalstates)
-            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Final[0]) +
-                                                          "norb {}\n".format(
-                                                              CAS_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(CAS_mults))
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            #CAS-CI option for Ionized FInalstate. CASSCF orb-opt done on Initial state but then CAS-CI using Init-state orbs on Final-states
-            if CASCI is True:
-                print("CASCI option on! Final ionized states performed at CAS-CI level using Initial-state orbitals.")
-                theory.orcasimpleinput = theory.orcasimpleinput + ' noiter'
-
-
-            print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
-
-            if initialorbitalfiles is not None:
-                print("not tested for CASSCF...")
-                print("initialorbitalfiles keyword provided.")
-                print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-                shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
-
-            ash.Singlepoint(fragment=fragment, theory=theory, charge=Finalstates[0].charge, mult=Finalstates[0].mult)
-
-            #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
-            fstates_dict = casscf_state_energies_grab(theory.filename+'.out')
-            print("fstates_dict: ", fstates_dict)
-
-            # Saveing GBW and CIS file
-            shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
-            shutil.copyfile(theory.filename + '.out', './' + 'Final_State' + '.out')
-            shutil.copyfile(theory.filename + '.inp', './' + 'Final_State' + '.inp')
-
-            #Each fstate linked with same GBW file and outfile
-            for fstate in Finalstates:
-                fstate.gbwfile = "Final_State" + ".gbw"
-                fstate.outfile = "Final_State" + ".out"
-
-            #TODO: Saving files for density Cube file creation for CASSCF
-
-        elif MRCI is True or MREOM is True:
-            print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Final[0], MRCI_Final[1]))
-            print("{} electrons in {} orbitals".format(MRCI_Final[0], MRCI_Final[1]))
-            
-            
-            
-            # Making sure multiplicties are sorted in ascending order and creating comma-sep string
-            MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
-
-            print("MRCI_mults:", MRCI_mults)
-            for line in theory.orcablocks.split('\n'):
-                if 'nel' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'norb' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'nroots' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-                if 'mult' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-
-            #Add nel,norb and nroots lines back in.
-            # And both spin multiplicities. Nroots for each
-            #numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
-            numionstates_string = ','.join(str(f.numionstates) for f in Finalstates)
-            print("numionstates_string:", numionstates_string)
-            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(MRCI_Final[0]) +
-                                                          "norb {}\n".format(
-                                                              MRCI_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(MRCI_mults))
-
-            #In Final-state MRCI we would typically use the previous CASSCF-orbitals. Hence CAS-CI and noiter
-            if MRCI_CASCI_Final is True:
-                if 'noiter' not in theory.orcasimpleinput.lower():
-                    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
-
-
-            #Creating newblock blocks for each multiplicity
-            #newblockstring=""
-            #for mult in [f.mult for f in Finalstates]:
-            #    newblockstring = newblockstring + "  newblock {} *\n".format(mult)+"  refs cas({},{}) end\n".format(MRCI_Final[0],MRCI_Final[1] )+ "nroots {}\n".format(mult)+"end\n"
-            #theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf 1e-16\nend"
-            theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
-            theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
-
-            print(bcolors.OKGREEN, "Calculating Final State MRCI Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
-
-            if initialorbitalfiles is not None:
-                print("not tested for MRCI...")
-                print("initialorbitalfiles keyword provided.")
-                print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-                shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
-
-            ash.Singlepoint(fragment=fragment, theory=theory, charge=Finalstates[0].charge, mult=Finalstates[0].mult)
-
-            #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
-            if SORCI is True:
-                fstates_dict = mrci_state_energies_grab(theory.filename+'.out', SORCI=True)
-            else:
-                fstates_dict = mrci_state_energies_grab(theory.filename+'.out')
-            # Saveing GBW and CIS file
-            shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
-            shutil.copyfile(theory.filename + '.out', './' + 'Final_State' + '.out')
-            shutil.copyfile(theory.filename + '.inp', './' + 'Final_State' + '.inp')
-
-            #Each fstate linked with same GBW file and outfile
-            for fstate in Finalstates:
-                fstate.gbwfile = "Final_State" + ".gbw"
-                fstate.outfile = "Final_State" + ".out"
-
-            #TODO: Saving files for density Cube file creation for MRCI
-
-        else:
-            #TDDFT-option SCF+TDDFT for each spin multiplicity
-            #################################################
-            if tda==False:
-                # Boolean for whether no_tda is on or not
-                no_tda = True
-                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15"+"end\n"+"\n"
-            else:
-                tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
-                # Boolean for whether no_tda is on or not
-                no_tda = False
-            theory.extraline=theory.extraline+tddftstring
-            blankline()
-
-            for findex,fstate in enumerate(Finalstates):
-                print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-                if initialorbitalfiles is not None:
-                    print("initialorbitalfiles keyword provided.")
-                    print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex+1]))
-                    shutil.copyfile(initialorbitalfiles[findex+1], theory.filename + '.gbw')
-
-
-                ash.Singlepoint(fragment=fragment, theory=theory, charge=fstate.charge, mult=fstate.mult)
-                stability = check_stability_in_output(theory.filename+'.out')
-                if stability is False and check_stability is True:
-                    print("PES: Unstable final state. Exiting...")
-                    ashexit()
-                
-                
-                fstate.energy = scfenergygrab(theory.filename+'.out')
-                #Saveing GBW and CIS file
-                shutil.copyfile(theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
-                shutil.copyfile(theory.filename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
-                shutil.copyfile(theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
-                shutil.copyfile(theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
-
-                fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
-                fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
-                fstate.cisfile="Final_State_mult"+str(fstate.mult)+".cis"
-
-
-                #Grab TDDFT states from ORCA file:
-                fstate.TDtransitionenergies = tddftgrab(theory.filename+'.out')
-                # Final state orbitals for MO-DOSplot
-                fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(theory.filename+'.out')
-
-                print(fstate.__dict__)
-                if fstate.hftyp == "UHF":
-                    fstate.restricted = False
-                elif fstate.hftyp == "RHF":
-                    fstate.restricted = True
-                else:
-                    print("hmmm")
-                    ashexit()
-
-
-                #Create Cube file of electron/spin density using orca_plot for FINAL STATE
-                if Densities == 'SCF' or Densities == 'All':
-                    print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
-                    os.chdir('Calculated_densities')
-                    shutil.copyfile('../' + theory.filename + '.gbw', './' + theory.filename + '.gbw')
-                    shutil.copyfile('../' + theory.filename + '.densities', './'+theory.filename + '.densities')
-                    #Electron density
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='density',
-                                 gridvalue=densgridvalue)
-                    os.rename(theory.filename + '.densities', 'Final_State_mult' + str(fstate.mult) + '.scfp')
-                    shutil.copyfile(theory.filename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                    #Spin density
-                    if fstate.hftyp == "UHF":
-                        run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='spindensity',
-                                 gridvalue=densgridvalue)
-                        #os.rename(theory.filename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
-                        shutil.copyfile(theory.filename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
-                    os.chdir('..')
-            blankline()
-            blankline()
-            print("All SCF and TDDFT calculations done (unless Densities=All)!")
-    else:
-        print("Theory not supported for PhotoElectronSpectrum")
-        ashexit()
-
-    blankline()
-    blankline()
-
-    if CAS is True or MRCI is True:
-        FinalIPs = []
-        Finalionstates = []
-        FinalTDtransitionenergies =[]
-        print(bcolors.OKBLUE,"Initial State energy:", stateI.energy, "au",bcolors.ENDC)
-        print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
-        
-        for fstate in Finalstates:
-            fstate.ionstates = fstates_dict[fstate.mult]
-            for ionstate in fstate.ionstates:
-                fstate.IPs.append((ionstate-stateI.energy)*ash.constants.hartoeV)
-            print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
-            FinalIPs = FinalIPs + fstate.IPs
-            Finalionstates = Finalionstates + fstate.ionstates
-    elif EOM is True:
-        print(bcolors.OKBLUE,"Initial State CCSD energy:", stateI.energy, "au",bcolors.ENDC)
-        print(bcolors.OKBLUE,"Final State CCSD+EOM-IP energies:", fstates_dict, bcolors.ENDC)
-        #IPs already calculated
-        print("FinalIPs:", FinalIPs)
-        Finalionstates = [];finaldysonnorms=[]
-        for fstate in Finalstates:
-            print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))  
-            Finalionstates = Finalionstates + fstate.ionstates      
-            finaldysonnorms = finaldysonnorms + fstate.dysonnorms 
-    else:
-
-        FinalIPs = []
-        Finalionstates = []
-        FinalTDtransitionenergies =[]
-        print(bcolors.OKBLUE,"Initial State SCF energy:", stateI.energy, "au",bcolors.ENDC)
-        print("")
-        for fstate in Finalstates:
-            print("---------------------------------------------------------------------------")
-            print("Now going through SCF energy and TDDFT transitions for FinalState mult: ", fstate.mult)
-            # 1st vertical IP via deltaSCF
-            GSIP=(fstate.energy-stateI.energy)*ash.constants.hartoeV
-            fstate.GSIP=GSIP
-            print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
-            print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
-            print("")
-            # TDDFT states
-            print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
-
-            # Adding GS-IP to IP-list and GS ion to ionstate
-            fstate.IPs.append(fstate.GSIP)
-            fstate.ionstates.append(fstate.energy)
-            for e in fstate.TDtransitionenergies:
-                fstate.ionstates.append(e / ash.constants.hartoeV + fstate.energy)
-                fstate.IPs.append((e / ash.constants.hartoeV + fstate.energy - stateI.energy) * ash.constants.hartoeV)
-            print("")
-            print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
-            print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
-            print("")
-            FinalIPs = FinalIPs + fstate.IPs
-            Finalionstates = Finalionstates + fstate.ionstates
-            FinalTDtransitionenergies = FinalTDtransitionenergies + fstate.TDtransitionenergies
-
-    blankline()
-    blankline()
-    print("All combined Final IPs:", FinalIPs)
-    blankline()
-    print("All combined Ion-state energies (au):", Finalionstates)
-
-    if noDyson is True:
-        print("NoDyson is True. Exiting...")
-        return FinalIPs, None
-
-
-    if CAS is not True and MRCI is not True and EOM is not True:
-        #MO IP spectrum:
-        stk_alpha,stk_beta=modosplot(stateI.occorbs_alpha,stateI.occorbs_beta,stateI.hftyp)
-        moips=sorted(stk_alpha+stk_beta)
-        print(bcolors.OKBLUE,"MO IPs (negative of MO energies of State I):", bcolors.ENDC)
-        print(moips)
-        print("")
-        print("MO-IPs (alpha), eV : ", stk_alpha)
-        print("MO-IPs (beta), eV : ", stk_beta)
-        print("")
-        print("") 
-    else:
-        stk_alpha=[]
-        stk_beta=[]
-
-
-
-    ###########################################
-    # Dyson orbitals for TDDFT STATES/CAS STATES/MRCI STATES
-    ###########################################
-    if EOM is not True:
-        if theory.__class__.__name__ == "ORCATheory":
-            # Todo: Need to preserve this one as it has been deleted
-            #gbwfile_init = glob.glob('Init_State.gbw')[0]
-            # gbwfile_final = glob.glob('Final_State_mult.gbw')[0]
-            # cisfile_final = glob.glob('Final_State_mult.cis')[0]
-            print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and determinants from ORCA GBW file, CIS file (if TDDFT) or output (if CAS/MRCI)",
-            bcolors.ENDC)
-            print("")
-            # Get AO matrix from init state calculation
-            saveAOmatrix(stateI.gbwfile, orcadir=theory.orcadir)
-            # Specify frozencore or not.
-            frozencore = 0
-
-            # Grab MO coefficients and write to files mos_init and mos_final
-
-            #Delete old mos_init file
-            try:
-                os.remove("mos_init")
-            except:
-                pass
-            #if os.path.isfile('./mos_init') == True:
-            #    print(bcolors.WARNING, "mos_init file already exists in dir! Using (is this what you want?!)", bcolors.ENDC)
-            #else:
-            print("stateI.gbwfile: ", stateI.gbwfile)
-            print("stateI.restricted :", stateI.restricted)
-            print("frozencore: ", frozencore)
-            mos_init = get_MO_from_gbw(stateI.gbwfile, stateI.restricted, frozencore,theory.orcadir)
-            writestringtofile(mos_init, "mos_init")
-
-            for fstate in Finalstates:
-                print("here")
-                print("fstate.restricted:", fstate.restricted)
-                print("fstate.gbwfile:", fstate.gbwfile)
-                mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, frozencore,theory.orcadir)
-                writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
-                #os.rename("mos_final","mos_final-mult"+str(fstate.mult))
-
-            # Create determinant file for ionized TDDFT states
-            # Needs Outputfile, CIS-file, restricted-option, XXX, GS multiplicity, number of ion states and states to skip
-            # States per Initial and Final options
-            #TDDFT-only:
-            statestoextract = [1, numionstates]
-            statestoskip = [0, 0]
-
-            # Number of multiplicity blocks I think. Should be 2 in general, 1 for GS and 1 for ionized
-            # Not correct, should be actual multiplicites. Finalstate mult. If doing TDDFT-triplets then I guess we have more
-
-
-
-            # Threshold for WF.
-            wfthres = 2.0
-
-            if CAS is True:
-                #CASSCF: GETTING GETERMINANTS FROM DETERMINANT-PRINTING OPTION in OUTPUTFILE
-                #Combining with internal and external orbitals: internal_orbs,active_orbs,external_orbs
-                #Initial
-                print("Grabbing determinants from Initial State output")
-                init_state = grab_dets_from_CASSCF_output(stateI.outfile)
-                print("init_state:", init_state)
-                #init_state_dict = [i.determinants for i in init_state]
-                #init_state_dict2 = {Initialstate_mult : init_state_dict}
-                #print("init_state_dict:", init_state_dict)
-                #print("init_state_dict2:", init_state_dict2)
-                det_init = format_ci_vectors(init_state[Initialstate_mult])
-                #print("det_init:", det_init)
-                # Printing to file
-                writestringtofile(det_init, "dets_init")
-                print("")
-                #Final state. Just need to point to the one outputfile
-                print("Grabbing determinants from Final State output")
-                final_states = grab_dets_from_CASSCF_output(Finalstates[0].outfile)
-                #print("final_states:", final_states)
-                #final_states_dict = [i.determinants for i in final_states]
-                #print("final_states_dict:", final_states_dict)
-                #final_states_dict2 = {Initialstate_mult : final_states_dict}
-                #print("final_states_dict2:", final_states_dict2)
-                for fstate in Finalstates:
-                    #print("fstate: ", fstate)
-                    #print("fstate.mult :", fstate.mult)
-                    det_final = format_ci_vectors(final_states[fstate.mult])
-                    #print("det_final : ", det_final)
-                    # Printing to file
-                    writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
-            elif MRCI is True:
-
-                print("Grabbing determinants from Initial State output")
-                if SORCI is True:
-                    init_state = grab_dets_from_MRCI_output(stateI.outfile,SORCI=True)                    
-                else:
-                    init_state = grab_dets_from_MRCI_output(stateI.outfile)
-                
-                det_init = format_ci_vectors(init_state[Initialstate_mult])
-
-                writestringtofile(det_init, "dets_init")
-
-                #Checking if wrong determinant in file
-                delete_wrong_det("dets_init",stateI.mult)
-
-
-                print("Grabbing determinants from Final State output")
-                if SORCI is True:
-                    final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile,SORCI=True)                    
-                else:
-                    final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
-                
-                for fstate in Finalstates:
-                    print("fstate: ", fstate)
-                    print("fstate.mult :", fstate.mult)
-                    det_final = format_ci_vectors(final_states[fstate.mult])
-                    #print("det_final : ", det_final)
-                    # Printing to file
-                    writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
-                    
-                    #Checking if wrong determinant in file and delete
-                    delete_wrong_det("dets_final_mult" + str(fstate.mult),fstate.mult)
-                    
-            else:
-                #TDDFT: GETTING DETERMINANTS FROM CIS FILE
-                # Final state. Create detfiles
-                for fstate in Finalstates:
-                    # mults = [stateFmult]
-                    mults = [fstate.mult]
-                    det_final = get_dets_from_cis(fstate.outfile, fstate.cisfile, fstate.restricted, mults, fstate.charge, fstate.mult,
-                                                totnuccharge, statestoextract, statestoskip, no_tda, frozencore, wfthres)
-                    # Printing to file
-                    for blockname, string in det_final.items():
-                        writestringtofile(string, "dets_final_mult"+str(fstate.mult))
-
-
-                # Now doing initial state. Redefine necessary here.
-                #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
-                #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
-                # RB simplification. Separate function for getting determinant-string for Initial State where only one.
-                det_init = get_dets_from_single(stateI.outfile, stateI.restricted, stateI.charge, stateI.mult, totnuccharge, frozencore)
-                # Printing to file
-                for blockname, string in det_init.items():
-                    writestringtofile(string, "dets_init")
-
-            print(bcolors.OKGREEN, "AO matrix, MO coefficients and excited state determinants have been written to files:",
-                bcolors.ENDC)
-            # TODO
-            print(bcolors.OKGREEN, "AO_overl, mos_init, mos_final, dets_final_multX", bcolors.ENDC)
-
-            finaldysonnorms = []
-            for fstate in Finalstates:
-                if Densities == 'SCF' or Densities == 'All':
-                    os.chdir('Calculated_densities')
-                    # Create difference density between Initial-SCF and Finalstate-SCFs
-                    #rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                    #nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                    cubedict2 = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                    #print("init value 0:  ", initial_values[0])
-                    #print("finalstate_values 0:  ", finalstate_values[0])
-                    write_cube_diff(cubedict,cubedict2,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
-
-                    print("Wrote Cube file containing density difference between Initial State and Final State.")
-                    os.chdir('..')
-                ###################
-                # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.  Will take a while for big systems.
-                print("")
-
-                # Check if binary exists
-                if os.path.exists(path_wfoverlap) is False:
-                    print("Path {} does NOT exist !".format(path_wfoverlap))
-                    ashexit()
-
-                print("Running WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
-                # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
-                #Poing to file in inputfile
-                wfoverlapinput = """
-                mix_aoovl=AO_overl
-                a_mo=mos_final
-                b_mo=mos_init
-                a_det=dets_final
-                b_det=dets_init
-                a_mo_read=0
-                b_mo_read=0
-                ao_read=0
-                moprint=1
-                """
-                wfoverlapinput = wfoverlapinput.replace("dets_final", "dets_final_mult"+str(fstate.mult))
-                wfoverlapinput = wfoverlapinput.replace("mos_final", "mos_final-mult"+str(fstate.mult))
-
-                run_wfoverlap(wfoverlapinput,path_wfoverlap,memory)
-
-                #This grabs Dyson norms from wfovl.out file
-                dysonnorms=grabDysonnorms()
-                print("")
-                print(bcolors.OKBLUE,"Dyson norms ({}):".format(len(dysonnorms)),bcolors.ENDC)
-                print(dysonnorms)
-                if len(dysonnorms) == 0:
-                    print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
-                    print("Setting Dyson norms to zero and continuing.")
-                    dysonnorms=len(fstate.IPs)*[0.0]
-                print("")
-                finaldysonnorms=finaldysonnorms+dysonnorms
-            print("")
-            print(bcolors.OKBLUE, "Final combined Dyson norms ({}):".format(len(finaldysonnorms)), bcolors.ENDC)
-            print(finaldysonnorms)
-            print("")
-    else:
-        print("")
-        print(bcolors.WARNING,"WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation",bcolors.ENDC)
-        print("Approximate Dyson norms: ", finaldysonnorms)
-
-        assert len(FinalIPs) == len(finaldysonnorms), "List of Dysonnorms not same size as list of IPs."
-
-    #Print table with info
-    print("-------------------------------------------------------------------------")
-    print("FINAL RESULTS for fragment (CalcLabel: {} FragLabel: {}  Formula: {})".format(label,fragment.label, fragment.prettyformula))
-    print("-------------------------------------------------------------------------")
-    print("Initial state:")
-    print("{:>6} {:>7} {:^20} {:^5}".format("State no.", "Mult", "TotalE (Eh)", "State-type"))
-    if EOM is True:
-        print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "CCSD"))            
-    else:
-        print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, stateI.mult, stateI.energy, "SCF"))
-    print("")
-    print("Final ionized states:")
-    if CAS is True or MRCI is True:
-        stype='CI'
-        print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
-        for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
-            #Getting spinmult
-            if MultipleSpinStates is True:
-                #Change test. what mult we are in.. TODO: Check this for correctness
-                if i < Finalstates[0].numionstates:
-                    spinmult=Finalstates[0].mult
-                else:
-                    spinmult=Finalstates[1].mult
-            else:
-                spinmult=stateF1.mult
-            print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))
-    elif EOM is True:
-        stype='EOM'
-        print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
-        for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
-            #Getting spinmult
-            if MultipleSpinStates is True:
-                #Change test. what mult we are in.. TODO: Check this for correctness
-                if i < Finalstates[0].numionstates:
-                    spinmult=Finalstates[0].mult
-                else:
-                    spinmult=Finalstates[1].mult
-            else:
-                spinmult=stateF1.mult
-            print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))        
-    
-    else:
-        print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
-        for i, (E, IE, dys) in enumerate(zip(Finalionstates,FinalIPs,finaldysonnorms)):
-            #Getting type of state
-            if i == 0:
-                stype='SCF'
-            else:
-                if tda is True:
-                    stype = 'TDA'
-                else:
-                    stype = 'TDDFT'
-                if MultipleSpinStates is True:
-                    if i == numionstates:
-                        stype='SCF'
-            #Getting spinmult
-            if MultipleSpinStates is True:
-                if i < numionstates:
-                    spinmult=Finalstates[0].mult
-                else:
-                    spinmult=Finalstates[1].mult
-            else:
-                spinmult=stateF1.mult
-            #Getting TDDFT transition energy
-            if stype == "TDA" or stype == "TDDFT":
-                if i < numionstates:
-                    TDtransenergy = Finalstates[0].TDtransitionenergies[i-1]
-                else:
-                    #print("i:", i)
-                    index=i-numionstates-1
-                    #print("index:", index)
-                    #print("Finalstates[1].TDtransitionenergies: ", Finalstates[1].TDtransitionenergies)
-                    TDtransenergy = Finalstates[1].TDtransitionenergies[index]
-
-            else:
-                TDtransenergy=0.0
-            print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,stype, TDtransenergy))
-
-
-        #Here doing densities for each TDDFT-state. SCF-states already done.
-        if Densities == 'All':
-            print("")
-            print(bcolors.OKMAGENTA, "Densities option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", bcolors.ENDC)
-            os.chdir('Calculated_densities')
-
-            #Adding Keepdens and Engrad to do TDDFT gradient
-            theory.orcasimpleinput=theory.orcasimpleinput+' KeepDens Engrad'
-
-            if '/C' not in theory.orcasimpleinput:
-                theory.orcasimpleinput = theory.orcasimpleinput + ' AutoAux'
-
-            for findex, fstate in enumerate(Finalstates):
-                print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-                shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
-                os.rename('Final_State_mult' + str(fstate.mult) + '.gbw', theory.filename + '.gbw')
-
-
-                #Looping over each TDDFT-state and doing TDDFT-calc
-                for tddftstate in range(1,numionstates):
-                    print("-------------------------------------------------")
-                    print("Running TDDFT-gradient for State: ", tddftstate)
-                    #Adding Iroot to get state-specific gradient+density                                              ''
-                    if tda == False:
-                        # Boolean for whether no_tda is on or not
-                        print("Not sure if Full-TDDFT density is available. TO BE CHECKED.")
-                        no_tda = True
-                        tddftstring = "%tddft\n" + "tda false\n" + "nroots " + str(
-                            numionstates - 1) + '\n' + "maxdim 25\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
-                    else:
-                        tddftstring = "%tddft\n" + "tda true\n" + "nroots " + str(
-                            numionstates - 1) + '\n' + "maxdim 25\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
-                        # Boolean for whether no_tda is on or not
-                        no_tda = False
-                    theory.extraline = "%method\n"+"frozencore FC_NONE\n"+"end\n" + tddftstring
-
-                    #Turning off stability analysis. Not available for gradient run.
-                    if 'stabperform true' in theory.orcablocks:
-                        print("Turning off stability analysis.")
-                        theory.orcablocks=theory.orcablocks.replace("stabperform true", "stabperform false")
-
-
-                    ash.Singlepoint(fragment=fragment, theory=theory, charge=fstate.charge, mult=fstate.mult)
-                    # TDDFT state done. Renaming cisp and cisr files
-                    #os.rename(theory.filename+'.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
-                    #os.rename(theory.filename+'.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
-                    print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
-
-                    #Doing spin-density Cubefilefor each cisr file
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisspindensity',gridvalue=densgridvalue,
-                                  densityfilename=theory.filename+'.cisr' )
-                    os.rename(theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
-                    #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
-
-                    run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisdensity',gridvalue=densgridvalue,
-                                  densityfilename=theory.filename+'.cisp' )
-                    os.rename(theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
-
-                    final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
-                    #rlowx2, dx2, nx2, orgx2, rlowy2, dy2, ny2, orgy2, rlowz2, dz2, \
-                    #nz2, orgz2, elems2, molcoords2, molcoords_ang2, numatoms2, filebase2, finalstate_values = read_cube(final_dens)
-                    cubedict2 = read_cube(final_dens)
-                    #write_cube_diff(numatoms, orgx, orgy, orgz, nx, dx, ny, dy, nz, dz, elems, molcoords, initial_values, finalstate_values,
-                    #        "Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
-                    write_cube_diff(cubedict,cubedict2,"Densdiff_SCFInit-TDDFTFinalmult" + str(fstate.mult)+'TDState'+str(tddftstate))
-                    print("Wrote Cube file containing density difference between Initial State and Final TDDFT State: ", tddftstate)
-
-            os.chdir('..')
-
-
-    #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
-    print("")
-    print("Printing IPs, Dyson-norms, MOs to file: PES-Results.txt")
-    print("Can be read by PES.Read_old_results() function")
-    #Writing file in Configparser format for easy read-in below
-    with open("PES-Results.txt", 'w') as resultfile:
-        resultfile.write("[Results]\n")
-        resultfile.write("IPs : {}\n".format(FinalIPs))
-        resultfile.write("Dyson-norms : {}\n".format(finaldysonnorms))
-        resultfile.write("MOs_alpha : {}\n".format(stk_alpha))
-        resultfile.write("MOs_beta : {}\n".format(stk_beta))
-
-    print_time_rel(module_init_time, modulename='Photoelectronspectrum', moduleindex=0)
-    return FinalIPs, finaldysonnorms
-
 def Read_old_results():
     print("Reading file PES-Results.txt ...")
     # Parsing of files
@@ -4075,7 +2984,8 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
 # Class for state (Initial, Final etc.) that may differ in charge or spin
 #Will contain energies, MOs, transition energies, IPs etc.
 class MolState:
-    def __init__(self,charge,mult,numionstates):
+    def __init__(self,charge,mult,numionstates,label):
+        self.label=label
         self.charge=charge
         self.mult=mult
         self.tddftstates=[]
@@ -4088,6 +2998,7 @@ class MolState:
         self.restricted=None
         self.GSIP=None
         self.IPs=[]
+        self.cubedict=None
         #Energy
         self.ionstates=[]
         #Number of calculated states for each mult
@@ -4095,3 +3006,4 @@ class MolState:
         self.gbwfile=None
         self.outfile=None
         self.cisfile=None
+        self.densitiesfile=None #New since ORCA5

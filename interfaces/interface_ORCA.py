@@ -187,6 +187,9 @@ class ORCATheory:
         list_files.append(self.filename + '.inp')
         list_files.append(self.filename + '.out')
         list_files.append(self.filename + '.engrad')
+        list_files.append(self.filename + '.cis')
+        list_files.append(self.filename + '_last.out')
+        list_files.append(self.filename + '.xyz')
         for file in list_files:
             try:
                 os.remove(file)
@@ -713,7 +716,7 @@ def grab_ORCA_errors(filename):
 
     errors=[]
     #Lines that are not errors
-    ignore_lines=['   Startup', '   DIIS-Error',' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', 
+    ignore_lines=['           *** ORCA-CIS/TD-DFT FINISHED WITHOUT ERROR','   Startup', '   DIIS-Error',' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', 
         '  Sum of total UMP2 truncation', ]
     for err in error_lines:
         false_positive = any(err.startswith(ign) for ign in ignore_lines)

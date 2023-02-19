@@ -84,6 +84,7 @@ class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, grofile=None,
                  amber_inpcrdfile=None, amber_prmtopfile=None,
                  chemshellfile=None, coords=None, elems=None, connectivity=None, atom=None, diatomic=None, diatomic_bondlength=None,
+                 bondlength=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
 
@@ -141,15 +142,20 @@ class Fragment:
             self.coords = reformat_list_to_array([[0.0,0.0,0.0]])
             #self.update_attributes()
         elif diatomic is not None:
-            print("Creating Diatomic Fragment from formula and diatomic_bondlength")
-            if diatomic_bondlength == None:
-                print(BC.FAIL,"diatomic option requires diatomic_bondlength to be set. Exiting!", BC.END)
-                ashexit()
+            print("Creating Diatomic Fragment from formula and bondlength")
+            if bondlength is None:
+                #TODO: remove diatomic_bondlength and use bondlength only
+                if diatomic_bondlength is None:
+                    print(BC.FAIL,"diatomic option requires bondlength to be set. Exiting!", BC.END)
+                    ashexit()
+                else:
+                    bondlength=diatomic_bondlength
+            
             self.elems=molformulatolist(diatomic)
             if len(self.elems) != 2:
                 print(f"Problem with molecular formula diatomic={diatomic} string!")
                 ashexit()
-            self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(diatomic_bondlength)]])
+            self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(bondlength)]])
             #self.update_attributes()
         # If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
