@@ -140,6 +140,9 @@ class PhotoElectronClass:
         self.label=label
         self.check_stability=check_stability
 
+        #Initizalign final list (necessary)
+        self.finaldysonnorms=[]
+
 
         #Getting charge/mult of states from function argument
         self.totnuccharge=self.fragment.nuccharge
@@ -1081,7 +1084,7 @@ class PhotoElectronClass:
                 print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
                 print("Setting Dyson norms to zero and continuing.")
                 dysonnorms=len(fstate.IPs)*[0.0]
-            self.finaldysonnorms=dysonnorms
+            self.finaldysonnorms=self.finaldysonnorms+dysonnorms
 
 
     def cleanup(self):
