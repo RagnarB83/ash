@@ -1113,7 +1113,8 @@ class PhotoElectronClass:
         if self.TDDFT is True:
             self.run_TDDFT()
             #Diff density
-            self.make_diffdensities_SCF()
+            if self.densities == 'SCF' or self.densities == 'All':
+                self.make_diffdensities_SCF()
             # MO-spectrum 
             self.mo_spectrum()
             #For wfoverlap
