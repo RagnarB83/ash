@@ -1081,7 +1081,7 @@ class PhotoElectronClass:
                 print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
                 print("Setting Dyson norms to zero and continuing.")
                 dysonnorms=len(fstate.IPs)*[0.0]
-            self.finaldysonnorms=self.finaldysonnorms+dysonnorms
+            self.finaldysonnorms=dysonnorms
 
 
     def cleanup(self):
