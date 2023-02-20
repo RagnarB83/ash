@@ -11,9 +11,9 @@ import shutil
 import math
 
 #import ash
-from ash.interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output, ORCATheory
-from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel,print_line_with_mainheader
-from ash.functions.functions_elstructure import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
+from ash.interfaces.interface_ORCA import scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output, ORCATheory
+from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel,print_line_with_mainheader,find_between
+from ash.functions.functions_elstructure import modosplot,write_cube_diff,read_cube
 import ash.constants
 
 #Wrapper function around PhotoElectron()
@@ -139,6 +139,12 @@ class PhotoElectronClass:
         self.DLPNO=DLPNO 
         self.label=label
         self.check_stability=check_stability
+
+        print("TDDFT:", self.TDDFT)
+        print("CAS:", self.CAS)
+        print("EOM:", self.EOM)
+        print("MRCI:", self.MRCI)
+        print("MREOM:", self.MREOM)
 
         #Initizalign final list (necessary)
         self.finaldysonnorms=[]
@@ -307,15 +313,20 @@ class PhotoElectronClass:
         print("MRCI/MREOM option active!")
         print("Will do CASSCF orbital optimization for initial-state, followed by MRCI/MREOM")
 
+        #CASSCF/MRCI wavefunction interpreted as restricted (important for get_MO_from_gbw)
+        self.stateI.restricted = True
+        for fstate in self.Finalstates:
+            fstate.restricted = True
+
         if self.MRCI_CASCI_Final is True:
             print("Will do CAS-CI reference (using initial-state orbitals) for final-states")
 
             
-            print("Using TprintWF value of ", tprintwfvalue)
-            print("Modifying MRCI block for initial state, CAS({},{})".format(MRCI_Initial[0],MRCI_Initial[1]))
-            print("{} electrons in {} orbitals".format(MRCI_Initial[0],MRCI_Initial[1]))
+            print("Using TprintWF value of ", self.tprintwfvalue)
+            print("Modifying MRCI block for initial state, CAS({},{})".format(self.MRCI_Initial[0],self.MRCI_Initial[1]))
+            print("{} electrons in {} orbitals".format(self.MRCI_Initial[0],self.MRCI_Initial[1]))
             print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
-            if 'SORCI' in theory.orcasimpleinput:
+            if 'SORCI' in self.theory.orcasimpleinput:
                 SORCI=True
                 print("SORCI is True!")
             else:
@@ -323,100 +334,105 @@ class PhotoElectronClass:
                 print("SORCI is False!")
             #USING CASSCF block to define reference
             #Add nel,norb and nroots lines back in. Also determinant printing option
-            print("theory.orcablocks :", theory.orcablocks)
+            print("theory.orcablocks :", self.theory.orcablocks)
             
             #If CASSCF block present, trim and replace
-            if '%casscf' in theory.orcablocks:
+            if '%casscf' in self.theory.orcablocks:
                             #Removing nel/norb/nroots lines if user added
-                for line in theory.orcablocks.split('\n'):
+                for line in self.theory.orcablocks.split('\n'):
                     if 'nel' in line:
-                        theory.orcablocks=theory.orcablocks.replace(line,'')
+                        self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
                     if 'norb' in line:
-                        theory.orcablocks=theory.orcablocks.replace(line,'')
+                        self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
                     if 'nroots' in line:
-                        theory.orcablocks=theory.orcablocks.replace(line,'')
+                        self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
                     if 'maxiter' in line:
-                        theory.orcablocks=theory.orcablocks.replace(line,'')
-                theory.orcablocks = theory.orcablocks.replace('\n\n','\n')    
-                theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) +
-                                                        "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\n".format(1))
+                        self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+                self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')    
+                self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) +
+                                                        "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\n".format(1))
             else:
-                theory.orcablocks= theory.orcablocks + '%casscf\n'  + "nel {}\n".format(MRCI_Initial[0]) + "norb {}\n".format(MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
-            print("theory.orcablocks :", theory.orcablocks)
+                self.theory.orcablocks= self.theory.orcablocks + '%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) + "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
+            print("theory.orcablocks :", self.theory.orcablocks)
 
 
             #Enforcing CAS-CI
             #if 'noiter' not in theory.orcasimpleinput.lower():
             #    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
             if self.MREOM is True:
-                if '%mdci' not in theory.orcablocks:
-                    theory.orcablocks = theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n"
+                if '%mdci' not in self.theory.orcablocks:
+                    self.theory.orcablocks = self.theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n"
                 else:
-                    theory.orcablocks = theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n")
+                    self.theory.orcablocks = self.theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n")
                     
             #Defining simple MRCI block. States defined
-            if '%mrci' not in theory.orcablocks:
-                theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(tprintwfvalue) + "end"
+            if '%mrci' not in self.theory.orcablocks:
+                self.theory.orcablocks = self.theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(self.tprintwfvalue) + "end"
             else:
-                theory.orcablocks = theory.orcablocks.replace("%mrci\n","%mrci\n"+"printwf det\nTPrintwf {}\n".format(tprintwfvalue))
+                self.theory.orcablocks = self.theory.orcablocks.replace("%mrci\n","%mrci\n"+"printwf det\nTPrintwf {}\n".format(self.tprintwfvalue))
             
             #theory.orcablocks = "%mrci\n" + "printwf det\nTPrintwf 1e-16\n" + "newblock {} *\n refs cas({},{}) end\n".format(stateI.mult,MRCI_Initial[0],MRCI_Initial[1])+ "nroots {}\n end\n".format(1) + "end"
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
+            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
 
             #Adding MRCI+Q to simpleinputline unless MREOM
             #TODO: Remove as we may want another MRCI method ?
             if self.MREOM is True:
-                if 'MREOM' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput = theory.orcasimpleinput + ' MR-EOM' 
+                if 'MREOM' not in self.theory.orcasimpleinput:
+                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' MR-EOM' 
             else:
-                if 'MRCI+Q' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput = theory.orcasimpleinput + ' MRCI+Q' 
+                if 'MRCI+Q' not in self.theory.orcasimpleinput:
+                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' MRCI+Q' 
 
             #Calling SCF run
-            self.run_SCF_InitState()
+            #self.run_SCF_InitState()
+            result = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.stateI.charge, mult=self.stateI.mult)
+            self.stateI.energy=result.energy
 
-            self.stateI.energy=finalsinglepointenergy
-            print("stateI.energy: ", self.stateI.energy)
+            #Keeping copy of input/outputfile and GBW file
+            shutil.copyfile(self.theory.filename + '.out', './' + self.stateI.label + '.out')
+            shutil.copyfile(self.theory.filename + '.inp', './' + self.stateI.label + '.inp')
+            shutil.copyfile(self.theory.filename + '.gbw', './' + self.stateI.label + '.gbw')
+            self.stateI.gbwfile=self.stateI.label+".gbw"
+            self.stateI.outfile=self.stateI.label+".out"
 
             #Get orbital ranges (stateI is sufficient)
-            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(theory.filename+'.out')
+            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(self.theory.filename+'.out')
 
 
 
-            print("Modifying MRCI block for Final state, MRCI({},{})".format(MRCI_Final[0], MRCI_Final[1]))
-            print("{} electrons in {} orbitals".format(MRCI_Final[0], MRCI_Final[1]))
-            
+            print("Modifying MRCI block for Final state, MRCI({},{})".format(self.MRCI_Final[0], self.MRCI_Final[1]))
+            print("{} electrons in {} orbitals".format(self.MRCI_Final[0], self.MRCI_Final[1]))
             
             
             # Making sure multiplicties are sorted in ascending order and creating comma-sep string
-            MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
+            MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in self.Finalstates]))
 
             print("MRCI_mults:", MRCI_mults)
-            for line in theory.orcablocks.split('\n'):
+            for line in self.theory.orcablocks.split('\n'):
                 if 'nel' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
+                    self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
                 if 'norb' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
+                    self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
+                    self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
                 if 'mult' in line:
-                    theory.orcablocks=theory.orcablocks.replace(line,'')
-            theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+                    self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
 
             #Add nel,norb and nroots lines back in.
             # And both spin multiplicities. Nroots for each
             #numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
-            numionstates_string = ','.join(str(f.numionstates) for f in Finalstates)
+            numionstates_string = ','.join(str(f.numionstates) for f in self.Finalstates)
             print("numionstates_string:", numionstates_string)
-            theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(MRCI_Final[0]) +
+            self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(self.MRCI_Final[0]) +
                                                         "norb {}\n".format(
-                                                            MRCI_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(MRCI_mults))
+                                                            self.MRCI_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(MRCI_mults))
 
             #In Final-state MRCI we would typically use the previous CASSCF-orbitals. Hence CAS-CI and noiter
-            if MRCI_CASCI_Final is True:
-                if 'noiter' not in theory.orcasimpleinput.lower():
-                    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
+            if self.MRCI_CASCI_Final is True:
+                if 'noiter' not in self.theory.orcasimpleinput.lower():
+                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' noiter '
 
 
             #Creating newblock blocks for each multiplicity
@@ -424,24 +440,24 @@ class PhotoElectronClass:
             #for mult in [f.mult for f in Finalstates]:
             #    newblockstring = newblockstring + "  newblock {} *\n".format(mult)+"  refs cas({},{}) end\n".format(MRCI_Final[0],MRCI_Final[1] )+ "nroots {}\n".format(mult)+"end\n"
             #theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf 1e-16\nend"
-            theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
-            theory.orcablocks = theory.orcablocks.replace('\n\n', '\n')
+            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n', '\n')
+            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n', '\n')
 
-            print(bcolors.OKGREEN, "Calculating Final State MRCI Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
+            print(bcolors.OKGREEN, "Calculating Final State MRCI Spin Multiplicities: ", [f.mult for f in self.Finalstates], bcolors.ENDC)
 
-            if initialorbitalfiles is not None:
+            if self.initialorbitalfiles is not None:
                 print("not tested for MRCI...")
                 print("initialorbitalfiles keyword provided.")
-                print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-                shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
+                print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex + 1]))
+                shutil.copyfile(self.initialorbitalfiles[findex + 1], self.theory.filename + '.gbw')
 
-            ash.Singlepoint(fragment=fragment, theory=theory, charge=Finalstates[0].charge, mult=Finalstates[0].mult)
+            ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
 
             #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
             if SORCI is True:
-                fstates_dict = mrci_state_energies_grab(theory.filename+'.out', SORCI=True)
+                fstates_dict = mrci_state_energies_grab(self.theory.filename+'.out', SORCI=True)
             else:
-                fstates_dict = mrci_state_energies_grab(theory.filename+'.out')
+                fstates_dict = mrci_state_energies_grab(self.theory.filename+'.out')
             # Saveing GBW and CIS file
             shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
             shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State' + '.out')
@@ -473,8 +489,9 @@ class PhotoElectronClass:
         if SORCI is True:
             init_state = grab_dets_from_MRCI_output(self.stateI.outfile,SORCI=True)                    
         else:
+            print("self.stateI.outfile:", self.stateI.outfile)
             init_state = grab_dets_from_MRCI_output(self.stateI.outfile)
-        
+        print("xx")
         det_init = format_ci_vectors(init_state[self.Initialstate_mult])
 
         writestringtofile(det_init, "dets_init")
@@ -485,9 +502,9 @@ class PhotoElectronClass:
 
         print("Grabbing determinants from Final State output")
         if SORCI is True:
-            final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile,SORCI=True)                    
+            final_states = grab_dets_from_MRCI_output(self.Finalstates[0].outfile,SORCI=True)                    
         else:
-            final_states = grab_dets_from_MRCI_output(Finalstates[0].outfile)
+            final_states = grab_dets_from_MRCI_output(self.Finalstates[0].outfile)
         
         for fstate in self.Finalstates:
             print("fstate: ", fstate)
@@ -502,8 +519,8 @@ class PhotoElectronClass:
 
     def run_CAS(self):
         print("Using TprintWF value of ", self.tprintwfvalue)
-        print("Modifying CASSCF block for initial state, CAS({},{})".format(CAS_Initial[0],CAS_Initial[1]))
-        print("{} electrons in {} orbitals".format(CAS_Initial[0],CAS_Initial[1]))
+        print("Modifying CASSCF block for initial state, CAS({},{})".format(self.CAS_Initial[0],self.CAS_Initial[1]))
+        print("{} electrons in {} orbitals".format(self.CAS_Initial[0],self.CAS_Initial[1]))
 
         #Removing nel/norb/nroots lines if user added
         for line in self.theory.orcablocks.split('\n'):
@@ -516,9 +533,9 @@ class PhotoElectronClass:
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
 
         #Add nel,norb and nroots lines back in. Also determinant printing option
-        self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n' + "printwf det\nci TPrintwf {} end\n".format(self.tprintwfvalue) + "nel {}\n".format(CAS_Initial[0]) +
+        self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n' + "printwf det\nci TPrintwf {} end\n".format(self.tprintwfvalue) + "nel {}\n".format(self.CAS_Initial[0]) +
                                                     "norb {}\n".format(
-                                                        CAS_Initial[1]) + "nroots {}\n".format(1))
+                                                        self.CAS_Initial[1]) + "nroots {}\n".format(1))
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
 
@@ -546,50 +563,50 @@ class PhotoElectronClass:
         ##CAS option: State-averaged calculation for both spin multiplicities.
 
 
-        print("Modifying CASSCF block for final state, CAS({},{})".format(CAS_Final[0],CAS_Final[1]))
-        print("{} electrons in {} orbitals".format(CAS_Final[0],CAS_Final[0]))
+        print("Modifying CASSCF block for final state, CAS({},{})".format(self.CAS_Final[0],self.CAS_Final[1]))
+        print("{} electrons in {} orbitals".format(self.CAS_Final[0],self.CAS_Final[0]))
         #Making sure multiplicties are sorted in ascending order and creating comma-sep string
-        CAS_mults=','.join(str(x) for x in sorted([f.mult for f in Finalstates]))
+        CAS_mults=','.join(str(x) for x in sorted([f.mult for f in self.Finalstates]))
         print("CAS_mults:", CAS_mults)
         #Removing nel/norb/nroots lines
         for line in self.theory.orcablocks.split('\n'):
             if 'nel' in line:
-                self.theory.orcablocks=theory.orcablocks.replace(line,'')
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
             if 'norb' in line:
-                theory.orcablocks=theory.orcablocks.replace(line,'')
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
             if 'nroots' in line:
-                theory.orcablocks=theory.orcablocks.replace(line,'')
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
             if 'mult' in line:
-                theory.orcablocks=theory.orcablocks.replace(line,'')
-        theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
 
         #Add nel,norb and nroots lines back in.
         # And both spin multiplicities. Nroots for each
         #numionstates_string = ','.join(str(numionstates) for x in [f.numionstates for f in Finalstates])
-        numionstates_string = ','.join(str(f.numionstates) for f in Finalstates)
-        theory.orcablocks = theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(CAS_Final[0]) +
+        numionstates_string = ','.join(str(f.numionstates) for f in self.Finalstates)
+        self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(self.CAS_Final[0]) +
                                                     "norb {}\n".format(
-                                                        CAS_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(CAS_mults))
-        theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
-        theory.orcablocks = theory.orcablocks.replace('\n\n','\n')
+                                                        self.CAS_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(CAS_mults))
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
         #CAS-CI option for Ionized FInalstate. CASSCF orb-opt done on Initial state but then CAS-CI using Init-state orbs on Final-states
-        if CASCI is True:
+        if self.CASCI is True:
             print("CASCI option on! Final ionized states performed at CAS-CI level using Initial-state orbitals.")
-            theory.orcasimpleinput = theory.orcasimpleinput + ' noiter'
+            self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' noiter'
 
 
-        print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in Finalstates], bcolors.ENDC)
+        print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in self.Finalstates], bcolors.ENDC)
 
-        if initialorbitalfiles is not None:
+        if self.initialorbitalfiles is not None:
             print("not tested for CASSCF...")
             print("initialorbitalfiles keyword provided.")
-            print("Will use file {} as guess GBW file for this Final state.".format(initialorbitalfiles[findex + 1]))
-            shutil.copyfile(initialorbitalfiles[findex + 1], theory.filename + '.gbw')
+            print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex + 1]))
+            shutil.copyfile(self.initialorbitalfiles[findex + 1], self.theory.filename + '.gbw')
 
-        ash.Singlepoint(fragment=fragment, theory=theory, charge=Finalstates[0].charge, mult=Finalstates[0].mult)
+        ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
 
         #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
-        fstates_dict = casscf_state_energies_grab(theory.filename+'.out')
+        fstates_dict = casscf_state_energies_grab(self.theory.filename+'.out')
         print("fstates_dict: ", fstates_dict)
 
         # Saveing GBW and CIS file
@@ -1111,6 +1128,7 @@ class PhotoElectronClass:
         # CALL EOM, MRCI/MREOM, CAS or TDDFT to get states
         #######################################################
         if self.TDDFT is True:
+            self.setup_ORCA_object()
             self.run_TDDFT()
             #Diff density
             if self.densities == 'SCF' or self.densities == 'All':
@@ -1121,19 +1139,26 @@ class PhotoElectronClass:
             self.prepare_mos_file()
         elif self.EOM is True:
             print("Calling EOM")
+            ashexit()
+            self.setup_ORCA_object()
             self.run_EOM()
 
         elif self.CAS is True:
             print("CASSCF option active!")
+            ashexit()
+            self.setup_ORCA_object()
             if self.CASCI is True:
                 print("CASCI option on! Initial state will be done with CASSCF while Final ionized states will do CAS-CI")
             #For wfoverlap
             self.prepare_mos_file()
         #Simplifies things. MREOM uses MRCI so let's use same logic.
         elif self.MRCI or self.MREOM is True:
+            self.setup_ORCA_object()
             self.run_MRCI()
             #For wfoverlap
             self.prepare_mos_file()
+            #Defining no MO-spectrum since WFT
+            self.stk_alpha=[]; self.stk_beta=[]
 
         print("\nAll combined Final IPs:", self.FinalIPs)
         print("All combined Ion-state energies (au):", self.Finalionstates)
@@ -1295,7 +1320,6 @@ def get_smat_from_gbw(file1, file2='', orcadir=None):
 
 #Get MO coefficients from GBW file.
 def get_MO_from_gbw(filename,restr,frozencore,orcadir):
-
     # run orca_fragovl
     string=orcadir+'/orca_fragovl %s %s' % (filename,filename)
     try:
@@ -1368,7 +1392,7 @@ def get_MO_from_gbw(filename,restr,frozencore,orcadir):
         #print("range(NAO)", range(NAO))
         #print("data[184]:", data[184])
         for iao in range(NAO):
-          #print("iao:", iao)
+          print("iao:", iao)
           shift=max(0,len(str(iao))-3)
           jline=iline + jblock*(NAO+1) + iao
           line=data[jline]
@@ -2127,7 +2151,6 @@ def grab_dets_from_CASSCF_output(file):
 
 #Grab determinants from MRCI-ORCA output with option PrintWF det
 def grab_dets_from_MRCI_output(file, SORCI=False):
-
     #If SORCI True then multiple MRCI output sections. we want last one
     if SORCI is True:
         final_part=False

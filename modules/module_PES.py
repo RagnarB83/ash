@@ -13,7 +13,7 @@ import math
 
 #import ash
 from ash.interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
-from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel
+from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel,find_between
 from ash.functions.functions_elstructure import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
 import ash.constants
 
@@ -111,7 +111,10 @@ def get_smat_from_gbw(file1, file2='', orcadir=None):
 
 #Get MO coefficients from GBW file.
 def get_MO_from_gbw(filename,restr,frozencore,orcadir):
-
+    print("filename:", filename)
+    print("restr:", restr)
+    print("frozencore:", frozencore)
+    print("orcadir:", orcadir)
     # run orca_fragovl
     string=orcadir+'/orca_fragovl %s %s' % (filename,filename)
     try:
@@ -943,7 +946,7 @@ def grab_dets_from_CASSCF_output(file):
 
 #Grab determinants from MRCI-ORCA output with option PrintWF det
 def grab_dets_from_MRCI_output(file, SORCI=False):
-
+    print("file:", file)
     #If SORCI True then multiple MRCI output sections. we want last one
     if SORCI is True:
         final_part=False
