@@ -250,7 +250,7 @@ class PhotoElectronClass:
 
 
             #Looping over each TDDFT-state and doing TDDFT-calc
-            for tddftstate in range(1,self.numionstates):
+            for tddftstate in range(1,fstate.numionstates):
                 print("-------------------------------------------------")
                 print("Running TDDFT-gradient for State: ", tddftstate)
                 #Adding Iroot to get state-specific gradient+density                                              ''
