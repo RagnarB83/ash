@@ -385,6 +385,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("blocblock_parallelization_mpi is set to MPI")
             print("block2-mpi version needs to be installed for this to work")
             self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
+            self.mch.fcisolver.threads = 1
         elif self.block_parallelization == 'OpenMP':
             print("block_parallelization is set to OpenMP.")
             print("Will parallelize Block2 by OpenMP multithreading")
