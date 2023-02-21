@@ -386,6 +386,11 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("block2-mpi version needs to be installed for this to work")
             self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
             self.mch.fcisolver.threads = 1
+            #NOTE: Problem. We are still getting threading when using MPI
+            #Disabling MPI for now
+            print("MPI parallelization is not working")
+            ashexit()
+
         elif self.block_parallelization == 'OpenMP':
             print("block_parallelization is set to OpenMP.")
             print("Will parallelize Block2 by OpenMP multithreading")
