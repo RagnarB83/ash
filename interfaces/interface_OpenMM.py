@@ -2674,6 +2674,9 @@ class OpenMM_MDclass:
         #External QM option off by default
         self.externalqm=False
 
+        #Trajectory filename. Used for trajs in DCD, PDB etc. format, also single PDB snapshots
+        self.trajfilename=trajfilename
+
         # Distinguish between OpenMM theory QM/MM theory or QM theory
         self.dummy_MM=dummy_MM
 
@@ -2871,7 +2874,7 @@ class OpenMM_MDclass:
         #TODO: See if this can be made to work for simulations with step-by-step
         if trajectory_file_option == 'PDB':
             self.openmmobject.simulation.reporters.append(
-                self.openmmobject.openmm.app.PDBReporter(trajfilename+'.pdb', self.traj_frequency,
+                self.openmmobject.openmm.app.PDBReporter(self.trajfilename+'.pdb', self.traj_frequency,
                                                          enforcePeriodicBox=self.enforcePeriodicBox))
         elif trajectory_file_option == 'DCD':
             # NOTE: Disabling for now
@@ -2880,18 +2883,18 @@ class OpenMM_MDclass:
             # enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
             # print("Wrote PDB")
             self.openmmobject.simulation.reporters.append(
-                self.openmmobject.openmm.app.DCDReporter(trajfilename+'.dcd', self.traj_frequency,
+                self.openmmobject.openmm.app.DCDReporter(self.trajfilename+'.dcd', self.traj_frequency,
                                                          enforcePeriodicBox=self.enforcePeriodicBox))
         elif trajectory_file_option == 'NetCDFReporter':
             print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import_()
             self.openmmobject.simulation.reporters.append(
-                mdtraj.reporters.NetCDFReporter(trajfilename+'.nc', self.traj_frequency))
+                mdtraj.reporters.NetCDFReporter(self.trajfilename+'.nc', self.traj_frequency))
         elif trajectory_file_option == 'HDF5Reporter':
             print("HDF5Reporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import_()
             self.openmmobject.simulation.reporters.append(
-                mdtraj.reporters.HDF5Reporter(trajfilename+'.lh5', self.traj_frequency,
+                mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=self.enforcePeriodicBox))
 
         if barostat is not None:
@@ -3235,9 +3238,9 @@ class OpenMM_MDclass:
         self.openmmobject.system.setDefaultPeriodicBoxVectors(a, b, c)
 
         # Writing final frame to disk as PDB
-        with open('final_MDfrag_laststep.pdb', 'w') as f:
+        with open(self.trajfilename+'.pdb', 'w') as f:
             self.openmmobject.openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
-        with open('final_MDfrag_laststep.pdb', 'a') as f:
+        with open(self.trajfilename+'.pdb', 'a') as f:
             self.openmmobject.openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology,
                                                                     self.state.getPositions(asNumpy=True).value_in_unit(
                                                                         self.openmmobject.unit.angstrom), f)
@@ -3748,8 +3751,9 @@ CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', P
 
 #
 def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], 
-    temperatures=[1,10,300], check_gradient_first=True, gradient_threshold=100, use_mdtraj=True):
+    temperatures=[1,10,300], check_gradient_first=True, gradient_threshold=100, use_mdtraj=True, trajfilename="warmup_MD"):
     print_line_with_mainheader("Gentle_warm_up_MD")
+    print("Trajectory filename:", trajfilename)
     if theory is None or fragment is None:
         print("Gentle_warm_up_MD requires theory (OpenMM object) and fragment")
         ashexit()
@@ -3770,6 +3774,21 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
             print("Suggests a bad system geometry or that atoms need constraints (might be present already)")
             print("Gentle_warm_up_MD will go on")
 
+    #Try a simple minimization first or simple MD
+    print("\nAttempting initial 10-step minimization first")
+    #testheory=copy.copy(theory)
+    #nonHindices=fragment.get_nonH_atomindices() #get nonH indices
+    #testheory.freeze_atoms(frozen_atoms=nonHindices) #freezing non-H atoms
+    #testheory.remove_all_constraints() #remove all constraints (incompatible with frozen atoms)
+    #testheory.update_simulation() #Updating simulation object after freezing
+    try:
+        OpenMM_Opt(fragment=fragment, theory=theory, maxiter=10, tolerance=1)
+        print("Minimization successful")
+    except Exception as e :
+        print("Problem minimizing system")
+        print("Error message:", e)       
+        print("Will go on to do MD")
+
     print(f"\n{len(steps)} MD-runs have been defined")
     for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
         print(f"MD-step {num} Number of simulation steps: {step} with timestep: {ts} and temperature: {temp} K")
@@ -3777,19 +3796,21 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
     print();print()
     #Gentle heating up protocol
     for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
+        #Name of PDB and DCD filename: i.e. warmup_MD_cycle1.pdb and warmup_MD_cycle1.dcd 
+        MDcyclename=trajfilename+f"_cycle{num}"
         print(f"\nNow running MD-run {num}. Number of steps: {step} with timestep:{ts} and temperature: {temp} K")
-        print("Will write trajectory to file:", 'NVTtrajectorystep_'+str(num)+'.dcd')
+        print(f"Will write trajectory to file: {MDcyclename}.dcd")
         OpenMM_MD(fragment=fragment, theory=theory, timestep=ts, simulation_steps=step, traj_frequency=1, temperature=temp,
-            integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajfilename='NVTtrajectorystep_'+str(num), trajectory_file_option='DCD')
+            integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajfilename=MDcyclename, trajectory_file_option='DCD')
         
         #Running mdtraj after each sim
         if use_mdtraj is True:
             print("Trying to load mdtraj for basic analysis of trajectory")
             try:
                 print("Imaging trajectory")
-                MDtraj_imagetraj('NVTtrajectorystep_'+str(num)+'.dcd', "final_MDfrag_laststep.pdb")
+                MDtraj_imagetraj(f"{MDcyclename}.dcd", f"{MDcyclename}.pdb")
                 print("Running RMS Fluctuation analysis on trajectory")
-                MDtraj_RMSF('NVTtrajectorystep_'+str(num)+"_imaged.dcd", "final_MDfrag_laststep.pdb", print_largest_values=True, 
+                MDtraj_RMSF(f"{MDcyclename}.dcd", f"{MDcyclename}.pdb", print_largest_values=True, 
                     threshold=0.005, largest_values=10)
             except ImportError:
                 print("mdtraj library could not be imported. Skipping")
