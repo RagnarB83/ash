@@ -966,10 +966,17 @@ class PySCFTheory:
                         print("Exiting")
                         ashexit()
                 if self.mcpdft is True:
-                    bla = casscf.run(orbitals, natorb=True)
+                    mcpdft_result = casscf.run(orbitals, natorb=True)
+                    print("E(CASSCF):", mcpdft_result.e_mcscf)
+                    print(f"Eot({self.mcpdft_functional}):", mcpdft_result.e_ot)
+                    print("E(tot, MC-PDFT):", mcpdft_result.e_tot)
+                    print("E(ci):", mcpdft_result.e_cas)
                     print("bla:", bla)
                     print("casscf dict", casscf.__dict__)
                     print("bla dict", bla.__dict__)
+                    print("")
+                    casscf.compute_pdft_energy_()
+                    print("sdfdsf")
 
                 else:
                     e_tot, e_cas, fcivec, mo, mo_energy = casscf.run(orbitals, natorb=True)
