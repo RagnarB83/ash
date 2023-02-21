@@ -968,6 +968,9 @@ class PySCFTheory:
                 if self.mcpdft is True:
                     bla = casscf.run(orbitals, natorb=True)
                     print("bla:", bla)
+                    print("casscf dict", casscf.__dict__)
+                    print("bla dict", bla.__dict__)
+
                 else:
                     e_tot, e_cas, fcivec, mo, mo_energy = casscf.run(orbitals, natorb=True)
                 print("CASSCF run done\n")
