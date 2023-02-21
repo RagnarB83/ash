@@ -939,7 +939,7 @@ class PySCFTheory:
             if self.CASSCF is True:
                 print("Doing CASSCF (orbital optimization)")
                 if self.mcpdft is True:
-                    casscf = self.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas).run ()
+                    casscf = self.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
                 else:
                     #Regular CASSCF
                     casscf = self.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
@@ -984,7 +984,9 @@ class PySCFTheory:
                 print("Doing CAS-CI (no orbital optimization)")
                 if self.mcpdft is True:
                     print("mcpdft is True")
-                    mcpdft_result = self.mcpdft_l.CASCI (self.mf, self.mcpdft_functional, norb_cas, nel_cas).run ()
+                    casci= self.mcpdft_l.CASCI (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+                    casci.verbose=self.verbose_setting
+                    mcpdft_result = casci.run()
                     print("E(CASSCF):", mcpdft_result.e_mcscf)
                     print(f"Eot({self.mcpdft_functional}):", mcpdft_result.e_ot)
                     print("E(tot, MC-PDFT):", mcpdft_result.e_tot)
