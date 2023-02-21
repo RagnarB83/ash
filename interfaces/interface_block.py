@@ -269,13 +269,13 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals, 
-                                                                CAS_AO_labels=self.CAS_AO_labels, elems=elems)
+                                                                CAS_AO_labels=self.CAS_AO_labels, elems=elems, numcores=self.numcores)
             else:
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals,
-                                                                elems=elems)
+                                                                elems=elems, numcores=self.numcores)
 
         else:
             print("Will read MOs from checkpoint file:", self.moreadfile)
@@ -415,7 +415,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         #Adding singlet embedding if requested
         if self.singlet_embedding is True:
-            self.mch.fcisolver.block_extra_keyword="singlet_embedding"
+            self.mch.fcisolver.block_extra_keyword= ["singlet_embedding"]
 
         self.mch.verbose=verbose
         #Setting memory

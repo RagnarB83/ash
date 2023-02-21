@@ -384,7 +384,7 @@ noio
                 print("First calculating MP2 natural orbitals, then doing SHCI-job")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
                 MP2nat_occupations, MP2nat_mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                self.pyscftheoryobject.mf, method='MP2', elems=elems)
+                                                                self.pyscftheoryobject.mf, method='MP2', elems=elems, numcores=self.numcores)
                 self.setup_active_space(occupations=MP2nat_occupations)
                 self.setup_SHCI_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True
                 self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
@@ -407,13 +407,13 @@ noio
 
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals, 
-                                                                CAS_AO_labels=self.CAS_AO_labels, elems=elems)
+                                                                CAS_AO_labels=self.CAS_AO_labels, elems=elems, numcores=self.numcores)
             else:
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals,
-                                                                elems=elems)
+                                                                elems=elems, numcores=self.numcores)
 
         else:
             print("Will read MOs from checkpoint file:", self.moreadfile)

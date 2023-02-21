@@ -304,8 +304,14 @@ class PySCFTheory:
     #Currently doing so for MP2 (cheap-ish) for pop-ana printout but not CCSD. CCSD(T) is fine since manual
     #Make CCSD and MP2 manual also?
     #Relaxed refers to DFMP2 only 
-    def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None, elems=None, relaxed=False):
+    def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None, elems=None, relaxed=False, numcores=1):
         module_init_time=time.time()
+        print("Inside calculate_natural_orbitals")
+        print("Number of PySCF lib threads was:", self.lib.num_threads())
+        print("Setting threads to :", numcores)
+        self.pyscf.lib.num_threads(numcores)
+        print("Number of PySCF lib threads is now:", self.lib.num_threads())
+
 
         #Determine frozen core from element list
         self.determine_frozen_core(elems)
