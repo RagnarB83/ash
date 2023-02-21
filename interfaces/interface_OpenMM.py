@@ -3751,7 +3751,8 @@ CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', P
 
 #
 def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], 
-    temperatures=[1,10,300], check_gradient_first=True, gradient_threshold=100, use_mdtraj=True, trajfilename="warmup_MD"):
+    temperatures=[1,10,300], check_gradient_first=True, gradient_threshold=100, use_mdtraj=True, trajfilename="warmup_MD",
+    initial_opt=True):
     print_line_with_mainheader("Gentle_warm_up_MD")
     print("Trajectory filename:", trajfilename)
     if theory is None or fragment is None:
@@ -3781,13 +3782,14 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
     #testheory.freeze_atoms(frozen_atoms=nonHindices) #freezing non-H atoms
     #testheory.remove_all_constraints() #remove all constraints (incompatible with frozen atoms)
     #testheory.update_simulation() #Updating simulation object after freezing
-    try:
-        OpenMM_Opt(fragment=fragment, theory=theory, maxiter=10, tolerance=1)
-        print("Minimization successful")
-    except Exception as e :
-        print("Problem minimizing system")
-        print("Error message:", e)       
-        print("Will go on to do MD")
+    if initial_opt is True:
+        try:
+            OpenMM_Opt(fragment=fragment, theory=theory, maxiter=10, tolerance=1)
+            print("Minimization successful")
+        except Exception as e :
+            print("Problem minimizing system")
+            print("Error message:", e)       
+            print("Will go on to do MD")
 
     print(f"\n{len(steps)} MD-runs have been defined")
     for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
