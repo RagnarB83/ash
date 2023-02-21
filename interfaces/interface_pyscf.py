@@ -307,11 +307,7 @@ class PySCFTheory:
     def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None, elems=None, relaxed=False, numcores=1):
         module_init_time=time.time()
         print("Inside calculate_natural_orbitals")
-        print("Number of PySCF lib threads was:", self.pyscf.lib.num_threads())
-        print("Setting threads to :", numcores)
-        self.pyscf.lib.num_threads(numcores)
-        print("Number of PySCF lib threads is now:", self.pyscf.lib.num_threads())
-
+        print("Number of PySCF lib threads is:", self.pyscf.lib.num_threads())
 
         #Determine frozen core from element list
         self.determine_frozen_core(elems)
@@ -435,6 +431,7 @@ class PySCFTheory:
             # and hence UCCSD
             if type(ccsd) == self.pyscf.cc.uccsd.UCCSD:
                 print("CCSD(T) lambda UHF")
+                #NOTE: No threading parallelization seen here, not sure why
                 conv, l1, l2 = self.uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
                 rdm1 = self.uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
                 print("Mulliken analysis for UHF-CCSD(T) density matrix")
