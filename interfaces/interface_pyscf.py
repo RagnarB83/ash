@@ -307,10 +307,10 @@ class PySCFTheory:
     def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None, elems=None, relaxed=False, numcores=1):
         module_init_time=time.time()
         print("Inside calculate_natural_orbitals")
-        print("Number of PySCF lib threads was:", self.lib.num_threads())
+        print("Number of PySCF lib threads was:", self.pyscf.lib.num_threads())
         print("Setting threads to :", numcores)
         self.pyscf.lib.num_threads(numcores)
-        print("Number of PySCF lib threads is now:", self.lib.num_threads())
+        print("Number of PySCF lib threads is now:", self.pyscf.lib.num_threads())
 
 
         #Determine frozen core from element list
