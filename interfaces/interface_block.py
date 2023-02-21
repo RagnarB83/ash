@@ -18,12 +18,17 @@ import ash.settings_ash
 #BLock 1.5 docs: https://pyscf.org/Block/with-pyscf.html
 
 #TODO: Block direct from Fcidump file. Dryrun option also maybe??
+#TODO: Threading  control is not working in general. 
+#We are in general getting max threads (though evenly split to MPI procs if using Hybrid) on node
+#However, we can't get less thread even though specified
+#TODO: NEVPT2 add
+
 
 class BlockTheory:
     def __init__(self, blockdir=None, pyscftheoryobject=None, blockversion='Block2', filename='input.dat', printlevel=2,
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None, 
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
-                Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None,
+                Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None):
 
         self.theorynamelabel="Block"
@@ -105,6 +110,7 @@ class BlockTheory:
         self.macroiter=macroiter
         self.Block_direct=Block_direct
         self.maxM=maxM
+        self.singlet_embedding=singlet_embedding
         self.tol=tol
 
         self.fcidumpfile=fcidumpfile
@@ -115,6 +121,7 @@ class BlockTheory:
         self.frozencore=frozencore
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
+
         #Print stuff
         print("Printlevel:", self.printlevel)
         print("PySCF object:", self.pyscftheoryobject)
@@ -135,6 +142,7 @@ class BlockTheory:
         print("cas_nmax:", self.cas_nmax)
         print("macroiter:", self.macroiter)
         print("MaxM", self.maxM)
+        print("singlet_embedding:", self.singlet_embedding)
         print("Tolerance", self.tol)
 
     
@@ -404,6 +412,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         else:
             print("Error: Wrong block_parallelization option chosen. Exiting")
             ashexit()
+
+        #Adding singlet embedding if requested
+        if self.singlet_embedding is True:
+            self.mch.fcisolver.block_extra_keyword="singlet_embedding"
 
         self.mch.verbose=verbose
         #Setting memory
