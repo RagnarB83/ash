@@ -212,7 +212,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("Calling Block executable directly")
         print(f"Running Block with ({self.numcores} MPI processes)")
         with open('output.dat', "w") as outfile:
-            sp.call(['mpirun', '-np', str(self.numcores), self.block_binary, self.filename], stdout=outfile)
+            sp.call(['mpirun', '-np', str(self.numcores), ' --bind-to none', self.block_binary, self.filename], stdout=outfile)
         print_time_rel(module_init_time, modulename='Block-direct-run', moduleindex=2)
     
     #Set up initial orbitals
@@ -384,7 +384,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.block_parallelization == 'MPI':
             print("blocblock_parallelization_mpi is set to MPI")
             print("block2-mpi version needs to be installed for this to work")
-            self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
+            self.mch.fcisolver.mpiprefix = f'mpirun -n {self.numcores} --bind-to none'
             self.mch.fcisolver.threads = 1
             #NOTE: Problem. We are still getting threading when using MPI
             #Disabling MPI for now
@@ -399,7 +399,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         elif self.block_parallelization == 'Hybrid':
             print("block_parallelization is set to Hybrid.")
             print("block2-mpi version needs to be installed for this to work")
-            self.mch.fcisolver.mpiprefix = f'mpirun -np {self.hybrid_num_mpi_procs}'
+            self.mch.fcisolver.mpiprefix = f'mpirun -n {self.hybrid_num_mpi_procs} --bind-to none'
             self.mch.fcisolver.threads = self.hybrid_num_threads
         else:
             print("Error: Wrong block_parallelization option chosen. Exiting")
