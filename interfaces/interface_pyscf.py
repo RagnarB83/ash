@@ -944,7 +944,7 @@ class PySCFTheory:
                     #Optional recompute with different on-top functional
                     #e_tot, e_ot, e_states = casscf.compute_pdft_energy_(otxc='tBLYP')
                 else:
-                    #Regular CASSC
+                    #Regular CASSCF
                     casscf = self.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
                 casscf.max_cycle_macro=self.casscf_maxcycle
                 casscf.verbose=self.verbose_setting
@@ -965,7 +965,11 @@ class PySCFTheory:
                         print("Something wrong with orbitals:", orbitals)
                         print("Exiting")
                         ashexit()
-                e_tot, e_cas, fcivec, mo, mo_energy = casscf.run(orbitals, natorb=True)
+                if self.mcpdft is True:
+                    bla = casscf.run(orbitals, natorb=True)
+                    print("bla:", bla)
+                else:
+                    e_tot, e_cas, fcivec, mo, mo_energy = casscf.run(orbitals, natorb=True)
                 print("CASSCF run done\n")
             else:
                 print("Doing CAS-CI (no orbital optimization)")
