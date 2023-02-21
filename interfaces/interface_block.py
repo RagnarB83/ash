@@ -12,7 +12,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 
 #Interface to Block: Block2 primarily via PySCF and also directly via FCIdump
-# Possibly later both Block 1.5 and Stackblock via PySCF
+# Possibly later include Block 1.5 and Stackblock (currently no need)
 
 #Block 2 docs: https://block2.readthedocs.io
 #BLock 1.5 docs: https://pyscf.org/Block/with-pyscf.html
@@ -22,6 +22,7 @@ import ash.settings_ash
 #We are in general getting max threads (though evenly split to MPI procs if using Hybrid) on node
 #However, we can't get less thread even though specified
 #TODO: NEVPT2 add
+#TODO: MRCI add. FIC-MRCISD and uncontracted
 
 
 class BlockTheory:
