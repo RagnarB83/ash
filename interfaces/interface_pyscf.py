@@ -25,7 +25,8 @@ class PySCFTheory:
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
-                  loscpath=None, LOSC_window=None):
+                  loscpath=None, LOSC_window=None,
+                  mcpdft=False, mcpdft_functional=None):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -108,6 +109,9 @@ class PySCFTheory:
         self.loscfunctional=loscfunctional
         self.LOSC_method=LOSC_method
         self.LOSC_window=LOSC_window
+        #MC-PDFT
+        self.mcpdft=mcpdft
+        self.mcpdft_functional=mcpdft_functional
 
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
@@ -181,6 +185,8 @@ class PySCFTheory:
         print("CAS_nmax:", self.cas_nmax)
         print("Active space:", self.active_space)
         print()
+        print("MC-PDFT:", self.mcpdft)
+        print("mcpdft_functional:", self.mcpdft_functional)
         #TODO: Restart settings for PySCF
 
     def determine_frozen_core(self,elems):
@@ -252,11 +258,23 @@ class PySCFTheory:
         from pyscf.mcscf import avas, dmet_cas
         self.pyscf_avas=avas
         self.pyscf_dmet_cas=dmet_cas
-        #TODO: Needs to be revisited
+        
         if self.pe==True:
+            #TODO: Needs to be revisited
             #import pyscf.solvent as solvent
             #from pyscf.solvent import pol_embed
             import cppe
+        if self.mcpdft is True:
+            try:
+                from pyscf import mcpdft, mcdcft
+            except ImportError:
+                print("Problem importing mcpdft library")
+                print("Make sure that mcpdft has been installed into this pyscf environment")
+                print("See: https://gagliardigroup.uchicago.edu/open-software-data/mc-pdft/")
+                ashexit()
+            self.mcpdft_l=mcpdft
+            self.mcdcft_l=mcdcft
+
     def load_pyqmc(self):
         try:
             import pyqmc.api as pyq
@@ -920,8 +938,14 @@ class PySCFTheory:
             print(f"Now running CAS job with active space of {nel_cas} electrons in {norb_cas} orbitals")
             if self.CASSCF is True:
                 print("Doing CASSCF (orbital optimization)")
-                #TODO: Orbital option for starting CASSCF calculation
-                casscf = self.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
+                if self.mcpdft is True:
+                    casscf = self.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas).run ()
+
+                    #Optional recompute with different on-top functional
+                    #e_tot, e_ot, e_states = casscf.compute_pdft_energy_(otxc='tBLYP')
+                else:
+                    #Regular CASSC
+                    casscf = self.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
                 casscf.max_cycle_macro=self.casscf_maxcycle
                 casscf.verbose=self.verbose_setting
                 #Writing of checkpointfile
