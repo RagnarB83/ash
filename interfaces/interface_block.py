@@ -13,14 +13,11 @@ import ash.settings_ash
 
 #Interface to Block: Block2 primarily via PySCF and also directly via FCIdump
 # Possibly later include Block 1.5 and Stackblock (currently no need)
-
 #Block 2 docs: https://block2.readthedocs.io
 #BLock 1.5 docs: https://pyscf.org/Block/with-pyscf.html
 
 #TODO: Block direct from Fcidump file. Dryrun option also maybe??
 #TODO: Threading  control is not working in general. 
-#We are in general getting max threads (though evenly split to MPI procs if using Hybrid) on node
-#However, we can't get less thread even though specified
 #TODO: NEVPT2 add
 #TODO: MRCI add. FIC-MRCISD and uncontracted
 
