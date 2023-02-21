@@ -940,9 +940,6 @@ class PySCFTheory:
                 print("Doing CASSCF (orbital optimization)")
                 if self.mcpdft is True:
                     casscf = self.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas).run ()
-
-                    #Optional recompute with different on-top functional
-                    #e_tot, e_ot, e_states = casscf.compute_pdft_energy_(otxc='tBLYP')
                 else:
                     #Regular CASSCF
                     casscf = self.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
@@ -972,39 +969,39 @@ class PySCFTheory:
                     print("E(tot, MC-PDFT):", mcpdft_result.e_tot)
                     print("E(ci):", mcpdft_result.e_cas)
                     print("")
-                    casscf.compute_pdft_energy_()
-                    print("sdfdsf")
-
+                    #casscf.compute_pdft_energy_()
+                    #Optional recompute with different on-top functional
+                    #e_tot, e_ot, e_states = casscf.compute_pdft_energy_(otxc='tBLYP')
+                    self.energy=mcpdft_result.e_tot
                 else:
+                    #Regular CASSCF
                     e_tot, e_cas, fcivec, mo, mo_energy = casscf.run(orbitals, natorb=True)
+                    print("e_tot:", e_tot)
+                    print("e_cas:", e_cas)
+                    self.energy = e_tot
                 print("CASSCF run done\n")
             else:
                 print("Doing CAS-CI (no orbital optimization)")
-                casci = self.mcscf.CASCI(self.mf, norb_cas, nel_cas)
-                casci.verbose=self.verbose_setting
-                #CAS-CI from chosen orbitals above
-                e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(orbitals)
-
-                print("CAS-CI run done\n")
-
-            print("e_tot:", e_tot)
-            print("e_cas:", e_cas)
-            self.energy = e_tot
-
-            #################
-            # for ipie
-            #################
-            #print("CAS_nocc_a:", self.CAS_nocc_a)
-            #print("CAS_nocc_b:", self.CAS_nocc_b)
-            #Write to checkpoint file
-            #coeff, occa, occb = zip(*self.pyscf.fci.addons.large_ci(fcivec, self.active_space[0], (self.CAS_nocc_a, self.CAS_nocc_a), 
-            #    tol=1e-8, return_strs=False))
-            # Need to write wavefunction to checkpoint file.
-            #import h5py
-            #with h5py.File("scf.chk", 'r+') as fh5:
-            #    fh5['mcscf/ci_coeffs'] = coeff
-            #    fh5['mcscf/occs_alpha'] = occa
-            #    fh5['mcscf/occs_beta'] = occb
+                if self.mcpdft is True:
+                    print("mcpdft is True")
+                    casci = self.mcpdft_l.CASCI (self.mf, self.mcpdft_functional, norb_cas, nel_cas).run ()
+                    print("E(CASSCF):", mcpdft_result.e_mcscf)
+                    print(f"Eot({self.mcpdft_functional}):", mcpdft_result.e_ot)
+                    print("E(tot, MC-PDFT):", mcpdft_result.e_tot)
+                    print("E(ci):", mcpdft_result.e_cas)
+                    print("")
+                    self.energy = mcpdft_result.e_tot
+                    print("CAS-CI run done\n")
+                else:
+                    #Regular CAS-CI
+                    casci = self.mcscf.CASCI(self.mf, norb_cas, nel_cas)
+                    casci.verbose=self.verbose_setting
+                    #CAS-CI from chosen orbitals above
+                    e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(orbitals)
+                    print("e_tot:", e_tot)
+                    print("e_cas:", e_cas)
+                    self.energy = e_tot
+                    print("CAS-CI run done\n")
         else:
             print("No post-SCF job.")
         
