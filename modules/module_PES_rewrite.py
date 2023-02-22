@@ -421,9 +421,9 @@ class PhotoElectronClass:
             self.stateI.outfile=self.stateI.label+".out"
             #Copy density files for Init state over to Calculated_densities
             if self.densities != None:
-                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', 
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', specify_density=True,
                     densityfilename=self.theory.filename + f'.state_0_block_0.el.tmp',gridvalue=self.densgridvalue)
-                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', 
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
                     densityfilename=self.theory.filename + f'.state_0_block_0.spin.tmp',gridvalue=self.densgridvalue)
                 shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{self.stateI.label}.eldens.cube")
                 shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{self.stateI.label}.spindens.cube")
@@ -506,9 +506,9 @@ class PhotoElectronClass:
                     for numstate in range(0,fstate.numionstates):
                         print("numstate:", numstate)
 
-                        run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', 
+                        run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', specify_density=True,
                             densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.el.tmp',gridvalue=self.densgridvalue)
-                        run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', 
+                        run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
                             densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp',gridvalue=self.densgridvalue)
                         
                         shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.eldens.cube")
