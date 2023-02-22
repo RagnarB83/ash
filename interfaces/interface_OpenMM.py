@@ -3752,7 +3752,7 @@ CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', P
 #
 def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], 
     temperatures=[1,10,300], check_gradient_first=True, gradient_threshold=100, use_mdtraj=True, 
-    trajfilename="warmup_MD", initial_opt=False, traj_frequency=1):
+    trajfilename="warmup_MD", initial_opt=True, traj_frequency=1):
     print_line_with_mainheader("Gentle_warm_up_MD")
     print("Trajectory filename:", trajfilename)
     if theory is None or fragment is None:
@@ -3776,13 +3776,15 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
             print("Gentle_warm_up_MD will go on")
 
     #Try a simple minimization first or simple MD
-    print("\nAttempting initial 10-step minimization first")
+
     #testheory=copy.copy(theory)
     #nonHindices=fragment.get_nonH_atomindices() #get nonH indices
     #testheory.freeze_atoms(frozen_atoms=nonHindices) #freezing non-H atoms
     #testheory.remove_all_constraints() #remove all constraints (incompatible with frozen atoms)
     #testheory.update_simulation() #Updating simulation object after freezing
     if initial_opt is True:
+        print("\ninitial_opt is True (default). Will attempt initial 10-step minimization first")
+        print("If this step runs forever you can select initial_opt=False")
         try:
             OpenMM_Opt(fragment=fragment, theory=theory, maxiter=10, tolerance=1)
             print("Minimization successful")
