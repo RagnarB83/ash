@@ -311,7 +311,8 @@ class PhotoElectronClass:
                 fcubedict = read_cube(f"{fstate.label}_state{numstate}.eldens.cube")
         write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'{statetype}State'+str(fstate.label))
         print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", fstate.label)
-
+        os.chdir('..')
+    #NOTE: below is unnecessary
     def make_diffdensities_SCF(self):
         os.chdir('Calculated_densities')
         # Read Initial-state-SCF density Cube file into memory
