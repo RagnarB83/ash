@@ -307,10 +307,12 @@ class PhotoElectronClass:
         os.chdir('Calculated_densities')
         self.stateI.cubedict= read_cube(f"{self.stateI.label}.eldens.cube")
         for fstate in self.Finalstates:
+            print("fstate:", fstate)
             for numstate in range(0,fstate.numionstates):
+                print("numstate:", numstate)
                 fcubedict = read_cube(f"{fstate.label}_state{numstate}.eldens.cube")
-        write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'{statetype}State'+str(fstate.label))
-        print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", fstate.label)
+                write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
+                print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", fstate.label)
         os.chdir('..')
     #NOTE: below is unnecessary
     def make_diffdensities_SCF(self):
@@ -493,15 +495,14 @@ class PhotoElectronClass:
             shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State' + '.out')
             shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State' + '.inp')
 
-            print("self.Finalstates:", self.Finalstates)
             #Each fstate linked with same GBW file and outfile
             for numblock,fstate in enumerate(self.Finalstates):
-                print("numblock:", numblock)
                 fstate.gbwfile = "Final_State" + ".gbw"
                 fstate.outfile = "Final_State" + ".out"
 
                 #Copy density files for each final state over to Calculated_densities
                 if self.densities != None:
+                    print("Now creating density file for each final state")
                     for numstate in range(0,fstate.numionstates):
                         print("numstate:", numstate)
 
