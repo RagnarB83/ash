@@ -1212,6 +1212,10 @@ class PhotoElectronClass:
             if self.densities =='All':
                 self.run_tddft_densities()
 
+        print("Printing final results table again")
+        #PRINT FINAL TABLE
+        self.print_final_table()
+
         print_time_rel(module_init_time, modulename='Photoelectron-run', moduleindex=2)
         return self.FinalIPs, self.finaldysonnorms
 
