@@ -86,8 +86,13 @@ class PhotoElectronClass:
             print("You must choose between:  TDDFT=True, CAS=True, MRCI=True, MREOM=True and EOM=True")
             ashexit()
         if len(Ionizedstate_mult) != len(numionstates):
-            print("If 2 ionized state multiplicities are chosen (Ionizedstate_mult) then numionstates list must have 2 elements")
+            print(f"If 2 ionized state multiplicities are chosen (Ionizedstate_mult={Ionizedstate_mult}) then numionstates list must contain 2 numbers")
             ashexit()
+        if theory.numcores != numcores:
+            print(f"Warning: Numcores={numcores} provided to PhotoElectron does not match number of cores in theory level.")
+            print("Assuming this is a mistake and changing theory numcores now")
+            theory.numcores=numcores
+        
         ################
 
 
@@ -211,7 +216,7 @@ class PhotoElectronClass:
             print("Will do densities (and difference densities) for Inital-state and Final-state SCF wavefunctions only.")
             shutil.rmtree('Calculated_densities', ignore_errors=True)
             os.mkdir('Calculated_densities')
-        elif self.densities=='All':
+        elif self.densities=='All' or self.densities=='all':
             print("Will do densities (and difference densities) for all states: SCF and TDDFT states")
             shutil.rmtree('Calculated_densities', ignore_errors=True)
             os.mkdir('Calculated_densities')
@@ -296,6 +301,16 @@ class PhotoElectronClass:
                 print("Wrote Cube file containing density difference between Initial State and Final TDDFT State: ", tddftstate)
         self.theory.cleanup()
         os.chdir('..')
+
+    #General method, currently used by MRCI
+    def make_diffdensities(self, statetype='MRCI'):
+        os.chdir('Calculated_densities')
+        self.stateI.cubedict= read_cube(f"{self.stateI.label}.eldens.cube")
+        for fstate in self.Finalstates:
+            for numstate in range(0,fstate.numionstates):
+                fcubedict = read_cube(f"{fstate.label}_state{numstate}.eldens.cube")
+        write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'{statetype}State'+str(fstate.label))
+        print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", fstate.label)
 
     def make_diffdensities_SCF(self):
         os.chdir('Calculated_densities')
@@ -384,8 +399,14 @@ class PhotoElectronClass:
                 if 'MRCI+Q' not in self.theory.orcasimpleinput:
                     self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' MRCI+Q' 
 
+            #DENSITIES PRINT added to block
+            print("self.densities", self.densities)
+            if self.densities != None:
+                print("Adding densities keyword")
+                self.theory.orcablocks = self.theory.orcablocks.replace(f"%mrci\n","%mrci\n densities 6,0\n")
+                if 'keepdens' not in self.theory.orcasimpleinput:
+                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + " keepdens "
             #Calling SCF run
-            #self.run_SCF_InitState()
             result = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.stateI.charge, mult=self.stateI.mult)
             self.stateI.energy=result.energy
 
@@ -395,6 +416,14 @@ class PhotoElectronClass:
             shutil.copyfile(self.theory.filename + '.gbw', './' + self.stateI.label + '.gbw')
             self.stateI.gbwfile=self.stateI.label+".gbw"
             self.stateI.outfile=self.stateI.label+".out"
+            #Copy density files for Init state over to Calculated_densities
+            if self.densities != None:
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', 
+                    densityfilename=self.theory.filename + f'.state_0_block_0.el.tmp',gridvalue=self.densgridvalue)
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', 
+                    densityfilename=self.theory.filename + f'.state_0_block_0.spin.tmp',gridvalue=self.densgridvalue)
+                shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{self.stateI.label}.eldens.cube")
+                shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{self.stateI.label}.spindens.cube")
 
             #Get orbital ranges (stateI is sufficient)
             internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(self.theory.filename+'.out')
@@ -463,13 +492,31 @@ class PhotoElectronClass:
             shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State' + '.out')
             shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State' + '.inp')
 
+            print("self.Finalstates:", self.Finalstates)
             #Each fstate linked with same GBW file and outfile
-            for fstate in self.Finalstates:
+            for numblock,fstate in enumerate(self.Finalstates):
+                print("numblock:", numblock)
                 fstate.gbwfile = "Final_State" + ".gbw"
                 fstate.outfile = "Final_State" + ".out"
 
-            #TODO: Saving files for density Cube file creation for MRCI
+                #Copy density files for each final state over to Calculated_densities
+                if self.densities != None:
+                    for numstate in range(0,fstate.numionstates):
+                        print("numstate:", numstate)
 
+                        run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', 
+                            densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.el.tmp',gridvalue=self.densgridvalue)
+                        run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', 
+                            densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp',gridvalue=self.densgridvalue)
+                        
+                        shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.eldens.cube")
+                        shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.spindens.cube")
+
+            #TODO: Saving files for density Cube file creation for MRCI
+        else:
+            print("self.MRCI_CASCI_Final is False.")
+            print("This is not yet implemented")
+            ashexit()
         self.FinalIPs = []
         self.Finalionstates = []
         FinalTDtransitionenergies =[]
@@ -1155,6 +1202,9 @@ class PhotoElectronClass:
         elif self.MRCI or self.MREOM is True:
             self.setup_ORCA_object()
             self.run_MRCI()
+            #Difference densities
+            print("Calling make_diffdensities")
+            self.make_diffdensities(statetype='MRCI')
             #For wfoverlap
             self.prepare_mos_file()
             #Defining no MO-spectrum since WFT
@@ -1396,7 +1446,6 @@ def get_MO_from_gbw(filename,restr,frozencore,orcadir):
         #print("range(NAO)", range(NAO))
         #print("data[184]:", data[184])
         for iao in range(NAO):
-          print("iao:", iao)
           shift=max(0,len(str(iao))-3)
           jline=iline + jblock*(NAO+1) + iao
           line=data[jline]
