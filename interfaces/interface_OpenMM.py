@@ -3752,7 +3752,7 @@ CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', P
 #
 def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], 
     temperatures=[1,10,300], check_gradient_first=True, gradient_threshold=100, use_mdtraj=True, 
-    trajfilename="warmup_MD", initial_opt=False):
+    trajfilename="warmup_MD", initial_opt=False, traj_frequency=1):
     print_line_with_mainheader("Gentle_warm_up_MD")
     print("Trajectory filename:", trajfilename)
     if theory is None or fragment is None:
@@ -3802,7 +3802,7 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
         MDcyclename=trajfilename+f"_cycle{num}"
         print(f"\nNow running MD-run {num}. Number of steps: {step} with timestep:{ts} and temperature: {temp} K")
         print(f"Will write trajectory to file: {MDcyclename}.dcd")
-        OpenMM_MD(fragment=fragment, theory=theory, timestep=ts, simulation_steps=step, traj_frequency=1, temperature=temp,
+        OpenMM_MD(fragment=fragment, theory=theory, timestep=ts, simulation_steps=step, traj_frequency=traj_frequency, temperature=temp,
             integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajfilename=MDcyclename, trajectory_file_option='DCD')
         
         #Running mdtraj after each sim
