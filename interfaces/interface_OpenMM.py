@@ -3802,7 +3802,7 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
     for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
         #Name of PDB and DCD filename: i.e. warmup_MD_cycle1.pdb and warmup_MD_cycle1.dcd 
         MDcyclename=trajfilename+f"_cycle{num}"
-        print(f"\nNow running MD-run {num}. Number of steps: {step} with timestep:{ts} and temperature: {temp} K")
+        print(f"\n\nNow running MD-run {num}. Number of steps: {step} with timestep:{ts} and temperature: {temp} K")
         print(f"Will write trajectory to file: {MDcyclename}.dcd")
         OpenMM_MD(fragment=fragment, theory=theory, timestep=ts, simulation_steps=step, traj_frequency=traj_frequency, temperature=temp,
             integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajfilename=MDcyclename, trajectory_file_option='DCD')
@@ -3813,7 +3813,7 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
             try:
                 print("Imaging trajectory")
                 MDtraj_imagetraj(f"{MDcyclename}.dcd", f"{MDcyclename}.pdb")
-                print("Running RMS Fluctuation analysis on trajectory")
+                print("\nRunning RMS Fluctuation analysis on trajectory")
                 MDtraj_RMSF(f"{MDcyclename}.dcd", f"{MDcyclename}.pdb", print_largest_values=True, 
                     threshold=0.005, largest_values=10)
             except ImportError:
