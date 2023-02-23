@@ -502,6 +502,9 @@ class PhotoElectronClass:
                     #Copy density files for each final state over to Calculated_densities
                     shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.eldens.cube")
                     shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.spindens.cube")
+                    #Remove densityfiles once done
+                    os.remove(self.theory.filename + f'.state_{numstate}_block_{numblock}.el.tmp')
+                    os.remove(self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp')
                 print("------------------------")
 
 
