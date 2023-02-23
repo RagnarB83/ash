@@ -2187,6 +2187,7 @@ def grab_dets_from_CASSCF_output(file):
 
 #Grab determinants from MRCI-ORCA output with option PrintWF det
 def grab_dets_from_MRCI_output(file, SORCI=False):
+    print("file:", file)
     #If SORCI True then multiple MRCI output sections. we want last one
     if SORCI is True:
         final_part=False
@@ -2255,7 +2256,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                 mult = int(line.split()[-1])
 
             if detgrab is True:
-
+                print("detgrab True, line:", line)
                 #Here reading CFG line. Grabbing configuration
                 #Also
                 if '[' in line and 'CFG' in line:
@@ -2265,6 +2266,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                     #print("----------------------------------------------------------------------------------------")
                     #print("line:", line)
                     cfg = line.split()[-1]
+                    print("cfg:", cfg)
                     #This is the weight of this configuration, not CI coefficient
                     weight = float(line.split()[0])
                     #print("weight:", weight)
@@ -2385,7 +2387,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                         modexternal_tuple=external_tuple
                     #CASE: 2 HOLES  0 PARTICLES:
                     elif len(hole_indices) == 2 and len(particle_indices) == 0:
-                        moddetlist2=detlist2
+                        #print("we are here")
                         holeindex1=hole_indices[0]
                         holeindex2=hole_indices[1]
                         
@@ -2397,7 +2399,18 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                             #print("lst_internaltuple:", lst_internaltuple)
                             modinternal_tuple=tuple(lst_internaltuple)
                             #print("Mod internal_tuple :", modinternal_tuple)
-                            #No modification to detlist2 needed
+
+                            #NOTE: previously we wrote that no modification to detlist2 needed
+                            #Does not seem to be true. Adding below
+                            if len(detlist2) != active:
+                                #print("detlist2 is too long!:", detlist2)
+                                #Removing first element
+                                moddetlist2=detlist2[1:]
+                                #if len(moddetlist2) != active:
+                                #    print("still too long")
+                                #    ashexit()
+
+
                         #Subcase: Not doubly internal hole.
                         else:
                             #print("Not same holeindex")
@@ -2644,19 +2657,6 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                         
                     #combining
                     det_tuple=modinternal_tuple+tuple(moddetlist2)+modexternal_tuple
-                    #print("det_tuple ({}): {}".format(len(det_tuple),det_tuple))
-
-                    if len(det_tuple) != totorbitals:
-                        
-                        print("det_tuple:", det_tuple)
-                        print("modinternal_tuple:", modinternal_tuple)
-                        print("moddetlist2:", moddetlist2)
-                        print("tuple(moddetlist2):", tuple(moddetlist2))
-                        print("modexternal_tuple:", modexternal_tuple)
-                        print()
-                        print("internal_tuple:", internal_tuple)
-                        print("external_tuple:", external_tuple)
-
                     assert len(det_tuple) == totorbitals, "Orbital tuple ({}) not matching total number of orbitals ({})".format(len(det_tuple),totorbitals)
                     #if len(det_tuple) == 22:
                     #    print("problem")
