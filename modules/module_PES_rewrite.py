@@ -2646,7 +2646,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                     det_tuple=modinternal_tuple+tuple(moddetlist2)+modexternal_tuple
                     #print("det_tuple ({}): {}".format(len(det_tuple),det_tuple))
 
-                    if len(det_tuple) != totorbitals
+                    if len(det_tuple) != totorbitals:
                         
                         print("det_tuple:", det_tuple)
                         print("modinternal_tuple:", modinternal_tuple)
