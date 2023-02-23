@@ -32,6 +32,8 @@ def PhotoElectron(theory=None, fragment=None, numcores=1, memory=40000,label=Non
     """
     print_line_with_mainheader("PhotoElectron")
     timeA=time.time()
+    #NOTE: Create different PhotoElectronClass for each theory: PhotoElectronClass_ORCA, PhotoElectronClass_PySCF, PhotoElectronClass_MRCC ??
+    #So much of the code is theory-specific anyway
     photo=PhotoElectronClass(theory=theory, fragment=fragment, numcores=numcores, memory=memory,label=label, 
                         Initialstate_charge=Initialstate_charge, Initialstate_mult=Initialstate_mult,
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates, 
@@ -149,6 +151,13 @@ class PhotoElectronClass:
         print("CAS:", self.CAS)
         print("EOM:", self.EOM)
         print("MRCI:", self.MRCI)
+        if self.MRCI is True:
+            if 'SORCI' in self.theory.orcasimpleinput:
+                self.SORCI=True
+                print("SORCI is True!")
+            else:
+                self.SORCI=False
+                print("SORCI is False!")
         print("MREOM:", self.MREOM)
 
         #Initizalign final list (necessary)
@@ -307,140 +316,34 @@ class PhotoElectronClass:
         os.chdir('Calculated_densities')
         self.stateI.cubedict= read_cube(f"{self.stateI.label}.eldens.cube")
         for fstate in self.Finalstates:
-            print("fstate:", fstate)
+            print("fstate dict:", fstate.__dict__)
+            print("fstate.label:", fstate.label)
+            print("fstate.mult:", fstate.mult)
             for numstate in range(0,fstate.numionstates):
                 print("numstate:", numstate)
+
                 fcubedict = read_cube(f"{fstate.label}_state{numstate}.eldens.cube")
                 write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
-                print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", fstate.label)
+                print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", 
+                        str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
         os.chdir('..')
-    #NOTE: below is unnecessary
-    def make_diffdensities_SCF(self):
-        os.chdir('Calculated_densities')
-        # Read Initial-state-SCF density Cube file into memory
-        self.stateI.cubedict = read_cube(f"{self.stateI.label}.eldens.cube")
-        for fstate in self.Finalstates:
-            if self.densities == 'SCF' or self.densities == 'All':
-                # Create difference density between Initial-SCF and Finalstate-SCFs
-                cubedict2 = read_cube('Final_State_mult' + str(fstate.mult) + '.eldens.cube')
-                write_cube_diff(self.stateI.cubedict,cubedict2,"Densdiff_SCFInit-SCFFinalmult"+str(fstate.mult))
-                print("Wrote Cube file containing density difference between Initial State and Final State.")
-        os.chdir('..')
-        
-    def run_MRCI(self):
+
+    #MRCI for initial state
+    def run_MRCI_Initial(self):
         print("MRCI/MREOM option active!")
         print("Will do CASSCF orbital optimization for initial-state, followed by MRCI/MREOM")
-
+        print("Modifying MRCI block for initial state, CAS({},{})".format(self.MRCI_Initial[0],self.MRCI_Initial[1]))
+        print("{} electrons in {} orbitals".format(self.MRCI_Initial[0],self.MRCI_Initial[1]))
+        print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
         #CASSCF/MRCI wavefunction interpreted as restricted (important for get_MO_from_gbw)
         self.stateI.restricted = True
         for fstate in self.Finalstates:
             fstate.restricted = True
-
-        if self.MRCI_CASCI_Final is True:
-            print("Will do CAS-CI reference (using initial-state orbitals) for final-states")
-
-            
-            print("Using TprintWF value of ", self.tprintwfvalue)
-            print("Modifying MRCI block for initial state, CAS({},{})".format(self.MRCI_Initial[0],self.MRCI_Initial[1]))
-            print("{} electrons in {} orbitals".format(self.MRCI_Initial[0],self.MRCI_Initial[1]))
-            print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
-            if 'SORCI' in self.theory.orcasimpleinput:
-                SORCI=True
-                print("SORCI is True!")
-            else:
-                SORCI=False
-                print("SORCI is False!")
-            #USING CASSCF block to define reference
-            #Add nel,norb and nroots lines back in. Also determinant printing option
-            print("theory.orcablocks :", self.theory.orcablocks)
-            
-            #If CASSCF block present, trim and replace
-            if '%casscf' in self.theory.orcablocks:
-                            #Removing nel/norb/nroots lines if user added
-                for line in self.theory.orcablocks.split('\n'):
-                    if 'nel' in line:
-                        self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
-                    if 'norb' in line:
-                        self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
-                    if 'nroots' in line:
-                        self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
-                    if 'maxiter' in line:
-                        self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
-                self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')    
-                self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) +
-                                                        "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\n".format(1))
-            else:
-                self.theory.orcablocks= self.theory.orcablocks + '%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) + "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
-            print("theory.orcablocks :", self.theory.orcablocks)
-
-
-            #Enforcing CAS-CI
-            #if 'noiter' not in theory.orcasimpleinput.lower():
-            #    theory.orcasimpleinput = theory.orcasimpleinput + ' noiter '
-            if self.MREOM is True:
-                if '%mdci' not in self.theory.orcablocks:
-                    self.theory.orcablocks = self.theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n"
-                else:
-                    self.theory.orcablocks = self.theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n")
-                    
-            #Defining simple MRCI block. States defined
-            if '%mrci' not in self.theory.orcablocks:
-                self.theory.orcablocks = self.theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(self.tprintwfvalue) + "end"
-            else:
-                self.theory.orcablocks = self.theory.orcablocks.replace("%mrci\n","%mrci\n"+"printwf det\nTPrintwf {}\n".format(self.tprintwfvalue))
-            
-            #theory.orcablocks = "%mrci\n" + "printwf det\nTPrintwf 1e-16\n" + "newblock {} *\n refs cas({},{}) end\n".format(stateI.mult,MRCI_Initial[0],MRCI_Initial[1])+ "nroots {}\n end\n".format(1) + "end"
-            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
-            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
-
-            #Adding MRCI+Q to simpleinputline unless MREOM
-            #TODO: Remove as we may want another MRCI method ?
-            if self.MREOM is True:
-                if 'MREOM' not in self.theory.orcasimpleinput:
-                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' MR-EOM' 
-            else:
-                if 'MRCI+Q' not in self.theory.orcasimpleinput:
-                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' MRCI+Q' 
-
-            #DENSITIES PRINT added to block
-            print("self.densities", self.densities)
-            if self.densities != None:
-                print("Adding densities keyword")
-                self.theory.orcablocks = self.theory.orcablocks.replace(f"%mrci\n","%mrci\n densities 6,0\n")
-                if 'keepdens' not in self.theory.orcasimpleinput:
-                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + " keepdens "
-            #Calling SCF run
-            result = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.stateI.charge, mult=self.stateI.mult)
-            self.stateI.energy=result.energy
-
-            #Keeping copy of input/outputfile and GBW file
-            shutil.copyfile(self.theory.filename + '.out', './' + self.stateI.label + '.out')
-            shutil.copyfile(self.theory.filename + '.inp', './' + self.stateI.label + '.inp')
-            shutil.copyfile(self.theory.filename + '.gbw', './' + self.stateI.label + '.gbw')
-            self.stateI.gbwfile=self.stateI.label+".gbw"
-            self.stateI.outfile=self.stateI.label+".out"
-            #Copy density files for Init state over to Calculated_densities
-            if self.densities != None:
-                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', specify_density=True,
-                    densityfilename=self.theory.filename + f'.state_0_block_0.el.tmp',gridvalue=self.densgridvalue)
-                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
-                    densityfilename=self.theory.filename + f'.state_0_block_0.spin.tmp',gridvalue=self.densgridvalue)
-                shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{self.stateI.label}.eldens.cube")
-                shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{self.stateI.label}.spindens.cube")
-
-            #Get orbital ranges (stateI is sufficient)
-            internal_orbs,active_orbs,external_orbs = casscf_orbitalranges_grab(self.theory.filename+'.out')
-
-
-
-            print("Modifying MRCI block for Final state, MRCI({},{})".format(self.MRCI_Final[0], self.MRCI_Final[1]))
-            print("{} electrons in {} orbitals".format(self.MRCI_Final[0], self.MRCI_Final[1]))
-            
-            
-            # Making sure multiplicties are sorted in ascending order and creating comma-sep string
-            MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in self.Finalstates]))
-
-            print("MRCI_mults:", MRCI_mults)
+          
+        #USING CASSCF block to define reference
+        #If CASSCF block already present, trim and replace
+        if '%casscf' in self.theory.orcablocks:
+            #Removing nel/norb/nroots lines if user added
             for line in self.theory.orcablocks.split('\n'):
                 if 'nel' in line:
                     self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
@@ -448,118 +351,199 @@ class PhotoElectronClass:
                     self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
                 if 'nroots' in line:
                     self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
-                if 'mult' in line:
+                if 'maxiter' in line:
                     self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
-            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
-
-            #Add nel,norb and nroots lines back in.
-            # And both spin multiplicities. Nroots for each
-            #numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
-            numionstates_string = ','.join(str(f.numionstates) for f in self.Finalstates)
-            print("numionstates_string:", numionstates_string)
-            self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(self.MRCI_Final[0]) +
-                                                        "norb {}\n".format(
-                                                            self.MRCI_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(MRCI_mults))
-
-            #In Final-state MRCI we would typically use the previous CASSCF-orbitals. Hence CAS-CI and noiter
-            if self.MRCI_CASCI_Final is True:
-                if 'noiter' not in self.theory.orcasimpleinput.lower():
-                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' noiter '
-
-
-            #Creating newblock blocks for each multiplicity
-            #newblockstring=""
-            #for mult in [f.mult for f in Finalstates]:
-            #    newblockstring = newblockstring + "  newblock {} *\n".format(mult)+"  refs cas({},{}) end\n".format(MRCI_Final[0],MRCI_Final[1] )+ "nroots {}\n".format(mult)+"end\n"
-            #theory.orcablocks = theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf 1e-16\nend"
-            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n', '\n')
-            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n', '\n')
-
-            print(bcolors.OKGREEN, "Calculating Final State MRCI Spin Multiplicities: ", [f.mult for f in self.Finalstates], bcolors.ENDC)
-
-            if self.initialorbitalfiles is not None:
-                print("not tested for MRCI...")
-                print("initialorbitalfiles keyword provided.")
-                print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex + 1]))
-                shutil.copyfile(self.initialorbitalfiles[findex + 1], self.theory.filename + '.gbw')
-
-            ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
-
-            #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
-            if SORCI is True:
-                fstates_dict = mrci_state_energies_grab(self.theory.filename+'.out', SORCI=True)
-            else:
-                fstates_dict = mrci_state_energies_grab(self.theory.filename+'.out')
-            # Saveing GBW and CIS file
-            shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
-            shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State' + '.out')
-            shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State' + '.inp')
-
-            #Each fstate linked with same GBW file and outfile
-            for numblock,fstate in enumerate(self.Finalstates):
-                fstate.gbwfile = "Final_State" + ".gbw"
-                fstate.outfile = "Final_State" + ".out"
-
-                #Copy density files for each final state over to Calculated_densities
-                if self.densities != None:
-                    print("Now creating density file for each final state")
-                    for numstate in range(0,fstate.numionstates):
-                        print("numstate:", numstate)
-
-                        run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', specify_density=True,
-                            densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.el.tmp',gridvalue=self.densgridvalue)
-                        run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
-                            densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp',gridvalue=self.densgridvalue)
-                        
-                        shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.eldens.cube")
-                        shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.spindens.cube")
-
-            #TODO: Saving files for density Cube file creation for MRCI
+            self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')    
+            self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) +
+                                                    "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\n".format(1))
         else:
-            print("self.MRCI_CASCI_Final is False.")
-            print("This is not yet implemented")
-            ashexit()
-        self.FinalIPs = []
-        self.Finalionstates = []
-        FinalTDtransitionenergies =[]
-        print(bcolors.OKBLUE,"Initial State energy:", self.stateI.energy, "au",bcolors.ENDC)
-        print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
+            self.theory.orcablocks= self.theory.orcablocks + '%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) + "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
+
+        #Adding MREOM-specific keywords to mdci block
+        if self.MREOM is True:
+            if '%mdci' not in self.theory.orcablocks:
+                self.theory.orcablocks = self.theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n"
+            else:
+                self.theory.orcablocks = self.theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n")
+                
+        #Defining simple MRCI block. States defined
+        if '%mrci' not in self.theory.orcablocks:
+            self.theory.orcablocks = self.theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(self.tprintwfvalue) + "end"
+        else:
+            self.theory.orcablocks = self.theory.orcablocks.replace("%mrci\n","%mrci\n"+"printwf det\nTPrintwf {}\n".format(self.tprintwfvalue))
+        #Trimming
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
+
+        #Adding MRCI+Q to simpleinputline unless MREOM
+        #TODO: We may want more flexibility here. MRACPF, MRAQCC, MRDDCI3
+        if self.MREOM is True:
+            if 'MREOM' not in self.theory.orcasimpleinput:
+                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' MR-EOM' 
+        else:
+            if 'MRCI+Q' not in self.theory.orcasimpleinput:
+                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' MRCI+Q' 
+
+        #DENSITIES PRINT added to block
+        if self.densities != None:
+            print("MRCI Densities requested. Adding densities input to MRCI block")
+            self.theory.orcablocks = self.theory.orcablocks.replace(f"%mrci\n","%mrci\n densities 6,0\n")
+            if 'keepdens' not in self.theory.orcasimpleinput:
+                self.theory.orcasimpleinput = self.theory.orcasimpleinput + " keepdens "
         
+        #Calling SCF run
+        result = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.stateI.charge, mult=self.stateI.mult)
+        self.stateI.energy=result.energy
+
+        #Keeping copy of input/outputfile and GBW file
+        shutil.copyfile(self.theory.filename + '.out', './' + self.stateI.label + '.out')
+        shutil.copyfile(self.theory.filename + '.inp', './' + self.stateI.label + '.inp')
+        shutil.copyfile(self.theory.filename + '.gbw', './' + self.stateI.label + '.gbw')
+        self.stateI.gbwfile=self.stateI.label+".gbw"
+        self.stateI.outfile=self.stateI.label+".out"
+
+        #Copy density files for Init state over to Calculated_densities
+        if self.densities != None:
+            run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', specify_density=True,
+                densityfilename=self.theory.filename + f'.state_0_block_0.el.tmp',gridvalue=self.densgridvalue)
+            run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
+                densityfilename=self.theory.filename + f'.state_0_block_0.spin.tmp',gridvalue=self.densgridvalue)
+            shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{self.stateI.label}.eldens.cube")
+            shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{self.stateI.label}.spindens.cube")
+            #Remove files for Init state 
+            os.remove(self.theory.filename + f'.state_0_block_0.el.tmp')
+            os.remove(self.theory.filename + f'.state_0_block_0.spin.tmp')
+
+    def run_MRCI_Final(self):
+
+        if self.MRCI_CASCI_Final is True:
+            print("Will do CAS-CI reference (using initial-state orbitals) for final-states") 
+            #In Final-state MRCI we here  use the previous CASSCF-orbitals. Hence CAS-CI and noiter
+            if 'noiter' not in self.theory.orcasimpleinput.lower():
+                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' noiter '
+
+        ######################
+        # FINAL STATES
+        ######################
+        print("Modifying MRCI block for Final state, MRCI({},{})".format(self.MRCI_Final[0], self.MRCI_Final[1]))
+        print("{} electrons in {} orbitals".format(self.MRCI_Final[0], self.MRCI_Final[1]))
+        
+        # Making sure multiplicties are sorted in ascending order and creating comma-sep string
+        MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in self.Finalstates]))
+
+        print("MRCI_mults:", MRCI_mults)
+        for line in self.theory.orcablocks.split('\n'):
+            if 'nel' in line:
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+            if 'norb' in line:
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+            if 'nroots' in line:
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+            if 'mult' in line:
+                self.theory.orcablocks=self.theory.orcablocks.replace(line,'')
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
+
+        #Add nel,norb and nroots lines back in.
+        # And both spin multiplicities. Nroots for each
+        #numionstates_string = ','.join(str(numionstates) for x in [f.mult for f in Finalstates])
+        numionstates_string = ','.join(str(f.numionstates) for f in self.Finalstates)
+        print("numionstates_string:", numionstates_string)
+        self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n' + "nel {}\n".format(self.MRCI_Final[0]) +
+                                                    "norb {}\n".format(
+                                                        self.MRCI_Final[1]) + "nroots {}\n".format(numionstates_string) + "mult {}\n".format(MRCI_mults))
+
+        #Creating newblock blocks for each multiplicity
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n', '\n')
+        self.theory.orcablocks = self.theory.orcablocks.replace('\n\n', '\n')
+
+        print(bcolors.OKGREEN, "Calculating Final State MRCI Spin Multiplicities: ", [f.mult for f in self.Finalstates], bcolors.ENDC)
+
+        if self.initialorbitalfiles is not None:
+            print("not tested for MRCI...")
+            print("initialorbitalfiles keyword provided.")
+            print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex + 1]))
+            shutil.copyfile(self.initialorbitalfiles[findex + 1], self.theory.filename + '.gbw')
+
+        #RUNNING JOB
+        ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
+
+        #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
+        fstates_dict = mrci_state_energies_grab(self.theory.filename+'.out', SORCI=self.SORCI)
+        # Saveing GBW and CIS file
+        shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State' + '.gbw')
+        shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State' + '.out')
+        shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State' + '.inp')
+
+        #NOW CREATING CUBEFILES
+        if self.densities != None:
+            print("Densities were calculated by MRCI. Now calling orca_plot to create cubefiles for each root")
+            print("Looping over Finalstates")
+            for fstate in self.Finalstates:
+                print("Fstate multiplicity:", fstate.mult)
+                #IMPORTANT: ORCA multiplicity blocks are not the same order as original PhotoElectron input
+                #ORCA reorder multiplicity blocks so that highest is first
+                if self.MultipleSpinStates is True:
+                    print("self.Ionizedstate_mult:", self.Ionizedstate_mult)
+                    if fstate.mult == max(self.Ionizedstate_mult):
+                        print("fstate.mult is highest multiplicity. numblock is 0")
+                        numblock=0
+                    else:
+                        print("fstate.mult is NOT highest multiplicity. numblock is 1")
+                        numblock=1
+                else:
+                    #Case: Single multiplicity. One ORCA block (named 1 in outputfile but 0 in densityfile)
+                    numblock=0
+                print("Now creating density file for each root")
+                for numstate in range(0,fstate.numionstates):
+                    run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', specify_density=True,
+                        densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.el.tmp',gridvalue=self.densgridvalue)
+                    run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
+                        densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp',gridvalue=self.densgridvalue)
+                    #Copy density files for each final state over to Calculated_densities
+                    shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.eldens.cube")
+                    shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.spindens.cube")
+                print("------------------------")
+
+
+
+        #PREPARE Final IPs and energies
+        self.FinalIPs = []
+        self.Finalionstates = []        
         for fstate in self.Finalstates:
+            #Each fstate linked with same GBW file and outfile
+            fstate.gbwfile = "Final_State" + ".gbw"
+            fstate.outfile = "Final_State" + ".out"
             fstate.ionstates = fstates_dict[fstate.mult]
             for ionstate in fstate.ionstates:
                 fstate.IPs.append((ionstate-self.stateI.energy)*ash.constants.hartoeV)
             print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
             self.FinalIPs = self.FinalIPs + fstate.IPs
             self.Finalionstates = self.Finalionstates + fstate.ionstates
+        print(bcolors.OKBLUE,"Initial State energy:", self.stateI.energy, "au",bcolors.ENDC)
+        print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
 
-        #MRCI prepare determinants for Dyson
+    #MRCI prepare determinants for Dyson    
+    def MRCI_prepare_determinants(self):
+        #############
+        #INIT STATE
+        #############
         print("Grabbing determinants from Initial State output")
-        if SORCI is True:
-            init_state = grab_dets_from_MRCI_output(self.stateI.outfile,SORCI=True)                    
-        else:
-            print("self.stateI.outfile:", self.stateI.outfile)
-            init_state = grab_dets_from_MRCI_output(self.stateI.outfile)
-        print("xx")
+        init_state = grab_dets_from_MRCI_output(self.stateI.outfile,SORCI=self.SORCI)
+        #Format and write to file
         det_init = format_ci_vectors(init_state[self.Initialstate_mult])
-
         writestringtofile(det_init, "dets_init")
 
         #Checking if wrong determinant in file
         delete_wrong_det("dets_init",self.stateI.mult)
 
-
+        #############
+        #FINAL STATES
+        #############
         print("Grabbing determinants from Final State output")
-        if SORCI is True:
-            final_states = grab_dets_from_MRCI_output(self.Finalstates[0].outfile,SORCI=True)                    
-        else:
-            final_states = grab_dets_from_MRCI_output(self.Finalstates[0].outfile)
+        final_states = grab_dets_from_MRCI_output(self.Finalstates[0].outfile,SORCI=self.SORCI)  
         
         for fstate in self.Finalstates:
-            print("fstate: ", fstate)
-            print("fstate.mult :", fstate.mult)
             det_final = format_ci_vectors(final_states[fstate.mult])
-            #print("det_final : ", det_final)
             # Printing to file
             writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
             
@@ -668,15 +652,11 @@ class PhotoElectronClass:
             fstate.gbwfile = "Final_State" + ".gbw"
             fstate.outfile = "Final_State" + ".out"
 
-        #TODO: Saving files for density Cube file creation for CASSCF
-
-
+        #Assembling Final energies, IPs etc.
         self.FinalIPs = []
         self.Finalionstates = []
-        FinalTDtransitionenergies =[]
         print(bcolors.OKBLUE,"Initial State energy:", self.stateI.energy, "au",bcolors.ENDC)
         print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
-        
         for fstate in self.Finalstates:
             fstate.ionstates = fstates_dict[fstate.mult]
             for ionstate in fstate.ionstates:
@@ -1181,7 +1161,7 @@ class PhotoElectronClass:
             self.run_TDDFT()
             #Diff density
             if self.densities == 'SCF' or self.densities == 'All':
-                self.make_diffdensities_SCF()
+                self.make_diffdensities(statetype='SCF')()
             # MO-spectrum 
             self.mo_spectrum()
             #For wfoverlap
@@ -1203,13 +1183,15 @@ class PhotoElectronClass:
         #Simplifies things. MREOM uses MRCI so let's use same logic.
         elif self.MRCI or self.MREOM is True:
             self.setup_ORCA_object()
-            self.run_MRCI()
+            self.run_MRCI_Initial()
+            self.run_MRCI_Final()
             #Difference densities
             print("Calling make_diffdensities")
             self.make_diffdensities(statetype='MRCI')
-            #For wfoverlap
+            #Prepare determinants and MOs for Wfoverlap Dyson calculations
+            self.MRCI_prepare_determinants()
             self.prepare_mos_file()
-            #Defining no MO-spectrum since WFT
+            #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
 
         print("\nAll combined Final IPs:", self.FinalIPs)
@@ -1263,10 +1245,9 @@ class PhotoElectronClass:
             #Create Cube file of electron/spin density using orca_plot for INITIAL STATE
             if self.densities =='All':
                 self.run_tddft_densities()
-
-        print("Printing final results table again")
-        #PRINT FINAL TABLE
-        self.print_final_table()
+                print("Printing final results table again for convenience")
+                #PRINT FINAL TABLE
+                self.print_final_table()
 
         print_time_rel(module_init_time, modulename='Photoelectron-run', moduleindex=2)
         return self.FinalIPs, self.finaldysonnorms
@@ -2664,7 +2645,9 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                     #combining
                     det_tuple=modinternal_tuple+tuple(moddetlist2)+modexternal_tuple
                     #print("det_tuple ({}): {}".format(len(det_tuple),det_tuple))
-                    
+                    print("det_tuple:", det_tuple)
+                    print("totorbitals:", totorbitals)
+
                     assert len(det_tuple) == totorbitals, "Orbital tuple ({}) not matching total number of orbitals ({})".format(len(det_tuple),totorbitals)
                     #if len(det_tuple) == 22:
                     #    print("problem")

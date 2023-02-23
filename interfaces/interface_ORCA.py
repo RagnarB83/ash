@@ -577,7 +577,7 @@ end"""
 def check_ORCA_location(orcadir):
     if orcadir != None:
         finalorcadir = orcadir
-        print(BC.OKGREEN,"Using orcadir path provided: {}  (this dir should contain all the ORCA executable programs: orca, orca_scf, orca_mp2 etc.)".format(finalorcadir), BC.END)
+        print(BC.OKGREEN,f"Using orcadir path provided: {finalorcadir}", BC.END)
     else:
         print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable in ASH settings file (~/ash_user_settings.ini)", BC.END)
         try:
@@ -1776,6 +1776,16 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
 # Wrapper around interactive orca_plot
 # Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
 def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=False, densityfilename=None, mo_operator=0, mo_number=None):
+
+    #If using densityfilename check if file exists
+    if densityfilename is not None:
+        print("Density file provided:", densityfilename)
+        if os.path.isfile(densityfilename) is True:
+            print("File exists")
+        else:
+            print("File does not exist! Skipping")
+            return
+
 
     orcadir = check_ORCA_location(orcadir)
     # Always creating Cube file (5,7 option)
