@@ -406,19 +406,19 @@ class PhotoElectronClass:
         if self.densities != None:
             run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', specify_density=True,
                 densityfilename=self.theory.filename + f'.state_0_block_0.el.tmp',gridvalue=self.densgridvalue)
-            run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
-                densityfilename=self.theory.filename + f'.state_0_block_0.spin.tmp',gridvalue=self.densgridvalue)
             shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{self.stateI.label}.eldens.cube")
-            shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{self.stateI.label}.spindens.cube")
-            #Remove files for Init state 
             os.remove(self.theory.filename + f'.state_0_block_0.el.tmp')
-            os.remove(self.theory.filename + f'.state_0_block_0.spin.tmp')
+            #Only spin density in CAS/MRCI if spinmult >1
+            if self.stateI.mult > 1:
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
+                    densityfilename=self.theory.filename + f'.state_0_block_0.spin.tmp',gridvalue=self.densgridvalue)
+                shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{self.stateI.label}.spindens.cube")
+                os.remove(self.theory.filename + f'.state_0_block_0.spin.tmp')
 
     def run_MRCI_Final(self):
-
         if self.MRCI_CASCI_Final is True:
             print("Will do CAS-CI reference (using initial-state orbitals) for final-states") 
-            #In Final-state MRCI we here  use the previous CASSCF-orbitals. Hence CAS-CI and noiter
+            #In Final-state MRCI we  use the previous CASSCF-orbitals. Hence CAS-CI and noiter
             if 'noiter' not in self.theory.orcasimpleinput.lower():
                 self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' noiter '
 
