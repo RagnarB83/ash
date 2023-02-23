@@ -2645,8 +2645,17 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                     #combining
                     det_tuple=modinternal_tuple+tuple(moddetlist2)+modexternal_tuple
                     #print("det_tuple ({}): {}".format(len(det_tuple),det_tuple))
-                    print("det_tuple:", det_tuple)
-                    print("totorbitals:", totorbitals)
+
+                    if len(det_tuple) != totorbitals
+                        
+                        print("det_tuple:", det_tuple)
+                        print("modinternal_tuple:", modinternal_tuple)
+                        print("moddetlist2:", moddetlist2)
+                        print("tuple(moddetlist2):", tuple(moddetlist2))
+                        print("modexternal_tuple:", modexternal_tuple)
+                        print()
+                        print("internal_tuple:", internal_tuple)
+                        print("external_tuple:", external_tuple)
 
                     assert len(det_tuple) == totorbitals, "Orbital tuple ({}) not matching total number of orbitals ({})".format(len(det_tuple),totorbitals)
                     #if len(det_tuple) == 22:
