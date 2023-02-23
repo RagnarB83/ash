@@ -497,18 +497,15 @@ class PhotoElectronClass:
                 for numstate in range(0,fstate.numionstates):
                     run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', specify_density=True,
                         densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.el.tmp',gridvalue=self.densgridvalue)
-                    run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
-                        densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp',gridvalue=self.densgridvalue)
-                    #Copy density files for each final state over to Calculated_densities
                     shutil.copyfile(self.theory.filename + '.eldens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.eldens.cube")
-                    shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.spindens.cube")
-                    #Remove densityfiles once done
                     os.remove(self.theory.filename + f'.state_{numstate}_block_{numblock}.el.tmp')
-                    os.remove(self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp')
-                print("------------------------")
-
-
-
+                    #Only spin density in CAS/MRCI if spinmult >1
+                    if fstate.mult > 1:
+                        run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', specify_density=True,
+                            densityfilename=self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp',gridvalue=self.densgridvalue)
+                        #Copy density files for each final state over to Calculated_densities
+                        shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.spindens.cube")
+                        os.remove(self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp')
         #PREPARE Final IPs and energies
         self.FinalIPs = []
         self.Finalionstates = []        
