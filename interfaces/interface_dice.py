@@ -574,18 +574,22 @@ noio
         print()
         #Grab actual number of stochastic PT iterations taken
         ref_energy=float(pygrep("Given Ref. Energy", "output.dat")[-1])
+        print(f"Dice ref. energy: {ref_energy} Eh")
         pt_energies=pygrep2("PTEnergy", "output.dat")
         var_energy=self.grab_var_energy()
-        det_PT_energy=float(pt_energies[0].split()[-1])
-        print(f"Dice ref. energy: {ref_energy} Eh")
         print(f"Dice variational energy: {var_energy} Eh")
-        print(f"Dice PT energy (deterministic): {det_PT_energy} Eh")
+        try:
+            det_PT_energy=float(pt_energies[0].split()[-1])
+            print(f"Dice PT energy (deterministic): {det_PT_energy} Eh")
+        except IndexError:
+            print("Warning: No deterministic PT energy printed in Dice output")
+            print(f"This probably means that you requsted variational-only SHCI.")            
         try:
             stoch_PT_energy=float(pt_energies[1].split()[1])
             print(f"Dice PT energy (stochastic): {stoch_PT_energy} Eh")
         except IndexError:
             print("Warning: No stochastic PT energy printed in Dice output")
-            print(f"This probably means that stochastic PT steps exceeded PT iterations {self.SHCI_PTiter}")
+            print(f"This either means you requested no PT orthat stochastic PT steps exceeded PT iterations {self.SHCI_PTiter}")
             print("Be careful about using the results")
 
         print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)

@@ -16,6 +16,10 @@ from ash.functions.functions_general import ashexit, writestringtofile,BC,blankl
 from ash.functions.functions_elstructure import modosplot,write_cube_diff,read_cube
 import ash.constants
 
+#TODO: MRCI/CAS determinant grab needs overhaul
+#TODO: Look into AGF2 as an addition
+#https://github.com/pyscf/pyscf/blob/master/examples/agf2/03-photoemission_spectra.py
+
 #Wrapper function around PhotoElectron()
 def PhotoElectron(theory=None, fragment=None, numcores=1, memory=40000,label=None, 
                         Initialstate_charge=None, Initialstate_mult=None,
@@ -34,6 +38,8 @@ def PhotoElectron(theory=None, fragment=None, numcores=1, memory=40000,label=Non
     timeA=time.time()
     #NOTE: Create different PhotoElectronClass for each theory: PhotoElectronClass_ORCA, PhotoElectronClass_PySCF, PhotoElectronClass_MRCC ??
     #So much of the code is theory-specific anyway
+    #Method then selects class to use. Probably should switch to dictionaries for all the keywords then
+
     photo=PhotoElectronClass(theory=theory, fragment=fragment, numcores=numcores, memory=memory,label=label, 
                         Initialstate_charge=Initialstate_charge, Initialstate_mult=Initialstate_mult,
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates, 
@@ -258,9 +264,11 @@ class PhotoElectronClass:
         os.chdir('Calculated_densities')
 
         #Adding Keepdens and Engrad to do TDDFT gradient
-        self.theory.orcasimpleinput=self.theory.orcasimpleinput+' KeepDens Engrad'
-
-        if '/C' not in self.theory.orcasimpleinput:
+        if 'KEEPDENS' not in self.theory.orcasimpleinput.upper():
+            self.theory.orcasimpleinput=self.theory.orcasimpleinput+' KeepDens '
+        if 'ENGRAD' not in self.theory.orcasimpleinput.upper():
+            self.theory.orcasimpleinput=self.theory.orcasimpleinput+' Engrad '   
+        if '/C' not in self.theory.orcasimpleinput.upper():
             self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' AutoAux'
 
         for findex, fstate in enumerate(self.Finalstates):
@@ -2186,13 +2194,42 @@ def grab_dets_from_CASSCF_output(file):
 
 
 #Grab determinants from MRCI-ORCA output with option PrintWF det
-def grab_dets_from_MRCI_output(file, SORCI=False):
+def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
     print("file:", file)
     #If SORCI True then multiple MRCI output sections. we want last one
     if SORCI is True:
         final_part=False
     else:
         final_part=True
+
+    #Calculate M_S spin of activespace tuple
+    def spin_of_activespace_tuple(det_tuple):
+        ms=0 #m_s spin
+        for n in det_tuple:
+            if n == 3:
+                ms+=0
+            elif n == 1:
+                ms+=0.5
+            elif n == 2:
+                ms-=0.5
+        return ms
+    #Checking that tuple contains correct number of electrons
+    def check_elcount_of_tuple(det_tuple):
+        el=0
+        for n in det_tuple:
+            if n == 3:
+                el+=2
+            elif n == 1 or n == 2:
+                el+=1
+        return el
+    def check_elcount_of_string_tuple(det_tuple):
+        el=0
+        for n in det_tuple:
+            if n == 'd':
+                el+=2
+            elif n == 'a' or n == 'b':
+                el+=1
+        return el
 
     class state_dets():
         def __init__(self, root,energy,mult):
@@ -2208,15 +2245,17 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
     dummycount=0
     with open(file) as f:
         for line in f:
+            print("-----------------------------------------------------------")
             if 'Program Version 4.2.1 -  RELEASE' in line:
                 ashexit(errormessage='MRCI-determinant read will not work for ORCA 4.2.1 and older!')
             if 'Total number of orbitals            ...' in line:
                 totorbitals=int(line.split()[-1])
                 #print("totorbitals:", totorbitals)
+            if ' Number of Electrons    NEL             ....' in line:
+                tot_num_electrons=int(line.split()[-1])
             #Getting orbital ranges
             # Internal (doubly occ)and external orbitals (empty)
             if grabrange is True:
-
                 if 'Internal' in line:
                     internal=int(line.split()[-2])
                     internal_tuple = tuple([3] * internal)
@@ -2269,7 +2308,14 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                     print("cfg:", cfg)
                     #This is the weight of this configuration, not CI coefficient
                     weight = float(line.split()[0])
-                    #print("weight:", weight)
+                    print("weight:", weight)
+
+                    if weight == 0.0000:
+                        print("CFG Weight is very small")
+                        #if skip_tiny_CFGs is True:
+                        #    print("skip_tiny_CFGs is True. Skipping this one")
+                        #    continue
+
                     state.configurations[cfg] = weight
                     #Reading CFG line and determining hole/particle excitations outside active space
                     if 'h---h---' in line and line.count('p')==0:
@@ -2279,6 +2325,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                         particle_indices=[]
                         #print("hole_indices:", hole_indices)                         
                         #print("particle_indices:", particle_indices)    
+
                     elif 'h---h---' in line and line.count('p')==1:
                         #0-hole 1-particle
                         hole_indices=[]
@@ -2351,10 +2398,18 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                     #print("Determinant line:", line)
                     det = line.split()[0]
                     #print("det:", det)
+                    #Converting active space CFG to a list
+                    print("cfg:", cfg)
+                    #cfglist_n=[int(i) for i in cfg.split("[")[1].split("]")[0]]
+                    #print("cfglist_n:", cfglist_n)
+                    #cfglist_n=[int(i) for i in cfg.replace('[','').replace(']','')]
+                    #print("cfglist_n:", cfglist_n)
+                    #Converting active space det to a list
                     detlist=[i for i in det.replace('[','').replace(']','')]
                     detlist2=[]
-                    #print("detlist:", detlist)
-                    #Sticking with labelling: 3: doubly occ, 0: empty, 1 for up-alpha, 2 for down-beta
+                    cfglist2=[]
+                    #Sticking with 3-2-1 labelling: 3: doubly occ, 0: empty, 1 for up-alpha, 2 for down-beta
+                    #Det-list in 3-2-1 format
                     for j in detlist:
                         if j == '2':
                             detlist2.append(3)
@@ -2364,25 +2419,72 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                             detlist2.append(1)
                         elif j == 'd':
                             detlist2.append(2)
-                    #print("detlist2:", detlist2)
+                    #CFG-list in 3-2-1 format
+                    #for k in cfglist_n:
+                    #    if k == 2:
+                    #        cfglist2.append(3)
+                    #    elif k == 0:
+                    #        cfglist2.append(0)
+                    #    elif k == 1:
+                    #        cfglist2.append(1)
                     
+                    print("detlist2:", detlist2)
+                    #print("cfglist2:", cfglist2)
                     
                     
                     #Modifying internal_tuple for possible holes
                     #print("internal_tuple :", internal_tuple)
                     #CASE: 1 HOLES  0 PARTICLES:
                     if len(hole_indices) == 1 and len(particle_indices) == 0:
+                        print("Case: 1 HOLE 0 PARTICLE")
                         holeindex=hole_indices[0]
+                        print("holeindex:", holeindex)
+                        print()
+
+                        if len(detlist2) != active:
+                            print("list is too long")
+                            print("detlist2:", detlist2)
+                            print("cfg:", cfg)
+                            print("det:", det)
+                            moddetlist2=detlist2
+                            exit()
+                        else:
+                            moddetlist2=detlist2
+
+
+                        #Compare regular active space (from last 0-hole-0-particle case)
+                        #and current active space
+                        #print("previous regular_space:", regular_space_cfg)
+                        print("current:", cfglist_n)
+                        #spin_reg = spin_of_activespace_tuple(regular_space_det)
+                        #spin_curr = spin_of_activespace_tuple(detlist2)
+                        #print("spin_reg:", spin_reg)
+                        #print("spin_curr:", spin_curr)
+                        #if spin_curr - spin_reg == -0.5:
+                        #    print("spin got lowered and 0.5")
+                        #    print("must have added a beta electron")
+                        #    print("alpha electron remains")
+                        #    spinlabel=1 #alpha/up electron remains
+                        #else:
+                        #    print("hmmm")
+                        #    exit()
+                        #print()
+                        #modinternal_tuple=list(internal_tuple)
+                        #modinternal_tuple[holeindex] = 
                         #print("Modifying internal_tuple")                        
                         lst_internaltuple=list(internal_tuple)
+                        #print("lst_internaltuple:", lst_internaltuple)
                         #Getting spinlabel of internal electron where hole was created from detlist (first index in bracket)
-                        spinlabelh1p0int=detlist2[0]
-                        lst_internaltuple[holeindex] = spinlabelh1p0int
+                        #spinlabelh1p0int=detlist2[0]
+                        lst_internaltuple[holeindex] = spinlabel
                         modinternal_tuple=tuple(lst_internaltuple)
                         #print("Mod internal_tuple :", modinternal_tuple)
                         #Removing hole orb from detlist
-                        moddetlist2=detlist2[1:]
+                        #print("detlist2:", detlist2)
+                        #moddetlist2=detlist2[1:]
+                        moddetlist2=detlist2
                         #print("Mod active tuple :", detlist2)
+                        
                         #Unmodified external
                         modexternal_tuple=external_tuple
                     #CASE: 2 HOLES  0 PARTICLES:
@@ -2399,17 +2501,18 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                             #print("lst_internaltuple:", lst_internaltuple)
                             modinternal_tuple=tuple(lst_internaltuple)
                             #print("Mod internal_tuple :", modinternal_tuple)
-
+                            #print("detlist2:", detlist2)
                             #NOTE: previously we wrote that no modification to detlist2 needed
                             #Does not seem to be true. Adding below
                             if len(detlist2) != active:
                                 #print("detlist2 is too long!:", detlist2)
                                 #Removing first element
                                 moddetlist2=detlist2[1:]
-                                #if len(moddetlist2) != active:
-                                #    print("still too long")
-                                #    ashexit()
-
+                                if len(moddetlist2) != active:
+                                    #print("still too long")
+                                    ashexit()
+                            else:
+                                moddetlist2=detlist2
 
                         #Subcase: Not doubly internal hole.
                         else:
@@ -2654,16 +2757,41 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                         modinternal_tuple=internal_tuple
                         modexternal_tuple=external_tuple
                         moddetlist2=detlist2
+                        #regular_space_det=moddetlist2
+                        #regular_space_cfg=cfglist_n
                         
                     #combining
                     det_tuple=modinternal_tuple+tuple(moddetlist2)+modexternal_tuple
+                    print("det_tuple ({}): {}".format(len(det_tuple),det_tuple))
+                    print("modinternal_tuple:", modinternal_tuple)
+                    print("moddetlist2:", moddetlist2)
+                    print("tuple(moddetlist2):", tuple(moddetlist2))
+                    print("modexternal_tuple:", modexternal_tuple)
+                    print()
+                    print("internal_tuple:", internal_tuple)
+                    print("external_tuple:", external_tuple)
+                    if len(det_tuple) != totorbitals:
+                        
+                        print("det_tuple:", det_tuple)
+                        print("modinternal_tuple:", modinternal_tuple)
+                        print("moddetlist2:", moddetlist2)
+                        print("tuple(moddetlist2):", tuple(moddetlist2))
+                        print("modexternal_tuple:", modexternal_tuple)
+                        print()
+                        print("internal_tuple:", internal_tuple)
+                        print("external_tuple:", external_tuple)
+                    #print("-----------------------------------------------------------")
+
+                    #SANITY CHECKS
                     assert len(det_tuple) == totorbitals, "Orbital tuple ({}) not matching total number of orbitals ({})".format(len(det_tuple),totorbitals)
-                    #if len(det_tuple) == 22:
-                    #    print("problem")
-                    #    ashexit()
-                    #if len(det_tuple) != totorbitals:
-                    #    print("XXXXXXXXX")
                     
+
+                    det_elcount = check_elcount_of_tuple(det_tuple)
+                    
+                    if det_elcount != tot_num_electrons:
+                        print("det_tuple:", det_tuple)
+                        print(f"Problem. Determinant electron-count({det_elcount}) does not add up to correct electron-number({tot_num_electrons})")
+                        ashexit()
                     #This is the CI coeffient
                     coeff = float(line.split()[-1])
                     #print("coeff : ", coeff)
@@ -2672,22 +2800,6 @@ def grab_dets_from_MRCI_output(file, SORCI=False):
                     #if dummycount == 7416:
                     #    ashexit()
 
-
-                    #CASE: CFG contains only 2 and 0s. That means a situation where CFG and Det is same thing
-                    # But det info is not printed so we need to add it
-                    #DISABLING after Vijay update
-                    #if '1' not in cfg:
-                    #    print("cfg : ", cfg)
-                    #    print("Found CFG without Det info. Adding to determinants")
-                    #    print("line:", line)
-                    #    bla = cfg.replace('[','').replace(']','').replace('CFG','')
-                    #    print("bla:", bla)
-                    #    det = bla.replace(str(2),str(3))
-                    #    print("det:", det)
-                    #    det2 = [int(i) for i in det]
-                    #    det_tuple = internal_tuple + tuple(det2) + external_tuple
-                    #    #print("det_tuple: ", det_tuple)
-                    #    state.determinants[det_tuple] = coeff
 
                 #Now creating state. Taking energy, root and mult (found earlier in beginning of CI block).
                 if 'STATE' in line:
