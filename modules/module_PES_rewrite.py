@@ -327,13 +327,22 @@ class PhotoElectronClass:
             print("fstate dict:", fstate.__dict__)
             print("fstate.label:", fstate.label)
             print("fstate.mult:", fstate.mult)
-            for numstate in range(0,fstate.numionstates):
-                print("numstate:", numstate)
-
-                fcubedict = read_cube(f"{fstate.label}_state{numstate}.eldens.cube")
-                write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
+            #Here we have all of them
+            if statetype == 'MRCI':
+                for numstate in range(0,fstate.numionstates):
+                    print("numstate:", numstate)
+                    print("Will read file:", f"{fstate.label}_state{numstate}.eldens.cube")
+                    fcubedict = read_cube(f"{fstate.label}_state{numstate}.eldens.cube")
+                    write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
+                    print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", 
+                            str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
+            #Here we have only the SCF states for Init, and for each Final-multiplicity
+            elif statetype == 'SCF':
+                #Only 2 states 
+                fcubedict = read_cube(f"{fstate.label}_state0.eldens.cube")
+                write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'_{statetype}State0')
                 print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", 
-                        str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
+                        str(fstate.mult)+f'_{statetype}State0')
         os.chdir('..')
 
     #MRCI for initial state
@@ -737,12 +746,13 @@ class PhotoElectronClass:
                 #Electron density
                 run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', gridvalue=self.densgridvalue)
                 #Move into Calculated_densities dir
-                shutil.move(f"{self.theory.filename}.eldens.cube", 'Calculated_densities/' + f"{fstate.label}.eldens.cube")
+                shutil.move(f"{self.theory.filename}.eldens.cube", 'Calculated_densities/' + f"{fstate.label}_state0.eldens.cube")
+                #f"{fstate.label}_state{numstate}.eldens.cube"
                 #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
                 if fstate.hftyp == "UHF":
                     run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
                     #Move into Calculated_densities dir
-                    shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{fstate.label}.spindens.cube")
+                    shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{fstate.label}_state0.spindens.cube")
 
             print("Final state multiplicity properties:", fstate.__dict__)
             if fstate.hftyp == "UHF":
@@ -1169,7 +1179,7 @@ class PhotoElectronClass:
             self.run_TDDFT()
             #Diff density
             if self.densities == 'SCF' or self.densities == 'All':
-                self.make_diffdensities(statetype='SCF')()
+                self.make_diffdensities(statetype='SCF')
             # MO-spectrum 
             self.mo_spectrum()
             #For wfoverlap
@@ -2437,6 +2447,8 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     #CASE: 1 HOLES  0 PARTICLES:
                     if len(hole_indices) == 1 and len(particle_indices) == 0:
                         print("Case: 1 HOLE 0 PARTICLE")
+                        print("Currently skipping")
+                        continue
                         holeindex=hole_indices[0]
                         print("holeindex:", holeindex)
                         print()
@@ -2489,7 +2501,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         modexternal_tuple=external_tuple
                     #CASE: 2 HOLES  0 PARTICLES:
                     elif len(hole_indices) == 2 and len(particle_indices) == 0:
-                        #print("we are here")
+                        print("CASE 2HOLES 0 PARTICLES")
                         holeindex1=hole_indices[0]
                         holeindex2=hole_indices[1]
                         
@@ -2509,7 +2521,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                                 #Removing first element
                                 moddetlist2=detlist2[1:]
                                 if len(moddetlist2) != active:
-                                    #print("still too long")
+                                    print("still too long")
                                     ashexit()
                             else:
                                 moddetlist2=detlist2
