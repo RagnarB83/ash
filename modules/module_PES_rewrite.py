@@ -2392,7 +2392,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     #This is the weight of this configuration, not CI coefficient
                     weight = float(line.split()[0])
                     #print("weight:", weight)
-                    if weight == 0.0000:
+                    #if weight == 0.0000:
                         #print("CFG Weight is very small")
                         #if skip_tiny_CFGs is True:
                         #    print("skip_tiny_CFGs is True. Skipping this one")
