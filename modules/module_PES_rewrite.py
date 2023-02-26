@@ -845,13 +845,19 @@ class PhotoElectronClass:
         if self.btPNO == True:
             if 'bt-PNO-IP-EOM-CCSD' not in self.theory.orcasimpleinput:
                 self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' bt-PNO-IP-EOM-CCSD '
+            if '/C' not in self.theory.orcasimpleinput:
+                self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' AutoAux '
         elif self.DLPNO == True:
             if 'IP-EOM-DLPNO-CCSD' not in self.theory.orcasimpleinput:
                 self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' IP-EOM-DLPNO-CCSD '
+            if '/C' not in self.theory.orcasimpleinput:
+                self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' AutoAux '
         else:
             if 'IP-EOM-CCSD' not in self.theory.orcasimpleinput:
                 self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' IP-EOM-CCSD '
-        
+
+
+
         self.FinalIPs=[]
         fstates_dict={}
         for fstate in self.Finalstates:
