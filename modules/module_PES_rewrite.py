@@ -17,7 +17,9 @@ from ash.functions.functions_general import ashexit, writestringtofile,BC,blankl
 from ash.functions.functions_elstructure import modosplot,write_cube_diff,read_cube
 import ash.constants
 
-#TODO: MRCI/CAS determinant grab needs overhaul
+#TODO: Add NEVPT2/CASPT2 as energy correction to CASSCF ? Keep Dyson norms from CASSCF level
+#TODO: pyscf addition
+#TODO: TDDFT spin-flip
 #TODO: Look into AGF2 as an addition
 #https://github.com/pyscf/pyscf/blob/master/examples/agf2/03-photoemission_spectra.py
 
@@ -738,7 +740,7 @@ class PhotoElectronClass:
             if self.tda==False:
                 # Boolean for whether no_tda is on or not
                 self.no_tda = True
-                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15"+"end\n"+"\n"
+                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15\n"+"end\n"+"\n"
             else:
                 tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
                 # Boolean for whether no_tda is on or not
