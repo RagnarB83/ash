@@ -833,18 +833,17 @@ class PhotoElectronClass:
         print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
 
         #NOTE: EOM will not call Init-State SCF
-        
         #Preserve old
-        orig_orcablocks=copy.copy(theory.orcablocks)
+        orig_orcablocks=copy.copy(self.theory.orcablocks)
         
         #Will calculate IPs directly
         print("Adding MDCI block for initial state")
         
         #Canonical EOM, btPNO or DLPNO
-        if btPNO == True:
+        if self.btPNO == True:
             if 'bt-PNO-IP-EOM-CCSD' not in self.theory.orcasimpleinput:
                 self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' bt-PNO-IP-EOM-CCSD '
-        elif DLPNO == True:
+        elif self.DLPNO == True:
             if 'IP-EOM-DLPNO-CCSD' not in self.theory.orcasimpleinput:
                 self.theory.orcasimpleinput =  self.theory.orcasimpleinput + ' IP-EOM-DLPNO-CCSD '
         else:
@@ -873,13 +872,13 @@ class PhotoElectronClass:
                 print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex + 1]))
                 shutil.copyfile(self.initialorbitalfiles[findex + 1], self.theory.filename + '.gbw')
             #NOTE: Using initial state charge/mult here because EOM
-            init_EOM = ash.Singlepoint(fragment=fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
+            init_EOM = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
             energy = init_EOM.energy
             self.stateI.energy= energy
 
 
             #Grab EOM-IPs and dominant singles amplitudes
-            IPs, amplitudes = grabEOMIPs(theory.filename+'.out')
+            IPs, amplitudes = grabEOMIPs(self.theory.filename+'.out')
             print("IPs:", IPs)
             print("Dominant singles EOM amplitudes:", amplitudes)
             
@@ -997,13 +996,22 @@ class PhotoElectronClass:
         print("Initial state:")
         print("{:>6} {:>7} {:^20} {:^5}".format("State no.", "Mult", "TotalE (Eh)", "State-type"))
         if self.method=='EOM':
-            print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, self.stateI.mult, self.stateI.energy, "CCSD"))            
+            init_stype='CCSD'           
+        elif self.method == 'CASCI':
+            init_stype='CI'
         else:
-            print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, self.stateI.mult, self.stateI.energy, "SCF"))
+            init_stype='SCF'
+        print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, self.stateI.mult, self.stateI.energy, init_stype))
         print("")
         print("Final ionized states:")
-        if self.method == 'CASSCF' or self.method =='MRCI' or self.method =='MREOM':
-            stype='CI'
+        if self.method == 'CASSCF' or self.method == 'CASCI' or self.method =='MRCI' or self.method =='MREOM':
+            if self.method == 'CASCI' or self.method =='MRCI' or self.method =='MREOM':
+                stype='CI'
+            if self.method == 'CASSCF':
+                if self.CASCI_Final is True:
+                    stype='CI'
+                else:
+                    stype='SCF'
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
             for i, (E, IE, dys) in enumerate(zip(self.Finalionstates,self.FinalIPs,self.finaldysonnorms)):
                 #Getting spinmult
@@ -1018,7 +1026,7 @@ class PhotoElectronClass:
                 print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))
         elif self.method == 'EOM':
             stype='EOM'
-            print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
+            print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Approx. Dyson", "State-type"))
             for i, (E, IE, dys) in enumerate(zip(self.Finalionstates,self.FinalIPs,self.finaldysonnorms)):
                 #Getting spinmult
                 if self.MultipleSpinStates is True:
@@ -1225,9 +1233,12 @@ class PhotoElectronClass:
             self.prepare_mos_file()
         elif self.method =='EOM':
             print("Calling EOM")
-            ashexit()
             self.setup_ORCA_object()
             self.run_EOM()
+            if self.densities != None:
+                print("No densities are available for EOM yet. Skipping")
+            #No MO-spectrum since WFT
+            self.stk_alpha=[]; self.stk_beta=[]
         elif self.method =='CASSCF' or self.method=='CASCI':
             print("CASSCF/CASCI option active!")
             self.setup_ORCA_object()
@@ -1269,7 +1280,11 @@ class PhotoElectronClass:
 
         if self.noDyson is True:
             print("NoDyson is True. Setting all Dyson norms to 0.0")
-            self.finaldysonnorms=[0.0]*self.numionstates
+            #self.finaldysonnorms=[0.0]*self.numionstates
+            self.finaldysonnorms=[0.0]*len(self.FinalIPs)
+        elif self.method == 'EOM':
+            print("Dyson orbital calculation not available for EOM.")
+            print("Skipping")
         else:
             #Call Dyson orb calc
             self.run_dyson_calc()
