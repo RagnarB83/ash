@@ -884,6 +884,12 @@ class PhotoElectronClass:
             
             fstate.IPs=IPs
             fstate.dysonnorms=amplitudes
+
+            #EOM may have found fewer roots than requested. Updating 
+            if len(IPs) != fstate.numionstates:
+                print(f"Warning: EOM found fewer states ({len(IPs)}) than requested ({fstate.numionstates})")
+                print("Updating number of states for multiplicity:", fstate.mult)
+                fstate.numionstates=len(IPs)
             
             #Collecting list of all IPs
             self.FinalIPs=self.FinalIPs+IPs
@@ -1030,10 +1036,14 @@ class PhotoElectronClass:
             for i, (E, IE, dys) in enumerate(zip(self.Finalionstates,self.FinalIPs,self.finaldysonnorms)):
                 #Getting spinmult
                 if self.MultipleSpinStates is True:
+                    print("here")
                     #Change test. what mult we are in.. TODO: Check this for correctness
                     if i < self.Finalstates[0].numionstates:
+                        print("i:", i)
+                        print("self.Finalstates[0].numionstates:", self.Finalstates[0].numionstates)
                         spinmult=self.Finalstates[0].mult
                     else:
+                        print("else")
                         spinmult=self.Finalstates[1].mult
                 else:
                     spinmult=self.stateF1.mult
