@@ -19,7 +19,8 @@ import ash.constants
 
 #TODO: Add NEVPT2/CASPT2 as energy correction to CASSCF ? Keep Dyson norms from CASSCF level
 #TODO: pyscf addition
-#TODO: TDDFT spin-flip
+#TODO: TDDFT spin-flip finish
+#TODO: TDDFT, add orbwindow option so that shakeup states are reduced in magnitude
 #TODO: Look into AGF2 as an addition
 #https://github.com/pyscf/pyscf/blob/master/examples/agf2/03-photoemission_spectra.py
 
@@ -84,6 +85,8 @@ class PhotoElectronClass:
             ashexit()
         if method == 'TDDFT':
             self.TDDFT=True
+        elif method == 'SF-TDDFT':
+            self.SF_TDDFT=True
         #CASSCF for initial state and finalstates. if CASCI_Final is True then Finalstate uses Initstate orbitals 
         elif method == 'CASSCF':
             self.CAS=True
@@ -831,6 +834,124 @@ class PhotoElectronClass:
             self.Finalionstates = self.Finalionstates + fstate.ionstates
             self.FinalTDtransitionenergies = self.FinalTDtransitionenergies + fstate.TDtransitionenergies
 
+
+    # Calculate Ionized state via SPIN-FLIP SCF+TDDFT approach
+    #Will calculate highest-multiplicity state with SCF + TDDFT and then do same state with SCF+-SF-TDDFT
+    def run_SF_TDDFT(self):
+        print("SF-TDDFT option chosen:")
+        print(bcolors.OKBLUE,"Total ion states:", self.numionstates, bcolors.ENDC)
+        print(bcolors.OKBLUE,"SF_TDDFT-calculated ion states:", self.numionstates-1, bcolors.ENDC)
+
+
+        print("This is not ready")
+        ashexit()
+        #Run Initial-State SCF
+        self.run_SCF_InitState()
+
+        ###################
+        #FINAL STATE
+        ###################
+        #TDDFT-option SCF+TDDFT for each spin multiplicity
+        #################################################
+
+        #Looping over Finalstate-multiplicities (not individual states)
+        for findex,fstate in enumerate(self.Finalstates):
+            #Setting TDA/TDDFT states for each spin multiplicity
+            if self.tda==False:
+                # Boolean for whether no_tda is on or not
+                self.no_tda = True
+                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15\n"+"end\n"+"\n"
+            else:
+                tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
+                # Boolean for whether no_tda is on or not
+                self.no_tda = False
+            self.theory.extraline=tddftstring
+
+            print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+            if self.initialorbitalfiles is not None:
+                print("Initial orbitals keyword provided.")
+                print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex+1]))
+                shutil.copyfile(self.initialorbitalfiles[findex+1], self.theory.filename + '.gbw')
+
+            #Run SCF+TDDDFT
+            ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
+            stability = check_stability_in_output(self.theory.filename+'.out')
+            if stability is False and check_stability is True:
+                print("PES: Unstable final state. Exiting...")
+                ashexit()
+            
+            #Grab SCF energy
+            fstate.energy = scfenergygrab(self.theory.filename+'.out')
+
+            #Grab TDDFT states from ORCA output
+            fstate.TDtransitionenergies = tddftgrab(self.theory.filename+'.out')
+
+            #Saving GBW and CIS files
+            shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
+            shutil.copyfile(self.theory.filename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
+            shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
+            shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
+            fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
+            fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
+            fstate.cisfile="Final_State_mult"+str(fstate.mult)+".cis"
+
+            # Final state orbitals for MO-DOSplot
+            fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(self.theory.filename+'.out')
+
+            #Calculate SCF eldensity and spindensity if requested
+            if self.densities == 'SCF' or self.densities == 'All':
+                #Electron density
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', gridvalue=self.densgridvalue)
+                #Move into Calculated_densities dir
+                shutil.move(f"{self.theory.filename}.eldens.cube", 'Calculated_densities/' + f"{fstate.label}_state0.eldens.cube")
+                #f"{fstate.label}_state{numstate}.eldens.cube"
+                #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
+                if fstate.hftyp == "UHF":
+                    run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
+                    #Move into Calculated_densities dir
+                    shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{fstate.label}_state0.spindens.cube")
+
+            print("Final state multiplicity properties:", fstate.__dict__)
+            if fstate.hftyp == "UHF":
+                fstate.restricted = False
+            elif fstate.hftyp == "RHF":
+                fstate.restricted = True
+
+        blankline()
+        blankline()
+        print("All SCF and TDDFT calculations are now done (unless Densities=All, then we will calculate TDDFT densities at the end)!")
+
+
+        #Printing initial results
+        self.FinalIPs = []; self.Finalionstates = []; self.FinalTDtransitionenergies =[]
+        print(bcolors.OKBLUE,"\nInitial State SCF energy:", self.stateI.energy, "au",bcolors.ENDC)
+        print("")
+        for fstate in self.Finalstates:
+            print("---------------------------------------------------------------------------")
+            print("SCF energy and TDDFT transition energies for FinalState mult: ", fstate.mult)
+            # 1st vertical IP via deltaSCF
+            GSIP=(fstate.energy-self.stateI.energy)*ash.constants.hartoeV
+            fstate.GSIP=GSIP
+            print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
+            print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
+            # TDDFT states
+            print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
+
+            # Adding GS-IP to IP-list and GS ion to ionstate
+            fstate.IPs.append(fstate.GSIP)
+            fstate.ionstates.append(fstate.energy)
+            for e in fstate.TDtransitionenergies:
+                fstate.ionstates.append(e / ash.constants.hartoeV + fstate.energy)
+                fstate.IPs.append((e / ash.constants.hartoeV + fstate.energy - self.stateI.energy) * ash.constants.hartoeV)
+            print("")
+            print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
+            print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
+            print("")
+            self.FinalIPs = self.FinalIPs + fstate.IPs
+            self.Finalionstates = self.Finalionstates + fstate.ionstates
+            self.FinalTDtransitionenergies = self.FinalTDtransitionenergies + fstate.TDtransitionenergies
+
+
     def run_EOM(self):
         print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
 
@@ -1241,6 +1362,17 @@ class PhotoElectronClass:
             #Diff density
             if self.densities == 'SCF' or self.densities == 'All':
                 self.make_diffdensities(statetype='SCF')
+            # MO-spectrum 
+            self.mo_spectrum()
+            #For wfoverlap
+            self.prepare_mos_file()
+        elif self.method =='SF_TDDFT':
+            print("SpinFlip TDDFT option is active")
+            self.setup_ORCA_object()
+            self.run_SF_TDDFT()
+            #Diff density
+            #if self.densities == 'SCF' or self.densities == 'All':
+            #    self.make_diffdensities(statetype='SCF')
             # MO-spectrum 
             self.mo_spectrum()
             #For wfoverlap
@@ -2278,7 +2410,7 @@ def grab_dets_from_CASSCF_output(file):
 
 #Grab determinants from MRCI-ORCA output with option PrintWF det
 def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
-    print("file:", file)
+    #print("file:", file)
     #If SORCI True then multiple MRCI output sections. we want last one
     if SORCI is True:
         final_part=False
@@ -2372,7 +2504,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                 ciblock = int(line.split()[-2])
                 #print("Inside CI Block : ", ciblock)
             if 'Now choosing densities' in line:
-                print("Setting detgrab to False")
+                #print("Setting detgrab to False")
                 detgrab = False
             if 'Building a CAS' in line:
                 #Setting mult here. mult will be used when creating state
@@ -2629,21 +2761,35 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #Subcase: Not doubly internal hole.
                         else:
                             #print("Not same holeindex")
-                            #print("moddetlist2:", moddetlist2)
-                            spinlabelh2p0int_1=detlist2[0]
-                            spinlabelh2p0int_2=detlist2[1]
+                            if len(detlist2) != active:
+                                #Removing first 2 elements
+                                sm1 = SequenceMatcher(None, cfg_cas_list, detlist[2:])
+                                #removing last 2 element
+                                sm2 = SequenceMatcher(None, cfg_cas_list, detlist[0:-2])
+                                #Finding which det agrees best with cfg
+                                if sm1.ratio() > sm2.ratio():
+                                    moddetlist2=detlist2[2:]
+                                    addedspinlabels=detlist2[0:2]
+                                else:
+                                    moddetlist2=detlist2[0:-2]
+                                    addedspinlabels=detlist2[-2:]
+                                #Those added spin labels should normally be something other than 0
+                                if addedspinlabels == [0,0]:
+                                    #Another weird ORCA bug
+                                    #print("makes no sense. setting to 1")
+                                    #Setting to 1
+                                    spinlabelh2p0int_1=1
+                                    spinlabelh2p0int_2=1
+                            #Changing internal
                             lst_internaltuple=list(internal_tuple)
                             lst_internaltuple[holeindex1] = spinlabelh2p0int_1
                             lst_internaltuple[holeindex2] = spinlabelh2p0int_2
-                            #print("lst_internaltuple:", lst_internaltuple)
                             modinternal_tuple=tuple(lst_internaltuple)
-                            #print("Mod internal_tuple :", modinternal_tuple)
-                            #Modification to detlist
-                            moddetlist2=detlist2[2:]
                         #Unmodified external
                         modexternal_tuple=external_tuple
                     #CASE: 0 HOLE  1 PARTICLE:
                     elif len(hole_indices) == 0 and len(particle_indices) == 1:
+                        #print("0hole 1p")
                         particleindex1=particle_indices[0]
                         #Particleposition in external list
                         particleposition=particleindex1-external_first
@@ -2661,6 +2807,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         modinternal_tuple=internal_tuple
                     #CASE: 1 HOLE  1 PARTICLE:
                     elif len(hole_indices) == 1 and len(particle_indices) == 1:
+                        #print("1hole 1p")
                         holeindex=hole_indices[0]
                         particleindex1=particle_indices[0]
                         #Particleposition in external list
@@ -2682,6 +2829,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         moddetlist2=detlist2[1:-1]
                     #CASE: 0 HOLE  2 PARTICLES:                        
                     elif len(hole_indices) == 0 and len(particle_indices) == 2:
+                        #print("0hole 2p")
                         particleindex1=particle_indices[0]
                         particleindex2=particle_indices[1]
                         #Particleposition in external list
@@ -2717,6 +2865,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         
                     #CASE: 1 HOLE  2 PARTICLES:                        
                     elif len(hole_indices) == 1 and len(particle_indices) == 2:
+                        #print("1hole 2p")
                         #Grabbing immediately
                         moddetlist2=detlist2
                         holeindex=hole_indices[0]
@@ -2743,9 +2892,6 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                             lst_externaltuple[particleposition1] = 3
                             modexternal_tuple=tuple(lst_externaltuple)
                             #print("Mod external tuple :", modexternal_tuple)
-                            
-
-                            
                         else:
                             #print("Particle indices NOT the same")
                             spinlabelh1p2_1ext=detlist2[-2]
@@ -2758,9 +2904,9 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                             #Modifying active detlist
                             moddetlist2=moddetlist2[:-2]
                         
-
                     #CASE: 2 HOLES  2 PARTICLES:                       
                     elif len(hole_indices) == 2 and len(particle_indices) == 2:
+                        #print("2hole 2p")
                         #Grab this immediately
                         moddetlist2=detlist2
                         holeindex1=hole_indices[0]
@@ -2819,6 +2965,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         
                     #CASE: 2 HOLE  1 PARTICLE:   
                     elif len(hole_indices) == 2 and len(particle_indices) == 1:
+                        #print("2hole 1p")
                         moddetlist2=detlist2
                         holeindex1=hole_indices[0]
                         holeindex2=hole_indices[1]
@@ -2866,6 +3013,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     #CASE: NO HOLES, NO PARTICLES
                     # internal, active and external are all unchanged                   
                     else:
+                        #print("0hole 0p")
                         modinternal_tuple=internal_tuple
                         modexternal_tuple=external_tuple
                         moddetlist2=detlist2
