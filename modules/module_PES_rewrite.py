@@ -1036,14 +1036,10 @@ class PhotoElectronClass:
             for i, (E, IE, dys) in enumerate(zip(self.Finalionstates,self.FinalIPs,self.finaldysonnorms)):
                 #Getting spinmult
                 if self.MultipleSpinStates is True:
-                    print("here")
                     #Change test. what mult we are in.. TODO: Check this for correctness
                     if i < self.Finalstates[0].numionstates:
-                        print("i:", i)
-                        print("self.Finalstates[0].numionstates:", self.Finalstates[0].numionstates)
                         spinmult=self.Finalstates[0].mult
                     else:
-                        print("else")
                         spinmult=self.Finalstates[1].mult
                 else:
                     spinmult=self.stateF1.mult
@@ -2361,8 +2357,6 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                 #print("here. transitio energies line. Setting detgrab to false")
             #Determining CI BLOCK
             #if 'CI BLOCK' in line:
-
-
             #What block we are reading through
             if '          CI-BLOCK' in line:
                 #Setting detgrab to False for each new CI-block. Prevents us from grabbing State-lines for Reference-space CI
@@ -2375,33 +2369,31 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
             if 'Building a CAS' in line:
                 #Setting mult here. mult will be used when creating state
                 mult = int(line.split()[-1])
-
             if detgrab is True:
-                print("-----------------------------------------------------------")
-                print("detgrab True, line:", line)
+                #print("-----------------------------------------------------------")
+                #print("detgrab True, line:", line)
                 #Here reading CFG line. Grabbing configuration
                 #Also
                 if '[' in line and 'CFG' in line:
-                    print("="*90)
-                    print(f"NEW CFG (mult:{mult})")
-                    print("="*90)
+                    #print("="*90)
+                    #print(f"NEW CFG (mult:{mult})")
+                    #print("="*90)
                     hole_indices=[]
                     particle_indices=[]
-                    print("line:", line)
+                    #print("line:", line)
                     #cfg = line.split()[-1] Does not work for 2 particles
                     cfg = line.split("CFG", 1)[1]
-                    print("cfg:", cfg)
+                    #print("cfg:", cfg)
                     #Converting active space CFG to a list
                     #Keeping as string for comparison with determinant
                     #CFG list for active space only
                     cfg_cas_list=[str(i) for i in cfg.split("[")[1].split("]")[0]]
-                    print("cfg_cas_list:", cfg_cas_list)
+                    #print("cfg_cas_list:", cfg_cas_list)
                     #This is the weight of this configuration, not CI coefficient
                     weight = float(line.split()[0])
-                    print("weight:", weight)
-
+                    #print("weight:", weight)
                     if weight == 0.0000:
-                        print("CFG Weight is very small")
+                        #print("CFG Weight is very small")
                         #if skip_tiny_CFGs is True:
                         #    print("skip_tiny_CFGs is True. Skipping this one")
                         #    continue
@@ -2484,7 +2476,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         
                 if '[' in line and 'CFG' not in line:
                     dummycount+=1
-                    print("cfg:", cfg)
+                    #print("cfg:", cfg)
                     #print("dummycount:", dummycount)
                     #print("Determinant line:", line)
                     det = line.split()[0]
@@ -2513,7 +2505,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     #    elif k == 1:
                     #        cfglist2.append(1)
                     
-                    print("detlist2:", detlist2)
+                    #print("detlist2:", detlist2)
                     #print("cfglist2:", cfglist2)
                     
                     
@@ -2521,29 +2513,26 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     #print("internal_tuple :", internal_tuple)
                     #CASE: 1 HOLES  0 PARTICLES:
                     if len(hole_indices) == 1 and len(particle_indices) == 0:
-                        print("Case: 1 HOLE 0 PARTICLE")
+                        #print("Case: 1 HOLE 0 PARTICLE")
                         #print("Currently skipping")
                         #continue
                         holeindex=hole_indices[0]
-                        print("holeindex:", holeindex)
-                        print()
-
                         # If active space brackets in det have changed then we have to check if ORCA added to front or back of list
                         if len(detlist2) != active:
-                            print("list is too long")
+                            #print("list is too long")
                             #Comparing cfglist_n and detlist
                             #Using similarity metric from difflib library
-                            print("detlist:", detlist)
-                            print("detlist2:", detlist2)
-                            print("cfg:", cfg)
-                            print("det:", det)
+                            #print("detlist:", detlist)
+                            #print("detlist2:", detlist2)
+                            #print("cfg:", cfg)
+                            #print("det:", det)
                             #removing first element
                             sm1 = SequenceMatcher(None, cfg_cas_list, detlist[1:])
                             #removing last element
                             sm2 = SequenceMatcher(None, cfg_cas_list, detlist[0:-1])
 
-                            print("sm1(first) ratio:", sm1.ratio())
-                            print("sm2(last) ratio:", sm2.ratio())
+                            #print("sm1(first) ratio:", sm1.ratio())
+                            #print("sm2(last) ratio:", sm2.ratio())
                             if sm1.ratio() > sm2.ratio():
                                 moddetlist2=detlist2[1:]
                                 addedspinlabel=detlist2[0]
@@ -2551,8 +2540,8 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                                 moddetlist2=detlist2[0:-1]
                                 addedspinlabel=detlist2[-1]
 
-                            print("moddetlist2:", moddetlist2)
-                            print("addedspinlabel:", addedspinlabel)
+                            #print("moddetlist2:", moddetlist2)
+                            #print("addedspinlabel:", addedspinlabel)
                         else:
                             moddetlist2=detlist2
 
@@ -2582,19 +2571,19 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("lst_internaltuple:", lst_internaltuple)
                         #Getting spinlabel of internal electron where hole was created from detlist (first index in bracket)
                         #spinlabelh1p0int=detlist2[0]
-                        print("addedspinlabel:", addedspinlabel)
-                        print("holeindex:", holeindex)
+                        #print("addedspinlabel:", addedspinlabel)
+                        #print("holeindex:", holeindex)
 
                         if addedspinlabel is 0:
-                            print("addedspinlabel: 0")
-                            print("weird.  ORCA bug")
-                            print("Since there is 1 hole the spinlabel must be 1 or 2")
+                            #print("addedspinlabel: 0")
+                            #print("weird.  ORCA bug")
+                            #print("Since there is 1 hole the spinlabel must be 1 or 2")
                             bull=False
                             addedspinlabel=1
                         lst_internaltuple[holeindex] = addedspinlabel
-                        print("lst_internaltuple:", lst_internaltuple)
+                        #print("lst_internaltuple:", lst_internaltuple)
                         modinternal_tuple=tuple(lst_internaltuple)
-                        print("Mod internal_tuple :", modinternal_tuple)
+                        #print("Mod internal_tuple :", modinternal_tuple)
                         #Removing hole orb from detlist
                         #print("detlist2:", detlist2)
                         #moddetlist2=detlist2[1:]
@@ -2604,7 +2593,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         modexternal_tuple=external_tuple
                     #CASE: 2 HOLES  0 PARTICLES:
                     elif len(hole_indices) == 2 and len(particle_indices) == 0:
-                        print("CASE 2HOLES 0 PARTICLES")
+                        #print("CASE 2HOLES 0 PARTICLES")
                         holeindex1=hole_indices[0]
                         holeindex2=hole_indices[1]
                         
@@ -2820,7 +2809,6 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                             #Modifying active detlist
                             moddetlist2=moddetlist2[:-2]                        
                         
-                        
                     #CASE: 2 HOLE  1 PARTICLE:   
                     elif len(hole_indices) == 2 and len(particle_indices) == 1:
                         moddetlist2=detlist2
@@ -2873,39 +2861,21 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         modinternal_tuple=internal_tuple
                         modexternal_tuple=external_tuple
                         moddetlist2=detlist2
-                        #regular_space_det=moddetlist2
-                        #regular_space_cfg=cfglist_n
                         
                     #combining
                     det_tuple=modinternal_tuple+tuple(moddetlist2)+modexternal_tuple
-                    print("modinternal_tuple:", modinternal_tuple)
+                    #print("modinternal_tuple:", modinternal_tuple)
                     #print("moddetlist2:", moddetlist2)
-                    print("tuple(moddetlist2):", tuple(moddetlist2))
-                    print("modexternal_tuple:", modexternal_tuple)
-                    print("Final det_tuple ({}): {}".format(len(det_tuple),det_tuple))
-                    print()
-                    if bull is True:
-                        print("bull tru. exitting")
-                        ashexit()
-                    if len(det_tuple) != totorbitals:
-                        
-                        print("det_tuple:", det_tuple)
-                        print("modinternal_tuple:", modinternal_tuple)
-                        print("moddetlist2:", moddetlist2)
-                        print("tuple(moddetlist2):", tuple(moddetlist2))
-                        print("modexternal_tuple:", modexternal_tuple)
-                        print()
-                        print("internal_tuple:", internal_tuple)
-                        print("external_tuple:", external_tuple)
+                    #print("tuple(moddetlist2):", tuple(moddetlist2))
+                    #print("modexternal_tuple:", modexternal_tuple)
+                    #print("Final det_tuple ({}): {}".format(len(det_tuple),det_tuple))
+                    #print()
 
                     #SANITY CHECKS
                     #Det_tuple needs to have correct number of orbitals.
                     #If logic above failed (dealing with holes, particles and active space changes printout)
                     assert len(det_tuple) == totorbitals, "Orbital tuple ({}) not matching total number of orbitals ({})".format(len(det_tuple),totorbitals)
-                    
-
                     det_elcount = check_elcount_of_tuple(det_tuple)
-                    
                     if det_elcount != tot_num_electrons:
                         print("det_tuple:", det_tuple)
                         print(f"Problem. Determinant electron-count({det_elcount}) does not add up to correct electron-number({tot_num_electrons})")
@@ -2914,11 +2884,6 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     coeff = float(line.split()[-1])
                     #print("coeff : ", coeff)
                     state.determinants[det_tuple] = coeff
-                    #print("state.determinants :", state.determinants)
-                    #if dummycount == 7416:
-                    #    ashexit()
-
-
                 #Now creating state. Taking energy, root and mult (found earlier in beginning of CI block).
                 if 'STATE' in line:
                     #print("STATE in line. Creating state")
@@ -2928,8 +2893,6 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     energy = float(line.split()[3])
                     state = state_dets(root,energy,mult)
                     list_of_states.append(state)
-            #if 'CAS-SCF STATES FOR BLOCK' in line:
-            #    mult =int(line.split()[6])
             #Now PT2-selection and CI-problem is solved. Final states coming next.
             #Checking if final_part of MRCI output or not (e.g. if SORCI)
             if final_part is True:
@@ -2937,32 +2900,12 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     detgrab=True
             if 'S O R C I (DDCI3-STEP)' in line:
                 final_part=True
-
-    #print("list_of_states:", list_of_states)
-    #print(list_of_states[0])
-    #print(list_of_states[0].determinants)
-    #print(list_of_states[0].configurations)
-
-
-    #Going through
-    #print("list_of_states[0].__dict__", list_of_states[0].__dict__)
-    #for n,state in enumerate(list_of_states):
-    #    print("------------------------")
-    #    print("This is state {}  with mult {} and energy {} and root {}".format(n,state.mult, state.energy, state.root))
-    #    print("length of state CFGs :", len(state.configurations))
-    #    print("length of state determinants :", len(state.determinants))
-    #    print("state.configurations : ", state.configurations)
-    #    print("state.determinants : ", state.determinants)
-
-    #print("list_of_states:", list_of_states)
-
     mults = list(set([state.mult for state in list_of_states]))
     #Return a dictionary with all mults and all states
     final = {}
     for mult in mults:
         final[mult] = [state.determinants for state in list_of_states if state.mult == mult ]
-    #print("final :", final)
-    print("All done with grab_dets_from_MRCI_output")
+    #print("All done with grab_dets_from_MRCI_output")
     return final
 
 #Find wrong determinant in file
