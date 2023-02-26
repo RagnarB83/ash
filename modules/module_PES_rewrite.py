@@ -367,7 +367,7 @@ class PhotoElectronClass:
             self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', '%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) +
                                                     "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\n".format(1))
         else:
-            self.theory.orcablocks= self.theory.orcablocks + '%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) + "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
+            self.theory.orcablocks= self.theory.orcablocks + '\n%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) + "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
 
     #MRCI for initial state
     def run_MRCI_Initial(self):
