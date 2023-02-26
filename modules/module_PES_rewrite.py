@@ -1294,6 +1294,7 @@ class PhotoElectronClass:
             writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
 
     def run_dyson_calc(self):
+        module_init_time=time.time()
         print("Inside run_dyson_calc")
         # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.
         # Check if binary exists
@@ -1330,6 +1331,7 @@ class PhotoElectronClass:
                 print("Setting Dyson norms to zero and continuing.")
                 dysonnorms=len(fstate.IPs)*[0.0]
             self.finaldysonnorms=self.finaldysonnorms+dysonnorms
+        print_time_rel(module_init_time, modulename='run_dyson_calc', moduleindex=2)
 
 
     def cleanup(self):
@@ -2714,7 +2716,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("addedspinlabel:", addedspinlabel)
                         #print("holeindex:", holeindex)
 
-                        if addedspinlabel is 0:
+                        if addedspinlabel == 0:
                             #print("addedspinlabel: 0")
                             #print("weird.  ORCA bug")
                             #print("Since there is 1 hole the spinlabel must be 1 or 2")
