@@ -583,13 +583,13 @@ noio
             print(f"Dice PT energy (deterministic): {det_PT_energy} Eh")
         except IndexError:
             print("Warning: No deterministic PT energy printed in Dice output")
-            print(f"This probably means that you requsted variational-only SHCI.")            
+            print(f"This probably means that you requested variational-only SHCI.")            
         try:
             stoch_PT_energy=float(pt_energies[1].split()[1])
             print(f"Dice PT energy (stochastic): {stoch_PT_energy} Eh")
         except IndexError:
             print("Warning: No stochastic PT energy printed in Dice output")
-            print(f"This either means you requested no PT orthat stochastic PT steps exceeded PT iterations {self.SHCI_PTiter}")
+            print(f"This either means you requested no PT or that stochastic PT steps exceeded PT iterations {self.SHCI_PTiter}")
             print("Be careful about using the results")
 
         print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
