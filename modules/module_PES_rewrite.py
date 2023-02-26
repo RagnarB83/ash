@@ -248,7 +248,7 @@ class PhotoElectronClass:
     #Some general modifications to ORCA object
     def setup_ORCA_object(self):
         #General ORCA setting
-        self.theory.extraline=self.theory.extraline+"%method\n"+"frozencore FC_NONE\n"+"end\n"
+        self.theory.orcablocks=self.theory.orcablocks+"\n%method\n"+"frozencore FC_NONE\n"+"end\n"
         
         # For orbital analysis
         if 'NORMALPRINT' not in self.theory.orcasimpleinput.upper():
@@ -299,7 +299,7 @@ class PhotoElectronClass:
                         self.numionstates - 1) + '\n' + "maxdim 25\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
                     # Boolean for whether no_tda is on or not
                     self.no_tda = False
-                self.theory.extraline = "%method\n"+"frozencore FC_NONE\n"+"end\n" + tddftstring
+                self.theory.extraline = tddftstring
 
                 #Turning off stability analysis. Not available for gradient run.
                 if 'stabperform true' in self.theory.orcablocks:
@@ -745,7 +745,7 @@ class PhotoElectronClass:
                 tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
                 # Boolean for whether no_tda is on or not
                 self.no_tda = False
-            self.theory.extraline=self.theory.extraline+tddftstring
+            self.theory.extraline=tddftstring
 
             print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
             if self.initialorbitalfiles is not None:
