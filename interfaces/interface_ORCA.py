@@ -1775,9 +1775,19 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
 
 # Wrapper around interactive orca_plot
 # Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
-def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=False, densityfilename=None, mo_operator=0, mo_number=None):
+def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=False, 
+    densityfilename=None, individual_file=False, mo_operator=0, mo_number=None,):
     print("Running run_orca_plot")
     orcadir = check_ORCA_location(orcadir)
+    def check_if_file_exists():
+        if os.path.isfile(densityfilename) is True:
+            print("File exists")
+        else:
+            print("File does not exist! Skipping")
+            return
+    #If individual_file is True then we can check if file exists (case for MRCI)
+    if individual_file is True:
+        check_if_file_exists()
     # Always creating Cube file (5,7 option)
     #Always setting grid (4,gridvalue option)
     #Always choosing a plot (2,X) option:
@@ -1796,14 +1806,7 @@ def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=
         plottype = 1
     if option=='density' or option=='spindensity':
         if specify_density is True:
-            print("specify_density: True. Picking density file:", densityfilename)
-            if densityfilename is not None:
-                print("Density file provided:", densityfilename)
-                if os.path.isfile(densityfilename) is True:
-                    print("File exists")
-                else:
-                    print("File does not exist! Skipping")
-                    return
+            print("specify_density: True. Picking density filename:", densityfilename)
             #Choosing e.g. MRCI density
             p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
                 input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n10\n11\n\n', encoding='ascii')  
