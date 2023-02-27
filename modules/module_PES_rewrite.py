@@ -2420,7 +2420,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
         final_part=True
 
     #Calculate M_S spin of activespace tuple
-    def spin_of_activespace_tuple(det_tuple):
+    def check_spin_of_tuple(det_tuple):
         ms=0 #m_s spin
         for n in det_tuple:
             if n == 3:
@@ -2775,17 +2775,28 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                                 else:
                                     moddetlist2=detlist2[0:-2]
                                     addedspinlabels=detlist2[-2:]
+                                #print("moddetlist2:", moddetlist2)
+                                #print("addedspinlabels:", addedspinlabels)
                                 #Those added spin labels should normally be something other than 0
                                 if addedspinlabels == [0,0]:
-                                    #Another weird ORCA bug
-                                    #print("makes no sense. setting to 1")
-                                    #Setting to 1
-                                    spinlabelh2p0int_1=1
-                                    spinlabelh2p0int_2=1
+                                    #Another weird ORCA bug where the spin labels are 0
+                                    #print("makes no sense. modifying")
+                                    #print("ref spin:", (mult-1)/2)
+                                    #print("spin of active space:", check_spin_of_tuple(moddetlist2))
+                                    if check_spin_of_tuple(moddetlist2) > (mult-1)/2:
+                                        #print("moddetlist2:", moddetlist2)
+                                        addedspinlabels=[2,2] #Setting to down-down
+                                    elif check_spin_of_tuple(moddetlist2) < (mult-1)/2:
+                                        #print("moddetlist2:", moddetlist2)
+                                        addedspinlabels=[1,1] #Setting to up-up
+                                    else: #mult correct, hole should add up to 0
+                                        addedspinlabels=[1,2] #Setting to up-down
+                                    #print("addedspinlabels:", addedspinlabels)
+                                    #exit()
                             #Changing internal
                             lst_internaltuple=list(internal_tuple)
-                            lst_internaltuple[holeindex1] = spinlabelh2p0int_1
-                            lst_internaltuple[holeindex2] = spinlabelh2p0int_2
+                            lst_internaltuple[holeindex1] = addedspinlabels[0]
+                            lst_internaltuple[holeindex2] = addedspinlabels[1]
                             modinternal_tuple=tuple(lst_internaltuple)
                         #Unmodified external
                         modexternal_tuple=external_tuple
@@ -3031,13 +3042,20 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
 
                     #SANITY CHECKS
                     #Det_tuple needs to have correct number of orbitals.
-                    #If logic above failed (dealing with holes, particles and active space changes printout)
-                    assert len(det_tuple) == totorbitals, "Orbital tuple ({}) not matching total number of orbitals ({})".format(len(det_tuple),totorbitals)
+                    # The electron count needs to be correct
+                    # The spin needs to be correct
+                    if len(det_tuple)  != totorbitals:
+                        print(f"Orbital tuple ({det_tuple}) not matching total number of orbitals ({totorbitals})")
                     det_elcount = check_elcount_of_tuple(det_tuple)
                     if det_elcount != tot_num_electrons:
                         print("det_tuple:", det_tuple)
                         print(f"Problem. Determinant electron-count({det_elcount}) does not add up to correct electron-number({tot_num_electrons})")
                         ashexit()
+                    det_ms = check_spin_of_tuple(det_tuple)    
+                    if det_ms != (mult-1)/2:
+                        print("det_tuple:", det_tuple)
+                        print(f"Problem. Determinant spin or M_S value ({det_ms}) does not add up to correct spin (mult:{mult} i.e. M_S: {(mult-1)/2:})")
+                        ashexit() 
                     #This is the CI coeffient
                     coeff = float(line.split()[-1])
                     #print("coeff : ", coeff)
