@@ -954,21 +954,6 @@ class PhotoElectronClass:
 
         # Final state orbitals for MO-DOSplot
         lowest_mult_fstate.occorbs_alpha, lowest_mult_fstate.occorbs_beta, lowest_mult_fstate.hftyp = orbitalgrab(self.theory.filename+'.out')
-
-        #Calculate SCF eldensity and spindensity if requested
-        if self.densities == 'SCF' or self.densities == 'All':
-            print("not ready")
-            exit()
-            #Electron density
-            run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', gridvalue=self.densgridvalue)
-            #Move into Calculated_densities dir
-            shutil.move(f"{self.theory.filename}.eldens.cube", 'Calculated_densities/' + f"{lowest_mult_fstate.label}_state0.eldens.cube")
-            #f"{fstate.label}_state{numstate}.eldens.cube"
-            #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
-            if lowest_mult_fstate.hftyp == "UHF":
-                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
-                #Move into Calculated_densities dir
-                shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{lowest_mult_fstate.label}_state0.spindens.cube")
         print("Final state multiplicity properties:", lowest_mult_fstate.__dict__)
         if lowest_mult_fstate.hftyp == "UHF":
             lowest_mult_fstate.restricted = False
