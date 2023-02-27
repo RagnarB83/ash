@@ -762,7 +762,7 @@ class PhotoElectronClass:
             #Run SCF+TDDDFT
             ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
             stability = check_stability_in_output(self.theory.filename+'.out')
-            if stability is False and check_stability is True:
+            if stability is False and self.check_stability is True:
                 print("PES: Unstable final state. Exiting...")
                 ashexit()
             
@@ -845,9 +845,6 @@ class PhotoElectronClass:
         print(bcolors.OKBLUE,"Total ion states:", self.numionstates, bcolors.ENDC)
         print(bcolors.OKBLUE,"SF_TDDFT-calculated ion states:", self.numionstates-1, bcolors.ENDC)
 
-
-        print("This is not ready")
-        ashexit()
         #Run Initial-State SCF
         self.run_SCF_InitState()
 
@@ -856,103 +853,174 @@ class PhotoElectronClass:
         ###################
         #TDDFT-option SCF+TDDFT for each spin multiplicity
         #################################################
+        
+        #Choosing highest-spinmult state
+        highest_mult_fstate_index = self.Ionizedstate_mult.index(max(self.Ionizedstate_mult))
+        highest_mult_fstate=self.Finalstates[highest_mult_fstate_index]
+        if highest_mult_fstate_index == 0:
+            lowest_mult_fstate_index=1
+        else:
+            lowest_mult_fstate_index=1
+        lowest_mult_fstate=self.Finalstates[lowest_mult_fstate_index]
+        #Setting TDA/TDDFT states for each spin multiplicity
+        if self.tda==False:
+            # Boolean for whether no_tda is on or not
+            self.no_tda = True
+            tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(highest_mult_fstate.numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15\n"+"end\n"+"\n"
+        else:
+            tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(highest_mult_fstate.numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
+            # Boolean for whether no_tda is on or not
+            self.no_tda = False
+        self.theory.extraline=tddftstring
+        print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", highest_mult_fstate.mult, bcolors.ENDC)
+        #TODO: Initial orbitalfiles
+        #Run SCF+TDDDFT
+        print(bcolors.OKGREEN, f"\nCalculating Higher-spinmultiplicity (mult: {highest_mult_fstate.mult}) State SCF and TDDFT.",bcolors.ENDC)
+        ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=highest_mult_fstate.charge, mult=highest_mult_fstate.mult)
+        stability = check_stability_in_output(self.theory.filename+'.out')
+        if stability is False and self.check_stability is True:
+            print("PES: Unstable final state. Exiting...")
+            ashexit()
+        #Grab SCF energy
+        highest_mult_fstate.energy = scfenergygrab(self.theory.filename+'.out')
 
-        #Looping over Finalstate-multiplicities (not individual states)
-        for findex,fstate in enumerate(self.Finalstates):
-            #Setting TDA/TDDFT states for each spin multiplicity
-            if self.tda==False:
-                # Boolean for whether no_tda is on or not
-                self.no_tda = True
-                tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15\n"+"end\n"+"\n"
-            else:
-                tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
-                # Boolean for whether no_tda is on or not
-                self.no_tda = False
-            self.theory.extraline=tddftstring
+        #Grab TDDFT states from ORCA output
+        highest_mult_fstate.TDtransitionenergies = tddftgrab(self.theory.filename+'.out')
 
-            print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
-            if self.initialorbitalfiles is not None:
-                print("Initial orbitals keyword provided.")
-                print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex+1]))
-                shutil.copyfile(self.initialorbitalfiles[findex+1], self.theory.filename + '.gbw')
+        #Saving GBW and CIS files
+        shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State_mult' + str(highest_mult_fstate.mult) + '.gbw')
+        shutil.copyfile(self.theory.filename + '.cis', './' + 'Final_State_mult' + str(highest_mult_fstate.mult) + '.cis')
+        shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State_mult' + str(highest_mult_fstate.mult) + '.out')
+        shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State_mult' + str(highest_mult_fstate.mult) + '.inp')
+        highest_mult_fstate.gbwfile="Final_State_mult"+str(highest_mult_fstate.mult)+".gbw"
+        highest_mult_fstate.outfile="Final_State_mult"+str(highest_mult_fstate.mult)+".out"
+        highest_mult_fstate.cisfile="Final_State_mult"+str(highest_mult_fstate.mult)+".cis"
 
-            #Run SCF+TDDDFT
-            ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
-            stability = check_stability_in_output(self.theory.filename+'.out')
-            if stability is False and check_stability is True:
-                print("PES: Unstable final state. Exiting...")
-                ashexit()
-            
-            #Grab SCF energy
-            fstate.energy = scfenergygrab(self.theory.filename+'.out')
+        # Final state orbitals for MO-DOSplot
+        highest_mult_fstate.occorbs_alpha, highest_mult_fstate.occorbs_beta, highest_mult_fstate.hftyp = orbitalgrab(self.theory.filename+'.out')
 
-            #Grab TDDFT states from ORCA output
-            fstate.TDtransitionenergies = tddftgrab(self.theory.filename+'.out')
-
-            #Saving GBW and CIS files
-            shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
-            shutil.copyfile(self.theory.filename + '.cis', './' + 'Final_State_mult' + str(fstate.mult) + '.cis')
-            shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State_mult' + str(fstate.mult) + '.out')
-            shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State_mult' + str(fstate.mult) + '.inp')
-            fstate.gbwfile="Final_State_mult"+str(fstate.mult)+".gbw"
-            fstate.outfile="Final_State_mult"+str(fstate.mult)+".out"
-            fstate.cisfile="Final_State_mult"+str(fstate.mult)+".cis"
-
-            # Final state orbitals for MO-DOSplot
-            fstate.occorbs_alpha, fstate.occorbs_beta, fstate.hftyp = orbitalgrab(self.theory.filename+'.out')
-
-            #Calculate SCF eldensity and spindensity if requested
-            if self.densities == 'SCF' or self.densities == 'All':
-                #Electron density
-                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', gridvalue=self.densgridvalue)
+        #Calculate SCF eldensity and spindensity if requested
+        if self.densities == 'SCF' or self.densities == 'All':
+            #Electron density
+            run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', gridvalue=self.densgridvalue)
+            #Move into Calculated_densities dir
+            shutil.move(f"{self.theory.filename}.eldens.cube", 'Calculated_densities/' + f"{highest_mult_fstate.label}_state0.eldens.cube")
+            #f"{fstate.label}_state{numstate}.eldens.cube"
+            #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
+            if highest_mult_fstate.hftyp == "UHF":
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
                 #Move into Calculated_densities dir
-                shutil.move(f"{self.theory.filename}.eldens.cube", 'Calculated_densities/' + f"{fstate.label}_state0.eldens.cube")
-                #f"{fstate.label}_state{numstate}.eldens.cube"
-                #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
-                if fstate.hftyp == "UHF":
-                    run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
-                    #Move into Calculated_densities dir
-                    shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{fstate.label}_state0.spindens.cube")
+                shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{highest_mult_fstate.label}_state0.spindens.cube")
+        print("Final state multiplicity properties:", highest_mult_fstate.__dict__)
+        if highest_mult_fstate.hftyp == "UHF":
+            highest_mult_fstate.restricted = False
+        elif highest_mult_fstate.hftyp == "RHF":
+            highest_mult_fstate.restricted = True
 
-            print("Final state multiplicity properties:", fstate.__dict__)
-            if fstate.hftyp == "UHF":
-                fstate.restricted = False
-            elif fstate.hftyp == "RHF":
-                fstate.restricted = True
+        #NOW DO SPIN-FLIP STATES
+        print("Done calculating highest-multiplicity regular TDDFT states")
+        print(bcolors.OKGREEN, f"\nCalculating Lower-spinmultiplicity (mult: {lowest_mult_fstate.mult}) via spinFlip-TDDFT from higher-mult SCF(mult: {highest_mult_fstate}).",bcolors.ENDC)
+        #Setting TDA/TDDFT states for each spin multiplicity
+        if self.tda==False:
+            # Boolean for whether no_tda is on or not
+            self.no_tda = True
+            tddftstring="%tddft\n"+"sf true\n"+"tda false\n"+"nroots " + str(lowest_mult_fstate.numionstates) + '\n'+"maxdim 25\n"+"maxiter 15\n"+"end\n"+"\n"
+        else:
+            tddftstring="%tddft\n"+"sf true\n"+"tda true\n"+"nroots " + str(lowest_mult_fstate.numionstates) + '\n'+"maxdim 25\n"+"end\n"+"\n"
+            # Boolean for whether no_tda is on or not
+            self.no_tda = False
+        self.theory.extraline=tddftstring
+        #Run Spin-Flip TDDFT, using highest-spin multiplicity
+        ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=lowest_mult_fstate.charge, mult=highest_mult_fstate.mult)
+        stability = check_stability_in_output(self.theory.filename+'.out')
+        if stability is False and self.check_stability is True:
+            print("PES: Unstable final state. Exiting...")
+            ashexit()
+        #Grab SCF energy
+        lowest_mult_fstate.energy = scfenergygrab(self.theory.filename+'.out')
+        print("lowest_mult_fstate.energy:", lowest_mult_fstate.energy)
+        #Grab TDDFT states from ORCA output
+        SF_TDtransitionenergies = tddftgrab(self.theory.filename+'.out')
+        print("SF_TDtransitionenergies:", SF_TDtransitionenergies)
+
+        #Saving GBW and CIS files
+        shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State_mult' + str(lowest_mult_fstate.mult) + '.gbw')
+        shutil.copyfile(self.theory.filename + '.cis', './' + 'Final_State_mult' + str(lowest_mult_fstate.mult) + '.cis')
+        shutil.copyfile(self.theory.filename + '.out', './' + 'Final_State_mult' + str(lowest_mult_fstate.mult) + '.out')
+        shutil.copyfile(self.theory.filename + '.inp', './' + 'Final_State_mult' + str(lowest_mult_fstate.mult) + '.inp')
+        lowest_mult_fstate.gbwfile="Final_State_mult"+str(lowest_mult_fstate.mult)+".gbw"
+        lowest_mult_fstate.outfile="Final_State_mult"+str(lowest_mult_fstate.mult)+".out"
+        lowest_mult_fstate.cisfile="Final_State_mult"+str(lowest_mult_fstate.mult)+".cis"
+
+        # Final state orbitals for MO-DOSplot
+        lowest_mult_fstate.occorbs_alpha, lowest_mult_fstate.occorbs_beta, lowest_mult_fstate.hftyp = orbitalgrab(self.theory.filename+'.out')
+
+        #Calculate SCF eldensity and spindensity if requested
+        if self.densities == 'SCF' or self.densities == 'All':
+            print("not ready")
+            exit()
+            #Electron density
+            run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='density', gridvalue=self.densgridvalue)
+            #Move into Calculated_densities dir
+            shutil.move(f"{self.theory.filename}.eldens.cube", 'Calculated_densities/' + f"{lowest_mult_fstate.label}_state0.eldens.cube")
+            #f"{fstate.label}_state{numstate}.eldens.cube"
+            #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
+            if lowest_mult_fstate.hftyp == "UHF":
+                run_orca_plot(orcadir=self.theory.orcadir,filename=f"{self.theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
+                #Move into Calculated_densities dir
+                shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{lowest_mult_fstate.label}_state0.spindens.cube")
+        print("Final state multiplicity properties:", lowest_mult_fstate.__dict__)
+        if lowest_mult_fstate.hftyp == "UHF":
+            lowest_mult_fstate.restricted = False
+        elif lowest_mult_fstate.hftyp == "RHF":
+            lowest_mult_fstate.restricted = True
 
         blankline()
         blankline()
         print("All SCF and TDDFT calculations are now done (unless Densities=All, then we will calculate TDDFT densities at the end)!")
 
-
+        #lowest_mult_fstate.TDtransitionenergies  TODO
         #Printing initial results
         self.FinalIPs = []; self.Finalionstates = []; self.FinalTDtransitionenergies =[]
         print(bcolors.OKBLUE,"\nInitial State SCF energy:", self.stateI.energy, "au",bcolors.ENDC)
         print("")
-        for fstate in self.Finalstates:
-            print("---------------------------------------------------------------------------")
-            print("SCF energy and TDDFT transition energies for FinalState mult: ", fstate.mult)
-            # 1st vertical IP via deltaSCF
-            GSIP=(fstate.energy-self.stateI.energy)*ash.constants.hartoeV
-            fstate.GSIP=GSIP
-            print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
-            print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
-            # TDDFT states
-            print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
+        print("---------------------------------------------------------------------------")
+        print("SCF energy and TDDFT transition energies for FinalState mult: ", highest_mult_fstate.mult)
+        # 1st vertical IP via deltaSCF
+        GS_highest_mult_IP=(highest_mult_fstate.energy-self.stateI.energy)*ash.constants.hartoeV
+        highest_mult_fstate.GSIP=GS_highest_mult_IP
+        highest_mult_fstate.IPs.append(GS_highest_mult_IP)
+        highest_mult_fstate.ionstates.append(highest_mult_fstate.energy)
+        print(bcolors.OKBLUE,"Initial Final State SCF energy:", highest_mult_fstate.energy, "au", bcolors.ENDC)
+        print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", highest_mult_fstate.GSIP,bcolors.ENDC)
+        #Spin-flipped IPs
+        SF_IPs=sorted([GS_highest_mult_IP+SF_transenergy for SF_transenergy in SF_TDtransitionenergies]) #Converting SF transition energies into IPs and sorting
+        print("SF_IPs:", SF_IPs)
+        lowest_mult_fstate.IPs = SF_IPs
+        lowest_mult_fstate.TDtransitionenergies = SF_TDtransitionenergies
+        # Print TDDFT and SF-TDDFT transition energies
+        print(bcolors.OKBLUE, f"TDDFT transition energies (eV) for FinalState (mult: {highest_mult_fstate.mult}) : {highest_mult_fstate.TDtransitionenergies}\n", bcolors.ENDC, )
+        print(bcolors.OKBLUE, f"Spin-Flip TDDFT transition energies (eV) for FinalState (mult: {lowest_mult_fstate.mult}) : {lowest_mult_fstate.TDtransitionenergies}\n", bcolors.ENDC, )
 
-            # Adding GS-IP to IP-list and GS ion to ionstate
-            fstate.IPs.append(fstate.GSIP)
-            fstate.ionstates.append(fstate.energy)
-            for e in fstate.TDtransitionenergies:
-                fstate.ionstates.append(e / ash.constants.hartoeV + fstate.energy)
-                fstate.IPs.append((e / ash.constants.hartoeV + fstate.energy - self.stateI.energy) * ash.constants.hartoeV)
-            print("")
-            print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
-            print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
-            print("")
-            self.FinalIPs = self.FinalIPs + fstate.IPs
-            self.Finalionstates = self.Finalionstates + fstate.ionstates
-            self.FinalTDtransitionenergies = self.FinalTDtransitionenergies + fstate.TDtransitionenergies
+        #Assembling final ion state energies
+        for e in highest_mult_fstate.TDtransitionenergies:
+            highest_mult_fstate.ionstates.append(e / ash.constants.hartoeV + highest_mult_fstate.energy)
+            highest_mult_fstate.IPs.append((e / ash.constants.hartoeV + highest_mult_fstate.energy - self.stateI.energy) * ash.constants.hartoeV)
+        for ls_tda in lowest_mult_fstate.TDtransitionenergies:
+            print("ls_tda:", ls_tda)
+            print("highest_mult_fstate.energy:", highest_mult_fstate.energy)
+            lowest_mult_fstate.ionstates.append(ls_tda / ash.constants.hartoeV + highest_mult_fstate.energy)
+        
+        print("")
+        print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, highest_mult_fstate.IPs)
+        print(bcolors.OKBLUE, "SF-TDDFT-derived IPs (eV), :\n", bcolors.ENDC, lowest_mult_fstate.IPs)
+        print(bcolors.OKBLUE, f"Ion-state energies (au) for mult: {highest_mult_fstate.mult}:\n", bcolors.ENDC, highest_mult_fstate.ionstates)
+        print(bcolors.OKBLUE, f"Ion-state energies (au) for mult: {lowest_mult_fstate.mult} \n", bcolors.ENDC, lowest_mult_fstate.ionstates)
+        print("")
+
+        self.FinalIPs = highest_mult_fstate.IPs + lowest_mult_fstate.IPs
+        self.Finalionstates = highest_mult_fstate.ionstates + lowest_mult_fstate.ionstates
+        self.FinalTDtransitionenergies = highest_mult_fstate.TDtransitionenergies + lowest_mult_fstate.TDtransitionenergies
 
 
     def run_EOM(self):
@@ -1075,7 +1143,7 @@ class PhotoElectronClass:
         self.InitSCF = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
         finalsinglepointenergy = self.InitSCF.energy
         stability = check_stability_in_output(self.theory.filename+'.out')
-        if stability is False and check_stability is True:
+        if stability is False and self.check_stability is True:
             print("PES: Unstable initial state. Exiting...")
             ashexit()
 
@@ -1175,8 +1243,7 @@ class PhotoElectronClass:
                         spinmult=self.Finalstates[1].mult
                 else:
                     spinmult=self.stateF1.mult
-                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))        
-        
+                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))                
         elif self.method == 'TDDFT':
             #Creating lists of all state labels and transition energies
             if self.tda is True: 
@@ -1193,7 +1260,32 @@ class PhotoElectronClass:
             fstate=self.Finalstates[0]
             for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(self.Finalionstates,self.FinalIPs,self.finaldysonnorms,statelabels,tdtransitions,spinmults)):
                 print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,statelabel, TDtransenergy))
+        elif self.method == 'SF-TDDFT':
+            #Creating lists of all state labels and transition energies
+            if self.tda is True: 
+                tdtype = 'TDA'
+                sftdtype = 'SFTDA'
+            else: 
+                tdtype = 'TDDFT'
+                sftdtype = 'SFTDDFT'
+            #Choosing highest-spinmult state
+            highest_mult_fstate_index = self.Ionizedstate_mult.index(max(self.Ionizedstate_mult))
+            highest_mult_fstate=self.Finalstates[highest_mult_fstate_index]
+            if highest_mult_fstate_index == 0:
+                lowest_mult_fstate_index=1
+            else:
+                lowest_mult_fstate_index=1
+            lowest_mult_fstate=self.Finalstates[lowest_mult_fstate_index]
 
+            #statelabels=[]; tdtransitions=[];spinmults=[]
+            statelabels =  ['SCF']+[tdtype]*(highest_mult_fstate.numionstates-1) + [sftdtype]*lowest_mult_fstate.numionstates
+            tdtransitions = [0.0]+highest_mult_fstate.TDtransitionenergies + lowest_mult_fstate.TDtransitionenergies
+            spinmults = [highest_mult_fstate.mult]*highest_mult_fstate.numionstates + [lowest_mult_fstate.mult]*lowest_mult_fstate.numionstates
+            
+            print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
+            fstate=self.Finalstates[0]
+            for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(self.Finalionstates,self.FinalIPs,self.finaldysonnorms,statelabels,tdtransitions,spinmults)):
+                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,statelabel, TDtransenergy))
     def prepare_mos_file(self):
         print("Inside prepare_mos_file")
         print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and determinants from ORCA GBW file, CIS file (if TDDFT) or output (if CAS/MRCI)",
@@ -1373,7 +1465,7 @@ class PhotoElectronClass:
             self.mo_spectrum()
             #For wfoverlap
             self.prepare_mos_file()
-        elif self.method =='SF_TDDFT':
+        elif self.method =='SF-TDDFT':
             print("SpinFlip TDDFT option is active")
             self.setup_ORCA_object()
             self.run_SF_TDDFT()
