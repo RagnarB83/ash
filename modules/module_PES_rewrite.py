@@ -558,8 +558,10 @@ class PhotoElectronClass:
         #############
         print("Grabbing determinants from Initial State output")
         init_state = grab_dets_from_MRCI_output(self.stateI.outfile,SORCI=self.SORCI)
+
         #Format and write to file
-        det_init = format_ci_vectors(init_state[self.Initialstate_mult])
+        det_init,ndets_i = format_ci_vectors(init_state[self.Initialstate_mult])
+        print(f"{ndets_i} determinants for Initial State found")
         writestringtofile(det_init, "dets_init")
 
         #Checking if wrong determinant in file
@@ -572,7 +574,8 @@ class PhotoElectronClass:
         final_states = grab_dets_from_MRCI_output(self.Finalstates[0].outfile,SORCI=self.SORCI)  
         
         for fstate in self.Finalstates:
-            det_final = format_ci_vectors(final_states[fstate.mult])
+            det_final,ndets_f = format_ci_vectors(final_states[fstate.mult])
+            print(f"{ndets_f} determinants for FinalState mult{fstate.mult} found")
             # Printing to file
             writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
             
@@ -1272,7 +1275,8 @@ class PhotoElectronClass:
         #init_state_dict2 = {Initialstate_mult : init_state_dict}
         #print("init_state_dict:", init_state_dict)
         #print("init_state_dict2:", init_state_dict2)
-        det_init = format_ci_vectors(init_state[self.Initialstate_mult])
+        det_init,ndets_i = format_ci_vectors(init_state[self.Initialstate_mult])
+        print(f"{ndets_i} determinants for Initial State found")
         #print("det_init:", det_init)
         # Printing to file
         writestringtofile(det_init, "dets_init")
@@ -1288,7 +1292,8 @@ class PhotoElectronClass:
         for fstate in self.Finalstates:
             #print("fstate: ", fstate)
             #print("fstate.mult :", fstate.mult)
-            det_final = format_ci_vectors(final_states[fstate.mult])
+            det_final,ndets_f = format_ci_vectors(final_states[fstate.mult])
+            print(f"{ndets_f} determinants for FinalState mult{fstate.mult} found")
             #print("det_final : ", det_final)
             # Printing to file
             writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
@@ -1529,12 +1534,10 @@ def saveAOmatrix(file, orcadir=None):
 
 #Get smat from GBW.
 def get_smat_from_gbw(file1, file2='', orcadir=None):
-    print("Inside get_smat_from_gbw")
+    #print("Inside get_smat_from_gbw")
     if os.path.isfile(file1) is False:
         print(f"file {file1} does exist")
         ashexit()
-    print("file1:", file1)
-    print("file2:", file2)
     if not file2:
       file2=file1
 
@@ -1772,9 +1775,7 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
         key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
     eigenvectors[gsmult].append( {key:1.0} )
     strings={}
-    #print("Final (single-det case) eigenvectors:", eigenvectors)
-    #print("format_ci_vectors(eigenvectors[gsmult] :", format_ci_vectors(eigenvectors[gsmult]))
-    strings["dets."+str(gsmult)] = format_ci_vectors(eigenvectors[gsmult])
+    strings["dets."+str(gsmult)],nd = format_ci_vectors(eigenvectors[gsmult])
     return strings
 
 
@@ -2015,12 +2016,10 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
     #print("Final (CIS) eigenvectors:", eigenvectors)
     for imult,mult in enumerate(mults):
         filename='dets.%i' % mult
-        strings[filename]=format_ci_vectors(eigenvectors[mult])
+        strings[filename],nd=format_ci_vectors(eigenvectors[mult])
     return strings
 
 def format_ci_vectors(ci_vectors):
-
-    # get nstates, norb and ndets
     alldets=set()
     for dets in ci_vectors:
         for key in dets:
@@ -2046,7 +2045,7 @@ def format_ci_vectors(ci_vectors):
             else:
                 string+=' %11.7f ' % 0.
         string+='\n'
-    return string
+    return string,ndets
 
 #Run wfoverlap program
 def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory):

@@ -128,7 +128,7 @@ Opt = geomeTRICOptimizer
 # PES
 import ash.modules.module_PES
 from ash.modules.module_PES import oldPhotoElectronSpectrum #TODO: delete
-from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT
+from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT, plot_PES_Spectrum
 
 # Workflows, benchmarking etc
 import ash.modules.module_workflows
