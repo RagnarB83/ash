@@ -1473,9 +1473,10 @@ class PhotoElectronClass:
             print("CASSCF/CASCI option active!")
             self.setup_ORCA_object()
             self.run_CAS()
-            #Difference densities
-            print("Calling make_diffdensities")
-            self.make_diffdensities(statetype='CAS')
+            #Diff density
+            if self.densities == 'SCF' or self.densities == 'All':
+                print("Calling make_diffdensities")
+                self.make_diffdensities(statetype='CAS')
             #Prepare determinants and MOs for Wfoverlap Dyson calculations
             self.CAS_dets_prep()
             #For wfoverlap
@@ -1489,8 +1490,10 @@ class PhotoElectronClass:
             self.run_MRCI_Initial()
             self.run_MRCI_Final()
             #Difference densities
-            print("Calling make_diffdensities")
-            self.make_diffdensities(statetype='MRCI')
+            if self.densities == 'SCF' or self.densities == 'All':
+                #Difference densities
+                print("Calling make_diffdensities")
+                self.make_diffdensities(statetype='MRCI')
             #Prepare determinants and MOs for Wfoverlap Dyson calculations
             self.MRCI_prepare_determinants()
             self.prepare_mos_file()
