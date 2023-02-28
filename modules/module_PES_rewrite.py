@@ -2638,9 +2638,11 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #0-hole 2-particle
                         hole_indices=[]
                         #print("Assignment: 0 HOLE  2 PARTICLE")
-                        particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
-                        #print("hole_indices:", hole_indices) 
-                        #print("particle_indices:", particle_indices)                
+                        #particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        p_split = [i for i in line.split('p')]
+                        pindex_1=int(p_split[-2])
+                        pindex_2=int(p_split[-1])
+                        particle_indices=[pindex_1,pindex_2]           
                     elif 'h---h ' in line and line.count('p')==0:
                         #1-hole 0-particle
                         particle_indices=[]
@@ -2663,9 +2665,16 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("Assignment: 1 HOLE  2 PARTICLE")
                         hole_index=int(find_between(line,'h---h','[').strip())
                         hole_indices.append(hole_index)
-                        particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
-                        #print("hole_indices:", hole_indices) 
+                        p_split = [i for i in line.split('p')]
+                        #print("line split", p_split)
+                        pindex_1=int(p_split[-2])
+                        #print("pindex_1:", pindex_1)
+                        pindex_2=int(p_split[-1])
+                        #print("pindex_2:", pindex_2)
+                        particle_indices=[pindex_1,pindex_2]
+                        #particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
                         #print("particle_indices:", particle_indices)
+                        #exit()
                     elif 'CFG h ' in line and line.count('p')==0:
                         # 2-hole 0-particle
                         #print("Assignment: 2 HOLE  0 PARTICLE")
@@ -2685,7 +2694,11 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         # 2-hole 2-particle
                         #print("Assignment: 2 HOLE  2 PARTICLE")
                         hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
-                        particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        #particle_indices = [int(i) for i in find_between(line,']p','\n').replace('p','').split()]
+                        p_split = [i for i in line.split('p')]
+                        pindex_1=int(p_split[-2])
+                        pindex_2=int(p_split[-1])
+                        particle_indices=[pindex_1,pindex_2]
                         #print("hole_indices:", hole_indices) 
                         #print("particle_indices:", particle_indices)                                                    
                     else:
@@ -2897,6 +2910,8 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     #CASE: 1 HOLE  1 PARTICLE:
                     elif len(hole_indices) == 1 and len(particle_indices) == 1:
                         #print("1hole 1p")
+                        #print("hole_indices:", hole_indices)
+                        #print("particle_indices:", particle_indices)
                         holeindex=hole_indices[0]
                         particleindex1=particle_indices[0]
                         #Particleposition in external list
