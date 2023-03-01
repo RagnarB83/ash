@@ -4,6 +4,7 @@ import shutil
 
 from ash.interfaces.interface_ORCA import make_molden_file_ORCA
 from ash.functions.functions_general import BC,ashexit, writestringtofile, pygrep
+import ash.settings_ash
 """
     Interface to the Multiwfn program
 """
@@ -25,8 +26,8 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, mrccdensityfi
     if multiwfndir == None:
         print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
         try:
-            print("settings_ash.settings_dict:", settings_ash.settings_dict)
-            multiwfndir=settings_ash.settings_dict["multiwfndir"]
+            print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+            multiwfndir=ash.settings_ash.settings_dict["multiwfndir"]
         except:
             print(BC.WARNING,"Found no multiwfndir variable in settings_ash module either.",BC.END)
             try:

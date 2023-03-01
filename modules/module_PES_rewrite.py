@@ -12,10 +12,11 @@ import math
 from difflib import SequenceMatcher
 
 #import ash
-from ash.interfaces.interface_ORCA import scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output, ORCATheory
+from ash.interfaces.interface_ORCA import scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output, ORCATheory, finalenergiesgrab
 from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel,print_line_with_mainheader,find_between
 from ash.functions.functions_elstructure import modosplot,write_cube_diff,read_cube
 import ash.constants
+from ash.dictionaries_lists import eldict
 
 #TODO: Add NEVPT2/CASPT2 as energy correction to CASSCF ? Keep Dyson norms from CASSCF level
 #TODO: pyscf addition
@@ -80,6 +81,7 @@ class PhotoElectronClass:
         ###############
         #Early exits
         ################
+        self.TDDFT=False;self.CAS=False;self.NEVPT2=False;self.EOM=False;self.MRCI=False
         if method is None:
             print("You must choose a PES method (e.g. method=\"TDDFT\"). \nOptions are: TDDFT, CASSCF, EOM, MRCI and MREOM")
             ashexit()
@@ -90,6 +92,10 @@ class PhotoElectronClass:
         #CASSCF for initial state and finalstates. if CASCI_Final is True then Finalstate uses Initstate orbitals 
         elif method == 'CASSCF':
             self.CAS=True
+        #NEVPT2 for initial state and finalstate IEs. Dyson norms from CASSCF
+        elif method == 'NEVPT2':
+            self.CAS=True
+            self.NEVPT2=True
         #CAS-CI for both init and final states: only makes sense if good initial orbitals are provided
         elif method == 'CASCI':
             self.CAS=True
@@ -184,7 +190,7 @@ class PhotoElectronClass:
 
         # Always just one StateI object with one charge and one spin multiplicity
         self.stateI = MolState(charge=self.Initialstate_charge, mult=self.Initialstate_mult,numionstates=1, label='Init_State')
-        print(bcolors.OKBLUE, "StateI: Charge=", self.stateI.charge, "Multiplicity", self.stateI.mult, bcolors.ENDC)
+        print(BC.OKBLUE, "StateI: Charge=", self.stateI.charge, "Multiplicity", self.stateI.mult, BC.ENDC)
 
 
         if type(self.Ionizedstate_mult) is int:
@@ -193,8 +199,8 @@ class PhotoElectronClass:
                                         numionstates=self.numionstates, label=f'Final_State_mult{self.Ionizedstate_mult}')
             self.MultipleSpinStates = False
             self.Finalstates=[self.stateF1]
-            print(bcolors.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult, bcolors.ENDC)
-            print(bcolors.OKBLUE, "StateF_1: Numionstates=", self.Finalstates[0].numionstates, bcolors.ENDC)        
+            print(BC.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult, BC.ENDC)
+            print(BC.OKBLUE, "StateF_1: Numionstates=", self.Finalstates[0].numionstates, BC.ENDC)        
         #Case list provided for ionized state. Could mean multiple spin states: e.g.  Ionizedstate_mult=[5,7]
         elif type(self.Ionizedstate_mult) is list:
             if len(self.Ionizedstate_mult) == 1:
@@ -203,9 +209,9 @@ class PhotoElectronClass:
                 self.stateF1 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult[0],
                                             numionstates=self.numionstates, label=f'Final_State_mult{self.Ionizedstate_mult[0]}')
                 self.Finalstates = [self.stateF1]
-                print(bcolors.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult,
-                    bcolors.ENDC)
-                print(bcolors.OKBLUE, "StateF_1: Numionstates=", self.numionstates_A, bcolors.ENDC)
+                print(BC.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult,
+                    BC.ENDC)
+                print(BC.OKBLUE, "StateF_1: Numionstates=", self.numionstates_A, BC.ENDC)
             elif len(Ionizedstate_mult) == 2:
                 self.MultipleSpinStates = True
                 self.stateF1 = MolState(charge=self.Ionizedstate_charge, mult=self.Ionizedstate_mult[0],numionstates=self.numionstates_A,
@@ -214,12 +220,12 @@ class PhotoElectronClass:
                                             label=f'Final_State_mult{self.Ionizedstate_mult[1]}')
                 self.Finalstates = [self.stateF1,self.stateF2]
                 print("Multiple spin states for Final State:")
-                print(bcolors.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult,
-                    bcolors.ENDC)
-                print(bcolors.OKBLUE, "StateF_2: Charge=", self.Finalstates[1].charge, "Multiplicity", self.Finalstates[1].mult,
-                    bcolors.ENDC)
-                print(bcolors.OKBLUE, "StateF_1: Numionstates=", self.Finalstates[0].numionstates, bcolors.ENDC)
-                print(bcolors.OKBLUE, "StateF_2: Numionstates=", self.Finalstates[1].numionstates, bcolors.ENDC)
+                print(BC.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult,
+                    BC.ENDC)
+                print(BC.OKBLUE, "StateF_2: Charge=", self.Finalstates[1].charge, "Multiplicity", self.Finalstates[1].mult,
+                    BC.ENDC)
+                print(BC.OKBLUE, "StateF_1: Numionstates=", self.Finalstates[0].numionstates, BC.ENDC)
+                print(BC.OKBLUE, "StateF_2: Numionstates=", self.Finalstates[1].numionstates, BC.ENDC)
             else:
                 print("More than Two spin multiplicities are now allowed in Ionizedstate_mult argument")
                 ashexit()
@@ -269,7 +275,7 @@ class PhotoElectronClass:
         print("Inside run_tddft_densities")
         #Here doing densities for each TDDFT-state. SCF-states already done.
         print("")
-        print(bcolors.OKMAGENTA, "Densities option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", bcolors.ENDC)
+        print(BC.OKMAGENTA, "Densities option: All . Will do TDDFT-gradient calculation for each TDDFT-state (expensive)", BC.ENDC)
         os.chdir('Calculated_densities')
 
         #Adding Keepdens and Engrad to do TDDFT gradient
@@ -281,7 +287,7 @@ class PhotoElectronClass:
             self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' AutoAux'
 
         for findex, fstate in enumerate(self.Finalstates):
-            print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+            print(BC.OKGREEN, "Calculating Final State SCF + TDDFT DENSITY CALCULATION. Spin Multiplicity: ", fstate.mult, BC.ENDC)
             shutil.copyfile('../'+'Final_State_mult' + str(fstate.mult) + '.gbw','Final_State_mult' + str(fstate.mult) + '.gbw')
             os.rename('Final_State_mult' + str(fstate.mult) + '.gbw', self.theory.filename + '.gbw')
 
@@ -483,13 +489,13 @@ class PhotoElectronClass:
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n', '\n')
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n', '\n')
 
-        print(bcolors.OKGREEN, "Calculating Final State MRCI Spin Multiplicities: ", [f.mult for f in self.Finalstates], bcolors.ENDC)
+        print(BC.OKGREEN, "Calculating Final State MRCI Spin Multiplicities: ", [f.mult for f in self.Finalstates], BC.ENDC)
 
         if self.initialorbitalfiles is not None:
             print("not tested for MRCI...")
             print("initialorbitalfiles keyword provided.")
-            print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex + 1]))
-            shutil.copyfile(self.initialorbitalfiles[findex + 1], self.theory.filename + '.gbw')
+            print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
+            shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
 
         #RUNNING JOB
         ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
@@ -548,8 +554,8 @@ class PhotoElectronClass:
             print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
             self.FinalIPs = self.FinalIPs + fstate.IPs
             self.Finalionstates = self.Finalionstates + fstate.ionstates
-        print(bcolors.OKBLUE,"Initial State energy:", self.stateI.energy, "au",bcolors.ENDC)
-        print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
+        print(BC.OKBLUE,"Initial State energy:", self.stateI.energy, "au",BC.ENDC)
+        print(BC.OKBLUE,"Final State energies:", fstates_dict, BC.ENDC)
 
     #MRCI prepare determinants for Dyson    
     def MRCI_prepare_determinants(self):
@@ -590,6 +596,9 @@ class PhotoElectronClass:
         self.setup_CASSCF_block()
         if 'CASSCF' not in self.theory.orcasimpleinput:
             self.theory.orcasimpleinput = self.theory.orcasimpleinput + " CASSCF"
+        if self.NEVPT2 is True:
+            self.theory.orcasimpleinput = self.theory.orcasimpleinput + " NEVPT2 "
+
         # If method is CASCI then we add noiter
         if self.method == 'CASCI':
             print("CASCI option on! Orbitals will not be optimized")
@@ -601,6 +610,8 @@ class PhotoElectronClass:
 
         #DENSITIES PRINT added to block
         if self.densities != None:
+            if self.NEVPT2 is True:
+                print("Warning: No NEVPT2 densities or similar available yet. Will do CASSCF.")
             print("CASSCF Densities requested. Adding densities input for CASSCF")
             #Adding keepdens to input means that densities/spindensities for all CASSCF states will be present in orca.densities
             if 'keepdens' not in self.theory.orcasimpleinput:
@@ -610,7 +621,10 @@ class PhotoElectronClass:
         self.run_SCF_InitState()
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         print("After CASSCF run")
-        self.stateI.energy=casscfenergygrab(self.theory.filename+'.out')
+        if self.method =='CASSCF' or self.method == 'CASCI':
+            self.stateI.energy=casscfenergygrab(self.theory.filename+'.out')
+        elif self.method == 'NEVPT2':
+            self.stateI.energy=finalenergiesgrab(self.theory.filename+'.out')[0]
         print("stateI.energy: ", self.stateI.energy)
 
         # Initial state orbitals for MO-DOSplot
@@ -668,18 +682,21 @@ class PhotoElectronClass:
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
 
-        print(bcolors.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in self.Finalstates], bcolors.ENDC)
+        print(BC.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in self.Finalstates], BC.ENDC)
 
         if self.initialorbitalfiles is not None:
             print("not tested for CASSCF...")
             print("initialorbitalfiles keyword provided.")
-            print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex + 1]))
-            shutil.copyfile(self.initialorbitalfiles[findex + 1], self.theory.filename + '.gbw')
+            print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
+            shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
 
         ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
 
         #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
-        fstates_dict = casscf_state_energies_grab(self.theory.filename+'.out')
+        if self.NEVPT2 is True:
+            fstates_dict = nevpt2_state_energies_grab(self.theory.filename+'.out')
+        else:
+            fstates_dict = casscf_state_energies_grab(self.theory.filename+'.out')
         print("fstates_dict: ", fstates_dict)
 
         # Saveing GBW and CIS file
@@ -715,8 +732,8 @@ class PhotoElectronClass:
         #Assembling Final energies, IPs etc.
         self.FinalIPs = []
         self.Finalionstates = []
-        print(bcolors.OKBLUE,"Initial State energy:", self.stateI.energy, "au",bcolors.ENDC)
-        print(bcolors.OKBLUE,"Final State energies:", fstates_dict, bcolors.ENDC)
+        print(BC.OKBLUE,"Initial State energy:", self.stateI.energy, "au",BC.ENDC)
+        print(BC.OKBLUE,"Final State energies:", fstates_dict, BC.ENDC)
         for fstate in self.Finalstates:
             fstate.ionstates = fstates_dict[fstate.mult]
             for ionstate in fstate.ionstates:
@@ -728,8 +745,8 @@ class PhotoElectronClass:
     # Calculate Ionized state via SCF+TDDFT approach
     def run_TDDFT(self):
         print("TDDFT option chosen:")
-        print(bcolors.OKBLUE,"Total ion states:", self.numionstates, bcolors.ENDC)
-        print(bcolors.OKBLUE,"TDDFT-calculated ion states:", self.numionstates-1, bcolors.ENDC)
+        print(BC.OKBLUE,"Total ion states:", self.numionstates, BC.ENDC)
+        print(BC.OKBLUE,"TDDFT-calculated ion states:", self.numionstates-1, BC.ENDC)
 
         #Run Initial-State SCF
         self.run_SCF_InitState()
@@ -753,7 +770,7 @@ class PhotoElectronClass:
                 self.no_tda = False
             self.theory.extraline=tddftstring
 
-            print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, bcolors.ENDC)
+            print(BC.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, BC.ENDC)
             if self.initialorbitalfiles is not None:
                 print("Initial orbitals keyword provided.")
                 print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex+1]))
@@ -810,7 +827,7 @@ class PhotoElectronClass:
 
         #Printing initial results
         self.FinalIPs = []; self.Finalionstates = []; self.FinalTDtransitionenergies =[]
-        print(bcolors.OKBLUE,"\nInitial State SCF energy:", self.stateI.energy, "au",bcolors.ENDC)
+        print(BC.OKBLUE,"\nInitial State SCF energy:", self.stateI.energy, "au",BC.ENDC)
         print("")
         for fstate in self.Finalstates:
             print("---------------------------------------------------------------------------")
@@ -818,10 +835,10 @@ class PhotoElectronClass:
             # 1st vertical IP via deltaSCF
             GSIP=(fstate.energy-self.stateI.energy)*ash.constants.hartoeV
             fstate.GSIP=GSIP
-            print(bcolors.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", bcolors.ENDC)
-            print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,bcolors.ENDC)
+            print(BC.OKBLUE,"Initial Final State SCF energy:", fstate.energy, "au", BC.ENDC)
+            print(BC.OKBLUE,"1st vertical IP (delta-SCF):", fstate.GSIP,BC.ENDC)
             # TDDFT states
-            print(bcolors.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), bcolors.ENDC, )
+            print(BC.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), BC.ENDC, )
 
             # Adding GS-IP to IP-list and GS ion to ionstate
             fstate.IPs.append(fstate.GSIP)
@@ -830,8 +847,8 @@ class PhotoElectronClass:
                 fstate.ionstates.append(e / ash.constants.hartoeV + fstate.energy)
                 fstate.IPs.append((e / ash.constants.hartoeV + fstate.energy - self.stateI.energy) * ash.constants.hartoeV)
             print("")
-            print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, fstate.IPs)
-            print(bcolors.OKBLUE, "Ion-state energies (au):\n", bcolors.ENDC, fstate.ionstates)
+            print(BC.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", BC.ENDC, fstate.IPs)
+            print(BC.OKBLUE, "Ion-state energies (au):\n", BC.ENDC, fstate.ionstates)
             print("")
             self.FinalIPs = self.FinalIPs + fstate.IPs
             self.Finalionstates = self.Finalionstates + fstate.ionstates
@@ -842,8 +859,8 @@ class PhotoElectronClass:
     #Will calculate highest-multiplicity state with SCF + TDDFT and then do same state with SCF+-SF-TDDFT
     def run_SF_TDDFT(self):
         print("SF-TDDFT option chosen:")
-        print(bcolors.OKBLUE,"Total ion states:", self.numionstates, bcolors.ENDC)
-        print(bcolors.OKBLUE,"SF_TDDFT-calculated ion states:", self.numionstates-1, bcolors.ENDC)
+        print(BC.OKBLUE,"Total ion states:", self.numionstates, BC.ENDC)
+        print(BC.OKBLUE,"SF_TDDFT-calculated ion states:", self.numionstates-1, BC.ENDC)
 
         #Run Initial-State SCF
         self.run_SCF_InitState()
@@ -872,10 +889,10 @@ class PhotoElectronClass:
             # Boolean for whether no_tda is on or not
             self.no_tda = False
         self.theory.extraline=tddftstring
-        print(bcolors.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", highest_mult_fstate.mult, bcolors.ENDC)
+        print(BC.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", highest_mult_fstate.mult, BC.ENDC)
         #TODO: Initial orbitalfiles
         #Run SCF+TDDDFT
-        print(bcolors.OKGREEN, f"\nCalculating Higher-spinmultiplicity (mult: {highest_mult_fstate.mult}) State SCF and TDDFT.",bcolors.ENDC)
+        print(BC.OKGREEN, f"\nCalculating Higher-spinmultiplicity (mult: {highest_mult_fstate.mult}) State SCF and TDDFT.",BC.ENDC)
         ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=highest_mult_fstate.charge, mult=highest_mult_fstate.mult)
         stability = check_stability_in_output(self.theory.filename+'.out')
         if stability is False and self.check_stability is True:
@@ -919,7 +936,7 @@ class PhotoElectronClass:
 
         #NOW DO SPIN-FLIP STATES
         print("Done calculating highest-multiplicity regular TDDFT states")
-        print(bcolors.OKGREEN, f"\nCalculating Lower-spinmultiplicity (mult: {lowest_mult_fstate.mult}) via spinFlip-TDDFT from higher-mult SCF(mult: {highest_mult_fstate}).",bcolors.ENDC)
+        print(BC.OKGREEN, f"\nCalculating Lower-spinmultiplicity (mult: {lowest_mult_fstate.mult}) via spinFlip-TDDFT from higher-mult SCF(mult: {highest_mult_fstate}).",BC.ENDC)
         #Setting TDA/TDDFT states for each spin multiplicity
         if self.tda==False:
             # Boolean for whether no_tda is on or not
@@ -967,7 +984,7 @@ class PhotoElectronClass:
         #lowest_mult_fstate.TDtransitionenergies  TODO
         #Printing initial results
         self.FinalIPs = []; self.Finalionstates = []; self.FinalTDtransitionenergies =[]
-        print(bcolors.OKBLUE,"\nInitial State SCF energy:", self.stateI.energy, "au",bcolors.ENDC)
+        print(BC.OKBLUE,"\nInitial State SCF energy:", self.stateI.energy, "au",BC.ENDC)
         print("")
         print("---------------------------------------------------------------------------")
         print("SCF energy and TDDFT transition energies for FinalState mult: ", highest_mult_fstate.mult)
@@ -976,16 +993,16 @@ class PhotoElectronClass:
         highest_mult_fstate.GSIP=GS_highest_mult_IP
         highest_mult_fstate.IPs.append(GS_highest_mult_IP)
         highest_mult_fstate.ionstates.append(highest_mult_fstate.energy)
-        print(bcolors.OKBLUE,"Initial Final State SCF energy:", highest_mult_fstate.energy, "au", bcolors.ENDC)
-        print(bcolors.OKBLUE,"1st vertical IP (delta-SCF):", highest_mult_fstate.GSIP,bcolors.ENDC)
+        print(BC.OKBLUE,"Initial Final State SCF energy:", highest_mult_fstate.energy, "au", BC.ENDC)
+        print(BC.OKBLUE,"1st vertical IP (delta-SCF):", highest_mult_fstate.GSIP,BC.ENDC)
         #Spin-flipped IPs
         SF_IPs=sorted([GS_highest_mult_IP+SF_transenergy for SF_transenergy in SF_TDtransitionenergies]) #Converting SF transition energies into IPs and sorting
         print("SF_IPs:", SF_IPs)
         lowest_mult_fstate.IPs = SF_IPs
         lowest_mult_fstate.TDtransitionenergies = SF_TDtransitionenergies
         # Print TDDFT and SF-TDDFT transition energies
-        print(bcolors.OKBLUE, f"TDDFT transition energies (eV) for FinalState (mult: {highest_mult_fstate.mult}) : {highest_mult_fstate.TDtransitionenergies}\n", bcolors.ENDC, )
-        print(bcolors.OKBLUE, f"Spin-Flip TDDFT transition energies (eV) for FinalState (mult: {lowest_mult_fstate.mult}) : {lowest_mult_fstate.TDtransitionenergies}\n", bcolors.ENDC, )
+        print(BC.OKBLUE, f"TDDFT transition energies (eV) for FinalState (mult: {highest_mult_fstate.mult}) : {highest_mult_fstate.TDtransitionenergies}\n", BC.ENDC, )
+        print(BC.OKBLUE, f"Spin-Flip TDDFT transition energies (eV) for FinalState (mult: {lowest_mult_fstate.mult}) : {lowest_mult_fstate.TDtransitionenergies}\n", BC.ENDC, )
 
         #Assembling final ion state energies
         for e in highest_mult_fstate.TDtransitionenergies:
@@ -997,10 +1014,10 @@ class PhotoElectronClass:
             lowest_mult_fstate.ionstates.append(ls_tda / ash.constants.hartoeV + highest_mult_fstate.energy)
         
         print("")
-        print(bcolors.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", bcolors.ENDC, highest_mult_fstate.IPs)
-        print(bcolors.OKBLUE, "SF-TDDFT-derived IPs (eV), :\n", bcolors.ENDC, lowest_mult_fstate.IPs)
-        print(bcolors.OKBLUE, f"Ion-state energies (au) for mult: {highest_mult_fstate.mult}:\n", bcolors.ENDC, highest_mult_fstate.ionstates)
-        print(bcolors.OKBLUE, f"Ion-state energies (au) for mult: {lowest_mult_fstate.mult} \n", bcolors.ENDC, lowest_mult_fstate.ionstates)
+        print(BC.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", BC.ENDC, highest_mult_fstate.IPs)
+        print(BC.OKBLUE, "SF-TDDFT-derived IPs (eV), :\n", BC.ENDC, lowest_mult_fstate.IPs)
+        print(BC.OKBLUE, f"Ion-state energies (au) for mult: {highest_mult_fstate.mult}:\n", BC.ENDC, highest_mult_fstate.ionstates)
+        print(BC.OKBLUE, f"Ion-state energies (au) for mult: {lowest_mult_fstate.mult} \n", BC.ENDC, lowest_mult_fstate.ionstates)
         print("")
 
         self.FinalIPs = highest_mult_fstate.IPs + lowest_mult_fstate.IPs
@@ -1038,7 +1055,7 @@ class PhotoElectronClass:
         self.FinalIPs=[]
         fstates_dict={}
         for fstate in self.Finalstates:
-            print(bcolors.OKGREEN, "Calculating IPs directly via IP-EOM-CCSD. ", bcolors.ENDC)
+            print(BC.OKGREEN, "Calculating IPs directly via IP-EOM-CCSD. ", BC.ENDC)
             if fstate.mult > self.stateI.mult:
                 print("Final state mult {}, setting DoBeta true".format(fstate.mult))
                 Electron_ion_line='DoBeta true'
@@ -1054,8 +1071,8 @@ class PhotoElectronClass:
             if self.initialorbitalfiles is not None:
                 print("not tested for IP-EOM-CCSD...")
                 print("initialorbitalfiles keyword provided.")
-                print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex + 1]))
-                shutil.copyfile(self.initialorbitalfiles[findex + 1], self.theory.filename + '.gbw')
+                print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
+                shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
             #NOTE: Using initial state charge/mult here because EOM
             init_EOM = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
             energy = init_EOM.energy
@@ -1102,8 +1119,8 @@ class PhotoElectronClass:
             print("")
 
             #Final states
-            print(bcolors.OKBLUE,"Initial State CCSD energy:", self.stateI.energy, "au",bcolors.ENDC)
-            print(bcolors.OKBLUE,"Final State CCSD+EOM-IP energies:", fstates_dict, bcolors.ENDC)
+            print(BC.OKBLUE,"Initial State CCSD energy:", self.stateI.energy, "au",BC.ENDC)
+            print(BC.OKBLUE,"Final State CCSD+EOM-IP energies:", fstates_dict, BC.ENDC)
             #IPs already calculated
             print("FinalIPs:", self.FinalIPs)
             self.Finalionstates = []; self.finaldysonnorms=[]
@@ -1113,12 +1130,12 @@ class PhotoElectronClass:
                 self.finaldysonnorms = self.finaldysonnorms + fstate.dysonnorms 
 
 
-        print(bcolors.WARNING,"WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation",bcolors.ENDC)
+        print(BC.WARNING,"WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation",BC.ENDC)
         print("Approximate Dyson norms: ", self.finaldysonnorms)
 
 
     def run_SCF_InitState(self):
-        print(bcolors.OKGREEN, "\nCalculating Initial State SCF.",bcolors.ENDC)
+        print(BC.OKGREEN, "\nCalculating Initial State SCF.",BC.ENDC)
 
         if self.initialorbitalfiles is not None:
             print("initialorbitalfiles keyword provided.")
@@ -1135,6 +1152,8 @@ class PhotoElectronClass:
         #Grab energy of initial state
         if self.method == 'CASSCF' or self.method =='CASCI':
             self.stateI.energy=casscfenergygrab(self.theory.filename+'.out')
+        if self.method == 'NEVPT2':
+            self.stateI.energy=finalenergiesgrab(self.theory.filename+'.out')[0]
         else:
             self.stateI.energy=scfenergygrab(self.theory.filename+'.out')
 
@@ -1171,7 +1190,7 @@ class PhotoElectronClass:
         #MO IP spectrum:
         self.stk_alpha,self.stk_beta=modosplot(self.stateI.occorbs_alpha,self.stateI.occorbs_beta,self.stateI.hftyp)
         moips=sorted(self.stk_alpha+self.stk_beta)
-        print(bcolors.OKBLUE,"MO IPs (negative of MO energies of State I):", bcolors.ENDC)
+        print(BC.OKBLUE,"MO IPs (negative of MO energies of State I):", BC.ENDC)
         print(moips)
         print("")
         print("MO-IPs (alpha), eV : ", self.stk_alpha)
@@ -1190,14 +1209,18 @@ class PhotoElectronClass:
             init_stype='CCSD'           
         elif self.method == 'CASCI':
             init_stype='CI'
+        elif self.method == 'NEVPT2':
+            init_stype='NEVPT2'
         else:
             init_stype='SCF'
         print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, self.stateI.mult, self.stateI.energy, init_stype))
         print("")
         print("Final ionized states:")
-        if self.method == 'CASSCF' or self.method == 'CASCI' or self.method =='MRCI' or self.method =='MREOM':
+        if self.method == 'CASSCF' or self.method == 'CASCI' or self.method =='MRCI' or self.method =='MREOM' or self.method=='NEVPT2':
             if self.method == 'CASCI' or self.method =='MRCI' or self.method =='MREOM':
                 stype='CI'
+            if self.method == 'NEVPT2':
+                stype='NEVPT2'
             if self.method == 'CASSCF':
                 if self.CASCI_Final is True:
                     stype='CI'
@@ -1273,8 +1296,8 @@ class PhotoElectronClass:
                 print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,statelabel, TDtransenergy))
     def prepare_mos_file(self):
         print("Inside prepare_mos_file")
-        print(bcolors.OKGREEN, "Grabbing AO matrix, MO coefficients and determinants from ORCA GBW file, CIS file (if TDDFT) or output (if CAS/MRCI)",
-        bcolors.ENDC)
+        print(BC.OKGREEN, "Grabbing AO matrix, MO coefficients and determinants from ORCA GBW file, CIS file (if TDDFT) or output (if CAS/MRCI)",
+        BC.ENDC)
         # Specify frozencore or not.
         self.frozencore = 0
         print("")
@@ -1347,7 +1370,7 @@ class PhotoElectronClass:
         #Initial
         print("Grabbing determinants from Initial State output")
         init_state = grab_dets_from_CASSCF_output(self.stateI.outfile)
-        print("init_state:", init_state)
+        #print("init_state:", init_state)
         #init_state_dict = [i.determinants for i in init_state]
         #init_state_dict2 = {Initialstate_mult : init_state_dict}
         #print("init_state_dict:", init_state_dict)
@@ -1406,7 +1429,7 @@ class PhotoElectronClass:
 
             #Grabbing Dyson norms from wfovl.out
             dysonnorms=grabDysonnorms()
-            print(bcolors.OKBLUE,"\nDyson norms ({}):".format(len(dysonnorms)),bcolors.ENDC)
+            print(BC.OKBLUE,"\nDyson norms ({}):".format(len(dysonnorms)),BC.ENDC)
             print(dysonnorms)
             if len(dysonnorms) == 0:
                 print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
@@ -1469,7 +1492,8 @@ class PhotoElectronClass:
                 print("No densities are available for EOM yet. Skipping")
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
-        elif self.method =='CASSCF' or self.method=='CASCI':
+        #CASSCF, CAS-CI and NEVPT2
+        elif self.method =='CASSCF' or self.method=='CASCI' or self.method == 'NEVPT2':
             print("CASSCF/CASCI option active!")
             self.setup_ORCA_object()
             self.run_CAS()
@@ -1520,12 +1544,14 @@ class PhotoElectronClass:
             print("Skipping")
         else:
             #Call Dyson orb calc
+            if self.NEVPT2 is True:
+                print("Warning: IEs are NEVPT2 but Dyson norms are from CASSCF WF.")
             self.run_dyson_calc()
 
         print("")
-        print(bcolors.OKBLUE, "Final combined Dyson norms ({}):".format(len(self.finaldysonnorms)), bcolors.ENDC)
+        print(BC.OKBLUE, "Final combined Dyson norms ({}):".format(len(self.finaldysonnorms)), BC.ENDC)
         print(self.finaldysonnorms)
-        print("self.FinalIPs:", self.FinalIPs)
+        print("FinalIPs:", self.FinalIPs)
         assert len(self.FinalIPs) == len(self.finaldysonnorms), "List of Dysonnorms not same size as list of IPs."
         print("")
 
@@ -1584,10 +1610,8 @@ def Read_old_PES_results():
 
     return IPs, dysonnorms, mos_alpha, mos_beta
 
-class bcolors:
+class BC:
     HEADER = '\033[95m' ; OKBLUE = '\033[94m'; OKGREEN = '\033[92m'; OKMAGENTA= '\033[95m'; WARNING = '\033[93m'; FAIL = '\033[91m'; ENDC = '\033[0m'; BOLD = '\033[1m'; UNDERLINE = '\033[4m'
-
-eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11,'Mg':12,'Al':13,'Si':14,'P':15,'S':16,'Cl':17,'Ar':18,'K':19,'Ca':20,'Sc':21,'Ti':22,'V':23,'Cr':24,'Mn':25,'Fe':26,'Co':27,'Ni':28,'Cu':29,'Zn':30,'Ga':31,'Ge':32,'As':33,'Se':34,'Br':35,'Kr':36,'Mo':42,'W':74,'Ru':44,'I':53}
 
 #Readfile function
 def readfile(filename):
@@ -2081,7 +2105,7 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
               for iocc in range(header[4],header[5]+1):
                 for ivirt in range(header[6],header[7]+1):
                   CCfile.read(8)
-            if no_da:
+            if no_tda:
               CCfile.read(40)
               for iocc in range(header[0],header[1]+1):
                 for ivirt in range(header[2],header[3]+1):
@@ -2217,8 +2241,6 @@ def casscf_state_energies_grab(file):
     grab=False
     mult_dict={}
     state_energies=[];Energy=0.0
-    #string='STATE '
-    #string2='ROOT '
     with open(file) as f:
         for line in f:
             #Stop grabbing lines once we have reached end of table
@@ -2251,6 +2273,37 @@ def casscf_state_energies_grab(file):
             #Only grabbing lines once CASSCF calc has converged
             if 'Final CASSCF energy' in line:
                 Finished=True
+    return mult_dict
+
+def nevpt2_state_energies_grab(file):
+    grab=False
+    grab2=False
+    mult_dict={}
+    with open(file) as f:
+        for line in f:
+            #Stop grabbing lines once we reach end of table
+            if '-----------------------------' in line:
+                grab=False
+                grab2=False
+            #Grabbing NEVPT2 TOTAL ENERGIES TABLE
+            if grab is True:
+                if grab2 is True:
+                    if len(line) > 5:
+                        #print("line:", line)
+                        state=line.split()[0].replace(':','')
+                        #print("state:", state)
+                        root=int(line.split()[1])
+                        mult=int(line.split()[2])
+                        energy=float(line.split()[3])
+                        if mult not in mult_dict:
+                            mult_dict[mult]=[]
+                        mult_dict[mult].append(energy)
+
+            if 'STATE   ROOT MULT  Energy' in line:
+                grab2=True
+            if ' NEVPT2 TOTAL ENERGIES' in line:
+                grab=True
+    print("mult_dict:", mult_dict)
     return mult_dict
 
 #MRCI: Grabbing all root energies
@@ -2360,16 +2413,17 @@ def grab_dets_from_CASSCF_output(file):
     grabrange=False
     with open(file) as f:
         for line in f:
+            #print("line:", line)
             #Getting orbital ranges
             # Internal (doubly occ)and external orbitals (empty)
             if grabrange is True:
 
-                if 'Internal' in line:
+                if 'Internal    ' in line:
                     internal=int(line.split()[-2])
                     internal_tuple = tuple([3] * internal)
-                if 'Active' in line:
+                if 'Active   ' in line:
                     active=int(line.split()[-2])
-                if 'External' in line:
+                if 'External   ' in line:
                     external=int(line.split()[-2])
                     external_tuple = tuple([0] * external)
             if 'Determined orbital ranges:' in line:
@@ -2432,22 +2486,22 @@ def grab_dets_from_CASSCF_output(file):
                         state.determinants[det_tuple] = math.sqrt(weight)
 
                 if 'ROOT ' in line:
-                    print("line:", line)
+                    #print("line:", line)
                     root=int(line.split()[1][0])
                     energy = float(line.split()[3])
                     state = state_dets(root, energy, mult)
                     list_of_states.append(state)
             if 'CAS-SCF STATES FOR BLOCK' in line:
-                print("CAS LINE: ", line)
+                #print("CAS LINE: ", line)
                 mult =int(line.split()[6])
-                print("Setting mult to: ", mult)
+                #print("Setting mult to: ", mult)
                 detgrab = False
-                print("Det grab set to False")
+                #print("Det grab set to False")
             if '  Extended CI Printing (values > TPrintWF)' in line:
-                print("Det grab set to True")
+                #print("Det grab set to True")
                 detgrab=True
             if '  Spin-Determinant CI Printing' in line:
-                print("Det grab set to True")
+                #print("Det grab set to True")
                 detgrab=True
 
     #print("list_of_states:", list_of_states)
@@ -2458,10 +2512,10 @@ def grab_dets_from_CASSCF_output(file):
 
     #Going through
     for n,state in enumerate(list_of_states):
-        print("------------------------")
-        print("This is state {}  with mult {} and energy {} and root {}".format(n,state.mult, state.energy, state.root))
-        print("length of state CFGs :", len(state.configurations))
-        print("length of state determinants :", len(state.determinants))
+        #print("------------------------")
+        #print("This is state {}  with mult {} and energy {} and root {}".format(n,state.mult, state.energy, state.root))
+        #print("length of state CFGs :", len(state.configurations))
+        #print("length of state determinants :", len(state.determinants))
         if len(state.determinants) == 0:
             print("WARNING!!! No determinant output found.")
             print("Must be because CFG and det is the same. Using CFG info ")
@@ -3264,9 +3318,9 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
         MOPlot=True
 
     blankline()
-    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
-    print(bcolors.OKGREEN,"plot_PES_Spectrum: Plotting TDDFT-Dyson-norm spectrum and MO-spectrum",bcolors.ENDC)
-    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
+    print(BC.OKGREEN,"-------------------------------------------------------------------",BC.ENDC)
+    print(BC.OKGREEN,"plot_PES_Spectrum: Plotting TDDFT-Dyson-norm spectrum and MO-spectrum",BC.ENDC)
+    print(BC.OKGREEN,"-------------------------------------------------------------------",BC.ENDC)
     blankline()
     print("IPs ({}): {}".format(len(IPs),IPs))
     print("Dysonnorms ({}): {}".format(len(dysonnorms),dysonnorms))
@@ -3278,8 +3332,8 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
     #########################
     # Plot spectra.
     ########################
-    print(bcolors.OKGREEN, "Plotting-range chosen:", start, "-", finish, "eV", "with ", points, "points and ",
-              broadening, "eV broadening.", bcolors.ENDC)
+    print(BC.OKGREEN, "Plotting-range chosen:", start, "-", finish, "eV", "with ", points, "points and ",
+              broadening, "eV broadening.", BC.ENDC)
 
     # X-range is electron binding energy
     x = np.linspace(start, finish, points)

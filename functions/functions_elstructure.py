@@ -12,6 +12,7 @@ import ash.dictionaries_lists
 from ash.functions.functions_general import ashexit, isodd
 import ash.interfaces.interface_ORCA
 from ash.modules.module_coords import nucchargelist
+from ash.dictionaries_lists import eldict
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -255,7 +256,7 @@ def write_cube_diff(cubedict1,cubedict2, name="Default"):
 
 
 #Read cubefile. Grabs coords. Calculates density if MO
-def create_density_from_orb (cubefile):
+def create_density_from_orb (cubefile, denswrite=True, LargePrint=True):
     global bohrang
     #Opening orbital cube file
     try:
@@ -357,7 +358,7 @@ def create_density_from_orb (cubefile):
         print("Wrote orbital density file as:", filebase+'-dens.cube')
         print("")
     sumdensvalues=sum(i for i in alldensvalues)
-    if LargePrint==True:
+    if LargePrint is True:
         print("Sum of density values is:", sumdensvalues)
         print("Number of density values is", len(alldensvalues))
         print("Number of orb values is", len(allorbvalues))

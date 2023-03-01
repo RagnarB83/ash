@@ -1096,7 +1096,6 @@ class MRCC_CC_CBS_Theory:
 
         #Main attributes
         self.cardlabels={2:'D',3:'T',4:'Q',5:"5",6:"6"}
-        self.orcadir = orcadir
         self.elements=elements
         self.cardinals = cardinals
         self.alpha=alpha
@@ -1141,7 +1140,7 @@ class MRCC_CC_CBS_Theory:
         if self.LNO == True:
             print("LNO setting: ", self.lnosetting)
         print("")
-
+        ashexit()
         #Getting basis sets and ECPs for each element for a given basis-family and cardinal
         
         self.Calc1_basis_dict={}
@@ -1281,7 +1280,7 @@ class MRCC_CC_CBS_Theory:
     def run(self, current_coords=None, elems=None, Grad=False, numcores=None, charge=None, mult=None):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING MRCC_CC_CBS_Theory-------------", BC.END)
-
+        ashexit()
         #Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for MRCC_CC_CBS_Theory run", BC.END)
@@ -2569,6 +2568,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
     #MBE-FCI via PyMBE
     if MBE_FCI is True:
         print("MBE_FCI is True")
+        ashexit()
         print("mbe_thres_inc:", mbe_thres_inc)
         print("mbe_orbs_choice:", mbe_orbs_choice)
         print("mbe_ref_orblist:", mbe_ref_orblist)

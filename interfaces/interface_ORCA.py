@@ -4,6 +4,7 @@ import shutil
 import time
 import multiprocessing as mp
 import numpy as np
+import glob
 
 import ash.modules.module_coords
 from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
@@ -1901,7 +1902,7 @@ def SCF_FODocc_grab(filename):
                         return occupations
             if 'SPIN UP ORBITALS' in line:
                 occgrab=True
-    return natoccupations
+    return occupations
 
 def CASSCF_natocc_grab(filename):
     natoccgrab=False

@@ -16,6 +16,7 @@ from ash.functions.functions_general import ashexit, isint, listdiff, print_time
 import ash.dictionaries_lists
 import ash.settings_ash
 import ash.constants
+from ash.dictionaries_lists import eldict
 
 #import ash
 
@@ -120,7 +121,7 @@ class Fragment:
         # if atomnames is not None:
         #    self.atomnames=atomnames
         # Hessian. Can be added by Numfreq/Anfreq job
-        self.hessian = []
+        self.hessian = None
 
         # Something perhaps only used by molcrys but defined here. Needed for print_system
         # Todo: revisit this
@@ -1055,7 +1056,7 @@ def print_coords_all(coords, elems, indices=None, labels=None, labels2=None):
             else:
                 for i in range(len(elems)):
                     print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6".format(elems[i], coords[i][0], coords[i][1],
-                                                                                   coords[i][2], labels[i], label2[i]))
+                                                                                   coords[i][2], labels[i], labels2[i]))
     else:
         if labels is None:
             for i in range(len(elems)):
@@ -1097,7 +1098,7 @@ def write_coords_all(coords, elems, indices=None, labels=None, labels2=None, fil
                 for i in range(len(elems)):
                     f.write(
                         "{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6\n".format(elems[i], coords[i][0], coords[i][1],
-                                                                                   coords[i][2], labels[i], label2[i]))
+                                                                                   coords[i][2], labels[i], labels2[i]))
     else:
         if labels is None:
             for i in range(len(elems)):
@@ -1856,7 +1857,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
             if '%FLAG ATOMIC_NUMBER' in line:
                 grab_atomnumber = True
     if len(coords) != len(elems):
-        print(BC.FAIL,"Num coords not equal to num elems. Parsing of Amber files: {} and {} failed. BUG!".format(prmtopfile,inpcrddfile), BC.END)
+        print(BC.FAIL,"Num coords not equal to num elems. Parsing of Amber files: {} and {} failed. BUG!".format(prmtopfile,inpcrdfile), BC.END)
         ashexit()
     return elems, coords, box_dims
 
@@ -2666,7 +2667,7 @@ def cellbasis(angles, edges):
 # NOTE: Deprecated????
 def cut_cluster(coords=None, elems=None, radius=None, center_atomindex=None):
     print("Now cutting spherical cluster with radius {} Å from box.".format(radius))
-
+    ashexit()
     # Getting coordinates of atom to center cluster on
     # origin=np.array([coords[center_atomindex]])
     # comparecoords = np.tile(origin, (len(coords), 1))
@@ -2735,7 +2736,7 @@ def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
     print("set_up_MMwater_bondconstraints")
     print("Assuming oxygen atom type is: ", oxygentype)
     print("Change with keyword arguement: oxygentype='XX")
-
+    ashexit()
     # Go over actatoms and check if oxygen-water type
 
     # Shift nested list by number e.g. shift([[1,2],[100,101]], -1)  gives : [[0,1],[99,100]]

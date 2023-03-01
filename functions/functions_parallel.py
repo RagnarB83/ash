@@ -8,8 +8,9 @@ import shutil
 
 #import ash
 from ash.functions.functions_general import ashexit, BC,blankline,print_line_with_mainheader,print_line_with_subheader1
-from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_coords import check_charge_mult, Fragment, read_xyzfile
 from ash.modules.module_results import ASH_Results
+from ash.modules.module_QMMM import QMMMTheory
 
 #OPENMPI
 ###############################################
@@ -71,7 +72,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     if fragmentfile != None:
         if printlevel >= 2:
             print("Reading fragmentfile from disk")
-        fragment=ash.Fragment(fragfile=fragmentfile)
+        fragment=Fragment(fragfile=fragmentfile)
 
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     if printlevel >= 2:
@@ -426,13 +427,13 @@ def displacement_QMMMrun(arglist):
     os.chdir(dispdir)
     shutil.move('../'+filelabel+'.xyz','./'+filelabel+'.xyz')
     # Read XYZ-file from file
-    elems,coords = module_coords.read_xyzfile(filelabel+'.xyz')
+    elems,coords = read_xyzfile(filelabel+'.xyz')
 
     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
     print("Running displacement: {}".format(label))
 
     #If QMMMTheory init keywords are changed this needs to be updated
-    qmmmobject = ash.QMMMTheory(fragment=fragment, qm_theory=qm_theory, mm_theory=mm_theory, actatoms=actatoms,
+    qmmmobject = QMMMTheory(fragment=fragment, qm_theory=qm_theory, mm_theory=mm_theory, actatoms=actatoms,
                           qmatoms=qmatoms, embedding=embedding, charges=charges, printlevel=printlevel,
                             numcores=numcores, frozenatoms=frozenatoms)
 
@@ -477,45 +478,6 @@ def run_QMMM_SP_in_parallel(orcadir, list_of__geos, list_of_labels, QMMMtheory, 
 #    results = pool.map(theory.run, [[geo, QMMMtheory ] for geo in list_of__geos])
 #    pool.close()
 #    print("Calculations are done")
-
-
-
-
-
-
-
-#Useful function to measure size of object:
-#https://goshippo.com/blog/measure-real-size-any-python-object/
-#https://github.com/bosswissam/pysize/blob/master/pysize.py
-def get_size(obj, seen=None):
-    """Recursively finds size of objects in bytes"""
-    size = sys.getsizeof(obj)
-    if seen is None:
-        seen = set()
-    obj_id = id(obj)
-    if obj_id in seen:
-        return 0
-    # Important mark as seen *before* entering recursion to gracefully handle
-    # self-referential objects
-    seen.add(obj_id)
-    if hasattr(obj, '__dict__'):
-        for cls in obj.__class__.__mro__:
-            if '__dict__' in cls.__dict__:
-                d = cls.__dict__['__dict__']
-                if inspect.isgetsetdescriptor(d) or inspect.ismemberdescriptor(d):
-                    size += get_size(obj.__dict__, seen)
-                break
-    if isinstance(obj, dict):
-        size += sum((get_size(v, seen) for v in obj.values()))
-        size += sum((get_size(k, seen) for k in obj.keys()))
-    elif hasattr(obj, '__iter__') and not isinstance(obj, (str, bytes, bytearray)):
-        size += sum((get_size(i, seen) for i in obj))
-
-    if hasattr(obj, '__slots__'):  # can have __slots__ with __dict__
-        size += sum(get_size(getattr(obj, s), seen) for s in obj.__slots__ if hasattr(obj, s))
-
-    return size
-
 
 
 

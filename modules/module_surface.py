@@ -622,8 +622,8 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                                                     convergence_setting=convergence_setting, charge=charge, mult=mult)
                         energy = result.energy
                         #Write geometry to disk in dir : surface_xyzfiles
-                        fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
-                        fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
+                        mol.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
+                        mol.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                         shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                     
@@ -672,8 +672,8 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                                                     convergence_setting=convergence_setting, charge=charge, mult=mult)
                         energy = result.energy
                         #Write geometry to disk in dir : surface_xyzfiles
-                        fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
-                        fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
+                        mol.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
+                        mol.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
                         shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
                     print("Energy of file {} : {} Eh".format(relfile, energy))

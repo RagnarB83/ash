@@ -6,6 +6,7 @@ import time
 from functools import wraps
 import math
 import shutil
+import re
 
 import ash.settings_ash
 from ash import ashpath

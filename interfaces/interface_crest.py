@@ -7,7 +7,7 @@ import subprocess as sp
 from ash.modules.module_coords import split_multimolxyzfile
 from ash.functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel, pygrep
 from ash.modules.module_coords import check_charge_mult, Fragment
-
+import ash.settings_ash
 
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
@@ -17,8 +17,8 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
     if crestdir == None:
         print(BC.WARNING, "No crestdir argument passed to call_crest. Attempting to find crestdir variable inside settings_ash", BC.END)
         try:
-            print("settings_ash.settings_dict:", settings_ash.settings_dict)
-            crestdir=settings_ash.settings_dict["crestdir"]
+            print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+            crestdir=ash.settings_ash.settings_dict["crestdir"]
         except:
             print(BC.WARNING,"Found no crestdir variable in settings_ash module either.",BC.END)
             try:
@@ -102,8 +102,8 @@ def call_crest_entropy(fragment=None, crestdir=None, charge=None, mult=None, num
     if crestdir == None:
         print(BC.WARNING, "No crestdir argument passed to call_crest. Attempting to find crestdir variable inside settings_ash", BC.END)
         try:
-            print("settings_ash.settings_dict:", settings_ash.settings_dict)
-            crestdir=settings_ash.settings_dict["crestdir"]
+            print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+            crestdir=ash.settings_ash.settings_dict["crestdir"]
         except:
             print(BC.WARNING,"Found no crestdir variable in settings_ash module either.",BC.END)
             try:

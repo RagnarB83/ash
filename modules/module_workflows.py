@@ -21,6 +21,7 @@ from ash.modules.module_plotting import ASH_plot
 from ash.modules.module_singlepoint import ReactionEnergy
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_freq import thermochemcalc
+from ash.interfaces.interface_ORCA import ORCATheory
 
 #Simple class to keep track of results. To be extended
 #Deprecated?. Use ASH_Results instead?
@@ -1062,6 +1063,7 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
 #NOTE: not ready
 def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=None, BS_flip_options=None, charge=None, mult=None):
 
+    ashexit()
     if theory == None or fragment == None or flip_atoms == None or BS_flip_options==None:
         print("Please set theory, fragment, flip_atoms and BS_flip_options keywords")
         exit()
@@ -1071,9 +1073,9 @@ def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=N
 
     #Getting full-system atom numbers for each BS-flip
     atomstoflip=[flip_atoms[i-1] for i in BSflip]
-    orcaobject = ORCATheory(orcadir=orcadir, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
-                        brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, nprocs=numcores, extrabasisatoms=extrabasisatoms,
-                        extrabasis="ZORA-def2-TZVP")
+    #orcaobject = ORCATheory(orcadir=orcadir, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
+    #                    brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, nprocs=numcores, extrabasisatoms=extrabasisatoms,
+    #                    extrabasis="ZORA-def2-TZVP")
 
 
     #Looping over BS-flips

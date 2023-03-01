@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
-
+import ash.settings_ash
 #QUICK Theory object.
 #TODO: Add pointcharges to input and grab PC gradients
 class QUICKTheory:
@@ -22,8 +22,8 @@ class QUICKTheory:
         if quickdir == None:
             print(BC.WARNING, f"No quickdir argument passed to {self.theorynamelabel}Theory. Attempting to find quickdir variable inside settings_ash", BC.END)
             try:
-                print("settings_ash.settings_dict:", settings_ash.settings_dict)
-                self.quickdir=settings_ash.settings_dict["quickdir"]
+                print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+                self.quickdir=ash.settings_ash.settings_dict["quickdir"]
             except:
                 print(BC.WARNING,"Found no quickdir variable in settings_ash module either.",BC.END)
                 try:

@@ -174,6 +174,9 @@ class xTBTheory:
             print("xtb Hessian calculation done")
             hessian = xtbhessiangrab(len(elems))
             print_time_rel(module_init_time, modulename='xtB Hessian-run', moduleindex=2)
+
+            #Also setting Hessian of fragment
+            fragment.hessian=hessian
             return hessian
             
         else:

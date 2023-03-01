@@ -2887,12 +2887,12 @@ class OpenMM_MDclass:
                                                          enforcePeriodicBox=self.enforcePeriodicBox))
         elif trajectory_file_option == 'NetCDFReporter':
             print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
-            mdtraj = MDtraj_import_()
+            mdtraj = MDtraj_import()
             self.openmmobject.simulation.reporters.append(
                 mdtraj.reporters.NetCDFReporter(self.trajfilename+'.nc', self.traj_frequency))
         elif trajectory_file_option == 'HDF5Reporter':
             print("HDF5Reporter traj format selected. This requires mdtraj. Importing.")
-            mdtraj = MDtraj_import_()
+            mdtraj = MDtraj_import()
             self.openmmobject.simulation.reporters.append(
                 mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=self.enforcePeriodicBox))

@@ -231,7 +231,7 @@ class NonBondedTheory:
                     elif (self.atomtypes[i], self.atomtypes[j]) in self.LJpairpotdict:
                         self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][0]
                         self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[i], self.atomtypes[j])][1]
-                    elif (atomtypes[j], atomtypes[i]) in self.LJpairpotdict:
+                    elif (self.atomtypes[j], self.atomtypes[i]) in self.LJpairpotdict:
                         self.sigmaij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][0]
                         self.epsij[i, j] = self.LJpairpotdict[(self.atomtypes[j], self.atomtypes[i])][1]
         else:
@@ -548,6 +548,7 @@ UFF_modH_dict={'H': [0.000, 0.000], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 
 #Fast LJ-Coulomb via Fortran and f2PY
 #Outdated, to be removed
 def LJCoulomb(coords,epsij, sigmaij, charges, connectivity=None):
+    ashexit()
     #print("Inside LJCoulomb")
     #Todo: Avoid calling import everytime in the future...
     import LJCoulombv1
@@ -670,9 +671,11 @@ def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=None):
 
     atomlist=list(range(0, len(coords)))
     #LJ energy
-    energy=0
+    LJenergy=0.0
+    Coulenergy=0.0
     #LJ gradient
-    gradient = np.zeros((len(coords), 3))
+    LJgradient = np.zeros((len(coords), 3))
+    Coulgradient=np.zeros((len(coords), 3))
     #Iterating over atom i
     for i in atomlist:
         #Iterating over atom j
@@ -683,13 +686,13 @@ def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=None):
                 if i < j:
 
                     #Coulomb part
-                    pairdistance_b=distance(coords_b[i],coords_b[j])
+                    pairdistance_b=distance(coords[i],coords[j])
                     pairenergy=(charges[i]*charges[j])/pairdistance_b
                     Coulenergy+=pairenergy
                     #Using electric field expression from: http://www.physnet.org/modules/pdf_modules/m115.pdf
-                    Efield_pair_hat=np.array([(coords_b[i][0]-coords_b[j][0])/pairdistance_b,
-                                              (coords_b[i][1]-coords_b[j][1])/pairdistance_b,
-                                              (coords_b[i][2]-coords_b[j][2])/pairdistance_b ])
+                    Efield_pair_hat=np.array([(coords[i][0]-coords[j][0])/pairdistance_b,
+                                              (coords[i][1]-coords[j][1])/pairdistance_b,
+                                              (coords[i][2]-coords[j][2])/pairdistance_b ])
                     #Doing ij pair and storing contribution for each
                     Efield_pair_j=(Efield_pair_hat*charges[j])/(pairdistance_b**2)
                     Efield_pair_i = (Efield_pair_hat * charges[i]) / (pairdistance_b**2)

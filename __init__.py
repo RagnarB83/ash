@@ -126,8 +126,6 @@ from ash.interfaces.interface_geometric import geomeTRICOptimizer
 Optimizer = geomeTRICOptimizer
 Opt = geomeTRICOptimizer
 # PES
-import ash.modules.module_PES
-from ash.modules.module_PES import oldPhotoElectronSpectrum #TODO: delete
 from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT, plot_PES_Spectrum
 
 # Workflows, benchmarking etc
@@ -157,13 +155,13 @@ import ash.settings_ash
 
 # Print header
 import ash.ash_header
-ash_header.print_header()
+ash.ash_header.print_header()
 
 # Exit command (footer)
 if ash.settings_ash.settings_dict["print_exit_footer"] is True:
-    atexit.register(ash_header.print_footer)
+    atexit.register(ash.ash_header.print_footer)
     if ash.settings_ash.settings_dict["print_full_timings"] is True:
-        atexit.register(ash_header.print_timings)
+        atexit.register(ash.ash_header.print_timings)
 
 # Julia dependency. Load in the beginning or not. 
 #As both PyJulia and PythonCall are a bit slow to load, it is best to only load when needed (current behaviour)

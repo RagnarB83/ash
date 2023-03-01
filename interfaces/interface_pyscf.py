@@ -634,7 +634,7 @@ class PySCFTheory:
                 # QM/MM pointcharge embedding
                 #mf = mm_charge(dft.RKS(mol), [(0.5, 0.6, 0.8)], MMcharges)
                 if self.scf_type == 'RKS':
-                    self.mf = self.pyscf.qmmm.mm_charge(dft.RKS(self.mol), current_MM_coords, MMcharges)
+                    self.mf = self.pyscf.qmmm.mm_charge(self.pyscf.dft.RKS(self.mol), current_MM_coords, MMcharges)
                 else:
                     print("Error. scf_type other than RKS and PC True not ready")
                     ashexit()
@@ -684,7 +684,7 @@ class PySCFTheory:
                 print("Warning: No core-orbitals will be frozen in the CC calculation.")
                 self.frozen_core_orbital_indices=None
             else:
-                print("Manual user frozen core:", frozen_orbs)
+                print("Manual user frozen core:", self.frozen_core_setting)
                 self.frozen_core_orbital_indices=self.frozen_core_setting
             #Optional frozen virtuals also
             if self.frozen_virtuals is not None:
@@ -886,6 +886,7 @@ class PySCFTheory:
             #VMC. untested
             elif self.PyQMC_method == 'VMC':
                 #More options possible
+                ashexit()
                 df, configs = vmc(wf,configs)
         
         #####################

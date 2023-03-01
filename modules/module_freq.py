@@ -2,14 +2,16 @@ import numpy as np
 import math
 import shutil
 import os
+import sys
 import copy
 import time
 
-from ash.functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader,isodd
+from ash.functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader,isodd, isint
 import ash.modules.module_coords
 from ash.modules.module_coords import check_charge_mult, check_multiplicity
 from ash.modules.module_results import ASH_Results
 import ash.interfaces.interface_ORCA
+from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
 #Analytical frequencies function
@@ -1271,7 +1273,7 @@ def isotope_change_Hessian(hessfile=None, hessian=None, elems=None, masses=None,
 
     #Modify masses
     print("isotope_change:", isotope_change)
-    if isotope_change == deuterium:
+    if isotope_change == "deuterium":
         modmass=2.01410177811
         masses_mod = [m if el !="H" else modmass for m,el in zip(masses,elems)]
     else:
@@ -1533,7 +1535,7 @@ def printnormalmodecompositions(option,TRmodenum,vfreq,numatoms,elems,evectors,a
         # Case: Specific atom
         atom=int(option)
         if atom > numatoms-1:
-            print(bcolors.FAIL, "Atom index does not exist. Note: Numbering starts from 0", bcolors.ENDC)
+            print(BC.FAIL, "Atom index does not exist. Note: Numbering starts from 0", BC.ENDC)
             ashexit()
         line = "{:>4}{:>14}      {:45}".format("Mode", "Freq(cm**-1)", atomlist[atom])
         print(line)
@@ -1559,7 +1561,7 @@ def printnormalmodecompositions(option,TRmodenum,vfreq,numatoms,elems,evectors,a
         grouplist=[]
         for at in selatoms:
             if at > numatoms-1:
-                print(bcolors.FAIL,"Atom index does not exist. Note: Numbering starts from 0",bcolors.ENDC)
+                print(BC.FAIL,"Atom index does not exist. Note: Numbering starts from 0",BC.ENDC)
                 ashexit()
             grouplist.append(atomlist[at])
         simpgrouplist='_'.join(grouplist)
@@ -1617,7 +1619,7 @@ def write_normalmode(modenumber,fragment=None, freqdict=None):
 
     # hessatoms: list of atoms involved in Hessian. All atoms unless hessatoms list provided.
     if hessatoms == None:
-        hessatoms=list(range(0,len(elems)))
+        hessatoms=list(range(0,len(fragment.elems)))
 
     #Creating dictionary of displaced atoms and chosen mode coordinates
     modedict = {}
@@ -1660,8 +1662,8 @@ def comparenormalmodes(hessianA,hessianB,massesA,massesB):
     mwhessianB, massmatrixB = massweight(hessianB, massesB, numatoms)
 
     # Diagonalize mass-weighted Hessian
-    evaluesA, evectorsA = la.eigh(mwhessianA)
-    evaluesB, evectorsB = la.eigh(mwhessianB)
+    evaluesA, evectorsA = np.linalg.eigh(mwhessianA)
+    evaluesB, evectorsB = np.linalg.eigh(mwhessianB)
     evectorsA = np.transpose(evectorsA)
     evectorsB = np.transpose(evectorsB)
 
@@ -1675,6 +1677,7 @@ def comparenormalmodes(hessianA,hessianB,massesA,massesB):
     nmodesB = np.dot(evectorsB, massmatrixB)
     line = "{:>4}".format("Mode  Freq-A(cm**-1)  Freq-B(cm**-1)    Cosine-similarity")
     print(line)
+    TRmodenum=6
     for mode in range(0, 3 * numatoms):
         if mode < TRmodenum:
             line = "{:>3d}   {:>9.4f}       {:>9.4f}".format(mode, 0.000, 0.000)
@@ -1811,3 +1814,57 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
         #print("nothing detected")
         #print("Molecule must be non-linear")
         return False
+
+
+#Simple function to get Wigner distribution from geometr
+def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperature=300):
+    print("Wigner distribution function")
+    if fragment is None:
+        print("You need to provide an ASH fragment")
+        ashexit()
+    #Get or calculate normal_modes
+    if hessian is not None:
+        print("Hessian provided")
+        print("Diagonalizing to get normal modes")
+        frequencies, normal_modes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,fragment.masses,fragment.elems)
+    elif normal_modes is not None:
+        print("Normal modes provided")
+    elif fragment.hessian is not None:
+        print("Hessian found inside Fragment")
+        print("Diagonalizing to get normal modes")
+        frequencies, normal_modes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(fragment.hessian,fragment.masses,fragment.elems)
+    else:
+        print("You need to provide either hessian, normal_modes or a hessian as part of fragment")
+        ashexit()
+
+    #Projection probably required first
+
+    #normal_modes
+    print(f"normal_modes ({len(normal_modes)}):", normal_modes)
+    print(f"frequencies: ({len(frequencies)})", frequencies)
+    ashexit()
+    coords_collection=[]
+    vel_collection=[]
+    random_Q=1
+    random_P=1
+
+    print("fragment.elems:", fragment.elems)
+    print("fragment.coords:", fragment.coords)
+    for freq,mode in zip(frequencies,normal_modes):
+        print("Freq:", freq)
+        print("mode:", mode)
+        for i, (el,coord,mass) in enumerate(zip(fragment.elems,fragment.coords,fragment.masses)):
+            print("mass:", mass)
+            for xyz in range(3):
+                #coord
+                atom.coord[xyz] += random_Q * mode[i][xyz] * math.sqrt(1./mass)
+                #vel
+                atom.veloc[xyz] += random_P * mode[i][xyz] * math.sqrt(1./mass)
+    #Print XYZ trajectory of coordinates
+    #Also print velocities in some format
+
+    final_coords=None
+    final_vels=None
+
+    #Return collection of coordinates and velocities
+    return final_coords, final_vels

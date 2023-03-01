@@ -7,6 +7,7 @@ from ash.interfaces.interface_geometric import geomeTRICOptimizer
 from ash.modules.module_freq import NumFreq
 from ash.modules.module_singlepoint import Singlepoint
 from ash.functions.functions_general import print_line_with_subheader1,BC,ashexit,writestringtofile,isodd
+import ash.settings_ash
 #Various electron chemistry
 #DEA/DI
 
