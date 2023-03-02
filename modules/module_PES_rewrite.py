@@ -181,6 +181,12 @@ class PhotoElectronClass:
             else:
                 self.SORCI=False
                 print("SORCI is False!")
+        if self.initialorbitalfiles == None:
+            print("Initial orbital files option active")
+            if type(self.initialorbitalfiles) != list:
+                print("Error: initialorbitalfiles must be a list of GBW files (full or relative paths)")
+                ashexit()
+            print(f" Will read GBW-files from list (must be a list): {self.initialorbitalfiles}")
 
         #Initizalign final list (necessary)
         self.finaldysonnorms=[]
@@ -492,11 +498,13 @@ class PhotoElectronClass:
         print(BC.OKGREEN, "Calculating Final State MRCI Spin Multiplicities: ", [f.mult for f in self.Finalstates], BC.ENDC)
 
         if self.initialorbitalfiles is not None:
-            print("not tested for MRCI...")
             print("initialorbitalfiles keyword provided.")
-            print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
-            shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
-
+            if len(self.initialorbitalfiles) > 1:
+                print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
+                shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
+            else:
+                print("Only 1 GBW file was specified in initialorbitalfiles list. Ignoring.")
+                print("Continuing, will use orbitals from previous Init-state calculation instead.")
         #RUNNING JOB
         ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
 
@@ -685,10 +693,13 @@ class PhotoElectronClass:
         print(BC.OKGREEN, "Calculating Final State CASSCF Spin Multiplicities: ", [f.mult for f in self.Finalstates], BC.ENDC)
 
         if self.initialorbitalfiles is not None:
-            print("not tested for CASSCF...")
             print("initialorbitalfiles keyword provided.")
-            print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
-            shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
+            if len(self.initialorbitalfiles) > 1:
+                print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
+                shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
+            else:
+                print("Only 1 GBW file was specified in initialorbitalfiles list. Ignoring.")
+                print("Continuing, will use orbitals from previous Init-state calculation instead.")
 
         ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
 
@@ -773,8 +784,12 @@ class PhotoElectronClass:
             print(BC.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, BC.ENDC)
             if self.initialorbitalfiles is not None:
                 print("Initial orbitals keyword provided.")
-                print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex+1]))
-                shutil.copyfile(self.initialorbitalfiles[findex+1], self.theory.filename + '.gbw')
+                if len(self.initialorbitalfiles) > 1:
+                    print("Will use file {} as guess GBW file for this Final state.".format(self.initialorbitalfiles[findex+1]))
+                    shutil.copyfile(self.initialorbitalfiles[findex+1], self.theory.filename + '.gbw')
+                else:
+                    print("Only 1 GBW file was specified in initialorbitalfiles list. Ignoring.")
+                    print("Continuing, will use orbitals from previous Init-state calculation instead.")
 
             #Run SCF+TDDDFT
             ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
@@ -1069,10 +1084,13 @@ class PhotoElectronClass:
         
 
             if self.initialorbitalfiles is not None:
-                print("not tested for IP-EOM-CCSD...")
                 print("initialorbitalfiles keyword provided.")
-                print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
-                shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
+                if len(self.initialorbitalfiles) > 1:
+                    print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
+                    shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
+                else:
+                    print("Only 1 GBW file was specified in initialorbitalfiles list. Ignoring.")
+                    print("Continuing, will use orbitals from previous Init-state calculation instead.")
             #NOTE: Using initial state charge/mult here because EOM
             init_EOM = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
             energy = init_EOM.energy
@@ -1141,6 +1159,7 @@ class PhotoElectronClass:
             print("initialorbitalfiles keyword provided.")
             print("Will use file {} as guess GBW file for Initial state".format(self.initialorbitalfiles[0]))
             shutil.copyfile(self.initialorbitalfiles[0], self.theory.filename + '.gbw')
+
 
         self.InitSCF = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
         finalsinglepointenergy = self.InitSCF.energy
