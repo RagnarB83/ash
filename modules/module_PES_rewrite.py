@@ -18,9 +18,9 @@ from ash.functions.functions_elstructure import modosplot,write_cube_diff,read_c
 import ash.constants
 from ash.dictionaries_lists import eldict
 
-#TODO: Add NEVPT2/CASPT2 as energy correction to CASSCF ? Keep Dyson norms from CASSCF level
 #TODO: pyscf addition
-#TODO: TDDFT spin-flip finish
+#TODO: Wigner option
+#TODO: SHCI
 #TODO: TDDFT, add orbwindow option so that shakeup states are reduced in magnitude
 #TODO: Look into AGF2 as an addition
 #https://github.com/pyscf/pyscf/blob/master/examples/agf2/03-photoemission_spectra.py
@@ -81,7 +81,7 @@ class PhotoElectronClass:
         ###############
         #Early exits
         ################
-        self.TDDFT=False;self.CAS=False;self.NEVPT2=False;self.EOM=False;self.MRCI=False
+        self.TDDFT=False;self.CAS=False;self.NEVPT2=False;self.EOM=False;self.MRCI=False;self.F12=False
         if method is None:
             print("You must choose a PES method (e.g. method=\"TDDFT\"). \nOptions are: TDDFT, CASSCF, EOM, MRCI and MREOM")
             ashexit()
@@ -93,9 +93,10 @@ class PhotoElectronClass:
         elif method == 'CASSCF':
             self.CAS=True
         #NEVPT2 for initial state and finalstate IEs. Dyson norms from CASSCF
-        elif method == 'NEVPT2':
+        elif method == 'NEVPT2' or method == 'NEVPT2-F12':
             self.CAS=True
             self.NEVPT2=True
+            self.F12=True
         #CAS-CI for both init and final states: only makes sense if good initial orbitals are provided
         elif method == 'CASCI':
             self.CAS=True
@@ -181,7 +182,7 @@ class PhotoElectronClass:
             else:
                 self.SORCI=False
                 print("SORCI is False!")
-        if self.initialorbitalfiles == None:
+        if self.initialorbitalfiles != None:
             print("Initial orbital files option active")
             if type(self.initialorbitalfiles) != list:
                 print("Error: initialorbitalfiles must be a list of GBW files (full or relative paths)")
@@ -622,6 +623,16 @@ class PhotoElectronClass:
         self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', f"%casscf\n printwf det\nci TPrintwf {self.tprintwfvalue} end\n")
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
 
+        #If NEVPT2-F12
+        if self.method == 'NEVPT2-F12':
+            self.theory.orcablocks = self.theory.orcablocks.replace('%casscf', 
+                                                                    f"%casscf\n \
+trafostep ri\n \
+PTMethod FIC_NEVPT2\n \
+PTSettings\n \
+    F12 true\n \
+end") 
+
         #DENSITIES PRINT added to block
         if self.densities != None:
             if self.NEVPT2 is True:
@@ -637,7 +648,7 @@ class PhotoElectronClass:
         print("After CASSCF run")
         if self.method =='CASSCF' or self.method == 'CASCI':
             self.stateI.energy=casscfenergygrab(self.theory.filename+'.out')
-        elif self.method == 'NEVPT2':
+        elif self.NEVPT2 is True :
             self.stateI.energy=finalenergiesgrab(self.theory.filename+'.out')[0]
         print("stateI.energy: ", self.stateI.energy)
 
@@ -1177,7 +1188,7 @@ class PhotoElectronClass:
         #Grab energy of initial state
         if self.method == 'CASSCF' or self.method =='CASCI':
             self.stateI.energy=casscfenergygrab(self.theory.filename+'.out')
-        if self.method == 'NEVPT2':
+        if self.method == 'NEVPT2' or self.method == 'NEVPT2-F12':
             self.stateI.energy=finalenergiesgrab(self.theory.filename+'.out')[0]
         else:
             self.stateI.energy=scfenergygrab(self.theory.filename+'.out')
@@ -1241,10 +1252,10 @@ class PhotoElectronClass:
         print("{:>6d} {:>7d} {:20.11f} {:>8}".format(0, self.stateI.mult, self.stateI.energy, init_stype))
         print("")
         print("Final ionized states:")
-        if self.method == 'CASSCF' or self.method == 'CASCI' or self.method =='MRCI' or self.method =='MREOM' or self.method=='NEVPT2':
+        if self.method == 'CASSCF' or self.method == 'CASCI' or self.method =='MRCI' or self.method =='MREOM' or self.method=='NEVPT2' or self.method == 'NEVPT2-F12':
             if self.method == 'CASCI' or self.method =='MRCI' or self.method =='MREOM':
                 stype='CI'
-            if self.method == 'NEVPT2':
+            if self.method == 'NEVPT2' or self.method =='NEVPT2-F12':
                 stype='NEVPT2'
             if self.method == 'CASSCF':
                 if self.CASCI_Final is True:
@@ -1518,7 +1529,7 @@ class PhotoElectronClass:
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
         #CASSCF, CAS-CI and NEVPT2
-        elif self.method =='CASSCF' or self.method=='CASCI' or self.method == 'NEVPT2':
+        elif self.method =='CASSCF' or self.method=='CASCI' or self.method == 'NEVPT2' or self.method == 'NEVPT2-F12':
             print("CASSCF/CASCI option active!")
             self.setup_ORCA_object()
             self.run_CAS()
