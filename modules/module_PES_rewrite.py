@@ -1425,7 +1425,7 @@ class PhotoElectronClass:
             wfoverlapinput = wfoverlapinput.replace("mos_final", "mos_final-mult"+str(fstate.mult))
 
             #Calling wfoverlap
-            run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory)
+            run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory,self.numcores)
 
             #Grabbing Dyson norms from wfovl.out
             dysonnorms=grabDysonnorms()
@@ -2152,12 +2152,12 @@ def format_ci_vectors(ci_vectors):
     return string,ndets
 
 #Run wfoverlap program
-def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory):
+def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory,numcores):
     wfoverlapfilefile = open('wfovl.inp', 'w')
     for l in wfoverlapinput:
         wfoverlapfilefile.write(l)
     wfoverlapfilefile.close()
-    wfcommand="{} -m {} -f wfovl.inp".format(path_wfoverlap,memory)
+    wfcommand=f"export OMP_NUM_THREADS={numcores}; {path_wfoverlap} -m {memory} -f wfovl.inp"
     print("Running wfoverlap program:")
     print("may take a while...")
     print(wfcommand)
