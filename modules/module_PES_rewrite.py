@@ -429,7 +429,13 @@ class PhotoElectronClass:
             self.theory.orcablocks = self.theory.orcablocks.replace(f"%mrci\n","%mrci\n densities 6,0\n")
             if 'keepdens' not in self.theory.orcasimpleinput:
                 self.theory.orcasimpleinput = self.theory.orcasimpleinput + " keepdens "
-        
+
+        if self.initialorbitalfiles is not None:
+            print("initialorbitalfiles keyword provided.")
+            print("Will use file {} as guess GBW file for Initial state".format(self.initialorbitalfiles[0]))
+            shutil.copyfile(self.initialorbitalfiles[0], self.theory.filename + '.gbw')
+
+
         #Calling SCF run
         result = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.stateI.charge, mult=self.stateI.mult)
         self.stateI.energy=result.energy
