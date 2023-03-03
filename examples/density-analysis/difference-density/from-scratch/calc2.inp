@@ -1,9 +1,0 @@
-! BP86 def2-SVP tightscf notrah
-
-
-
-
-*xyz 1 2
-H 0.0 0.0 0.0 
-F 0.0 0.0 1.0 
-*

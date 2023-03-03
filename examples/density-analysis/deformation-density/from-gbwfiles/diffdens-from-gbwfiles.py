@@ -6,10 +6,10 @@ from ash.functions.functions_elstructure import  read_cube, write_cube_diff
 ##########################################
 #Use this script if you have ORCA GBW for a promolecular density (created via orca_mergefrag) 
 # and the final density 
-#And you want to get the defom
+#And you want to get the deformation density
 #Warning: geometry needs to be the same
 
-
+#Define names of GBW files (should be in directory)
 file1="promolecular.gbw"
 file2="final.gbw"
 

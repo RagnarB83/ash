@@ -23,6 +23,7 @@ from ash.dictionaries_lists import eldict
 #TODO: Finish No-Shakeup option
 #TODO: SHCI
 #TODO: Look into AGF2 as an addition
+#TODO: Combine with Auto Non-Aufbau calc?
 #https://github.com/pyscf/pyscf/blob/master/examples/agf2/03-photoemission_spectra.py
 
 #Wrapper function around PhotoElectron()

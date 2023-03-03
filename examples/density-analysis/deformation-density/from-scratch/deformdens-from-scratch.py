@@ -4,13 +4,14 @@ from ash.functions.functions_elstructure import  read_cube, write_cube_diff
 #########################################
 # Deformation density from scratch
 ##########################################
-#Use this script if you want to calculate deformation density from scratch
+#Use this script if you want to calculate the deformation density
+#for a molecule (AB) that you split into fragments A and B
 
 
 #Fragments
-AB_molecule=Fragment(xyzfile="hf.xyz", charge=0, mult=1)
-A_molecule=Fragment(xyzfile="h.xyz", charge=0, mult=2)
-B_molecule=Fragment(xyzfile="f.xyz", charge=0, mult=2)
+fragment_AB=Fragment(xyzfile="hf.xyz", charge=0, mult=1)
+fragment_A=Fragment(xyzfile="h.xyz", charge=0, mult=2)
+fragment_B=Fragment(xyzfile="f.xyz", charge=0, mult=2)
 
 #General theory level information
 orca_simple="! UKS BP86 def2-SVP tightscf notrah"
@@ -22,7 +23,7 @@ orca_blocks=""
 labelAB="calc_AB"
 calc_AB=ORCATheory(orcasimpleinput=orca_simple, orcablocks=orca_blocks,filename=labelAB)
 
-result_calcAB=Singlepoint(theory=calc_AB, fragment=AB_molecule)
+result_calcAB=Singlepoint(theory=calc_AB, fragment=fragment_AB)
 #Run orca_plot to request electron density creation from ORCA gbw file
 run_orca_plot(labelAB+".gbw", "density", gridvalue=80)
 
@@ -33,7 +34,7 @@ run_orca_plot(labelAB+".gbw", "density", gridvalue=80)
 labelA="calc_A"
 calc_A=ORCATheory(orcasimpleinput=orca_simple, orcablocks=orca_blocks,filename=labelA)
 
-result_calcA=Singlepoint(theory=calc_A, fragment=AB_molecule)
+result_calcA=Singlepoint(theory=calc_A, fragment=fragment_A)
 #Run orca_plot to request electron density creation from ORCA gbw file
 run_orca_plot(labelA+".gbw", "density", gridvalue=80)
 
@@ -43,7 +44,7 @@ run_orca_plot(labelA+".gbw", "density", gridvalue=80)
 labelB="calc_B"
 calc_B=ORCATheory(orcasimpleinput=orca_simple, orcablocks=orca_blocks,filename=labelB)
 
-result_calcB=Singlepoint(theory=calc_B, fragment=B_molecule)
+result_calcB=Singlepoint(theory=calc_B, fragment=fragment_B)
 #Run orca_plot to request electron density creation from ORCA gbw file
 run_orca_plot(labelB+".gbw", "density", gridvalue=80)
 

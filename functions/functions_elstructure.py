@@ -3,13 +3,14 @@ import math
 import shutil
 import os
 import glob
+import copy
 import subprocess as sp
 
 #import ash
 import ash.constants
 import ash.modules.module_coords
 import ash.dictionaries_lists
-from ash.functions.functions_general import ashexit, isodd
+from ash.functions.functions_general import ashexit, isodd, print_line_with_mainheader
 import ash.interfaces.interface_ORCA
 from ash.modules.module_coords import nucchargelist
 from ash.dictionaries_lists import eldict
@@ -1029,3 +1030,121 @@ def xdm_run(wfxfile=None, postgdir=None,a1=None, a2=None,functional=None):
     print("dispenergy:", dispenergy)
     print("dispgradient:", dispgradient)
     return dispenergy, dispgradient
+
+#Create difference density for 2 calculations differing in either fragment or theory-level
+def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, theory_B=None, griddensity=80):
+    print_line_with_mainheader("difference_density_ORCA")
+    print("Will calculate and create a difference density for molecule")
+    print("Either fragment can be different (different geometry, different charge, different spin)")
+    print("Or theory can be different (different functional, different basis set)")
+    print()
+    print("griddensity:", griddensity)
+
+    if fragment_A is None or fragment_B is None:
+        print("You need to provide an ASH fragment")
+        ashexit()
+    if fragment_A.charge == None or fragment_B.charge == None:
+        print("You must provide charge/multiplicity information to all fragments")
+        ashexit()
+    if theory_A == None or theory_A.__class__.__name__ != "ORCATheory":
+        print("theory_A: You must provide an ORCATheory level")
+        ashexit()
+    if theory_B == None or theory_B.__class__.__name__ != "ORCATheory":
+        print("theory_B: You must provide an ORCATheory level")
+        ashexit()
+
+    #------------------
+    #Calculation 1
+    #------------------
+    theory_A.filename="calc_A"
+    result_calc1=ash.Singlepoint(theory=theory_A, fragment=fragment_A)
+    #Run orca_plot to request electron density creation from ORCA gbw file
+    ash.interfaces.interface_ORCA.run_orca_plot("calc_A.gbw", "density", gridvalue=griddensity)
+
+
+    #------------------
+    #Calculation 2
+    #------------------
+    theory_B.filename="calc_B"
+    result_calc2=ash.Singlepoint(theory=theory_B, fragment=fragment_B)
+    #Run orca_plot to request electron density creation from ORCA gbw file
+    ash.interfaces.interface_ORCA.run_orca_plot("calc_B.gbw", "density", gridvalue=griddensity)
+
+    #Read Cubefiles from disk
+    cube_data1 = read_cube("calc_A.eldens.cube")
+    cube_data2 = read_cube("calc_B.eldens.cube")
+
+    #Write out difference density as a Cubefile
+    write_cube_diff(cube_data1, cube_data2, "diffence_density")
+    print()
+    print("Difference density file was created: diffence_density.cube")
+
+
+#Create deformation density using 3 fragment files
+def deformation_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, griddensity=80):
+    print_line_with_mainheader("deformation_density_ORCA")
+    print("Will calculate and create a deformation density for molecule AB for fragments A and B")
+    print("griddensity:", griddensity)
+
+    if fragment_AB is None or fragment_A is None or fragment_B is None:
+        print("You need to provide an ASH fragment")
+        ashexit()
+    if fragment_AB.charge == None or fragment_A.charge == None or fragment_B.charge == None:
+        print("You must provide charge/multiplicity information to all fragments")
+        ashexit()
+    print("theory:", theory)
+    if theory == None or theory.__class__.__name__ != "ORCATheory":
+        print("You must provide an ORCATheory level")
+        ashexit()
+    
+    #Creating copies of theory object provided
+    calc_AB = copy.copy(theory); calc_AB.filename="calcAB"
+    calc_A = copy.copy(theory); calc_A.filename="calcA"
+    calc_B = copy.copy(theory); calc_B.filename="calcB"
+
+    #-------------------------
+    #Calculation on AB
+    #------------------------
+    #Run AB SP
+    result_calcAB=ash.Singlepoint(theory=calc_AB, fragment=fragment_AB)
+    #Run orca_plot to request electron density creation from ORCA gbw file
+    ash.interfaces.interface_ORCA.run_orca_plot("calcAB.gbw", "density", gridvalue=griddensity)
+
+    #-------------------------
+    #Calculation on A
+    #------------------------
+    #Run A SP
+    result_calcA=ash.Singlepoint(theory=calc_A, fragment=fragment_A)
+    #Run orca_plot to request electron density creation from ORCA gbw file
+    ash.interfaces.interface_ORCA.run_orca_plot("calcA.gbw", "density", gridvalue=griddensity)
+
+    #-------------------------
+    #Calculation on B
+    #------------------------
+    #Run B SP
+    result_calcB=ash.Singlepoint(theory=calc_B, fragment=fragment_B)
+    #Run orca_plot to request electron density creation from ORCA gbw file
+    ash.interfaces.interface_ORCA.run_orca_plot("calcB.gbw", "density", gridvalue=griddensity)
+
+
+    #-----------------------------------------
+    # merge A + B to get promolecular density
+    #-----------------------------------------
+
+    p = sp.run(['orca_mergefrag', "calcA.gbw", "calcB.gbw", "promolecule_AB.gbw"], encoding='ascii')
+
+    #Get density
+    ash.interfaces.interface_ORCA.run_orca_plot("promolecule_AB.gbw", "density", gridvalue=80)
+
+    #-----------------------------------------
+    # Make deformation density as difference
+    #-----------------------------------------
+
+    #Read Cubefiles from disk
+    cube_data1 = read_cube("promolecule_AB.eldens.cube")
+    cube_data2 = read_cube(f"calcAB.eldens.cube")
+
+    #Write out difference density as a Cubefile
+    write_cube_diff(cube_data1, cube_data2, "deformation_density")
+    print()
+    print("Deformation density file was created: deformation_density.cube")
