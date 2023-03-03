@@ -190,6 +190,10 @@ class PhotoElectronClass:
             print("no_shakeup:", self.no_shakeup)
             print("virt_offset:", self.virt_offset)
             print("TDA:", self.tda)
+            # Threshold for determinant TDDFT printing
+            #NOTE: Currently hardcoded 
+            self.wfthres = 2.0
+            print("self.wfthres:", self.wfthres)
         #Initial Orbital check and print
         if self.initialorbitalfiles != None:
             print("Initial orbital files option active")
@@ -852,6 +856,12 @@ end")
 
             #Grab TDDFT states from ORCA output
             fstate.TDtransitionenergies = tddftgrab(self.theory.filename+'.out')
+            #TDDFT may have calculated fewer states than requested. Updating 
+            if len(fstate.TDtransitionenergies) != fstate.numionstates:
+                print(f"Warning: TDDFT calculated fewer states ({len(fstate.TDtransitionenergies)}) than requested ({fstate.numionstates})")
+                print("Updating number of states for multiplicity:", fstate.mult)
+                fstate.numionstates=len(fstate.TDtransitionenergies)
+
 
             #Saving GBW and CIS files
             shutil.copyfile(self.theory.filename + '.gbw', './' + 'Final_State_mult' + str(fstate.mult) + '.gbw')
@@ -1400,8 +1410,6 @@ end")
         #TDDFT-only:
         # Number of multiplicity blocks I think. Should be 2 in general, 1 for GS and 1 for ionized
         # Not correct, should be actual multiplicites. Finalstate mult. If doing TDDFT-triplets then I guess we have more
-        # Threshold for WF.
-        self.wfthres = 2.0    
         #TDDFT: GETTING DETERMINANTS FROM CIS FILE
         # Final state. Create detfiles
         statestoskip = [0, 0]
