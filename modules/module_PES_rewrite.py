@@ -34,7 +34,7 @@ def PhotoElectron(theory=None, fragment=None, method=None,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None,
                         CASCI_Final=False,
-                        MRCI_CASCI_Final=True,
+                        MRCI_CASCI_Final=False,
                         btPNO=False, DLPNO=False, no_shakeup=False, virt_offset=0,
                         path_wfoverlap=None, tprintwfvalue=1e-6, noDyson=False):
     """
@@ -68,7 +68,7 @@ class PhotoElectronClass:
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
-                        MRCI_CASCI_Final=True, CASCI_Final=False, 
+                        MRCI_CASCI_Final=False, CASCI_Final=False, 
                         btPNO=False, DLPNO=False, 
                         path_wfoverlap=None, tprintwfvalue=1e-6, noDyson=False):
         """
