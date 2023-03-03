@@ -1081,18 +1081,20 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
 
 
 #Create deformation density using 3 fragment files
-def deformation_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, griddensity=80):
+def deformation_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, griddensity=80,
+                            NOCV=True):
     print_line_with_mainheader("deformation_density_ORCA")
     print("Will calculate and create a deformation density for molecule AB for fragments A and B")
     print("griddensity:", griddensity)
-
+    print("NOCV option:", NOCV)
+    if NOCV is True:
+        print("Will do NOCV analysis on AB fragment deformation density using A+B promolecular density")
     if fragment_AB is None or fragment_A is None or fragment_B is None:
         print("You need to provide an ASH fragment")
         ashexit()
     if fragment_AB.charge == None or fragment_A.charge == None or fragment_B.charge == None:
         print("You must provide charge/multiplicity information to all fragments")
         ashexit()
-    print("theory:", theory)
     if theory == None or theory.__class__.__name__ != "ORCATheory":
         print("You must provide an ORCATheory level")
         ashexit()
@@ -1101,14 +1103,6 @@ def deformation_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None,
     calc_AB = copy.copy(theory); calc_AB.filename="calcAB"
     calc_A = copy.copy(theory); calc_A.filename="calcA"
     calc_B = copy.copy(theory); calc_B.filename="calcB"
-
-    #-------------------------
-    #Calculation on AB
-    #------------------------
-    #Run AB SP
-    result_calcAB=ash.Singlepoint(theory=calc_AB, fragment=fragment_AB)
-    #Run orca_plot to request electron density creation from ORCA gbw file
-    ash.interfaces.interface_ORCA.run_orca_plot("calcAB.gbw", "density", gridvalue=griddensity)
 
     #-------------------------
     #Calculation on A
@@ -1136,6 +1130,24 @@ def deformation_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None,
     #Get density
     ash.interfaces.interface_ORCA.run_orca_plot("promolecule_AB.gbw", "density", gridvalue=80)
 
+    #----------------------------
+    #Calculation on AB with NOCV
+    #----------------------------
+    #Run AB SP
+    if NOCV is True:
+        print("NOCV option on. Note that if system is open-shell then ORCA will not perform NOCV")
+        calc_AB.orcablocks = calc_AB.orcablocks + """
+%scf
+EDA true
+guessmode fmatrix
+end
+"""
+        calc_AB.moreadfile="promolecule_AB.gbw"
+    print("Running AB molecule with NOCV enabled")
+    result_calcAB=ash.Singlepoint(theory=calc_AB, fragment=fragment_AB)
+    #Run orca_plot to request electron density creation from ORCA gbw file
+    ash.interfaces.interface_ORCA.run_orca_plot("calcAB.gbw", "density", gridvalue=griddensity)
+
     #-----------------------------------------
     # Make deformation density as difference
     #-----------------------------------------
@@ -1148,3 +1160,4 @@ def deformation_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None,
     write_cube_diff(cube_data1, cube_data2, "deformation_density")
     print()
     print("Deformation density file was created: deformation_density.cube")
+    print ("If NOCV analysis was carred out, see calcAB.out")
