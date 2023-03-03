@@ -21,7 +21,6 @@ from ash.dictionaries_lists import eldict
 #TODO: pyscf addition
 #TODO: Wigner option
 #TODO: SHCI
-#TODO: TDDFT, add orbwindow option so that shakeup states are reduced in magnitude
 #TODO: Look into AGF2 as an addition
 #https://github.com/pyscf/pyscf/blob/master/examples/agf2/03-photoemission_spectra.py
 
@@ -35,7 +34,7 @@ def PhotoElectron(theory=None, fragment=None, method=None,
                         CAS_Initial=None, CAS_Final = None,
                         CASCI_Final=False,
                         MRCI_CASCI_Final=True,
-                        btPNO=False, DLPNO=False, 
+                        btPNO=False, DLPNO=False, no_shakeup=False, virt_offset=0,
                         path_wfoverlap=None, tprintwfvalue=1e-6, noDyson=False):
     """
     Wrapper function around PhotoElectron Class
@@ -51,7 +50,7 @@ def PhotoElectron(theory=None, fragment=None, method=None,
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates, 
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
                         tda=tda,brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, check_stability=check_stability,
-                        CAS_Initial=CAS_Initial, CAS_Final=CAS_Final,
+                        CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
                         MRCI_CASCI_Final=MRCI_CASCI_Final, CASCI_Final=CASCI_Final,
                         btPNO=btPNO, DLPNO=DLPNO, 
                         path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson)
@@ -67,14 +66,13 @@ class PhotoElectronClass:
                         Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, 
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
-                        CAS_Initial=None, CAS_Final = None,
+                        CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
                         MRCI_CASCI_Final=True, CASCI_Final=False, 
                         btPNO=False, DLPNO=False, 
                         path_wfoverlap=None, tprintwfvalue=1e-6, noDyson=False):
         """
         PhotoElectron module
         """
-        module_init_time=time.time()
         blankline()
         print_line_with_mainheader("PhotoElectron: Calculating PES spectra via TDDFT/CAS/MRCI/EOM/MREOM and Dyson-norm approach")
         
@@ -172,6 +170,8 @@ class PhotoElectronClass:
         self.DLPNO=DLPNO 
         self.label=label
         self.check_stability=check_stability
+        self.no_shakeup=no_shakeup
+        self.virt_offset=virt_offset  #For no_shakeup option. Whether to allow more than LUMO virtual excitations or not (default 0)
 
         print("PES method:", self.method)
         if self.method == 'MRCI' or self.method=='MREOM':
@@ -181,13 +181,28 @@ class PhotoElectronClass:
                 print("SORCI is True!")
             else:
                 self.SORCI=False
-                print("SORCI is False!")
+        #TDDFT-specific settings print
+        if self.method == 'TDDFT':
+            if self.tda == True:
+                self.no_tda = False
+            else:
+                self.no_tda = True
+            print("no_shakeup:", self.no_shakeup)
+            print("virt_offset:", self.virt_offset)
+            print("TDA:", self.tda)
+        #Initial Orbital check and print
         if self.initialorbitalfiles != None:
             print("Initial orbital files option active")
             if type(self.initialorbitalfiles) != list:
                 print("Error: initialorbitalfiles must be a list of GBW files (full or relative paths)")
                 ashexit()
             print(f" Will read GBW-files from list (must be a list): {self.initialorbitalfiles}")
+        #If SCF broken-symmetry solution:
+        #Applies to all methods except CASSCF,NEVPT2 and MRCI
+        print("brokensym:", self.brokensym)
+        print("HS mult:", self.HSmult)
+        print("atomstoflip:", self.atomstoflip)
+
 
         #Initizalign final list (necessary)
         self.finaldysonnorms=[]
@@ -305,16 +320,26 @@ class PhotoElectronClass:
                 print("Running TDDFT-gradient for State: ", tddftstate)
                 #Adding Iroot to get state-specific gradient+density                                              ''
                 if self.tda == False:
-                    # Boolean for whether no_tda is on or not
                     print("Not sure if Full-TDDFT density is available. TO BE CHECKED.")
-                    self.no_tda = True
                     tddftstring = "%tddft\n" + "tda false\n" + "nroots " + str(
                         self.numionstates - 1) + '\n' + "maxdim 25\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
                 else:
                     tddftstring = "%tddft\n" + "tda true\n" + "nroots " + str(
                         self.numionstates - 1) + '\n' + "maxdim 25\n" + "Iroot {}\n".format(tddftstate) + "end\n" + "\n"
-                    # Boolean for whether no_tda is on or not
-                    self.no_tda = False
+                #Optional orbitalwindow to get rid of shake-up states
+                if self.no_shakeup is True:
+                    if fstate.mult > 1 or self.brokensym is True:
+                        restricted=False
+                    else:
+                        restricted=True
+                    homoindex_a,homoindex_b=HOMOnumber(self.totnuccharge,fstate.charge,fstate.mult)
+                    if restricted:
+                        tddftstring=tddftstring.replace('%tddft',f'%tddft\nOrbWin[0] = -1,-1,{homoindex_a+1},{homoindex_a+1+self.virt_offset}')
+                    else:
+                        tddftstring=tddftstring.replace('%tddft',f'%tddft\nOrbWin[1] = -1,-1,{homoindex_b+1},{homoindex_b+1+self.virt_offset}')
+                        tddftstring=tddftstring.replace('%tddft',f'%tddft\nOrbWin[0] = -1,-1,{homoindex_a+1},{homoindex_a+1+self.virt_offset}')
+
+                #Modifying tddft string, adding owrb
                 self.theory.extraline = tddftstring
 
                 #Turning off stability analysis. Not available for gradient run.
@@ -789,15 +814,22 @@ end")
         for findex,fstate in enumerate(self.Finalstates):
             #Setting TDA/TDDFT states for each spin multiplicity
             if self.tda==False:
-                # Boolean for whether no_tda is on or not
-                self.no_tda = True
                 tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15\n"+"end\n"+"\n"
             else:
                 tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(fstate.numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
-                # Boolean for whether no_tda is on or not
-                self.no_tda = False
+            #Optional orbitalwindow to get rid of shake-up states
+            if self.no_shakeup is True:
+                if fstate.mult > 1 or self.brokensym is True:
+                    restricted=False
+                else:
+                    restricted=True
+                homoindex_a,homoindex_b=HOMOnumber(self.totnuccharge,fstate.charge,fstate.mult)
+                if restricted:
+                    tddftstring=tddftstring.replace('%tddft',f'%tddft\nOrbWin[0] = -1,-1,{homoindex_a+1},{homoindex_a+1+self.virt_offset}')
+                else:
+                    tddftstring=tddftstring.replace('%tddft',f'%tddft\nOrbWin[1] = -1,-1,{homoindex_b+1},{homoindex_b+1+self.virt_offset}')
+                    tddftstring=tddftstring.replace('%tddft',f'%tddft\nOrbWin[0] = -1,-1,{homoindex_a+1},{homoindex_a+1+self.virt_offset}')
             self.theory.extraline=tddftstring
-
             print(BC.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", fstate.mult, BC.ENDC)
             if self.initialorbitalfiles is not None:
                 print("Initial orbitals keyword provided.")
@@ -913,13 +945,9 @@ end")
         lowest_mult_fstate=self.Finalstates[lowest_mult_fstate_index]
         #Setting TDA/TDDFT states for each spin multiplicity
         if self.tda==False:
-            # Boolean for whether no_tda is on or not
-            self.no_tda = True
             tddftstring="%tddft\n"+"tda false\n"+"nroots " + str(highest_mult_fstate.numionstates-1) + '\n'+"maxdim 25\n"+"maxiter 15\n"+"end\n"+"\n"
         else:
             tddftstring="%tddft\n"+"tda true\n"+"nroots " + str(highest_mult_fstate.numionstates-1) + '\n'+"maxdim 25\n"+"end\n"+"\n"
-            # Boolean for whether no_tda is on or not
-            self.no_tda = False
         self.theory.extraline=tddftstring
         print(BC.OKGREEN, "Calculating Final State SCF + TDDFT. Spin Multiplicity: ", highest_mult_fstate.mult, BC.ENDC)
         #TODO: Initial orbitalfiles
@@ -971,13 +999,9 @@ end")
         print(BC.OKGREEN, f"\nCalculating Lower-spinmultiplicity (mult: {lowest_mult_fstate.mult}) via spinFlip-TDDFT from higher-mult SCF(mult: {highest_mult_fstate}).",BC.ENDC)
         #Setting TDA/TDDFT states for each spin multiplicity
         if self.tda==False:
-            # Boolean for whether no_tda is on or not
-            self.no_tda = True
             tddftstring="%tddft\n"+"sf true\n"+"tda false\n"+"nroots " + str(lowest_mult_fstate.numionstates) + '\n'+"maxdim 25\n"+"maxiter 15\n"+"end\n"+"\n"
         else:
             tddftstring="%tddft\n"+"sf true\n"+"tda true\n"+"nroots " + str(lowest_mult_fstate.numionstates) + '\n'+"maxdim 25\n"+"end\n"+"\n"
-            # Boolean for whether no_tda is on or not
-            self.no_tda = False
         self.theory.extraline=tddftstring
         #Run Spin-Flip TDDFT, using highest-spin multiplicity
         ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=lowest_mult_fstate.charge, mult=highest_mult_fstate.mult)
