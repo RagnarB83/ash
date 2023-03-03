@@ -20,6 +20,7 @@ from ash.dictionaries_lists import eldict
 
 #TODO: pyscf addition
 #TODO: Wigner option
+#TODO: Finish No-Shakeup option
 #TODO: SHCI
 #TODO: Look into AGF2 as an addition
 #https://github.com/pyscf/pyscf/blob/master/examples/agf2/03-photoemission_spectra.py
@@ -1420,6 +1421,11 @@ end")
                                         self.totnuccharge, [1, fstate.numionstates], statestoskip, self.no_tda, self.frozencore, self.wfthres)
             # Printing to file
             for blockname, string in det_final.items():
+                #If no-shakeup option active then we are missing all empty virtual orbitals
+                #Thes need to be added (add eeeeeeeee string to first column) but also we need add a column of zeros
+                #TODO: The
+                if self.no_shakeup is True:
+                    print("Warning: Dyson norms not ready for no_shakeup option yet")
                 writestringtofile(string, "dets_final_mult"+str(fstate.mult))
 
 
@@ -1969,11 +1975,6 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
     print("frozencore:", frozencore)
     print("wfthres", wfthres)
     print("nstates_to_extract:", nstates_to_extract)
-
-    #print restr,mults,gsmult,nstates_to_extract
-    #print "RB.....b"
-    # get infos from logfile
-    #logfile=os.path.join(os.path.dirname(filename),'ORCA.log')
     data=readfile(logfile)
     infos={}
     for iline,line in enumerate(data):
