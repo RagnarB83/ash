@@ -1097,15 +1097,19 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
     print("Difference density file was created: diffence_density.cube")
 
 
-#Create deformation density using 3 fragment files
+#Create deformation density by providing fragment files for AB, A and B and a theory-level object.
+#NOCV 
 def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, griddensity=80,
-                            NOCV=True, num_nocv_pairs=5):
-    print_line_with_mainheader("deformation_density_ORCA")
+                            NOCV=True, num_nocv_pairs=5, keep_all_orbital_cube_files=False):
+    print_line_with_mainheader("NOCV_density_ORCA")
     print("Will calculate and create a deformation density for molecule AB for fragments A and B")
     print("griddensity:", griddensity)
     print("NOCV option:", NOCV)
     if NOCV is True:
         print("Will do NOCV analysis on AB fragment deformation density using A+B promolecular density")
+    else:
+        print("Full NOCV analysis not carried out")
+    #Early exits
     if fragment_AB is None or fragment_A is None or fragment_B is None:
         print("You need to provide an ASH fragment")
         ashexit()
@@ -1124,6 +1128,9 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     #-------------------------
     #Calculation on A
     #------------------------
+    print("-"*120)
+    print("Performing ORCA calculation on fragment A")
+    print("-"*120)
     #Run A SP
     result_calcA=ash.Singlepoint(theory=calc_A, fragment=fragment_A)
     #Run orca_plot to request electron density creation from ORCA gbw file
@@ -1132,6 +1139,10 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     #-------------------------
     #Calculation on B
     #------------------------
+    print()
+    print("-"*120)
+    print("Performing ORCA calculation on fragment B")
+    print("-"*120)
     #Run B SP
     result_calcB=ash.Singlepoint(theory=calc_B, fragment=fragment_B)
     #Run orca_plot to request electron density creation from ORCA gbw file
@@ -1141,29 +1152,41 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     #-----------------------------------------
     # merge A + B to get promolecular density
     #-----------------------------------------
-
+    print()
+    print("-"*120)
+    print("Using orca_mergefrag to combine GBW-files for A and B into AB promolecule file: promolecule_AB.gbw")
+    print("-"*120)
     p = sp.run(['orca_mergefrag', "calcA.gbw", "calcB.gbw", "promolecule_AB.gbw"], encoding='ascii')
 
     #NOTE: promolecule_AB.gbw here contains orbitals that have not been orthogonalize
     #Here we run a Noiter job to orthogonalize
-    calc_promol = copy.copy(theory)
-    calc_promol.filename="calcAB"
-    calc_promol.orcasimpleinput+=" noiter"
-    calc_promol.moreadfile="promolecule_AB.gbw"
-    calc_promol.orcablocks="%scf guessmode fmatrix end"
-    calc_promol.filename="promol"
-    calc_promol.keep_last_output=False
-    result_promol=ash.Singlepoint(theory=calc_promol, fragment=fragment_AB)
+    promolecule_AB_orthog = copy.copy(theory)
+    promolecule_AB_orthog.filename="calcAB"
+    promolecule_AB_orthog.orcasimpleinput+=" noiter"
+    promolecule_AB_orthog.moreadfile="promolecule_AB.gbw"
+    promolecule_AB_orthog.orcablocks="%scf guessmode fmatrix end"
+    promolecule_AB_orthog.filename="promol"
+    promolecule_AB_orthog.keep_last_output=False
+    print()
+    print("-"*120)
+    print("Performing ORCA noiter calculation in order to orthogonalize orbitals and get file: promolecule_AB_orthog.gbw")
+    print("-"*120)
+    result_promol=ash.Singlepoint(theory=promolecule_AB_orthog, fragment=fragment_AB)
     #NOTE: calc_promol.gbw will contain  orthogonalized orbitals
     #Writing out electron density of orthogonalized promolecular electron density
-    ash.interfaces.interface_ORCA.run_orca_plot(calc_promol.filename+".gbw", "density", gridvalue=80)
-    os.rename(f"{calc_promol.filename}.eldens.cube","promolecule_AB_orthogonalized.eldens.cube")
+    print()
+    print("-"*120)
+    print("Performing orca_plot calculation to create density Cubefile: promolecule_AB_orthogonalized.eldens.cube")
+    print("-"*120)
+    ash.interfaces.interface_ORCA.run_orca_plot(promolecule_AB_orthog.filename+".gbw", "density", gridvalue=80)
+    os.rename(f"{promolecule_AB_orthog.filename}.eldens.cube","promolecule_AB_orthogonalized.eldens.cube")
 
     #----------------------------
     #Calculation on AB with NOCV
     #----------------------------
     #Run AB SP
     if NOCV is True:
+        print()
         print("NOCV option on. Note that if system is open-shell then ORCA will not perform NOCV")
         calc_AB.orcablocks = calc_AB.orcablocks + """
 %scf
@@ -1172,7 +1195,10 @@ guessmode fmatrix
 end
 """
         calc_AB.moreadfile="promolecule_AB.gbw"
-    print("Running AB molecule with NOCV enabled")
+    print()
+    print("-"*120)
+    print("Calling ORCA to perform NOCV analysis on AB")
+    print("-"*120)
     result_calcAB=ash.Singlepoint(theory=calc_AB, fragment=fragment_AB)
     #Run orca_plot to request electron density creation from ORCA gbw file
     ash.interfaces.interface_ORCA.run_orca_plot("calcAB.gbw", "density", gridvalue=griddensity)
@@ -1182,6 +1208,10 @@ end
     #-----------------------------------------
 
     #Read Cubefiles from disk
+    print()
+    print("-"*120)
+    print("Reading Cubefiles and creating difference density (i.e. deformation density) from orthogonalized promolecular density and final density")
+    print("-"*120)
     cube_data1 = read_cube("promolecule_AB_orthogonalized.eldens.cube")
     cube_data2 = read_cube(f"calcAB.eldens.cube")
 
@@ -1192,10 +1222,17 @@ end
     print()
 
     #If nocv GBW file is present then NOCV was definitely carried out and we can calculate cube files of the donor-acceptor orbitals
-    if os.path.isfile("calcAB.nocv.gbw"): 
+    if os.path.isfile("calcAB.nocv.gbw") is False:
+        print("No NOCV file was created by ORCA. This probably means that ORCA could not perform the NOCV calculation.")
+        print("Possibly as the system is open-shell.")
+        return
+    else: 
         print ("NOCV analysis was carried out, see calcAB.out for details")
-        #Creating noiter ORCA output for visualization in Chemcraft
+        print()
+        print("-"*120)
         print("Running dummy ORCA noiter PrintMOS job using NOCV orbitals in file: calcAB.nocv.gbw ")
+        print("-"*120)
+        #Creating noiter ORCA output for visualization in Chemcraft
         calc_AB.orcasimpleinput+=" noiter printmos printbasis"
         calc_AB.moreadfile="calcAB.nocv.gbw"
         calc_AB.orcablocks=""
@@ -1209,6 +1246,10 @@ end
         os.rename(f"calcAB.nocv.eldens.cube", f"NOCV-total-density.cube")
         num_mos=int(pygrep("Number of basis functions                   ...", "calcAB.out")[-1])
         #Storing individual NOCV MOs and densities in separate dir (less useful)
+        print()
+        print("-"*120)
+        print("Creating final Cube files for NOCV pair orbitals, orbital-densities and orbital-pair deformation densities")
+        print("-"*120)
         try:
             os.mkdir("NOCV_orbitals_and_densities")
         except:
@@ -1241,3 +1282,8 @@ end
             os.rename(f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube")
             os.rename(f"calcAB.NOCVpair_{i}.donor_mo{i}a-dens.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.donor_mo{i}a-dens.cube")
             os.rename(f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a-dens.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a-dens.cube")
+        #Optionally delete whole directory at end
+        if keep_all_orbital_cube_files is False:
+            print("keep_all_orbital_cube_files option is False")
+            print("Deleting directory: NOCV_orbitals_and_densities")
+            shutil.rmtree("NOCV_orbitals_and_densities")

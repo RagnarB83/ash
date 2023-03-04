@@ -2,7 +2,7 @@ from ash import *
 
 #Examples on how to use the difference_density_ORCA function for different cases
 
-#Example A: Fragments differ (redox)
+#Example A: Fragments differ (vertical redox)
 HF_neut=Fragment(xyzfile="hf.xyz", charge=0, mult=1)
 HF_ox=Fragment(xyzfile="hf.xyz", charge=1, mult=2)
 

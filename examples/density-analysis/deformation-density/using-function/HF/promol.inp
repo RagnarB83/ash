@@ -1,0 +1,11 @@
+! ROKS BP86 def2-SVP noiter
+
+
+! MOREAD
+%moinp "promolecule_AB.gbw"
+%scf guessmode fmatrix end
+
+*xyz 0 1
+H 0.0 0.0 0.0 
+F 0.0 0.0 1.0 
+*

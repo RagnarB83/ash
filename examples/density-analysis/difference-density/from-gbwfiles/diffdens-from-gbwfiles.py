@@ -8,7 +8,7 @@ from ash.functions.functions_elstructure import  read_cube, write_cube_diff
 #And you want to get the difference density
 
 #Warning: the filename.densities files typically has to be available as well
-#even though orca_plot can create the density without the density file this does not work when electron count differs
+#even though orca_plot can sometimes create the density without the density file this does not work when electron count differs
 
 
 file1="calc1.gbw"
