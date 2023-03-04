@@ -56,7 +56,7 @@ import ash.constants
 
 # functions related to electronic structure
 import ash.functions.functions_elstructure
-from ash.functions.functions_elstructure import read_cube, write_cube_diff, deformation_density_ORCA, difference_density_ORCA
+from ash.functions.functions_elstructure import read_cube, write_cube_diff, NOCV_density_ORCA, difference_density_ORCA
 
 #multiwfn interface
 import ash.interfaces.interface_multiwfn

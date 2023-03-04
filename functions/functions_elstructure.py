@@ -10,7 +10,7 @@ import subprocess as sp
 import ash.constants
 import ash.modules.module_coords
 import ash.dictionaries_lists
-from ash.functions.functions_general import ashexit, isodd, print_line_with_mainheader
+from ash.functions.functions_general import ashexit, isodd, print_line_with_mainheader,pygrep
 import ash.interfaces.interface_ORCA
 from ash.modules.module_coords import nucchargelist
 from ash.dictionaries_lists import eldict
@@ -158,7 +158,8 @@ def read_cube (cubefile):
         quit()
     #Read cube file and get all data. Square values
     count = 0
-    X = False
+    grabpoints = False
+    grab_deset_id=False #Whether to grab line with DSET_IDs or not
     d = []
     vals=[]
     elems=[]
@@ -171,6 +172,11 @@ def read_cube (cubefile):
         numwords=len(words)
         #Grabbing origin
         if count == 3:
+            #Getting possibly signed numatoms 
+            numat_orig=int(line.split()[0])
+            if numat_orig < 0:
+                #If negative then we have an ID line later with DSET_IDS
+                grab_deset_id=True
             numatoms=abs(int(line.split()[0]))
             orgx=float(line.split()[1])
             orgy=float(line.split()[2])
@@ -193,7 +199,7 @@ def read_cube (cubefile):
             molcoords.append(molcoord)
             molcoords_ang.append(molcoord_ang)
         # reading gridpoints
-        if X == True:
+        if grabpoints == True:
             b = line.rstrip('\n').replace('  ', ' ').replace('  ', ' ').split(' ')
             b=list(filter(None, b))
             c =[float(i) for i in b]
@@ -201,18 +207,29 @@ def read_cube (cubefile):
             if len(c) >0:
                 vals.append(c)
         # when to begin reading gridpoints
-        if (count >= 6+numatoms and X==False):
-            X = True
+        if grab_deset_id is True and count == 7+numatoms:
+            DSET_IDS_1 = int(line.split()[0])
+            DSET_IDS_2 = int(line.split()[1])
+        if (count >= 6+numatoms and grabpoints==False and grab_deset_id is False):
+            #Setting grabpoints to True for next line
+            grabpoints = True
+        if (count >= 7+numatoms and grabpoints==False):
+            #Now setting grabpoints to True for grabbing next
+            grabpoints = True
     if LargePrint==True:
         print("Number of orb/density points:", len(vals))
     finaldict={'rlowx':rlowx,'dx':dx,'nx':nx,'orgx':orgx,'rlowy':rlowy,'dy':dy,'ny':ny,'orgy':orgy,'rlowz':rlowz,'dz':dz,'nz':nz,'orgz':orgz,'elems':elems,
         'molcoords':molcoords,'molcoords_ang':molcoords_ang,'numatoms':numatoms,'filebase':filebase,'vals':vals}
+    if grab_deset_id is True:
+        #In case we use it later
+        finaldict['DSET_IDS_1']=DSET_IDS_1
+        finaldict['DSET_IDS_2']=DSET_IDS_2
     return  finaldict
 
 #Subtract one Cube-file from another
 def write_cube_diff(cubedict1,cubedict2, name="Default"):
 
-    #TODO: Check for consistency of cubefile with respect to grid points, coordinates etc
+    #Note: For now ignoring DSET_IDS_1 lines that may have been grabbed and present in dicts
 
     numatoms=cubedict1['numatoms']
     orgx=cubedict1['orgx']
@@ -258,7 +275,7 @@ def write_cube_diff(cubedict1,cubedict2, name="Default"):
 
 #Read cubefile. Grabs coords. Calculates density if MO
 def create_density_from_orb (cubefile, denswrite=True, LargePrint=True):
-    global bohrang
+    bohrang = 0.52917721067
     #Opening orbital cube file
     try:
         filename = cubefile
@@ -1081,8 +1098,8 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
 
 
 #Create deformation density using 3 fragment files
-def deformation_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, griddensity=80,
-                            NOCV=True):
+def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, griddensity=80,
+                            NOCV=True, num_nocv_pairs=5):
     print_line_with_mainheader("deformation_density_ORCA")
     print("Will calculate and create a deformation density for molecule AB for fragments A and B")
     print("griddensity:", griddensity)
@@ -1127,8 +1144,20 @@ def deformation_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None,
 
     p = sp.run(['orca_mergefrag', "calcA.gbw", "calcB.gbw", "promolecule_AB.gbw"], encoding='ascii')
 
-    #Get density
-    ash.interfaces.interface_ORCA.run_orca_plot("promolecule_AB.gbw", "density", gridvalue=80)
+    #NOTE: promolecule_AB.gbw here contains orbitals that have not been orthogonalize
+    #Here we run a Noiter job to orthogonalize
+    calc_promol = copy.copy(theory)
+    calc_promol.filename="calcAB"
+    calc_promol.orcasimpleinput+=" noiter"
+    calc_promol.moreadfile="promolecule_AB.gbw"
+    calc_promol.orcablocks="%scf guessmode fmatrix end"
+    calc_promol.filename="promol"
+    calc_promol.keep_last_output=False
+    result_promol=ash.Singlepoint(theory=calc_promol, fragment=fragment_AB)
+    #NOTE: calc_promol.gbw will contain  orthogonalized orbitals
+    #Writing out electron density of orthogonalized promolecular electron density
+    ash.interfaces.interface_ORCA.run_orca_plot(calc_promol.filename+".gbw", "density", gridvalue=80)
+    os.rename(f"{calc_promol.filename}.eldens.cube","promolecule_AB_orthogonalized.eldens.cube")
 
     #----------------------------
     #Calculation on AB with NOCV
@@ -1153,11 +1182,62 @@ end
     #-----------------------------------------
 
     #Read Cubefiles from disk
-    cube_data1 = read_cube("promolecule_AB.eldens.cube")
+    cube_data1 = read_cube("promolecule_AB_orthogonalized.eldens.cube")
     cube_data2 = read_cube(f"calcAB.eldens.cube")
 
     #Write out difference density as a Cubefile
-    write_cube_diff(cube_data1, cube_data2, "deformation_density")
+    write_cube_diff(cube_data1, cube_data2, "full_deformation_density")
     print()
-    print("Deformation density file was created: deformation_density.cube")
-    print ("If NOCV analysis was carred out, see calcAB.out")
+    print("Deformation density file was created: full_deformation_density.cube")
+    print()
+
+    #If nocv GBW file is present then NOCV was definitely carried out and we can calculate cube files of the donor-acceptor orbitals
+    if os.path.isfile("calcAB.nocv.gbw"): 
+        print ("NOCV analysis was carried out, see calcAB.out for details")
+        #Creating noiter ORCA output for visualization in Chemcraft
+        print("Running dummy ORCA noiter PrintMOS job using NOCV orbitals in file: calcAB.nocv.gbw ")
+        calc_AB.orcasimpleinput+=" noiter printmos printbasis"
+        calc_AB.moreadfile="calcAB.nocv.gbw"
+        calc_AB.orcablocks=""
+        calc_AB.filename="NOCV-noiter-visualization"
+        calc_AB.keep_last_output=False
+        result_calcAB=ash.Singlepoint(theory=calc_AB, fragment=fragment_AB)
+        #Creating Cube files
+        print("Now creating Cube files for main NOCV pairs and making orbital-pair deformation densities")
+        print("Creating Cube file for NOCV total deformation density:")
+        ash.interfaces.interface_ORCA.run_orca_plot("calcAB.nocv.gbw", "density", gridvalue=griddensity)
+        os.rename(f"calcAB.nocv.eldens.cube", f"NOCV-total-density.cube")
+        num_mos=int(pygrep("Number of basis functions                   ...", "calcAB.out")[-1])
+        #Storing individual NOCV MOs and densities in separate dir (less useful)
+        try:
+            os.mkdir("NOCV_orbitals_and_densities")
+        except:
+            pass
+        for i in range(0,num_nocv_pairs):
+            print("-----------------------")
+            print(f"Now doing NOCV pair: {i}")
+            print("-----------------------")
+            print()
+            print("Creating Cube file for NOCV donor MO number:", i)
+            ash.interfaces.interface_ORCA.run_orca_plot("calcAB.nocv.gbw", "mo", mo_number=i, gridvalue=griddensity)
+            os.rename(f"calcAB.nocv.mo{i}a.cube", f"calcAB.NOCVpair_{i}.donor_mo{i}a.cube")
+            print("Creating density for orbital")
+            create_density_from_orb (f"calcAB.NOCVpair_{i}.donor_mo{i}a.cube", denswrite=True, LargePrint=True)
+            
+            print("Creating Cube file for NOCV acceptor MO number:", num_mos-1-i)
+            ash.interfaces.interface_ORCA.run_orca_plot("calcAB.nocv.gbw", "mo", mo_number=num_mos-1-i, gridvalue=griddensity)
+            os.rename(f"calcAB.nocv.mo{num_mos-1-i}a.cube", f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube")
+            print("Creating density for orbital")
+            create_density_from_orb (f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube", denswrite=True, LargePrint=False)
+            
+            #Difference density for orbital pair
+            donor = read_cube(f"calcAB.NOCVpair_{i}.donor_mo{i}a-dens.cube")
+            acceptor = read_cube(f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a-dens.cube")
+            print(f"Making difference density file: NOCV_pair_{i}_deform_density.cube")
+            write_cube_diff(donor,acceptor, name=f"NOCV_pair_{i}_deform_density")
+            
+            #Move less important stuff to dir
+            os.rename(f"calcAB.NOCVpair_{i}.donor_mo{i}a.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.donor_mo{i}a.cube")
+            os.rename(f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube")
+            os.rename(f"calcAB.NOCVpair_{i}.donor_mo{i}a-dens.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.donor_mo{i}a-dens.cube")
+            os.rename(f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a-dens.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a-dens.cube")

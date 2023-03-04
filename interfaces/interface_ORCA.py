@@ -156,6 +156,9 @@ class ORCATheory:
         #Overwritten by QMMMtheory, used in Flip-spin
         self.qmatoms=[]
         
+        #Whether to keep a copy of last output (filename_last.out) or not
+        self.keep_last_output=True
+
         #XDM: if True then we add !AIM to input
         self.xdm=False
         if xdm == True:
@@ -479,7 +482,8 @@ end"""
             shutil.copy(self.filename+'.out', self.filename+'_run{}'.format(self.runcalls)+'.out')
 
         #Always make copy of last output file
-        shutil.copy(self.filename+'.out', self.filename+'_last.out')
+        if self.keep_last_output is True:
+            shutil.copy(self.filename+'.out', self.filename+'_last.out')
 
         ORCAfinished,numiterations = checkORCAfinished(outfile)
         #Check if ORCA finished or not. Exiting if so
