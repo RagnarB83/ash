@@ -1097,8 +1097,9 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
     print("Difference density file was created: diffence_density.cube")
 
 
-#Create deformation density by providing fragment files for AB, A and B and a theory-level object.
-#NOCV 
+#Create deformation density and do NOCV analysis by providing fragment files for AB, A and B and a theory-level object.
+#TODO: Limitation, ORCA can only do closed-shell case
+#TODO: Switch to multiwfn for more generality
 def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, griddensity=80,
                             NOCV=True, num_nocv_pairs=5, keep_all_orbital_cube_files=False):
     print_line_with_mainheader("NOCV_density_ORCA")
