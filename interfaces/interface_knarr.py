@@ -21,7 +21,7 @@ ashpath = os.path.dirname(ash.__file__)
 sys.path.insert(0,ashpath+'/knarr')
 
 from KNARRio.system_print import PrintHeader, PrintDivider, PrintCredit
-from KNARRatom.utilities import InitializeAtomObject, InitializePathObject
+from KNARRatom.utilities import InitializeAtomObject, InitializePathObject, RMS, RMS3
 from KNARRjobs.path import DoPathInterpolation
 from KNARRio.io import ReadTraj
 from KNARRjobs.neb import DoNEB
@@ -633,6 +633,7 @@ class KnarrCalculator:
         self.actatoms=actatoms
         self.full_coords_images_dict={}
         self.energies_dict={}
+        self.gradient_dict={} #Keeps track of gradients for each image. Should only be active-space gradients
         self.converged=False 
         #Activating ORCA flag if theory or QM-region theory
         self.ORCAused = False
@@ -791,6 +792,8 @@ class KnarrCalculator:
 
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
+                    #Keeping track of (active-region) gradients for each image in a dict
+                    self.gradient_dict[image_number]=Grad_image
 
                 else:
 
@@ -810,7 +813,8 @@ class KnarrCalculator:
                     
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
-
+                    #Keeping track of  gradients for each image in a dict
+                    self.gradient_dict[image_number]=Grad_image
                 
                 counter += 1
                 #Energies array for all images
@@ -893,7 +897,10 @@ class KnarrCalculator:
             result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel)
             en_dict = result_par.energies_dict
-            gradient_dict = result_par.gradients_dict
+            #Now looping over gradients present (done to avoid overwriting frozen-image gradients)
+            #self.gradient_dict = result_par.gradients_dict
+            for gradkey in result_par.gradients_dict:
+                self.gradient_dict[gradkey] = result_par.gradients_dict[gradkey]
 
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():
@@ -911,11 +918,11 @@ class KnarrCalculator:
                 #Forces array for all images
                 #ActiveRegion: Trim Full gradient down to only act-atoms gradient
                 if self.ActiveRegion is True:
-                    Grad_image_full = gradient_dict[i]
+                    Grad_image_full = self.gradient_dict[i]
                     #Trimming gradient if active region
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
                 else:
-                    Grad_image = gradient_dict[i]
+                    Grad_image = self.gradient_dict[i]
 
                 #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
                 force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
@@ -928,19 +935,25 @@ class KnarrCalculator:
         path.AddFC(counter)
         print("NEB iteration calculations done\n")
 
-        #Printing table of energies
-        print("Current energies of all images (in Eh and kcal/mol)")
+        #Printing table of images
+        print("Overview of images")        
+        header=f"Image  Energy(Eh)  dE(kcal/mol)  State     RMSF(eV/Ang)    MaxF(eV/Ang)"
+        print(header)
         print("-"*70)
         for i in sorted(self.energies_dict.keys()):
+            #RMSF and MaxF in eV/Angstrom
+            rms_f=RMSfunc(self.gradient_dict[i])*51.42210665240553
+            max_f=np.max(self.gradient_dict[i])*51.42210665240553
             if self.FreeEnd == False and (i == 0 or i == self.numimages-1):
                 relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
-                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f} (frozen)")
+                #print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f} (frozen) RMSF: {rms_f:6.4f} MaxF: {max_f:6.4f}")
+                print(f"{i:>4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'frozen':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
             else:
                 relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
-                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f}")
+                #print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f}          RMSF: {rms_f:6.4f} MaxF: {max_f:6.4f}")
+                print(f"{i:>4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'active':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
         print("-"*70)
         print()
-
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
             if self.iterations >= 0:
@@ -1035,3 +1048,10 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
             Saddlepoint_fragment.write_xyzfile(xyzfilename=f'Saddlepoint-{label}.xyz')
         print(f"{label} Saddlepoint energy: {saddle_energy} Eh")
         return Saddlepoint_fragment
+
+#Simple RMS function for np array
+def RMSfunc(x):
+    rms = 0.0
+    for v in x.reshape(1, x.size).flatten():
+        rms +=v*v
+    return np.sqrt((1.0 / float(x.size)) * rms)
