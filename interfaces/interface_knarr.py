@@ -668,7 +668,7 @@ class KnarrCalculator:
         if self.runmode=='serial':
             print("Starting NEB calculations in serial mode")
             for image_number in list_to_compute:
-                print("Computing image: ", image_number)
+                print("\nComputing image: ", image_number)
 
                 #Creating dir 
                 try:

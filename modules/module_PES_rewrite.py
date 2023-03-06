@@ -37,7 +37,7 @@ def PhotoElectron(theory=None, fragment=None, method=None,
                         CASCI_Final=False,
                         MRCI_CASCI_Final=False,
                         btPNO=False, DLPNO=False, no_shakeup=False, virt_offset=0,
-                        path_wfoverlap=None, tprintwfvalue=1e-6, noDyson=False):
+                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False):
     """
     Wrapper function around PhotoElectron Class
     """
@@ -71,7 +71,7 @@ class PhotoElectronClass:
                         CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
                         MRCI_CASCI_Final=False, CASCI_Final=False, 
                         btPNO=False, DLPNO=False, 
-                        path_wfoverlap=None, tprintwfvalue=1e-6, noDyson=False):
+                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False):
         """
         PhotoElectron module
         """
