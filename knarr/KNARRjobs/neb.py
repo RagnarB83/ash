@@ -363,6 +363,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         # =======================================================
         # Compute maximum abs. and RMS force
         # =======================================================
+        print("x startci:", startci)
         if startci:
             maxf_all = np.max(abs(freal_perp))
             freal_noci = np.concatenate((freal_perp[0:ci * path.GetNDofIm()],
@@ -456,10 +457,17 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         # =======================================================
         # Climbing image block
         # =======================================================
+        print("x2")
+        print("maxf:", maxf)
+        print("tol_turn_on_ci:", tol_turn_on_ci)
+        print("tol_turn_on_ci:", tol_turn_on_ci)
         if (maxf < tol_turn_on_ci or tol_turn_on_ci == 0.0):
             if not startci and doci:
                 checkmax = np.argmax(path.GetEnergy())
+                print("checkmax:", checkmax)
+                print("path.GetNim() - 1:", path.GetNim() - 1)
                 if checkmax != 0 and checkmax != path.GetNim() - 1:
+                    print("Turning on CI")
                     startci = True
                     #Rmod:
                     calculator.ISCION = True
