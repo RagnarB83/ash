@@ -556,7 +556,8 @@ end"""
                         print("Time calculating QM-Pointcharge gradient: {} seconds".format(orca_timings["pc_gradient"]))
                 #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                 self.pcgrad=ORCApcgradientgrab(pcgradfile)
-                print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                if self.printlevel >= 2:
+                    print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
                 print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy, self.grad, self.pcgrad
             else:
