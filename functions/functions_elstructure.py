@@ -12,7 +12,6 @@ import ash.modules.module_coords
 import ash.dictionaries_lists
 from ash.functions.functions_general import ashexit, isodd, print_line_with_mainheader,pygrep
 import ash.interfaces.interface_ORCA
-from ash.interfaces.interface_ORCA import make_molden_file_ORCA
 from ash.modules.module_coords import nucchargelist
 from ash.dictionaries_lists import eldict
 from ash.constants import hartokcal
@@ -1365,20 +1364,20 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
         ashexit()
     #A
     ash.Singlepoint(theory=theory, fragment=fragment_A)
-    make_molden_file_ORCA(theory.filename+'.gbw') #TODO: Generalize
+    ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw') #TODO: Generalize
     os.rename("orca.molden.input", "bh3.molden.input")
     theory.cleanup()
 
     #B
     ash.Singlepoint(theory=theory, fragment=fragment_B)
-    make_molden_file_ORCA(theory.filename+'.gbw')
+    ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw')
     os.rename("orca.molden.input", "nh3.molden.input")
     theory.cleanup()
 
     #AB
     theory.orcablocks=theory.orcablocks+"%output Print[P_Iter_F] 1 end"
     ash.Singlepoint(theory=theory, fragment=fragment_AB)
-    make_molden_file_ORCA(theory.filename+'.gbw')
+    ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw')
     os.rename("orca.molden.input", "AB.molden.input")
 
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
