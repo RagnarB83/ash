@@ -2,7 +2,6 @@ import subprocess as sp
 import os
 import shutil
 
-from ash.interfaces.interface_ORCA import make_molden_file_ORCA
 from ash.functions.functions_general import BC,ashexit, writestringtofile, pygrep
 import ash.settings_ash
 """
@@ -16,8 +15,6 @@ import ash.settings_ash
  # Psi4: fchk file
  # MRCC: Molden and CCDENSITIES
 
-#ORCA interface can create Molden file from GBW
-#make_molden_file_ORCA
 
 def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
                  fragmentfiles=None, fockfile=None):
