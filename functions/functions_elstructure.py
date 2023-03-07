@@ -1393,6 +1393,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     deltaE_orb=float(pygrep(" Sum of pair energies:","NOCV.txt")[-2])
     deltaE_steric=deltaE_int-deltaE_orb #Elstat+Pauli. Further ecomposition not possibly at the moment
 
+    print()
     print("="*20)
     print("Basic EDA analysis")
     print("="*20)
@@ -1407,3 +1408,5 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     print("dE(int) is the vertical total interaction energy (without geometric relaxation)")
 
     #TODO: Grab orbital-interaction stuff from NOCV.txt and print here also
+    print()
+    print("TODO: NOCV orbital table to come here. See NOCV.txt for now")

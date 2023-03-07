@@ -127,7 +127,7 @@ def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densit
 q
         """
     elif option == 'nocv':
-        print("nocv here")
+        print("Writing Multiwfn inputfile for NOCV analysis)
         denstype=1
         numprodfrags=len(fragmentfiles)
         fragmentfilenames="\n".join(fragmentfiles)
@@ -216,7 +216,7 @@ q
     #Write inputformula to disk
     writestringtofile(inputformula,"mwfnoptions")
 
-    print("Wrote file: mwfnoptions")
+    print("Wrote Multiwfn inputfile to disk: mwfnoptions")
 
 
 #Analyze CCSD(T) wavefunctions from Psi4
