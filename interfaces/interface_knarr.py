@@ -774,13 +774,14 @@ class KnarrCalculator:
                                                                 elems=self.full_fragment_reactant.elems, Grad=True, label="image_"+str(image_number))
 
                     if self.ORCAused == True:
-
-                        if self.printlevel >= 1:
-                            print(f"ORCA run done. Copying {self.theory.filename}.gbw to {current_image_file} for next time")
                         
                         if isinstance(self.theory,ash.QMMMTheory):
+                            if self.printlevel >= 1:
+                                print(f"ORCA run done. Copying {self.theory.qm_theory.filename}.gbw to {current_image_file} for next time")
                             shutil.copyfile(self.theory.qm_theory.filename+".gbw",current_image_file)
                         else:
+                            if self.printlevel >= 1:
+                                print(f"ORCA run done. Copying {self.theory.filename}.gbw to {current_image_file} for next time")
                             shutil.copyfile(self.theory.filename+".gbw",current_image_file)
                     if self.printlevel >= 2:
                         print("Energy of image {} is : {}".format(image_number,En_image))
