@@ -711,13 +711,10 @@ class KnarrCalculator:
                         if self.printlevel >= 1:
                             print(f"current_image_file {current_image_file} DOES NOT exist")
                         if isinstance(self.theory,ash.modules.module_QMMM.QMMMTheory):
-                            print("yes")
                             if os.path.exists(self.theory.qm_theory.filename+".gbw"):
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.qm_theory.filename}.gbw file does exist. Will use.")
                             else:
-                                print("no")
-                                print("theory:", self.theory)
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.qm_theory.filename}.gbw file DOES NOT exist.")
                                 #If not image_0 let's try to copy GBW file from image_0 dir first

@@ -19,8 +19,9 @@ import ash.settings_ash
 #ORCA interface can create Molden file from GBW
 #make_molden_file_ORCA
 
-def multiwfn_run(inputfile, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3):
-    originputfile=inputfile
+def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
+                 fragmentfiles=None):
+    originputfile=moldenfile
     originputbasename=os.path.splitext(originputfile)[0]
     print("originputbasename:", originputbasename)
     if multiwfndir == None:
@@ -38,9 +39,12 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, mrccdensityfi
                 ashexit()
     
     print("multiwfndir:", multiwfndir)
-    print("Inputfile:", inputfile) #Inputfile is typically a Molden file
+    print("Molden file:", moldenfile) #Inputfile is typically a Molden file
+    if os.path.isfile(moldenfile) is False:
+        print(f"The selected Moldenfile: {moldenfile} does not exist. Exiting")
+        ashexit()
 
-    #MRCC density
+    #MRCC density special case
     if option=="mrcc-density":
 
         if mrccoutputfile == None:
@@ -52,7 +56,7 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, mrccdensityfi
         print("Frozen orbitals:", frozen_orbs)
         
         #Rename MRCC Molden file to mrcc.molden
-        shutil.copy(inputfile, "mrcc.molden")
+        shutil.copy(moldenfile, "mrcc.molden")
 
         #First Multiwfn call. Create new Moldenfile based on correlated density
         write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile)
@@ -61,32 +65,41 @@ def multiwfn_run(inputfile, option='density', mrccoutputfile=None, mrccdensityfi
 
         #Writes: mrccnew.molden a proper Molden WF file for MRCC WF. Now we can proceed
         option="density"
-        inputfile="mrccnew.molden"
+        moldenfile="mrccnew.molden"
+    elif option == 'nocv':
+        print("NOCV option")
+        print("fragmentfiles:", fragmentfiles)
+        write_multiwfn_input_option(option=option, grid=grid, file1=fragmentfiles[0], file2=fragmentfiles[1])
+    #Density and regular stuff
     else:
         frozen_orbs=None
+        #Writing input
+        write_multiwfn_input_option(option=option, grid=grid)
     
-    #This writes the input-code file that interacts with the Multiwfn program for the chosen option
-    write_multiwfn_input_option(option=option, grid=grid)
-
     #Run
-    #sp.call([multiwfndir+'/Multiwfn', inputfile, '<', "mwfnoptions"])
     with open("mwfnoptions") as input:
-        sp.run([multiwfndir+'/Multiwfn', inputfile], stdin=input)
+        sp.run([multiwfndir+'/Multiwfn', moldenfile], stdin=input)
 
     #Read output
     if option =="density":
+        print("Density option chosen")
         outputfile="density.cub"
         finaloutputfile=originputbasename+'_mwfn.cube'
         os.rename(outputfile, finaloutputfile)
         print("Electron density outputfile written:", finaloutputfile)
         return finaloutputfile
+    elif option =="nocv":
+        print("NOCV option chosen.")
+        print("Now reading output")
     elif option =="hirshfeld":
+        print("Hirshfeld option chosen")
         #read file: 
-        outputfile=inputfile+'.chg'
+        outputfile=moldenfile+'.chg'
 
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
-def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densityfile=None):
+def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densityfile=None,
+                                file1=None,file2=None,file3=None):
     #Create input formula as file
     if option == 'density':
         denstype=1
@@ -99,6 +112,21 @@ def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densit
 {denstype}
 {grid}
 {writeoutput}
+0
+q
+        """
+    elif option == 'nocv':
+        print("nocv here")
+        denstype=1
+        #grid=3 #high-quality grid
+        writeoutput=2 #Write Cubefile to current dir
+        # 5 Output and plot specific property within a spatial region (calc. grid data)
+        # 1 Electron density                 2 Gradient norm of electron density
+        
+        inputformula=f"""23
+2
+{file1}
+{file2}
 0
 q
         """
@@ -142,6 +170,9 @@ q
         pass
     elif option =="fuzzy_bondorder":
         pass
+    else:
+        print("write_multiwfn_input_option: unknown option")
+        ashexit()
     #Write inputformula to disk
     writestringtofile(inputformula,"mwfnoptions")
 
