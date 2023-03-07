@@ -84,8 +84,12 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
         write_multiwfn_input_option(option=option, grid=grid)
     
     #Run
-    with open("mwfnoptions") as input:
-        sp.run([multiwfndir+'/Multiwfn', moldenfile], stdin=input)
+    #TODO: Use logging instead
+    input=open("mwfnoptions")
+    output=open("multiwfn.out",'w')
+    sp.run([multiwfndir+'/Multiwfn', moldenfile], stdin=input, stdout=output)
+    input.close()
+    output.close()
 
     #Read output
     if option =="density":

@@ -1359,27 +1359,48 @@ def grab_NOCV_interactions(file):
 #Make internal theory methods for ORCATheory, xTBtheory, PySCF etc. ?? that outputs a Molden file ???
 def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, gridlevel=2,
                             num_nocv_pairs=5, make_cube_files=True):
+    print_line_with_mainheader("NOCV_Multiwfn")
+    print("Will do full NOCV analysis with Multiwfn")
+    print("gridlevel:", gridlevel)
+    print()
     if isinstance(theory,ash.interfaces.interface_ORCA.ORCATheory) is not True:
         print("NOCV_Multiwfn currently only works with ORCATheory")
         ashexit()
     #A
-    ash.Singlepoint(theory=theory, fragment=fragment_A)
+    result_calcA=ash.Singlepoint(theory=theory, fragment=fragment_A)
     ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw') #TODO: Generalize
     os.rename("orca.molden.input", "bh3.molden.input")
     theory.cleanup()
 
     #B
-    ash.Singlepoint(theory=theory, fragment=fragment_B)
+    result_calcB=ash.Singlepoint(theory=theory, fragment=fragment_B)
     ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw')
     os.rename("orca.molden.input", "nh3.molden.input")
     theory.cleanup()
 
     #AB
     theory.orcablocks=theory.orcablocks+"%output Print[P_Iter_F] 1 end"
-    ash.Singlepoint(theory=theory, fragment=fragment_AB)
+    result_calcAB=ash.Singlepoint(theory=theory, fragment=fragment_AB)
     ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw')
     os.rename("orca.molden.input", "AB.molden.input")
 
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["bh3.molden.input","nh3.molden.input"],
                     fockfile=theory.filename+'.out')
+
+    deltaE_int=(result_calcAB.energy - result_calcA.energy - result_calcB.energy)*hartokcal
+    deltaE_orb=float(pygrep("Delta Total Energy  (Kcal/mol) :","calcAB.out")[-1])
+    deltaE_steric=deltaE_int-deltaE_orb #Elstat+Pauli. Further ecomposition not possibly at the moment
+
+    print("="*20)
+    print("Basic EDA analysis")
+    print("="*20)
+    print()
+    print("-"*50)
+    print(f"{'dE(steric)':<20s} {deltaE_steric:>14.3f} kcal/mol")
+    print(f"{'dE(orb)':<20s} {deltaE_orb:>14.3f} kcal/mol")
+    print(f"{'dE(int)':<20s} {deltaE_int:>14.3f} kcal/mol")
+    print("-"*50)
+    print("E(steric) is sum of electrostatic and Pauli repulsion")
+    print("dE(orb) is the NOCV-ETS orbital-relaxation of orthogonalized promolecular system")
+    print("dE(int) is the vertical total interaction energy (without geometric relaxation)")
