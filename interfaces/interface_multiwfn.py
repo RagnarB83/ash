@@ -138,7 +138,6 @@ q
         #%output Print[P_Iter_F] 1 end
         #Not perfect agreement with ORCA though, unclear why
         inputformula=f"""23
-        #
 2
 {fragfile1}
 {fragfile2}
@@ -151,6 +150,18 @@ Pauli-deform.cube
 orbdeform.cube
 10
 totdeform.cube
+7
+1
+NOCVpair0.cube
+2
+NOCVpair1.cube
+3
+NOCVpair2.cube
+4
+NOCVpair3.cube
+4
+NOCVpair4.cube
+q
 -10
 q
         """
