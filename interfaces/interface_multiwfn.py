@@ -127,7 +127,7 @@ def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densit
 q
         """
     elif option == 'nocv':
-        print("Writing Multiwfn inputfile for NOCV analysis)
+        print("Writing Multiwfn inputfile for NOCV analysis")
         denstype=1
         numprodfrags=len(fragmentfiles)
         fragmentfilenames="\n".join(fragmentfiles)
