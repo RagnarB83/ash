@@ -711,21 +711,28 @@ class KnarrCalculator:
                         if self.printlevel >= 1:
                             print(f"current_image_file {current_image_file} DOES NOT exist")
                         if isinstance(self.theory,ash.QMMMTheory):
+                            print("yes")
                             if os.path.exists(self.theory.qm_theory.filename+".gbw"):
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.qm_theory.filename}.gbw file does exist. Will use.")
                             else:
+                                print("no")
+                                print("theory:", self.theory)
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.qm_theory.filename}.gbw file DOES NOT exist.")
-                                    #If not image_0 let's try to copy GBW file from image_0 dir first
-                                    if image_number != 0:
+                                #If not image_0 let's try to copy GBW file from image_0 dir first
+                                if image_number != 0:
+                                    if self.printlevel >= 1:
                                         print("Will try to copy GBW file from image_0 dir first")
-                                        try:
-                                            shutil.copyfile(f"../image_0/{self.qm_theory.filename}.gbw",f"./{self.qm_theory.filename}.gbw")
-                                            print(f"Found a file : ../image_0/{self.qm_theory.filename}.gbw  Copying to dir: image_{image_number}")
-                                        except:
-                                            print(f"No {self.qm_theory.filename}.gbw file found in image_0 dir. Will use ORCATheory settings.")
-                                    else:
+                                    try:
+                                        shutil.copyfile(f"../image_0/{self.theory.qm_theory.filename}.gbw",f"./{self.theory.qm_theory.filename}.gbw")
+                                        if self.printlevel >= 1:
+                                            print(f"Found a file : ../image_0/{self.theory.qm_theory.filename}.gbw  Copying to dir: image_{image_number}")
+                                    except:
+                                        if self.printlevel >= 1:
+                                            print(f"No {self.theory.qm_theory.filename}.gbw file found in image_0 dir. Will use ORCATheory settings.")
+                                else:
+                                    if self.printlevel >= 1:
                                         print("Will use ORCATheory settings")
                         else:
                             if os.path.exists(self.theory.filename+".gbw"):
@@ -734,15 +741,19 @@ class KnarrCalculator:
                             else:
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.filename}.gbw file DOES NOT exist.")
-                                    #If not image_0 let's try to copy GBW file from image_0 dir first
-                                    if image_number != 0:
+                                #If not image_0 let's try to copy GBW file from image_0 dir first
+                                if image_number != 0:
+                                    if self.printlevel >= 1:
                                         print("Will try to copy GBW file from image_0 dir first")
-                                        try:
-                                            shutil.copyfile(f"../image_0/{self.theory.filename}.gbw",f"./{self.theory.filename}.gbw")
+                                    try:
+                                        shutil.copyfile(f"../image_0/{self.theory.filename}.gbw",f"./{self.theory.filename}.gbw")
+                                        if self.printlevel >= 1:
                                             print(f"Found a file in : ../image_0/{self.theory.filename}.gbw  Copying to dir: image_{image_number}")
-                                        except:
+                                    except:
+                                        if self.printlevel >= 1:
                                             print(f"No {self.theory.filename}.gbw file found in image_0 dir. Will use ORCATheory settings.")
-                                    else:
+                                else:
+                                    if self.printlevel >= 1:
                                         print("Will use ORCATheory settings")
                 if self.ActiveRegion == True:
                     currcoords=image_coords
