@@ -78,8 +78,8 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
         #TODO: fockfile should contain Fock matrix, either in specific format
         #or ORCA outputfile format is also allowed if Fock matrix printout has been used
         #Prepare this before
-        write_multiwfn_input_option(option="nocv", grid=grid, fragfile1=fragmentfiles[0], 
-                                    fragfile2=fragmentfiles[1], fockfile="orca.out")
+        write_multiwfn_input_option(option="nocv", grid=grid, fragmentfiles=fragmentfiles, 
+                                    fockfile="orca.out")
     #Density and regular stuff
     else:
         frozen_orbs=None
@@ -109,7 +109,7 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
 def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densityfile=None,
-                                fragfile1=None,fragfile2=None,fockfile=None, file4=None):
+                                fragmentfiles=None,fockfile=None, file4=None):
     #Create input formula as file
     if option == 'density':
         denstype=1
@@ -128,6 +128,7 @@ q
     elif option == 'nocv':
         print("nocv here")
         denstype=1
+        numprodfrags=len(fragmentfiles)
         #grid=3 #high-quality grid
         writeoutput=2 #Write Cubefile to current dir
         # 5 Output and plot specific property within a spatial region (calc. grid data)
@@ -138,9 +139,9 @@ q
         #%output Print[P_Iter_F] 1 end
         #Not perfect agreement with ORCA though, unclear why
         inputformula=f"""23
-2
-{fragfile1}
-{fragfile2}
+{numprodfrags}
+{fragmentfiles[0]}
+{fragmentfiles[1]}
 -1
 {fockfile}
 8
