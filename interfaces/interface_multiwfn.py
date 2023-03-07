@@ -164,6 +164,8 @@ NOCVpair3.cube
 4
 NOCVpair4.cube
 q
+-4
+
 -10
 q
         """
