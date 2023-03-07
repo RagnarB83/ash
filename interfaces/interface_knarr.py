@@ -717,10 +717,10 @@ class KnarrCalculator:
                             else:
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.qm_theory.filename}.gbw file DOES NOT exist.")
-                                #If not image_0 let's try to copy GBW file from image_0 dir first
+                                #If not image_0 let's try to copy GBW file from image_0 dir
                                 if image_number != 0:
                                     if self.printlevel >= 1:
-                                        print("Will try to copy GBW file from image_0 dir first")
+                                        print("Will try to copy GBW file from image_0 dir")
                                     try:
                                         shutil.copyfile(f"../image_0/{self.theory.qm_theory.filename}.gbw",f"./{self.theory.qm_theory.filename}.gbw")
                                         if self.printlevel >= 1:
@@ -738,10 +738,10 @@ class KnarrCalculator:
                             else:
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.filename}.gbw file DOES NOT exist.")
-                                #If not image_0 let's try to copy GBW file from image_0 dir first
+                                #If not image_0 let's try to copy GBW file from image_0 dir
                                 if image_number != 0:
                                     if self.printlevel >= 1:
-                                        print("Will try to copy GBW file from image_0 dir first")
+                                        print("Will try to copy GBW file from image_0 dir")
                                     try:
                                         shutil.copyfile(f"../image_0/{self.theory.filename}.gbw",f"./{self.theory.filename}.gbw")
                                         if self.printlevel >= 1:
@@ -953,11 +953,11 @@ class KnarrCalculator:
             if self.FreeEnd == False and (i == 0 or i == self.numimages-1):
                 relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
                 #print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f} (frozen) RMSF: {rms_f:6.4f} MaxF: {max_f:6.4f}")
-                print(f"{i:>4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'frozen':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
+                print(f" {i:<4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'frozen':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
             else:
                 relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
                 #print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f}          RMSF: {rms_f:6.4f} MaxF: {max_f:6.4f}")
-                print(f"{i:>4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'active':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
+                print(f"{i:<4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'active':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
         print("-"*70)
         print()
         #Write out full MEP path in each NEB iteration.

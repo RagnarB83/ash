@@ -20,7 +20,7 @@ import ash.settings_ash
 #make_molden_file_ORCA
 
 def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
-                 fragmentfiles=None):
+                 fragmentfiles=None, fockfile=None):
     originputfile=moldenfile
     originputbasename=os.path.splitext(originputfile)[0]
     print("originputbasename:", originputbasename)
@@ -72,7 +72,14 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
         if fragmentfiles == None:
             print("NOCV option requires fragmentfiles")
             ashexit()
-        write_multiwfn_input_option(option="nocv", grid=grid, file1=fragmentfiles[0], file2=fragmentfiles[1])
+        if fockfile == None:
+            print("NOCV option requires fockfile option")
+            ashexit()   
+        #TODO: fockfile should contain Fock matrix, either in specific format
+        #or ORCA outputfile format is also allowed if Fock matrix printout has been used
+        #Prepare this before
+        write_multiwfn_input_option(option="nocv", grid=grid, fragfile1=fragmentfiles[0], 
+                                    fragfile2=fragmentfiles[1], fockfile="orca.out")
     #Density and regular stuff
     else:
         frozen_orbs=None
@@ -102,7 +109,7 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
 def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densityfile=None,
-                                file1=None,file2=None,file3=None):
+                                fragfile1=None,fragfile2=None,fockfile=None, file4=None):
     #Create input formula as file
     if option == 'density':
         denstype=1
@@ -127,12 +134,16 @@ q
         # 1 Electron density                 2 Gradient norm of electron density
         
         #-2 means generation of Fock matrix by information in file ? Is this valid. Output is not entirely correct
-        #Alternative: have ORCA print out Fock matrix
+        #-1 means that we read Fock matrix externally. Can read ORCA output that contains Fock-matrix printout
+        #%output Print[P_Iter_F] 1 end
+        #Not perfect agreement with ORCA though, unclear why
         inputformula=f"""23
+        #
 2
-{file1}
-{file2}
--2
+{fragfile1}
+{fragfile2}
+-1
+{fockfile}
 8
 3
 Pauli-deform.cube
