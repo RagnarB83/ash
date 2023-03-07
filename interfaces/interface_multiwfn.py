@@ -69,7 +69,10 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
     elif option == 'nocv':
         print("NOCV option")
         print("fragmentfiles:", fragmentfiles)
-        write_multiwfn_input_option(option=option, grid=grid, file1=fragmentfiles[0], file2=fragmentfiles[1])
+        if fragmentfiles == None:
+            print("NOCV option requires fragmentfiles")
+            ashexit()
+        write_multiwfn_input_option(option="nocv", grid=grid, file1=fragmentfiles[0], file2=fragmentfiles[1])
     #Density and regular stuff
     else:
         frozen_orbs=None
@@ -123,11 +126,21 @@ q
         # 5 Output and plot specific property within a spatial region (calc. grid data)
         # 1 Electron density                 2 Gradient norm of electron density
         
+        #-2 means generation of Fock matrix by information in file ? Is this valid. Output is not entirely correct
+        #Alternative: have ORCA print out Fock matrix
         inputformula=f"""23
 2
 {file1}
 {file2}
-0
+-2
+8
+3
+Pauli-deform.cube
+9
+orbdeform.cube
+10
+totdeform.cube
+-10
 q
         """
     elif option == 'hirshfeld':        
@@ -138,6 +151,7 @@ y
 0
 q
         """
+
     elif option =="mrcc-density":
         if frozenorbitals == None:
             print("mrccdensity requires frozenorbitals")
