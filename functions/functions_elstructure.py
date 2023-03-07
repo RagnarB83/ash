@@ -12,9 +12,11 @@ import ash.modules.module_coords
 import ash.dictionaries_lists
 from ash.functions.functions_general import ashexit, isodd, print_line_with_mainheader,pygrep
 import ash.interfaces.interface_ORCA
+from ash.interfaces.interface_ORCA import make_molden_file_ORCA
 from ash.modules.module_coords import nucchargelist
 from ash.dictionaries_lists import eldict
 from ash.constants import hartokcal
+from ash.interfaces.interface_multiwfn import multiwfn_run
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -1351,3 +1353,34 @@ def grab_NOCV_interactions(file):
                 grab=True
 
     return neg_eigenvals,pos_eigenvals,DE_k
+
+#NOCV analysis using Multiwfn
+#Need to figure out how to generalize more. 
+#If Molden files is the best for Multiwfn then theory levels need to create those.
+#Make internal theory methods for ORCATheory, xTBtheory, PySCF etc. ?? that outputs a Molden file ???
+def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, gridlevel=2,
+                            num_nocv_pairs=5, make_cube_files=True):
+    if isinstance(theory,ash.interfaces.interface_ORCA.ORCATheory) is not True:
+        print("NOCV_Multiwfn currently only works with ORCATheory")
+        ashexit()
+    #A
+    ash.Singlepoint(theory=theory, fragment=fragment_A)
+    make_molden_file_ORCA(theory.filename+'.gbw') #TODO: Generalize
+    os.rename("orca.molden.input", "bh3.molden.input")
+    theory.cleanup()
+
+    #B
+    ash.Singlepoint(theory=theory, fragment=fragment_B)
+    make_molden_file_ORCA(theory.filename+'.gbw')
+    os.rename("orca.molden.input", "nh3.molden.input")
+    theory.cleanup()
+
+    #AB
+    theory.orcablocks=theory.orcablocks+"%output Print[P_Iter_F] 1 end"
+    ash.Singlepoint(theory=theory, fragment=fragment_AB)
+    make_molden_file_ORCA(theory.filename+'.gbw')
+    os.rename("orca.molden.input", "AB.molden.input")
+
+    multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
+                    fragmentfiles=["bh3.molden.input","nh3.molden.input"],
+                    fockfile=theory.filename+'.out')
