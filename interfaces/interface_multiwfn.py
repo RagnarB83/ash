@@ -129,6 +129,7 @@ q
         print("nocv here")
         denstype=1
         numprodfrags=len(fragmentfiles)
+        fragmentfilenames="\n".join(fragmentfiles)
         #grid=3 #high-quality grid
         writeoutput=2 #Write Cubefile to current dir
         # 5 Output and plot specific property within a spatial region (calc. grid data)
@@ -140,8 +141,7 @@ q
         #Not perfect agreement with ORCA though, unclear why
         inputformula=f"""23
 {numprodfrags}
-{fragmentfiles[0]}
-{fragmentfiles[1]}
+{fragmentfilenames}
 -1
 {fockfile}
 8
