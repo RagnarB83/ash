@@ -1330,7 +1330,7 @@ end
     for n,p,e in zip(neg_vals,pos_vals,dE_ints):
         print(f"{n:>10.3f} {p:>20.3f} {e:>20.3f}")
     print("-"*70)
-    print(f"Sum of interactions: {sum(dE_ints)} kcal/mol")
+    print(f"Sum of orbital interactions: {sum(dE_ints):>23.3f} kcal/mol")
 
 
 def grab_NOCV_interactions(file):
