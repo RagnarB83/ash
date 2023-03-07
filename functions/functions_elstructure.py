@@ -14,6 +14,7 @@ from ash.functions.functions_general import ashexit, isodd, print_line_with_main
 import ash.interfaces.interface_ORCA
 from ash.modules.module_coords import nucchargelist
 from ash.dictionaries_lists import eldict
+from ash.constants import hartokcal
 
 #CM5. from https://github.com/patrickmelix/CM5-calculator/blob/master/cm5calculator.py
 
@@ -1101,7 +1102,8 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
 #TODO: Limitation, ORCA can only do closed-shell case
 #TODO: Switch to multiwfn for more generality
 def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, griddensity=80,
-                            NOCV=True, num_nocv_pairs=5, keep_all_orbital_cube_files=False):
+                            NOCV=True, num_nocv_pairs=5, keep_all_orbital_cube_files=False,
+                            make_cube_files=True):
     print_line_with_mainheader("NOCV_density_ORCA")
     print("Will calculate and create a deformation density for molecule AB for fragments A and B")
     print("griddensity:", griddensity)
@@ -1135,7 +1137,8 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     #Run A SP
     result_calcA=ash.Singlepoint(theory=calc_A, fragment=fragment_A)
     #Run orca_plot to request electron density creation from ORCA gbw file
-    ash.interfaces.interface_ORCA.run_orca_plot("calcA.gbw", "density", gridvalue=griddensity)
+    if make_cube_files is True:
+        ash.interfaces.interface_ORCA.run_orca_plot("calcA.gbw", "density", gridvalue=griddensity)
 
     #-------------------------
     #Calculation on B
@@ -1147,7 +1150,8 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     #Run B SP
     result_calcB=ash.Singlepoint(theory=calc_B, fragment=fragment_B)
     #Run orca_plot to request electron density creation from ORCA gbw file
-    ash.interfaces.interface_ORCA.run_orca_plot("calcB.gbw", "density", gridvalue=griddensity)
+    if make_cube_files is True:
+        ash.interfaces.interface_ORCA.run_orca_plot("calcB.gbw", "density", gridvalue=griddensity)
 
 
     #-----------------------------------------
@@ -1176,11 +1180,12 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     #NOTE: calc_promol.gbw will contain  orthogonalized orbitals
     #Writing out electron density of orthogonalized promolecular electron density
     print()
-    print("-"*120)
-    print("Performing orca_plot calculation to create density Cubefile: promolecule_AB_orthogonalized.eldens.cube")
-    print("-"*120)
-    ash.interfaces.interface_ORCA.run_orca_plot(promolecule_AB_orthog.filename+".gbw", "density", gridvalue=80)
-    os.rename(f"{promolecule_AB_orthog.filename}.eldens.cube","promolecule_AB_orthogonalized.eldens.cube")
+    if make_cube_files is True:
+        print("-"*120)
+        print("Performing orca_plot calculation to create density Cubefile: promolecule_AB_orthogonalized.eldens.cube")
+        print("-"*120)
+        ash.interfaces.interface_ORCA.run_orca_plot(promolecule_AB_orthog.filename+".gbw", "density", gridvalue=80)
+        os.rename(f"{promolecule_AB_orthog.filename}.eldens.cube","promolecule_AB_orthogonalized.eldens.cube")
 
     #----------------------------
     #Calculation on AB with NOCV
@@ -1198,56 +1203,62 @@ end
         calc_AB.moreadfile="promolecule_AB.gbw"
     print()
     print("-"*120)
-    print("Calling ORCA to perform NOCV analysis on AB")
+    print("Calling ORCA to perform calculation on AB")
     print("-"*120)
     result_calcAB=ash.Singlepoint(theory=calc_AB, fragment=fragment_AB)
-    #Run orca_plot to request electron density creation from ORCA gbw file
-    ash.interfaces.interface_ORCA.run_orca_plot("calcAB.gbw", "density", gridvalue=griddensity)
+    if make_cube_files is True:
+        #Run orca_plot to request electron density creation from ORCA gbw file
+        ash.interfaces.interface_ORCA.run_orca_plot("calcAB.gbw", "density", gridvalue=griddensity)
 
-    #-----------------------------------------
-    # Make deformation density as difference
-    #-----------------------------------------
+        #-----------------------------------------
+        # Make deformation density as difference
+        #-----------------------------------------
 
-    #Read Cubefiles from disk
-    print()
-    print("-"*120)
-    print("Reading Cubefiles and creating difference density (i.e. deformation density) from orthogonalized promolecular density and final density")
-    print("-"*120)
-    cube_data1 = read_cube("promolecule_AB_orthogonalized.eldens.cube")
-    cube_data2 = read_cube(f"calcAB.eldens.cube")
+        #Read Cubefiles from disk
+        print()
+        print("-"*120)
+        print("Reading Cubefiles and creating difference density (i.e. deformation density) from orthogonalized promolecular density and final density")
+        print("-"*120)
+        cube_data1 = read_cube("promolecule_AB_orthogonalized.eldens.cube")
+        cube_data2 = read_cube(f"calcAB.eldens.cube")
 
-    #Write out difference density as a Cubefile
-    write_cube_diff(cube_data1, cube_data2, "full_deformation_density")
-    print()
-    print("Deformation density file was created: full_deformation_density.cube")
-    print()
+        #Write out difference density as a Cubefile
+        write_cube_diff(cube_data1, cube_data2, "full_deformation_density")
+        print()
+        print("Deformation density file was created: full_deformation_density.cube")
+        print()
+
 
     #If nocv GBW file is present then NOCV was definitely carried out and we can calculate cube files of the donor-acceptor orbitals
     if os.path.isfile("calcAB.nocv.gbw") is False:
         print("No NOCV file was created by ORCA. This probably means that ORCA could not perform the NOCV calculation.")
         print("Possibly as the system is open-shell.")
         return
-    else: 
-        print ("NOCV analysis was carried out, see calcAB.out for details")
-        print()
-        print("-"*120)
-        print("Running dummy ORCA noiter PrintMOS job using NOCV orbitals in file: calcAB.nocv.gbw ")
-        print("-"*120)
-        #Creating noiter ORCA output for visualization in Chemcraft
-        calc_AB.orcasimpleinput+=" noiter printmos printbasis"
-        calc_AB.moreadfile="calcAB.nocv.gbw"
-        calc_AB.orcablocks=""
-        calc_AB.filename="NOCV-noiter-visualization"
-        calc_AB.keep_last_output=False
-        result_calcAB=ash.Singlepoint(theory=calc_AB, fragment=fragment_AB)
+
+    #FURTHER
+    print ("NOCV analysis was carried out, see calcAB.out for details")
+    print()
+    print("-"*120)
+    print("Running dummy ORCA noiter PrintMOS job using NOCV orbitals in file: calcAB.nocv.gbw ")
+    print("-"*120)
+    #Creating noiter ORCA output for visualization in Chemcraft
+    calc_AB.orcasimpleinput+=" noiter printmos printbasis"
+    calc_AB.moreadfile="calcAB.nocv.gbw"
+    calc_AB.orcablocks=""
+    calc_AB.filename="NOCV-noiter-visualization"
+    calc_AB.keep_last_output=False
+    result_calcAB_noiter=ash.Singlepoint(theory=calc_AB, fragment=fragment_AB)
+
+    print()
+    if make_cube_files is True:
         #Creating Cube files
         print("Now creating Cube files for main NOCV pairs and making orbital-pair deformation densities")
         print("Creating Cube file for NOCV total deformation density:")
         ash.interfaces.interface_ORCA.run_orca_plot("calcAB.nocv.gbw", "density", gridvalue=griddensity)
         os.rename(f"calcAB.nocv.eldens.cube", f"NOCV-total-density.cube")
         num_mos=int(pygrep("Number of basis functions                   ...", "calcAB.out")[-1])
+        
         #Storing individual NOCV MOs and densities in separate dir (less useful)
-        print()
         print("-"*120)
         print("Creating final Cube files for NOCV pair orbitals, orbital-densities and orbital-pair deformation densities")
         print("-"*120)
@@ -1288,3 +1299,55 @@ end
             print("keep_all_orbital_cube_files option is False")
             print("Deleting directory: NOCV_orbitals_and_densities")
             shutil.rmtree("NOCV_orbitals_and_densities")
+        print()
+    ###############################
+    # FINAL EDA analysis printout
+
+    deltaE_int=(result_calcAB.energy - result_calcA.energy - result_calcB.energy)*hartokcal
+    deltaE_orb=float(pygrep("Delta Total Energy  (Kcal/mol) :","calcAB.out")[-1])
+    deltaE_steric=deltaE_int-deltaE_orb #Elstat+Pauli. Further ecomposition not possibly at the moment
+
+    print("="*20)
+    print("Basic EDA analysis")
+    print("="*20)
+    print()
+    print("-"*50)
+    print(f"{'dE(steric)':<20s} {deltaE_steric:>14.3f} kcal/mol")
+    print(f"{'dE(orb)':<20s} {deltaE_orb:>14.3f} kcal/mol")
+    print(f"{'dE(int)':<20s} {deltaE_int:>14.3f} kcal/mol")
+    print("-"*50)
+    print("E(steric) is sum of electrostatic and Pauli repulsion")
+    print("dE(orb) is the NOCV-ETS orbital-relaxation of orthogonalized promolecular system")
+    print("dE(int) is the vertical total interaction energy (without geometric relaxation)")
+    print()
+    print()
+    print("Primary NOCV/ETS orbital interactions:")
+    neg_vals,pos_vals,dE_ints = grab_NOCV_interactions("calcAB.out")
+
+    print("-"*70)
+    print(f"{'Neg. eigvals (e)':20}{'Pos. eigvals (e)':20}{'dE_orb (kcal/mol)':20}")
+    print("-"*70)
+    for n,p,e in zip(neg_vals,pos_vals,dE_ints):
+        print(f"{n:>10.3f} {p:>20.3f} {e:>20.3f}")
+    print("-"*70)
+    print(f"Sum of interactions: {sum(dE_ints)} kcal/mol")
+
+
+def grab_NOCV_interactions(file):
+    grab=False
+    neg_eigenvals=[]
+    pos_eigenvals=[]
+    DE_k=[]
+    with open(file) as f:
+        for line in f:
+            if 'Consistency' in line:
+                grab=False
+            if grab is True:
+                if len(line) >2:
+                    neg_eigenvals.append(float(line.split()[0]))
+                    pos_eigenvals.append(float(line.split()[1]))
+                    DE_k.append(float(line.split()[-1]))
+            if 'negative eigen. (e)' in line:
+                grab=True
+
+    return neg_eigenvals,pos_eigenvals,DE_k
