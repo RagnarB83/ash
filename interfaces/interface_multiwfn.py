@@ -91,7 +91,7 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
     input=open("mwfnoptions")
     output=open("multiwfn.out",'w')
     print("Now calling Multiwfn")
-    sp.run([multiwfndir+'/Multiwfn', moldenfile,'-nt', numcores], stdin=input, stdout=output)
+    sp.run([multiwfndir+'/Multiwfn', moldenfile,'-nt', str(numcores)], stdin=input, stdout=output)
     print("Multiwfn is done!")
     input.close()
     output.close()
