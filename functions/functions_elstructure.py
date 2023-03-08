@@ -1094,7 +1094,7 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
     cube_data2 = read_cube("calc_B.eldens.cube")
 
     #Write out difference density as a Cubefile
-    write_cube_diff(cube_data1, cube_data2, "diffence_density")
+    write_cube_diff(cube_data2, cube_data1, "diffence_density")
     print()
     print("Difference density file was created: diffence_density.cube")
 
@@ -1224,7 +1224,7 @@ end
         cube_data2 = read_cube(f"calcAB.eldens.cube")
 
         #Write out difference density as a Cubefile
-        write_cube_diff(cube_data1, cube_data2, "full_deformation_density")
+        write_cube_diff(cube_data2, cube_data1, "full_deformation_density")
         print()
         print("Deformation density file was created: full_deformation_density.cube")
         print()
@@ -1288,7 +1288,7 @@ end
             donor = read_cube(f"calcAB.NOCVpair_{i}.donor_mo{i}a-dens.cube")
             acceptor = read_cube(f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a-dens.cube")
             print(f"Making difference density file: NOCV_pair_{i}_deform_density.cube")
-            write_cube_diff(donor,acceptor, name=f"NOCV_pair_{i}_deform_density")
+            write_cube_diff(acceptor,donor, name=f"NOCV_pair_{i}_deform_density")
             
             #Move less important stuff to dir
             os.rename(f"calcAB.NOCVpair_{i}.donor_mo{i}a.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.donor_mo{i}a.cube")
