@@ -1371,13 +1371,13 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     #A
     result_calcA=ash.Singlepoint(theory=theory, fragment=fragment_A)
     ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw') #TODO: Generalize
-    os.rename("orca.molden.input", "bh3.molden.input")
+    os.rename("orca.molden.input", "A.molden.input")
     theory.cleanup()
 
     #B
     result_calcB=ash.Singlepoint(theory=theory, fragment=fragment_B)
     ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw')
-    os.rename("orca.molden.input", "nh3.molden.input")
+    os.rename("orca.molden.input", "B.molden.input")
     theory.cleanup()
 
     #AB
@@ -1387,7 +1387,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     os.rename("orca.molden.input", "AB.molden.input")
 
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
-                    fragmentfiles=["bh3.molden.input","nh3.molden.input"],
+                    fragmentfiles=["A.molden.input","B.molden.input"],
                     fockfile=theory.filename+'.out', numcores=numcores)
 
     deltaE_int=(result_calcAB.energy - result_calcA.energy - result_calcB.energy)*hartokcal
