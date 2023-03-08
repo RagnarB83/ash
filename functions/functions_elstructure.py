@@ -1359,10 +1359,11 @@ def grab_NOCV_interactions(file):
 #TODO: Make internal theory methods for ORCATheory, xTBtheory, PySCF etc. ?? that outputs a Molden file ???
 #NOTE: Benefit, multiwfn supports open-shell analysis
 def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, gridlevel=2,
-                            num_nocv_pairs=5, make_cube_files=True):
+                            num_nocv_pairs=5, make_cube_files=True, numcores=1):
     print_line_with_mainheader("NOCV_Multiwfn")
     print("Will do full NOCV analysis with Multiwfn")
     print("gridlevel:", gridlevel)
+    print("Numcores:", numcores)
     print()
     if isinstance(theory,ash.interfaces.interface_ORCA.ORCATheory) is not True:
         print("NOCV_Multiwfn currently only works with ORCATheory")
@@ -1387,7 +1388,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
 
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["bh3.molden.input","nh3.molden.input"],
-                    fockfile=theory.filename+'.out')
+                    fockfile=theory.filename+'.out', numcores=numcores)
 
     deltaE_int=(result_calcAB.energy - result_calcA.energy - result_calcB.energy)*hartokcal
     deltaE_orb=float(pygrep(" Sum of pair energies:","NOCV.txt")[-2])

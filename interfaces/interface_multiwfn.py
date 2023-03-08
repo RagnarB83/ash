@@ -21,6 +21,11 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
                  fragmentfiles=None, fockfile=None):
     print_line_with_mainheader("multiwfn_run")
 
+    print("multiwfndir:", multiwfndir)
+    print("Molden file:", moldenfile) #Inputfile is typically a Molden file
+    print("Option:", option)
+    print("Gridsetting:", grid)
+    print("Numcores:", numcores)
     ############################
     #PREPARING MULTIWFN INPUT
     ############################
@@ -38,8 +43,6 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
                 print("Found no Multiwfn executable in path. Exiting... ")
                 ashexit()
     
-    print("multiwfndir:", multiwfndir)
-    print("Molden file:", moldenfile) #Inputfile is typically a Molden file
     #TODO: Update, once fchk files are supported 
     if os.path.isfile(moldenfile) is False:
         print(f"The selected Moldenfile: {moldenfile} does not exist. Exiting")
@@ -66,6 +69,7 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
     elif option == 'nocv':
         print("NOCV option")
         print("fragmentfiles:", fragmentfiles)
+        print("Fockfile:", fockfile)
         if fragmentfiles == None:
             print("NOCV option requires fragmentfiles")
             ashexit()
