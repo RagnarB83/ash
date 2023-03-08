@@ -957,7 +957,7 @@ class KnarrCalculator:
             else:
                 relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
                 #print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f}          RMSF: {rms_f:6.4f} MaxF: {max_f:6.4f}")
-                print(f"{i:<4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'active':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
+                print(f" {i:<4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'active':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
         print("-"*70)
         print()
         #Write out full MEP path in each NEB iteration.
