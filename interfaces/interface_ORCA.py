@@ -328,7 +328,7 @@ class ORCATheory:
             else:
                 fragment_indices=self.fragment_indices
             #extrabasisatomindices if QM/MM
-            print("QM atoms :", self.qmatoms)
+            #print("QM atoms :", self.qmatoms)
             qmatoms_extrabasis=[self.qmatoms.index(i) for i in self.extrabasisatoms]
             #new QM-region indices for atomstoflip if QM/MM
             try:

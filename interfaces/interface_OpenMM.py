@@ -1361,7 +1361,7 @@ class OpenMMTheory:
             else:
                 ashexit()
 
-        print_time_rel(timeA, modulename="OpenMMTheory.run: constraints checking", currprintlevel=self.printlevel, currthreshold=1)
+        print_time_rel(timeA, modulename="OpenMMTheory.run: constraints checking", currprintlevel=self.printlevel, currthreshold=2)
         # Making sure coords is np array and not list-of-lists
         current_coords = np.array(current_coords)
         factor = -49614.752589207
@@ -1373,12 +1373,12 @@ class OpenMMTheory:
         pos = [self.Vec3(current_coords_nm[i, 0], current_coords_nm[i, 1], current_coords_nm[i, 2]) for i in
                range(len(current_coords_nm))] * self.unit.nanometer
         # pos = [self.Vec3(*v) for v in current_coords_nm] * self.unit.nanometer #slower
-        print_time_rel(timeA, modulename="Creating pos array", currprintlevel=self.printlevel, currthreshold=1)
+        print_time_rel(timeA, modulename="Creating pos array", currprintlevel=self.printlevel, currthreshold=2)
         timeA = time.time()
         # THIS IS THE SLOWEST PART. Probably nothing to be done
         self.simulation.context.setPositions(pos)
 
-        print_time_rel(timeA, modulename="Updating MM positions", currprintlevel=self.printlevel, currthreshold=1)
+        print_time_rel(timeA, modulename="Updating MM positions", currprintlevel=self.printlevel, currthreshold=2)
         timeA = time.time()
         # While these distance constraints should not matter, applying them makes the energy function agree with
         # previous benchmarking for bonded and nonbonded
@@ -1401,7 +1401,7 @@ class OpenMMTheory:
             state = self.simulation.context.getState(getEnergy=True, getForces=False)
             self.energy = state.getPotentialEnergy().value_in_unit(self.unit.kilojoule_per_mole) / ash.constants.hartokj
         
-        print_time_rel(timeA, modulename="OpenMM getState", currprintlevel=self.printlevel, currthreshold=1)
+        print_time_rel(timeA, modulename="OpenMM getState", currprintlevel=self.printlevel, currthreshold=2)
 
         if self.printlevel > 1:
             print("OpenMM Energy:", self.energy, "Eh")
