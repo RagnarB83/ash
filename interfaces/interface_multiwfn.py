@@ -2,7 +2,7 @@ import subprocess as sp
 import os
 import shutil
 
-from ash.functions.functions_general import BC,ashexit, writestringtofile, pygrep
+from ash.functions.functions_general import BC,ashexit, writestringtofile, pygrep, print_line_with_mainheader
 import ash.settings_ash
 """
     Interface to the Multiwfn program
@@ -15,12 +15,15 @@ import ash.settings_ash
  # Psi4: fchk file
  # MRCC: Molden and CCDENSITIES
 
+#TODO: Support settings.ini file?
 
 def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
                  fragmentfiles=None, fockfile=None):
-    originputfile=moldenfile
-    originputbasename=os.path.splitext(originputfile)[0]
-    print("originputbasename:", originputbasename)
+    print_line_with_mainheader("multiwfn_run")
+
+    ############################
+    #PREPARING MULTIWFN INPUT
+    ############################
     if multiwfndir == None:
         print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
         try:
@@ -37,13 +40,13 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
     
     print("multiwfndir:", multiwfndir)
     print("Molden file:", moldenfile) #Inputfile is typically a Molden file
+    #TODO: Update, once fchk files are supported 
     if os.path.isfile(moldenfile) is False:
         print(f"The selected Moldenfile: {moldenfile} does not exist. Exiting")
         ashexit()
 
     #MRCC density special case
     if option=="mrcc-density":
-
         if mrccoutputfile == None:
             print("MRCC outputfile should also be provided")
             ashexit()
@@ -51,15 +54,12 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
         print("Core electrons found in outputfile:", core_electrons)
         frozen_orbs = int(core_electrons/2)
         print("Frozen orbitals:", frozen_orbs)
-        
         #Rename MRCC Molden file to mrcc.molden
         shutil.copy(moldenfile, "mrcc.molden")
-
         #First Multiwfn call. Create new Moldenfile based on correlated density
         write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile)
         with open("mwfnoptions") as input:
             sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
-
         #Writes: mrccnew.molden a proper Molden WF file for MRCC WF. Now we can proceed
         option="density"
         moldenfile="mrccnew.molden"
@@ -70,28 +70,35 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
             print("NOCV option requires fragmentfiles")
             ashexit()
         if fockfile == None:
-            print("NOCV option requires fockfile option")
+            print("NOCV option requires fockfile option (can be ORCA output containing Fock-matrix printout)")
             ashexit()   
-        #TODO: fockfile should contain Fock matrix, either in specific format
-        #or ORCA outputfile format is also allowed if Fock matrix printout has been used
-        #Prepare this before
+        #Create dummy-input
         write_multiwfn_input_option(option="nocv", grid=grid, fragmentfiles=fragmentfiles, 
                                     fockfile="orca.out")
-    #Density and regular stuff
+    #Density and other options (may or may not work)
     else:
-        frozen_orbs=None
         #Writing input
         write_multiwfn_input_option(option=option, grid=grid)
     
-    #Run
+    ############################
+    #RUNNING MULTIWFN
+    ############################
     #TODO: Use logging instead
     input=open("mwfnoptions")
     output=open("multiwfn.out",'w')
-    sp.run([multiwfndir+'/Multiwfn', moldenfile], stdin=input, stdout=output)
+    print("Now calling Multiwfn")
+    sp.run([multiwfndir+'/Multiwfn', moldenfile,'-nt', numcores], stdin=input, stdout=output)
+    print("Multiwfn is done!")
     input.close()
     output.close()
 
-    #Read output
+    ############################
+    #POST-PROCESSING OUTPUT
+    ############################
+    #NOTE: For now only Molden-file as main inputfile is supported.
+    #TODO: Generalize below
+    originputbasename=os.path.splitext(moldenfile)[0]
+
     if option =="density":
         print("Density option chosen")
         outputfile="density.cub"
@@ -100,12 +107,15 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
         print("Electron density outputfile written:", finaloutputfile)
         return finaloutputfile
     elif option =="nocv":
-        print("NOCV option chosen.")
-        print("Now reading output")
+        print("NOCV option was chosen.")
+        print("Relevant Cube-files were created and NOCV output can be found in: NOCV.txt")
+        print("See multiwfn.out for a log-file of the Multiwfn call.")
     elif option =="hirshfeld":
-        print("Hirshfeld option chosen")
+        print("Hirshfeld option was chosen.")
+
         #read file: 
         outputfile=moldenfile+'.chg'
+        print(f"A file: {outputfile} was created")
 
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
