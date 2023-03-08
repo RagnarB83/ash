@@ -207,7 +207,7 @@ class ORCATheory:
             pass
 
     #Do an ORCA-optimization instead of ASH optimization. Useful for gas-phase chemistry when ORCA-optimizer is better than geomeTRIC
-    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
+    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, charge=None, mult=None):
 
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL ORCA OPTIMIZATION-------------", BC.END)
@@ -240,7 +240,7 @@ class ORCATheory:
         self.extraline=self.extraline+"\n! OPT "
 
         print("Running ORCA object with {} cores available".format(numcores))
-        print("Job label:", label)
+        print("Job label:", self.label)
 
         print("Creating inputfile:", self.filename+'.inp')
         print("ORCA input:")
@@ -290,7 +290,7 @@ class ORCATheory:
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
+            elems=None, Grad=False, Hessian=False, PC=False, numcores=None):
         module_init_time=time.time()
         self.runcalls+=1
         if self.printlevel >= 2:
@@ -358,7 +358,7 @@ end"""
 
         if self.printlevel >= 2:
             print("Running ORCA object with {} cores available".format(numcores))
-            print("Job label:", label)
+            print("Job label:", self.label)
 
         #TDDFT option
         #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
