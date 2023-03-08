@@ -1358,6 +1358,7 @@ def grab_NOCV_interactions(file):
 #If Molden files is the best for Multiwfn then theory levels need to create those.
 #TODO: Make internal theory methods for ORCATheory, xTBtheory, PySCF etc. ?? that outputs a Molden file ???
 #NOTE: Benefit, multiwfn supports open-shell analysis
+#NOTE: ETS analysis is approximate since the correct Fock matrix is not used
 def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, gridlevel=2,
                             num_nocv_pairs=5, make_cube_files=True, numcores=1):
     print_line_with_mainheader("NOCV_Multiwfn")
@@ -1406,6 +1407,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     print("-"*50)
     print("E(steric) is sum of electrostatic and Pauli repulsion")
     print("dE(orb) is the NOCV-ETS orbital-relaxation of orthogonalized promolecular system")
+    print("Warning: dE(orb) term is approximated when calculated by Multiwfn (as the correct TS Fock matrix is not used)")
     print("dE(int) is the vertical total interaction energy (without geometric relaxation)")
 
     #TODO: Grab orbital-interaction stuff from NOCV.txt and print here also
