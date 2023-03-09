@@ -79,7 +79,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     os.chdir('Numfreq_dir')
     print("Creating separate directory for displacement calculations: Numfreq_dir ")
     
-    #ORCA-specific: Copy old GBW file from .. dir 
+    #ORCA-specific: Copy old GBW file from .. dir
+    #NOTE: Pretty ugly. Not sure if there is a good alternative at the moment. Moreadfile option would override this anyway
     try:
         if theory.theorytype == "QM":
             if isinstance(theory,ash.interfaces.interface_ORCA.ORCATheory):
@@ -504,7 +505,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Add things to fragment
     fragment.hessian=hessian #Hessian
-
 
     #Return to ..
     os.chdir('..')

@@ -76,6 +76,9 @@ class ORCATheory:
         self.moreadfile_always=moreadfile_always
         #Autostart
         self.autostart=autostart
+        # Each ORCA calculation will save path to last GBW-file used in case we have switched directories
+        #and we want to use last one
+        self.path_to_last_gbwfile_used=None #default None
 
         #Using orcadir to set LD_LIBRARY_PATH
         old = os.environ.get("LD_LIBRARY_PATH")
@@ -375,6 +378,25 @@ end"""
                     if os.path.isfile(f"../{self.moreadfile}") is True:
                         print("Yes. Copying file to current dir")
                         shutil.copy(f"../{self.moreadfile}", f"./{self.moreadfile}")
+        else:
+            print("Moreadfile option not active")
+            if os.path.isfile(f"{self.filename}.gbw") is True:
+                print(f"No file : {self.filename}.gbw is present in dir.")
+                if self.path_to_last_gbwfile_used != None:
+                    print("Found a path to last GBW-file used by this Theory object. Will copy this file do current dir")
+                    shutil.copy(self.path_to_last_gbwfile_used, f"./{self.filename}.gbw")
+                    if self.autostart is False:
+                        print("Autostart option is False. ORCA will ignore this file")
+                    else:
+                        print("Autostart feature is active. ORCA will read GBW-file present.")
+                else:
+                    print("Found no file. ORCA will guess new orbitals")
+            else:
+                print(f"A GBW-file with same basename : {self.filename}.gbw is present")
+                if self.autostart is False:
+                    print("Autostart is False. ORCA will ignore any file present")
+                else:
+                    print("Autostart feature is active. ORCA will read GBW-file present.")
 
         #TDDFT option
         #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
@@ -500,6 +522,10 @@ end"""
         #Always make copy of last output file
         if self.keep_last_output is True:
             shutil.copy(self.filename+'.out', self.filename+'_last.out')
+
+        #Save path to last GBW-file (used if ASH changes directories, e.g. goes from NumFreq)
+        self.path_to_last_gbwfile_used=f"{os.getcwd()}/{self.filename}.gbw"
+
 
         ORCAfinished,numiterations = checkORCAfinished(outfile)
         #Check if ORCA finished or not. Exiting if so
