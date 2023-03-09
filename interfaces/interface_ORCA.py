@@ -367,7 +367,7 @@ end"""
                 print("File exists")
             else:
                 print("File does not exist.")
-                if os.path.isabs() is True:
+                if os.path.isabs(self.moreadfile) is True:
                     print("Error: Absolute path provided but file does not exists. Exiting")
                     ashexit()
                 else:
