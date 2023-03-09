@@ -381,7 +381,7 @@ end"""
         else:
             print("Moreadfile option not active")
             if os.path.isfile(f"{self.filename}.gbw") is False:
-                print(f"No file : {self.filename}.gbw is present in dir.")
+                print(f"No {self.filename}.gbw file is present in dir.")
                 if self.path_to_last_gbwfile_used != None:
                     print("Found a path to last GBW-file used by this Theory object. Will copy this file do current dir")
                     shutil.copy(self.path_to_last_gbwfile_used, f"./{self.filename}.gbw")
