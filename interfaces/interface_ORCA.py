@@ -380,7 +380,7 @@ end"""
                         shutil.copy(f"../{self.moreadfile}", f"./{self.moreadfile}")
         else:
             print("Moreadfile option not active")
-            if os.path.isfile(f"{self.filename}.gbw") is True:
+            if os.path.isfile(f"{self.filename}.gbw") is False:
                 print(f"No file : {self.filename}.gbw is present in dir.")
                 if self.path_to_last_gbwfile_used != None:
                     print("Found a path to last GBW-file used by this Theory object. Will copy this file do current dir")
@@ -390,7 +390,12 @@ end"""
                     else:
                         print("Autostart feature is active. ORCA will read GBW-file present.")
                 else:
-                    print("Found no file. ORCA will guess new orbitals")
+                    print(f"Checking if a file {self.filename}.gbw exists in parentdir:")
+                    if os.path.isfile(f"../{self.filename}.gbw") is True:
+                        print("Yes. Copying file from parentdir to current dir")
+                        shutil.copy(f"../{self.filename}.gbw", f"./{self.filename}.gbw")
+                    else:
+                        print("Found no file. ORCA will guess new orbitals")
             else:
                 print(f"A GBW-file with same basename : {self.filename}.gbw is present")
                 if self.autostart is False:
