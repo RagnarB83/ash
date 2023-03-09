@@ -137,7 +137,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             hessianoption='file:'+str(hessianfile)
         else:
             print("Doing Numfreq")
-            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint='1', runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, numcores=numcores)
             hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
