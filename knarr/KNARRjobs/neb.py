@@ -628,16 +628,19 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         #                path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()],
         #                path.GetSymbols())
 
-        PrintAtomMatrix("Atomic forces(eV/Å):", path.GetNDofIm(),
-                        path.GetForces()[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
-                        path.GetSymbols())
+        #No longer printing (too big for large act region)
+        #PrintAtomMatrix("Atomic forces(eV/Å):", path.GetNDofIm(),
+        #                path.GetForces()[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
+        #                path.GetSymbols())
 
         tang = GetTangent(path.GetNDofIm(), path.GetNim(), path.GetR(), path.GetEnergy(),
                           tangent_type, pbc=path.GetPBC(), cell=path.GetCell())
 
-        PrintAtomMatrix("Tangent to path:", path.GetNDofIm(),
-                        tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
-                        path.GetSymbols())
+        #No longer printing (too big for large act region)
+        #PrintAtomMatrix("Tangent to path:", path.GetNDofIm(),
+        #                tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
+        #                path.GetSymbols())
+        
         #RB addition: Provide final tangent to calculator
         tang_2d_CI = np.reshape(tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],(int(path.ndofIm/3),3))
         calculator.tangent = tang_2d_CI

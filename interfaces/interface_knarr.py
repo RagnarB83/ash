@@ -1,4 +1,4 @@
-#Non-intrusive interface to Knarr
+#Interface to Knarr
 #Assumes that Knarr directory exists inside ASH
 import numpy as np
 import sys
@@ -16,7 +16,6 @@ from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from
 from ash.modules.module_results import ASH_Results
 
 #This makes Knarr part of python path
-#Recommended way?
 ashpath = os.path.dirname(ash.__file__)
 sys.path.insert(0,ashpath+'/knarr')
 
@@ -111,9 +110,9 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             interpolation=interpolation, idpp_maxiter=idpp_maxiter, 
             restart_file=restart_file, TS_guess=TS_guess, mofilesdir=mofilesdir)
     #Saddlepoint fragment
-    SP = NEB_results["saddlepoint_fragment"]
+    SP = NEB_results.saddlepoint_fragment
     #Dictionary of images
-    energies_dict = NEB_results["MEP_energies_dict"]
+    energies_dict = NEB_results.MEP_energies_dict
     
     if SP == None:
         print("NEB-CI job failed. Exiting NEBTS.")
@@ -122,7 +121,9 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     #SP.write_xyzfile(xyzfilename='Saddlepoint-NEBCI-approx.xyz')
     print("NEB-CI job is complete. Now choosing Hessian option to use for Opt-TS job.")
 
-    #Prepare Hessian option
+    #############################
+    #SETTING UP INITIAL HESSIAN
+    ##############################
     #Hessianfile should be a simple text file with 1 row per line, values space-separated and no header.
     #Default: 
     if hessian_for_TS == None:
@@ -197,7 +198,6 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         #TODO: Make this work for QMMMTheory
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization 
-        #if isinstance(theory,ash.DualTheory): theory.switch_to_theory(2)
         result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms, runmode=runmode, numcores=numcores)
 
         #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
@@ -209,7 +209,6 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         write_hessian(combined_hessian,hessfile=hessianfile)
         #Creating string 
         hessianoption='file:'+str(hessianfile)
-
     else:
         print("Unknown hessian_for_TS option")
         ashexit()
@@ -223,13 +222,12 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     theory.set_numcores(cores_for_TSopt)
     print(f"to: {cores_for_TSopt} cores")
 
-    ash.Optimizer(theory=theory, fragment=SP, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter, 
+    ash.Optimizer(theory=theory, fragment=SP, TSOpt=True, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter, 
                 ActiveRegion=ActiveRegion, actatoms=actatoms, convergence_setting=OptTS_convergence_setting, 
-                conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list, TSOpt=True,
+                conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list, 
                 hessian=hessianoption, subfrctor=subfrctor)
 
     #TODO: Test if Optimizer converged or not. Currently there would be an error from geometric.
-    # 
     # Finalprintout here with energies of all images, CI image pointed out and TS image also.
     #Also write-out NEB-CI image as Saddlepoint-NEBCI-approx.xyz and Saddlepoint-OptTS.xyz
 
@@ -259,11 +257,9 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         else:
             #If regular image
             relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
-            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f}")            
-    
+            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f}")
     print("-"*80)
     print()
-
     #Writing final geometries for clarity
     SP.write_xyzfile(xyzfilename='Saddlepoint-OptTS.xyz')
 
@@ -276,7 +272,6 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         saddlepoint_fragment=SP, charge=charge, mult=mult, MEP_energies_dict=energies_dict,
         barrier_energy=SP_relenergy)
     return result
-    #return SP
 
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
