@@ -364,9 +364,9 @@ end"""
         if self.moreadfile != None:
             print(f"Moreadfile option active. File path: {self.moreadfile}")
             if os.path.isfile(self.moreadfile) is True:
-                print("File exists")
+                print(f"File exists in current directory: {os.getcwd()}")
             else:
-                print("File does not exist.")
+                print(f"File does not exist in current directory: {os.getcwd()}")
                 if os.path.isabs(self.moreadfile) is True:
                     print("Error: Absolute path provided but file does not exists. Exiting")
                     ashexit()
