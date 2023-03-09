@@ -114,7 +114,7 @@ class GeomeTRICOptimizerClass:
                 if partial_hessian_atoms is None:
                     print("hessian='partial' option requires setting the partial_hessian_atoms option. Exiting.")
                     ashexit()
-                #
+
                 print("Now doing partial Hessian calculation using atoms:", partial_hessian_atoms)
                 #Note: hardcoding runmode='serial' for now
                 result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, hessatoms=partial_hessian_atoms, runmode='serial', numcores=1)

@@ -360,6 +360,22 @@ end"""
             print("Running ORCA object with {} cores available".format(numcores))
             print("Job label:", self.label)
 
+        #MOREAD. Checking file provided exists and determining what to do if not
+        if self.moreadfile != None:
+            print(f"Moreadfile option active. File path: {self.moreadfile}")
+            if os.path.isfile(self.moreadfile) is True:
+                print("File exists")
+            else:
+                print("File does not exist.")
+                if os.path.isabs() is True:
+                    print("Error: Absolute path provided but file does not exists. Exiting")
+                    ashexit()
+                else:
+                    print("Checking if file exists in parentdir instead:")
+                    if os.path.isfile(f"../{self.moreadfile}") is True:
+                        print("Yes. Copying file to current dir")
+                        shutil.copy(f"../{self.moreadfile}", f"./{self.moreadfile}")
+
         #TDDFT option
         #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
         if self.TDDFT == True:
