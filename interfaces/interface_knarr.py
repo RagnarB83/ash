@@ -104,17 +104,20 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     print(f"{cores_for_TSopt} CPU cores will be used to parallize theory during Opt-TS part.")
 
     #CI-NEB step
-    SP,energies_dict = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
+    NEB_results = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
             conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
             interpolation=interpolation, idpp_maxiter=idpp_maxiter, 
             restart_file=restart_file, TS_guess=TS_guess, mofilesdir=mofilesdir)
-
+    #Saddlepoint fragment
+    SP = NEB_results["saddlepoint_fragment"]
+    #Dictionary of images
+    energies_dict = NEB_results["MEP_energies_dict"]
+    
     if SP == None:
         print("NEB-CI job failed. Exiting NEBTS.")
         return None
-        #ashexit()
 
     #SP.write_xyzfile(xyzfilename='Saddlepoint-NEBCI-approx.xyz')
     print("NEB-CI job is complete. Now choosing Hessian option to use for Opt-TS job.")
@@ -429,13 +432,6 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     print()
     print("Optimizer parameters:\n", optimizer)
     print()
-
-
-
-
-
-
-
     print("\nLaunching Knarr")
     print()
     PrintDivider()
@@ -532,7 +528,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             print('KNARR successfully terminated')
             print()
             Saddlepoint_fragment = prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, "NEBCIapprox")
-            print("WARNING: The NEB-CI saddlepoint is usually close to the true saddlepoint. Needs confirmation by Hessian.")
+            print("Warning: The NEB-CI saddlepoint is only an approximation to the true saddlepoint.")
+            print("An OptTS job and confirmation of Hessian is usually necessary.")
             print()
 
         print("\nThe Knarr-NEB code is based on work described in the following article. Please consider citing it:")
@@ -1009,7 +1006,6 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
 
         if ActiveRegion == True:
             print("Getting saddlepoint geometry and creating new fragment for Full system")
-            print("Has not been confirmed to work...")
             #Finding CI coords and energy
             CI = np.argmax(path.GetEnergy())
             print("Saddlepoint assumed to be image no.", CI)

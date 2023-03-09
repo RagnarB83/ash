@@ -623,9 +623,10 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         E_barrier=(path.GetEnergy()[CI][0] - path.GetEnergy()[0][0])*23.060541945329334
         print(f"\nBarrier energy: {E_barrier} kcal/mol")
 
-        PrintAtomMatrix("\nSaddle point geometry (Å):", path.GetNDimIm(),
-                        path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()],
-                        path.GetSymbols())
+        #Disabled as too much for e.g. QM/MM 1000-atom QM-region
+        #PrintAtomMatrix("\nSaddle point geometry (Å):", path.GetNDimIm(),
+        #                path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()],
+        #                path.GetSymbols())
 
         PrintAtomMatrix("Atomic forces(eV/Å):", path.GetNDofIm(),
                         path.GetForces()[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
