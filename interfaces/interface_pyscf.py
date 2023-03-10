@@ -19,14 +19,14 @@ class PySCFTheory:
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
-                  CAS=False, CASSCF=False, active_space=None, stability_analysis=True,casscf_maxcycle=200,
+                  CAS=False, CASSCF=False, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
-                  mcpdft=False, mcpdft_functional=None):
+                  mcpdft=False, mcpdft_functional=None, specialrun=False):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -112,6 +112,9 @@ class PySCFTheory:
         #MC-PDFT
         self.mcpdft=mcpdft
         self.mcpdft_functional=mcpdft_functional
+
+        #Special PySCF run option
+        self.specialrun=specialrun
 
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
@@ -561,8 +564,26 @@ class PySCFTheory:
         print("Stability analysis loop succeeded in finding stable internal solution!")
         return mf
 
-    #Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    #General run function to distinguish  specialrun and mainrun
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
+            charge=None, mult=None):
+        if self.specialrun is True:
+            #Attempt at having special run method that could be run my multiprocessing
+            print("special run")
+            #Create pyscf inputscript that defines mol object in script
+            #Writes things that should be run etc and then executes by launching separate process
+            #Ugly but should work
+            
+            return None, None
+        else:
+
+            return self.mainrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
+            elems=elems, Grad=Grad, PC=PC, numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
+            charge=charge, mult=mult)
+
+    #Main Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    def mainrun(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
             charge=None, mult=None ):
 
