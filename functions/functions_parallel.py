@@ -1,7 +1,7 @@
 import copy
 import multiprocessing as mp
-from multiprocessing.pool import ThreadPool as Pool
-#from multiprocessing.pool import Pool as Pool
+from multiprocessing.pool import ThreadPool
+from multiprocessing.pool import Pool
 import subprocess as sp
 import os
 import sys
@@ -188,7 +188,10 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 #will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
 #NOTE: Experimental copytheory option
-def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False):
+#Added threadpool option. Not sure if useful
+def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, 
+                         allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False,
+                         threadpool=False):
     print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
@@ -230,7 +233,10 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("Mofilesdir:", mofilesdir)
         print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
         print("Launching multiprocessing and passing list of ASH fragments")
-    pool = Pool(numcores)
+    if threadpool is True:
+        pool=ThreadPool(numcores)
+    else:
+        pool = Pool(numcores)
     manager = mp.Manager()
     event = manager.Event()
 
@@ -459,13 +465,16 @@ def run_QM_MM_SP(list):
     #Cd dir
     theory.run(Grad=True)
 
-def run_QMMM_SP_in_parallel(orcadir, list_of__geos, list_of_labels, QMMMtheory, numcores):
+def run_QMMM_SP_in_parallel(orcadir, list_of__geos, list_of_labels, QMMMtheory, numcores, threadpool=False):
     import multiprocessing as mp
     blankline()
     print("Number of CPU cores: ", numcores)
     print("Number of geos:", len(list_of__geos))
     print("Running snapshots in parallel")
-    pool = Pool(numcores)
+    if threadpool is True:
+        pool=ThreadPool(numcores)
+    else:
+        pool = Pool(numcores)
     results = pool.map(run_QM_MM_SP, [[orcadir,geo, QMMMtheory ] for geo in list_of__geos])
     pool.close()
     print("Calculations are done")
