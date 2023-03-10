@@ -915,6 +915,9 @@ class KnarrCalculator:
             result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, threadpool=self.threadpool, copytheory=False)
             en_dict = result_par.energies_dict
+            print("result_par:", result_par)
+            print("en_dict:", en_dict)
+            print("result_par.gradients_dict:", result_par.gradients_dict)
             #Now looping over gradients present (done to avoid overwriting frozen-image gradients)
             #self.gradient_dict = result_par.gradients_dict
             for gradkey in result_par.gradients_dict:
