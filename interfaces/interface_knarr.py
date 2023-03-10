@@ -136,6 +136,15 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             hessianfile="Hessian_from_dualtheory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
+        elif isinstance(theory,ash.QMMMTheory):
+            #NOTE: More sensible default than below
+            #NOTE: This is different from partial approach below. Need to change
+            print("QM/MM Theory is recognized. Doing by default partial Hessian using whole QM-region")
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, 
+                                    numcores=numcores, hessatoms=theory.qmatoms)
+            hessianfile="Hessian_from_theory"
+            shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+            hessianoption='file:'+str(hessianfile)            
         else:
             print("Doing Numfreq")
             result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, numcores=numcores)
@@ -191,6 +200,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         print(f"Using climbing image tangent to find dominant atoms in approximate TS mode (tsmode_tangent_threshold={tsmode_tangent_threshold})")
 
         #Getting tangent and atoms that contribute at least X to tangent where X is tsmode_tangent_threshold=0.1 (default)
+        #TODO: Add also connected atoms somehow ?
         tangent = read_tangent("CItangent.xyz")
         TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
 
@@ -1007,19 +1017,24 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
             saddle_energy = path.GetEnergy()[CI][0]*constants.hartoeV
-
+            print("saddle_coords:", saddle_coords)
             #Combinining frozen region with optimized active-region for saddle-point
             # Defining full_coords as original coords temporarily
             full_saddleimage_coords = copy.deepcopy(reactant.coords)
             # Replacing act-region coordinates with coords from currcoords
-            for i, c in enumerate(saddle_coords):
-                if i in actatoms:
+            #for i, c in enumerate(saddle_coords):
+            #    if i in actatoms:
                     # Silly. Pop-ing first coord from currcoords until done
-                    curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
-                    full_saddleimage_coords[i] = curr_c
+            #        curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
+            #        full_saddleimage_coords[i] = curr_c
+                    #Replacing act-region coordinates in full_coords with coords from currcoords
+            for act_i,curr_i in zip(actatoms,saddle_coords):
+                print(f"act_i: {act_i} curr_i: {curr_i}")
+                full_saddleimage_coords[act_i] = curr_i
 
             #Creating new ASH fragment for Full Saddle-point geometry
-            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
+            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, 
+                                                    connectivity=reactant.connectivity, charge=charge, mult=mult)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Adding atomtypes and charges if present.
             Saddlepoint_fragment.update_atomcharges(reactant.atomcharges)
