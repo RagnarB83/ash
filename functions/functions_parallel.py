@@ -1,5 +1,7 @@
 import copy
 import multiprocessing as mp
+from multiprocessing.pool import ThreadPool as Pool
+#from multiprocessing.pool import Pool as Pool
 import subprocess as sp
 import os
 import sys
@@ -228,7 +230,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("Mofilesdir:", mofilesdir)
         print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
         print("Launching multiprocessing and passing list of ASH fragments")
-    pool = mp.Pool(numcores)
+    pool = Pool(numcores)
     manager = mp.Manager()
     event = manager.Event()
 
@@ -463,7 +465,7 @@ def run_QMMM_SP_in_parallel(orcadir, list_of__geos, list_of_labels, QMMMtheory, 
     print("Number of CPU cores: ", numcores)
     print("Number of geos:", len(list_of__geos))
     print("Running snapshots in parallel")
-    pool = mp.Pool(numcores)
+    pool = Pool(numcores)
     results = pool.map(run_QM_MM_SP, [[orcadir,geo, QMMMtheory ] for geo in list_of__geos])
     pool.close()
     print("Calculations are done")
