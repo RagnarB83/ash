@@ -577,6 +577,7 @@ class PySCFTheory:
             #Ugly but should work
             energy=random.random()
             grad=np.random.random([len(elems),3])
+            print("SpecialPyscf energy:", energy)
             return energy, grad
         else:
 
