@@ -162,6 +162,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
 
     if Grad == True:
+        print(f"This is image label {label} with coords: \n{fragment.coords}")
         energy,gradient = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult, Grad=Grad)
     else:
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult)
