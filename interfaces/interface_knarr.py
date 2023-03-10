@@ -921,8 +921,10 @@ class KnarrCalculator:
             #Now looping over gradients present (done to avoid overwriting frozen-image gradients)
             #self.gradient_dict = result_par.gradients_dict
             for gradkey in result_par.gradients_dict:
+                print("gradkey:", gradkey)
+                print("result_par.gradients_dict[gradkey]:", result_par.gradients_dict[gradkey])
                 self.gradient_dict[gradkey] = result_par.gradients_dict[gradkey]
-
+            print("self.gradient_dict:", self.gradient_dict)
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():
                 #i is image_X
