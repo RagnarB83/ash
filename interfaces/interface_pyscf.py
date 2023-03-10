@@ -8,6 +8,7 @@ import glob
 import numpy as np
 from functools import reduce
 import scipy
+import random
 
 #PySCF Theory object.
 # TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
@@ -574,8 +575,9 @@ class PySCFTheory:
             #Create pyscf inputscript that defines mol object in script
             #Writes things that should be run etc and then executes by launching separate process
             #Ugly but should work
-            
-            return None, None
+            energy=random.random()
+            grad=np.zeros((len(elems),3))
+            return None, grad
         else:
 
             return self.mainrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
