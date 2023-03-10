@@ -939,11 +939,11 @@ class KnarrCalculator:
                 #Forces array for all images
                 #ActiveRegion: Trim Full gradient down to only act-atoms gradient
                 if self.ActiveRegion is True:
-                    Grad_image_full = self.gradient_dict[i]
+                    Grad_image_full = self.gradient_dict[im]
                     #Trimming gradient if active region
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
                 else:
-                    Grad_image = self.gradient_dict[i]
+                    Grad_image = self.gradient_dict[im]
 
                 #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
                 force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
