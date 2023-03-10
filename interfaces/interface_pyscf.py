@@ -576,8 +576,8 @@ class PySCFTheory:
             #Writes things that should be run etc and then executes by launching separate process
             #Ugly but should work
             energy=random.random()
-            grad=np.zeros((len(elems),3))
-            return None, grad
+            grad=np.random.random([len(elems),3])
+            return energy, grad
         else:
 
             return self.mainrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
