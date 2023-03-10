@@ -7,6 +7,8 @@
     """
 import numpy as np
 import time
+import subprocess as sp
+
 import ash
 from ash.functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import check_charge_mult
@@ -432,6 +434,62 @@ class ZeroTheory:
         else:
             return self.energy,self.gradient
 
+
+
+
+# Theory object that executes a script present in dir and then grabs energy and gradient from files created
+#Simple way to create interfaces to programs
+class ScriptTheory:
+    def __init__(self, fragment=None, printlevel=None, numcores=1, label=None, scriptpath=None):
+        """Class FileTheory: ScriptTheory  gives zero energy and a zero-valued gradient array by calling a script
+        """
+        print_line_with_mainheader("ScriptTheory initialization")
+        print("ScriptTheory is an ASH wrapper around a script/program capable of producing energy and gradient" )
+        print("from coordinates as input")
+        self.numcores=numcores
+        self.printlevel=printlevel
+        self.label=label
+        self.fragment=fragment
+        self.filename="zerotheory"
+        #Indicate that this is a QMtheory
+        self.theorytype="QM"
+        
+        #Scriptname
+        self.scriptpath=scriptpath
+    
+    def create_script_from_string(self,input):
+
+        #Create shell/python script from input-string
+        pass
+        #Make script executable
+
+    def run(self, current_coords=None, elems=None, Grad=False, PC=False, numcores=None, charge=None, mult=None, label=None ):
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING ScriptTheory INTERFACE-------------", BC.END)
+        #Execute script
+        #NOTE: Script should be executable and create file called energy, file called gradient
+        #Note: Should allow both full path to script or local script (should contain ./ if so)
+        p = sp.call([self.scriptpath])
+
+        #Grab energy from file energy
+        with open("energy") as f: self.energy = float(f.readlines()[0])
+        print("energy:", self.energy)
+        #Grab gradient from file gradient. Simple format, first line contains numatoms, then x,y,z component in each line
+        atomcount=0
+        with open('gradient') as grdfile:
+            for i,line in enumerate(grdfile):
+                if i==0:
+                    numatoms=int(line.split()[0])
+                    self.gradient=np.zeros((numatoms,3))
+                if i>0:
+                    self.gradient[atomcount,0] = float(line.split()[0])
+                    self.gradient[atomcount,1] = float(line.split()[1])
+                    self.gradient[atomcount,2] = float(line.split()[2])
+                    atomcount+=1
+        print("self.gradient:", self.gradient)
+        if Grad==False:
+            return self.energy
+        else:
+            return self.energy,self.gradient
 
 
 def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=None, unit='kcal/mol', label=None, reference=None, silent=False):

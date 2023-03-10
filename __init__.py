@@ -41,7 +41,7 @@ from ash.modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms
 
 # Singlepoint
 import ash.modules.module_singlepoint
-from ash.modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheory, Singlepoint_fragments,\
+from ash.modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheory, ScriptTheory, Singlepoint_fragments,\
      Singlepoint_theories, Singlepoint_fragments_and_theories, Singlepoint_reaction
 
 # Parallel

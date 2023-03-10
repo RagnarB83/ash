@@ -574,7 +574,8 @@ class PySCFTheory:
             print("special run")
             #Create pyscf inputscript that defines mol object in script
             #Writes things that should be run etc and then executes by launching separate process
-            #Ugly but should work
+            #Ugly
+            #NOTE: Problem. Theory object can  not be pickled.
             energy=random.random()
             grad=np.random.random([len(elems),3])
             print("SpecialPyscf energy:", energy)

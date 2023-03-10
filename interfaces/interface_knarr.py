@@ -912,6 +912,12 @@ class KnarrCalculator:
                     all_image_fragments.append(frag)
 
             #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
+
+            #TODO: Add alternative option here for theories that can not be pickled
+            #if theory.picklable is False:
+            #   Maybe launch Singlepoint_parallel with a simple ScriptTheory that only executes a runscript.py and grabs E+G from
+            # files that are created
+            #else:
             result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, threadpool=self.threadpool, copytheory=False)
             en_dict = result_par.energies_dict
@@ -919,10 +925,7 @@ class KnarrCalculator:
             #self.gradient_dict = result_par.gradients_dict
             for gradkey in result_par.gradients_dict:
                 im=int(gradkey.replace("image_",""))
-                print("gradkey:", gradkey)
-                print("result_par.gradients_dict[gradkey]:", result_par.gradients_dict[gradkey])
                 self.gradient_dict[im] = result_par.gradients_dict[gradkey]
-            print("self.gradient_dict:", self.gradient_dict)
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():
                 #i is image_X
