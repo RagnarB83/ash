@@ -1275,7 +1275,7 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
 
     origincoords=fragment.coords[originatom]
     act_indices=[]
-    
+    #print("resids:", resids)
     for index,allc in enumerate(fragment.coords):
         #print("index:", index)
         #print("allc:", allc)
@@ -1296,6 +1296,7 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
                     act_indices.append(k)
 
     #Only unique and sorting:
+    print("act_indices:", act_indices)
     act_indices = np.unique(act_indices).tolist()
 
     #Print indices to output

@@ -142,8 +142,14 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             print("QM/MM Theory is recognized. Doing by default partial Hessian using whole QM-region")
             result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, 
                                     numcores=numcores, hessatoms=theory.qmatoms)
-            hessianfile="Hessian_from_theory"
-            shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+
+            #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
+            #Large Hessian is the actatoms Hessian if actatoms provided
+            combined_hessian = approximate_full_Hessian_from_smaller(SP,result_freq.hessian,theory.qmatoms, 
+                                                                     large_atomindices=actatoms, restHessian=modelhessian)
+            #Write combined Hessian to disk
+            hessianfile="Hessian_from_partial"
+            write_hessian(combined_hessian,hessfile=hessianfile)
             hessianoption='file:'+str(hessianfile)            
         else:
             print("Doing Numfreq")
@@ -228,9 +234,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
     #TSopt
     print(f"Now starting Optimizer job from NEB-CI saddlepoint with TSOpt=True with hessian option: {hessianoption}")
-    print(f"Changing number of cores of Theory object from : {theory.numcores} cores ", end="")
+    print(f"Changing number of cores of Theory object from {theory.numcores} to {cores_for_TSopt} cores ")
     theory.set_numcores(cores_for_TSopt)
-    print(f"to: {cores_for_TSopt} cores")
 
     ash.Optimizer(theory=theory, fragment=SP, TSOpt=True, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter, 
                 ActiveRegion=ActiveRegion, actatoms=actatoms, convergence_setting=OptTS_convergence_setting, 
@@ -1017,7 +1022,6 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
             saddle_energy = path.GetEnergy()[CI][0]*constants.hartoeV
-            print("saddle_coords:", saddle_coords)
             #Combinining frozen region with optimized active-region for saddle-point
             # Defining full_coords as original coords temporarily
             full_saddleimage_coords = copy.deepcopy(reactant.coords)
@@ -1029,7 +1033,6 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
             #        full_saddleimage_coords[i] = curr_c
                     #Replacing act-region coordinates in full_coords with coords from currcoords
             for act_i,curr_i in zip(actatoms,saddle_coords):
-                print(f"act_i: {act_i} curr_i: {curr_i}")
                 full_saddleimage_coords[act_i] = curr_i
 
             #Creating new ASH fragment for Full Saddle-point geometry
@@ -1047,7 +1050,7 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
         else:
             #Finding CI coords and energy
             CI = np.argmax(path.GetEnergy())
-            print("Saddlepoint assumed to be image no.", CI)
+            print("Saddlepoint is image no.", CI)
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (reactant.numatoms, 3))
             saddle_energy = path.GetEnergy()[CI][0]/constants.hartoeV
