@@ -651,7 +651,7 @@ class KnarrCalculator:
         #Final tangent of saddlepoint. Will be available if job converges
         self.tangent=None
         #Optional Threadpool option for runmode='parallel', passed onto Singlepoint_parallel
-        self.threadpool
+        self.threadpool=threadpool
 
     #Function that Knarr will use to signal convergence and set self.converged to True. Otherwise it is False
     def status(self,converged):
