@@ -913,7 +913,7 @@ class KnarrCalculator:
 
             #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
             result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
-                allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, threadpool=self.threadpool, copytheory=True)
+                allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, threadpool=self.threadpool, copytheory=False)
             en_dict = result_par.energies_dict
             #Now looping over gradients present (done to avoid overwriting frozen-image gradients)
             #self.gradient_dict = result_par.gradients_dict
