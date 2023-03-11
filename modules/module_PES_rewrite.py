@@ -541,7 +541,7 @@ class PhotoElectronClass:
                 print(f"Will use file {self.initialorbitalfiles[1]} as guess GBW file for this Final state.")
                 shutil.copyfile(self.initialorbitalfiles[1], self.theory.filename + '.gbw')
             else:
-                print("Only 1 GBW file was specified in initialorbitalfiles list. Ignoring.")
+                print("Only 1 GBW file was specified in initialorbitalfiles list.")
                 print("Continuing, will use orbitals from previous Init-state calculation instead.")
         #RUNNING JOB
         ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)

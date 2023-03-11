@@ -294,7 +294,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
         charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=700, 
+        interpolation="IDPP", idpp_maxiter=700, zoom=False,
         restart_file=None, TS_guess=None, mofilesdir=None, threadpool=False):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
@@ -410,6 +410,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     neb_settings["TOL_RMS_F"] = tol_rms_f
     neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
     optimizer["MAX_ITER"] = maxiter
+    #Turning on ZOOM
+    neb_settings["ZOOM"] = zoom
     #Setting number of images of Knarr
     path_parameters["NIMAGES"]=total_num_images
 
@@ -963,7 +965,7 @@ class KnarrCalculator:
         print("Overview of images")        
         header=f"Image  Energy(Eh)  dE(kcal/mol)  State     RMSF(eV/Ang)    MaxF(eV/Ang)"
         print(header)
-        print("-"*70)
+        print("-"*75)
         for i in sorted(self.energies_dict.keys()):
             #RMSF and MaxF in eV/Angstrom
             rms_f=RMSfunc(self.gradient_dict[i])*51.42210665240553
@@ -976,7 +978,7 @@ class KnarrCalculator:
                 relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
                 #print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f}          RMSF: {rms_f:6.4f} MaxF: {max_f:6.4f}")
                 print(f" {i:<4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'active':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
-        print("-"*70)
+        print("-"*75)
         print()
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
