@@ -1051,7 +1051,7 @@ def xdm_run(wfxfile=None, postgdir=None,a1=None, a2=None,functional=None):
     return dispenergy, dispgradient
 
 #Create difference density for 2 calculations differing in either fragment or theory-level
-def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, theory_B=None, griddensity=80):
+def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, theory_B=None, griddensity=80, cubefilename='difference_density'):
     print_line_with_mainheader("difference_density_ORCA")
     print("Will calculate and create a difference density for molecule")
     print("Either fragment can be different (different geometry, different charge, different spin)")
@@ -1060,10 +1060,10 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
     print("griddensity:", griddensity)
 
     if fragment_A is None or fragment_B is None:
-        print("You need to provide an ASH fragment")
+        print("You need to provide an ASH fragment for both fragment_A and fragment_B (can be the same)")
         ashexit()
     if fragment_A.charge == None or fragment_B.charge == None:
-        print("You must provide charge/multiplicity information to all fragments")
+        print("You must provide charge/multiplicity information in all fragments")
         ashexit()
     if theory_A == None or theory_A.__class__.__name__ != "ORCATheory":
         print("theory_A: You must provide an ORCATheory level")
@@ -1094,9 +1094,9 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
     cube_data2 = read_cube("calc_B.eldens.cube")
 
     #Write out difference density as a Cubefile
-    write_cube_diff(cube_data2, cube_data1, "diffence_density")
+    write_cube_diff(cube_data2, cube_data1, cubefilename)
     print()
-    print("Difference density file was created: diffence_density.cube")
+    print(f"Difference density (B - A) file was created: {cubefilename}.cube")
 
 
 #Create deformation density and do NOCV analysis by providing fragment files for AB, A and B and a theory-level object.
