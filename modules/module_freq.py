@@ -6,7 +6,7 @@ import sys
 import copy
 import time
 
-from ash.functions.functions_general import ashexit, listdiff, clean_number,blankline,BC,print_time_rel, print_line_with_mainheader,isodd, isint
+from ash.functions.functions_general import ashexit, listdiff, clean_number, blankline,BC,print_time_rel, print_line_with_mainheader,isodd, isint
 import ash.modules.module_coords
 from ash.modules.module_coords import check_charge_mult, check_multiplicity
 from ash.modules.module_results import ASH_Results
@@ -438,11 +438,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     symm_hessian=(hessian+hessian.transpose())/2
     hessian=symm_hessian
 
-
-    #Project out Translation+Rotational modes
+    #Checking for linearity. Determines how many Trans+Rot modes 
+    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+        TRmodenum=5
+    else:
+        TRmodenum=6
+    
+    #######################################################################
+    #Project out Translation+Rotational modes (unless we have frozen atoms)
     #TODO
-    #NOTE: Only if no frozen atoms
-
+    #######################################################################
 
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
@@ -457,7 +462,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Masses used:", hessmasses)
     #Todo: Note. elems is redefined here. Not ideal
     frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
-    #frequencies=diagonalizeHessian(hessian,hessmasses,hesselems)[0]
+
+    #Clean up the complex frequencies before using further
+    frequencies = clean_frequencies(frequencies)
 
     #Print out normal mode output. Like in Chemshell or ORCA
     blankline()
@@ -466,12 +473,14 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #TODO: or perhaps elemental normal mode composition factors
     print("Eigenvectors to be printed here")
     blankline()
+
+
     #Print out Freq output. Maybe print normal mode compositions here instead???
-    printfreqs(frequencies,len(hessatoms))
+    printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
 
     print("\n\n")
     print("Normal mode composition factors by element")
-    printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms)
+    printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms,TRmodenum=TRmodenum)
 
     print("\nNow doing thermochemistry")
 
@@ -510,6 +519,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     os.chdir('..')
     print_time_rel(module_init_time, modulename='NumFreq', moduleindex=1)
 
+
+
     result = ASH_Results(label="Numfreq", hessian=hessian, vib_eigenvectors=evectors,
         frequencies=frequencies, 
         normal_modes=nmodes, thermochemistry=thermodict)        
@@ -536,17 +547,9 @@ def get_partial_matrix(matrix,hessatoms):
     return np.take(matrix,hessatoms, axis=0)
 
 
-# Open-source project in Fortran:
-#https://github.com/zorkzou/UniMoVib
-#Calculates Hessian etc. Has IR and Raman intensity
-#Todo: Add IR/Raman intensity support
-
-
-#Taken from Hess-tool on 21st Dec 2019. Modified to read in Hessian array instead of ORCA-hessfile
+#Diagonalize Hessian from input Hessian, masses and element-strings
 def diagonalizeHessian(hessian, masses, elems):
     print("Diagonalizing Hessian")
-    # Grab masses, elements and numatoms from Hessianfile
-    #masses, elems, numatoms = masselemgrab(hessfile)
     numatoms=len(elems)
     atomlist = []
     for i, j in enumerate(elems):
@@ -588,14 +591,39 @@ def calcfreq(evalues):
     return vfreq
 
 
+def printfreqs(vfreq,numatoms,TRmodenum=6):
+    print("Note: imaginary modes shown as negative")
+    print("Warning: Currently not distinguish correctly between TR modes and other imaginary modes")
+    print("{:>6}{:>16}".format("Mode", "Freq(cm**-1)"))
+    for mode in range(0,3*numatoms):
+        vib=vfreq[mode]
+        line = "  {:<4d}{:>14.4f}".format(mode, vib)
+        if mode < TRmodenum:
+            line=line+"   (TR mode)"
+        print(line)
+
+
+#Function to print frequencies and also elemental normal mode composition
+def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms=None, TRmodenum=6):
+    numatoms=len(hessatoms)
+    print("{:>6}{:>16}  {:<18}".format("Mode", "Freq(cm**-1)", "Elemental composition factors"))
+    for mode in range(0,3*numatoms):
+        #Get elemental normalmode comps
+        normmodecompelemsdict = normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, hessatoms=hessatoms)
+        normmodecompelemsdict_list=[f'{k}: {v:.2f}' for k,v in normmodecompelemsdict.items()]
+        normmodecompelemsdict_string='   '.join(normmodecompelemsdict_list)
+        vib=vfreq[mode]
+        line = "  {:<4d}{:>14.4f}    {}".format(mode, vib, normmodecompelemsdict_string)
+
+        if mode < TRmodenum:
+            line=line+" (TR mode)"
+        print(line)
+
+
 #NOTE: THIS IS NOT CORRECT
 #TODO: Need to identify SP mode
 #FOR SADDLEPOINT, the SP mode will be the largest imaginary mode, hence mode 0.
-def printfreqs(vfreq,numatoms):
-    if numatoms == 2:
-        TRmodenum=5
-    else:
-        TRmodenum=6
+def old_printfreqs(vfreq,numatoms,TRmodenum=6):
     line = "{:>4}{:>14}".format("Mode", "Freq(cm**-1)")
     print(line)
     for mode in range(0,3*numatoms):
@@ -1356,43 +1384,6 @@ def normalmodecomp_all(mode,fragment,evectors, hessatoms=None):
     #Returning normcomplist, a list of atomic contributions for each atom
     return normcomplist
 
-#Function to print frequencies and also elemental normal mode composition
-def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms=None):
-    #print("printfreqs_and_nm_elem_comps:")
-    numatoms=len(hessatoms)
-    if numatoms == 2:
-        TRmodenum=5
-    else:
-        TRmodenum=6
-    line = "{:<6}{:<16}{:<18}".format("Mode", "Freq(cm**-1)", "Elemental composition factors")
-    print(line)
-    for mode in range(0,3*numatoms):
-        #Get elemental normalmode comps
-        normmodecompelemsdict = normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, hessatoms=hessatoms)
-        normmodecompelemsdict_list=[f'{k}: {v:.2f}' for k,v in normmodecompelemsdict.items()]
-        normmodecompelemsdict_string='   '.join(normmodecompelemsdict_list)
-        #print("normmodecompelemsdict_list:", normmodecompelemsdict_list)
-        #print("normmodecompelemsdict:", normmodecompelemsdict)
-        realpart=vfreq[mode].real
-        imagpart=vfreq[mode].imag
-        if mode < TRmodenum:
-            line=line+" (TR mode)"
-        if realpart == 0.0:
-            vib=imagpart
-            line = "{:>3d}   {:>9.4f}i    {}".format(mode, vib, normmodecompelemsdict_string)
-        elif imagpart == 0.0:
-            vib=clean_number(vfreq[mode])
-            line = "{:>3d}   {:>9.4f}     {}".format(mode, vib, normmodecompelemsdict_string)
-        else:
-            print("vfreq[mode]:", vfreq[mode])
-            print("realpart:", realpart)
-            print("imagpart:", imagpart)
-            print("This should not have happened")
-            ashexit()
-
-        print(line)
-
-
 
 def normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, silent=False, hessatoms=None):
     #print("normalmodecomp_permode_by_elems------------")
@@ -1817,8 +1808,9 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
 
 
 #Simple function to get Wigner distribution from geometr
-def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperature=300):
-    print("Wigner distribution function")
+def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperature=300, num_samples=100):
+    print_line_with_mainheader("Wigner distribution")
+
     if fragment is None:
         print("You need to provide an ASH fragment")
         ashexit()
@@ -1837,29 +1829,56 @@ def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperat
         print("You need to provide either hessian, normal_modes or a hessian as part of fragment")
         ashexit()
 
-    #Projection probably required first
+    #Checklinear
+    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+        TRmodenum=5
+    else:
+        TRmodenum=6
 
-    #normal_modes
-    print(f"normal_modes ({len(normal_modes)}):", normal_modes)
-    print(f"frequencies: ({len(frequencies)})", frequencies)
-    ashexit()
-    coords_collection=[]
-    vel_collection=[]
-    random_Q=1
-    random_P=1
+    #Clean up frequencies
+    frequencies = clean_frequencies(frequencies)
+    print("Fragment:", fragment)
+    #print("Hessian:", hessian)
+    print("Frequencies:", frequencies)
+    #print("Normal modes:", normal_modes)
+    print(f"Temperature {temperature} K")
+    print("Number of samples:", num_samples)
 
-    print("fragment.elems:", fragment.elems)
-    print("fragment.coords:", fragment.coords)
-    for freq,mode in zip(frequencies,normal_modes):
-        print("Freq:", freq)
-        print("mode:", mode)
-        for i, (el,coord,mass) in enumerate(zip(fragment.elems,fragment.coords,fragment.masses)):
-            print("mass:", mass)
-            for xyz in range(3):
-                #coord
-                atom.coord[xyz] += random_Q * mode[i][xyz] * math.sqrt(1./mass)
-                #vel
-                atom.veloc[xyz] += random_P * mode[i][xyz] * math.sqrt(1./mass)
+    #NOTE: Projection probably required first
+    print("Before:")
+    print(f"Num normal_modes ({len(normal_modes)})")
+    print(f"Frequencies: ({len(frequencies)})", frequencies)
+    print("Removing first 6 freqs and modes:")
+
+    frequencies_proj=frequencies[TRmodenum:]
+    normal_modes_proj=frequencies[TRmodenum:]
+    print(f"Num normal_modes ({len(normal_modes_proj)})")
+    print(f"Frequencies: ({len(frequencies_proj)})", frequencies_proj)
+    #Currently calling geometric to get wigner distribution
+    from geometric.normal_modes import wigner_sample
+    print("Calling wigner_sample")
+    #Converting coords to Bohr
+    coords_in_au = fragment.coords * ash.constants.ang2bohr
+    #NOTE: Not working for some reason
+    #wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies), normal_modes, temperature, num_samples, '.', True)
+    exit()
+    #coords_collection=[]
+    #vel_collection=[]
+    #random_Q=1
+    #random_P=1
+
+    #print("fragment.elems:", fragment.elems)
+    #print("fragment.coords:", fragment.coords)
+    #for freq,mode in zip(frequencies,normal_modes):
+    #    print("Freq:", freq)
+     #   print("mode:", mode)
+     #   for i, (el,coord,mass) in enumerate(zip(fragment.elems,fragment.coords,fragment.masses)):
+     #       print("mass:", mass)
+     #       for xyz in range(3):
+     #           #coord
+     #           atom.coord[xyz] += random_Q * mode[i][xyz] * math.sqrt(1./mass)
+     #           #vel
+     #           atom.veloc[xyz] += random_P * mode[i][xyz] * math.sqrt(1./mass)
     #Print XYZ trajectory of coordinates
     #Also print velocities in some format
 
@@ -1868,3 +1887,16 @@ def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperat
 
     #Return collection of coordinates and velocities
     return final_coords, final_vels
+
+
+#Simple function to get the relevant part (real or imaginary) part of a complex number
+#If imaginary part is larger then we convert into negative number
+#Used to report vibrational frequencies
+def get_relevant_part_of_complex(numb):
+    if numb.real > numb.imag:
+        return numb.real
+    else:
+        return numb.imag*-1
+
+def clean_frequencies(freqs):
+    return [get_relevant_part_of_complex(f) for f in freqs]
