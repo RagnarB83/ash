@@ -858,8 +858,9 @@ end")
 
             #Grab TDDFT states from ORCA output
             fstate.TDtransitionenergies = tddftgrab(self.theory.filename+'.out')
-            #TDDFT may have calculated fewer states than requested. Updating 
-            if len(fstate.TDtransitionenergies) != fstate.numionstates:
+            #TDDFT may have calculated fewer states than requested. Updating
+            # NOTE:  TDtransitionenergies should be 1 less than numionstates
+            if len(fstate.TDtransitionenergies) != fstate.numionstates-1:
                 print(f"Warning: TDDFT calculated fewer states ({len(fstate.TDtransitionenergies)}) than requested ({fstate.numionstates})")
                 print("Updating number of states for multiplicity:", fstate.mult)
                 fstate.numionstates=len(fstate.TDtransitionenergies)
