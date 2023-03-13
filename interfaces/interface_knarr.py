@@ -520,7 +520,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         #Now starting NEB from path object, using neb_settings and optimizer settings
         print("neb_settings:", neb_settings)
         print("optimizer:", optimizer)
-        DoNEB(path, calculator, neb_settings, optimizer)
+        DoNEB(path, calculator, neb_settings, optimizer, second_run=zoom)
 
         ###########################################################
         # CHECKING CONVERGENCE AND PREPARING FINAL OUTPUT
