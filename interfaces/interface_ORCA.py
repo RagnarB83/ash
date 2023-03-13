@@ -1195,8 +1195,11 @@ def MolecularOrbitalGrab(file):
     else:
         Openshell=False
 
+    #Total number of orbitals
+    totnumorbitals=len(bands_alpha)+len(virtbands_a)
     #Final dict
-    MOdict= {"occ_alpha":bands_alpha, "occ_beta":bands_alpha, "unocc_alpha":virtbands_a, "unocc_beta":virtbands_b, "Openshell":Openshell}
+    MOdict= {"occ_alpha":bands_alpha, "occ_beta":bands_alpha, "unocc_alpha":virtbands_a, "unocc_beta":virtbands_b, "Openshell":Openshell,
+            "totnumorbitals":totnumorbitals}
     return MOdict
 
 

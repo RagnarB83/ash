@@ -19,8 +19,6 @@ import ash.constants
 from ash.dictionaries_lists import eldict
 
 
-#BUG: TDDFT Dyson not supporting general contraction scheme such as in cc-pVDZ basis set
-#Inconsistency for mos_init and dets_init files, causing wfoverlap to crash
 #TODO: pyscf addition
 #TODO: Wigner option
 #TODO: Finish No-Shakeup option
@@ -1439,7 +1437,6 @@ end")
         #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
         # RB simplification. Separate function for getting determinant-string for Initial State where only one.
         det_init = get_dets_from_single(self.stateI.outfile, self.stateI.restricted, self.stateI.charge, self.stateI.mult, self.totnuccharge, self.frozencore)
-        print("det_init:", det_init)
         # Printing to file
         for blockname, string in det_init.items():
             writestringtofile(string, "dets_init")
@@ -1483,7 +1480,10 @@ end")
         print("Inside run_dyson_calc")
         # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.
         # Check if binary exists
-        if os.path.exists(self.path_wfoverlap) is False:
+        if self.path_wfoverlap == None:
+            print("path_wfoverlap is not set. Exiting")
+            ashexit()
+        elif os.path.exists(self.path_wfoverlap) is False:
             print("Path {} does NOT exist !".format(self.path_wfoverlap))
             ashexit()
         print("Looping over Finalstate multiplicities")
@@ -1908,27 +1908,11 @@ mocoef
 #get determinant-string output for single-determinant case
 def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
     print("\nInside get_dets_from_single")
-    # get infos from logfile
-    data=readfile(logfile)
+    #Define empty dict
     infos={}
-    for iline,line in enumerate(data):
-      #print("line:", line)
-      #if '# of contracted basis functions' in line:
-      if 'Number of basis functions                   ...' in line:
-        infos['nbsuse']=int(line.split()[-1])
-        print("infos['nbsuse']:", infos['nbsuse'])
-      if 'Orbital ranges used for CIS calculation:' in line:
-        s=data[iline+1].replace('.',' ').split()
-        infos['NFC']=int(s[3])
-        infos['NOA']=int(s[4])-int(s[3])+1
-        infos['NVA']=int(s[7])-int(s[6])+1
-        if restr:
-          infos['NOB']=infos['NOA']
-          infos['NVB']=infos['NVA']
-        else:
-          s=data[iline+2].replace('.',' ').split()
-          infos['NOB']=int(s[4])-int(s[3])+1
-          infos['NVB']=int(s[7])-int(s[6])+1
+    #Read MO-energies in order to get number of orbitals (ORCA5 bug for general contracted basis sets requires this)
+    mo_dict = ash.interfaces.interface_ORCA.MolecularOrbitalGrab(logfile)
+    infos['nbsuse']=mo_dict["totnumorbitals"]
     if not 'NOA' in infos:
       charge=gscharge
       #charge=QMin['chargemap'][gsmult]
@@ -1938,7 +1922,6 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
       infos['NVA']=infos['nbsuse']-infos['NOA']
       infos['NVB']=infos['nbsuse']-infos['NOB']
       infos['NFC']=0
-
 
     # get ground state configuration
     # make step vectors (0:empty, 1:alpha, 2:beta, 3:docc)
@@ -1964,7 +1947,6 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
     return strings
 
 
-
 #Get determinants from ORCA cisfile.
 def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnuccharge,nstates_to_extract,nstates_to_skip,no_tda,frozencore,wfthres):
     print("Inside get_dets_from_cis")
@@ -1984,12 +1966,19 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
     print("nstates_to_extract:", nstates_to_extract)
     data=readfile(logfile)
     infos={}
+    #Read MO-energies in order to get number of orbitals (ORCA5 bug for general contracted basis sets requires this)
+    mo_dict = ash.interfaces.interface_ORCA.MolecularOrbitalGrab(logfile)
+    infos['nbsuse']=mo_dict["totnumorbitals"]
+
     for iline,line in enumerate(data):
+    #NOTE: Below fails in ORCA5 for generally contracted basis sets like cc-pVnZ.
       #if '# of contracted basis functions' in line:
-      if 'Number of basis functions                   ...' in line:
-        infos['nbsuse']=int(line.split()[-1])
+      #if 'Number of basis functions                   ...' in line:
+      #  infos['nbsuse']=int(line.split()[-1])
+      
       if 'Orbital ranges used for CIS calculation:' in line:
         s=data[iline+1].replace('.',' ').split()
+
         infos['NFC']=int(s[3])
         infos['NOA']=int(s[4])-int(s[3])+1
         infos['NVA']=int(s[7])-int(s[6])+1
