@@ -18,6 +18,9 @@ from ash.functions.functions_elstructure import modosplot,write_cube_diff,read_c
 import ash.constants
 from ash.dictionaries_lists import eldict
 
+
+#BUG: TDDFT Dyson not supporting general contraction scheme such as in cc-pVDZ basis set
+#Inconsistency for mos_init and dets_init files, causing wfoverlap to crash
 #TODO: pyscf addition
 #TODO: Wigner option
 #TODO: Finish No-Shakeup option
@@ -1436,6 +1439,7 @@ end")
         #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
         # RB simplification. Separate function for getting determinant-string for Initial State where only one.
         det_init = get_dets_from_single(self.stateI.outfile, self.stateI.restricted, self.stateI.charge, self.stateI.mult, self.totnuccharge, self.frozencore)
+        print("det_init:", det_init)
         # Printing to file
         for blockname, string in det_init.items():
             writestringtofile(string, "dets_init")
@@ -1912,6 +1916,7 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
       #if '# of contracted basis functions' in line:
       if 'Number of basis functions                   ...' in line:
         infos['nbsuse']=int(line.split()[-1])
+        print("infos['nbsuse']:", infos['nbsuse'])
       if 'Orbital ranges used for CIS calculation:' in line:
         s=data[iline+1].replace('.',' ').split()
         infos['NFC']=int(s[3])
