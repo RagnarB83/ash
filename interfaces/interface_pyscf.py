@@ -819,8 +819,6 @@ class PySCFTheory:
             print("SCF energy:", scf_result.e_tot)
             if self.printlevel >1:
                 print("SCF energy components:", scf_result.scf_summary)
-            if self.dispersion != None:
-                print(f"Dispersion contribution: {self.mf.e_vdw} (included in SCF energy)")
 
             #Possible population analysis (if dm=None then taken from mf object)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
