@@ -18,6 +18,7 @@ import random
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, 
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
+                  dispersion=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
                   CAS=False, CASSCF=False, active_space=None, stability_analysis=False, casscf_maxcycle=200,
@@ -113,6 +114,10 @@ class PySCFTheory:
         #MC-PDFT
         self.mcpdft=mcpdft
         self.mcpdft_functional=mcpdft_functional
+
+        #Dispersion option
+        #Uses: https://github.com/ajz34/vdw
+        self.dispersion=dispersion
 
         #Special PySCF run option
         self.specialrun=specialrun
@@ -599,9 +604,9 @@ class PySCFTheory:
 
         #Load pyscf
         import pyscf
-        #Set numcores
+        #Set PySCF threads to numcores
         pyscf.lib.num_threads(self.numcores)
-
+        print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
         #Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for PYSCFTheory.run method", BC.END)
@@ -703,7 +708,7 @@ class PySCFTheory:
             #mf._numint.libxc = xcfun
 
             #Grid setting
-            self.mf.grids.level = self.gridlevel
+            self.mf.grids.level = self.gridlevel 
 
         self.mf.conv_tol = self.conv_tol
         #Control printing here. TOdo: make variable
@@ -769,6 +774,7 @@ class PySCFTheory:
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
                 print("SCF energy:", scf_result.e_tot)
+
             #Possible stability analysis
             self.run_stability_analysis()
             print("SCF energy:", scf_result.e_tot)
@@ -1051,7 +1057,39 @@ class PySCFTheory:
         else:
             if self.printlevel >1:
                 print("No post-SCF job.")
-        
+
+
+
+        ##############
+        #DISPERSION
+        ##############
+        #Dispersion correction
+        if self.dispersion != None:
+            print("Dispersion correction is active")
+            try:
+                import vdw
+            except ModuleNotFoundError:
+                print("vdw library not found. See https://github.com/ajz34/vdw")
+                print("You probably have to do: pip install pyvdw")
+                ashexit()
+            except ImportError as e:
+                print("Import Error when importing vdw")
+                print("Exception message from vdw library:", e)
+                ashexit()
+
+            if self.dispersion == 'D3':
+                print("D3 correction on")
+                from vdw import to_dftd3
+                self.mf = to_dftd3(self.mf, version="bjm")
+            elif self.dispersion == 'TS':
+                print("TS correction on")
+                from vdw import to_mbd
+                self.mf = to_mbd(self.mf, variant="ts")  
+            elif self.dispersion == 'MBD':
+                print("MBD correction on")
+                from vdw import to_mbd
+                self.mf = to_mbd(self.mf, variant="rsscs") 
+
         ##############
         #GRADIENT
         ##############
@@ -1064,7 +1102,7 @@ class PySCFTheory:
                 ashexit()
             if PC is True:
                 print("Gradient with PC is not quite ready")
-                print("Units need to be checked.")
+                #print("Units need to be checked.")
                 ashexit()
                 hfg = mm_charge_grad(grad.dft.RKS(self.mf), current_MM_coords, MMcharges)
                 #                grad = self.mf.nuc_grad_method()
