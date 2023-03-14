@@ -687,11 +687,13 @@ class PySCFTheory:
 
         #Printing settings.
         if self.printsetting==True:
-            print("Printing output to stdout...")
+            if self.printlevel >1:
+                print("Printing output to stdout...")
             #np.set_printoptions(linewidth=500) TODO: not sure
         else:
-            print("PySCF printing to:", self.filename )
             self.mf.stdout = open(self.filename+'.out', 'w')
+            if self.printlevel >0:
+                print(f"PySCF printing to: {self.filename}.out")
 
         #DFT
         if self.functional is not None:
