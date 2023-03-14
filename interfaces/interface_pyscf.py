@@ -1123,6 +1123,9 @@ class PySCFTheory:
                 print("self.mf", self.mf)
                 print("self.mf dict", self.mf.__dict__)
                 print("self.mf version", self.mf.version)
+                if self.dispersion != None:
+                    self.mf.version='bj'
+                    print("self.mf version", self.mf.version)
                 grad = self.mf.nuc_grad_method()
                 self.gradient = grad.kernel()
                 if self.printlevel >1:
