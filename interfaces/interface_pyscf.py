@@ -1126,7 +1126,7 @@ class PySCFTheory:
                     #print("self.mf version", self.mf.version)
                     #self.mf.version='bj'
                     #print("self.mf version", self.mf.version)
-                    self.gradient = self.mf.grad()
+                    self.gradient = self.mf.nuc_grad_method().kernel()
                 else:
                     self.gradient = self.mf.nuc_grad_method().kernel()
                 if self.printlevel >1:
