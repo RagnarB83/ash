@@ -574,15 +574,12 @@ class PySCFTheory:
 
         if self.specialrun is True:
             #Attempt at having special run method that could be run my multiprocessing
-            print("special run")
             #Create pyscf inputscript that defines mol object in script
             #Writes things that should be run etc and then executes by launching separate process
-            #Ugly
-            #NOTE: Problem. Theory object can  not be pickled.
+            #Not ready
+            ashexit()
             energy=random.random()
             grad=np.random.random([len(elems),3])
-            print("SpecialPyscf energy:", energy)
-            print("grad:", grad)
             return energy, grad
         else:
 
@@ -775,11 +772,13 @@ class PySCFTheory:
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
                 num_scf_orbitals_alpha=len(scf_result.mo_occ)
                 print("Total num. orbitals:", num_scf_orbitals_alpha)
-                self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
+                if self.printlevel >1:
+                    self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             else:
                 num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
                 print("Total num. orbitals:", num_scf_orbitals_alpha)
-                self.run_population_analysis(self.mf, dm=None, unrestricted=True, type='Mulliken', label='SCF')
+                if self.printlevel >1:
+                    self.run_population_analysis(self.mf, dm=None, unrestricted=True, type='Mulliken', label='SCF')
 
             #Get SCFenergy as initial total energy
             self.energy = scf_result.e_tot
