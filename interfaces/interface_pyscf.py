@@ -758,7 +758,6 @@ class PySCFTheory:
                 print("D3 correction on")
                 from vdw import to_dftd3
                 self.mf = to_dftd3(self.mf)
-                print("self.mf version", self.mf.version)
             if self.dispersion == 'D4':
                 print("D4 correction on")
                 from vdw import to_dftd4
@@ -1124,9 +1123,9 @@ class PySCFTheory:
                     print("here")
                     print("self.mf", self.mf)
                     print("self.mf dict", self.mf.__dict__)
-                    print("self.mf version", self.mf.version)
-                    self.mf.version='bj'
-                    print("self.mf version", self.mf.version)
+                    #print("self.mf version", self.mf.version)
+                    #self.mf.version='bj'
+                    #print("self.mf version", self.mf.version)
                     self.gradient = self.mf.grad()
                 else:
                     self.gradient = self.mf.nuc_grad_method().kernel()
