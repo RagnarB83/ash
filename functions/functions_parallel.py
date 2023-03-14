@@ -66,6 +66,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         theory=copy.deepcopy(theory)
     else:
         #print("copytheory False")
+        pass
 
 
     if printlevel >= 2:
