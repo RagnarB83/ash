@@ -210,8 +210,13 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         tangent = read_tangent("CItangent.xyz")
         TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
 
+
+        #Convert atom indices to full system indices
+        if ActiveRegion is True:
+            print("TSmodeatoms (active region):", TSmodeatoms)
+            TSmodeatoms = [actatoms[a] for a in actatoms]
+            print("TSmodeatoms (full system):", TSmodeatoms)
         print(f"Performing partial Hessian calculation using atoms: {TSmodeatoms}")
-        #TODO: Make this work for QMMMTheory
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization 
         result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms, runmode=runmode, numcores=numcores)
