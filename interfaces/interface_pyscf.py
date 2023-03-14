@@ -547,7 +547,8 @@ class PySCFTheory:
                 stableprint(stable_i, stable_e)
             print_time_rel(module_init_time, modulename='Stability analysis', moduleindex=2)
         else:
-            print("No stability analysis requested")
+            if self.printlevel >1:
+                print("No stability analysis requested")
         
     #Stability analysis loop for any mf object
     def stability_analysis_loop(self,mf,mos,maxcyc=10):
@@ -593,8 +594,8 @@ class PySCFTheory:
             charge=None, mult=None,pyscf=None ):
 
         module_init_time=time.time()
-
-        print(BC.OKBLUE,BC.BOLD, "------------RUNNING PYSCF INTERFACE-------------", BC.END)
+        if self.printlevel >0:
+            print(BC.OKBLUE,BC.BOLD, "------------RUNNING PYSCF INTERFACE-------------", BC.END)
 
         #Load pyscf
         import pyscf
@@ -686,10 +687,10 @@ class PySCFTheory:
 
         #Printing settings.
         if self.printsetting==True:
-            print("Printsetting = True. Printing output to stdout...")
+            print("Printing output to stdout...")
             #np.set_printoptions(linewidth=500) TODO: not sure
         else:
-            print("Printsetting = False. Printing to:", self.filename )
+            print("PySCF printing to:", self.filename )
             self.mf.stdout = open(self.filename+'.out', 'w')
 
         #DFT
@@ -734,13 +735,15 @@ class PySCFTheory:
         #SCF STEP
         #####################
         if self.SCF is True:
-            print(f"Running SCF (SCF-type: {self.scf_type})")
+            if self.printlevel >1:
+                print(f"Running SCF (SCF-type: {self.scf_type})")
             self.mf.verbose=self.verbose_setting+1
             if self.write_chkfile_name != None:
                 self.mf.chkfile = self.write_chkfile_name
             else:
                 self.mf.chkfile = "scf.chk"
-            print("Will write checkpointfile:", self.mf.chkfile )
+            if self.printlevel >1:
+                print("Will write checkpointfile:", self.mf.chkfile )
 
             #SCF from chkpointfile orbitals if specfied
             if self.moreadfile != None:
@@ -759,24 +762,28 @@ class PySCFTheory:
 
                 
             else:
-                print("Starting SCF from default guess orbitals")
+                if self.printlevel >1:
+                    print("Starting SCF from default guess orbitals")
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
                 print("SCF energy:", scf_result.e_tot)
             #Possible stability analysis
             self.run_stability_analysis()
             print("SCF energy:", scf_result.e_tot)
-            print("SCF energy components:", scf_result.scf_summary)
+            if self.printlevel >1:
+                print("SCF energy components:", scf_result.scf_summary)
 
             #Possible population analysis (if dm=None then taken from mf object)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
                 num_scf_orbitals_alpha=len(scf_result.mo_occ)
-                print("Total num. orbitals:", num_scf_orbitals_alpha)
+                if self.printlevel >1:
+                    print("Total num. orbitals:", num_scf_orbitals_alpha)
                 if self.printlevel >1:
                     self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             else:
                 num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
-                print("Total num. orbitals:", num_scf_orbitals_alpha)
+                if self.printlevel >1:
+                    print("Total num. orbitals:", num_scf_orbitals_alpha)
                 if self.printlevel >1:
                     self.run_population_analysis(self.mf, dm=None, unrestricted=True, type='Mulliken', label='SCF')
 
@@ -984,7 +991,8 @@ class PySCFTheory:
                     casscf.chkfile = self.write_chkfile_name
                 else:
                     casscf.chkfile = "casscf.chk"
-                print("Will write checkpointfile:", casscf.chkfile )
+                if self.printlevel >1:
+                    print("Will write checkpointfile:", casscf.chkfile )
 
                 #CASSCF starting from AVAS/DMET_CAS/MP2 natural orbitals
                 #Making sure that we only feed in one set of orbitals into CAS (CC is OK with alpha and beta)
@@ -1039,14 +1047,16 @@ class PySCFTheory:
                     self.energy = e_tot
                     print("CAS-CI run done\n")
         else:
-            print("No post-SCF job.")
+            if self.printlevel >1:
+                print("No post-SCF job.")
         
         ##############
         #GRADIENT
         ##############
         #NOTE: only SCF supported for now
         if Grad==True:
-            print("Gradient requested")
+            if self.printlevel >1:
+                print("Gradient requested")
             if self.postSCF is True:
                 print("Gradient for postSCF methods is not implemented in ASH interface")
                 ashexit()
@@ -1058,11 +1068,13 @@ class PySCFTheory:
                 #                grad = self.mf.nuc_grad_method()
                 self.gradient = hfg.kernel()
             else:
-                print("Calculating regular SCF gradient")
+                if self.printlevel >1:
+                    print("Calculating regular SCF gradient")
                 #Doing regular SCF gradeitn
                 grad = self.mf.nuc_grad_method()
                 self.gradient = grad.kernel()
-                print("Gradient calculation done")
+                if self.printlevel >1:
+                    print("Gradient calculation done")
 
 
         #TODO: write in error handling here
