@@ -1127,7 +1127,9 @@ class PySCFTheory:
                 if self.dispersion != None:
                     self.mf.version='bj'
                     print("self.mf version", self.mf.version)
-                self.gradient = self.mf.nuc_grad_method().kernel()
+                    self.gradient = self.mf.grad()
+                else:
+                    self.gradient = self.mf.nuc_grad_method().kernel()
                 if self.printlevel >1:
                     print("Gradient calculation done")
 
