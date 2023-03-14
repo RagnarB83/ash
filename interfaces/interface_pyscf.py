@@ -1120,11 +1120,11 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
                 #Doing regular SCF gradient
-                print("here")
-                print("self.mf", self.mf)
-                print("self.mf dict", self.mf.__dict__)
-                print("self.mf version", self.mf.version)
                 if self.dispersion != None:
+                    print("here")
+                    print("self.mf", self.mf)
+                    print("self.mf dict", self.mf.__dict__)
+                    print("self.mf version", self.mf.version)
                     self.mf.version='bj'
                     print("self.mf version", self.mf.version)
                     self.gradient = self.mf.grad()
