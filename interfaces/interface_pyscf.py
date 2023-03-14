@@ -804,7 +804,6 @@ class PySCFTheory:
                     print("Ignoring and continuing")
                     scf_result = self.mf.run()
                     print("SCF energy:", scf_result.e_tot)
-
                 
             else:
                 if self.printlevel >1:
@@ -812,6 +811,7 @@ class PySCFTheory:
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
                 print("SCF energy:", scf_result.e_tot)
+                self.gradient = self.mf.nuc_grad_method().kernel()
 
             #Possible stability analysis
             self.run_stability_analysis()
