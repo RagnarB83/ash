@@ -819,7 +819,7 @@ class PySCFTheory:
             if self.printlevel >1:
                 print("SCF energy components:", scf_result.scf_summary)
             if self.dispersion != None:
-                print("Dispersion energy:", self.mf.e_vdw)
+                print(f"Dispersion contribution: {self.mf.e_vdw} (included in SCF energy)")
 
             #Possible population analysis (if dm=None then taken from mf object)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
@@ -1118,7 +1118,7 @@ class PySCFTheory:
             else:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
-                #Doing regular SCF gradeitn
+                #Doing regular SCF gradient
                 grad = self.mf.nuc_grad_method()
                 self.gradient = grad.kernel()
                 if self.printlevel >1:
