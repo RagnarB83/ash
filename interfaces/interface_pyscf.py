@@ -732,7 +732,41 @@ class PySCFTheory:
             else:
                 self.frozen_orbital_indices=self.frozen_core_orbital_indices
             print("Final frozen-orbital list (core and virtuals):", self.frozen_orbital_indices)
-        
+
+
+
+
+        ##############
+        #DISPERSION
+        ##############
+        #Modifying self.mf object
+        if self.dispersion != None:
+            print("Dispersion correction is active")
+            try:
+                import vdw
+            except ModuleNotFoundError:
+                print("vdw library not found. See https://github.com/ajz34/vdw")
+                print("You probably have to do: pip install pyvdw")
+                ashexit()
+            except ImportError as e:
+                print("Import Error when importing vdw")
+                print("Exception message from vdw library:", e)
+                print("Note: A toml library also needs to be installed: e.g. conda install toml or pip install toml")
+                ashexit()
+
+            if self.dispersion == 'D3':
+                print("D3 correction on")
+                from vdw import to_dftd3
+                self.mf = to_dftd3(self.mf, version="bjm")
+            elif self.dispersion == 'TS':
+                print("TS correction on")
+                from vdw import to_mbd
+                self.mf = to_mbd(self.mf, variant="ts")  
+            elif self.dispersion == 'MBD':
+                print("MBD correction on")
+                from vdw import to_mbd
+                self.mf = to_mbd(self.mf, variant="rsscs") 
+
         
         ##############################
         #RUNNING
@@ -780,6 +814,8 @@ class PySCFTheory:
             print("SCF energy:", scf_result.e_tot)
             if self.printlevel >1:
                 print("SCF energy components:", scf_result.scf_summary)
+            if self.dispersion != None:
+                print("Dispersion energy:", self.mf.e_vdw)
 
             #Possible population analysis (if dm=None then taken from mf object)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
@@ -1057,38 +1093,6 @@ class PySCFTheory:
         else:
             if self.printlevel >1:
                 print("No post-SCF job.")
-
-
-
-        ##############
-        #DISPERSION
-        ##############
-        #Dispersion correction
-        if self.dispersion != None:
-            print("Dispersion correction is active")
-            try:
-                import vdw
-            except ModuleNotFoundError:
-                print("vdw library not found. See https://github.com/ajz34/vdw")
-                print("You probably have to do: pip install pyvdw")
-                ashexit()
-            except ImportError as e:
-                print("Import Error when importing vdw")
-                print("Exception message from vdw library:", e)
-                ashexit()
-
-            if self.dispersion == 'D3':
-                print("D3 correction on")
-                from vdw import to_dftd3
-                self.mf = to_dftd3(self.mf, version="bjm")
-            elif self.dispersion == 'TS':
-                print("TS correction on")
-                from vdw import to_mbd
-                self.mf = to_mbd(self.mf, variant="ts")  
-            elif self.dispersion == 'MBD':
-                print("MBD correction on")
-                from vdw import to_mbd
-                self.mf = to_mbd(self.mf, variant="rsscs") 
 
         ##############
         #GRADIENT
