@@ -758,6 +758,10 @@ class PySCFTheory:
                 print("D3 correction on")
                 from vdw import to_dftd3
                 self.mf = to_dftd3(self.mf, version="bjm")
+            if self.dispersion == 'D4':
+                print("D4 correction on")
+                from vdw import to_dftd4
+                self.mf = to_dftd4(self.mf)
             elif self.dispersion == 'TS':
                 print("TS correction on")
                 from vdw import to_mbd
