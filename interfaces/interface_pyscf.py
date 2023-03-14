@@ -1138,19 +1138,10 @@ class PySCFTheory:
 
                 if self.dispersion != None:
                     if self.dispersion == "D3" or self.dispersion == "D4":
-                        print("vdw_gradient", vdw_gradient)
                         self.gradient = self.gradient + vdw_gradient
+                        if self.printlevel > 1:
+                                print("vdw_gradient", vdw_gradient)
 
-                #if self.dispersion != None:
-                #    print("here")
-                #    print("self.mf", self.mf)
-                #    print("self.mf dict", self.mf.__dict__)
-                    #print("self.mf version", self.mf.version)
-                    #self.mf.version='bj'
-                    #print("self.mf version", self.mf.version)
-                #    self.gradient = self.mf.nuc_grad_method().kernel()
-                #else:
-                    
                 if self.printlevel >1:
                     print("Gradient calculation done")
 

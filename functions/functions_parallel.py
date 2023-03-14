@@ -109,7 +109,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
             else:
                 moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
 
-    #Label is not tuple. Not coming from calc_surface funcitons
+    #Label is not tuple. Not coming from calc_surface functions
     elif type(label) == float or type(label) == int:
         if printlevel >= 2:
             print("Label is float or int")
