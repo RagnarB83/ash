@@ -811,7 +811,9 @@ class PySCFTheory:
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
                 print("SCF energy:", scf_result.e_tot)
+                self.mf.xc = self.functional
                 self.gradient = self.mf.nuc_grad_method().kernel()
+                
 
             #Possible stability analysis
             self.run_stability_analysis()
