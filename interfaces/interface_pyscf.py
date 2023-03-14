@@ -1119,6 +1119,10 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
                 #Doing regular SCF gradient
+                print("here")
+                print("self.mf", self.mf)
+                print("self.mf dict", self.mf__dict__)
+                print("self.mf version", self.mf.version)
                 grad = self.mf.nuc_grad_method()
                 self.gradient = grad.kernel()
                 if self.printlevel >1:
