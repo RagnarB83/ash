@@ -756,12 +756,14 @@ class PySCFTheory:
 
             if self.dispersion == 'D3':
                 print("D3 correction on")
-                from vdw import to_dftd3
-                self.mf = to_dftd3(self.mf, do_grad=Grad)
+                from vdw import to_dftd3, WithDFTD3
+                Dispersion=WithDFTD3
+                #self.mf = to_dftd3(self.mf, do_grad=Grad)
             if self.dispersion == 'D4':
                 print("D4 correction on")
-                from vdw import to_dftd4
-                self.mf = to_dftd4(self.mf, do_grad=Grad)
+                from vdw import to_dftd4,WithDFTD4
+                Dispersion=WithDFTD4
+                #self.mf = to_dftd4(self.mf, do_grad=Grad)
             elif self.dispersion == 'TS':
                 print("TS correction on")
                 from vdw import to_mbd
@@ -811,9 +813,6 @@ class PySCFTheory:
                 #SCF starting from default guess orbitals
                 scf_result = self.mf.run()
                 print("SCF energy:", scf_result.e_tot)
-                self.mf.xc = self.functional
-                self.gradient = self.mf.nuc_grad_method().kernel()
-                
 
             #Possible stability analysis
             self.run_stability_analysis()
@@ -837,8 +836,23 @@ class PySCFTheory:
                 if self.printlevel >1:
                     self.run_population_analysis(self.mf, dm=None, unrestricted=True, type='Mulliken', label='SCF')
 
-            #Get SCFenergy as initial total energy
-            self.energy = scf_result.e_tot
+            #Dispersion correction
+            if self.dispersion != None:
+                if self.dispersion == "D3" or self.dispersion == "D4"
+                    with_vdw = Dispersion(mol, xc=self.functional)
+                    vdw_energy = with_vdw.eng
+                    vdw_gradient = with_vdw.grad
+                    print(f"{self.dispersion} dispersion energy is: {vdw_energy}")
+                else:
+                    #For TS and MBD it is calculated by the wrapper and already included in thh SCF
+                    vdw_energy=0.0 #to avoid double-counting
+                    print(f"{self.dispersion} dispersion energy is: {self.mf.e_vdw}")
+            else:
+                vdw_energy=0.0
+            
+
+            #Total energy is SCF energy + possible vdW energy
+            self.energy = scf_result.e_tot + vdw_energy
 
             #LOSC
             if self.losc is True:
@@ -1100,6 +1114,7 @@ class PySCFTheory:
             if self.printlevel >1:
                 print("No post-SCF job.")
 
+
         ##############
         #GRADIENT
         ##############
@@ -1120,17 +1135,24 @@ class PySCFTheory:
             else:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
-                #Doing regular SCF gradient
+                
+                self.gradient = self.mf.nuc_grad_method().kernel()
+
                 if self.dispersion != None:
-                    print("here")
-                    print("self.mf", self.mf)
-                    print("self.mf dict", self.mf.__dict__)
+                    if self.dispersion == "D3" or self.dispersion == "D4":
+                        print("vdw_gradient", vdw_gradient)
+                        self.gradient = self.gradient + vdw_gradient
+
+                #if self.dispersion != None:
+                #    print("here")
+                #    print("self.mf", self.mf)
+                #    print("self.mf dict", self.mf.__dict__)
                     #print("self.mf version", self.mf.version)
                     #self.mf.version='bj'
                     #print("self.mf version", self.mf.version)
-                    self.gradient = self.mf.nuc_grad_method().kernel()
-                else:
-                    self.gradient = self.mf.nuc_grad_method().kernel()
+                #    self.gradient = self.mf.nuc_grad_method().kernel()
+                #else:
+                    
                 if self.printlevel >1:
                     print("Gradient calculation done")
 
