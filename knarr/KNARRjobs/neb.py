@@ -175,6 +175,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     # Initialize second run of neb
     # --------------------------------------------------------------------------------
     if second_run:
+        print("zoom is not available yet")
+        exit()
         # Get Zoom Region
         CI = np.argmax(path.GetEnergy())
         Ereactant = path.GetEnergy()[0]

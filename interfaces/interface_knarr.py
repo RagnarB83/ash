@@ -320,6 +320,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} CPU cores available to this ASH job on the computing node", BC.END)
     elif runmode == 'serial' and numcores == 1:
         print (BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
+        print("theory:", theory)
+        print("theory.numcors:", theory.numcores)
         if theory.numcores > 1:
             print(BC.WARNING,f"Theory parallelization is active and will utilize: {theory.numcores} CPU cores per image.",BC.END)
         else:
