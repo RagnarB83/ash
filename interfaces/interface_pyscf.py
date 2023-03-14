@@ -153,7 +153,6 @@ class PySCFTheory:
 
         #Attempting to load pyscf
         #self.load_pyscf()
-        #self.set_numcores(numcores)
         self.numcores=numcores
         if self.losc is True:
             self.load_losc(loscpath)
@@ -293,11 +292,12 @@ class PySCFTheory:
             print(BC.FAIL, "Problem importing pyqmc.api. Make sure pyqmc has been installed: pip install pyqmc", BC.END)
             ashexit(code=9)
     #Set numcores method
-    #def set_numcores(self,numcores):
-    #    self.numcores=numcores
-    #    print("Setting numcores to: ", self.numcores)
+    def set_numcores(self,numcores):
+        self.numcores=numcores
+        print("Setting numcores to: ", self.numcores)
     #    #Controlling OpenMP parallelization.
-    #    pyscf.lib.num_threads(numcores)
+        import pyscf
+        pyscf.lib.num_threads(numcores)
     #Cleanup after run.
     def cleanup(self):
         print("Cleaning up old PySCF files")
@@ -307,23 +307,28 @@ class PySCFTheory:
         except:
             pass
     def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies, label="orbs"):
+        import pyscf
+        from pyscf.tools import molden
         print("Writing orbitals to disk as Molden file")
         #pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
         with open(f'pyscf_{label}.molden', 'w') as f1:
-            pyscf_molden.header(mol, f1)
-            pyscf_molden.orbital_coeff(mol, f1, mo_coeffs, ene=mo_energies, occ=occupations)
+            molden.header(mol, f1)
+            molden.orbital_coeff(mol, f1, mo_coeffs, ene=mo_energies, occ=occupations)
     
     #Write Cube files for a list of orbital indices
     def cubegen_orbital(self, mol, name, coeffs, nx=60,ny=60,nz=60):
-        pyscf_tools.cubegen.orbital(mol, name, coeffs, nx=nx, ny=ny, nz=nz)
+        import pyscf.tools
+        pyscf.tools.cubegen.orbital(mol, name, coeffs, nx=nx, ny=ny, nz=nz)
         print("cubegen_orbital: Wrote file:", name)
     #Write Cube file for density
     def cubegen_density(self, mol, name, dm, nx=60,ny=60,nz=60):
-        pyscf_tools.cubegen.density(mol, name, dm, nx=nx, ny=ny, nz=nz)
+        import pyscf.tools
+        pyscf.tools.cubegen.density(mol, name, dm, nx=nx, ny=ny, nz=nz)
         print("cubegen_density: Wrote file:", name)
     #Write Cube file for MEP
     def cubegen_mep(self, mol, name, dm, nx=60,ny=60,nz=60):
-        pyscf_tools.cubegen.mep(mol, name, dm, nx=nx, ny=ny, nz=nz)
+        import pyscf.tools
+        pyscf.tools.cubegen.mep(mol, name, dm, nx=nx, ny=ny, nz=nz)
         print("cubegen_mep: Wrote file:", name)
     #Natural orbital at the RHF/UHF MP2, CCSD, CCSD(T), AVAS-CASSCF, DMET-CASSCF levels
     #Also possible to do  KS-CC or KS-MP2
@@ -335,6 +340,9 @@ class PySCFTheory:
     def calculate_natural_orbitals(self,mol, mf, method='MP2', CAS_AO_labels=None, elems=None, relaxed=False, numcores=1):
         module_init_time=time.time()
         print("Inside calculate_natural_orbitals")
+        #Necessary to reimport
+        import pyscf
+        import pyscf.mcscf
         print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
 
         #Determine frozen core from element list
@@ -353,6 +361,7 @@ class PySCFTheory:
                 mf = mf.to_uhf()
         if 'MP2' in method:
             print("Running MP2 natural orbital calculation")
+            import pyscf.mp
             # MP2 natural occupation numbers and natural orbitals
             #natocc, natorb = pyscf_dmp2(mf.to_uhf()).make_natorbs() Old
             
@@ -372,7 +381,7 @@ class PySCFTheory:
                     print("Mulliken analysis for UHF-MP2 density matrix")
                     self.run_population_analysis(mf, unrestricted=True, dm=mp2_dm, type='Mulliken', label='MP2')
                 #TODO: Fix. Slightly silly, calling make_natural_orbitals will cause dm calculation again
-                natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
+                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mp2)
             elif method == 'DFMP2' or method =='DFMP2relax':
                 #DF-MP2 scales better but syntax differs: https://pyscf.org/user/mp.html#dfmp2
                 if self.scf_type == "RKS" or self.scf_type == "RHF" :
@@ -418,7 +427,8 @@ class PySCFTheory:
             dm1 = cisolver.make_rdm1(fcivec, norb, (nelec_a,nelec_b))
         elif method == 'AVAS-CASSCF':
             print("Doing AVAS and then CASSCF to get natural orbitals")
-            norb_cas, nel_cas, avasorbitals = pyscf_avas.avas(self.mf, CAS_AO_labels)
+            from pyscf.mcscf import avas
+            norb_cas, nel_cas, avasorbitals = avas.avas(self.mf, CAS_AO_labels)
             print(f"AVAS determined an active space of: CAS({nel_cas},{norb_cas})")
             print(f"Now doing CASSCF using AVAS active space (CAS({nel_cas},{norb_cas})) and AVAS orbitals")
             casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
@@ -428,9 +438,10 @@ class PySCFTheory:
             print("CASSCF occupations", cas_result.mo_occ)
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'DMET-CASSCF':
+            from pyscf.mcscf import dmet_cas
             print("Doing DMET-CAS and then CASSCF to get natural orbitals")
             print("DMET_CAS automatic CAS option chosen")
-            norb_cas, nel_cas, dmetorbitals = pyscf_dmet_cas.guess_cas(mf, mf.make_rdm1(), CAS_AO_labels)
+            norb_cas, nel_cas, dmetorbitals = dmet_cas.guess_cas(mf, mf.make_rdm1(), CAS_AO_labels)
             print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
             print(f"Now doing CASSCF using DMET-CAS active space (CAS({nel_cas},{norb_cas})) and DMET-CAS orbitals")
             casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
@@ -440,6 +451,7 @@ class PySCFTheory:
             print("CASSCF occupations", cas_result.mo_occ)
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'CCSD':
+            import pyscf.cc as pyscf_cc
             print("Running CCSD natural orbital calculation")
             ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
             ccsd.max_cycle=200
@@ -447,6 +459,12 @@ class PySCFTheory:
             ccsd.run()
             natocc, natorb = self.mcscf.addons.make_natural_orbitals(ccsd)
         elif method == 'CCSD(T)':
+            import pyscf.cc as pyscf_cc
+            from pyscf.cc import ccsd_t_lambda_slow as ccsd_t_lambda
+            from pyscf.cc import uccsd_t_lambda
+            from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
+            from pyscf.cc import uccsd_t_rdm
+
             print("Running CCSD(T) natural orbital calculation")
             #No CCSD(T) object in pyscf. So manual approach. Slower algorithms
             ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
@@ -460,14 +478,14 @@ class PySCFTheory:
             if type(ccsd) == pyscf.cc.uccsd.UCCSD:
                 print("CCSD(T) lambda UHF")
                 #NOTE: No threading parallelization seen here, not sure why
-                conv, l1, l2 = self.uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
-                rdm1 = self.uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
+                conv, l1, l2 = uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+                rdm1 = uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
                 print("Mulliken analysis for UHF-CCSD(T) density matrix")
                 self.run_population_analysis(mf, unrestricted=True, dm=rdm1, type='Mulliken', label='CCSD(T)')
             else:
                 print("CCSD(T) lambda RHF")
-                conv, l1, l2 = self.ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
-                rdm1 = self.ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
+                conv, l1, l2 = ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+                rdm1 = ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
                 print("Mulliken analysis for RHF-CCSD(T) density matrix")
                 self.run_population_analysis(mf, unrestricted=False, dm=rdm1, type='Mulliken', label='CCSD(T)')
 
@@ -913,6 +931,7 @@ class PySCFTheory:
         #####################
         if self.CC is True:
             print("Coupled cluster is on !")
+            import pyscf.cc as pyscf_cc
             #Default MO coefficients None (unless MP2natorbs option below)
             mo_coefficients=None
 
@@ -997,6 +1016,7 @@ class PySCFTheory:
 
         elif self.CAS is True:
             print("CAS run is on!")
+            import pyscf.mcscf
             #First run SCF
             scf_result = self.mf.run()
             
@@ -1004,12 +1024,14 @@ class PySCFTheory:
             #Checking for AVAS; DMET_CAS and Chkfile options. Otherwise MP2 natural orbitals.
             print("Checking for CAS initial orbital options.")
             if self.AVAS is True:
+                from pyscf.mcscf import avas
                 print("AVAS automatic CAS option chosen")
-                norb_cas, nel_cas, orbitals = pyscf_avas.avas(self.mf, self.CAS_AO_labels)
+                norb_cas, nel_cas, orbitals = avas.avas(self.mf, self.CAS_AO_labels)
                 print(f"AVAS determined an active space of: CAS({nel_cas},{norb_cas})")
             elif self.DMET_CAS is True:
+                from pyscf.mcscf import dmet_cas
                 print("DMET_CAS automatic CAS option chosen")
-                norb_cas, nel_cas, orbitals = pyscf_dmet_cas.guess_cas(self.mf, self.mf.make_rdm1(), self.CAS_AO_labels)
+                norb_cas, nel_cas, orbitals = dmet_cas.guess_cas(self.mf, self.mf.make_rdm1(), self.CAS_AO_labels)
                 print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
             elif self.moreadfile != None:
                 print("moreadfile option was specified")
@@ -1042,10 +1064,10 @@ class PySCFTheory:
             if self.CASSCF is True:
                 print("Doing CASSCF (orbital optimization)")
                 if self.mcpdft is True:
-                    casscf = self.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+                    casscf = pyscf.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
                 else:
                     #Regular CASSCF
-                    casscf = self.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
+                    casscf = pyscf.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
                 casscf.max_cycle_macro=self.casscf_maxcycle
                 casscf.verbose=self.verbose_setting
                 #Writing of checkpointfile
@@ -1079,7 +1101,10 @@ class PySCFTheory:
                     self.energy=mcpdft_result.e_tot
                 else:
                     #Regular CASSCF
-                    e_tot, e_cas, fcivec, mo, mo_energy = casscf.run(orbitals, natorb=True)
+                    casscf_result = casscf.run(orbitals, natorb=True)
+                    print("casscf_result:", casscf_result)
+                    e_tot = casscf_result.e_tot
+                    e_cas = casscf_result.e_cas
                     print("e_tot:", e_tot)
                     print("e_cas:", e_cas)
                     self.energy = e_tot
@@ -1088,7 +1113,7 @@ class PySCFTheory:
                 print("Doing CAS-CI (no orbital optimization)")
                 if self.mcpdft is True:
                     print("mcpdft is True")
-                    casci= self.mcpdft_l.CASCI (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+                    casci= pyscf.mcpdft_l.CASCI (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
                     casci.verbose=self.verbose_setting
                     mcpdft_result = casci.run()
                     print("E(CASSCF):", mcpdft_result.e_mcscf)
@@ -1100,7 +1125,7 @@ class PySCFTheory:
                     print("CAS-CI run done\n")
                 else:
                     #Regular CAS-CI
-                    casci = self.mcscf.CASCI(self.mf, norb_cas, nel_cas)
+                    casci = pyscf.mcscf.CASCI(self.mf, norb_cas, nel_cas)
                     casci.verbose=self.verbose_setting
                     #CAS-CI from chosen orbitals above
                     e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(orbitals)
