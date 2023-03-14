@@ -757,19 +757,19 @@ class PySCFTheory:
             if self.dispersion == 'D3':
                 print("D3 correction on")
                 from vdw import to_dftd3
-                self.mf = to_dftd3(self.mf)
+                self.mf = to_dftd3(self.mf, do_grad=Grad)
             if self.dispersion == 'D4':
                 print("D4 correction on")
                 from vdw import to_dftd4
-                self.mf = to_dftd4(self.mf)
+                self.mf = to_dftd4(self.mf, do_grad=Grad)
             elif self.dispersion == 'TS':
                 print("TS correction on")
                 from vdw import to_mbd
-                self.mf = to_mbd(self.mf, variant="ts")  
+                self.mf = to_mbd(self.mf, variant="ts", do_grad=Grad)  
             elif self.dispersion == 'MBD':
                 print("MBD correction on")
                 from vdw import to_mbd
-                self.mf = to_mbd(self.mf, variant="rsscs") 
+                self.mf = to_mbd(self.mf, variant="rsscs", do_grad=Grad) 
 
         
         ##############################
