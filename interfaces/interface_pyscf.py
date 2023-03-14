@@ -838,7 +838,7 @@ class PySCFTheory:
 
             #Dispersion correction
             if self.dispersion != None:
-                if self.dispersion == "D3" or self.dispersion == "D4"
+                if self.dispersion == "D3" or self.dispersion == "D4":
                     with_vdw = Dispersion(mol, xc=self.functional)
                     vdw_energy = with_vdw.eng
                     vdw_gradient = with_vdw.grad
