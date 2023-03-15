@@ -55,7 +55,7 @@ def test_OpenMPI():
 
 #Stripped down version of Singlepoint functffragment_file ion for Singlepoint_parallel.
 #NOTE: Version intended for apply_async
-#TODO: This function may still be a bit ORCA-centric. Needs to be generalized 
+#TODO: This function contains 2 many QM-code specific. Needs to be generalized (QM-specifics moved to QMtheory class)
 def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2, copytheory=False):
 
     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run

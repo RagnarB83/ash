@@ -243,7 +243,7 @@ class ORCATheory:
         self.extraline=self.extraline+"\n! OPT "
 
         print("Running ORCA object with {} cores available".format(numcores))
-        print("Job label:", self.label)
+        print("Object label:", self.label)
 
         print("Creating inputfile:", self.filename+'.inp')
         print("ORCA input:")
@@ -293,12 +293,13 @@ class ORCATheory:
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, Hessian=False, PC=False, numcores=None):
+            elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()
         self.runcalls+=1
         if self.printlevel >= 2:
             print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
-
+            print("Object-label:", self.label) #To distinguish multiple objects
+            print("Run-label:", label) #Primarily used in multiprocessing
         #Coords provided to run
         if current_coords is not None:
             pass
@@ -361,7 +362,6 @@ end"""
 
         if self.printlevel >= 2:
             print("Running ORCA object with {} cores available".format(numcores))
-            print("Job label:", self.label)
 
         #MOREAD. Checking file provided exists and determining what to do if not
         if self.moreadfile != None:

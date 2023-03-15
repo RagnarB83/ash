@@ -273,7 +273,8 @@ class xTBTheory:
 
         if self.printlevel >= 2:
             print("------------STARTING XTB INTERFACE-------------")
-
+            print("Object-label:", self.label)
+            print("Run-label:", label)
         #Coords provided to run
         if current_coords is not None:
             pass

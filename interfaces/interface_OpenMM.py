@@ -63,6 +63,7 @@ class OpenMMTheory:
                 Also see http://docs.openmm.org/latest/userguide/application.html")
 
         # OpenMM variables
+        #TODO: Revisit this (might make OpenMMTheory picklable)
         self.openmm = openmm
         self.openmm_app = openmm.app
         self.simulationclass = openmm.app.simulation.Simulation

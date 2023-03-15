@@ -16,7 +16,7 @@ import random
 #TODO: Remove PyQMC from pyscftheory. 
 
 class PySCFTheory:
-    def __init__(self, printsetting=False, printlevel=2, numcores=1, 
+    def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   dispersion=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
@@ -25,7 +25,7 @@ class PySCFTheory:
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name=None,
                   PyQMC=False, PyQMC_nconfig=1, PyQMC_method='DMC',
-                  AVAS=False, DMET_CAS=False, CAS_AO_labels=None,
+                  AVAS=False, DMET_CAS=False, CAS_AO_labels=None, 
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None, specialrun=False):
@@ -58,6 +58,7 @@ class PySCFTheory:
             CAS=True
         #Printlevel
         self.printlevel=printlevel
+        self.label=label
         self.memory=memory
         self.filename=filename
         self.printsetting=printsetting
@@ -619,7 +620,8 @@ class PySCFTheory:
         module_init_time=time.time()
         if self.printlevel >0:
             print(BC.OKBLUE,BC.BOLD, "------------RUNNING PYSCF INTERFACE-------------", BC.END)
-
+            print("Object-label:", self.label)
+            print("Run-label:", label)
         #Load pyscf
         import pyscf
         #Set PySCF threads to numcores
