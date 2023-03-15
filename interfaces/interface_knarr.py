@@ -11,7 +11,7 @@ import time
 import ash
 import ash.constants as constants
 from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC,print_line_with_subheader1,print_line_with_subheader2
-from ash.modules.module_coords import check_charge_mult, write_xyzfile
+from ash.modules.module_coords import check_charge_mult, write_xyzfile, get_conn_atoms_for_list
 from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from_smaller, calc_model_Hessian_ORCA, read_tangent, calc_hessian_xtb
 from ash.modules.module_results import ASH_Results
 
@@ -200,30 +200,42 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         write_hessian(hessian,hessfile=hessianfile)
         #Creating string 
         hessianoption='file:'+str(hessianfile)
-    #Finding atoms that contribute the most to saddlepoint mode according to CI-NEB. Perform partial Hessian optimization
+    #Finding atoms that contribute the most to saddlepoint mode according to CI-NEB. 
+    # Add connecting atoms and erform partial Hessian optimization
     elif hessian_for_TS == 'partial':
         print("hessian_for_TS option: partial")
         print(f"Using climbing image tangent to find dominant atoms in approximate TS mode (tsmode_tangent_threshold={tsmode_tangent_threshold})")
 
         #Getting tangent and atoms that contribute at least X to tangent where X is tsmode_tangent_threshold=0.1 (default)
-        #TODO: Add also connected atoms somehow ?
         tangent = read_tangent("CItangent.xyz")
         TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
-
-
-        #Convert atom indices to full system indices
+        #Convert activeregion atom indices to full system indices
+        print("Determining atoms contributing the most to TS mode")
         if ActiveRegion is True:
             print("TSmodeatoms (active region):", TSmodeatoms)
             TSmodeatoms = [actatoms[a] for a in actatoms]
             print("TSmodeatoms (full system):", TSmodeatoms)
-        print(f"Performing partial Hessian calculation using atoms: {TSmodeatoms}")
+        else:
+            print("TSmodeatoms (full system):", TSmodeatoms)
+        #Now finding the atoms that TSmodeatoms are connected to, for both R, P and SP
+        print("Now finding connected atoms to TSmode-atoms")
+        result_R = get_conn_atoms_for_list(fragment=reactant, atoms=TSmodeatoms)
+        print("result_R:", result_R)
+        result_P = get_conn_atoms_for_list(fragment=product, atoms=TSmodeatoms)
+        print("result_P:", result_P)
+        result_SP = get_conn_atoms_for_list(fragment=SP, atoms=TSmodeatoms)
+        print("result_SP:", result_SP)
+        #Combining
+        Final_partial_hessatoms = np.unique(result_R + result_P + result_SP).tolist()
+
+        print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization 
-        result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms, runmode=runmode, numcores=numcores)
+        result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=Final_partial_hessatoms, runmode=runmode, numcores=numcores)
 
         #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
         #Large Hessian is the actatoms Hessian if actatoms provided
-        combined_hessian = approximate_full_Hessian_from_smaller(SP,result_freq.hessian,TSmodeatoms, large_atomindices=actatoms, restHessian=modelhessian)
+        combined_hessian = approximate_full_Hessian_from_smaller(SP,result_freq.hessian,Final_partial_hessatoms, large_atomindices=actatoms, restHessian=modelhessian)
 
         #Write combined Hessian to disk
         hessianfile="Hessian_from_partial"

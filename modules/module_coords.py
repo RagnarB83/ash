@@ -1268,6 +1268,17 @@ def get_connected_atoms_np(coords, elems, scale, tol, atomindex):
     return connatoms
 
 
+#Get connected atoms for a small list of atoms with input fragment
+#Used e.g. in NEB-TS
+def get_conn_atoms_for_list(atoms=None, fragment=None,scale=1.0, tol=0.1):
+    final_list=[]
+    for atom in atoms:
+        conn = ash.modules.module_coords.get_connected_atoms_np(fragment.coords, fragment.elems, scale, tol, atom)
+        final_list.append(conn)
+    #Remove duplicates and sort
+    return np.unique(final_list).tolist()
+
+
 # Numpy clever loop test.
 # Either atomindex or membs has to be defined
 def get_molecule_members_loop_np(coords, elems, loopnumber, scale, tol, atomindex='', membs=None):
