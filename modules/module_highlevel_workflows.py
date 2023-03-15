@@ -1048,8 +1048,7 @@ maxiter 150\nend
         # TODO: Keep output files for each step
         os.remove(self.ccsdt_1.filename+'.gbw')
 
-        #return final energy and also dictionary with energy components
-        #TODO: remove E_dict
+        #return only final energy now. Energy components accessible as energy_components attribute
         return E_FINAL
 
 #MRCC version

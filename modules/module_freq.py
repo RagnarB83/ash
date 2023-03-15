@@ -263,6 +263,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #OLD code below. To be deleted probably. Attempts to avoid pickling problem
     elif runmode == 'parallel2':
 
+        print("runmode not active")
+        ashexit()
         import multiprocessing as mp
         #import pickle4reducer
         #ctx = mp.get_context()
