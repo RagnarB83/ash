@@ -16,7 +16,7 @@ import random
 #TODO: Remove PyQMC from pyscftheory. 
 
 class PySCFTheory:
-    def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None
+    def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
                   dispersion=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
