@@ -1231,7 +1231,15 @@ end")
         else:
             self.stateI.energy=scfenergygrab(self.theory.filename+'.out')
 
+        #Read MO-energies in order to get number of orbitals (ORCA5 bug for general contracted basis sets requires this)
+        mo_dict = ash.interfaces.interface_ORCA.MolecularOrbitalGrab(self.theory.filename+'.out')
+        self.totnumorbitals=mo_dict["totnumorbitals"]
+        #self.numoccorbitals_alpha=mo_dict["occ_alpha"]
+        #self.numoccorbitals_beta=mo_dict["occ_beta"]
+        #self.numvirtorbitals_alpha=mo_dict["unocc_alpha"]
+        #self.numvirtorbitals_beta=mo_dict["unocc_beta"]
         # Initial state orbitals for MO-DOSplot
+        #TODO: Replace this ??
         self.stateI.occorbs_alpha, self.stateI.occorbs_beta, self.stateI.hftyp = orbitalgrab(self.theory.filename+'.out')
         print("Initial state occupied MO energies (alpha):", self.stateI.occorbs_alpha)
         print("Initial state SCF-type:", self.stateI.hftyp)
@@ -1260,6 +1268,7 @@ end")
                 #Move into Calculated_densities dir
                 shutil.move(f"{self.theory.filename}.spindens.cube", 'Calculated_densities/' + f"{self.stateI.label}.spindens.cube")
 
+    #TODO: Replace this
     def mo_spectrum(self):
         #MO IP spectrum:
         self.stk_alpha,self.stk_beta=modosplot(self.stateI.occorbs_alpha,self.stateI.occorbs_beta,self.stateI.hftyp)
@@ -1408,6 +1417,7 @@ end")
             writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
 
     def TDDFT_dets_prep(self):
+        
         # Create determinant file for ionized TDDFT states
         # Needs Outputfile, CIS-file, restricted-option, XXX, GS multiplicity, number of ion states and states to skip
         # States per Initial and Final options
@@ -1431,15 +1441,15 @@ end")
                     print("Warning: Dyson norms not ready for no_shakeup option yet")
                 writestringtofile(string, "dets_final_mult"+str(fstate.mult))
 
+        # Creating determinant-string for Initial State from orbital information
+        init_determinant_string = get_dets_from_single(self.totnumorbitals, len(self.stateI.occorbs_alpha), len(self.stateI.occorbs_beta),
+                                        self.stateI.restricted, self.frozencore)
+        
+        writestringtofile(init_determinant_string, "dets_init")
 
-        # Now doing initial state. Redefine necessary here.
-        #det_init = get_dets_from_cis("Init_State1.out", "dummy", restricted_I, mults, stateIcharge, stateImult, totnuccharge,
-        #                             statestoextract, statestoskip, no_tda, frozencore, wfthres)
-        # RB simplification. Separate function for getting determinant-string for Initial State where only one.
-        det_init = get_dets_from_single(self.stateI.outfile, self.stateI.restricted, self.stateI.charge, self.stateI.mult, self.totnuccharge, self.frozencore)
         # Printing to file
-        for blockname, string in det_init.items():
-            writestringtofile(string, "dets_init")
+        #for blockname, string in det_init.items():
+        #    writestringtofile(string, "dets_init")
 
     def CAS_dets_prep(self):
         #CASSCF: GETTING GETERMINANTS FROM DETERMINANT-PRINTING OPTION in OUTPUTFILE
@@ -1904,36 +1914,71 @@ mocoef
     return string
 
 
-#RB. New function
 #get determinant-string output for single-determinant case
-def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
-    print("\nInside get_dets_from_single")
-    #Define empty dict
-    infos={}
-    #Read MO-energies in order to get number of orbitals (ORCA5 bug for general contracted basis sets requires this)
-    mo_dict = ash.interfaces.interface_ORCA.MolecularOrbitalGrab(logfile)
-    infos['nbsuse']=mo_dict["totnumorbitals"]
+#From totnumorbitals, number of alpha occupied and beta-occupied orbs
+#Avoid issue of ECP since only active orbital infor is provided
+def get_dets_from_single(totnumorbitals,numocc_alpha,numocc_beta,restr,frozencore_electrons=0):
+    #TODO: frozencore???
+
+    #Actual number of electrons provided (ECP electrons not counted)
+    actnumelectrons=numocc_alpha+numocc_beta
+
+    #Creating determinant string
+    #Restricted
+    if restr is True:
+        numoccorbitals = int(actnumelectrons/2)
+        #occupation numbers: 3 for doubly occupied, 0 for empty
+        occorbs=[3 for i in range(numoccorbitals)]
+        virtorbs=[0 for i in range(totnumorbitals-numoccorbitals)]
+        #occupation_list= occorbs + virtorbs
+        detstring = "d"*len(occorbs)+"e"*len(virtorbs)
+    #Unrestricted
+    else:
+        #occupation numbers: 1 for alpha, 2 for beta, 0 for empty
+        occ_alpha=[1 for i in range(numocc_alpha)]
+        virt_alpha=[0 for i in range(totnumorbitals-numocc_alpha)]
+        occ_beta=[2 for i in range(numocc_beta)] 
+        virt_beta=[0 for i in range(totnumorbitals-numocc_beta)]
+        #occupation_list=occ_alpha+virt_alpha+occ_beta+virt_beta
+        detstring = "a"*len(occ_alpha)+"e"*len(virt_alpha)+"b"*len(occ_beta)+"e"*len(virt_beta)
+
+    numstates=1 #Only 1 state Initital
+    numdets=1 #Only 1 determinant for regular SCF-state
+    finalstring = f"{numstates} {totnumorbitals} {numdets}\n{detstring}   1.00"
+    return finalstring
+
+
+
     if not 'NOA' in infos:
       charge=gscharge
+      print("gscharge:", gscharge)
       #charge=QMin['chargemap'][gsmult]
       nelec=float(totnuccharge-charge)
+      print("nelec:", nelec)
       infos['NOA']=int(nelec/2. + float(gsmult-1)/2. )
+      print("infos['NOA']:", infos['NOA'])
       infos['NOB']=int(nelec/2. - float(gsmult-1)/2. )
+      print("infos['NOB']:", infos['NOB'])
       infos['NVA']=infos['nbsuse']-infos['NOA']
+      print("infos['NVA']:", infos['NVA'])
       infos['NVB']=infos['nbsuse']-infos['NOB']
       infos['NFC']=0
 
     # get ground state configuration
     # make step vectors (0:empty, 1:alpha, 2:beta, 3:docc)
     if restr:
+        print("here")
         occ_A=[ 3 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
+        print("len occ_A:", len(occ_A))
+        print("occ_A:", occ_A)
+
     if not restr:
         occ_A=[ 1 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
         occ_B=[ 2 for i in range(infos['NFC']+infos['NOB']) ]+[ 0 for i in range(infos['NVB']) ]
     occ_A=tuple(occ_A)
     if not restr:
         occ_B=tuple(occ_B)
-
+    print("occ_A:", occ_A)
     # get eigenvectors
     eigenvectors={}
     eigenvectors[gsmult]=[]
@@ -1942,12 +1987,15 @@ def get_dets_from_single(logfile,restr,gscharge,gsmult,totnuccharge,frozencore):
     else:
         key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
     eigenvectors[gsmult].append( {key:1.0} )
+    print("eigenvectors:", eigenvectors)
     strings={}
     strings["dets."+str(gsmult)],nd = format_ci_vectors(eigenvectors[gsmult])
+    print("strings:", strings)
     return strings
 
 
 #Get determinants from ORCA cisfile.
+#TODO: Rewrite this
 def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnuccharge,nstates_to_extract,nstates_to_skip,no_tda,frozencore,wfthres):
     print("Inside get_dets_from_cis")
     print("")
