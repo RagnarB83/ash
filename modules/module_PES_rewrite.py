@@ -1919,13 +1919,13 @@ mocoef
 #Avoid issue of ECP since only active orbital infor is provided
 def get_dets_from_single(totnumorbitals,numocc_alpha,numocc_beta,restr,frozencore_electrons=0):
     #TODO: frozencore???
-
-    #Actual number of electrons provided (ECP electrons not counted)
-    actnumelectrons=numocc_alpha+numocc_beta
-
     #Creating determinant string
+
     #Restricted
     if restr is True:
+        #Actual number of electrons provided (ECP electrons not counted)
+        #Times 2 since restricted. Note: no beta electrons present in this case
+        actnumelectrons=numocc_alpha*2
         numoccorbitals = int(actnumelectrons/2)
         #occupation numbers: 3 for doubly occupied, 0 for empty
         occorbs=[3 for i in range(numoccorbitals)]
@@ -1934,6 +1934,8 @@ def get_dets_from_single(totnumorbitals,numocc_alpha,numocc_beta,restr,frozencor
         detstring = "d"*len(occorbs)+"e"*len(virtorbs)
     #Unrestricted
     else:
+        #Actual number of electrons provided (ECP electrons not counted)
+        actnumelectrons=numocc_alpha+numocc_beta
         #occupation numbers: 1 for alpha, 2 for beta, 0 for empty
         occ_alpha=[1 for i in range(numocc_alpha)]
         virt_alpha=[0 for i in range(totnumorbitals-numocc_alpha)]
