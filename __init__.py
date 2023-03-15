@@ -46,7 +46,7 @@ from ash.modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheo
 
 # Parallel
 import ash.functions.functions_parallel
-from ash.functions.functions_parallel import Singlepoint_parallel, run_QMMM_SP_in_parallel
+from ash.functions.functions_parallel import Singlepoint_parallel
 
 # Freq
 from ash.modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants,\
