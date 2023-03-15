@@ -48,7 +48,7 @@ class TeraChemTheory:
     def cleanup():
         print(f"self.theorynamelabel cleanup not yet implemented.")
     #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
-
+    #NOTE: Should be possible by adding to subprocess call
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,

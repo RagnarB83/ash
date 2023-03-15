@@ -49,7 +49,6 @@ class MRCCTheory:
         print("MRCC cleanup not yet implemented.")
     #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
 
-
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
@@ -66,6 +65,7 @@ class MRCCTheory:
 
         print("Running MRCC object. Will use threads if OMP_NUM_THREADS and MKL_NUM_THREAD environment variables")
         #TODO: Need to finish parallelization
+        #NOTE: Should be possible by adding to subprocess call, i.e. export OMP_NUM_THREADS=1 etc.
         if 'OMP_NUM_THREADS' in os.environ:
             print("OMP_NUM_TREADS :", os.environ['OMP_NUM_THREADS'])
         if 'MKL_NUM_THREADS' in os.environ:
