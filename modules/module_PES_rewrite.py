@@ -1930,8 +1930,9 @@ def get_dets_from_single(totnumorbitals,numocc_alpha,numocc_beta,restr,frozencor
         #occupation numbers: 3 for doubly occupied, 0 for empty
         occorbs=[3 for i in range(numoccorbitals)]
         virtorbs=[0 for i in range(totnumorbitals-numoccorbitals)]
-        #occupation_list= occorbs + virtorbs
+        occupation_list= occorbs + virtorbs
         detstring = "d"*len(occorbs)+"e"*len(virtorbs)
+        totnumorbvalue=len(occupation_list)
     #Unrestricted
     else:
         #Actual number of electrons provided (ECP electrons not counted)
@@ -1941,12 +1942,13 @@ def get_dets_from_single(totnumorbitals,numocc_alpha,numocc_beta,restr,frozencor
         virt_alpha=[0 for i in range(totnumorbitals-numocc_alpha)]
         occ_beta=[2 for i in range(numocc_beta)] 
         virt_beta=[0 for i in range(totnumorbitals-numocc_beta)]
-        #occupation_list=occ_alpha+virt_alpha+occ_beta+virt_beta
+        occupation_list=occ_alpha+virt_alpha+occ_beta+virt_beta
         detstring = "a"*len(occ_alpha)+"e"*len(virt_alpha)+"b"*len(occ_beta)+"e"*len(virt_beta)
+        totnumorbvalue=len(occupation_list)
 
     numstates=1 #Only 1 state Initital
     numdets=1 #Only 1 determinant for regular SCF-state
-    finalstring = f"{numstates} {totnumorbitals} {numdets}\n{detstring}   1.00"
+    finalstring = f"{numstates} {totnumorbvalue} {numdets}\n{detstring}   1.00"
     return finalstring
 
 
