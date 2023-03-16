@@ -953,7 +953,7 @@ class KnarrCalculator:
                 im=int(i.replace("image_",""))
                 En_image=en_dict[i]
                 if self.printlevel >= 2:
-                    print("Energy of image {} is : {}".format(image_number,En_image))
+                    print("Energy of image {} is : {}".format(im,En_image))
 
                 #Keeping track of images in Eh
                 self.energies_dict[im] = En_image
