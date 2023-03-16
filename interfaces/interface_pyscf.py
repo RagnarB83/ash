@@ -18,7 +18,7 @@ import random
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
-                  dispersion=None, densityfit=False, auxbasis=None,
+                  dispersion=None, densityfit=False, auxbasis=None, sgx=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
                   CAS=False, CASSCF=False, active_space=None, stability_analysis=False, casscf_maxcycle=200,
@@ -122,9 +122,9 @@ class PySCFTheory:
 
 
         #Density fitting and semi-numeric exchange options
-        self.densityfit = densityfit
-        self.auxbasis = auxbasis
-        #TODO: Add semi-numerical exchange option
+        self.densityfit = densityfit #RI-J
+        self.auxbasis = auxbasis #Aux J basis
+        self.sgx=sgx #Semi-numerical exchange 
 
         #Special PySCF run option
         self.specialrun=specialrun
@@ -801,7 +801,7 @@ class PySCFTheory:
 
 
         ##############################
-        #DENSITY FITTING 
+        #DENSITY FITTING and SGX
         ##############################
         #https://pyscf.org/user/df.html
         #ASH-default gives PySCF default :optimized JK auxbasis for family if it exists,
@@ -809,15 +809,25 @@ class PySCFTheory:
         #NOTE: For DF with pure functionals pyscf is using a large JK auxbasis despite only J integrals present
         #More efficient then to specify the : 'def2-universal-jfit' (same as 'weigend') auxbasis
         #Currently left up to user
-        if self.densityfit is True:
+
+        #If SGX was selected we do DF for Coulomb and SGX for Exchange (densityfit keyword is ignored)
+        if self.sgx is True:
+            print("SGX option selected. Will use DF for Coulomb and SGX for Exchange")
+            import pyscf.sgx
+            self.mf = pyscf.sgx.sgx_fit(self.mf, auxbasis=self.auxbasis)
+            self.mf.with_df.dfj = True
+            self.mf.with_df.pjs = True
+            if Grad is True:
+                print("Warning: Gradient calculation requested. This is probably not implemented yet in PySCF.")
+                print("PySCF will most likely give an error")
+        #If sgx was not selected but densityfit was, we do RI-J if pure-DFT or RI-JK if hybrid-DFT/HF
+        elif self.densityfit is True:
             print("Density fitting option is on. Turning on in meanfield object!")
             if self.auxbasis != None:
                 self.mf = self.mf.density_fit(self.auxbasis)
             else:
                 self.mf = self.mf.density_fit()
-
-
-
+            
         ##############################
         #RUNNING
         ##############################
