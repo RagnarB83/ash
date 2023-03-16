@@ -20,7 +20,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
-                 moreadfile=None, moreadfile_always=False, bind_to_core_option=False,
+                 moreadfile=None, moreadfile_always=False, bind_to_core_option=True,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
@@ -41,6 +41,7 @@ class ORCATheory:
         #Bind to core option when calling ORCA: i.e. execute: /path/to/orca file.inp "--bind-to none"
         #TODO: Default False; make True?
         self.bind_to_core_option=bind_to_core_option
+        print("bind_to_core_option:", self.bind_to_core_option)
 
         #Checking if user added Opt, Freq keywords
         if ' OPT' in orcasimpleinput.upper() or ' FREQ' in orcasimpleinput.upper() :
@@ -716,7 +717,7 @@ def run_orca_SP(list):
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if numcores >1.
 # Takes possible Grad boolean argument.
 
-def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True, bind_to_core_option=False):
+def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True, bind_to_core_option=True):
     if numcores>1:
         palstring='%pal nprocs {} end'.format(numcores)
         with open(inpfile) as ifile:
