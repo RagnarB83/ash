@@ -20,7 +20,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
-                 moreadfile=None, moreadfile_always=False,
+                 moreadfile=None, moreadfile_always=False, bind_to_core_option=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
@@ -37,6 +37,10 @@ class ORCATheory:
         if numcores != 1:
             print(f"ORCA parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
             check_OpenMPI()
+
+        #Bind to core option when calling ORCA: i.e. execute: /path/to/orca file.inp "--bind-to none"
+        #TODO: Default False; make True?
+        self.bind_to_core_option=bind_to_core_option
 
         #Checking if user added Opt, Freq keywords
         if ' OPT' in orcasimpleinput.upper() or ' FREQ' in orcasimpleinput.upper() :
@@ -70,6 +74,7 @@ class ORCATheory:
 
         #Create inputfile with generic name
         self.filename=filename
+
 
         #MOREAD-file
         self.moreadfile=moreadfile
@@ -257,7 +262,7 @@ class ORCATheory:
         create_orca_input_plain(self.filename, elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                 charge, mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
-        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores)
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         outfile=self.filename+'.out'
@@ -491,7 +496,8 @@ end"""
         if self.printlevel >= 2:
             print(BC.OKGREEN, "ORCA Calculation starting.", BC.END)
 
-        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings)
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option,
+                                check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings)
         if self.printlevel >= 1:
             print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
@@ -710,17 +716,19 @@ def run_orca_SP(list):
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if numcores >1.
 # Takes possible Grad boolean argument.
 
-def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True):
+def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True, bind_to_core_option=False):
     if numcores>1:
         palstring='%pal nprocs {} end'.format(numcores)
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', palstring, Once=True )
-    #basename = inpfile.split('.')[0]
     basename = inpfile.replace('.inp','')
     with open(basename+'.out', 'w') as ofile:
-        #process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         try:
-            process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            if bind_to_core_option is True:
+                print("bind_to_core_option is active")
+                process = sp.run([orcadir + '/orca', inpfile, "--bind-to none"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            else:
+                process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             if check_for_errors:
                 grab_ORCA_errors(basename+'.out')
             if check_for_warnings:
