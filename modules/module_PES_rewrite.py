@@ -1920,7 +1920,6 @@ mocoef
 def get_dets_from_single(totnumorbitals,numocc_alpha,numocc_beta,restr,frozencore_electrons=0):
     #TODO: frozencore???
     #Creating determinant string
-
     #Restricted
     if restr is True:
         #Actual number of electrons provided (ECP electrons not counted)
@@ -1946,56 +1945,10 @@ def get_dets_from_single(totnumorbitals,numocc_alpha,numocc_beta,restr,frozencor
         detstring = "a"*len(occ_alpha)+"e"*len(virt_alpha)+"b"*len(occ_beta)+"e"*len(virt_beta)
         totnumorbvalue=len(occupation_list)
 
-    numstates=1 #Only 1 state Initital
-    numdets=1 #Only 1 determinant for regular SCF-state
+    numstates=1 #Only 1 state (Initial)
+    numdets=1 #Only 1 determinant since regular SCF-state
     finalstring = f"{numstates} {totnumorbvalue} {numdets}\n{detstring}   1.00"
     return finalstring
-
-
-
-    if not 'NOA' in infos:
-      charge=gscharge
-      print("gscharge:", gscharge)
-      #charge=QMin['chargemap'][gsmult]
-      nelec=float(totnuccharge-charge)
-      print("nelec:", nelec)
-      infos['NOA']=int(nelec/2. + float(gsmult-1)/2. )
-      print("infos['NOA']:", infos['NOA'])
-      infos['NOB']=int(nelec/2. - float(gsmult-1)/2. )
-      print("infos['NOB']:", infos['NOB'])
-      infos['NVA']=infos['nbsuse']-infos['NOA']
-      print("infos['NVA']:", infos['NVA'])
-      infos['NVB']=infos['nbsuse']-infos['NOB']
-      infos['NFC']=0
-
-    # get ground state configuration
-    # make step vectors (0:empty, 1:alpha, 2:beta, 3:docc)
-    if restr:
-        print("here")
-        occ_A=[ 3 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
-        print("len occ_A:", len(occ_A))
-        print("occ_A:", occ_A)
-
-    if not restr:
-        occ_A=[ 1 for i in range(infos['NFC']+infos['NOA']) ]+[ 0 for i in range(infos['NVA']) ]
-        occ_B=[ 2 for i in range(infos['NFC']+infos['NOB']) ]+[ 0 for i in range(infos['NVB']) ]
-    occ_A=tuple(occ_A)
-    if not restr:
-        occ_B=tuple(occ_B)
-    print("occ_A:", occ_A)
-    # get eigenvectors
-    eigenvectors={}
-    eigenvectors[gsmult]=[]
-    if restr:
-        key=tuple(occ_A[frozencore:])
-    else:
-        key=tuple(occ_A[frozencore:]+occ_B[frozencore:])
-    eigenvectors[gsmult].append( {key:1.0} )
-    print("eigenvectors:", eigenvectors)
-    strings={}
-    strings["dets."+str(gsmult)],nd = format_ci_vectors(eigenvectors[gsmult])
-    print("strings:", strings)
-    return strings
 
 
 #Get determinants from ORCA cisfile.
@@ -2231,8 +2184,6 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
                 for iocc in range(header[4],header[5]+1):
                   for ivirt in range(header[6],header[7]+1):
                     CCfile.read(8)
-
-
     strings={}
     #print("Final (CIS) eigenvectors:", eigenvectors)
     for imult,mult in enumerate(mults):
@@ -2241,6 +2192,7 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
     return strings
 
 def format_ci_vectors(ci_vectors):
+    occnumb_to_string={0:'e', 1:'a', 2:'b',3:'d'}
     alldets=set()
     for dets in ci_vectors:
         for key in dets:
@@ -2248,18 +2200,10 @@ def format_ci_vectors(ci_vectors):
     ndets=len(alldets)
     nstates=len(ci_vectors)
     norb=len(next(iter(alldets)))
-
     string='%i %i %i\n' % (nstates,norb,ndets)
     for det in sorted(alldets,reverse=True):
         for o in det:
-            if o==0:
-                string+='e'
-            elif o==1:
-                string+='a'
-            elif o==2:
-                string+='b'
-            elif o==3:
-                string+='d'
+            string+=occnumb_to_string[o]
         for istate in range(len(ci_vectors)):
             if det in ci_vectors[istate]:
                 string+=' %11.7f ' % ci_vectors[istate][det]
