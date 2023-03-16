@@ -55,7 +55,6 @@ def test_OpenMPI():
 def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, 
                          allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False,
                          threadpool=False):
-    print("")
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
     :param fragments:
@@ -66,7 +65,17 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     :param Grad: whether to do Gradient or not.
     :type Grad: Boolean.
     '''
-
+    print()
+    if printlevel >= 2:
+        print_line_with_subheader1("Singlepoint_parallel function")
+        print("Number of CPU cores available: ", numcores)
+    if printlevel >= 2:
+        print("Number of theories:", len(theories))
+        print("Running single-point calculations in parallel")
+        print("Mofilesdir:", mofilesdir)
+        print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
+    
+    #Early exits
     if fragments == None and fragmentfiles == None:
         print(BC.FAIL,"Singlepoint_parallel requires a list of ASH fragments or a list of fragmentfilenames",BC.END)
         ashexit()
@@ -75,11 +84,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         print("numcores:", numcores)
         print(BC.FAIL,"Singlepoint_parallel requires a theory object and a numcores value",BC.END)
         ashexit()
-
-    print()
-    if printlevel >= 2:
-        print_line_with_subheader1("Singlepoint_parallel function")
-        print("Number of CPU cores available: ", numcores)
+    #Fragment objects passed or name of fragmentfiles
     if fragments != None:
         if printlevel >= 2:
             print("Number of fragments:", len(fragments))
@@ -90,20 +95,12 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             print("Number of fragmentfiles:", len(fragmentfiles))
     else:
         fragmentfiles=[]
-    if printlevel >= 2:
-        print("Number of theories:", len(theories))
-        print("Running single-point calculations in parallel")
-        print("Mofilesdir:", mofilesdir)
-        print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
-        print("Launching multiprocessing and passing list of ASH fragments")
-    
-    
-    #########################
-    # Multiprocessing Pool
-    #########################
-    #NOTE: Python 3.8 and higher use spawn in MacOS. Leads to ash import problems
-    #NOTE: Unix/Linux uses fork
 
+    
+    ###############################
+    # Multiprocessing Pool setup
+    ###############################
+    #NOTE: Python 3.8 and higher use spawn in MacOS (ash import problems). Unix/Linux uses fork
     #Option to use Threadpool instead (probably not useful)    
     if threadpool is True:
         pool=ThreadPool(numcores)
@@ -122,6 +119,10 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         event.set()
         ashexit()
 
+
+    ##############################################################
+    # Calling Pool for different fragment vs. theory scenarios
+    ###############################################################
     #Case: 1 theory, multiple fragments
     results=[]
     if len(theories) == 1:
@@ -209,6 +210,14 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             pool.terminate()
             break
 
+    ##############################################################
+    # END OF POOL
+    ###############################################################
+
+
+    ###########
+    # RESULTS
+    ###########
     #Going through each result-object and adding to energy_dict if ready
     #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
