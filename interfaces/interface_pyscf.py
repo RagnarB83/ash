@@ -812,9 +812,9 @@ class PySCFTheory:
         if self.densityfit is True:
             print("Density fitting option is on. Turning on in meanfield object!")
             if self.auxbasis != None:
-                self.mf.density_fit(self.auxbasis)
+                self.mf = self.mf.density_fit(self.auxbasis)
             else:
-                self.mf.density_fit()
+                self.mf = self.mf.density_fit()
 
 
 
