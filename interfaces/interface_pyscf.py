@@ -18,7 +18,7 @@ import random
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
                   scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
-                  dispersion=None,
+                  dispersion=None, densityfit=False, auxbasis=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
                   CAS=False, CASSCF=False, active_space=None, stability_analysis=False, casscf_maxcycle=200,
@@ -119,6 +119,12 @@ class PySCFTheory:
         #Dispersion option
         #Uses: https://github.com/ajz34/vdw
         self.dispersion=dispersion
+
+
+        #Density fitting and semi-numeric exchange options
+        self.densityfit = densityfit
+        self.auxbasis = auxbasis
+        #TODO: Add semi-numerical exchange option
 
         #Special PySCF run option
         self.specialrun=specialrun
@@ -793,7 +799,25 @@ class PySCFTheory:
                 from vdw import to_mbd
                 self.mf = to_mbd(self.mf, variant="rsscs", do_grad=Grad) 
 
-        
+
+        ##############################
+        #DENSITY FITTING 
+        ##############################
+        #https://pyscf.org/user/df.html
+        #ASH-default gives PySCF default :optimized JK auxbasis for family if it exists,
+        # otherwise an even-tempered basis is generated
+        #NOTE: For DF with pure functionals pyscf is using a large JK auxbasis despite only J integrals present
+        #More efficient then to specify the : 'def2-universal-jfit' (same as 'weigend') auxbasis
+        #Currently left up to user
+        if self.densityfit is True:
+            print("Density fitting option is on. Turning on in meanfield object!")
+            if self.auxbasis != None:
+                self.mf.density_fit(self.auxbasis)
+            else:
+                self.mf.density_fit()
+
+
+
         ##############################
         #RUNNING
         ##############################
