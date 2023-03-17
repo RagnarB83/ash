@@ -1276,8 +1276,8 @@ def get_conn_atoms_for_list(atoms=None, fragment=None,scale=1.0, tol=0.1):
         conn = ash.modules.module_coords.get_connected_atoms_np(fragment.coords, fragment.elems, scale, tol, atom)
         final_list.append(conn)
     print("final_list after:", final_list)
-    #Flatten array in case nD
-    final_list = final_list.flatten()
+    #Flatten list
+    final_list  = [item for sublist in final_list for item in sublist]
     print("final_list after:", final_list)
     #Remove duplicates and sort
     return np.unique(final_list).tolist()
