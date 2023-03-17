@@ -25,6 +25,9 @@ class Correction_handler:
         #Combined grad info
         self.combined_RMSgrad=[]
         self.combined_Maxgrad=[]
+
+#NOTE: DualTheory and multiprocessing parallelization is not compatible at the moment. Unclear how to make work
+#Maybe after each Dualtheory-run by each worker we write a file to disk and read from disk so we know when to update ?
 class DualTheory:
     """ASH DualTheory theory.
     Combines two theory levels to give a modified energy and modified gradient

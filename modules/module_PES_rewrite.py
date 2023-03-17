@@ -1682,21 +1682,30 @@ end")
 #####################################################################################
 # Independent functions below
 ######################################################################################
-def Read_old_PES_results():
-    print("Reading file PES-Results.txt ...")
+def Read_old_PES_results(filename='PES-Results.txt'):
+    print(f"Reading file {filename}")
+    if os.path.isfile(filename) is False:
+        print(f"File {filename} does exist")
+        ashexit()
     # Parsing of files
     import json
     import configparser
     #from configparser import ConfigParser
     parser = configparser.ConfigParser()
 
-    parser.read('PES-Results.txt')
+    parser.read(filename)
     #Using JSON to load
     #From: https://stackoverflow.com/questions/335695/lists-in-configparser
     IPs = json.loads(parser.get("Results", "IPs"))
     dysonnorms = json.loads(parser.get("Results", "Dyson-norms"))
-    mos_alpha = json.loads(parser.get("Results", "MOs_alpha"))
-    mos_beta = json.loads(parser.get("Results", "MOs_beta"))
+    try:
+        mos_alpha = json.loads(parser.get("Results", "MOs_alpha"))
+    except:
+        mos_alpha=[]
+    try:
+        mos_beta = json.loads(parser.get("Results", "MOs_beta"))
+    except:
+        mos_beta=[]
 
     return IPs, dysonnorms, mos_alpha, mos_beta
 
