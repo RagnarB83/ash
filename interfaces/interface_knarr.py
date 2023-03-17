@@ -7,7 +7,6 @@ import copy
 import shutil
 import time
 
-
 import ash
 import ash.constants as constants
 from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC,print_line_with_subheader1,print_line_with_subheader2
@@ -25,6 +24,9 @@ from KNARRjobs.path import DoPathInterpolation
 from KNARRio.io import ReadTraj
 from KNARRjobs.neb import DoNEB
 import KNARRatom.atom
+
+#TODO: Need to remove QM-specific things (ORCA in particular)
+
 
 #LOG of Knarr-code modifications
 #1. Various python2 print-statements to print-functions changes
@@ -67,6 +69,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
              "LBFGS_DAMP": 1.0,
              "FD_STEP": 0.001,
              "LINESEARCH": None}
+
 
 #NEB-TS: NEB-CI + OptTS
 #Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
@@ -898,8 +901,12 @@ class KnarrCalculator:
                             if os.path.exists(path_to_imagefile):
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} DOES exist")
-                                    print(f"Copying file {path_to_imagefile} to dir {workerdir} as {self.theory.filename}.gbw")
-                                shutil.copyfile(path_to_imagefile,workerdir+"/"+self.theory.filename+".gbw") #Copying to Pooljob_image_X as orca.gbw
+                                    if isinstance(self.theory,ash.QMMMTheory):
+                                        print(f"Copying file {path_to_imagefile} to dir {workerdir} as {self.theory.qm_theory.filename}.gbw")
+                                        shutil.copyfile(path_to_imagefile,workerdir+"/"+self.theory.qm_theory.filename+".gbw") #Copying to Pooljob_image_X as orca.gbw
+                                    else:
+                                        print(f"Copying file {path_to_imagefile} to dir {workerdir} as {self.theory.filename}.gbw")
+                                        shutil.copyfile(path_to_imagefile,workerdir+"/"+self.theory.filename+".gbw") #Copying to Pooljob_image_X as orca.gbw
                             else:
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} does NOT exist. Continuing.")
