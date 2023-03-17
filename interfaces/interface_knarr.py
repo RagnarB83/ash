@@ -213,7 +213,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         print("Determining atoms contributing the most to TS mode")
         if ActiveRegion is True:
             print("TSmodeatoms (active region):", TSmodeatoms)
-            TSmodeatoms = [actatoms[a] for a in actatoms]
+            TSmodeatoms = [actatoms[a] for a in TSmodeatoms]
             print("TSmodeatoms (full system):", TSmodeatoms)
         else:
             print("TSmodeatoms (full system):", TSmodeatoms)
@@ -229,6 +229,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         Final_partial_hessatoms = np.unique(result_R + result_P + result_SP).tolist()
 
         print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
+        print("This corresponds to atoms contributing to the TS-mode and connected atoms")
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization 
         result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=Final_partial_hessatoms, runmode=runmode, numcores=numcores)
