@@ -1278,7 +1278,11 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
         for s_j, j in enumerate(athessindices):
             fullhessian[i,j] = hessian_small[s_i,s_j]
     print("Final fullhessian:", fullhessian)
+    #NOTE: Diagonalizing full Hessian just to see
+    print("Now diagaonlizing full Hessian")
+    frequencies, normal_modes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(fullhessian,fragment.masses,fragment.elems)
     print("Size:", fullhessian.size)
+    print("Frequencies of full Hessian:", frequencies)
     write_hessian(fullhessian,hessfile="Finalfullhessian")
     return fullhessian
 
