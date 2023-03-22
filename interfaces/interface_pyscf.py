@@ -11,6 +11,7 @@ import scipy
 import random
 
 #PySCF Theory object.
+#TODO: Somehow support reading in user mf object ?
 # TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Remove PyQMC from pyscftheory. 
@@ -19,7 +20,7 @@ class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
                   scf_type=None, basis=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
-                  fractional_occupation=False,
+                  fractional_occupation=False, scf_maxiter=50, direct_scf=True,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
@@ -122,6 +123,12 @@ class PySCFTheory:
         #Dispersion option
         #Uses: https://github.com/ajz34/vdw
         self.dispersion=dispersion
+
+        #Direct SCF
+        self.direct_scf=direct_scf
+
+        #SCF max iterations
+        self.scf_maxiter=scf_maxiter
 
         #Guess orbitals (if None then default)
         self.guess=guess
@@ -721,13 +728,19 @@ class PySCFTheory:
         ###################
         #SCF CONVERGENCE
         ###################
+        #Direct SCF or conventional
+        self.mf.direct_scf=self.direct_scf
         #Tolerance
         self.mf.conv_tol = self.conv_tol
+        #SCF max iterations
+        self.mf.max_cycle=self.scf_maxiter
+
         #Fractional occupation
         if self.fractional_occupation is True:
             if self.printlevel >1:
                 print(f"Fractional occupation is on!")
             self.mf = pyscf.scf.addons.frac_occ(self.mf)
+
         #Damping
         if self.damping != None:
             if self.printlevel >1:
