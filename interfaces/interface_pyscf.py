@@ -17,7 +17,9 @@ import random
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
-                  scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False,
+                  scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
+                  soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
+                  fractional_occupation=False,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
@@ -119,6 +121,25 @@ class PySCFTheory:
         #Dispersion option
         #Uses: https://github.com/ajz34/vdw
         self.dispersion=dispersion
+
+        #Guess orbitals (if None then default)
+        self.guess=guess
+
+        #Damping
+        self.damping=damping
+
+        #Level-shift
+        self.level_shift=level_shift
+
+        #DIIS options
+        self.diis_method=diis_method
+        self.diis_start_cycle=diis_start_cycle
+
+        #Fractional occupation/smearing
+        self.fractional_occupation=fractional_occupation
+
+        #SOSCF (Newton)
+        self.soscf=soscf
 
 
         #Density fitting and semi-numeric exchange options
@@ -235,61 +256,6 @@ class PySCFTheory:
             print("Problem importing pyscf_losc")
             print("e:", e)
             ashexit()
-    #def load_pyscf(self):
-    #    try:
-    #        import pyscf
-    #    except:
-    #        print(BC.FAIL, "Problem importing pyscf. Make sure pyscf has been installed: pip install pyscf", BC.END)
-    #        ashexit(code=9)
-    #    pyscf=pyscf
-    #    print("\nPySCF version:", pyscf.__version__)
-    #    import pyscf.tools
-    #    pyscf_tools=pyscf.tools
-    #    from pyscf.tools import molden
-    #    pyscf_molden=molden
-    #    #Always importing MP2 for convenience
-    #    #from pyscf.mp.dfump2_native import DFMP2
-    #
-    #    from pyscf.mp.dfmp2_native import DFRMP2
-    #    from pyscf.mp.dfump2_native import DFUMP2
-    #    pyscf_dfrmp2=DFRMP2
-    #    pyscf_dfump2=DFUMP2
-        #from pyscf.mp.dfmp2_native import DFRMP2
-        #from pyscf.mp.dfump2_native import DFUMP2
-        #And mcsdcf (natural orbitals creation)
-    #    from pyscf import mcscf
-    #    self.mcscf=mcscf
-    #    #And CC
-    #    from pyscf import cc
-    #    pyscf_cc=cc
-    #    from pyscf.cc import ccsd_t_lambda_slow as ccsd_t_lambda
-    #    from pyscf.cc import uccsd_t_lambda
-    #    from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
-    #    from pyscf.cc import uccsd_t_rdm
-    #    self.ccsd_t_lambda=ccsd_t_lambda
-    #    self.uccsd_t_lambda=uccsd_t_lambda
-    #    self.ccsd_t_rdm=ccsd_t_rdm
-    #    self.uccsd_t_rdm=uccsd_t_rdm
-    #    #AVAS/DMET
-    #    from pyscf.mcscf import avas, dmet_cas
-    #    pyscf_avas=avas
-    #    pyscf_dmet_cas=dmet_cas
-    #    
-    #    if self.pe==True:
-    #        #TODO: Needs to be revisited
-    #        #import pyscf.solvent as solvent
-    #        #from pyscf.solvent import pol_embed
-    #        import cppe
-    #    if self.mcpdft is True:
-    #        try:
-    #            from pyscf import mcpdft, mcdcft
-    #        except ImportError:
-    #            print("Problem importing mcpdft library")
-    #            print("Make sure that mcpdft has been installed into this pyscf environment")
-    #            print("See: https://gagliardigroup.uchicago.edu/open-software-data/mc-pdft/")
-    #            ashexit()
-    #        self.mcpdft_l=mcpdft
-    #        self.mcdcft_l=mcdcft
 
     def load_pyqmc(self):
         try:
@@ -677,6 +643,9 @@ class PySCFTheory:
         self.mol.build()
         ###########
 
+        ############################
+        # CREATE MF OBJECT
+        ############################
         #Polarizable embedding option
         if self.pe==True:
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
@@ -711,12 +680,13 @@ class PySCFTheory:
                 elif self.scf_type == 'UHF':
                     self.mf = pyscf.scf.UHF(self.mol)
 
-        #Convert non-relativistic mf object to spin-free x2c if self.x2c is True
-        if self.x2c is True:
-            print("x2c is True. Changing SCF object to relativistic x2c Hamiltonian")
-            self.mf = self.mf.sfx2c1e()
-
-        #Printing settings.
+        ###########
+        # PRINTING
+        ############
+        #Verbosity of PySCF
+        self.mf.verbose = self.verbose_setting
+        
+        #Print to stdout or to file
         if self.printsetting==True:
             if self.printlevel >1:
                 print("Printing output to stdout...")
@@ -726,41 +696,62 @@ class PySCFTheory:
             if self.printlevel >0:
                 print(f"PySCF printing to: {self.filename}.out")
 
+        #####################
+        # SCALAR RELATIVITY
+        #####################
+        #Convert non-relativistic mf object to spin-free x2c if self.x2c is True
+        if self.x2c is True:
+            print("x2c is True. Changing SCF object to relativistic x2c Hamiltonian")
+            self.mf = self.mf.sfx2c1e()
+
+        #####################
         #DFT
+        #####################
         if self.functional is not None:
             #Setting functional
             self.mf.xc = self.functional
             #TODO: libxc vs. xcfun interface control here
             #mf._numint.libxc = xcfun
-
             #Grid setting
             self.mf.grids.level = self.gridlevel 
 
+        ###################
+        #SCF CONVERGENCE
+        ###################
+        #Tolerance
         self.mf.conv_tol = self.conv_tol
-        #Control printing here. TOdo: make variable
-        self.mf.verbose = self.verbose_setting
-
-        #FROZEN ORBITALS in CC
-        if self.CC:
-            #Frozen-core settings
-            if self.frozen_core_setting == 'Auto':
-                self.determine_frozen_core(elems)
-            elif self.frozen_core_setting == None or self.frozen_core_setting == 'None':
-                print("Warning: No core-orbitals will be frozen in the CC calculation.")
-                self.frozen_core_orbital_indices=None
-            else:
-                print("Manual user frozen core:", self.frozen_core_setting)
-                self.frozen_core_orbital_indices=self.frozen_core_setting
-            #Optional frozen virtuals also
-            if self.frozen_virtuals is not None:
-                print(f"Frozen virtuals option active. Will freeze orbitals {self.frozen_virtuals}.")
-                self.frozen_orbital_indices = self.frozen_core_orbital_indices + self.frozen_virtuals
-            else:
-                self.frozen_orbital_indices=self.frozen_core_orbital_indices
-            print("Final frozen-orbital list (core and virtuals):", self.frozen_orbital_indices)
-
-
-
+        #Fractional occupation
+        if self.fractional_occupation is True:
+            if self.printlevel >1:
+                print(f"Fractional occupation is on!")
+            self.mf = pyscf.scf.addons.frac_occ(self.mf)
+        #Damping
+        if self.damping != None:
+            if self.printlevel >1:
+                print(f"Damping value: {self.damping} DIIS-start: {self.diis_start_cycle}")
+            self.mf.damp = self.damping
+            self.mf.diis_start_cycle=self.diis_start_cycle
+        #Level shifting
+        #NOTE: https://github.com/pyscf/pyscf/blob/master/examples/scf/03-level_shift.py
+        #TODO: Dynamic levelshift: 
+        # https://github.com/pyscf/pyscf/blob/master/examples/scf/52-dynamically_control_level_shift.py
+        #Possibly to apply different levelshift to alpha/beta sets
+        if self.level_shift != None:
+            if self.printlevel >1:
+                print(f"Levelshift value: {self.level_shift}")
+            self.mf.level_shift = self.level_shift
+        #DIIS option
+        if self.diis_method == 'CDIIS' or self.diis_method == 'DIIS':
+            self.mf.DIIS = pyscf.scf.DIIS
+        elif self.diis_method == 'ADIIS':
+            self.mf.DIIS = pyscf.scf.ADIIS
+        elif self.diis_method == 'EDIIS':
+            self.mf.DIIS = pyscf.scf.EDIIS
+        #SOSCF/Newton
+        if self.soscf is True:
+            if self.printlevel >1:
+                print("SOSCF is True. Turning on in meanfield object")
+            self.mf = self.mf.newton()
 
         ##############
         #DISPERSION
@@ -827,7 +818,29 @@ class PySCFTheory:
                 self.mf = self.mf.density_fit(self.auxbasis)
             else:
                 self.mf = self.mf.density_fit()
-            
+
+        ##############################
+        #FROZEN ORBITALS in CC
+        ##############################
+        if self.CC:
+            #Frozen-core settings
+            if self.frozen_core_setting == 'Auto':
+                self.determine_frozen_core(elems)
+            elif self.frozen_core_setting == None or self.frozen_core_setting == 'None':
+                print("Warning: No core-orbitals will be frozen in the CC calculation.")
+                self.frozen_core_orbital_indices=None
+            else:
+                print("Manual user frozen core:", self.frozen_core_setting)
+                self.frozen_core_orbital_indices=self.frozen_core_setting
+            #Optional frozen virtuals also
+            if self.frozen_virtuals is not None:
+                print(f"Frozen virtuals option active. Will freeze orbitals {self.frozen_virtuals}.")
+                self.frozen_orbital_indices = self.frozen_core_orbital_indices + self.frozen_virtuals
+            else:
+                self.frozen_orbital_indices=self.frozen_core_orbital_indices
+            print("Final frozen-orbital list (core and virtuals):", self.frozen_orbital_indices)
+
+
         ##############################
         #RUNNING
         ##############################
@@ -863,8 +876,13 @@ class PySCFTheory:
                 
             else:
                 if self.printlevel >1:
-                    print("Starting SCF from default guess orbitals")
-                #SCF starting from default guess orbitals
+                    print("Starting SCF from guess orbitals")
+                    print("Using guess option:", self.guess)
+                if self.guess not in ['minao', 'atom', 'huckel', 'vsap','1e']:
+                    print("Guess option not recognized. Valid guess options are: ", ['minao', 'atom', 'huckel', 'vsap','1e'])
+                    ashexit()
+                self.mf.init_guess = self.guess
+                #SCF starting from  guess orbitals
                 scf_result = self.mf.run()
                 print("SCF energy:", scf_result.e_tot)
 
@@ -873,6 +891,12 @@ class PySCFTheory:
             print("SCF energy:", scf_result.e_tot)
             if self.printlevel >1:
                 print("SCF energy components:", scf_result.scf_summary)
+            
+            #Occupation printing (relevant for fraction occ)
+            if self.printlevel >1:
+            #if self.fractional_occupation is True:
+                print("SCF occupations:")
+                print(self.mf.mo_occ)
 
             #Possible population analysis (if dm=None then taken from mf object)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
