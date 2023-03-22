@@ -28,10 +28,6 @@ def check_OpenMPI():
     print("OpenMPI binary directory found:", openmpibindir)
     #Test that mpirun is executable and grab OpenMPI version number for printout
     test_OpenMPI()
-    #NOTE: Not sure if we should do more here
-    #Inspect LD_LIBRARY_PATH
-    #openmpilibdir= os.environ.get("LD_LIBRARY_PATH")
-    #print("OpenMPI library directory:", openmpilibdir)
     return
 
 def test_OpenMPI():

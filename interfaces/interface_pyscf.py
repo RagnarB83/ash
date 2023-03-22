@@ -7,7 +7,6 @@ import sys
 import glob
 import numpy as np
 from functools import reduce
-import scipy
 import random
 
 #PySCF Theory object.
@@ -440,6 +439,7 @@ class PySCFTheory:
             ccsd.run()
             natocc, natorb = self.mcscf.addons.make_natural_orbitals(ccsd)
         elif method == 'CCSD(T)':
+            import scipy
             import pyscf.cc as pyscf_cc
             from pyscf.cc import ccsd_t_lambda_slow as ccsd_t_lambda
             from pyscf.cc import uccsd_t_lambda
