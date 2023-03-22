@@ -1,10 +1,6 @@
-from operator import truediv
 import os
 from sys import stdout
 import time
-import traceback
-import io
-import copy
 import numpy as np
 
 #import ash
@@ -281,9 +277,6 @@ class OpenMMTheory:
 
             # TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
 
-            # Create an OpenMM system by calling createSystem on grotop
-            # self.system = self.grotop.createSystem(nonbondedMethod=simtk.openmm.app.NoCutoff,
-            #                                    nonbondedCutoff=1 * simtk.openmm.unit.nanometer)
 
         elif Amberfiles is True:
             if self.printlevel > 0:
@@ -858,8 +851,6 @@ class OpenMMTheory:
         #3. remove from topology
         #4. remove system restraint force ?
         self.system.removeForce(-1)
-
-
 
 
     # This is custom externa force that restrains group of atoms to center of system
@@ -3764,7 +3755,6 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
 
     #Try a simple minimization first or simple MD
 
-    #testheory=copy.copy(theory)
     #nonHindices=fragment.get_nonH_atomindices() #get nonH indices
     #testheory.freeze_atoms(frozen_atoms=nonHindices) #freezing non-H atoms
     #testheory.remove_all_constraints() #remove all constraints (incompatible with frozen atoms)
