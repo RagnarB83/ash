@@ -17,7 +17,7 @@ import random
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
-                  scf_type=None, basis=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
+                  scf_type=None, basis=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False,
@@ -39,7 +39,7 @@ class PySCFTheory:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'RKS', 'UKS'")
             ashexit()
         if basis is None:
-            print("Error: You must give a basis set (basis keyword)")
+            print("Error: You must give a basis set. Basis set can a name (string) or dict (elements as keys)")
             ashexit()
         if functional is not None:
             print(f"Functional keyword: {functional} chosen. DFT is on!")
@@ -72,7 +72,8 @@ class PySCFTheory:
         #
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
-        self.basis=basis
+        self.basis=basis #Basis set can be string or dict with elements as keys
+        self.ecp=ecp
         self.functional=functional
         self.x2c=x2c
         self.CC=CC
@@ -637,6 +638,8 @@ class PySCFTheory:
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         self.mol.basis=self.basis
+        #ECP: Can be string ('def2-SVP') or dict or a dict with element-specific keys and values 
+        self.mol.ecp = self.ecp
         #Memory settings
         self.mol.max_memory = self.memory
         #BUILD mol object
