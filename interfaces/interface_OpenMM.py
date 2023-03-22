@@ -63,11 +63,6 @@ class OpenMMTheory:
                 Also see http://docs.openmm.org/latest/userguide/application.html")
 
         # OpenMM variables
-        #TODO: Revisit this (might make OpenMMTheory picklable)
-        #self.openmm = openmm
-        #self.openmm_app = openmm.app
-        self.simulationclass = openmm.app.simulation.Simulation
-
         # print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
         if self.printlevel > 0:
             print_line_with_subheader1("Defining OpenMM object")
@@ -789,12 +784,7 @@ class OpenMMTheory:
         #Used by GentlewarmupMD etc. to get a basic gradient
         self.force_run=False
 
-        # Old:
         # NOTE: If self.system is modified then we have to remake self.simulation
-        # self.simulation = simtk.openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,self.platform)
-        # self.simulation = self.simulationclass(self.topology, self.system, self.integrator,self.platform)
-        #print_time_rel(timeA, modulename="simulation setup")
-        # timeA = time.time()
         print_time_rel(module_init_time, modulename="OpenMM object creation")
 
     #Set numcores method: currently inactive. Included for completeness
@@ -1188,7 +1178,7 @@ class OpenMMTheory:
                   BC.END)
             ashexit()
 
-        self.simulation = self.simulationclass(self.topology, self.system, self.integrator, self.platform,
+        self.simulation = openmm.app.simulation.Simulation(self.topology, self.system, self.integrator, self.platform,
                                                self.properties)
         #Now calling function to compute the actual degrees of freedom.
         #NOTE: Better place for this? Just needs to be called once, after constraints and frozen atoms are done.
