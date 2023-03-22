@@ -25,7 +25,7 @@ from ash.interfaces.interface_mdtraj import MDtraj_import, MDtraj_imagetraj, MDt
 
 
 class OpenMMTheory:
-    def __init__(self, printlevel=2, platform='CPU', numcores=None, topoforce=False, forcefield=None, topology=None,
+    def __init__(self, printlevel=2, platform='CPU', numcores=1, topoforce=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None,
@@ -141,11 +141,12 @@ class OpenMMTheory:
         self.platform_choice = platform
         # CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell
         # before running.
+        self.numcores=numcores #Setting for general ASH compatibility
         self.properties = {}
         if self.platform_choice == 'CPU':
             if self.printlevel > 0:
                 print("Using platform: CPU")
-            if numcores is not None:
+            if numcores > 1:
                 if self.printlevel > 0:
                     print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
                 self.properties["Threads"] = str(numcores)
