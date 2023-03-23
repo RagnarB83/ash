@@ -134,10 +134,10 @@ class OpenMMTheory:
         if self.platform_choice == 'CPU':
             if self.printlevel > 0:
                 print("Using platform: CPU")
+            self.properties["Threads"] = str(numcores)
             if numcores > 1:
                 if self.printlevel > 0:
                     print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
-                self.properties["Threads"] = str(numcores)
                 if self.printlevel > 0:
                     print(BC.WARNING,"Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.",BC.END)
                     print("If OPENMM_CPU_THREADS was not set in jobscript, physical cores will probably be used.")
