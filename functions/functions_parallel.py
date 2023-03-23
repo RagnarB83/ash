@@ -65,6 +65,10 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     if printlevel >= 2:
         print_line_with_subheader1("Singlepoint_parallel function")
         print("Number of CPU cores available: ", numcores)
+        if isinstance(theory, QMMMTheory):
+            print("Warning: Singlepoint_parallel using QMMMTheory with OpenMMTheory MM is experimental")
+            print("Specifically there are issues with platform='CPU'.")
+            print("Try platform='Reference' instead or GPU options OpenCL or CUDA if possible")
     if printlevel >= 2:
         print("Number of theories:", len(theories))
         print("Running single-point calculations in parallel")

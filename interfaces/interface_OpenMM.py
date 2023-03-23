@@ -490,7 +490,6 @@ class OpenMMTheory:
                             print("Set box vectors:", self.forcefield.box_vectors)
 
 
-                    # ashexit()
                     self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.PME,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
