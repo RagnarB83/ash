@@ -246,10 +246,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     elif runmode == 'parallel':
 
         if isinstance(theory,ash.QMMMTheory):
-            print("Numfreq in runmode='parallel' is not working with QM/MM at the moment.")
-            ashexit()
-            #NOTE: Because OpenMM can not be pickled. Possibly try enabling for MMTheory = NonbondedTheory
-        
+            print("Numfreq in runmode='parallel' with QM/MM is quite experimental")
+
         print(f"Starting Numfreq calculations in parallel mode (numcores={numcores}) using Singlepoint_parallel")
 
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
