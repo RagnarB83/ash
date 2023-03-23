@@ -310,13 +310,12 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     return result
 
 #ASH NEB function. Calls Knarr
-#Added experimental threadpool option
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
         charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, zoom=False,
-        restart_file=None, TS_guess=None, mofilesdir=None, threadpool=False):
+        restart_file=None, TS_guess=None, mofilesdir=None):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
     module_init_time=time.time()
@@ -382,7 +381,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
                                      full_fragment_product=product,numimages=total_num_images, charge=charge, mult=mult,
-                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir, threadpool=threadpool)
+                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir)
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
@@ -406,7 +405,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         #Create Knarr calculator from ASH theory
         calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
                                      ActiveRegion=False, runmode=runmode,numimages=total_num_images, charge=charge, mult=mult,
-                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir, threadpool=threadpool)
+                                     FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir)
 
         # Symbols list for Knarr
         Knarr_symbols = [y for y in reactant.elems for i in range(3)]
@@ -640,7 +639,7 @@ def coords_to_Knarr(coords):
 class KnarrCalculator:
     def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None, numcores=1,
                  full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False, charge=None, mult=None, 
-                 mofilesdir=None,threadpool=False ):
+                 mofilesdir=None):
         self.numcores=numcores
         self.FreeEnd=FreeEnd
         self.numimages=numimages
@@ -675,8 +674,6 @@ class KnarrCalculator:
                 self.ORCAused = True
         #Final tangent of saddlepoint. Will be available if job converges
         self.tangent=None
-        #Optional Threadpool option for runmode='parallel', passed onto Singlepoint_parallel
-        self.threadpool=threadpool
 
     #Function that Knarr will use to signal convergence and set self.converged to True. Otherwise it is False
     def status(self,converged):
@@ -952,7 +949,7 @@ class KnarrCalculator:
             #else:
             print("Debugging 5")
             result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
-                allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, threadpool=self.threadpool, copytheory=False)
+                allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
             en_dict = result_par.energies_dict
             #Now looping over gradients present (done to avoid overwriting frozen-image gradients)
             #self.gradient_dict = result_par.gradients_dict

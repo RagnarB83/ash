@@ -1,7 +1,4 @@
 import copy
-import multiprocessing as mp
-from multiprocessing.pool import ThreadPool
-from multiprocessing.pool import Pool
 import subprocess as sp
 import os
 import sys
@@ -47,10 +44,9 @@ def test_OpenMPI():
 #will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
 #NOTE: Experimental copytheory option
-#NOTE: Added threadpool option. Not sure if useful
 def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, 
                          allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False,
-                         threadpool=False):
+                         version='multiprocess'):
     '''
     The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
     :param fragments:
@@ -101,12 +97,21 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     # Multiprocessing Pool setup
     ###############################
     #NOTE: Python 3.8 and higher use spawn in MacOS (ash import problems). Unix/Linux uses fork
-    #Option to use Threadpool instead (probably not useful)    
-    if threadpool is True:
-        pool=ThreadPool(numcores)
-    else:
-        pool = Pool(numcores)
-    
+    if version == 'multiprocessing':
+        print("Singlepoint_parallel: Using version: multiprocessing")
+        import multiprocessing as mp
+        from multiprocessing.pool import Pool
+    #Active fork of multiprocessing that uses dill instead of pickle etc. https://github.com/uqfoundation/multiprocess
+    elif version == 'multiprocess':
+        print("Singlepoint_parallel: Using version: multiprocess")
+        try:
+            import multiprocess as mp
+            from multiprocess.pool import Pool
+        except ImportError:
+            print("multiprocess requires the multiprocess library to be installed")
+            print("Please install using pip: pip install multiprocess")
+            ashexit()
+    pool = Pool(numcores)
     #Manager
     manager = mp.Manager()
     event = manager.Event()
@@ -396,240 +401,3 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     else:
         return (label,energy)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-#Functions to run each displacement in parallel NumFreq run.
-#Simple QM object
-# def displacement_QMrun(arglist):
-#     #print("arglist:", arglist)
-#     geo = arglist[0]
-#     elems = arglist[1]
-#     #We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
-#     numcores = arglist[2]
-#     theory = arglist[3]
-#     label = arglist[4]
-#     charge = arglist[5]
-#     mult = arglist[6]
-#     dispdir=label.replace(' ','')
-#     os.mkdir(dispdir)
-#     os.chdir(dispdir)
-#     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
-#     print("Running displacement: {}".format(label))
-#     energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
-#     print("Energy: ", energy)
-#     os.chdir('..')
-#     #Delete dir?
-#     #os.remove(dispdir)
-#     return [label, energy, gradient]
-
-
-#Function to run each displacement in parallel NumFreq run
-#Version where geo is read from file to avoid large memory pickle inside pool.map
-# def displacement_QMMMrun(arglist):
-#     #global QMMM_xtb
-#     print("arglist:", arglist)
-
-#     #print("locals", locals())
-#     #print("globals", globals())
-#     print("-----------")
-#     #import gc
-#     #print(gc.get_objects())
-
-#     filelabel=arglist[0]
-#     #elems = arglist[1]
-#     #Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems. Only makes sense if we have may more cores available than displacements
-#     numcores = arglist[1]
-#     label = arglist[2]
-#     fragment= arglist[3]
-#     qm_theory = arglist[4]
-#     mm_theory = arglist[5]
-#     actatoms = arglist[6]
-#     qmatoms = arglist[7]
-#     embedding = arglist[8]
-#     charges = arglist[9]
-#     printlevel = arglist[10]
-#     frozenatoms = arglist[11]
-
-#     dispdir=label.replace(' ','')
-#     os.mkdir(dispdir)
-#     os.chdir(dispdir)
-#     shutil.move('../'+filelabel+'.xyz','./'+filelabel+'.xyz')
-#     # Read XYZ-file from file
-#     elems,coords = read_xyzfile(filelabel+'.xyz')
-
-#     #Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
-#     print("Running displacement: {}".format(label))
-
-#     #If QMMMTheory init keywords are changed this needs to be updated
-#     qmmmobject = QMMMTheory(fragment=fragment, qm_theory=qm_theory, mm_theory=mm_theory, actatoms=actatoms,
-#                           qmatoms=qmatoms, embedding=embedding, charges=charges, printlevel=printlevel,
-#                             numcores=numcores, frozenatoms=frozenatoms)
-
-#     energy, gradient = qmmmobject.run(current_coords=coords, elems=elems, Grad=True, numcores=numcores)
-#     print("Energy: ", energy)
-#     os.chdir('..')
-#     #Delete dir?
-#     #os.remove(dispdir)
-#     return [label, energy, gradient]
-
-
-
-
-#Called from run_QMMM_SP_in_parallel. Runs
-# def run_QM_MM_SP(list):
-#     orcadir=list[0]
-#     current_coords=list[1]
-#     theory=list[2]
-#     #label=list[3]
-#     #Create new dir (name of label provided
-#     #Cd dir
-#     theory.run(Grad=True)
-
-# def run_QMMM_SP_in_parallel(orcadir, list_of__geos, list_of_labels, QMMMtheory, numcores, threadpool=False):
-#     import multiprocessing as mp
-#     blankline()
-#     print("Number of CPU cores: ", numcores)
-#     print("Number of geos:", len(list_of__geos))
-#     print("Running snapshots in parallel")
-#     if threadpool is True:
-#         pool=ThreadPool(numcores)
-#     else:
-#         pool = Pool(numcores)
-#     results = pool.map(run_QM_MM_SP, [[orcadir,geo, QMMMtheory ] for geo in list_of__geos])
-#     pool.close()
-#     print("Calculations are done")
-
-#def run_displacements_in_parallel(list_of__geos, list_of_labels, QMMMtheory, numcores):
-#    import multiprocessing as mp
-#    blankline()
-#    print("Number of CPU cores: ", numcores)
-#    print("Number of geos:", len(list_of__geos))
-#    print("Running displacements in parallel")
-#    pool = mp.Pool(numcores)
-#    results = pool.map(theory.run, [[geo, QMMMtheory ] for geo in list_of__geos])
-#    pool.close()
-#    print("Calculations are done")
-
-
-
-# #Stripped down version of Singlepoint function for Singlepoint_parallel
-# #NOTE: Old version that used Pool.map instead of apply_async. TO BE DELETED
-# def Single_par_old(listx):
-#     print("listx:", listx)
-#     #Multiprocessing event
-#     event = listx[4]
-
-#     #Creating new copy of theory to prevent Brokensym feature from being deactivated by each run
-#     #NOTE: Alternatively we can add an if-statement inside orca.run
-#     theory=copy.deepcopy(listx[0])
-
-#     #listx[1] is either an ASH Fragment or Fragment file string (avoids massive pickle object)
-#     if listx[1].__class__.__name__ == "Fragment":
-#         print("Here", listx[1].__class__.__name__)
-#         fragment=listx[1]
-#     elif listx[1].__class__.__name__ == "str":
-#         if "ygg" in listx[1]:
-#             print("Found string assumed to be ASH fragmentfile")
-#             fragment=ash.Fragment(fragfile=listx[1])
-#     else:
-#         print("Unknown object passed")
-#         kill_all_mp_processes()
-#         ashexit()
-#     print("Fragment:", fragment)
-
-#     #Making label flexible. Can be tuple but inputfilename is converted to string below
-#     label=listx[2]
-#     mofilesdir=listx[3]
-#     print("label: {} (type {})".format(label,type(label)))
-#     if label == None:
-#         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
-#         print("Exiting...")
-#         print("event:", event)
-#         print("event is_set: ", event.is_set())
-#         event.set()
-#         print("after event")
-#         print("event is_set: ", event.is_set())
-#         ashexit()
-#         #sys.exit()
-#         #kill_all_mp_processes()
-#         #ashexit()
-
-#     #Using label (could be tuple) to create a labelstring which is used to name worker directories
-#     # Tuple-label (1 or 2 element) used by calc_surface functions.
-#     # Otherwise normally string
-#     if type(label) == tuple:
-#         if len(label) ==2:
-#             labelstring=str(str(label[0])+'_'+str(label[1])).replace('.','_')
-#         else:
-#             labelstring=str(str(label[0])).replace('.','_')
-#         print("Labelstring:", labelstring)
-#         #RC1_0.9-RC2_170.0.xyz
-#         #orca_RC1_0.9RC2_170.0.gbw
-#         #TODO: what if tuple is only a single number???
-
-#         if mofilesdir != None:
-#             print("Mofilesdir option.")
-#             if len(label) == 2:
-#                 moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])+'-'+'RC2_'+str(label[1])
-#             else:
-#                 moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
-
-#     #Label is not tuple. Not coming from calc_surface funcitons
-#     elif type(label) == float or type(label) == int:
-#         print("Label is float or int")
-#         #
-#         #Label is float or int. 
-#         if mofilesdir != None:
-#             print("Mofilesdir option.")
-#             moreadfile_path=mofilesdir+'/'+theory.filename+'_'+'RC1_'+str(label[0])
-#     else:
-#         print("Here. label.", label)
-#         #Label is not tuple. String or single number
-#         labelstring=str(label).replace('.','_')
-
-#     #Creating separate inputfilename using label
-#     #Removing . in inputfilename as ORCA can get confused
-#     if theory.__class__.__name__ == "ORCATheory":
-#         #theory.filename=''.join([str(i) for i in labelstring])
-#         #NOTE: Not sure if we really need to use labelstring for input since inside separate directoreies
-#         #Disabling for now
-#         #theory.filename=labelstring
-#         if mofilesdir != None:
-#             theory.moreadfile=moreadfile_path+'.gbw'
-#             print("Setting moreadfile to:", theory.moreadfile)
-#     elif theory.__class__.__name__ == "MRCCTheory":
-#         if mofilesdir != None:
-#             print("Case MRCC MOREADfile parallel")
-#             print("moreadfile_path:", moreadfile_path)
-#         print("not finished. exiting")
-#         kill_all_mp_processes()
-#         ashexit()
-#     else:
-#         if mofilesdir != None:
-#             print("moreadfile option not ready for this Theory. exiting")
-#             kill_all_mp_processes()
-#             ashexit()
-
-#     #Creating new dir and running calculation inside
-#     os.mkdir('Pooljob_'+labelstring)
-#     os.chdir('Pooljob_'+labelstring)
-#     print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
-#     print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
-
-#     energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label)
-#     os.chdir('..')
-#     print("Energy: ", energy)
-#     # Now adding total energy to fragment
-#     fragment.energy = energy
-#     return (label,energy)
