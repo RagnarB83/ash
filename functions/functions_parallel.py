@@ -252,10 +252,10 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 #NOTE: Version intended for apply_async
 #TODO: This function contains 2 many QM-code specifics. Needs to be generalized (QM-specifics moved to QMtheory class)
 def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2, copytheory=False):
-
+    print("Inside Single_par")
     #Check charge/mult.
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Single_par", theory=theory, printlevel=printlevel)
-
+    print("XDebug1")
     #BASIC PRINTING
     if printlevel >= 2:
         print("Fragment:", fragment)
@@ -266,6 +266,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     # Example: Brokensym feature in ORCATheory
     #NOTE: Alternatively add if-statement inside orca.run
     #NOTE: This is not compatible with Dualtheory
+    print("XDebug2")
     if copytheory == True:
         #print("copytheory True")
         theory=copy.deepcopy(theory)
@@ -289,7 +290,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         print("No label provided to fragment or theory objects. This is required to distinguish between calculations ")
         print("Exiting.")
         raise Exception("Labelproblem")
-
+    print("XDebug4")
     #Using label (could be tuple) to create a labelstring which is used to name worker directories
     # Tuple-label (1 or 2 element) used by calc_surface functions.
     # Otherwise normally string
@@ -356,6 +357,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     # Handling Directory
     ####################################
     #Creating new dir and running calculation inside
+    print("XDebug7")
     try:
         os.mkdir('Pooljob_'+labelstring)
     except:
@@ -363,6 +365,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
             print("Dir exists. continuing")
         pass
     os.chdir('Pooljob_'+labelstring)
+    print("XDebug8")
     if printlevel >= 2:
         print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
         print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
@@ -371,6 +374,7 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     #RUN WORKER JOB
     #####################
     if Grad == True:
+        print("XDebug9")
         energy,gradient = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult, Grad=Grad)
     else:
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult)
