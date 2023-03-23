@@ -144,7 +144,7 @@ class OpenMMTheory:
                     print("To be safe: check the running process on the node",BC.END)
             else:
                 if self.printlevel > 0:
-                    print("No numcores variable provided to OpenMM object")
+                    print("Numcores=1 or no numcores variable provided to OpenMM object")
                     print("Checking if OPENMM_CPU_THREADS shell variable is present")
                 try:
                     if self.printlevel > 0:
@@ -157,7 +157,7 @@ class OpenMMTheory:
         else:
             if self.printlevel > 0:
                 print("Using platform:", self.platform_choice)
-
+        print("self.properties:", self.properties)
         # Whether to do energy decomposition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_decomposition = do_energy_decomposition
 
