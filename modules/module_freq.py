@@ -800,9 +800,13 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     #######################
     #Electronic entropy
     #######################
-    q_el=multiplicity
-    S_el=ash.constants.R_gasconst*math.log(q_el)
-    TS_el=temp*S_el
+    if multiplicity != None:
+        q_el=multiplicity
+        S_el=ash.constants.R_gasconst*math.log(q_el)
+        TS_el=temp*S_el
+    else:
+        #E.g. OpenMMTheory
+        TS_el=0.0
 
     #######################
     # Thermodynamic corrections
