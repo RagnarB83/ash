@@ -287,10 +287,10 @@ class QMMMTheory:
                 #Deleting Coulomb exception interactions involving QM and MM atoms
                 self.mm_theory.delete_exceptions(self.qmatoms)
                 #Option to create OpenMM externalforce that handles full system
-                if openmm_externalforce == True:
+                if self.openmm_externalforce == True:
                     print("openmm_externalforce is True")
-                    print("Creating new OpenMM custom external force")
-                    self.openmm_externalforceobject = self.mm_theory.add_custom_external_force()
+                    #print("Creating new OpenMM custom external force")
+                    #MOVED FROM HERE TO OPENMM_MD
 
             #Printing charges: all or only QM
             if self.printlevel > 2:
@@ -610,7 +610,6 @@ class QMMMTheory:
 
         self.qmelems=[self.elems[i] for i in self.qmatoms]
         self.mmelems=[self.elems[i] for i in self.mmatoms]
-        
         
         
         #LINKATOMS
@@ -953,17 +952,16 @@ class QMMMTheory:
                 #Provide QM_PC_gradient to OpenMMTheory 
                 if self.openmm_externalforce == True:
                     print("OpenMM externalforce is True")
-                    #Take QM_PC gradient (link-atom projected) and provide to OpenMM external force
-                    CheckpointTime = time.time()
-                    self.mm_theory.update_custom_external_force(self.openmm_externalforceobject,self.QM_PC_gradient)
+                    #Calculate energy associated with external force so that we can subtract it later
+                    self.extforce_energy=3*np.mean(sum(self.QM_PC_gradient*current_coords*1.88972612546))
 
-                    print_time_rel(CheckpointTime, modulename='QM/MM openMM: update custom external force', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+                    #NOTE: Now moved mm_theory.update_custom_external_force call to MD simulation instead
+                    # as we don't have access to simulation object here anymore. Uses self.QM_PC_gradient
                     if exit_after_customexternalforce_update==True:
                         print("OpenMM custom external force updated. Exit requested")
                         #This is used if OpenMM MD is handling forces and dynamics
                         return
-                    #Calculate energy associated with external force so that we can subtract it later
-                    self.extforce_energy=3*np.mean(sum(self.QM_PC_gradient*current_coords*1.88972612546))
+
                 self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms, Grad=True)
             else:
                 print("QM/MM Grad is false")
@@ -994,10 +992,11 @@ class QMMMTheory:
 
         #FINAL QM/MM GRADIENT ASSEMBLY
         if Grad == True:
-
             #If OpenMM external force method then QM/MM gradient is already complete
+            #NOTE: Not possible anymore 
             if self.openmm_externalforce == True:
-                self.QM_MM_gradient = self.MMgradient
+                pass
+            #    self.QM_MM_gradient = self.MMgradient
             #Otherwise combine
             else:
                 #Now assemble full QM/MM gradient
