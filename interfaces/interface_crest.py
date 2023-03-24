@@ -86,7 +86,7 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
     print_time_rel(module_init_time, modulename='crest run', moduleindex=0)
 
     #Get conformers
-    list_conformers, list_xtb_energies = get_crest_conformers()
+    list_conformers, list_xtb_energies = get_crest_conformers(charge=charge, mult=mult)
 
 
     return list_conformers, list_xtb_energies
