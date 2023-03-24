@@ -94,14 +94,16 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     print("ML_energies: ", ML_energies)
 
     #4.Run high-level thery. Provide HLtheory object (typically ORCATheory)
-    HL_energies=[]
-    for index,conformer in enumerate(list_conformer_frags):
-        print("")
-        print("Performing High-level calculation for ML-optimized Conformer ", index)
-        HLresult = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
-        HLenergy = HLresult.energy
-        HL_energies.append(HLenergy)
-
+    if HLtheory != None:
+        HL_energies=[]
+        for index,conformer in enumerate(list_conformer_frags):
+            print("")
+            print("Performing High-level calculation for ML-optimized Conformer ", index)
+            HLresult = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
+            HLenergy = HLresult.energy
+            HL_energies.append(HLenergy)
+    else:
+        HL_energies=[0 for i in list_conformer_frags]
 
     print("")
     print("=================")

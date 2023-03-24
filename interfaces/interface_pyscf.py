@@ -13,14 +13,16 @@ import random
 #TODO: Somehow support reading in user mf object ?
 # TODO: PE: Polarizable embedding (CPPE). Not completely active in PySCF 1.7.1. Bugfix required I think
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
-#TODO: Remove PyQMC from pyscftheory. 
+#TODO: Remove PyQMC from pyscftheory.
+#TODO: Dirac Kohn-Sham
+#TODO: TDDFT
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
                   scf_type=None, basis=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True,
-                  dispersion=None, densityfit=False, auxbasis=None, sgx=False,
+                  dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
                   CAS=False, CASSCF=False, active_space=None, stability_analysis=False, casscf_maxcycle=200,
@@ -36,7 +38,7 @@ class PySCFTheory:
         print_line_with_mainheader("PySCFTheory initialization")
         #Exit early if no SCF-type
         if scf_type is None:
-            print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'RKS', 'UKS'")
+            print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
             ashexit()
         if basis is None:
             print("Error: You must give a basis set. Basis set can a name (string) or dict (elements as keys)")
@@ -73,6 +75,7 @@ class PySCFTheory:
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
         self.basis=basis #Basis set can be string or dict with elements as keys
+        self.magmom=magmom
         self.ecp=ecp
         self.functional=functional
         self.x2c=x2c
@@ -645,6 +648,10 @@ class PySCFTheory:
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         self.mol.basis=self.basis
+        #Optional setting magnetic moments 
+        if self.magmom != None:
+            print("Setting magnetic moments from user-input:", self.magmom)
+            self.mol.magmom=self.magmom #Should be a list of the collinear spins of each atom
         #ECP: Can be string ('def2-SVP') or dict or a dict with element-specific keys and values 
         self.mol.ecp = self.ecp
         #Memory settings
@@ -689,7 +696,10 @@ class PySCFTheory:
                     self.mf = pyscf.scf.RHF(self.mol)
                 elif self.scf_type == 'UHF':
                     self.mf = pyscf.scf.UHF(self.mol)
-
+                elif self.scf_type == 'GHF':
+                    self.mf = pyscf.scf.GHF(self.mol)
+                elif self.scf_type == 'GKS':
+                    self.mf = pyscf.scf.GKS(self.mol)
         ###########
         # PRINTING
         ############
