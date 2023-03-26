@@ -558,7 +558,28 @@ class QMMMTheory:
         print(f"Setting new numcores {numcores}for QMtheory and MMtheory")
         self.qm_theory.set_numcores(numcores)
         self.mm_theory.set_numcores(numcores)
+    #General run
     def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
+
+        if self.embedding == "Mechanical":
+            return self.mech_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
+                label=label, charge=charge, mult=mult)
+        elif self.embedding == "Elstat":
+            return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
+                label=label, charge=charge, mult=mult)
+        else:
+            print("Unknown embedding. Exiting")
+            ashexit()
+
+    #Mechanical embedding run
+    def mech_run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
+        print("Mechanical embedding not ready yet")
+        #Since elstat-run is so complicated it is easier to just write new mechanical run
+        #mechanical embedding may also come with its own complexities
+        #NOTE: We should also reduce complexity of elstat-run by moving code into methods
+        ashexit()
+    #Electrostatic embedding run
+    def elstat_run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
         module_init_time=time.time()
         CheckpointTime = time.time()
         if self.printlevel >= 2:
@@ -673,9 +694,10 @@ class QMMMTheory:
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
             #If no linkatoms then self.pointcharges are just original charges with QM-region zeroed
-            self.pointcharges=[self.charges_qmregionzeroed[i] for i in self.mmatoms]
-            #If no linkatoms MM coordinates are the same
-            self.pointchargecoords=self.mmcoords
+            if self.embedding=="Elstat":
+                self.pointcharges=[self.charges_qmregionzeroed[i] for i in self.mmatoms]
+                #If no linkatoms MM coordinates are the same
+                self.pointchargecoords=self.mmcoords
        
         #NOTE: Now we have updated MM-coordinates (if doing linkatoms, wtih dipolecharges etc) and updated mm-charges (more, due to dipolecharges if linkatoms)
         # We also have MMcharges that have been set to zero due to QM/mm
@@ -708,36 +730,6 @@ class QMMMTheory:
             print("No QMtheory. Skipping QM calc")
             QMenergy=0.0;self.linkatoms=False;PCgradient=np.array([0.0, 0.0, 0.0])
             QMgradient=np.array([0.0, 0.0, 0.0])
-        #TODO: Revisit Psi4 and remove this is pointcharge gradients have been implemented
-        elif self.qm_theory_name == "Psi4Theory":
-            #Calling Psi4 theory, providing current QM and MM coordinates.
-            if Grad==True:
-                if PC==True:
-                    print(BC.WARNING, "Pointcharge gradient for Psi4 is not implemented.",BC.END)
-                    print(BC.WARNING, "Warning: Only calculating QM-region contribution, skipping electrostatic-embedding gradient on pointcharges", BC.END)
-                    print(BC.WARNING, "Only makes sense if MM region is frozen! ", BC.END)
-                    QMenergy, QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                                                         current_MM_coords=self.pointchargecoords,
-                                                                                         MMcharges=self.pointcharges,
-                                                                                         qm_elems=current_qmelems, charge=charge, mult=mult,
-                                                                                         Grad=True, PC=True, numcores=numcores)
-                    #Creating zero-gradient array
-                    PCgradient = np.zeros((len(self.mmatoms), 3))
-                else:
-                    print("grad. mech embedding. not ready")
-                    ashexit()
-                    QMenergy, QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
-                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
-            else:
-                if PC == True:
-                    print("PC embed true. not ready")
-                    QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
-                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
-                else:
-                    print("mech true, not ready")
-                    ashexit()
         #General QM-code energy+gradient call.
         #TODO: Add check whether QM-code supports both pointcharges and pointcharge-gradient?
         else:

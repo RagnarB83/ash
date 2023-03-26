@@ -558,7 +558,6 @@ end"""
             if self.printlevel >= 2:
                 print("\nPrinting Population analysis:")
                 print("-"*30)
-                print("Spin populations:")
                 charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
                 spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
                 self.properties["Mulliken_charges"] = charges
@@ -781,7 +780,7 @@ def grab_ORCA_errors(filename):
 
     errors=[]
     #Lines that are not errors
-    ignore_lines=['           *** ORCA-CIS/TD-DFT FINISHED WITHOUT ERROR','   Startup', '   DIIS-Error',' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', 
+    ignore_lines=['   Iter.        energy            ||Error||_2',' WARNING: the maximum gradient error','           *** ORCA-CIS/TD-DFT FINISHED WITHOUT ERROR','   Startup', '   DIIS-Error',' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', 
         '  Sum of total UMP2 truncation', ]
     for err in error_lines:
         false_positive = any(err.startswith(ign) for ign in ignore_lines)
@@ -1693,6 +1692,10 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     grab=False
     coordgrab=False
     spinpops=[]
+    BS=False #if broken-symmetry job
+    #if
+    if len(pygrep2("WARNING: Broken symmetry calculations", outputfile)):
+        BS=True
 
     if chargemodel == "Mulliken":
         with open(outputfile) as ofile:
@@ -1719,13 +1722,20 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     else:
         print("Unknown chargemodel. Exiting...")
         ashexit()
+    #If BS then we have grabbed charges for both high-spin and BS solution
+    if BS is True:
+        print("Broken-symmetry job detected. Only taking BS-state populations")
+        spinpops=spinpops[int(len(spinpops)/2):]
     return spinpops
 
 def grabatomcharges_ORCA(chargemodel,outputfile):
     grab=False
     coordgrab=False
     charges=[]
-
+    BS=False #if broken-symmetry job
+    #if
+    if len(pygrep2("WARNING: Broken symmetry calculations", outputfile)):
+        BS=True
 
     if chargemodel=="NPA" or chargemodel=="NBO":
         print("Warning: NPA/NBO charge-option in ORCA requires setting environment variable NBOEXE:")
@@ -1838,6 +1848,12 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
     else:
         print("Unknown chargemodel. Exiting...")
         ashexit()
+    
+    #If BS then we have grabbed charges for both high-spin and BS solution
+    if BS is True:
+        print("Broken-symmetry job detected. Only taking BS-state populations")
+        charges=charges[int(len(charges)/2):]
+
     return charges
 
 
