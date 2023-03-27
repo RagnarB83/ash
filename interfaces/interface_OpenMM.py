@@ -1005,6 +1005,7 @@ class OpenMMTheory:
 
     #Changed masses according to user input dictionary
     def modify_masses(self, changed_masses=None):
+        import openmm
         print("Modify masses according: ", changed_masses)
         # Preserve original masses
         #self.system_masses = [self.system.getParticleMass(i) for i in self.allatoms]
@@ -1223,6 +1224,7 @@ class OpenMMTheory:
         return energies
 
     def printEnergyDecomposition(self,simulation):
+        import openmm
         timeA = time.time()
         # Energy composition
         # TODO: Calling this is expensive (seconds)as the energy has to be recalculated.
@@ -1818,6 +1820,7 @@ class OpenMMTheory:
 # CustomNonbonded Force?
 # Presumably not but maybe can add a special force object just for 1-4 interactions. We
 def create_cnb(original_nbforce):
+    import openmm
     """Creates a CustomNonbondedForce object that mimics the original nonbonded force
     and also a Custombondforce to handle 14 exceptions
     """
