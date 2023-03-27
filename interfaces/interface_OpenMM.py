@@ -993,6 +993,7 @@ class OpenMMTheory:
     # Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential
     # energy-function.
     def freeze_atoms(self, frozen_atoms=None):
+        import openmm
         print("Freezing {} atoms by setting particles masses to zero.".format(len(frozen_atoms)))
 
         # Modify particle masses in system object. For freezing atoms
