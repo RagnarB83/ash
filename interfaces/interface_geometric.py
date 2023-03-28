@@ -599,7 +599,7 @@ class ASHengineclass:
             
             if self.printlevel >2:
                 print("printlevel >2. Writing full grad to disk")
-                write_coords_all(Grad, self.fragment.elems, indices=self.allatoms, file="Grad", description="Grad (au/Bohr):")
+                write_coords_all(Grad, self.fragment.elems, indices=self.fragment.allatoms, file="Grad", description="Grad (au/Bohr):")
             #Trim Full gradient down to only act-atoms gradient
             Grad_act = np.array([Grad[i] for i in self.actatoms])
             if self.printlevel >2:
