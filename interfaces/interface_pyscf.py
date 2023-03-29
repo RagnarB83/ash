@@ -390,7 +390,7 @@ class PySCFTheory:
                 #natocc, natorb = dmp2.make_natorbs(rdm1_mo=dfmp2_dm, relaxed=relaxed)
                 #NOTE: Above gives weird occupations ?
                 #NOTE: Slightly silly, calling make_natural_orbitals will cause dm calculation again
-                natocc, natorb = self.mcscf.addons.make_natural_orbitals(dmp2)                
+                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(dmp2)                
             #natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
         elif method =='FCI':
             print("Running FCI natural orbital calculation")
@@ -412,7 +412,7 @@ class PySCFTheory:
             norb_cas, nel_cas, avasorbitals = avas.avas(self.mf, CAS_AO_labels)
             print(f"AVAS determined an active space of: CAS({nel_cas},{norb_cas})")
             print(f"Now doing CASSCF using AVAS active space (CAS({nel_cas},{norb_cas})) and AVAS orbitals")
-            casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
+            casscf = pyscf.mcscf.CASSCF(mf, norb_cas, nel_cas)
             casscf.max_cycle_macro=self.casscf_maxcycle
             casscf.verbose=self.verbose_setting
             cas_result = casscf.run(avasorbitals, natorb=True)
@@ -425,7 +425,7 @@ class PySCFTheory:
             norb_cas, nel_cas, dmetorbitals = dmet_cas.guess_cas(mf, mf.make_rdm1(), CAS_AO_labels)
             print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
             print(f"Now doing CASSCF using DMET-CAS active space (CAS({nel_cas},{norb_cas})) and DMET-CAS orbitals")
-            casscf = self.mcscf.CASSCF(mf, norb_cas, nel_cas)
+            casscf = pyscf.mcscf.CASSCF(mf, norb_cas, nel_cas)
             casscf.max_cycle_macro=self.casscf_maxcycle
             casscf.verbose=self.verbose_setting
             cas_result = casscf.run(dmetorbitals, natorb=True)
@@ -438,7 +438,7 @@ class PySCFTheory:
             ccsd.max_cycle=200
             ccsd.verbose=5
             ccsd.run()
-            natocc, natorb = self.mcscf.addons.make_natural_orbitals(ccsd)
+            natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccsd)
         elif method == 'CCSD(T)':
             import scipy
             import pyscf.cc as pyscf_cc
