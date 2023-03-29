@@ -171,17 +171,11 @@ if ash.settings_ash.settings_dict["load_julia"] is True:
     try:
         print("Importing Julia interface and loading functions")
         Juliafunctions = load_julia_interface()
-        # Hungarian package needs to be installed
-        # try:
-        #    from julia import Hungarian
-        # except:
-        #    print("Problem loading Julia packages: Hungarian")
 
     except ImportError:
         print("Problem importing Julia interface")
         print(
-            "Make sure Julia is installed, Pythoncall/juliacall and the required Julia packages have been "
-            "installed.")
+            "Make sure Julia is installed, Pythoncall/juliacall and the required Julia packages have been installed.")
         print("Proceeding. Slower Python routines will used instead when possible")
         # Connectivity code in Fragment
         ash.settings_ash.settings_dict["connectivity_code"] = "py"

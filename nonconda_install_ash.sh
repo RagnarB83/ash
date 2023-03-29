@@ -42,7 +42,7 @@ then
   echo "path_to_python3_exe is unset"
   echo "Searching for python3 in PATH"
   path_to_python3_exe=$(which python3)
-  #Check if fou
+  #Check if found
   if [ $? -eq 1 ]
   then
       echo "Did not find a python3 executable in PATH. Put a Python3 installation in PATH (or load a module)"

@@ -593,7 +593,7 @@ def calcfreq(evalues):
 
 def printfreqs(vfreq,numatoms,TRmodenum=6):
     print("Note: imaginary modes shown as negative")
-    print("Warning: Currently not distinguish correctly between TR modes and other imaginary modes")
+    print("Warning: Currently not distinguishing correctly between TR modes and other imaginary modes")
     print("{:>6}{:>16}".format("Mode", "Freq(cm**-1)"))
     for mode in range(0,3*numatoms):
         vib=vfreq[mode]
@@ -1281,8 +1281,8 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
             fullhessian[i,j] = hessian_small[s_i,s_j]
     print("Final fullhessian:", fullhessian)
     #NOTE: Diagonalizing full Hessian just to see
-    print("Now diagaonlizing full Hessian")
-    frequencies, normal_modes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(fullhessian,fragment.masses,fragment.elems)
+    print("Now diagonalizing full Hessian")
+    frequencies, normal_modes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(fullhessian,usedfragment.masses,usedfragment.elems)
     print("Size:", fullhessian.size)
     print("Frequencies of full Hessian:", frequencies)
     write_hessian(fullhessian,hessfile="Finalfullhessian")
