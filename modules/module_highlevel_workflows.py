@@ -1732,6 +1732,33 @@ def Extrapolation_twopoint_corr(corr_energies, cardinals, basis_family, beta=Non
     return corr_final
 
 
+#2-point formula for CBS extrapolation of correlation energy by Riemann Zeta function
+# Lesiuk, Jeziorski, JCTC 2019, 15, 5398-5403
+def Extrapolation_Riemann_zeta_corr(corr_energies, cardinals):
+
+    if len(corr_energies) != len(cardinals):
+        print("corr_energies and cardinals lists should be same length")
+        ashexit()
+    if len(corr_energies) != 2:
+        print("corr_energies list should be size 2")
+        ashexit()
+
+    #Riemann zeta: ksi(s), ksi(4) = pi^4/90
+    rz4 = math.pi**4/90
+    
+    #a = L^4(E_L - E_L-1)
+    a = cardinals[-1]**4*(corr_energies[1]-corr_energies[0])
+
+    #sum_ang: sum(l^-4 for l=1 to L)
+    sum_ang=sum([l**(-4) for l in range(1,cardinals[1]+1)])
+    
+    #E_L 
+    E_inf = corr_energies[-1] + a*(rz4-sum_ang)
+    print("Cardinals are:", cardinals)
+    print("Correlation energies are:", corr_energies[0], "and", corr_energies[1])
+    print("Correlation Extrapolated value is", E_inf)
+    return E_inf
+
 
 def FCI_extrapolation(E):
     """Full-CI extrapolation by Goodson. Extrapolates SCF-energy, SD correlation, T correlation to Full-CI at given basis set.
