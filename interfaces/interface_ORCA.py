@@ -5,6 +5,7 @@ import time
 import multiprocessing as mp
 import numpy as np
 import glob
+import copy
 
 import ash.modules.module_coords
 from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
@@ -2409,3 +2410,65 @@ def grab_coordinates_from_ORCA_output(filename):
                     grab=True
     npcoords=np.array(coords)
     return elems, npcoords
+
+
+
+#Make an ORCA fragment guess
+def orca_frag_guess(fragment=None, theory=None, A_indices=None, B_indices=None, A_charge=None, B_charge=None, A_mult=None, B_mult=None):
+    print_line_with_mainheader("orca_frag_guess")
+
+    elems_A= [fragment.elems[i] for i in A_indices]
+    coords_A= np.take(fragment.coords, A_indices, axis=0)
+
+    elems_B= [fragment.elems[i] for i in B_indices]
+    coords_B= np.take(fragment.coords, B_indices, axis=0)
+
+    fragment_A = ash.Fragment(elems=elems_A, coords=coords_A, charge=A_charge, mult=A_mult)
+    fragment_B = ash.Fragment(elems=elems_B, coords=coords_B, charge=B_charge, mult=B_mult)
+
+    #Early exits
+    if fragment is None:
+        print("You need to provide an ASH fragment")
+        ashexit()
+    if fragment.charge == None or A_mult == None or B_mult == None or A_charge == None or B_charge == None:
+        print("You must provide charge/multiplicity information to all fragments")
+        ashexit()
+    if theory == None or theory.__class__.__name__ != "ORCATheory":
+        print("You must provide an ORCATheory level")
+        ashexit()
+    
+    #Creating copies of theory object provided
+    calc_AB = copy.copy(theory); calc_AB.filename="calcAB"
+    calc_A = copy.copy(theory); calc_A.filename="calcA"
+    calc_B = copy.copy(theory); calc_B.filename="calcB"
+
+    #-------------------------
+    #Calculation on A
+    #------------------------
+    print("-"*120)
+    print("Performing ORCA calculation on fragment A")
+    print("-"*120)
+    #Run A SP
+    result_calcA=ash.Singlepoint(theory=calc_A, fragment=fragment_A)
+
+    #-------------------------
+    #Calculation on B
+    #------------------------
+    print()
+    print("-"*120)
+    print("Performing ORCA calculation on fragment B")
+    print("-"*120)
+    #Run B SP
+    result_calcB=ash.Singlepoint(theory=calc_B, fragment=fragment_B)
+
+    #-----------------------------------------
+    # merge A + B to get promolecular density
+    #-----------------------------------------
+    print()
+    print("-"*120)
+    print("Using orca_mergefrag to combine GBW-files for A and B into AB :")
+    print("-"*120)
+    p = sp.run(['orca_mergefrag', "calcA.gbw", "calcB.gbw", "orca_frag_guess.gbw"], encoding='ascii')
+
+    print("Created new GBW-file: orca_frag_guess.gbw")
+    return "orca_frag_guess.gbw"
