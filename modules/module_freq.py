@@ -200,7 +200,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     for label, dispgeo,disp in zip(list_of_labels,list_of_displaced_geos,list_of_displacements):
         filelabel=label.replace(' ','').replace(':','')
         list_of_filelabels.append(filelabel)
-        ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel, printlevel=printlevel)
+        #Disabling (huge printout for e.g. QM/MM protein system)
+        #ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel, printlevel=printlevel)
 
         #Creating ASH fragments with label
         frag=ash.Fragment(coords=dispgeo, elems=elems,label=disp, printlevel=printlevel, charge=charge, mult=mult)
@@ -228,18 +229,18 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
             #Keep QM outputfile for each displacement
-            if theory.theorytype == "QM":
-                try:
-                    shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
-                except:
-                    pass
-            elif theory.theorytype == "QM/MM":
-                try:
-                    shutil.copy(theory.qm_theory.filename+'.out', theory.qm_theory.filename+'disp_'+str(numdisp)+'.out')
-                except:
-                    pass
-            else:
-                print("Warning. Unknown theorytype")
+            #if theory.theorytype == "QM":
+            #    try:
+            #        shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
+            #    except:
+            #        pass
+            #elif theory.theorytype == "QM/MM":
+            #    try:
+            #        shutil.copy(theory.qm_theory.filename+'.out', theory.qm_theory.filename+'disp_'+str(numdisp)+'.out')
+            #    except:
+            #        pass
+            #else:
+            #    print("Warning. Unknown theorytype")
 
             #Adding gradient to dictionary for AtomNCoordPDirectionm
             displacement_grad_dictionary[disp] = gradient
