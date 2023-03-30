@@ -42,7 +42,7 @@ class ProjectResults():
 
 #Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
 def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
-                         HLtheory=None, numcores=1, charge=None, mult=None):
+                         HLtheory=None, numcores=1, charge=None, mult=None, crestoptions=None):
     """[summary]
 
     Args:
@@ -66,7 +66,8 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
 
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
-    list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
+    list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, 
+                                                                                   charge=charge, mult=mult, numcores=numcores, extraoptions=crestoptions)
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
     #list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.get_crest_conformers(charge=charge, mult=mult)

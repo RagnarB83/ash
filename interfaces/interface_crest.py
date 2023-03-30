@@ -11,7 +11,7 @@ import ash.settings_ash
 
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
-               constrained_atoms=None, forceconstant_constraint=0.5):
+               constrained_atoms=None, forceconstant_constraint=0.5, extraoptions=None):
     print_line_with_subheader1("call_crest")
     module_init_time=time.time()
     if crestdir == None:
@@ -76,10 +76,17 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
 
     #GBSA solvation or not
     if solvent is None:
-        process = sp.run([crestdir + '/crest', 'initial.xyz', '-T', str(numcores), '-gfn'+str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge), '-uhf', str(mult-1)])
+        solventstring=""
     else:
-        process = sp.run([crestdir + '/crest', 'initial.xyz','-T', str(numcores),  '-gfn' + str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge),'-gbsa', str(solvent),
-            str(charge), '-uhf', str(mult - 1)])
+        solventstring=f'-gbsa {solvent}'
+    #Extra options or empty. string with extra crest keyword flags
+    if extraoptions == None:
+        extraoptions=""
+    
+    #Run
+    process = sp.run([crestdir + '/crest', 'initial.xyz','-T', str(numcores),  '-gfn' + str(xtbflag), 
+                      '-ewin', str(energywindow),  str(charge), solventstring, extraoptions,
+                    '-chrg', str(charge), '-uhf', str(mult - 1)])
 
 
     os.chdir('..')
