@@ -5,13 +5,16 @@ import time
 import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
-from ash.modules.module_coords import write_xyzfile
 import ash.settings_ash
+from ash.functions.functions_parallel import check_OpenMPI
 
-#Basic NWChem interface
-#Works for RHF,UHF,RKS,UKS
-#CCSD(T) w/wo TCE
-#No PCs yet
+#Reasonably flexible NWChem interface: NWChem input should be specified by nwcheminput multi-line string.
+#Everything except geometry
+#Works for RHF,UHF,RKS,UKS, MP2, CCSD(T) w/wo TCE. 
+#TODO: PC embedding
+#TODO: Constrained DFT
+#TODO: GPU support for CC
+#TODO: ADFT
 
 #NWChem Theory object.
 class NWChemTheory:
@@ -24,7 +27,12 @@ class NWChemTheory:
         if nwcheminput is None:
             print(f"{self.theorynamelabel}Theory requires a nwcheminput keyword")
             ashexit()
-        self.nwchemdir=None
+
+        #Checking OpenMPI
+        if numcores != 1:
+            print(f"ORCA parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
+            check_OpenMPI()
+        #Finding NWChem
         if nwchemdir == None:
             print(BC.WARNING, f"No nwchemdir argument passed to {self.theorynamelabel}Theory. Attempting to find nwchemdir variable inside settings_ash", BC.END)
             try:
@@ -40,6 +48,7 @@ class NWChemTheory:
                     ashexit()
         else:
             self.nwchemdir = nwchemdir
+        
         #Indicate that this is a QMtheory
         self.theorytype="QM"
 
@@ -129,7 +138,7 @@ class NWChemTheory:
                 Grad=True, filename=self.filename, openshell=self.openshell, tce=self.tce)
             
             #Run NWChem
-            run_NWChem(self.nwchemdir,self.filename)
+            run_NWChem(self.nwchemdir,self.filename,numcores=self.numcores)
 
             self.energy=grab_energy_nwchem(self.filename+'.out',method=self.method, tce=self.tce)
             if PC is True:
@@ -145,7 +154,7 @@ class NWChemTheory:
                 method=self.method, openshell=self.openshell, tce=self.tce)
             
             #Run NWChem
-            run_NWChem(self.nwchemdir,self.filename)
+            run_NWChem(self.nwchemdir,self.filename,numcores=self.numcores)
             
             self.energy=grab_energy_nwchem(self.filename+'.out',method=self.method, tce=self.tce)
 
@@ -163,9 +172,12 @@ class NWChemTheory:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
 
-def run_NWChem(nwchemdir,filename):
+def run_NWChem(nwchemdir,filename,numcores=1):
     with open(filename+'.out', 'w') as ofile:
-        process = sp.run([nwchemdir + '/nwchem', filename+'.nw'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        if numcores >1:
+            process = sp.run(['mpirun', '-np', str(numcores), nwchemdir + '/nwchem', filename+'.nw'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        else:
+            process = sp.run([nwchemdir + '/nwchem', filename+'.nw'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 def write_NWChem_input(nwcheminput,charge,mult,elems,coords, filename='nwchem',
     PCfile=None, Grad=True, method='scf', openshell=False, tce=False):
@@ -216,7 +228,6 @@ def grab_energy_nwchem(outfile,method=None,tce=False):
     energy=None
     if method == 'scf':
         grabline='Total SCF energy ='
-
     elif method == 'mp2':
         grabline='Total MP2 energy'
     elif method == 'ccsd' and tce is True:
@@ -232,7 +243,6 @@ def grab_energy_nwchem(outfile,method=None,tce=False):
     else:
         print("Unknown method")
         ashexit()
-    print("grabline:", grabline)
     with open(outfile) as f:
         for line in f:
             if grabline in line:
