@@ -87,6 +87,7 @@ from ash.interfaces.interface_MRCC import MRCCTheory
 from ash.interfaces.interface_QUICK import QUICKTheory
 from ash.interfaces.interface_TeraChem import TeraChemTheory
 from ash.interfaces.interface_sparrow import SparrowTheory
+from ash.interfaces.interface_NWChem import NWChemTheory
 
 from ash.interfaces.interface_CFour import CFourTheory
 from ash.interfaces.interface_xtb import xTBTheory
