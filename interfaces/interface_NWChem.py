@@ -61,14 +61,11 @@ class NWChemTheory:
         self.method=method
         self.tce=tce
 
-
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cleanup():
         print(f"self.theorynamelabel cleanup not yet implemented.")
-    #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
-    #NOTE: Should be possible by adding to subprocess call
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -188,9 +185,6 @@ def write_NWChem_input(nwcheminput,charge,mult,elems,coords, filename='nwchem',
         jobdirective='energy'
     if PCfile is not None:
         pckeyword=PCfile
-    joboption="energy"
-    if Grad is True:
-        joboption="gradient"
     with open(f"{filename}.nw", 'w') as inpfile:
         inpfile.write('#NWChem input\n')
         inpfile.write(f'start {filename}\n')
@@ -222,7 +216,6 @@ def write_NWChem_input(nwcheminput,charge,mult,elems,coords, filename='nwchem',
             inpfile.write(f"task {method} {jobdirective}\n")
         inpfile.write('\n')
 
-
 #Grab NWChem energy
 def grab_energy_nwchem(outfile,method=None,tce=False):
     energy=None
@@ -248,7 +241,6 @@ def grab_energy_nwchem(outfile,method=None,tce=False):
             if grabline in line:
                 energy=float(line.split()[-1])
     return energy
-
 
 def grab_gradient_NWChem(outfile,numatoms,numpc=None):
     grad_grab=False

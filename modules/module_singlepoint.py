@@ -13,7 +13,6 @@ import ash
 from ash.functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_results import ASH_Results
-#from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
 
 #Single-point energy function
 def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
