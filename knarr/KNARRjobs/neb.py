@@ -613,7 +613,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 extra="CI"
             else: extra=""
             print('%4i %6.2f %12.6f %12.4f %12.6f %6s' % (
-                i, s[i], 1/(27.211386245988)*path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - Ereactant),
+                i, s[i], 1/(27.211386245988)*path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - path.GetEnergy()[0][0]),
                 np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()])),extra))
 
         WritePath(basename + "_MEP.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),

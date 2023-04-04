@@ -259,9 +259,8 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
 #NOTE: Version intended for apply_async
 #TODO: This function contains 2 many QM-code specifics. Needs to be generalized (QM-specifics moved to QMtheory class)
 def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2, copytheory=False):
-    print("Inside Single_par")
-    import multiprocess as mp
-    from multiprocess.pool import Pool
+    #import multiprocess as mp
+    #from multiprocess.pool import Pool
     #Check charge/mult.
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Single_par", theory=theory, printlevel=printlevel)
     #BASIC PRINTING

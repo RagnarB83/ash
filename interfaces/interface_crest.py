@@ -84,6 +84,7 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
         extraoptions=""
     
     #Run
+    print("Now calling CREST")
     process = sp.run([crestdir + '/crest', 'initial.xyz','-T', str(numcores),  '-gfn' + str(xtbflag), 
                       '-ewin', str(energywindow),  str(charge), solventstring, extraoptions,
                     '-chrg', str(charge), '-uhf', str(mult - 1)])
@@ -186,7 +187,7 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
         list_xtb_energies.append(en)
 
     for (els,cs,eny) in zip(all_elems,all_coords,list_xtb_energies):
-        conf = Fragment(elems=els, coords=cs, charge=charge, mult=mult)
+        conf = Fragment(elems=els, coords=cs, charge=charge, mult=mult, printlevel=0)
         list_conformers.append(conf)
         conf.energy=eny
 

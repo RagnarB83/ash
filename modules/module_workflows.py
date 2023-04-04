@@ -42,7 +42,8 @@ class ProjectResults():
 
 #Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
 def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
-                         HLtheory=None, numcores=1, charge=None, mult=None, crestoptions=None):
+                         HLtheory=None, numcores=1, charge=None, mult=None, crestoptions=None,
+                         optimizer_maxiter=200):
     """[summary]
 
     Args:
@@ -71,20 +72,25 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
     #list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.get_crest_conformers(charge=charge, mult=mult)
+    print("Crest Conformer Search done. Found {} conformers".format(len(xtb_energies)))
+    #Printing relative energies
+    min_xtbenergy=min(xtb_energies)
+    harkcal = 627.50946900
+    print(" Conformer   xTB-energy (Eh)  dE (kcal/mol)")
+    print("----------------------------------------------------------------")
+    for index,xtb_en in enumerate(xtb_energies):
+        rel_xtb=(xtb_en-min_xtbenergy)*harkcal
+        print("{:10} {:13.10f} {:13.3f}".format(index,xtb_en,rel_xtb))
 
-    print("list_conformer_frags:", list_conformer_frags)
-    print("")
-    print("Crest Conformer Searches done. Found {} conformers".format(len(xtb_energies)))
-    print("xTB energies: ", xtb_energies)
 
     #3. Run ML (e.g. DFT) geometry optimizations for each crest-conformer
-
     ML_energies=[]
     print("")
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        ash.interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric', charge=charge, mult=mult)
+        ash.interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, 
+                                                        coordsystem='tric', charge=charge, mult=mult, maxiter=optimizer_maxiter)
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
         os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
