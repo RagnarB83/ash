@@ -1685,12 +1685,11 @@ end")
 def Read_old_PES_results(filename='PES-Results.txt'):
     print(f"Reading file {filename}")
     if os.path.isfile(filename) is False:
-        print(f"File {filename} does exist")
+        print(f"File {filename} does NOT exist")
         ashexit()
     # Parsing of files
     import json
     import configparser
-    #from configparser import ConfigParser
     parser = configparser.ConfigParser()
 
     parser.read(filename)
@@ -1739,7 +1738,7 @@ def saveAOmatrix(file, orcadir=None):
 def get_smat_from_gbw(file1, file2='', orcadir=None):
     #print("Inside get_smat_from_gbw")
     if os.path.isfile(file1) is False:
-        print(f"file {file1} does exist")
+        print(f"file {file1} does NOT exist")
         ashexit()
     if not file2:
       file2=file1
@@ -3355,7 +3354,6 @@ def Read_old_results():
     # Parsing of files
     import json
     import configparser
-    #from configparser import ConfigParser
     parser = configparser.ConfigParser()
 
     parser.read('PES-Results.txt')

@@ -88,6 +88,8 @@ from ash.interfaces.interface_QUICK import QUICKTheory
 from ash.interfaces.interface_TeraChem import TeraChemTheory
 from ash.interfaces.interface_sparrow import SparrowTheory
 from ash.interfaces.interface_NWChem import NWChemTheory
+from ash.interfaces.interface_CP2K import CP2KTheory
+
 
 from ash.interfaces.interface_CFour import CFourTheory
 from ash.interfaces.interface_xtb import xTBTheory
@@ -103,7 +105,7 @@ from ash.modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCou
 from ash.interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_RMSF
 
 # QM/MM
-from ash.modules.module_QMMM import QMMMTheory, actregiondefine
+from ash.modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf
 from ash.modules.module_polembed import PolEmbedTheory
 
 # Knarr

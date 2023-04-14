@@ -1210,6 +1210,24 @@ def grab_resids_from_pdbfile(pdbfile):
                 resids.append(resid_part)
     return resids
 
+#Read atomic charges present in PSF-file. assuming Xplor format
+def read_charges_from_psf(file):
+    charges=[]
+    grab=False
+    with open(file) as f:
+        for line in f:
+            if len(line.split()) == 9:
+                if 'REMARKS' not in line:
+                    grab=True
+            if len(line.split()) < 8:
+                grab=False
+            if 'NBOND' in line:
+                return charges
+            if grab is True:
+                charge=float(line.split()[6])
+                charges.append(charge)
+    return charges
+
 #Define active region based on radius from an origin atom.
 #Requires fragment (for coordinates) and resids list inside OpenMMTheory object
 #TODO: Also allow PDBfile to grab resid information from?? Prettier since we don't have to create an OpenMMTheory object

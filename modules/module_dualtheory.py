@@ -9,6 +9,7 @@ import ash.constants
 import ash.functions.functions_elstructure
 import time
 import numpy as np
+import os
 from collections import defaultdict
 
 class Correction_handler:
@@ -161,10 +162,50 @@ class DualTheory:
         print("self.correction_dict[label].correction_RMSgrad:", self.correction_dict[label].correction_RMSgrad)
         print("self.correction_dict[label].correction_Maxgrad:", self.correction_dict[label].correction_Maxgrad)
 
+    #Write info to disk
+    def write_updatefreqdict_to_disk(self, filename="dualtheory_log"):
+        print("Inside: write_updatefreqdict_to_disk")
+        import json
+        try:
+            os.remove(filename)
+        except:
+            pass
+        print("self.update_freq_dict:", self.update_freq_dict)
+        #d = {"one":1, "two":2}
+        #print("d:", d)
+        json.dump(self.update_freq_dict, open("dualtheory_log",'w'))
+        print("he")
+        #exit()
+        #json.dump(self.update_freq_dict, open(filename,'w'))
+        #with open(filename,'w') as f:
+        #    json.dump(self.update_freq_dict, f)
+        print("xxx")
+        #with open(filename, 'w') as f:
+        #    f.write("[Data]\n")
+        #    f.write(f"label : {label}\n")
+        #    f.write(f"update_freq_dict : {update_freq_dict}\n")
+    #Read info from disk
+    def read_updatefreqdict_from_disk(self, update_freq_dict, filename="dualtheory_log"):
+        print("Inside: read_updatefreqdict_from_disk")
+        print("reading file:", filename)
+        import json
+        if os.path.isfile(filename) is False:
+            print(f"File {filename} does not exist")
+            print("Continuing")
+            #Returning original 
+            return
+        print("here")
+        self.update_freq_dict = json.load(open(filename))
+        return 
+
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, label=None, charge=None, mult=None, run_both_theories=False ):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, label='default', charge=None, mult=None, run_both_theories=False ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DUALTHEORY INTERFACE-------------", BC.END)
         self.totalruncalls += 1
+        print("running")
+        print("label:", label)
+        #Reading info from disk (this makes things compatible with multiprocessing)
+        self.read_updatefreqdict_from_disk(self.update_freq_dict)
 
         #If theory2 switch is active then we only do theory2
         if self.theory2_active == True:
@@ -244,31 +285,40 @@ class DualTheory:
                         print("Correction not stabilized. Doing Theory2 correction")
                         run_both_theories=True
             elif self.update_schedule=='frequency':
+                print("here")
+                print("label:", label)
+                print("self.update_freq_dict:", self.update_freq_dict)
                 if label not in self.update_freq_dict:
                     print("First DualTheory call. Running both theories")
                     self.update_freq_dict[label] = [0,0,0] #Runcalls, theory1-runcalls, theory2-runcalls
                     run_both_theories=True
                 elif label in self.update_freq_dict:
-                    print("")
+                    print("XXXX")
+                    print("self.update_freq_dict:",self.update_freq_dict)
 
                     #Checking if we have reached max_updates
                     print(f"Number of corrections {self.update_freq_dict[label][2]} for label: {label}")
                     if  self.update_freq_dict[label][2] >= self.max_updates:
                         print("Max number of corrections reached. Skipping correction (theory2 calc) in this step")
                     else:
-                        #If runcalls for label mataches update_freq
+                        #If runcalls for label matches update_freq
                         if self.update_freq_dict[label][0] % self.update_freq == 0:
                             run_both_theories=True
             else:
                 print("Unknown update_schedule")
                 ashexit()
+            print("YYYY")
+            print("self.update_freq_dict:", self.update_freq_dict)
             ################
             self.update_freq_dict[label][0] +=1 
             if Grad == True:
+                print("Grad True")
                 self.update_freq_dict[label][1] +=1 
                 T1_energy, T1_grad = self.theory1.run(current_coords=current_coords, elems=elems, numcores=numcores, Grad=True, charge=charge, mult=mult)
                 if run_both_theories == True:
-                    self.update_freq_dict[label][2] +=1 
+                    print("runboth true")
+                    self.update_freq_dict[label][2] +=1
+                    self.write_updatefreqdict_to_disk(self.update_freq_dict)
                     T2_energy, T2_grad = self.theory2.run(current_coords=current_coords, elems=elems, numcores=numcores, Grad=True, charge=charge, mult=mult)
                     #Update gradient correction if both theories were calculated
                     self.correction(Grad,label,T2_E=T2_energy,T1_E=T1_energy,T2_G=T2_grad,T1_G=T1_grad)
@@ -277,13 +327,18 @@ class DualTheory:
                 self.update_freq_dict[label][1] +=1 
                 T1_energy = self.theory1.run(current_coords=current_coords, elems=elems, numcores=numcores, Grad=False, charge=charge, mult=mult)
                 if run_both_theories == True:
-                    self.update_freq_dict[label][2] +=1 
+                    print("Here zz")
+                    self.update_freq_dict[label][2] +=1
+                    self.write_updatefreqdict_to_disk(self.update_freq_dict)
                     T2_energy = self.theory2.run(current_coords=current_coords, elems=elems, numcores=numcores, Grad=False, charge=charge, mult=mult)
                     #Update gradient correction if both theories were calculated
                     self.correction(Grad,label,T2_E=T2_energy,T1_E=T1_energy,T2_G=T2_grad,T1_G=T1_grad)
                     #self.correction_stats(label)
 
         #Current energy
+        print("curr energy")
+        print("label:", label)
+        print("self.energy_correction:", self.energy_correction)
         energy = T1_energy + self.energy_correction[label]
         print("Dualtheory energy:", energy)
         if Grad == True:

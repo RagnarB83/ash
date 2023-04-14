@@ -921,9 +921,7 @@ class KnarrCalculator:
                     # Defining full_coords as original coords temporarily
                     #full_coords = self.full_fragment_reactant.coords
                     #Creating deep copy of reactant coordinates as it will be modified
-                    print("Debugging 1")
                     full_coords = copy.deepcopy(self.full_fragment_reactant.coords)
-                    print("Debugging 2")
                     # Replacing act-region coordinates with coords from currcoords
                     for i, c in enumerate(full_coords):
                         if i in self.actatoms:
@@ -931,10 +929,8 @@ class KnarrCalculator:
                             curr_c, currcoords = currcoords[0], currcoords[1:]
                             full_coords[i] = curr_c
                     full_current_image_coords = full_coords
-                    print("Debugging 3")
                     full_frag=ash.Fragment(coords=full_current_image_coords, elems=self.full_fragment_reactant.elems,charge=self.charge, mult=self.mult, label="image_"+str(image_number), printlevel=self.printlevel)
                     all_image_fragments.append(full_frag)
-                    print("Debugging 4")
                 else:
                     #NO active region
                     frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult, label="image_"+str(image_number), printlevel=self.printlevel)
@@ -947,7 +943,6 @@ class KnarrCalculator:
             #   Maybe launch Singlepoint_parallel with a simple ScriptTheory that only executes a runscript.py and grabs E+G from
             # files that are created
             #else:
-            print("Debugging 5")
             result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
             en_dict = result_par.energies_dict

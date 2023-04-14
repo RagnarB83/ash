@@ -406,7 +406,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
     if charge == None or mult == None:
         print(BC.FAIL, "Error. charge and mult has not been defined for calc_surface_fromXYZ", BC.END)
         ashexit()
-
+    if dimension == None:
+        print(BC.FAIL, "Error. Dimension keyword needs to be set (1 or 2)", BC.END)
+        ashexit()
     print("XYZdir:", xyzdir)
     print("Theory:", theory)
     print("Dimension:", dimension)
@@ -576,9 +578,6 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
             print("calc_surface_fromXYZ Relaxed option not possible in parallel mode yet. Exiting")
             ashexit()
         
-        
-        
-        
     else:
         ###########################
         #SERIAL CALCULATION
@@ -642,6 +641,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                 else:
                     print("RC1 and RC2 values in dict already. Skipping.")
             elif dimension == 1:
+                print("dim1")
                 #RC1_2.02.xyz
                 RCvalue1=float(relfile.replace('.xyz','').replace('RC1_',''))
                 pointlabel='RC1_'+str(RCvalue1)
@@ -725,6 +725,9 @@ def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraint
     Returns:
         [type]: [description]
     """
+    print("RC1_indices:", RC1_indices)
+    print("RCvalue1:", RCvalue1)
+
     allcon = {}
     if extraconstraints is not None:
         allcon = copy.copy(extraconstraints)
@@ -750,8 +753,7 @@ def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraint
         #Creating empty lists for each RC type (Note: could be the same)
         if RC1_type not in allcon:
             allcon[RC1_type] = []
-        for RC1_indexlist in RC1_indices:
-            RC1.append(RC1_indexlist+[RCvalue1])
+        RC1.append(RC1_indices+[RCvalue1])
         allcon[RC1_type] = allcon[RC1_type] + RC1
     return allcon
 
