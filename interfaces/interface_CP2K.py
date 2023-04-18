@@ -164,6 +164,25 @@ class CP2KTheory:
         except:
             pass
 
+        #Check for BASIS and POTENTIAL FILES before calling
+        print("Checking if POTENTIAL file exists in current dir")
+        if os.path.isfile("POTENTIAL") is True:
+            print(f"File exists in current directory: {os.getcwd()}")
+        else:
+            print("No file found. Trying parent dir")
+            if os.path.isfile("../POTENTIAL") is True:
+                print("Found file in parent dir. Copying to current dir:", os.getcwd())
+                shutil.copy(f"../POTENTIAL", f"./POTENTIAL")
+        #TODO: Need to support other basis sets (called something else than BASIS_MOLOPT)
+        print("Checking if BASIS_MOLOPT file exists in current dir")
+        if os.path.isfile("BASIS_MOLOPT") is True:
+            print(f"File exists in current directory: {os.getcwd()}")
+        else:
+            print("No file found. Trying parent dir")
+            if os.path.isfile("../BASIS_MOLOPT") is True:
+                print("Found file in parent dir. Copying to current dir:", os.getcwd())
+                shutil.copy(f"../BASIS_MOLOPT", f"./BASIS_MOLOPT")
+
         #Run CP2K
         run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores)
 
