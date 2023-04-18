@@ -10,7 +10,7 @@ from ash.modules.module_coords import write_xyzfile
 from ash.functions.functions_parallel import check_OpenMPI
 
 #Reasonably flexible CP2K interface: CP2K input should be specified by cp2kinput multi-line string.
-#cp2k.sopt vs cp2k.ssmp vs cp2k_shell.ssmp
+#cp2k.psmp vs. cp2k.sopt vs cp2k.ssmp vs cp2k_shell.ssm
 
 
 #CP2K Theory object.
@@ -46,11 +46,19 @@ class CP2KTheory:
             except:
                 print(BC.WARNING,"Found no cp2kdir variable in settings_ash module either.",BC.END)
                 try:
-                    self.cp2kdir = os.path.dirname(shutil.which('cp2k.sopt'))
-                    print(BC.OKGREEN,"Found cp2k.sopt in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
+                    print("Looking for cp2k.psmp")
+                    self.cp2kdir = os.path.dirname(shutil.which('cp2k.psmp'))
+                    print(BC.OKGREEN,"Found cp2k.psmp in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
+                    self.cp2k_bin_name='cp2k.psmp'
                 except:
-                    print(BC.FAIL,"Found no cp2k executable in PATH. Exiting... ", BC.END)
-                    ashexit()
+                    try:
+                        print("Looking for cp2k.sopt")
+                        self.cp2kdir = os.path.dirname(shutil.which('cp2k.sopt'))
+                        print(BC.OKGREEN,"Found cp2k.sopt in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
+                        self.cp2k_bin_name='cp2k.sopt'
+                    except:
+                        print(BC.FAIL,"Found no cp2k executable in PATH. Exiting... ", BC.END)
+                        ashexit()
         else:
             self.cp2kdir = cp2kdir
         
@@ -157,7 +165,7 @@ class CP2KTheory:
             pass
 
         #Run CP2K
-        run_CP2K(self.cp2kdir,self.filename,numcores=self.numcores)
+        run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores)
 
         #Grab energy
         self.energy=grab_energy_cp2k(self.filename+'.out',method=self.method)
@@ -188,12 +196,12 @@ class CP2KTheory:
 # Independent CP2K functions
 ################################
 
-def run_CP2K(cp2kdir,filename,numcores=1):
+def run_CP2K(cp2kdir,bin_name,filename,numcores=1):
     with open(filename+'.out', 'w') as ofile:
         if numcores >1:
-            process = sp.run(['mpirun', '-np', str(numcores), cp2kdir + '/cp2k.sopt', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            process = sp.run(['mpirun', '-np', str(numcores), cp2kdir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         else:
-            process = sp.run([cp2kdir + '/cp2k.sopt', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            process = sp.run([cp2kdir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #Regular CP2K input
 def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
