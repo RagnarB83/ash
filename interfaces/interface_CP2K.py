@@ -215,10 +215,10 @@ class CP2KTheory:
 # Independent CP2K functions
 ################################
 
-def run_CP2K(cp2kdir,bin_name,filename,numcores=1,bindtocorestring='--bind-to none'):
+def run_CP2K(cp2kdir,bin_name,filename,numcores=1):
     with open(filename+'.out', 'w') as ofile:
         if numcores >1:
-            process = sp.run(['mpirun', bindtocorestring,'-np', str(numcores), cp2kdir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            process = sp.run(["mpirun", "--bind-to", "none", f"-np", f"{str(numcores)}", f"{cp2kdir}/{bin_name}", f"{filename}.inp"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         else:
             process = sp.run([cp2kdir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
