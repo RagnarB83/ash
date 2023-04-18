@@ -87,14 +87,6 @@ class ORCATheory:
         #and we want to use last one
         self.path_to_last_gbwfile_used=None #default None
 
-        #Using orcadir to set LD_LIBRARY_PATH
-        old = os.environ.get("LD_LIBRARY_PATH")
-        if old:
-            os.environ["LD_LIBRARY_PATH"] = self.orcadir + ":" + old
-        else:
-            os.environ["LD_LIBRARY_PATH"] = self.orcadir
-        #os.environ['LD_LIBRARY_PATH'] = orcadir + ':$LD_LIBRARY_PATH'
-
         #Printlevel
         self.printlevel=printlevel
 
@@ -707,28 +699,27 @@ def run_orca_SP(list):
     orcadir=list[0]
     inpfile=list[1]
     print("Running inpfile", inpfile)
-    #if Grad==True:
-    #    with open(inpfile) as ifile:
-    #        insert_line_into_file(inpfile, '!', '! Engrad')
     basename = inpfile.split('.')[0]
     with open(basename+'.out', 'w') as ofile:
         process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if numcores >1.
-# Takes possible Grad boolean argument.
-
 def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True, bind_to_core_option=True):
     if numcores>1:
         palstring='%pal nprocs {} end'.format(numcores)
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', palstring, Once=True )
     basename = inpfile.replace('.inp','')
+
+    #LD_LIBRARY_PATH enforce: https://orcaforum.kofo.mpg.de/viewtopic.php?f=11&t=10118
+    #"-x LD_LIBRARY_PATH -x PATH"
+
     with open(basename+'.out', 'w') as ofile:
         try:
             if bind_to_core_option is True:
-                process = sp.run([orcadir + '/orca', inpfile, "--bind-to none"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                process = sp.run([orcadir + '/orca', inpfile, f"-x {orcadir}", "--bind-to none"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             else:
-                process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                process = sp.run([orcadir + '/orca', inpfile, f"-x {orcadir}"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             if check_for_errors:
                 grab_ORCA_errors(basename+'.out')
             if check_for_warnings:
