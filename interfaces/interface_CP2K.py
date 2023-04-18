@@ -17,14 +17,21 @@ from ash.functions.functions_parallel import check_OpenMPI
 class CP2KTheory:
     def __init__(self, cp2kdir=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None,
                 cell_length=10, functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
-                method='QUICKSTEP', numcores=1):
+                method='QUICKSTEP', numcores=1, periodic_val=None):
 
         self.theorynamelabel="CP2K"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-        #if cp2kinput is None:
-        #    print(f"{self.theorynamelabel}Theory requires a cp2kinput keyword")
-        #    ashexit()
+        #EARLY EXITS
+        if basis_dict is None:
+            print("basis_dict keyword is required")
+            ashexit()
+        if potential_dict is None:
+            print("potential_dict keyword is required")
+            ashexit()
+        if functional is None:
+            print("functional keyword is required")
+            ashexit()
 
         #Checking OpenMPI
         if numcores != 1:
@@ -54,7 +61,6 @@ class CP2KTheory:
         self.printlevel=printlevel
         self.filename=filename
         #Defining inputfile
-        #self.cp2kinput=cp2kinput
         self.basis_dict=basis_dict
         self.potential_dict=potential_dict
         self.cell_length=cell_length
@@ -64,6 +70,7 @@ class CP2KTheory:
         self.psolver=psolver
         self.numcores=numcores
         self.method=method
+        self.periodic_val=periodic_val
 
 
     #Set numcores method
@@ -128,7 +135,7 @@ class CP2KTheory:
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              functional=self.functional, restartfile=None,
                              PCfile=None, Grad=Grad, filename='cp2k', charge=charge, mult=mult,
-                             periodic_val=None, cell_length=self.cell_length, basis_file=self.basis_file, 
+                             periodic_val=self.periodic_val, cell_length=self.cell_length, basis_file=self.basis_file, 
                              potential_file=self.potential_file,
                              psolver=self.psolver, coupling=coupling, qm_kind_dict=qm_kind_dict)
         else:
@@ -140,7 +147,7 @@ class CP2KTheory:
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              functional=self.functional, restartfile=None,
                              PCfile=None, Grad=Grad, filename='cp2k', charge=charge, mult=mult,
-                             periodic_val=None, cell_length=self.cell_length, basis_file=self.basis_file, potential_file=self.potential_file,
+                             periodic_val=self.periodic_val, cell_length=self.cell_length, basis_file=self.basis_file, potential_file=self.potential_file,
                              psolver=self.psolver)
 
         #Delete old forces file if present
