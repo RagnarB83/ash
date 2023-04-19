@@ -36,19 +36,20 @@ class deMon2kTheory:
             try:
                 print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
                 self.demondir=ash.settings_ash.settings_dict["demondir"]
-                self.binary_name=binary_name
             except:
                 print(BC.WARNING,"Found no demondir variable in settings_ash module either.",BC.END)
                 try:
                     print(f"Looking for {binary_name}")
                     self.demondir = os.path.dirname(shutil.which(binary_name))
                     print(BC.OKGREEN,f"Found {binary_name} in PATH. Setting demondir to:", self.demondir, BC.END)
-                    self.binary_name=binary_name
                 except:
                     print(BC.FAIL,f"Found no {binary_name} executable in PATH. Exiting... ", BC.END)
                     ashexit()
         else:
             self.demondir = demondir
+        
+        #The name of the deMon executable. Often named binary
+        self.binary_name=binary_name
         
         #Indicate that this is a QMtheory
         self.theorytype="QM"
