@@ -140,7 +140,7 @@ class deMon2kTheory:
         run_deMon2k(self.demondir,self.binary_name,self.filename,numcores=self.numcores)
 
         #Grab energy
-        self.energy=grab_energy_demon2k(self.filename+'.out',method=self.method)
+        self.energy=grab_energy_demon2k(self.filename+'.out')
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
         
@@ -176,7 +176,7 @@ def run_deMon2k(demondir,bin_name,filename,numcores=1):
             process = sp.run([demondir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #Regular deMon2k input
-def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type=None, tolerance=1e-8,
+def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type=None, tolerance=1.e-8,
                         functional=None, Grad=True, charge=None, mult=None,
                         basis_name=None, auxis_name=None):
     #Energy or Energy+gradient
@@ -195,7 +195,7 @@ def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type
         inpfile.write(f'CHARGE {charge}\n')
         inpfile.write(f'MULTI {mult}\n')
         inpfile.write(f'#\n')
-        inpfile.write(f'SCFTYPE {scf_type} TOL={tolerance}\n')        
+        inpfile.write(f'SCFTYPE {scf_type} TOL={tolerance:.2E}\n')        
         inpfile.write(f'VXCTYPE {functional}\n')
         if Grad is True:
             inpfile.write(f'DYNAMICS INT=1, MAX=0, STEP=0\n')
@@ -219,7 +219,7 @@ def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type
         inpfile.write(f'BASIS ({basis_name})\n')
 
 #Grab deMon2k energy
-def grab_energy_demon2k(outfile,method=None):
+def grab_energy_demon2k(outfile):
     energy=None
     grabline=" TOTAL ENERGY                ="
     with open(outfile) as f:
