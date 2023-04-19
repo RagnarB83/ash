@@ -36,6 +36,7 @@ class deMon2kTheory:
             try:
                 print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
                 self.demondir=ash.settings_ash.settings_dict["demondir"]
+                self.binary_name=binary_name
             except:
                 print(BC.WARNING,"Found no demondir variable in settings_ash module either.",BC.END)
                 try:
@@ -45,7 +46,7 @@ class deMon2kTheory:
                     self.binary_name=binary_name
                 except:
                     print(BC.FAIL,f"Found no {binary_name} executable in PATH. Exiting... ", BC.END)
-                    #ashexit()
+                    ashexit()
         else:
             self.demondir = demondir
         
