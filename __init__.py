@@ -89,7 +89,7 @@ from ash.interfaces.interface_TeraChem import TeraChemTheory
 from ash.interfaces.interface_sparrow import SparrowTheory
 from ash.interfaces.interface_NWChem import NWChemTheory
 from ash.interfaces.interface_CP2K import CP2KTheory
-
+from ash.interfaces.interface_deMon import deMon2kTheory
 
 from ash.interfaces.interface_CFour import CFourTheory
 from ash.interfaces.interface_xtb import xTBTheory

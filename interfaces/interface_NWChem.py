@@ -29,7 +29,7 @@ class NWChemTheory:
 
         #Checking OpenMPI
         if numcores != 1:
-            print(f"ORCA parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
+            print(f"Parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version is available in your environment")
             check_OpenMPI()
         #Finding NWChem
         if nwchemdir == None:
