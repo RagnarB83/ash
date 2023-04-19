@@ -19,7 +19,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 #deMon2k Theory object.
 class deMon2kTheory:
     def __init__(self, demondir=None, filename='deMon', binary_name='binary', printlevel=2, numcores=1, 
-                functional='PBE', scf_type='UKS', basis_name='cc-pVDZ', auxis_name='GEN-A3*'):
+                functional='PBE', scf_type='UKS', basis_name='cc-pVDZ', auxis_name='GEN-A3*', grid='MEDIUM'):
 
         self.theorynamelabel="deMon2k"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
@@ -63,6 +63,7 @@ class deMon2kTheory:
         self.basis_name=basis_name
         self.auxis_name=auxis_name
         self.scf_type=scf_type
+        self.grid=grid
 
 
     #Set numcores method
@@ -114,7 +115,7 @@ class deMon2kTheory:
             #Write simple deMon2k input
             write_deMon2k_input(elems, current_coords, jobname='ash', filename=self.filename,
                                     functional=self.functional, Grad=Grad, charge=charge, mult=mult,
-                                    scf_type=self.scf_type,
+                                    scf_type=self.scf_type, grid=self.grid,
                                     basis_name=self.basis_name, auxis_name=self.auxis_name)
 
         #Check for BASIS and AUXIS FILES before calling
@@ -175,7 +176,7 @@ def run_deMon2k(demondir,bin_name,filename,numcores=1):
 
 #Regular deMon2k input
 def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type=None, tolerance=1.e-8,
-                        functional=None, Grad=True, charge=None, mult=None,
+                        functional=None, Grad=True, charge=None, mult=None, grid=None,
                         basis_name=None, auxis_name=None):
     #Energy or Energy+gradient
     if Grad is True:
@@ -195,6 +196,7 @@ def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type
         inpfile.write(f'#\n')
         inpfile.write(f'SCFTYPE {scf_type} TOL={tolerance:.2E}\n')        
         inpfile.write(f'VXCTYPE {functional}\n')
+        inpfile.write(f'GRID {grid}\n')
         if Grad is True:
             inpfile.write(f'DYNAMICS INT=1, MAX=0, STEP=0\n')
             inpfile.write(f'TRAJECTORY FORCES\n')
