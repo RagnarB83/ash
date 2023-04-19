@@ -111,8 +111,6 @@ class deMon2kTheory:
             exit()
         else:
             #No QM/MM
-            #Write xyz-file with coordinates
-            write_xyzfile(qm_elems, current_coords, f"{self.filename}", printlevel=1)
             #Write simple deMon2k input
             write_deMon2k_input(elems, current_coords, jobname='ash', filename=self.filename,
                                     functional=self.functional, Grad=Grad, charge=charge, mult=mult,
@@ -147,7 +145,7 @@ class deMon2kTheory:
         #Grab gradient if calculated
         if Grad is True:
             #Grab gradient
-            self.gradient = grab_gradient_deMon2k(f'ash-{self.filename}-1_0.xyz',len(current_coords))
+            self.gradient = grab_gradient_deMon2k(f'{self.filename}.out',len(current_coords))
             #Grab PCgradient from separate file
             if PC is True:
                 print("not ready")
