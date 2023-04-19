@@ -13,6 +13,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 #FILES needed in dir: BASIS, AUXIS, deMon.inp, executable
 # Optional: ECPS and MCPS
+#NOTE: Problem demon2K gradient via DYNAMICS calculates SCF twice
 
 #TODO: GUESS control
 
@@ -184,6 +185,10 @@ def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type
     else:
         jobdirective='ENERGY'
     
+    guess=False
+    #Check if deMon.rst file exists. If so then we read MOs from it
+    if os.isfile(f"{self.filename}.rst") is True:
+        guess=True
     #deMon2k
     with open(f"{filename}.inp", 'w') as inpfile:
 
@@ -197,6 +202,8 @@ def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type
         inpfile.write(f'SCFTYPE {scf_type} TOL={tolerance:.2E}\n')        
         inpfile.write(f'VXCTYPE {functional}\n')
         inpfile.write(f'GRID {grid}\n')
+        if guess is True:
+            inpfile.write(f'GUESS RESTART\n')
         if Grad is True:
             inpfile.write(f'DYNAMICS INT=1, MAX=0, STEP=0\n')
             inpfile.write(f'TRAJECTORY FORCES\n')
