@@ -184,7 +184,12 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
         if len(fragments) > 0:
             if printlevel >= 2:
                 print("fragments:", fragments)
-            for fragment in fragments:
+            for ij,fragment in enumerate(fragments):
+                #Setting fragment-specific constraints if provided
+                if Opt is True and opt_constraints != None:
+                    print("Opt is True and constraints is on")
+                    print("opt_constraints[ij]:", opt_constraints[ij])
+                    optimizer.set_constraints(opt_constraints[ij])
                 if printlevel >= 2:
                     print("fragment:", fragment)
                 results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir, version=version,
@@ -194,7 +199,10 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
         elif len(fragmentfiles) > 0:
             if printlevel >= 2:
                 print("Launching multiprocessing and passing list of ASH fragmentfiles")
-            for fragmentfile in fragmentfiles:
+            for ij,fragmentfile in enumerate(fragmentfiles):
+                #Setting fragment-specific constraints if provided
+                if Opt is True and opt_constraints != None:
+                    optimizer.set_constraints(opt_constraints[ij])
                 if printlevel >= 2:
                     print("fragmentfile:", fragmentfile)
                 results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir, version=version,
