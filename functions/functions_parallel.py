@@ -52,7 +52,7 @@ def test_OpenMPI():
 #Used to be Singlepoint_parallel. Default behaviour is single-point
 def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, 
                          allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False,
-                         version='multiprocessing', Opt=False, optimizer=None, opt_constraints=None):
+                         version='multiprocessing', Opt=False, optimizer=None, opt_constraints=None,constrainvalue=False):
     '''
     The Job_parallel function carries out multiple single-point or opt calculations in a parallel fashion
     :param fragments:
@@ -189,7 +189,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                 if Opt is True and opt_constraints != None:
                     print("Opt is True and constraints is on")
                     print("opt_constraints[ij]:", opt_constraints[ij])
-                    optimizer.set_constraints(opt_constraints[ij])
+                    optimizer.set_constraints(opt_constraints[ij],constrainvalue)
                 if printlevel >= 2:
                     print("fragment:", fragment)
                 results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir, version=version,
@@ -202,7 +202,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
             for ij,fragmentfile in enumerate(fragmentfiles):
                 #Setting fragment-specific constraints if provided
                 if Opt is True and opt_constraints != None:
-                    optimizer.set_constraints(opt_constraints[ij])
+                    optimizer.set_constraints(opt_constraints[ij],constrainvalue)
                 if printlevel >= 2:
                     print("fragmentfile:", fragmentfile)
                 results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir, version=version,

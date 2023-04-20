@@ -157,8 +157,9 @@ class GeomeTRICOptimizerClass:
                 ashexit()
 
         #Option to populate constraints dictionary
-        def set_constraints(self,con):
+        def set_constraints(self,con,constrainvalue):
             self.constraints=con
+            self.constrainvalue=constrainvalue
         #Parse the constraints into bond, angle, dihedral
         def define_constraints(self,constraints):
             ########################################
@@ -355,7 +356,9 @@ class GeomeTRICOptimizerClass:
             if constraints == None:
                 print("No constraints provided to run method")
                 if self.constraints != None:
+                    print("Found internal constraints")
                     constraints=self.constraints
+                    constrainvalue=self.constrainvalue
                 else:
                     print("No previously defined constraints found either")
             
