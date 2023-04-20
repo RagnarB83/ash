@@ -488,9 +488,8 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                     else:
                         print("RC1 value in dict already. Skipping.")
     print_time_rel(module_init_time, modulename='calc_surface', moduleindex=0)   
-    result = ASH_Results(label="Surface calc", surfacepoints=surfacedictionary)    
+    result = ASH_Results(label="Surface calc", surfacepoints=surfacedictionary)
     return result                 
-    #return surfacedictionary
 
 # Calculate surface from XYZ-file collection.
 #Both unrelaxed (single-point) and relaxed (opt) is now possible
@@ -539,7 +538,8 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
     if len(surfacedictionary) == totalnumpoints:
         print("Surface dictionary size {} matching total number of XYZ files {}. We should have all data".format(len(surfacedictionary),totalnumpoints))
         print("Exiting.")
-        return surfacedictionary
+        result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
+        return result   
 
 
     #Case Relaxed Scan: Create directory to keep track of optimized surface XYZ files
@@ -794,7 +794,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
     print_time_rel(module_init_time, modulename='calc_surface_fromXYZ', moduleindex=0)
     result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
     return result                 
-    #return surfacedictionary
+
 
 def calc_numerical_gradient():
     print("TODO")
