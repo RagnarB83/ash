@@ -298,9 +298,9 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 
                         #Running zero-theory with optimizer just to set geometry
                         #ash.interfaces.interface_geometric_new.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, 
-                                                                                coordsystem=coordsystem, constraints=allconstraints, 
-                                                                                constrainvalue=True, convergence_setting=convergence_setting,
-                                                                                ActiveRegion=ActiveRegion, actatoms=actatoms)
+                        #                                                        coordsystem=coordsystem, constraints=allconstraints, 
+                        #                                                        constrainvalue=True, convergence_setting=convergence_setting,
+                        #                                                        ActiveRegion=ActiveRegion, actatoms=actatoms)
                         #Shallow copy of fragment
                         #newfrag = copy.copy(fragment)
                         #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
