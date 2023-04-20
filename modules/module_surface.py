@@ -142,7 +142,8 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 ###########################
     if runmode=='parallel':
         print("Parallel runmode.")
-        surfacepointfragments={}
+        #surfacepointfragments={}
+        surfacepointfragments_lists=[]
         #####################
         # PARALLEL: UNRELAXED
         #####################
@@ -168,18 +169,12 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
                             #Shallow copy of fragment
                             newfrag = copy.copy(fragment)
-                            #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
-                            #Label can be tuple
                             newfrag.label = (RCvalue1,RCvalue2)
-                            
                             newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
-                            surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
-                            #Single-point ORCA calculation on adjusted geometry
-                            #energy = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
-                print("surfacepointfragments:", surfacepointfragments)
-                #TODO: sort this list??
-                surfacepointfragments_lists = list(surfacepointfragments.values())
+                            #surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
+                            surfacepointfragments_lists.append(newfrag)
+
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
                 result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
 
@@ -214,13 +209,10 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
                         #Label can be tuple
                         newfrag.label = (RCvalue1)
-                        
                         newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1))
                         shutil.move("RC1_"+str(RCvalue1), "surface_xyzfiles/RC1_"+str(RCvalue1))
-                        surfacepointfragments[(RCvalue1)] = newfrag
-                print("surfacepointfragments:", surfacepointfragments)
-                #TODO: sort this list??
-                surfacepointfragments_lists = list(surfacepointfragments.values())
+                        surfacepointfragments_lists.append(newfrag)
+
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
                 result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
                 surfacedictionary = result_surface.energies_dict
@@ -262,12 +254,14 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             newfrag = copy.copy(fragment)
                             newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
                             newfrag.label = (RCvalue1,RCvalue2)
-                            surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
+                            #surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
+                            surfacepointfragments_lists.append(newfrag)
 
-                print("surfacepointfragments:", surfacepointfragments)
+                #print("surfacepointfragments:", surfacepointfragments)
+                print("list_of_constraints:", list_of_constraints)
                 #TODO: sort this list??
-                surfacepointfragments_lists = list(surfacepointfragments.values())
-                print("surfacepointfragments_lists: ", surfacepointfragments_lists)
+                #surfacepointfragments_lists = list(surfacepointfragments.values())
+                #print("surfacepointfragments_lists: ", surfacepointfragments_lists)
                 #Parallel opt
                 result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
                                                                                Opt=True, optimizer=optimizer, constrainvalue=True, 
@@ -311,12 +305,12 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         newfrag = copy.copy(fragment)
                         newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
                         newfrag.label = (RCvalue1)
-                        surfacepointfragments[(RCvalue1)] = newfrag
+                        #surfacepointfragments[(RCvalue1)] = newfrag
+                        surfacepointfragments_lists.append(newfrag)
 
-                print("surfacepointfragments:", surfacepointfragments)
                 #TODO: sort this list??
-                surfacepointfragments_lists = list(surfacepointfragments.values())
-                print("surfacepointfragments_lists: ", surfacepointfragments_lists)
+                #surfacepointfragments_lists = list(surfacepointfragments.values())
+                #print("surfacepointfragments_lists: ", surfacepointfragments_lists)
                 #Parallel opt
                 result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
                                                                                Opt=True, optimizer=optimizer, constrainvalue=True, 
