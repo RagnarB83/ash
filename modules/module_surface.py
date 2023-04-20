@@ -221,8 +221,8 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                 surfacedictionary = result_surface.energies_dict
         elif scantype=="Relaxed":
             list_of_constraints=[]
-                #Create optimizer object
-                optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem, 
+            #Create optimizer object
+            optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem, 
                         convergence_setting=convergence_setting, ActiveRegion=ActiveRegion, actatoms=actatoms)
             print("not ready")
             if dimension == 2:
