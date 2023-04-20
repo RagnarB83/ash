@@ -717,7 +717,6 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, c
     with open(basename+'.out', 'w') as ofile:
         try:
             if bind_to_core_option is True:
-                print("here")
                 #f"\"-x {orcadir} --bind-to none\""
                 process = sp.run([orcadir + '/orca', inpfile, f"--bind-to none"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             else:

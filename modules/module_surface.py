@@ -20,8 +20,10 @@ from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_results import ASH_Results
 
 # TODO: Finish parallelize surfacepoint calculations
+# TODO: Remove ORCATheory specific things
+
 def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True, keepmofiles=False,
-                 runmode='serial', coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=1,
+                 runmode='serial', coordsystem='dlc', maxiter=150, extraconstraints=None, convergence_setting=None, numcores=1,
                  ActiveRegion=False, actatoms=None, RC1_range=None, RC1_type=None, RC1_indices=None, RC2_range=None, RC2_type=None, RC2_indices=None):
     """Calculate 1D/2D surface
 
@@ -254,7 +256,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
-                            #Single-point ORCA calculation on adjusted geometry
+                            #Single-point calculation on adjusted geometry
                             if theory is not None:
                                 result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                                 energy = result.energy
@@ -267,7 +269,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
-                            calc_rotational_constants(fragment)
+                            #calc_rotational_constants(fragment)
                         else:
                             print("RC1, RC2 values in dict already. Skipping.")
                     print("surfacedictionary:", surfacedictionary)
@@ -296,7 +298,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+".xyz", "surface_xyzfiles/"+"RC1_"+str(RCvalue1)+".xyz")
                         shutil.move("RC1_"+str(RCvalue1)+".ygg", "surface_fragfiles/"+"RC1_"+str(RCvalue1)+".ygg")
-                        #Single-point ORCA calculation on adjusted geometry
+                        #Single-point calculation on adjusted geometry
                         result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                         energy = result.energy
                         print("RCvalue1: {} Energy: {}".format(RCvalue1,energy))
@@ -308,7 +310,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
                         print("surfacedictionary:", surfacedictionary)
-                        calc_rotational_constants(fragment)
+                        #calc_rotational_constants(fragment)
                     else:
                         print("RC1 value in dict already. Skipping.")
         elif scantype=='Relaxed':
@@ -341,7 +343,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
                             #Writing dictionary to file
                             write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
-                            calc_rotational_constants(fragment)
+                            #calc_rotational_constants(fragment)
                             #Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
@@ -378,7 +380,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         #Writing dictionary to file
                         write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
                         print("surfacedictionary:", surfacedictionary)
-                        calc_rotational_constants(fragment)
+                        #calc_rotational_constants(fragment)
                         #Write geometry to disk
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
@@ -396,7 +398,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 # Parallelization and MOREAD complete
 # TODO: Parallelization and Relaxed mode
 def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimension=None, resultfile='surface_results.txt', scantype='Unrelaxed',runmode='serial',
-                         coordsystem='dlc', maxiter=50, extraconstraints=None, convergence_setting=None, numcores=None,
+                         coordsystem='dlc', maxiter=150, extraconstraints=None, convergence_setting=None, numcores=None,
                          RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True, keepmofiles=False,
                          read_mofiles=False, mofilesdir=None):
     module_init_time=time.time()
@@ -636,7 +638,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     #Writing dictionary to file
                     write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
                     print("surfacedictionary:", surfacedictionary)
-                    calc_rotational_constants(mol)
+                    #calc_rotational_constants(mol)
                     print("")
                 else:
                     print("RC1 and RC2 values in dict already. Skipping.")
@@ -686,7 +688,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     #Writing dictionary to file
                     write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
                     print("surfacedictionary:", surfacedictionary)
-                    calc_rotational_constants(mol)
+                    #calc_rotational_constants(mol)
                     print("")            
                 else:
                     print("RC1 value in dict already. Skipping.")
