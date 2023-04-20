@@ -157,7 +157,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
         if printlevel >= 2:
             print("Case: Multiple fragments but one theory")
             print("")
-            print("Launching multiprocessing pool.apply_async:")
+            print("Launching pool.apply_async:")
 
             print(BC.WARNING,"Job_parallel numcores set to:", numcores, BC.END)
             print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", BC.END)

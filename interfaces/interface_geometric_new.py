@@ -52,17 +52,6 @@ class GeomeTRICOptimizerClass:
                        subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
             print_line_with_mainheader("geomeTRICOptimizer initialization")
             print("Creating optimizer object")
-            ######################
-            #INITIAL CHECKS
-            ######################
-            try:
-                import geometric
-                self.geometric=geometric
-            except:
-                blankline()
-                print(BC.FAIL,"Problem importing geomeTRIC module!", BC.END)
-                print(BC.WARNING,"Either install geomeTRIC using pip:\n conda install geometric\n or \n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
-                ashexit(code=9)
 
             ###############################
             #Going through user options
@@ -402,11 +391,21 @@ class GeomeTRICOptimizerClass:
             #Hessian option
             self.hessian_option(fragment,self.actatoms,theory,charge,mult,self.modelhessian)
 
+
+
+            ######################
+            #CALLING LIBRARY
+            ######################
+            try:
+                import geometric
+            except:
+                blankline()
+                print(BC.FAIL,"Problem importing geomeTRIC module!", BC.END)
+                print(BC.WARNING,"Either install geomeTRIC using pip:\n conda install geometric\n or \n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
+                ashexit(code=9)
+
             #Read geometry from XYZ-file into geomeTRIC Molecule object
-            mol_geometric_frag=self.geometric.molecule.Molecule("initialxyzfiletric.xyz")
-
-
-
+            mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
 
             #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
             #Also now passing list of atoms to print in each step.
@@ -429,7 +428,7 @@ class GeomeTRICOptimizerClass:
             ###################################
             # RUNNING
             ###################################
-            self.geometric.optimize.run_optimizer(**vars(final_geometric_args))
+            geometric.optimize.run_optimizer(**vars(final_geometric_args))
             time.sleep(1)
 
              ###################################
