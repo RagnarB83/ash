@@ -123,12 +123,14 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
         print("Singlepoint_parallel: Using version: multiprocessing")
         import multiprocessing as mp
         from multiprocessing.pool import Pool
+        print("multiprocessing library sucessfully loaded")
     #Active fork of multiprocessing that uses dill instead of pickle etc. https://github.com/uqfoundation/multiprocess
     elif version == 'multiprocess':
         print("Job_parallel: Using version: multiprocess")
         try:
             import multiprocess as mp
             from multiprocess.pool import Pool
+            print("multiprocess library sucessfully loaded")
         except ImportError:
             print("This requires the multiprocess library to be installed")
             print("Please install using pip: pip install multiprocess")
