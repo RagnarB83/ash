@@ -137,10 +137,15 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     os.mkdir('surface_mofiles')
 
 
-    #PARALLEL CALCULATION
+###########################            
+#  PARALLEL 
+###########################
     if runmode=='parallel':
         print("Parallel runmode.")
         surfacepointfragments={}
+        #####################
+        # PARALLEL: UNRELAXED
+        #####################
         if scantype=='Unrelaxed':
             if dimension == 2:
                 zerotheory = ash.ZeroTheory()
@@ -219,15 +224,60 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
                 result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
                 surfacedictionary = result_surface.energies_dict
+        #####################
+        # PARALLEL: RELAXED
+        #####################
         elif scantype=="Relaxed":
             list_of_constraints=[]
             #Create optimizer object
             optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem, 
                         convergence_setting=convergence_setting, ActiveRegion=ActiveRegion, actatoms=actatoms)
-            print("not ready")
+            print("Warning: Relaxed scans in parallel mode are experimental")
             if dimension == 2:
-                print("not ready")
-                ashexit()
+                zerotheory = ash.ZeroTheory()
+                for RCvalue1 in RCvalue1_list:
+                    for RCvalue2 in RCvalue2_list:
+                        pointcount+=1
+                        print("=======================================")
+                        print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
+                        print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                        print("=======================================")
+                        pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
+                        if (RCvalue1,RCvalue2) not in surfacedictionary:
+                            #Now setting constraints
+                            allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
+                                                             RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
+                            print("allconstraints:", allconstraints)
+                            #List of all constraint-dicionaries for each fragment
+                            list_of_constraints.append(allconstraints)
+                            #Running zero-theory with optimizer just to set geometry
+                            ash.interfaces.interface_geometric_new.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                            constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
+                            ActiveRegion=ActiveRegion, actatoms=actatoms)
+                            #Shallow copy of fragment
+                            newfrag = copy.copy(fragment)
+                            #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
+                            #Label can be tuple
+                            newfrag.label = (RCvalue1,RCvalue2)
+                            
+                            newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
+                            shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
+                            surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
+
+                print("surfacepointfragments:", surfacepointfragments)
+                #TODO: sort this list??
+                surfacepointfragments_lists = list(surfacepointfragments.values())
+                print("surfacepointfragments_lists: ", surfacepointfragments_lists)
+                result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+
+                surfacedictionary = result_surface.energies_dict
+                print("Parallel calculation done!")
+                print("surfacedictionary:", surfacedictionary)
+
+                if len(surfacedictionary) != totalnumpoints:
+                    print("Dictionary not complete!")
+                    print("len surfacedictionary:", len(surfacedictionary))
+                    print("totalnumpoints:", totalnumpoints)
             if dimension == 1:
                 print("not ready")
                 ashexit()
@@ -269,10 +319,14 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                                                                                Opt=True, optimizer=optimizer, constrainvalue=True, 
                                                                                opt_constraints=list_of_constraints)
                 surfacedictionary = result_surface.energies_dict
-            ashexit()
-    #SERIAL CALCULATION
+###########################            
+#  SERIAL 
+###########################
     elif runmode=='serial':
         print("Serial runmode")
+        #####################
+        # SERIAL: UNRELAXED
+        #####################
         if scantype=='Unrelaxed':
             zerotheory = ash.ZeroTheory()
             if dimension == 2:
@@ -358,6 +412,9 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         #calc_rotational_constants(fragment)
                     else:
                         print("RC1 value in dict already. Skipping.")
+        #####################
+        # SERIAL: RELAXED
+        #####################
         elif scantype=='Relaxed':
             zerotheory = ash.ZeroTheory()
             if dimension == 2:
