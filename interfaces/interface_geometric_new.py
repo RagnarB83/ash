@@ -174,8 +174,6 @@ class GeomeTRICOptimizerClass:
                     print("Converting constraints indices to active-region indices")
                     print("Constraints (actregion-indices):", constraints)
 
-            #Delete constraintsfile
-            os.remove('constraints.txt')
             #Getting individual constraints from constraints dict
             if constraints is not None:
                 try:
@@ -198,6 +196,11 @@ class GeomeTRICOptimizerClass:
             return bondconstraints, angleconstraints, dihedralconstraints
 
         def write_constraintsfile(self,frozenatoms,bondconstraints,constrainvalue,angleconstraints,dihedralconstraints):
+            #Delete possible old constraintsfile
+            try:
+                os.remove('constraints.txt')
+            except FileNotFoundError:
+                pass
             ########################################
             # CONSTRAINTS
             ########################################
