@@ -529,6 +529,7 @@ class xTBTheory:
 
 #Grab Final single point energy
 def xtbfinalenergygrab(file):
+    Energy=None
     with open(file) as f:
         for line in f:
             if 'TOTAL ENERGY' in line:

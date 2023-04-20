@@ -233,6 +233,9 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
             optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem, 
                         convergence_setting=convergence_setting, ActiveRegion=ActiveRegion, actatoms=actatoms)
             print("Warning: Relaxed scans in parallel mode are experimental")
+            ###########################
+            # PARALLEL: RELAXED: DIM 2
+            ###########################
             if dimension == 2:
                 zerotheory = ash.ZeroTheory()
                 for RCvalue1 in RCvalue1_list:
@@ -268,7 +271,10 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                 #TODO: sort this list??
                 surfacepointfragments_lists = list(surfacepointfragments.values())
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
-                result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+                #Parallel opt
+                result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
+                                                                               Opt=True, optimizer=optimizer, constrainvalue=True, 
+                                                                               opt_constraints=list_of_constraints)
 
                 surfacedictionary = result_surface.energies_dict
                 print("Parallel calculation done!")
@@ -278,6 +284,9 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                     print("Dictionary not complete!")
                     print("len surfacedictionary:", len(surfacedictionary))
                     print("totalnumpoints:", totalnumpoints)
+            ###########################
+            # PARALLEL: RELAXED: DIM 1
+            ###########################
             if dimension == 1:
                 print("not ready")
                 ashexit()
