@@ -6,7 +6,7 @@ import shutil
 
 #functions related to QM/MM
 import ash.modules.module_coords
-from ash.modules.module_coords import Fragment
+from ash.modules.module_coords import Fragment, write_pdbfile
 from ash.functions.functions_general import ashexit, BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
 import ash.settings_ash
 
@@ -737,6 +737,19 @@ class QMMMTheory:
             if Grad==True:
                 if PC==True:
 
+                    #NOTE: Nasty temporary CP2K special case. Replace with qm_theory.method call instead?
+                    if isinstance(self.qm_theory,ash.CP2KTheory):
+                        print("here")
+                        #Write special PDB-file here manually for CP2K. Should contain MM and QM atoms, linkatoms, dipole atoms etc.
+                        #
+                        #resnames=['XY' for i in range(0,frag.numatoms)] #QM MM label
+                        #residlabels=[1 for i in range(0,frag.numatoms)] #1 and 2
+                        #charges
+
+                        #write_pdbfile(self.fragment, outputname="cp2k.pdb", resnames=resnames,
+                        #                residlabels=residlabels, charges_column=charges)
+
+                        #Also write qm-list to disk, that CP2K will read.
                     QMenergy, QMgradient, PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,

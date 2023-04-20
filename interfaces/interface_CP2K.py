@@ -6,12 +6,11 @@ import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import ash.settings_ash
-from ash.modules.module_coords import write_xyzfile
+from ash.modules.module_coords import write_xyzfile, write_pdbfile
 from ash.functions.functions_parallel import check_OpenMPI
 
 #Reasonably flexible CP2K interface: CP2K input should be specified by cp2kinput multi-line string.
 #cp2k.psmp vs. cp2k.sopt vs cp2k.ssmp vs cp2k_shell.ssm
-
 
 #CP2K Theory object.
 class CP2KTheory:
@@ -131,9 +130,9 @@ class CP2KTheory:
             #pcfile=self.filename+'.pc'
 
             #1.Write coordinate file for whole system
-            write_xyzfile(qm_elems, current_coords, f"{self.filename}", printlevel=1)
-            #2. Write dummy PSF file for whole system that contains MM charges?
-            #2b. Alternative write dummy PDB-file for whole system that contains MM charges in some column
+            #write_xyzfile(qm_elems, current_coords, f"{self.filename}", printlevel=1)
+            
+
 
             #3. Write CP2K QM/MM inputfile
             coupling='COULOMB' #Regular elstat-embedding. Gaussian smearing also possible, see GEEP
@@ -145,7 +144,8 @@ class CP2KTheory:
                              PCfile=None, Grad=Grad, filename='cp2k', charge=charge, mult=mult,
                              periodic_val=self.periodic_val, cell_length=self.cell_length, basis_file=self.basis_file, 
                              potential_file=self.potential_file,
-                             psolver=self.psolver, coupling=coupling, qm_kind_dict=qm_kind_dict)
+                             psolver=self.psolver, coupling=coupling, qm_kind_dict=qm_kind_dict,
+                             pdbfile=pdbfile)
         else:
             #No QM/MM
             #Write xyz-file with coordinates
@@ -228,7 +228,8 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
                     PCfile=None, Grad=True, filename='cp2k', charge=None, mult=None,
                     periodic_val=None, cell_length=10, basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
                     psolver='wavelet', 
-                    coupling='COULOMB', qm_kind_dict=None):
+                    coupling='COULOMB', qm_kind_dict=None,
+                    pdbfile=None):
     #Energy or Energy+gradient
     if Grad is True:
         jobdirective='ENERGY_FORCE'
@@ -298,14 +299,11 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
             #MM
             inpfile.write(f'    &MM\n')
             inpfile.write(f'      &FORCEFIELD\n')
-            inpfile.write(f'        PARM_FILE_NAME {PCfile}\n')
-            inpfile.write(f'        PARMTYPE CHM\n')
-            inpfile.write(f'        VDW_SCALE14 0.0\n')
-            inpfile.write(f'        EI_SCALE14 0.0\n')
+            inpfile.write(f'        DO_NONBONDED FALSE\n')
             inpfile.write(f'      &END FORCEFIELD\n')
             inpfile.write(f'      &POISSON\n')            
             inpfile.write(f'        &EWALD\n')
-            inpfile.write(f'          GMAX 25 25 25\n')
+            inpfile.write(f'          EWALD_TYPE NONE\n')
             inpfile.write(f'        &END EWALD\n')
             inpfile.write(f'      &END POISSON\n') 
             inpfile.write(f'    &END MM\n')
@@ -347,12 +345,20 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
         if center_coords is True:
             inpfile.write(f'      &CENTER_COORDINATES\n')
             inpfile.write(f'      &END\n')
-        #if method == 'QMMM':
-        #    inpfile.write(f'      CONN_FILE_FORMAT CHM\n')
-        #    inpfile.write(f'      CONN_FILE_NAME  ./{filename}.psf\n')
-        inpfile.write(f'      COORD_FILE_FORMAT xyz\n')
-        inpfile.write(f'      COORD_FILE_NAME  ./{filename}.xyz\n')
-        inpfile.write(f'    &END\n')
+        if method == 'QMMM':
+            inpfile.write(f'      COORD_FILE_NAME {pdbfile}\n')
+            inpfile.write(f'      COORD_FILE_FORMAT PDB\n')
+            inpfile.write(f'      CHARGE_EXTENDED TRUE\n')
+            inpfile.write(f'      CONNECTIVITY OFF\n')
+            inpfile.write(f'      &GENERATE\n')
+            inpfile.write(f'           &ISOLATED_ATOMS\n')
+            inpfile.write(f'               LIST 1..26\n')
+            inpfile.write(f'           &END\n')
+            inpfile.write(f'      &END GENERATE\n')
+        else:
+            inpfile.write(f'      COORD_FILE_FORMAT xyz\n')
+            inpfile.write(f'      COORD_FILE_NAME  ./{filename}.xyz\n')
+        inpfile.write(f'    &END TOPOLOGY\n')
         inpfile.write(f'  &END SUBSYS\n')
 
         inpfile.write(f'&END FORCE_EVAL\n')

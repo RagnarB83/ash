@@ -1881,7 +1881,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
 # Example, minimal: write_pdbfile(frag)
 # TODO: Add option to write new hybrid-36 standard PDB file instead of current hexadecimal nonstandard fix
 def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,
-                  residlabels=None, segmentlabels=None, dummyname='DUM'):
+                  residlabels=None, segmentlabels=None, dummyname='DUM', charges_column=None):
     print("Writing PDB-file...")
     # Using ASH fragment
     elems = fragment.elems
@@ -1942,12 +1942,19 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
             # Using last 4 letters of atomnmae
             atomnamestring = atomname[-4:]
             # Using string format from: cupnet.net/pdb-format/
-            line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}".format(
-                'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
-                seg[0:3], el, '')
-            #print(line)
-            #print("ATOM      1  N   MET A   1      -4.023 -14.590  -3.242  1.00 10.20           N")
-            #exit()
+
+            #Optional charges column (used by CP2K)
+            if charges_column != None:
+                charge=charges_column[count]
+                line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}{:>10.6f}".format(
+                    'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
+                    seg[0:3], el, charge)
+            #Regular
+            else:
+                line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}".format(
+                    'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
+                    seg[0:3], el, '')
+
             pfile.write(line + '\n')
     print("Wrote PDB file: ", outputname + '.pdb')
 
