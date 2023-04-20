@@ -11,10 +11,11 @@ import ash.modules.module_coords
 from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
 from ash.modules.module_singlepoint import Singlepoint
 from ash.modules.module_coords import check_charge_mult
-from ash.functions.functions_elstructure import xdm_run, calc_cm5
+#from ash.functions.functions_elstructure import xdm_run, calc_cm5
+import ash.functions.functions_elstructure
 import ash.constants
 import ash.settings_ash
-from ash.functions.functions_parallel import check_OpenMPI
+import ash.functions.functions_parallel
 
 
 #ORCA Theory object.
@@ -37,7 +38,7 @@ class ORCATheory:
         #Checking OpenMPI
         if numcores != 1:
             print(f"ORCA parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
-            check_OpenMPI()
+            ash.functions.functions_parallel.check_OpenMPI()
 
         #Bind to core option when calling ORCA: i.e. execute: /path/to/orca file.inp "--bind-to none"
         #TODO: Default False; make True?
@@ -585,7 +586,7 @@ end"""
 
         #XDM option: WFX file should have been created.
         if self.xdm == True:
-            dispE,dispgrad = xdm_run(wfxfile=self.filename+'.wfx', a1=self.xdm_a1, a2=self.xdm_a2,functional=self.xdm_func)
+            dispE,dispgrad = ash.functions.functions_elstructure.xdm_run(wfxfile=self.filename+'.wfx', a1=self.xdm_a1, a2=self.xdm_a2,functional=self.xdm_func)
             if self.printlevel >= 2:
                 print("XDM dispersion energy:", dispE)
             self.energy = self.energy + dispE
@@ -1793,7 +1794,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     grab=True
         print("Hirshfeld charges :", charges)
         atomicnumbers=ash.modules.module_coords.elemstonuccharges(elems)
-        charges = calc_cm5(atomicnumbers, coords, charges)
+        charges = ash.functions.functions_elstructure.calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":
         with open(outputfile) as ofile:

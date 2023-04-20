@@ -18,6 +18,7 @@ from ash.modules.module_freq import calc_rotational_constants
 import ash.functions.functions_parallel
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_results import ASH_Results
+from ash.interfaces.interface_geometric_new import GeomeTRICOptimizerClass
 
 # TODO: Finish parallelize surfacepoint calculations
 # TODO: Remove ORCATheory specific things
@@ -175,7 +176,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                 #TODO: sort this list??
                 surfacepointfragments_lists = list(surfacepointfragments.values())
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
-                result_surface = ash.functions.functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+                result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
 
                 surfacedictionary = result_surface.energies_dict
                 print("Parallel calculation done!")
@@ -216,14 +217,58 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                 #TODO: sort this list??
                 surfacepointfragments_lists = list(surfacepointfragments.values())
                 print("surfacepointfragments_lists: ", surfacepointfragments_lists)
-                result_surface = ash.functions.functions_parallel.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+                result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
                 surfacedictionary = result_surface.energies_dict
         elif scantype=="Relaxed":
+            list_of_constraints=[]
+                #Create optimizer object
+                optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem, 
+                        convergence_setting=convergence_setting, ActiveRegion=ActiveRegion, actatoms=actatoms)
             print("not ready")
             if dimension == 2:
                 print("not ready")
+                ashexit()
             if dimension == 1:
                 print("not ready")
+                ashexit()
+                for RCvalue1 in RCvalue1_list:
+                    pointcount+=1
+                    print("=======================================")
+                    print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
+                    print("RCvalue1: {} ".format(RCvalue1))
+                    print("=======================================")
+                    pointlabel='RC1_'+str(RCvalue1)
+                    #Setup geometries and constraints
+                    if (RCvalue1) not in surfacedictionary:
+                        #Now setting constraints
+                        allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
+                                                            RC1_type=RC1_type, RC1_indices=RC1_indices)
+                        #List of all constraint-dicionaries for each fragment
+                        list_of_constraints.append(allconstraints)
+
+                        #Running zero-theory with optimizer just to set geometry
+                        ash.interfaces.interface_geometric_new.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, 
+                                                                                coordsystem=coordsystem, constraints=allconstraints, 
+                                                                                constrainvalue=True, convergence_setting=convergence_setting,
+                                                                                ActiveRegion=ActiveRegion, actatoms=actatoms)
+                        #Shallow copy of fragment
+                        newfrag = copy.copy(fragment)
+                        #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
+                        #Label can be tuple
+                        newfrag.label = (RCvalue1)
+                        #newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1))
+                        #shutil.move("RC1_"+str(RCvalue1), "surface_xyzfiles/RC1_"+str(RCvalue1))
+                        surfacepointfragments[(RCvalue1)] = newfrag
+
+                print("surfacepointfragments:", surfacepointfragments)
+                #TODO: sort this list??
+                surfacepointfragments_lists = list(surfacepointfragments.values())
+                print("surfacepointfragments_lists: ", surfacepointfragments_lists)
+                #Parallel opt
+                result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
+                                                                               Opt=True, optimizer=optimizer, constrainvalue=True, 
+                                                                               opt_constraints=list_of_constraints)
+                surfacedictionary = result_surface.energies_dict
             ashexit()
     #SERIAL CALCULATION
     elif runmode=='serial':
@@ -541,7 +586,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     list_of_surfacepoints.append(newsurfacepoint)
 
         #This is an ordered list of fragments only. Same order as list_of_surfacepoints, though does not matter since we use dicts
-        #Used by ash.Singlepoint_parallel
+        #Used by ash.Job_parallel
         surfacepointfragments_lists=[point.fragment for point in list_of_surfacepoints]
         
         if scantype=='Unrelaxed':
@@ -550,9 +595,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                 #print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
                 #if theory.__class__.__name__ == "ORCATheory":
                 #    theory.moreadfile=mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'
-                results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores, mofilesdir=mofilesdir)
+                results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores, mofilesdir=mofilesdir)
             else:
-                results = ash.Singlepoint_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
+                results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
             print("Parallel calculation done!")
             
             #Gathering results in FINAL dictionary.

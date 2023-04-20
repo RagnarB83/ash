@@ -11,7 +11,7 @@ import ash.constants
 import ash.modules.module_coords
 import ash.dictionaries_lists
 from ash.functions.functions_general import ashexit, isodd, print_line_with_mainheader,pygrep
-import ash.interfaces.interface_ORCA
+from ash.interfaces.interface_ORCA import ORCATheory, run_orca_plot, make_molden_file_ORCA
 from ash.modules.module_coords import nucchargelist
 from ash.dictionaries_lists import eldict
 from ash.constants import hartokcal
@@ -599,7 +599,7 @@ cnvkdiis false
 end"""
 
         #Creating ORCA object for  element
-        ORCASPcalculation = ash.interfaces.interface_ORCA.ORCATheory(orcadir=theory.orcadir, orcasimpleinput=theory.orcasimpleinput,
+        ORCASPcalculation = ORCATheory(orcadir=theory.orcadir, orcasimpleinput=theory.orcasimpleinput,
                                            orcablocks=theory.orcablocks, extraline=scfextrasettingsstring)
 
         #Element coordinates
@@ -1078,7 +1078,7 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
     theory_A.filename="calc_A"
     result_calc1=ash.Singlepoint(theory=theory_A, fragment=fragment_A)
     #Run orca_plot to request electron density creation from ORCA gbw file
-    ash.interfaces.interface_ORCA.run_orca_plot("calc_A.gbw", "density", gridvalue=griddensity)
+    run_orca_plot("calc_A.gbw", "density", gridvalue=griddensity)
 
 
     #------------------
@@ -1087,7 +1087,7 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
     theory_B.filename="calc_B"
     result_calc2=ash.Singlepoint(theory=theory_B, fragment=fragment_B)
     #Run orca_plot to request electron density creation from ORCA gbw file
-    ash.interfaces.interface_ORCA.run_orca_plot("calc_B.gbw", "density", gridvalue=griddensity)
+    run_orca_plot("calc_B.gbw", "density", gridvalue=griddensity)
 
     #Read Cubefiles from disk
     cube_data1 = read_cube("calc_A.eldens.cube")
@@ -1139,7 +1139,7 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     result_calcA=ash.Singlepoint(theory=calc_A, fragment=fragment_A)
     #Run orca_plot to request electron density creation from ORCA gbw file
     if make_cube_files is True:
-        ash.interfaces.interface_ORCA.run_orca_plot("calcA.gbw", "density", gridvalue=griddensity)
+        run_orca_plot("calcA.gbw", "density", gridvalue=griddensity)
 
     #-------------------------
     #Calculation on B
@@ -1152,7 +1152,7 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     result_calcB=ash.Singlepoint(theory=calc_B, fragment=fragment_B)
     #Run orca_plot to request electron density creation from ORCA gbw file
     if make_cube_files is True:
-        ash.interfaces.interface_ORCA.run_orca_plot("calcB.gbw", "density", gridvalue=griddensity)
+        run_orca_plot("calcB.gbw", "density", gridvalue=griddensity)
 
 
     #-----------------------------------------
@@ -1185,7 +1185,7 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
         print("-"*120)
         print("Performing orca_plot calculation to create density Cubefile: promolecule_AB_orthogonalized.eldens.cube")
         print("-"*120)
-        ash.interfaces.interface_ORCA.run_orca_plot(promolecule_AB_orthog.filename+".gbw", "density", gridvalue=80)
+        run_orca_plot(promolecule_AB_orthog.filename+".gbw", "density", gridvalue=80)
         os.rename(f"{promolecule_AB_orthog.filename}.eldens.cube","promolecule_AB_orthogonalized.eldens.cube")
 
     #----------------------------
@@ -1209,7 +1209,7 @@ end
     result_calcAB=ash.Singlepoint(theory=calc_AB, fragment=fragment_AB)
     if make_cube_files is True:
         #Run orca_plot to request electron density creation from ORCA gbw file
-        ash.interfaces.interface_ORCA.run_orca_plot("calcAB.gbw", "density", gridvalue=griddensity)
+        run_orca_plot("calcAB.gbw", "density", gridvalue=griddensity)
 
         #-----------------------------------------
         # Make deformation density as difference
@@ -1255,7 +1255,7 @@ end
         #Creating Cube files
         print("Now creating Cube files for main NOCV pairs and making orbital-pair deformation densities")
         print("Creating Cube file for NOCV total deformation density:")
-        ash.interfaces.interface_ORCA.run_orca_plot("calcAB.nocv.gbw", "density", gridvalue=griddensity)
+        run_orca_plot("calcAB.nocv.gbw", "density", gridvalue=griddensity)
         os.rename(f"calcAB.nocv.eldens.cube", f"NOCV-total-density.cube")
         num_mos=int(pygrep("Number of basis functions                   ...", "calcAB.out")[-1])
         
@@ -1273,13 +1273,13 @@ end
             print("-----------------------")
             print()
             print("Creating Cube file for NOCV donor MO number:", i)
-            ash.interfaces.interface_ORCA.run_orca_plot("calcAB.nocv.gbw", "mo", mo_number=i, gridvalue=griddensity)
+            run_orca_plot("calcAB.nocv.gbw", "mo", mo_number=i, gridvalue=griddensity)
             os.rename(f"calcAB.nocv.mo{i}a.cube", f"calcAB.NOCVpair_{i}.donor_mo{i}a.cube")
             print("Creating density for orbital")
             create_density_from_orb (f"calcAB.NOCVpair_{i}.donor_mo{i}a.cube", denswrite=True, LargePrint=True)
             
             print("Creating Cube file for NOCV acceptor MO number:", num_mos-1-i)
-            ash.interfaces.interface_ORCA.run_orca_plot("calcAB.nocv.gbw", "mo", mo_number=num_mos-1-i, gridvalue=griddensity)
+            run_orca_plot("calcAB.nocv.gbw", "mo", mo_number=num_mos-1-i, gridvalue=griddensity)
             os.rename(f"calcAB.nocv.mo{num_mos-1-i}a.cube", f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube")
             print("Creating density for orbital")
             create_density_from_orb (f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube", denswrite=True, LargePrint=False)
@@ -1366,25 +1366,25 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     print("gridlevel:", gridlevel)
     print("Numcores:", numcores)
     print()
-    if isinstance(theory,ash.interfaces.interface_ORCA.ORCATheory) is not True:
+    if isinstance(theory,ORCATheory) is not True:
         print("NOCV_Multiwfn currently only works with ORCATheory")
         ashexit()
     #A
     result_calcA=ash.Singlepoint(theory=theory, fragment=fragment_A)
-    ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw') #TODO: Generalize
+    make_molden_file_ORCA(theory.filename+'.gbw') #TODO: Generalize
     os.rename("orca.molden.input", "A.molden.input")
     theory.cleanup()
 
     #B
     result_calcB=ash.Singlepoint(theory=theory, fragment=fragment_B)
-    ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw')
+    make_molden_file_ORCA(theory.filename+'.gbw')
     os.rename("orca.molden.input", "B.molden.input")
     theory.cleanup()
 
     #AB
     theory.orcablocks=theory.orcablocks+"%output Print[P_Iter_F] 1 end"
     result_calcAB=ash.Singlepoint(theory=theory, fragment=fragment_AB)
-    ash.interfaces.interface_ORCA.make_molden_file_ORCA(theory.filename+'.gbw')
+    make_molden_file_ORCA(theory.filename+'.gbw')
     os.rename("orca.molden.input", "AB.molden.input")
 
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 

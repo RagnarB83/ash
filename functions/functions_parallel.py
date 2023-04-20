@@ -10,6 +10,7 @@ from ash.functions.functions_general import ashexit, BC,blankline,print_line_wit
 from ash.modules.module_coords import check_charge_mult, Fragment, read_xyzfile
 from ash.modules.module_results import ASH_Results
 from ash.modules.module_QMMM import QMMMTheory
+from ash.interfaces.interface_geometric_new import GeomeTRICOptimizerClass
 
 ###############################################
 #CHECKS FOR OPENMPI
@@ -37,20 +38,23 @@ def test_OpenMPI():
 
 
 #########################################
-#PARALLEL Single-point energy function. 
+#Job_parallel: General PARALLEL function. 
 #########################################
-#Used for standalone SP calculations, also used by NumFreq and NEB
+#Used for standalone SP calculations, NumFreq, surfacescans and NEB
+#Can also be used for optimization and relaxed scans by providing Opt keyword or optimizer object
 
 #will run over fragments or fragmentfiles, over theories or both
 #mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
 #NOTE: Experimental copytheory option
 #NOTE: Can now either use built-in multiprocessing library or more reliable fork multiprocess.
 #The latter uses dill serialization and should be more reliable
-def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, 
+
+#Used to be Singlepoint_parallel. Default behaviour is single-point
+def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, 
                          allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False,
-                         version='multiprocessing'):
+                         version='multiprocessing', Opt=False, optimizer=None, opt_constraints=None):
     '''
-    The Singlepoint_parallel function carries out multiple single-point calculations in a parallel fashion
+    The Job_parallel function carries out multiple single-point or opt calculations in a parallel fashion
     :param fragments:
     :type list: list of ASH objects of class Fragment
     :type list: list of ASH fragmentfiles (strings)
@@ -60,27 +64,43 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     :type Grad: Boolean.
     '''
     print()
+    print_line_with_subheader1("Job_parallel function")
+
+    #OPT
+    if Opt is True:
+        print("Opt is True. This is an Opt_parallel job")
+        if optimizer == None:
+            print("Job_parallel needs optimizer object which was not provided.")
+            print("Creating one")
+            #No options easily provided. Unclear if this is a good idea
+            optimizer=GeomeTRICOptimizerClass()
+            #ashexit()
+    #SP
+    else:
+        print("No Opt. This is a Singlepoint_parallel job")
+        optimizer=None
+    
     if printlevel >= 2:
-        print_line_with_subheader1("Singlepoint_parallel function")
         print("Number of CPU cores available: ", numcores)
+
         if isinstance(theories[0], QMMMTheory):
-            print("Warning: Singlepoint_parallel using QMMMTheory with OpenMMTheory MM is experimental")
+            print("Warning: Job_parallel using QMMMTheory with OpenMMTheory MM is experimental")
             print("Specifically there are issues with platform='CPU'.")
             print("Try platform='Reference' instead or GPU options OpenCL or CUDA if possible")
     if printlevel >= 2:
         print("Number of theories:", len(theories))
         print("Running single-point calculations in parallel")
         print("Mofilesdir:", mofilesdir)
-        print(BC.WARNING, "Warning: Output from Singlepoint_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
+        print(BC.WARNING, "Warning: Output from Job_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
     
     #Early exits
     if fragments == None and fragmentfiles == None:
-        print(BC.FAIL,"Singlepoint_parallel requires a list of ASH fragments or a list of fragmentfilenames",BC.END)
+        print(BC.FAIL,"Job_parallel requires a list of ASH fragments or a list of fragmentfilenames",BC.END)
         ashexit()
     if theories == None or numcores == None :
         print("theories:", theories)
         print("numcores:", numcores)
-        print(BC.FAIL,"Singlepoint_parallel requires a theory object and a numcores value",BC.END)
+        print(BC.FAIL,"Job_parallel requires a theory object and a numcores value",BC.END)
         ashexit()
     #Fragment objects passed or name of fragmentfiles
     if fragments != None:
@@ -105,7 +125,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         from multiprocessing.pool import Pool
     #Active fork of multiprocessing that uses dill instead of pickle etc. https://github.com/uqfoundation/multiprocess
     elif version == 'multiprocess':
-        print("Singlepoint_parallel: Using version: multiprocess")
+        print("Job_parallel: Using version: multiprocess")
         try:
             import multiprocess as mp
             from multiprocess.pool import Pool
@@ -139,7 +159,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             print("")
             print("Launching multiprocessing pool.apply_async:")
 
-            print(BC.WARNING,"Singlepoint_parallel numcores set to:", numcores, BC.END)
+            print(BC.WARNING,"Job_parallel numcores set to:", numcores, BC.END)
             print(BC.WARNING,f"ASH will run {numcores} jobs simultaneously", BC.END)
 
         #Whether to allow theory parallelization or not
@@ -154,7 +174,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             else:
                 if printlevel >= 2:
                     print(BC.WARNING,"allow_theory_parallelization is False. Now turning off theory.parallelization (setting theory numcores to 1)", BC.END)
-                    print(BC.WARNING,"This can be overriden by: Singlepoint_parallel(allow_theory_parallelization=True)\n", BC.END)
+                    print(BC.WARNING,"This can be overriden by: Job_parallel(allow_theory_parallelization=True)\n", BC.END)
                 theory.numcores=1
 
 
@@ -165,7 +185,8 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             for fragment in fragments:
                 if printlevel >= 2:
                     print("fragment:", fragment)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
+                results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,
+                                                                      event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
                     error_callback=Terminate_Pool_processes))
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
@@ -174,18 +195,20 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
             for fragmentfile in fragmentfiles:
                 if printlevel >= 2:
                     print("fragmentfile:", fragmentfile)
-                results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
+                results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,
+                                                                      event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
                     error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
         if printlevel >= 2:
             print("Case: Multiple theories but one fragment")
         fragment = fragments[0]
-        #results = pool.map(Single_par, [[theory,fragment, theory.label, event] for theory in theories])
+        #results = pool.map(Worker_par, [[theory,fragment, theory.label, event] for theory in theories])
         for theory in theories:
             if printlevel >= 2:
                 print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
+            results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,
+                                                                  event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
                 error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragmentfile
     elif len(fragmentfiles) == 1:
@@ -195,7 +218,8 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
         for theory in theories:
             if printlevel >= 2:
                 print("theory:", theory)
-            results.append(pool.apply_async(Single_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory), 
+            results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,
+                                                                  event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
                 error_callback=Terminate_Pool_processes))
     else:
         print("Multiple theories and multiple fragments provided.")
@@ -229,7 +253,7 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
 
-    result = ASH_Results(label="Singlepoint_parallel", energies=[], gradients=[])
+    result = ASH_Results(label="Job_parallel", energies=[], gradients=[])
     if Grad == True:
         gradient_dict={}
         for i,r in enumerate(results):
@@ -254,15 +278,16 @@ def Singlepoint_parallel(fragments=None, fragmentfiles=None, theories=None, numc
     return result
 
 
-#Version of Singlepoint used by Singlepoint_parallel.
+#Version of Singlepoint used by Job_parallel.
 #NOTE: Needs to be simplified
 #NOTE: Version intended for apply_async
 #TODO: This function contains 2 many QM-code specifics. Needs to be generalized (QM-specifics moved to QMtheory class)
-def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, mult=None, Grad=False, printlevel=2, copytheory=False):
+def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, 
+               mult=None, Grad=False, printlevel=2, copytheory=False, optimizer=None):
     #import multiprocess as mp
     #from multiprocess.pool import Pool
     #Check charge/mult.
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Single_par", theory=theory, printlevel=printlevel)
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Worker_par", theory=theory, printlevel=printlevel)
     #BASIC PRINTING
     if printlevel >= 2:
         print("Fragment:", fragment)
@@ -376,8 +401,14 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     #####################
     #RUN WORKER JOB
     #####################
-    if Grad == True:
+    #Optimizer
+    if optimizer != None:
+        result = optimizer.run(theory=theory, fragment=fragment, charge=charge, mult=mult)
+        energy = result.energy
+    #Singlepoint Grad
+    elif Grad == True:
         energy,gradient = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult, Grad=Grad)
+    #Singlepoint energy
     else:
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult)
     #####################
@@ -397,4 +428,5 @@ def Single_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         return (label,energy,gradient)
     else:
         return (label,energy)
+
 

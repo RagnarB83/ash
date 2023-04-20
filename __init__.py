@@ -46,7 +46,9 @@ from ash.modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheo
 
 # Parallel
 import ash.functions.functions_parallel
-from ash.functions.functions_parallel import Singlepoint_parallel
+from ash.functions.functions_parallel import Job_parallel
+
+Singlepoint_parallel = Job_parallel
 
 # Freq
 from ash.modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants,\
@@ -127,9 +129,13 @@ from ash.modules.module_molcrys import molcrys, Fragmenttype
 
 # Geometry optimization
 from ash.functions.functions_optimization import SimpleOpt, BernyOpt
-from ash.interfaces.interface_geometric import geomeTRICOptimizer
+#TODO: Delete eventually:
+from ash.interfaces.interface_geometric import oldgeomeTRICOptimizer, oldGeomeTRICOptimizerClass
+#NEW version. Will replace other one
+from ash.interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICOptimizerClass
 Optimizer = geomeTRICOptimizer
 Opt = geomeTRICOptimizer
+
 # PES
 from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT, plot_PES_Spectrum
 
