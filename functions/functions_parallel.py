@@ -187,7 +187,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
             for fragment in fragments:
                 if printlevel >= 2:
                     print("fragment:", fragment)
-                results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,
+                results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir, version=version,
                                                                       event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
                     error_callback=Terminate_Pool_processes))
         #Passing list of fragment files
@@ -197,7 +197,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
             for fragmentfile in fragmentfiles:
                 if printlevel >= 2:
                     print("fragmentfile:", fragmentfile)
-                results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,
+                results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir, version=version,
                                                                       event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
                     error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
@@ -209,7 +209,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
         for theory in theories:
             if printlevel >= 2:
                 print("theory:", theory)
-            results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir,
+            results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir, version=version,
                                                                   event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
                 error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragmentfile
@@ -220,7 +220,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
         for theory in theories:
             if printlevel >= 2:
                 print("theory:", theory)
-            results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir,
+            results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir, version=version,
                                                                   event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
                 error_callback=Terminate_Pool_processes))
     else:
@@ -285,7 +285,8 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
 #NOTE: Version intended for apply_async
 #TODO: This function contains 2 many QM-code specifics. Needs to be generalized (QM-specifics moved to QMtheory class)
 def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, 
-               mult=None, Grad=False, printlevel=2, copytheory=False, optimizer=None):
+               mult=None, Grad=False, printlevel=2, copytheory=False, optimizer=None, version='multiprocessing'):
+    #Should not be necessary to import 
     #import multiprocess as mp
     #from multiprocess.pool import Pool
     #Check charge/mult.
@@ -398,7 +399,7 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     os.chdir('Pooljob_'+labelstring)
     if printlevel >= 2:
         print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
-        print("\n\nProcess ID {} is running calculation with label: {} \n\n".format(mp.current_process(),label))
+
 
     #####################
     #RUN WORKER JOB
