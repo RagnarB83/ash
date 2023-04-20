@@ -257,15 +257,12 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             #ash.interfaces.interface_geometric_new.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
                             #constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
                             #ActiveRegion=ActiveRegion, actatoms=actatoms)
-                            #Shallow copy of fragment
-                            #newfrag = copy.copy(fragment)
-                            #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
-                            #Label can be tuple
-                            #newfrag.label = (RCvalue1,RCvalue2)
-                            
-                            #newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
-                            #shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
-                            surfacepointfragments[(RCvalue1,RCvalue2)] = fragment
+
+                            #Shallow copy of fragment and adding label
+                            newfrag = copy.copy(fragment)
+                            newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
+                            newfrag.label = (RCvalue1,RCvalue2)
+                            surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
 
                 print("surfacepointfragments:", surfacepointfragments)
                 #TODO: sort this list??
@@ -310,14 +307,11 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         #                                                        coordsystem=coordsystem, constraints=allconstraints, 
                         #                                                        constrainvalue=True, convergence_setting=convergence_setting,
                         #                                                        ActiveRegion=ActiveRegion, actatoms=actatoms)
-                        #Shallow copy of fragment
-                        #newfrag = copy.copy(fragment)
-                        #newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
-                        #Label can be tuple
-                        #newfrag.label = (RCvalue1)
-                        #newfrag.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1))
-                        #shutil.move("RC1_"+str(RCvalue1), "surface_xyzfiles/RC1_"+str(RCvalue1))
-                        surfacepointfragments[(RCvalue1)] = fragment
+                        #Shallow copy of fragment and adding label
+                        newfrag = copy.copy(fragment)
+                        newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
+                        newfrag.label = (RCvalue1)
+                        surfacepointfragments[(RCvalue1)] = newfrag
 
                 print("surfacepointfragments:", surfacepointfragments)
                 #TODO: sort this list??
