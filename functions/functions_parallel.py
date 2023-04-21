@@ -253,6 +253,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     #Going through each result-object and adding to energy_dict if ready
     #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
+    worker_dirnames_dict={}
 
     result = ASH_Results(label="Job_parallel", energies=[], gradients=[])
     if Grad == True:
@@ -261,6 +262,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
             if r.ready() == True:
                 energy_dict[r.get()[0]] = r.get()[1]
                 gradient_dict[r.get()[0]] = r.get()[2]
+                worker_dirnames_dict[r.get()[0]] = r.get()[3]
                 result.energies.append(r.get()[1])
                 result.gradients.append(r.get()[2])
         #return energy_dict,gradient_dict
@@ -270,11 +272,14 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
             #print("Result {} ready: {}".format(i, r.ready()))
             if r.ready() == True:
                 energy_dict[r.get()[0]] = r.get()[1]
+                worker_dirnames_dict[r.get()[0]] = r.get()[2]
                 result.energies.append(r.get()[1])
         #return energy_dict
 
-    #Adding dictionary also
+    #Adding energy dictionary also
     result.energies_dict = energy_dict
+    #And dictionary with dirnames used (so we can look up stuff)
+    result.worker_dirnames = worker_dirnames_dict
 
     return result
 
@@ -373,13 +378,14 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     # Handling Directory
     ####################################
     #Creating new dir and running calculation inside
+    worker_dirname='Pooljob_'+labelstring
     try:
-        os.mkdir('Pooljob_'+labelstring)
+        os.mkdir(worker_dirname)
     except:
         if printlevel >= 2:
             print("Dir exists. continuing")
         pass
-    os.chdir('Pooljob_'+labelstring)
+    os.chdir(worker_dirname)
     if printlevel >= 2:
         print(BC.WARNING,"Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
 
@@ -411,10 +417,10 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     #Exiting workerdir
     os.chdir('..')
 
-    #Return label and energy or label, energy and gradient
+    #Return label and energy or label, energy and gradient. Also worker_dirname
     if Grad == True:
-        return (label,energy,gradient)
+        return (label,energy,gradient,worker_dirname)
     else:
-        return (label,energy)
+        return (label,energy,worker_dirname)
 
 

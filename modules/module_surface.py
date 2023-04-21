@@ -258,6 +258,12 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                 #Parallel opt
                 result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
                                                                                Opt=True, optimizer=optimizer)
+                #Moving XYZ-files to surface_xyzfiles
+                for RCvalue1 in RCvalue1_list:
+                    for RCvalue2 in RCvalue2_list:
+                        d = result.worker_dirnames[(RCvalue1,RCvalue2)]
+                        print("d:", d)
+                        shutil.copy(d+"/Fragment-optimized.xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
 
                 surfacedictionary = result_surface.energies_dict
                 print("Parallel calculation done!")
@@ -663,15 +669,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
             else:
                 results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
             print("Parallel calculation done!")
-            
-            print("results:", results)
             surfacedictionary = results.energies_dict
-            #Gathering results in FINAL dictionary.
-            #for dictitem in results.energies_dict:
-            #    print("Surfacepoint: {} Energy: {}".format(dictitem, results.energies_dict[dictitem]))
-            #    surfacedictionary[dictitem] = results[dictitem]
-            print("")
-            print("surfacedictionary:", surfacedictionary)
 
             if len(surfacedictionary) != totalnumpoints:
                 print("Dictionary not complete!")
@@ -685,7 +683,6 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     newsurfacedictionary[k[0]]=v
                 surfacedictionary=newsurfacedictionary
 
-            print("surfacedictionary:", surfacedictionary)
             #Write final surface to file
             write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
         ###########################
@@ -704,13 +701,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                 results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
                                            Opt=True, optimizer=optimizer)
             print("Parallel calculation done!")
-            print("results:", results)
             surfacedictionary=results.energies_dict
-            print("surfacedictionary:", surfacedictionary)
             #Writing dictionary to file
             write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
-            print("surfacedictionary:", surfacedictionary)
-
     else:
         ###########################
         #SERIAL CALCULATION
@@ -779,8 +772,6 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     surfacedictionary[(RCvalue1,RCvalue2)] = energy
                     #Writing dictionary to file
                     write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
-                    print("surfacedictionary:", surfacedictionary)
-                    #calc_rotational_constants(mol)
                     print("")
                 else:
                     print("RC1 and RC2 values in dict already. Skipping.")
@@ -837,10 +828,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     surfacedictionary[(RCvalue1)] = energy
                     #Writing dictionary to file
                     write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
-                    print("surfacedictionary:", surfacedictionary)
                     print("")            
                 else:
                     print("RC1 value in dict already. Skipping.")
+    print("Final surfacedictionary:", surfacedictionary)
     print_time_rel(module_init_time, modulename='calc_surface_fromXYZ', moduleindex=0)
     result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
     return result                 
