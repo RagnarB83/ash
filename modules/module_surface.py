@@ -262,7 +262,6 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                 for RCvalue1 in RCvalue1_list:
                     for RCvalue2 in RCvalue2_list:
                         d = result_surface.worker_dirnames[(RCvalue1,RCvalue2)]
-                        print("d:", d)
                         shutil.copy(d+"/Fragment-optimized.xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
 
                 surfacedictionary = result_surface.energies_dict
@@ -309,7 +308,6 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                 #Moving XYZ-files to surface_xyzfiles
                 for RCvalue1 in RCvalue1_list:
                     d = result_surface.worker_dirnames[(RCvalue1)]
-                    print("d:", d)
                     shutil.copy(d+"/Fragment-optimized.xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+".xyz")
 
                 surfacedictionary = result_surface.energies_dict
