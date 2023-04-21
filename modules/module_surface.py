@@ -606,11 +606,11 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
                     #NOTE: Using tuple as a label for fragment
                     newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1,RCvalue2), charge=charge, mult=mult)
-
-                    #Now creating constraints dict for RC-value combo and adding to fragment
-                    allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
-                                                        RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
-                    newfrag.constraints = allconstraints
+                    if scantype=='Relaxed':
+                        #Now creating constraints dict for RC-value combo and adding to fragment
+                        allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
+                                                            RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
+                        newfrag.constraints = allconstraints
                     newsurfacepoint.fragment=newfrag
                     list_of_surfacepoints.append(newsurfacepoint)
      
@@ -628,10 +628,11 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     newsurfacepoint.xyzfile=xyzdir+'/'+relfile
                     #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
                     newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1,), charge=charge, mult=mult)
-                    #Now creating constraints dict for RC-value combo and adding to fragment
-                    allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
-                                                        RC1_type=RC1_type, RC1_indices=RC1_indices)
-                    newfrag.constraints = allconstraints
+                    if scantype=='Relaxed':
+                        #Now creating constraints dict for RC-value combo and adding to fragment
+                        allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
+                                                            RC1_type=RC1_type, RC1_indices=RC1_indices)
+                        newfrag.constraints = allconstraints
                     newsurfacepoint.fragment=newfrag
                     list_of_surfacepoints.append(newsurfacepoint)
 
