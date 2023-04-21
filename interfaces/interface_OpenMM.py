@@ -3614,7 +3614,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, height=1, 
               biaswidth_cv1=0.5, biaswidth_cv2=0.5,
               frequency=1, savefrequency=10,
-              biasdir='.'):
+              biasdir='.', multiplewalkers=False, walkernum=None, walkerid=None):
     print_line_with_mainheader("OpenMM metadynamics")
     
     if CV1_atoms == None or CV1_type == None:
@@ -3685,7 +3685,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             print("No plumed_input_string provided. Will create based on user-input")
             plumedinput = setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
                        CV1_type,biaswidth_cv1,CV1_atoms,
-                       CV2_type,biaswidth_cv2,CV2_atoms)
+                       CV2_type,biaswidth_cv2,CV2_atoms,
+                       multiplewalkers=multiplewalkers, biasdir=biasdir,
+                       walkernum=walkernum, walkerid=walkerid)
             writestringtofile(plumedinput,"plumedinput.in")
         
         #Add PlumedForce to OpenMM system
@@ -3859,8 +3861,9 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv, md):
 #dihedrals and angles are -pi to pi and 0 to pi
 def setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
                        CV1_type,biaswidth_cv1,CV1_atoms,
-                       CV2_type,biaswidth_cv2,CV2_atoms,
-                       distance_mingrid=0.05, distance_maxgrid=0.3):
+                       CV2_type,biaswidth_cv2,CV2_atoms, 
+                       multiplewalkers=False, biasdir='.',
+                       walkernum=None, walkerid=None):
     print("Inside setup_plumed_input")
     strideval=savefrequency #allow different ?
     paceval=savefrequency # allow different ?
@@ -3880,9 +3883,18 @@ def setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
         ashexit()
     if numCVs == 1:
         print("numCVs: 1")
+        if multiplewalkers is True:
+            walker_string=f"""
+WALKERS_N={walkernum}
+WALKERS_ID={walkerid}
+WALKERS_DIR={biasdir}
+WALKERS_RSTRIDE={strideval}
+            """
+        else:
+            walker_string=""
         plumedinput = f"""
 {cv1atom_line}        
-metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN={grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN=-{grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
 PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
         """
         return plumedinput
@@ -3903,10 +3915,21 @@ PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
     else:
         print("Error:Unknown CV1_type option")
         ashexit()
+    #MULTIPLE WALKERS
+    if multiplewalkers is True:
+        walker_string=f"""
+WALKERS_N={walkernum}
+WALKERS_ID={walkerid}
+WALKERS_DIR={biasdir}
+WALKERS_RSTRIDE={strideval}
+        """
+    else:
+        walker_string=""
+
     plumedinput = f"""
 {cv1atom_line}
 {cv2atom_line}
-metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN={grid_min1},{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN=-{grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
 PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
     """
     
