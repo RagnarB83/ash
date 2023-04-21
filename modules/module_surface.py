@@ -525,6 +525,13 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
         result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
         return result   
 
+    #Checking if list of lists. If so then we apply multiple constraints for this reaction coordinate (e.g. symmetric bonds)
+    #Here making list of list in case only a single list was provided
+    if any(isinstance(el, list) for el in RC1_indices) is False:
+        RC1_indices=[RC1_indices]
+    if dimension == 2:
+        if any(isinstance(el, list) for el in RC2_indices) is False:
+            RC2_indices=[RC2_indices]
 
     #Case Relaxed Scan: Create directory to keep track of optimized surface XYZ files
     if scantype=="Relaxed":
