@@ -3894,7 +3894,7 @@ WALKERS_RSTRIDE={strideval}
             walker_string=""
         plumedinput = f"""
 {cv1atom_line}        
-metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN=-{grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN={grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
 PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
         """
         return plumedinput
@@ -3929,7 +3929,7 @@ WALKERS_RSTRIDE={strideval}
     plumedinput = f"""
 {cv1atom_line}
 {cv2atom_line}
-metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN=-{grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN={grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
 PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
     """
     
