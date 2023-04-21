@@ -658,11 +658,13 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                 results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
             print("Parallel calculation done!")
             
+            print("results:", results)
             #Gathering results in FINAL dictionary.
-            for dictitem in results:
-                print("Surfacepoint: {} Energy: {}".format(dictitem, results[dictitem]))
+            for dictitem in results.energies_dict:
+                print("Surfacepoint: {} Energy: {}".format(dictitem, results.energies_dict[dictitem]))
                 surfacedictionary[dictitem] = results[dictitem]
             print("")
+            print("surfacedictionary:", surfacedictionary)
 
             if len(surfacedictionary) != totalnumpoints:
                 print("Dictionary not complete!")
