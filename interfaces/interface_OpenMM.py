@@ -3679,82 +3679,16 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         if plumed_input_string != None:
             print("plumed_input_string provided. Will read all options from this string (make sure to provide atom indices in 1-based indexing)")
             writestringtofile(plumed_input_string,"plumedinput.in")
-            system.addForce(openmmplumed.PlumedForce(plumed_input_string))
         #CREATE Plumed input strings based on provided keyword options
         else:
             print("No plumed_input_string provided. Will create based on user-input")
-            #TODO: pi ?
-            #Defining inputscript
-            #NOTE: SIGMA. Possible unit conversion needed here?
-            strideval=savefrequency #allow different ?
-            paceval=savefrequency # allow different ?
-
-            print("here")
-            print("CV1_type:", CV1_type)
-            #CV1:
-            if CV1_type == "dihedral" or CV1_type == "torsion":
-                cv1label="TORSION"
-                grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
-                atom_defsline=str(CV1_atoms[0]+1)+","+str(CV1_atoms[1]+1)+","+str(CV1_atoms[2]+1)+","+str(CV1_atoms[3]+1)
-                cv1atom_line=f"CV1: TORSION ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1},{CV1_atoms[3]+1}"
-            elif CV1_type == "angle":
-                cv1label="ANGLE"
-                grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
-                atom_defsline=str(CV1_atoms[0]+1)+","+str(CV1_atoms[1]+1)+","+str(CV1_atoms[2]+1)
-                cv1atom_line=f"CV1: ANGLE ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1}"
-            elif CV1_type == "bond" or CV1_type == "distance":
-                print("bond")
-                cv1label="DISTANCE"
-                grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
-                atom_defsline=str(CV1_atoms[0]+1)+","+str(CV1_atoms[1]+1)
-                cv1atom_line=f"CV1: DISTANCE ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1}"
-            else:
-                print("Error:Unknown CV1_type option")
-                ashexit()
-            print("cv1label:", cv1label)
-            #1 CVs
-            if numCVs == 1:
-                print("numCVs: 1")
-                #CV1: {cv1label} ATOMS={atom_defsline}
-                plumedinput = f"""
-        {cv1atom_line}        
-        metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN=-{grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
-        PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
-                """
-            #2 CVs
-            elif numCVs == 2:
-                print("numCVs: 2")
-
-            #CV2:
-            if CV2_type == "dihedral" or CV2_type == "torsion":
-                cv2label="TORSION"
-                grid_min2="pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv1
-                atom_defsline=str(CV2_atoms[0]+1)+","+str(CV2_atoms[1]+1)+","+str(CV2_atoms[2]+1)+","+str(CV2_atoms[3]+1)
-                cv2atom_line=f"CV2: DISTANCE ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1},{CV2_atoms[3]+1}"
-            elif CV2_type == "angle":
-                cv2label="ANGLE"
-                grid_min2="pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv1
-                atom_defsline=str(CV2_atoms[0]+1)+","+str(CV2_atoms[1]+1)+","+str(CV2_atoms[2]+1)
-                cv2atom_line=f"CV2: ANGLE ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1}"
-            elif CV2_type == "bond" or CV2_type == "distance":
-                cv2label="DISTANCE"
-                grid_min2="pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv2
-                atom_defsline=str(CV2_atoms[0]+1)+","+str(CV2_atoms[1]+1)
-                cv2atom_line=f"CV2: DISTANCE ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1}"
-            else:
-                print("Error:Unknown CV1_type option")
-                ashexit()
-
-            print("CV1_atoms:", CV1_atoms)
-            print("CV2_atoms:", CV2_atoms)
-            plumedinput = f"""
-    {cv1atom_line}
-    {cv2atom_line}
-    metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN=-{grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
-    PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
-            """
+            plumedinput = setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
+                       CV1_type,biaswidth_cv1,CV1_atoms,
+                       CV2_type,biaswidth_cv2,CV2_atoms)
             writestringtofile(plumedinput,"plumedinput.in")
-            system.addForce(openmmplumed.PlumedForce(plumedinput))
+        
+        #Add PlumedForce to OpenMM system
+        system.addForce(openmmplumed.PlumedForce(plumedinput))
 
     #Updating simulation context as the CustomCVForce needs to be added
     md.openmmobject.create_simulation()
@@ -3915,3 +3849,62 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv, md):
         print("unsupported CV_type for native OpenMM metadynamics implementation")
         ashexit()
     return CV_bias
+
+#Standalone function to create Plumed input-string based on basic MTD info and CVs
+#NOTE: SIGMA. Possible unit conversion needed here?
+#NOTE: grid min and max settings
+def setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
+                       CV1_type,biaswidth_cv1,CV1_atoms,
+                       CV2_type,biaswidth_cv2,CV2_atoms):
+    print("Inside setup_plumed_input")
+    strideval=savefrequency #allow different ?
+    paceval=savefrequency # allow different ?
+
+    #FIRST SETTING UP CV1:
+    if CV1_type == "dihedral" or CV1_type == "torsion":
+        grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+        cv1atom_line=f"CV1: TORSION ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1},{CV1_atoms[3]+1}"
+    elif CV1_type == "angle":
+        grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+        cv1atom_line=f"CV1: ANGLE ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1}"
+    elif CV1_type == "bond" or CV1_type == "distance":
+        print("bond")
+        cv1label="DISTANCE"
+        grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+        cv1atom_line=f"CV1: DISTANCE ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1}"
+    else:
+        print("Error:Unknown CV1_type option")
+        ashexit()
+    if numCVs == 1:
+        print("numCVs: 1")
+        plumedinput = f"""
+{cv1atom_line}        
+metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN=-{grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
+        """
+        return plumedinput
+    
+    #2 CVs
+    elif numCVs == 2:
+        print("numCVs: 2")
+    #SETTING UP CV2:
+    if CV2_type == "dihedral" or CV2_type == "torsion":
+        grid_min2="pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv1
+        cv2atom_line=f"CV2: DISTANCE ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1},{CV2_atoms[3]+1}"
+    elif CV2_type == "angle":
+        grid_min2="pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv1
+        cv2atom_line=f"CV2: ANGLE ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1}"
+    elif CV2_type == "bond" or CV2_type == "distance":
+        grid_min2="pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv2
+        cv2atom_line=f"CV2: DISTANCE ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1}"
+    else:
+        print("Error:Unknown CV1_type option")
+        ashexit()
+    plumedinput = f"""
+{cv1atom_line}
+{cv2atom_line}
+metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN=-{grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
+    """
+    
+    return plumedinput

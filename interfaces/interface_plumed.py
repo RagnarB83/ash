@@ -8,8 +8,8 @@ import glob
 from ash.functions.functions_general import ashexit, natural_sort, print_line_with_mainheader,print_time_rel
 
 #Interface to Plumed
-#PLUMED_ASH class
-
+#PLUMED_ASH class: Works with ASE but not confirmed to work with OpenMM at present.
+#NOTE: OpenMM also has native metadynamics and its own interface to Plumed
 class plumed_ASH():
     def __init__(self, path_to_plumed_kernel=None, bias_type="MTD", fragment=None, CV1_type=None, CV1_indices=None,
                 CV2_type=None, CV2_indices=None,
