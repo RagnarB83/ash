@@ -203,7 +203,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                                                             RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        geomeTRICOptimizerr(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
                         constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
                         ActiveRegion=ActiveRegion, actatoms=actatoms)
                         #Shallow copy of fragment
@@ -243,33 +243,23 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         print("=======================================")
                         pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
-                            #Now setting constraints
+                            #Now creating constraints dict for RC-value combo
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("allconstraints:", allconstraints)
-                            #List of all constraint-dicionaries for each fragment
-                            list_of_constraints.append(allconstraints)
-                            #Running zero-theory with optimizer just to set geometry
-                            #ash.interfaces.interface_geometric_new.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
-                            #constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,
-                            #ActiveRegion=ActiveRegion, actatoms=actatoms)
-
+                            print()
                             #Shallow copy of fragment and adding label
                             newfrag = copy.copy(fragment)
                             newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
                             newfrag.label = (RCvalue1,RCvalue2)
-                            #surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
+
+                            #Adding constraints to fragment
+                            newfrag.constraints = allconstraints
                             surfacepointfragments_lists.append(newfrag)
 
-                #print("surfacepointfragments:", surfacepointfragments)
-                print("list_of_constraints:", list_of_constraints)
-                #TODO: sort this list??
-                #surfacepointfragments_lists = list(surfacepointfragments.values())
-                #print("surfacepointfragments_lists: ", surfacepointfragments_lists)
                 #Parallel opt
                 result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
-                                                                               Opt=True, optimizer=optimizer, constrainvalue=True, 
-                                                                               opt_constraints=list_of_constraints)
+                                                                               Opt=True, optimizer=optimizer)
 
                 surfacedictionary = result_surface.energies_dict
                 print("Parallel calculation done!")
@@ -296,28 +286,21 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         #Now setting constraints
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
                                                             RC1_type=RC1_type, RC1_indices=RC1_indices)
-                        #List of all constraint-dicionaries for each fragment
-                        list_of_constraints.append(allconstraints)
-
-                        #Running zero-theory with optimizer just to set geometry
-                        #ash.interfaces.interface_geometric_new.geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, 
-                        #                                                        coordsystem=coordsystem, constraints=allconstraints, 
-                        #                                                        constrainvalue=True, convergence_setting=convergence_setting,
-                        #                                                        ActiveRegion=ActiveRegion, actatoms=actatoms)
+                        print("allconstraints:", allconstraints)
+                        print()
                         #Shallow copy of fragment and adding label
                         newfrag = copy.copy(fragment)
-                        newfrag.label = str(RCvalue1)+"_"+str(RCvalue2)
+                        newfrag.label = str(RCvalue1)
                         newfrag.label = (RCvalue1)
-                        #surfacepointfragments[(RCvalue1)] = newfrag
+
+                        #Adding constraints to fragment
+                        newfrag.constraints = allconstraints
                         surfacepointfragments_lists.append(newfrag)
 
-                #TODO: sort this list??
-                #surfacepointfragments_lists = list(surfacepointfragments.values())
-                #print("surfacepointfragments_lists: ", surfacepointfragments_lists)
+
                 #Parallel opt
                 result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
-                                                                               Opt=True, optimizer=optimizer, constrainvalue=True, 
-                                                                               opt_constraints=list_of_constraints)
+                                                                               Opt=True, optimizer=optimizer)
                 surfacedictionary = result_surface.energies_dict
 ###########################            
 #  SERIAL 

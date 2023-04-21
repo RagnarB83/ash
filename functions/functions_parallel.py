@@ -52,7 +52,7 @@ def test_OpenMPI():
 #Used to be Singlepoint_parallel. Default behaviour is single-point
 def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, 
                          allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False,
-                         version='multiprocessing', Opt=False, optimizer=None, opt_constraints=None,constrainvalue=False):
+                         version='multiprocessing', Opt=False, optimizer=None):
     '''
     The Job_parallel function carries out multiple single-point or opt calculations in a parallel fashion
     :param fragments:
@@ -179,17 +179,11 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                     print(BC.WARNING,"This can be overriden by: Job_parallel(allow_theory_parallelization=True)\n", BC.END)
                 theory.numcores=1
 
-
         #Passing list of fragments
         if len(fragments) > 0:
             if printlevel >= 2:
                 print("fragments:", fragments)
-            for ij,fragment in enumerate(fragments):
-                #Setting fragment-specific constraints if provided
-                if Opt is True and opt_constraints != None:
-                    print("Opt is True and constraints is on")
-                    print(f"Fragment label: {fragment.label} with opt_constraints[ij]:", opt_constraints[ij])
-                    optimizer.set_constraints(opt_constraints[ij],constrainvalue)
+            for fragment in fragments:
                 if printlevel >= 2:
                     print("fragment:", fragment)
                 results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir, version=version,
@@ -199,10 +193,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
         elif len(fragmentfiles) > 0:
             if printlevel >= 2:
                 print("Launching multiprocessing and passing list of ASH fragmentfiles")
-            for ij,fragmentfile in enumerate(fragmentfiles):
-                #Setting fragment-specific constraints if provided
-                if Opt is True and opt_constraints != None:
-                    optimizer.set_constraints(opt_constraints[ij],constrainvalue)
+            for fragmentfile in fragmentfiles:
                 if printlevel >= 2:
                     print("fragmentfile:", fragmentfile)
                 results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir, version=version,
@@ -287,9 +278,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
 
     return result
 
-
-#Version of Singlepoint used by Job_parallel.
-#NOTE: Needs to be simplified
+#Worker_par for both Singlepoint-type and Opt-type jobs
 #NOTE: Version intended for apply_async
 #TODO: This function contains 2 many QM-code specifics. Needs to be generalized (QM-specifics moved to QMtheory class)
 def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, 
@@ -414,7 +403,9 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     #####################
     #Optimizer
     if optimizer != None:
-        result = optimizer.run(theory=theory, fragment=fragment, charge=charge, mult=mult)
+        #Make copy of optimizer
+        optimizer_new = copy.copy(optimizer)
+        result = optimizer_new.run(theory=theory, fragment=fragment, charge=charge, mult=mult)
         energy = result.energy
     #Singlepoint Grad
     elif Grad == True:

@@ -352,16 +352,26 @@ class GeomeTRICOptimizerClass:
             #################
             # CONSTRAINTS
             #################
-            #If constraints not provided to run method, then we look at self.constraints
+            #If constraints not directly provided to run method, then we look at self.constraints and then fragment.constraints
             if constraints == None:
-                print("No constraints provided to run method")
+                print("No constraints provided to run method.")
+                print("Testing if constraints present in optimizer object")
                 if self.constraints != None:
-                    print("Found internal constraints")
+                    print("Found constraints in optimizer object")
                     constraints=self.constraints
                     constrainvalue=self.constrainvalue
                 else:
-                    print("No previously defined constraints found either")
-            
+                    print("No constraints in optimizer object.")
+                    print("Now testing if constraints in fragment object ")
+                    if fragment.constraints != None:
+                        #Option used by Surface-scan relaxed parallel
+                        print("Found constraints in fragment object")
+                        constraints = fragment.constraints
+                        constrainvalue=True #Assuming to be the case. 
+                    else:
+                        print("No constraints in fragment object.")
+            else:
+                print("Constraints provided to run method.")
             print("\nConstraints: ", constraints)
             print("constrainvalue: ", constrainvalue)
 

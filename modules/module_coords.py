@@ -212,7 +212,9 @@ class Fragment:
             if len(self.connectivity) == 0:
                 self.calc_connectivity(scale=scale, tol=tol)
 
-
+        #Constraints attributes. Used by parallel surface-scan to pass constraints along.
+        #Populated by calc_surface relaxed para
+        self.constraints = None
 
     def update_attributes(self):
         if self.printlevel >= 2:
