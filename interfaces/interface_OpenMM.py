@@ -3286,6 +3286,7 @@ class OpenMM_MDclass:
 
         print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
 
+        return simulation
 
 #############################
 #  Multi-step MD protocols  #
@@ -3696,9 +3697,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     #Calling md.run with either native option active or false
     print("Now starting metadynamics simulation")
     if simulation_steps is not None:
-        md.run(simulation_steps=simulation_steps, metadynamics=native_MTD, meta_object=meta_object)
+        simulation = md.run(simulation_steps=simulation_steps, metadynamics=native_MTD, meta_object=meta_object)
     elif simulation_time is not None:
-        md.run(simulation_time=simulation_time, metadynamics=native_MTD, meta_object=meta_object)
+        simulation = md.run(simulation_time=simulation_time, metadynamics=native_MTD, meta_object=meta_object)
     else:
         print("Either simulation_steps or simulation_time need to be defined (not both).")
         ashexit()
@@ -3707,7 +3708,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     #Possible data analysis ??
     if use_plumed is False:
         print("Now analyzing data")
-        CV_data = meta_object.getCollectiveVariables(md.openmmobject.simulation)
+        CV_data = meta_object.getCollectiveVariables(simulation)
         print("CV_data", CV_data)
         print("len of CV_data", len(CV_data))
         print("CV1_bias gridWidth:", CV1_bias.gridWidth)
@@ -3829,7 +3830,8 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv, md):
             ashexit()
         cv = openmm.CustomTorsionForce('theta')
         cv.addTorsion(*CV_atoms)
-        CV_bias = openmm.app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, periodic=False, gridWidth=None)
+        #V_bias = openmm.app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, periodic=True, gridWidth=None)
+        CV_bias = openmm.app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, True)
     elif CV_type == "angle":
         if len(CV_atoms) != 3:
             print("Error: CV_atoms list must contain 3 atom indices")
@@ -3853,24 +3855,25 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv, md):
 #Standalone function to create Plumed input-string based on basic MTD info and CVs
 #NOTE: SIGMA. Possible unit conversion needed here?
 #NOTE: grid min and max settings
+#NOTE: distance_mingrid and distance_maxgrid controls min and max for distances.
+#dihedrals and angles are -pi to pi and 0 to pi
 def setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
                        CV1_type,biaswidth_cv1,CV1_atoms,
-                       CV2_type,biaswidth_cv2,CV2_atoms):
+                       CV2_type,biaswidth_cv2,CV2_atoms,
+                       distance_mingrid=0.05, distance_maxgrid=0.3):
     print("Inside setup_plumed_input")
     strideval=savefrequency #allow different ?
     paceval=savefrequency # allow different ?
 
     #FIRST SETTING UP CV1:
     if CV1_type == "dihedral" or CV1_type == "torsion":
-        grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+        grid_min1="-pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
         cv1atom_line=f"CV1: TORSION ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1},{CV1_atoms[3]+1}"
     elif CV1_type == "angle":
-        grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+        grid_min1="0"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
         cv1atom_line=f"CV1: ANGLE ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1},{CV1_atoms[2]+1}"
     elif CV1_type == "bond" or CV1_type == "distance":
-        print("bond")
-        cv1label="DISTANCE"
-        grid_min1="pi"; grid_max1="pi"; sigma_cv1=biaswidth_cv1
+        grid_min1=distance_mingrid; grid_max1=distance_maxgrid; sigma_cv1=biaswidth_cv1
         cv1atom_line=f"CV1: DISTANCE ATOMS={CV1_atoms[0]+1},{CV1_atoms[1]+1}"
     else:
         print("Error:Unknown CV1_type option")
@@ -3879,7 +3882,7 @@ def setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
         print("numCVs: 1")
         plumedinput = f"""
 {cv1atom_line}        
-metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN=-{grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN={grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
 PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
         """
         return plumedinput
@@ -3889,13 +3892,13 @@ PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
         print("numCVs: 2")
     #SETTING UP CV2:
     if CV2_type == "dihedral" or CV2_type == "torsion":
-        grid_min2="pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv1
-        cv2atom_line=f"CV2: DISTANCE ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1},{CV2_atoms[3]+1}"
+        grid_min2="-pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv1
+        cv2atom_line=f"CV2: TORSION ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1},{CV2_atoms[3]+1}"
     elif CV2_type == "angle":
-        grid_min2="pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv1
+        grid_min2="0"; grid_max2="pi"; sigma_cv2=biaswidth_cv1
         cv2atom_line=f"CV2: ANGLE ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1},{CV2_atoms[2]+1}"
     elif CV2_type == "bond" or CV2_type == "distance":
-        grid_min2="pi"; grid_max2="pi"; sigma_cv2=biaswidth_cv2
+        grid_min2=distance_mingrid; grid_max2=distance_maxgrid; sigma_cv2=biaswidth_cv2
         cv2atom_line=f"CV2: DISTANCE ATOMS={CV2_atoms[0]+1},{CV2_atoms[1]+1}"
     else:
         print("Error:Unknown CV1_type option")
@@ -3903,7 +3906,7 @@ PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
     plumedinput = f"""
 {cv1atom_line}
 {cv2atom_line}
-metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN=-{grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN={grid_min1},{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
 PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
     """
     

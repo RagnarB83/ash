@@ -205,7 +205,7 @@ class plumed_ASH():
         self.plumedobj.finalize()
 
 #Standalone function to call plumed binary and get fes.dat
-def call_plumed_sum_hills(path_to_plumed,hillsfile):
+def call_plumed_sum_hills(path_to_plumed,hillsfile,ndim=None, binsg=[99,99], ming=[0,0], maxg=[10,10]):
         print("Running plumed sum_hills on hills file")
         print("path_to_plumed:", path_to_plumed)
         print("HILLS file:", hillsfile)
@@ -213,12 +213,23 @@ def call_plumed_sum_hills(path_to_plumed,hillsfile):
         #Either run plumed binary, requiring to st
         os.environ['PATH'] = path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
         os.environ['LD_LIBRARY_PATH'] = path_to_plumed+'/lib'+os.pathsep+os.environ['LD_LIBRARY_PATH']
-        os.system(f'plumed sum_hills --hills {hillsfile}')
+        #os.system(f'plumed sum_hills --hills {hillsfile} --min {} --max {}')
+        if ndim == None:
+            #Default grid
+            print("Calling plumed sum_hills with default grid settings")
+            os.system(f'plumed sum_hills --hills HILLS')
+        elif ndim == 1:
+            print(f"Calling plumed sum_hills with  grid settings: --bin {binsg[0]} --min {ming[0]} --max {maxg[0]}")
+            os.system(f'plumed sum_hills --hills HILLS --bin {binsg[0]} --min {ming[0]} --max {maxg[0]}')
+        elif ndim == 2:
+            print(f"Calling plumed sum_hills with  grid settings: --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}")
+            os.system(f'plumed sum_hills --hills HILLS --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}')
         
 #Metadynamics visualization tool
 
 def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
-                CV1_indices=None, CV2_indices=None, plumed_length_unit=None, plumed_energy_unit=None, plumed_time_unit=None):
+                CV1_indices=None, CV2_indices=None, plumed_length_unit=None, plumed_energy_unit=None, plumed_time_unit=None,
+                CV1_grid_limits=None,CV2_grid_limits=None):
     #Energy-unit used by Plumed-ASH should be eV in general
     print_line_with_mainheader("Metadynamics Analysis Script")
     try:
@@ -289,6 +300,10 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             ashexit()
 
 
+    ######################
+    # UNITS
+    ######################
+    pi=3.14159265359
     #Dict of energy conversions: Energy-unit to kcal/mol
     energy_conversion_dict= {'eV':1/23.060541945329334, 'kj/mol':4.184 }
     # possibly conversion from energy-unit to kcal/mol. 
@@ -300,14 +315,17 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     else:
         print("No plumed_length_unit defined. Assuming default plumed (nm)")
         distance_scaling=10
+
     #1D
     if CV2_type == None or CV2_type == "None":
         print("1D MTD")
         CVnum=1
         if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE' or CV1_type.upper()=='DIHEDRAL':
             finalcvunit_1='°'
-        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='DISTANCE':
+            CV1_scaling=180/pi
+        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='DISTANCE' or CV1_type.upper()=='BOND':
             finalcvunit_1='Å'
+            CV1_scaling=distance_scaling
         else:
             print("1unknown. exiting");exit()
         print("Final CV1 units:", finalcvunit_1)
@@ -317,15 +335,20 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         CVnum=2
         if CV1_type.upper() =='TORSION' or CV1_type.upper()=='ANGLE' or CV1_type.upper()=='DIHEDRAL':
             finalcvunit_1='°'
-        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='DISTANCE':
+            CV1_scaling=180/pi
+        elif CV1_type.upper() == 'RMSD' or CV1_type.upper()=='DISTANCE' or CV1_type.upper()=='BOND':
             finalcvunit_1='Å'
+            CV1_scaling=distance_scaling
+            print("")
         else:
             print("2unknown. exiting");exit()
         print("Final CV1 unit:", finalcvunit_1)
-        if CV2_type.upper() =='TORSION' or CV2_type.upper()=='ANGLE' or CV1_type.upper()=='DIHEDRAL':
+        if CV2_type.upper() =='TORSION' or CV2_type.upper()=='ANGLE' or CV2_type.upper()=='DIHEDRAL':
             finalcvunit_2='°'
-        elif CV2_type.upper() == 'RMSD' or CV2_type.upper()=='DISTANCE':
+            CV2_scaling=180/pi
+        elif CV2_type.upper() == 'RMSD' or CV2_type.upper()=='DISTANCE' or CV2_type.upper()=='BOND':
             finalcvunit_2='Å'
+            CV2_scaling=distance_scaling
         else:
             print("3unknown. exiting");ashexit()
         print("Final CV2 units:", finalcvunit_2)
@@ -335,9 +358,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     
     print("CV1_type:", CV1_type)
     print("CV2_type:", CV2_type)
-
-
-        
+    ######################
 
     ########################
     #READING MAIN DATA
@@ -359,7 +380,6 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         except FileNotFoundError:
             print("Found no HILLS.X or HILLS file. Exiting...")
             ashexit()
-
 
     #The plumed sum_hills command that is run.
     print("")
@@ -388,15 +408,29 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         print("Running plumed to sum hills...")
         print("")
         #RUN PLUMED_ASH OBJECT function
-        call_plumed_sum_hills(path_to_plumed,"HILLS.ALL")
-        #plumed_ash_object.run_sum_hills("HILLS.ALL")
-        #os.system('plumed sum_hills --hills HILLS.ALL')
+        if CV1_grid_limits == None:
+            call_plumed_sum_hills(path_to_plumed,"HILLS.ALL",CVnum)
+        else:
+            #Changing input unit from Angstrom to nm or degree to radian
+            if CVnum == 1:
+                call_plumed_sum_hills(path_to_plumed,'HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits_unit[0]/ CV1_scaling], maxg=[CV1_grid_limits_unit[1]/ CV1_scaling])
+            elif CVnum == 2:
+                #Changing input unit from Angstrom to nm or degree to radian
+                call_plumed_sum_hills(path_to_plumed,'HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits_unit[0]/ CV1_scaling,CV2_grid_limits_unit[0]/ CV2_scaling],
+                     maxg=[CV1_grid_limits_unit[1]/ CV1_scaling,CV2_grid_limits_unit[1]/ CV2_scaling])
+
     else:
         print("Calling call_plumed_sum_hills")
-        call_plumed_sum_hills(path_to_plumed,"HILLS")
-        #plumed_ash_object.run_sum_hills("HILLS")
-        #os.system('plumed sum_hills --hills HILLS')
-        #HILLSFILE="HILLS"
+        #call_plumed_sum_hills(path_to_plumed,"HILLS")
+        if CV1_grid_limits == None:
+            call_plumed_sum_hills(path_to_plumed,"HILLS",CVnum)
+        else:
+            #Changing input unit from Angstrom to nm or degree to radian
+            if CVnum == 1:
+                call_plumed_sum_hills(path_to_plumed,'HILLS',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling])
+            elif CVnum == 2:
+                #Changing input unit from Angstrom to nm or degree to radian
+                call_plumed_sum_hills(path_to_plumed,'HILLS',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling,CV2_grid_limits[0]/ CV2_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling,CV2_grid_limits[1]/ CV2_scaling])
         HILLSFILELIST=['HILLS']
         #Single COLVAR file
         COLVARFILELIST=['COLVAR']
@@ -425,7 +459,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             PotCurve=False
             print("File potcurve not found. Add file if desired.")
     ########################################
-    pi=3.14159265359
+    
 
 
     #READING fes.dat
@@ -520,40 +554,49 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
                         print("unknown format of COLVAR file. More than 2 CVs ??")
                         ashexit()
 
-        #convert to deg if torsion/angle
-        if CV1_type.upper()=='TORSION' or CV1_type.upper()=='ANGLE' or CV1_type.upper()=='DIHEDRAL':
-            rc_deg=np.array(rc)*180/pi
-            final_rc=rc_deg
-            colvar_value_deg=np.array(colvar_value)*180/pi
-            # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
-            colvar_value_deg_list.append(colvar_value_deg)            
-            finalcolvar_value_list=colvar_value_deg_list
-        #Possible conversion from nm to Angstrom
-        elif CV1_type.upper()=='RMSD' or CV1_type.upper()=='DISTANCE':
-            rc_ang=np.array(rc)*distance_scaling
-            final_rc=rc_ang
-            colvar_value=np.array(colvar_value)*distance_scaling
-            finalcolvar_value_list.append(colvar_value)
-        else:
-            finalcolvar_value_list.append(colvar_value)
+    #convert to deg if torsion/angle
+    if CV1_type.upper()=='TORSION' or CV1_type.upper()=='ANGLE' or CV1_type.upper()=='DIHEDRAL':
+        #General CV1 scaling factor for radian to deg
+        #Scaling
+        rc_deg=np.array(rc)*CV1_scaling
+        final_rc=rc_deg
+        colvar_value_deg=np.array(colvar_value)*CV1_scaling
+        # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
+        colvar_value_deg_list.append(colvar_value_deg)            
+        finalcolvar_value_list=colvar_value_deg_list
 
-        #convert to deg if torsion/angle
-        if CV2_type != None:
-            if CV2_type.upper()=='TORSION' or CV2_type.upper()=='ANGLE' or CV1_type.upper()=='DIHEDRAL':
-                rc2_deg=np.array(rc2)*180/pi
-                final_rc2=rc2_deg
-                colvar2_value_deg=np.array(colvar2_value)*180/pi
-                # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
-                colvar2_value_deg_list.append(colvar2_value_deg)            
-                finalcolvar2_value_list=colvar2_value_deg_list
-            #Possible conversion from nm to Angstrom
-            elif CV2_type.upper()=='RMSD' or CV2_type.upper()=='DISTANCE':
-                rc2_ang=np.array(rc2)*distance_scaling
-                final_rc2=rc2_ang
-                colvar2_value=np.array(colvar2_value)*distance_scaling
-                finalcolvar2_value_list.append(colvar2_value)
-            else:
-                finalcolvar2_value_list.append(colvar2_value)
+    #Possible conversion from nm to Angstrom
+    elif CV1_type.upper()=='RMSD' or CV1_type.upper()=='DISTANCE' or CV1_type.upper()=='BOND':
+        #General CV1 scaling factor for nm to Angstrom (default)
+        rc_ang=np.array(rc)*CV1_scaling
+        final_rc=rc_ang
+        #print("final_rc:", final_rc)
+        colvar_value=np.array(colvar_value)*CV1_scaling
+        #print("colvar_value:", colvar_value)
+        finalcolvar_value_list.append(colvar_value)
+        #print("finalcolvar_value_list:", finalcolvar_value_list)
+    else:
+        finalcolvar_value_list.append(colvar_value)
+
+    #convert to deg if torsion/angle
+    if CV2_type != None:
+        if CV2_type.upper()=='TORSION' or CV2_type.upper()=='ANGLE' or CV1_type.upper()=='DIHEDRAL':
+            #General CV1 scaling factor for radian to deg
+            rc2_deg=np.array(rc2)*CV2_scaling
+            final_rc2=rc2_deg
+            colvar2_value_deg=np.array(colvar2_value)*CV2_scaling
+            # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
+            colvar2_value_deg_list.append(colvar2_value_deg)            
+            finalcolvar2_value_list=colvar2_value_deg_list
+        #Possible conversion from nm to Angstrom
+        elif CV2_type.upper()=='RMSD' or CV2_type.upper()=='DISTANCE':
+            #General CV1 scaling factor for nm to Angstrom (default)
+            rc2_ang=np.array(rc2)*CV2_scaling
+            final_rc2=rc2_ang
+            colvar2_value=np.array(colvar2_value)*CV2_scaling
+            finalcolvar2_value_list.append(colvar2_value)
+        else:
+            finalcolvar2_value_list.append(colvar2_value)
 
         #Possible energy conversion
         biaspot_value_kcal=np.array(biaspot_value)/energy_scaling
@@ -667,6 +710,19 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         if CV1_type=='Torsion':
             plt.xlim([-180,180])
             plt.ylim([-180,180])
+        else:
+            print("Subplot 1 free energy surface")
+            print("Choosing sensible x and y values based on min and max")
+            #print("final_rc:", final_rc)
+            #print("final_rc2:", final_rc2)
+            #min_x=min(final_rc)
+            #max_x=max(final_rc)
+            #min_y=min(final_rc2)
+            #max_y=max(final_rc2)
+            #plt.xlim([min_x,max_x])
+            #plt.ylim([min_y,max_y])
+            #plt.xlim(CV1_plot_limits)
+            #plt.ylim(CV2_plot_limits)
         cm = plt.cm.get_cmap(colormap)
         colorscatter=plt.scatter(final_rc, final_rc2, c=Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, cmap=cm)
         cbar = plt.colorbar(colorscatter)
