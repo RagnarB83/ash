@@ -525,19 +525,25 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
         result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
         return result   
 
-    #Checking if list of lists. If so then we apply multiple constraints for this reaction coordinate (e.g. symmetric bonds)
-    #Here making list of list in case only a single list was provided
-    if any(isinstance(el, list) for el in RC1_indices) is False:
-        RC1_indices=[RC1_indices]
-    if dimension == 2:
-        if any(isinstance(el, list) for el in RC2_indices) is False:
-            RC2_indices=[RC2_indices]
 
-    #Case Relaxed Scan: Create directory to keep track of optimized surface XYZ files
+    #Case Relaxed Scan: 
     if scantype=="Relaxed":
+
+        #Making sure we have defined indices and type
         if RC1_indices == None or RC1_type == None:
             print("Error. For relaxed scan in calc_surface_fromXYZ you need to set RC1_indices, RC2_indices, RC1_type and RC2_type")
             ashexit()
+
+        #Checking if list of lists. If so then we apply multiple constraints for this reaction coordinate (e.g. symmetric bonds)
+        #Here making list of list in case only a single list was provided
+        #Only necessary for relaxed
+        if any(isinstance(el, list) for el in RC1_indices) is False:
+            RC1_indices=[RC1_indices]
+        if dimension == 2:
+            if any(isinstance(el, list) for el in RC2_indices) is False:
+                RC2_indices=[RC2_indices]
+
+        #Create directory to keep track of optimized surface XYZ files
         try:
             os.mkdir('surface_xyzfiles') 
         except FileExistsError:
