@@ -305,6 +305,13 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                 #Parallel opt
                 result_surface = ash.functions.functions_parallel.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
                                                                                Opt=True, optimizer=optimizer)
+
+                #Moving XYZ-files to surface_xyzfiles
+                for RCvalue1 in RCvalue1_list:
+                    d = result.worker_dirnames[(RCvalue1)]
+                    print("d:", d)
+                    shutil.copy(d+"/Fragment-optimized.xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+".xyz")
+
                 surfacedictionary = result_surface.energies_dict
 ###########################            
 #  SERIAL 
