@@ -294,8 +294,7 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         print("fragmentfile:", fragmentfile)
         print("Theory:", theory)
 
-    #Creating new copy of theory to avoid deactivation of certain first-run features
-    # Example: Brokensym feature in ORCATheory
+    #Creating new copy of theory to avoid deactivation of certain first-run features (e.g. brokensym)
     #NOTE: Alternatively add if-statement inside orca.run
     #NOTE: This is not compatible with Dualtheory
     if copytheory == True:
@@ -359,25 +358,12 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         labelstring=str(label).replace('.','_')
 
     ###############################
-
-    #Creating separate inputfilename using label
-    #Removing . in inputfilename as ORCA can get confused
     #TODO: Need to revisit all of this, ideally remove
     if theory.__class__.__name__ == "ORCATheory":
-        #theory.filename=''.join([str(i) for i in labelstring])
-        #NOTE: Not sure if we really need to use labelstring for input since inside separate directoreies
-        #Disabling for now
-        #theory.filename=labelstring
         if mofilesdir != None:
             theory.moreadfile=moreadfile_path+'.gbw'
             if printlevel >= 2:
                 print("Setting moreadfile to:", theory.moreadfile)
-    elif theory.__class__.__name__ == "MRCCTheory":
-        if mofilesdir != None:
-            print("Case MRCC MOREADfile parallel")
-            print("moreadfile_path:", moreadfile_path)
-        print("not finished. exiting")
-        raise Exception()
     else:
         if mofilesdir != None:
             print("moreadfile option not ready for this Theory. exiting")

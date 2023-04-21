@@ -20,7 +20,6 @@ from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_results import ASH_Results
 from ash.interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICOptimizerClass
 
-# TODO: Finish parallelize surfacepoint calculations
 # TODO: Remove ORCATheory specific things
 
 def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='Unrelaxed', resultfile='surface_results.txt', keepoutputfiles=True, keepmofiles=False,
@@ -232,7 +231,6 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
             ###########################
             if dimension == 2:
                 print("Scantype: Relaxed. Dim: 2")
-                zerotheory = ash.ZeroTheory()
                 for RCvalue1 in RCvalue1_list:
                     for RCvalue2 in RCvalue2_list:
                         pointcount+=1
@@ -539,6 +537,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
 
     #Create directory to keep track of surface outfiles for runmode=serial
     #Note: for runmode_parallel we have separate dirs for each surfacepoint where we have inputfile, outputfile and MOfile
+
+#####################
+# Preparation stuff
+#####################
     if runmode=='serial':
         try:
             shutil.rmtree("'surface_outfiles'")
@@ -571,9 +573,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
             self.fragment=None
 
 
-    ###########################
-    #PARALLEL CALCULATION
-    ##########################
+###########################
+#PARALLEL case
+##########################
     if runmode=='parallel':
         print("Parallel runmode.")
 
@@ -581,7 +583,6 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
             print("numcores argument required for parallel runmode")
             ashexit()
 
-        surfacepointfragments={}
         #Looping over XYZ files to get coordinates
         print("")
         print("Reading XYZ files, expecting format:  RC1_value1-RC2_value2.xyz     Example:  RC1_2.0-RC2_180.0.xyz")
@@ -602,11 +603,14 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
                     #NOTE: Using tuple as a label for fragment
                     newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1,RCvalue2), charge=charge, mult=mult)
-                    #"RC1"+str(RCvalue1)+"_RC2"+str(RCvalue2)
+
+                    #Now creating constraints dict for RC-value combo and adding to fragment
+                    allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
+                                                        RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
+                    newfrag.constraints = allconstraints
                     newsurfacepoint.fragment=newfrag
                     list_of_surfacepoints.append(newsurfacepoint)
-                    #surfacepointfragments[(RCvalue1,RCvalue2)] = newfrag
-                    
+     
             elif dimension == 1:
                 print("relfile:", relfile)
                 if 'RC2' in relfile:
@@ -620,21 +624,24 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     newsurfacepoint=Surfacepoint(RCvalue1)
                     newsurfacepoint.xyzfile=xyzdir+'/'+relfile
                     #NOTE: Currently putting fragment into surfacepoint. Could also just point to xyzfile. Currently more memory-demanding
-                    #NOTE: Using tuple as a label for fragment
                     newfrag=ash.Fragment(xyzfile=xyzdir+'/'+relfile, label=(RCvalue1,), charge=charge, mult=mult)
+                    #Now creating constraints dict for RC-value combo and adding to fragment
+                    allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
+                                                        RC1_type=RC1_type, RC1_indices=RC1_indices)
+                    newfrag.constraints = allconstraints
                     newsurfacepoint.fragment=newfrag
                     list_of_surfacepoints.append(newsurfacepoint)
 
         #This is an ordered list of fragments only. Same order as list_of_surfacepoints, though does not matter since we use dicts
         #Used by ash.Job_parallel
         surfacepointfragments_lists=[point.fragment for point in list_of_surfacepoints]
-        
-        if scantype=='Unrelaxed':
 
+        if scantype=='Unrelaxed':
+            ###########################
+            #PARALLEL: Dim2 & Dim1 Unrelaxed
+            ##########################
             if read_mofiles == True:
                 #print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
-                #if theory.__class__.__name__ == "ORCATheory":
-                #    theory.moreadfile=mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'
                 results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores, mofilesdir=mofilesdir)
             else:
                 results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores)
@@ -661,10 +668,22 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
             print("surfacedictionary:", surfacedictionary)
             #Write final surface to file
             write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
+        ###########################
+        #PARALLEL:  Relaxed
+        ##########################
         elif scantype=='Relaxed':
-            print("calc_surface_fromXYZ Relaxed option not possible in parallel mode yet. Exiting")
-            ashexit()
-        
+            #Create optimizer object
+            optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem, 
+                        convergence_setting=convergence_setting)
+            print("Warning: calc_surface_fromXYZ Relaxed option is experimental")
+            if read_mofiles == True:
+                #print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
+                results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores, 
+                                           mofilesdir=mofilesdir, Opt=True, optimizer=optimizer)
+            else:
+                results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
+                                           Opt=True, optimizer=optimizer)
+            print("Parallel calculation done!")
     else:
         ###########################
         #SERIAL CALCULATION
@@ -672,9 +691,13 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
         #Looping over XYZ files
         for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):
             relfile=os.path.basename(file)
-            #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
+
+            ###########################
+            #SERIAL: Dim2
+            ##########################
             if dimension == 2:
                 #Cleaner splitting.
+                #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
                 #TODO: Should we use other symbol than "-" inbetween RC1 and RC2 values?
                 start="RC1_"; end="-RC2_"
                 RCvalue1=float(relfile.split(start)[1].split(end)[0])
@@ -694,10 +717,16 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                 
                 if (RCvalue1,RCvalue2) not in surfacedictionary:
                     mol=ash.Fragment(xyzfile=file)
+                    ###########################
+                    #SERIAL: Dim2 Unrelaxed
+                    ##########################
                     if scantype=="Unrelaxed":
 
                         result = ash.Singlepoint(theory=theory, fragment=mol, charge=charge, mult=mult)
                         energy = result.energy
+                    ###########################
+                    #SERIAL: Dim2 Relaxed
+                    ##########################
                     elif scantype=="Relaxed":
                         #Now setting constraints
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
@@ -727,6 +756,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     print("")
                 else:
                     print("RC1 and RC2 values in dict already. Skipping.")
+            ###########################
+            #SERIAL: Dim1
+            ##########################
             elif dimension == 1:
                 print("dim1")
                 #RC1_2.02.xyz
@@ -746,9 +778,15 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
 
                 if (RCvalue1) not in surfacedictionary:
                     mol=ash.Fragment(xyzfile=file)
+                    ###########################
+                    #SERIAL: Dim1 Unrelaxed
+                    ##########################
                     if scantype=="Unrelaxed":
                         result = ash.Singlepoint(theory=theory, fragment=mol, charge=charge, mult=mult)
                         energy = result.energy
+                    ###########################
+                    #SERIAL: Dim1 Relaxed
+                    ##########################
                     elif scantype=="Relaxed":
                         #Now setting constraints
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
@@ -780,13 +818,6 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
     print_time_rel(module_init_time, modulename='calc_surface_fromXYZ', moduleindex=0)
     result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
     return result                 
-
-
-def calc_numerical_gradient():
-    print("TODO")
-    ashexit()
-
-
 
 
 #######################################################################
