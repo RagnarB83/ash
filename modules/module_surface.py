@@ -862,6 +862,9 @@ def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraint
         if RC2_type not in allcon:
             allcon[RC2_type] = []
         for RC2_indexlist in RC2_indices:
+            print("RC2_indices:", RC2_indices)
+            print("RC2_indexlist:", RC2_indexlist)
+            print("RCvalue2:", RCvalue2)
             RC2.append(RC2_indexlist+[RCvalue2])
         allcon[RC2_type] = allcon[RC2_type] + RC2
         for RC1_indexlist in RC1_indices:
