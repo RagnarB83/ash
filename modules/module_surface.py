@@ -703,6 +703,13 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                 results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
                                            Opt=True, optimizer=optimizer)
             print("Parallel calculation done!")
+            print("results:", results)
+            surfacedictionary=results.energy_dict
+            print("surfacedictionary:", surfacedictionary)
+            #Writing dictionary to file
+            write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
+            print("surfacedictionary:", surfacedictionary)
+
     else:
         ###########################
         #SERIAL CALCULATION
@@ -826,12 +833,10 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                         shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
                     if keepmofiles == True:
                         shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
-                    #theory.cleanup()
                     surfacedictionary[(RCvalue1)] = energy
                     #Writing dictionary to file
                     write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
                     print("surfacedictionary:", surfacedictionary)
-                    #calc_rotational_constants(mol)
                     print("")            
                 else:
                     print("RC1 value in dict already. Skipping.")
