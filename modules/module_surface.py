@@ -528,6 +528,9 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
 
     #Case Relaxed Scan: Create directory to keep track of optimized surface XYZ files
     if scantype=="Relaxed":
+        if RC1_indices == None or RC1_type == None:
+            print("Error. For relaxed scan in calc_surface_fromXYZ you need to set RC1_indices, RC2_indices, RC1_type and RC2_type")
+            ashexit()
         try:
             os.mkdir('surface_xyzfiles') 
         except FileExistsError:
@@ -729,6 +732,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                     ##########################
                     elif scantype=="Relaxed":
                         #Now setting constraints
+                        print("RC2_indices:", RC2_indices)
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
                                                         RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                         print("allconstraints:", allconstraints)
