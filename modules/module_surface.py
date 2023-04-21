@@ -60,7 +60,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
         print("Found no RC2_type. This is a 1D scan.")
         dimension = 1
     else:
-        print("Found RC2_type keyword. This is a SD scan.")
+        print("Found RC2_type keyword. This is a 2D scan.")
         dimension = 2
         if RC2_indices == None or RC2_type == None or RC2_range == None:
             print("Error: You must provide RC2_indices, RC2_type and RC2_range")
@@ -149,6 +149,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
         #####################
         if scantype=='Unrelaxed':
             if dimension == 2:
+                print("Scantype: unrelaxed. Dim: 2")
                 zerotheory = ash.ZeroTheory()
                 for RCvalue1 in RCvalue1_list:
                     for RCvalue2 in RCvalue2_list:
@@ -187,6 +188,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                     print("len surfacedictionary:", len(surfacedictionary))
                     print("totalnumpoints:", totalnumpoints)
             elif dimension == 1:
+                print("Scantype: unrelaxed. Dim: 1")
                 zerotheory = ash.ZeroTheory()
                 for RCvalue1 in RCvalue1_list:
                     pointcount+=1
@@ -229,13 +231,15 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
             # PARALLEL: RELAXED: DIM 2
             ###########################
             if dimension == 2:
+                print("Scantype: Relaxed. Dim: 2")
                 zerotheory = ash.ZeroTheory()
                 for RCvalue1 in RCvalue1_list:
                     for RCvalue2 in RCvalue2_list:
                         pointcount+=1
                         print("=======================================")
                         print("Surfacepoint: {} / {}".format(pointcount,totalnumpoints))
-                        print("RCvalue1: {} RCvalue2: {}".format(RCvalue1,RCvalue2))
+                        print(f"RCvalue1: {RCvalue1} RCvalue2: {RCvalue2}")
+                        print(f"RC1_indices: {RC1_indices} RC2_indices: {RC2_indices}")
                         print("=======================================")
                         pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
@@ -279,8 +283,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
             # PARALLEL: RELAXED: DIM 1
             ###########################
             if dimension == 1:
-                print("not ready")
-                ashexit()
+                print("Scantype: Relaxed. Dim: 1")
                 for RCvalue1 in RCvalue1_list:
                     pointcount+=1
                     print("=======================================")
@@ -826,9 +829,6 @@ def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraint
     Returns:
         [type]: [description]
     """
-    print("RC1_indices:", RC1_indices)
-    print("RCvalue1:", RCvalue1)
-
     allcon = {}
     if extraconstraints is not None:
         allcon = copy.copy(extraconstraints)

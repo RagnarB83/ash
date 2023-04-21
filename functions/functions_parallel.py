@@ -188,7 +188,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                 #Setting fragment-specific constraints if provided
                 if Opt is True and opt_constraints != None:
                     print("Opt is True and constraints is on")
-                    print("opt_constraints[ij]:", opt_constraints[ij])
+                    print(f"Fragment label: {fragment.label} with opt_constraints[ij]:", opt_constraints[ij])
                     optimizer.set_constraints(opt_constraints[ij],constrainvalue)
                 if printlevel >= 2:
                     print("fragment:", fragment)
