@@ -665,10 +665,11 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
             print("Parallel calculation done!")
             
             print("results:", results)
+            surfacedictionary = results.energies_dict
             #Gathering results in FINAL dictionary.
-            for dictitem in results.energies_dict:
-                print("Surfacepoint: {} Energy: {}".format(dictitem, results.energies_dict[dictitem]))
-                surfacedictionary[dictitem] = results[dictitem]
+            #for dictitem in results.energies_dict:
+            #    print("Surfacepoint: {} Energy: {}".format(dictitem, results.energies_dict[dictitem]))
+            #    surfacedictionary[dictitem] = results[dictitem]
             print("")
             print("surfacedictionary:", surfacedictionary)
 
@@ -704,7 +705,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
                                            Opt=True, optimizer=optimizer)
             print("Parallel calculation done!")
             print("results:", results)
-            surfacedictionary=results.energy_dict
+            surfacedictionary=results.energies_dict
             print("surfacedictionary:", surfacedictionary)
             #Writing dictionary to file
             write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
@@ -883,9 +884,6 @@ def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraint
         if RC2_type not in allcon:
             allcon[RC2_type] = []
         for RC2_indexlist in RC2_indices:
-            print("RC2_indices:", RC2_indices)
-            print("RC2_indexlist:", RC2_indexlist)
-            print("RCvalue2:", RCvalue2)
             RC2.append(RC2_indexlist+[RCvalue2])
         allcon[RC2_type] = allcon[RC2_type] + RC2
         for RC1_indexlist in RC1_indices:
