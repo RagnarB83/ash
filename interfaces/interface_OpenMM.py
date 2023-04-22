@@ -3861,7 +3861,8 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv, md):
 #dihedrals and angles are -pi to pi and 0 to pi
 def setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
                        CV1_type,biaswidth_cv1,CV1_atoms,
-                       CV2_type,biaswidth_cv2,CV2_atoms, 
+                       CV2_type,biaswidth_cv2,CV2_atoms,
+                       distance_mingrid=0.05, distance_maxgrid=0.3,
                        multiplewalkers=False, biasdir='.',
                        walkernum=None, walkerid=None):
     print("Inside setup_plumed_input")
@@ -3895,6 +3896,7 @@ WALKERS_RSTRIDE={strideval}
         plumedinput = f"""
 {cv1atom_line}        
 metad: METAD ARG=CV1 SIGMA={sigma_cv1} GRID_MIN={grid_min1} GRID_MAX={grid_max1} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+{walker_string}
 PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
         """
         return plumedinput
@@ -3930,7 +3932,7 @@ WALKERS_RSTRIDE={strideval}
 {cv1atom_line}
 {cv2atom_line}
 metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN={grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+{walker_string}
 PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
     """
-    
     return plumedinput
