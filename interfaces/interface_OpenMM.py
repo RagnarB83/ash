@@ -3173,7 +3173,14 @@ class OpenMM_MDclass:
                 extforce_energy=3*np.mean(sum(gradient*current_coords*1.88972612546))
                 print("extforce_energy:", extforce_energy)
 
-                simulation.step(1)
+
+
+                #OpenMM metadynamics
+                if metadynamics == True:
+                    print("Now calling OpenMM native metadynamics and taking 1 step")
+                    meta_object.step(simulation, 1)
+                else:
+                    simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
 
@@ -3233,7 +3240,6 @@ class OpenMM_MDclass:
                 print("Regular classical OpenMM MD option chosen.")
                 #This is the fastest option as getState is never called in each loop iteration like above
                 # Running all steps in one go
-                # TODO: If we wanted to support plumed then we would have to do step 1-by-1 instead
                 simulation.step(simulation_steps)
 
         print_line_with_subheader2("OpenMM MD simulation finished!")
@@ -3612,7 +3618,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
               use_plumed=False, plumed_input_string=None,
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, height=1, 
-              biaswidth_cv1=0.5, biaswidth_cv2=0.5,
+              CV1_biaswidth=0.5, CV2_biaswidth=0.5,
               frequency=1, savefrequency=10,
               biasdir='.', multiplewalkers=False, walkernum=None, walkerid=None):
     print_line_with_mainheader("OpenMM metadynamics")
@@ -3663,12 +3669,12 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         native_MTD=True
         if numCVs == 1:
             # Create metadynamics object for 1 CV
-            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,biaswidth_cv1,md)
+            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
             meta_object = openmm_app.Metadynamics(system, [CV1_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
         elif numCVs == 2:
             # Create metadynamics object for 2 CVs
-            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,biaswidth_cv1,md)
-            CV2_bias = create_CV_bias(CV2_type,CV2_atoms,biaswidth_cv2,md)
+            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
+            CV2_bias = create_CV_bias(CV2_type,CV2_atoms,CV2_biaswidth,md)
             meta_object = openmm_app.Metadynamics(system, [CV1_bias, CV2_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
     else:
         print("Setting up Plumed")
@@ -3684,8 +3690,8 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         else:
             print("No plumed_input_string provided. Will create based on user-input")
             plumedinput = setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
-                       CV1_type,biaswidth_cv1,CV1_atoms,
-                       CV2_type,biaswidth_cv2,CV2_atoms,
+                       CV1_type,CV1_biaswidth,CV1_atoms,
+                       CV2_type,CV2_biaswidth,CV2_atoms,
                        multiplewalkers=multiplewalkers, biasdir=biasdir,
                        walkernum=walkernum, walkerid=walkerid)
             writestringtofile(plumedinput,"plumedinput.in")
@@ -3832,15 +3838,15 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv, md):
             ashexit()
         cv = openmm.CustomTorsionForce('theta')
         cv.addTorsion(*CV_atoms)
-        #V_bias = openmm.app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, periodic=True, gridWidth=None)
-        CV_bias = openmm.app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, True)
+        CV_bias = openmm.app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, periodic=True)
+        #CV_bias = openmm.app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, True)
     elif CV_type == "angle":
         if len(CV_atoms) != 3:
             print("Error: CV_atoms list must contain 3 atom indices")
             ashexit()
         cv = openmm.CustomAngleForce('theta')
         cv.addAngle(*CV_atoms)
-        CV_bias = openmm.app.BiasVariable(cv, 0, 180, biaswidth_cv, periodic=False, gridWidth=None)
+        CV_bias = openmm.app.BiasVariable(cv, 0, 180, biaswidth_cv, periodic=False)
     elif CV_type == "distance" or CV_type == "bond":
         if len(CV_atoms) != 2:
             print("Error: CV_atoms list must contain 2 atom indices")
@@ -3848,7 +3854,7 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv, md):
         cv = openmm.CustomBondForce('r')
         cv.addBond(*CV_atoms)
         #NOTE: not sure about distances:
-        CV_bias = openmm.app.BiasVariable(cv, 0, 100, biaswidth_cv, periodic=False, gridWidth=None)
+        CV_bias = openmm.app.BiasVariable(cv, 0, 100, biaswidth_cv, periodic=False)
     else:
         print("unsupported CV_type for native OpenMM metadynamics implementation")
         ashexit()
@@ -3931,7 +3937,7 @@ WALKERS_RSTRIDE={strideval}
     plumedinput = f"""
 {cv1atom_line}
 {cv2atom_line}
-metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN={grid_min1},-{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
+metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN={grid_min1},{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f
 {walker_string}
 PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
     """
