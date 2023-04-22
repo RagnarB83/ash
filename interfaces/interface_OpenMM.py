@@ -2,6 +2,7 @@ import os
 from sys import stdout
 import time
 import numpy as np
+import glob
 
 #import ash
 import ash.constants
@@ -3728,7 +3729,16 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         print("len free energy", len(free_energy))
 
         np.savetxt("MTD_free_energy.txt", free_energy)
+
+        #Manual way (can be called standalone)
+        free_energy_manual = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
+        print("Manual free energy:", free_energy_manual)
+        print()
         print("Attemping to plot:")
+
+        #Save: np.savetxt("MTD_free_energy.txt", free_energy)
+        #Load: free_energy = np.loadtxt("MTD_free_energy.txt")
+        #Plot on screen
         try:
             import matplotlib.pyplot as plot
             plot.imshow(free_energy)
@@ -3942,3 +3952,23 @@ metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN={grid_min1},{gri
 PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
     """
     return plumedinput
+
+
+#Calculate free-energy from total bias array
+def free_energy_from_bias_array(temperature,biasFactor,totalBias):
+    deltaT = temperature*(biasFactor-1)
+    kjpermoleconversion=1
+    free_energy = -((temperature+deltaT)/deltaT)*totalBias*kjpermoleconversion
+    return free_energy
+
+#Calculate free-energy from OpenMM biasfiles
+def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridwith,directory='.'):
+    import glob
+    full_bias=np.zeros((CV1_gridwith,CV2_gridwith))
+    for biasfile in glob.glob(f"{directory}/*.npy"):
+        data = np.load(biasfile)
+        full_bias += data
+    free_energy = free_energy_from_bias_array(temperature,biasfactor,full_bias)
+    #Save: np.savetxt("MTD_free_energy.txt", free_energy)
+    #Load: free_energy = np.loadtxt("MTD_free_energy.txt")
+    return free_energy
