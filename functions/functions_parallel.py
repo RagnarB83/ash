@@ -486,7 +486,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
         #NOTE: jobfunction run method must have a process_id keyword to be compatible. Add as needed?
         parameter_dict["process_id"] = process
         #results.append(pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes))
-        results_dict[process] = pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes)
+        results_dict[process] = pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes).get()
         #results_dict[process] = res.get()
 
     pool.close()
