@@ -2995,7 +2995,7 @@ class OpenMM_MDclass:
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
     def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, metadyn_settings=None, 
-            plumedinput=None, process_id=None):
+            plumedinput=None, process_id=None, workerdir=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
         import openmm
@@ -3011,6 +3011,11 @@ class OpenMM_MDclass:
         # CREATE SIMULATION OBJECT
         ##################################
 
+        #Parallelization handling
+        if workerdir != None:
+            print(f"Workerdir: {workerdir} provided. Entering dir")
+            os.chdir(workerdir)
+
         #If using Plumed then now we add Plumed-force to system from plumedinput string
         if plumedinput != None:
             import openmmplumed
@@ -3021,6 +3026,8 @@ class OpenMM_MDclass:
                 plumedinput=plumedinput.replace("WALKERID",str(process_id))
                 print("plumedinput:", plumedinput)
                 writestringtofile(plumedinput,"plumedinput.in")
+
+
 
             self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
 

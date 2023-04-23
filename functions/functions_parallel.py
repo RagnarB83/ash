@@ -480,16 +480,16 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
                 os.mkdir(workerdir)
             except:
                 pass
-            os.chdir(workerdir)
 
         #Adding process_id to parameter_dict
         #NOTE: jobfunction run method must have a process_id keyword to be compatible. Add as needed?
         parameter_dict["process_id"] = process
+        parameter_dict["workerdir"] = workerdir
         #Calling apply_async. 
         results.append((process,pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes)))
         #Exiting dir
-        if separate_dirs is True:
-            os.chdir('..')
+        #if separate_dirs is True:
+        #    os.chdir('..')
     pool.close()
     pool.join()
     event.set()
