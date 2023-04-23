@@ -474,8 +474,8 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     for process in range(0,numcores):
         print("Starting process:", process)
         if separate_dirs is True:
-            print("separate_dirs option True. Creating separate dir per process")
             workerdir=f"Pooljob_{process}"
+            print(f"separate_dirs option True. Creating dir {workerdir} for this process")
             try:
                 os.mkdir(workerdir)
             except:
@@ -487,7 +487,9 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
         parameter_dict["process_id"] = process
         #Calling apply_async. 
         results.append((process,pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes)))
-
+        #Exiting dir
+        if separate_dirs is True:
+            os.chdir('..')
     pool.close()
     pool.join()
     event.set()
@@ -515,9 +517,6 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     for pr,res in results:
         results_dict[pr] = res.get()
     print("Returning result of Simple_parallel as dict:", results_dict)
-    #Exiting dir
-    if separate_dirs is True:
-        os.chdir('..')
     return results_dict
 
 
