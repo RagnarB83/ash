@@ -3745,7 +3745,8 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         print("len free energy", len(free_energy))
         np.savetxt("MTD_free_energy.txt", free_energy)
         #Manual way (can be called standalone)
-        free_energy_manual = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
+        if numCVs == 2:
+            free_energy_manual = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
         print("Manual free energy:", free_energy_manual)
         print()
         print("Attemping to plot:")
