@@ -435,8 +435,8 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 
 
 #Simple parallel function for cases where no file handling is needed.
-
-def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=False,
+#parameter_dict: dict of input keywords for jobfunction
+def Simple_parallel(jobfunction=None, parameter_dict, numcores=None,printlevel=2, copytheory=False,
                          version='multiprocessing'):
     print()
     print_line_with_subheader1("Simple_parallel function")
@@ -470,7 +470,7 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     results_dict={}
     for process in range(0,numcores):
         print("Starting process:", process)
-        res = pool.apply_async(jobfunction, kwds=dict(), error_callback=Terminate_Pool_processes)
+        res = pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes)
         results_dict[process] = res.get()
 
     pool.close()
