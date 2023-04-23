@@ -494,6 +494,12 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     for i,r in enumerate(results):
         print("Result {} ready: {}".format(i, r.ready()))
         print("r:", r)
+        a = r.get()
+        print("a:", a)
+        b = r.get()[0]
+        print("b:", b)
+        c = r.get()[1]
+        print("c:", c)
 
     return results
 
