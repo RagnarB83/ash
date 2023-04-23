@@ -3317,15 +3317,10 @@ class OpenMM_MDclass:
         # Updating ASH fragment
         newcoords = self.state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
         print("Updating coordinates in ASH fragment.")
-        print("h0")
         self.fragment.coords = newcoords
-        print("h1")
         #Updating positions array also in case we call run again
         self.positions = newcoords
-        
-        print("h2")
         print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
-        print("h3")
         return
 
 #############################
@@ -3755,7 +3750,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                                                         md.run, parameter_dict={"simulation_steps":simulation_steps, 
                                                         "simulation_time":simulation_time, "metadynamics":native_MTD, 
                                                         "metadyn_settings":metadyn_settings, "plumedinput" : plumedinput}, 
-                                                        numcores=numcores, version='multiprocess')
+                                                        numcores=numcores, version='multiprocessing')
     else:
         simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, metadyn_settings=metadyn_settings)
 
