@@ -436,13 +436,16 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 
 #Simple parallel function for cases where no file handling is needed.
 #parameter_dict: dict of input keywords for jobfunction
-def Simple_parallel(jobfunction=None, parameter_dict, numcores=None,printlevel=2, copytheory=False,
+def Simple_parallel(jobfunction=None, parameter_dict=None, numcores=None,printlevel=2, copytheory=False,
                          version='multiprocessing'):
     print()
     print_line_with_subheader1("Simple_parallel function")
     if printlevel >= 2:
         print("Number of CPU cores available: ", numcores)
     
+    if parameter_dict == None:
+        parameter_dict={}
+
     ############
     # POOL
     ###########
