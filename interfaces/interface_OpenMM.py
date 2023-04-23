@@ -3973,8 +3973,7 @@ PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
         ashexit()
     #MULTIPLE WALKERS
     if multiplewalkers is True:
-        walker_string=f"""
-WALKERS_N={walkernum}
+        walker_string=f"""WALKERS_N={walkernum}
 WALKERS_ID={walkerid}
 WALKERS_DIR={biasdir}
 WALKERS_RSTRIDE={strideval}
