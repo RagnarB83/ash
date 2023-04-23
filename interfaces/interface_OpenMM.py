@@ -3939,8 +3939,7 @@ def setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
         print("numCVs: 1")
         if multiplewalkers is True:
             #NOTE: WALKERID set later
-            walker_string=f"""
-WALKERS_N={walkernum}
+            walker_string=f"""WALKERS_N={walkernum}
 WALKERS_ID=WALKERID
 WALKERS_DIR={biasdir}
 WALKERS_RSTRIDE={strideval}
@@ -3974,7 +3973,7 @@ PRINT STRIDE={strideval} ARG=CV1,metad.bias FILE=COLVAR
     #MULTIPLE WALKERS
     if multiplewalkers is True:
         walker_string=f"""WALKERS_N={walkernum}
-WALKERS_ID={walkerid}
+WALKERS_ID=WALKERID
 WALKERS_DIR={biasdir}
 WALKERS_RSTRIDE={strideval}
         """
