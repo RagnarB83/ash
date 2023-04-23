@@ -3019,9 +3019,9 @@ class OpenMM_MDclass:
             import openmmplumed
             print("Plumed active. Adding Plumedforce to system")
             if process_id != None:
-                print("process_id passed to md.run. This must be a multiwalker Plumed MD run")
+                print(f"process_id ({process_id}) passed to md.run. This must be a multiwalker Plumed MD run")
                 print("plumedinput:", plumedinput)
-                plumedinput.replace("WALKERID",str(process_id))
+                plumedinput=plumedinput.replace("WALKERID",str(process_id))
                 print("plumedinput:", plumedinput)
                 writestringtofile(plumedinput,"plumedinput.in")
 
