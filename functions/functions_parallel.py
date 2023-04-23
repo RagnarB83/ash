@@ -473,6 +473,9 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, numcores=None,printle
     results_dict={}
     for process in range(0,numcores):
         print("Starting process:", process)
+        #Adding process_id to parameter_dict
+        #NOTE: jobfunction run method must have a process_id keyword to be compatible. Add as needed?
+        parameter_dict["process_id"] = process
         res = pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes)
         results_dict[process] = res.get()
 
