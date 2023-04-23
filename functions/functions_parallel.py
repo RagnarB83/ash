@@ -436,7 +436,7 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 
 #Simple parallel function for cases where no file handling is needed.
 #parameter_dict: dict of input keywords for jobfunction
-def Simple_parallel(jobfunction=None, parameter_dict=None, numcores=None,printlevel=2, copytheory=False,
+def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=True, numcores=None,printlevel=2, copytheory=False,
                          version='multiprocessing'):
     print()
     print_line_with_subheader1("Simple_parallel function")
@@ -473,6 +473,13 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, numcores=None,printle
     results_dict={}
     for process in range(0,numcores):
         print("Starting process:", process)
+        if separate_dirs is True:
+            workerdir=f"Pooljob_{process}"
+            try:
+                os.mkdir(workerdir)
+            except:
+                pass
+            os.chdir(workerdir)
         #Adding process_id to parameter_dict
         #NOTE: jobfunction run method must have a process_id keyword to be compatible. Add as needed?
         parameter_dict["process_id"] = process
