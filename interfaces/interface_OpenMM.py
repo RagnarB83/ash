@@ -3023,6 +3023,7 @@ class OpenMM_MDclass:
                 print("plumedinput:", plumedinput)
                 plumedinput.replace("WALKERID",str(process_id))
                 print("plumedinput:", plumedinput)
+                writestringtofile(plumedinput,"plumedinput.in")
 
             self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
 
