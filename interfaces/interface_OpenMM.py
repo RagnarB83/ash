@@ -3990,8 +3990,7 @@ WALKERS_RSTRIDE={strideval}
         #...
         #PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
         #"""
-    plumedinput = f"""
-    {cv1atom_line}
+    plumedinput = f"""{cv1atom_line}
     {cv2atom_line}
     metad: METAD ARG=CV1,CV2 SIGMA={sigma_cv1},{sigma_cv2} GRID_MIN={grid_min1},{grid_min2} GRID_MAX={grid_max1},{grid_max2} HEIGHT={height} PACE={paceval} TEMP={temperature} BIASFACTOR={biasfactor} FMT=%14.6f {walker_string}
     PRINT STRIDE={strideval} ARG=CV1,CV2,metad.bias FILE=COLVAR
