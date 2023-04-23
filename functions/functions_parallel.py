@@ -470,9 +470,9 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     # START
     #----------
     if separate_dirs is True:
-        for i in range(0,numcores):
+        for i in range(1,numcores+1):
             workerdir=f"Pooljob_{i}"
-            print(f"separate_dirs option True. Creating dir {workerdir} for this process")
+            print(f"separate_dirs option True. Creating dir {workerdir}")
             try:
                 os.mkdir(workerdir)
             except:
@@ -480,7 +480,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     #Collecting results in a list of tuples from each process
     results=[]
     print("Now looping")
-    for process in range(0,numcores):
+    for process in range(1,numcores+1):
         print("Starting process:", process)
         workerdir=f"Pooljob_{process}"
         #Adding process_id to parameter_dict
@@ -490,9 +490,6 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
         print("parameter_dict:", parameter_dict)
         #Calling apply_async. 
         results.append((process,pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes)))
-        #Exiting dir
-        #if separate_dirs is True:
-        #    os.chdir('..')
     pool.close()
     pool.join()
     event.set()
