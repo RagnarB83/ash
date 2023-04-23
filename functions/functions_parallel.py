@@ -503,7 +503,9 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     #    a = r.get()
     #    print("a:", a)
     #    final_results_dict[]=a
+    print("results:", results)
+    print("results_dict:", results_dict)
 
-    return final_results_dict
+    return results_dict
 
 
