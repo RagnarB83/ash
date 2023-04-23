@@ -3021,7 +3021,7 @@ class OpenMM_MDclass:
             if process_id != None:
                 print("process_id passed to md.run. This must be a multiwalker Plumed MD run")
                 print("plumedinput:", plumedinput)
-                plumedinput.replace("WALKERID",process_id)
+                plumedinput.replace("WALKERID",str(process_id))
                 print("plumedinput:", plumedinput)
 
             self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
