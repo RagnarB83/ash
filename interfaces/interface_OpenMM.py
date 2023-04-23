@@ -3121,6 +3121,7 @@ class OpenMM_MDclass:
                 # Now need to update OpenMM external force with new QM-PC force
                  #The QM_PC gradient (link-atom projected, from QM_MM object) is provided to OpenMM external force
                 CheckpointTime = time.time()
+                print("Updating custom external force")
                 self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,
                                                                self.QM_MM_object.QM_PC_gradient,simulation)
                 print_time_rel(CheckpointTime, modulename='QM/MM openMM: update custom external force', moduleindex=2, 
