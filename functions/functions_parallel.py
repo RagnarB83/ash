@@ -469,8 +469,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     #----------
     # START
     #----------
-
-    #Collecting results in a list from each process
+    #Collecting results in a list of tuples from each process
     results=[]
     for process in range(0,numcores):
         print("Starting process:", process)
@@ -481,12 +480,12 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
             except:
                 pass
             os.chdir(workerdir)
+
         #Adding process_id to parameter_dict
         #NOTE: jobfunction run method must have a process_id keyword to be compatible. Add as needed?
         parameter_dict["process_id"] = process
-        #results.append(pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes))
+        #Calling apply_async. 
         results.append((process,pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes)))
-        #results_dict[process] = res.get()
 
     pool.close()
     pool.join()
@@ -513,7 +512,6 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     # results_dict is a dictionary of a result objection from jobfunction (whatever that may be)
     # where keys are process-IDs
     for pr,res in results:
-        print(f"pr: {pr} res:{res}")
         results_dict[pr] = res.get()
     print("Returning result of Simple_parallel as dict:", results_dict)
     #Exiting dir
