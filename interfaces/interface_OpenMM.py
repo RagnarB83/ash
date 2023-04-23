@@ -3715,9 +3715,12 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
 
     if multiplewalkers is True:
         print(f"Now launching Metadynamics job with {numcores} walkers")
+        #Input parameters passed as dictionary to Simple_parallel
         ash.functions.functions_parallel.Simple_parallel(jobfunction=
-                                                         md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, 
-                               metadynamics=native_MTD, meta_object=meta_object),numcores=numcores, version='multiprocessing')
+                                                         md.run, parameter_dict={"simulation_steps":simulation_steps, 
+                                                         "simulation_time":simulation_time, "metadynamics":native_MTD, 
+                                                         "meta_object":meta_object},
+                                                         numcores=numcores, version='multiprocessing')
     else:
         simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, meta_object=meta_object)
 
