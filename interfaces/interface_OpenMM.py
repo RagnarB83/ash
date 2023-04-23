@@ -3029,11 +3029,11 @@ class OpenMM_MDclass:
         if metadynamics is True:
             #Creating meta_object from settings provided
             if metadyn_settings["numCVs"] == 2:
-                meta_object = openmm.app.Metadynamics(system, [metadyn_settings["CV1_bias"], metadyn_settings["CV2_bias"]], metadyn_settings["temperature"], 
+                meta_object = openmm.app.Metadynamics(self.openmmobject.system, [metadyn_settings["CV1_bias"], metadyn_settings["CV2_bias"]], metadyn_settings["temperature"], 
                                                             metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
                                                             savefrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
             elif metadyn_settings["numCVs"] == 1:
-                meta_object = openmm.app.Metadynamics(system, [metadyn_settings["CV1_bias"]], metadyn_settings["temperature"], 
+                meta_object = openmm.app.Metadynamics(self.openmmobject.system, [metadyn_settings["CV1_bias"]], metadyn_settings["temperature"], 
                                                             metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
                                                             savefrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
 
@@ -3696,9 +3696,6 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                         center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
                         barostat_frequency=barostat_frequency, specialbox=specialbox)
 
-    #Access to system object via md (if QM theory then it was created)
-    system = md.openmmobject.system
-
     #Load OpenMM.app
     import openmm.app as openmm_app
 
@@ -3716,7 +3713,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             # Create metadynamics object for 2 CVs
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
             CV2_bias = create_CV_bias(CV2_type,CV2_atoms,CV2_biaswidth,md)
-            
+            metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, CV2_bias":CV2_bias, "temperature":temperature, "biasfactor":biasfactor, 
+                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasDir":biasdir}
+
     else:
         print("Setting up Plumed")
         #Setting native_MTD Boolean to False and metaobject to None
