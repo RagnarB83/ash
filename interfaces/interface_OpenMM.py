@@ -2994,7 +2994,8 @@ class OpenMM_MDclass:
 
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
-    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, meta_object=None, plumedinput=None, process_id=None):
+    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, plumedinput=None, process_id=None,
+                metadyn_settings=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
         import openmm
@@ -3022,6 +3023,19 @@ class OpenMM_MDclass:
                 writestringtofile(plumedinput,"plumedinput.in")
 
             self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
+
+        #Case native OpenMM metadynamcis
+        print("metadynamics:", metadynamics)
+        if metadynamics is True:
+            #Creating meta_object from settings provided
+            if metadyn_settings["numCV"] == 2:
+                meta_object = openmm.app.Metadynamics(system, [metadyn_settings["CV1_bias"], metadyn_settings["CV2_bias"]], metadyn_settings["temperature"], 
+                                                            metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
+                                                            savefrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
+            elif metadyn_settings["numCV"] == 1:
+                meta_object = openmm.app.Metadynamics(system, [metadyn_settings["CV1_bias"]], metadyn_settings["temperature"], 
+                                                            metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
+                                                            savefrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
 
         #Case: QM MD
         if self.externalqm is True:
@@ -3695,17 +3709,18 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         if numCVs == 1:
             # Create metadynamics object for 1 CV
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
-            meta_object = openmm_app.Metadynamics(system, [CV1_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
+            metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "temperature":temperature, "biasfactor":biasfactor, 
+                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasDir":biasdir}
+            #meta_object = openmm_app.Metadynamics(system, [CV1_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
         elif numCVs == 2:
             # Create metadynamics object for 2 CVs
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
             CV2_bias = create_CV_bias(CV2_type,CV2_atoms,CV2_biaswidth,md)
-            meta_object = openmm_app.Metadynamics(system, [CV1_bias, CV2_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
+            
     else:
         print("Setting up Plumed")
         #Setting native_MTD Boolean to False and metaobject to None
         native_MTD=False
-        meta_object=None
 
         #OPTION to provide the full Plumed input as string instead
         if plumed_input_string != None:
@@ -3738,10 +3753,10 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         ash.functions.functions_parallel.Simple_parallel(jobfunction=
                                                         md.run, parameter_dict={"simulation_steps":simulation_steps, 
                                                         "simulation_time":simulation_time, "metadynamics":native_MTD, 
-                                                        "meta_object":meta_object, "plumedinput" : plumedinput}, 
+                                                        "metadyn_settings":metadyn_settings, "plumedinput" : plumedinput}, 
                                                         numcores=numcores, version='multiprocess')
     else:
-        simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, meta_object=meta_object)
+        simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, metadyn_settings=metadyn_settings)
 
     print("Metadynamics simulation done")
 
