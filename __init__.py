@@ -46,7 +46,7 @@ from ash.modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheo
 
 # Parallel
 import ash.functions.functions_parallel
-from ash.functions.functions_parallel import Job_parallel
+from ash.functions.functions_parallel import Job_parallel, Simple_parallel
 
 Singlepoint_parallel = Job_parallel
 

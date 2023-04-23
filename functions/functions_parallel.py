@@ -14,7 +14,6 @@ from ash.interfaces.interface_geometric_new import GeomeTRICOptimizerClass
 
 ###############################################
 #CHECKS FOR OPENMPI
-#NOTE: Perhaps to be moved to other location
 ###############################################
 def check_OpenMPI():
     #Find mpirun and take path
@@ -35,6 +34,32 @@ def test_OpenMPI():
     mpiversion=out.split()[3].decode()
     print(BC.OKGREEN,"yes",BC.END)
     print("OpenMPI version:", mpiversion)
+
+###############################################
+#MULTIPROCESS/MULTIPROCESSING handling
+###############################################
+def import_mp(version='multiprocessing'):
+    ###############################
+    # Multiprocessing Pool setup
+    ###############################
+    #NOTE: Python 3.8 and higher use spawn in MacOS (ash import problems). Unix/Linux uses fork
+    if version == 'multiprocessing':
+        print("Singlepoint_parallel: Using version: multiprocessing")
+        import multiprocessing as mp
+        from multiprocessing.pool import Pool
+        print("multiprocessing library successfully loaded")
+    #Active fork of multiprocessing that uses dill instead of pickle etc. https://github.com/uqfoundation/multiprocess
+    elif version == 'multiprocess':
+        print("Job_parallel: Using version: multiprocess")
+        try:
+            import multiprocess as mp
+            from multiprocess.pool import Pool
+            print("multiprocess library successfully loaded")
+        except ImportError:
+            print("This requires the multiprocess library to be installed")
+            print("Please install using pip: pip install multiprocess")
+            ashexit()
+    return mp,Pool
 
 
 #########################################
@@ -118,36 +143,14 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     ###############################
     # Multiprocessing Pool setup
     ###############################
-    #NOTE: Python 3.8 and higher use spawn in MacOS (ash import problems). Unix/Linux uses fork
-    if version == 'multiprocessing':
-        print("Singlepoint_parallel: Using version: multiprocessing")
-        import multiprocessing as mp
-        from multiprocessing.pool import Pool
-        print("multiprocessing library successfully loaded")
-    #Active fork of multiprocessing that uses dill instead of pickle etc. https://github.com/uqfoundation/multiprocess
-    elif version == 'multiprocess':
-        print("Job_parallel: Using version: multiprocess")
-        try:
-            import multiprocess as mp
-            from multiprocess.pool import Pool
-            print("multiprocess library successfully loaded")
-        except ImportError:
-            print("This requires the multiprocess library to be installed")
-            print("Please install using pip: pip install multiprocess")
-            ashexit()
+
+    #Import multiprocess/multiprocessing library
+    mp, Pool = import_mp(version=version)
+
     pool = Pool(numcores)
     #Manager
     manager = mp.Manager()
     event = manager.Event()
-
-    #Function to handle exception of child processes
-    def Terminate_Pool_processes(message):
-        print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
-        print(BC.FAIL,"Exception message:", message, BC.END)
-        pool.terminate()
-        event.set()
-        ashexit()
-
 
     ##############################################################
     # Calling Pool for different fragment vs. theory scenarios
@@ -424,3 +427,59 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         return (label,energy,worker_dirname)
 
 
+#Simple parallel function for cases where no file handling is needed.
+
+def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=False,
+                         version='multiprocessing'):
+    print()
+    print_line_with_subheader1("Simple_parallel function")
+    if printlevel >= 2:
+        print("Number of CPU cores available: ", numcores)
+    
+    ############
+    # POOL
+    ###########
+    #Import multiprocess/multiprocessing
+    mp, Pool = import_mp(version=version)
+    pool = Pool(numcores)
+    manager = mp.Manager()
+    event = manager.Event()
+
+    #----------
+    # START
+    #----------
+    results=[]
+    results.append(pool.apply_async(jobfunction, kwds=dict(), error_callback=Terminate_Pool_processes))
+
+    pool.close()
+    pool.join()
+    event.set()
+
+    #While loop that is only terminated if processes finished or exception occurred
+    while True:
+        if printlevel >= 2:
+            print("Pool multiprocessing underway....")
+        time.sleep(3)
+        if event.is_set():
+            if printlevel >= 2:
+                print("Event has been set! Now terminating Pool processes")
+            pool.terminate()
+            break
+
+    ##############################################################
+    # END OF POOL
+    ###############################################################
+    ###########
+    # RESULTS
+    ###########
+    print("result:", results)
+
+    return results
+
+#Function to handle exception of child processes
+def Terminate_Pool_processes(message):
+    print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
+    print(BC.FAIL,"Exception message:", message, BC.END)
+    pool.terminate()
+    event.set()
+    ashexit()

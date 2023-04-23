@@ -19,7 +19,7 @@ from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, char
 from ash.modules.module_singlepoint import Singlepoint
 from ash.interfaces.interface_plumed import MTD_analyze
 from ash.interfaces.interface_mdtraj import MDtraj_import, MDtraj_imagetraj, MDtraj_RMSF
-
+import ash.functions.functions_parallel
 
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=1, topoforce=False, forcefield=None, topology=None,
@@ -3621,7 +3621,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, height=1, 
               CV1_biaswidth=0.5, CV2_biaswidth=0.5,
               frequency=1, savefrequency=10,
-              biasdir='.', multiplewalkers=False, walkernum=None, walkerid=None):
+              biasdir='.', multiplewalkers=False, numcores=1, walkerid=None):
     print_line_with_mainheader("OpenMM metadynamics")
     
     if CV1_atoms == None or CV1_type == None:
@@ -3633,6 +3633,12 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         numCVs=1
     else:
         numCVs=2
+
+    #Parallelization
+    if multiplewalkers is True and numcores == 1 :
+        print("Error: For multiplewalkers=True  you must set numcores to the number of walkers")
+        ashexit()
+    
 
     if use_plumed is True:
         print("Using metadynamics via OpenMM Plumed plugin (use_plumed=True)")
@@ -3694,7 +3700,8 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                        CV1_type,CV1_biaswidth,CV1_atoms,
                        CV2_type,CV2_biaswidth,CV2_atoms,
                        multiplewalkers=multiplewalkers, biasdir=biasdir,
-                       walkernum=walkernum, walkerid=walkerid)
+                       walkernum=numcores,
+                       walkerid=walkerid)
             writestringtofile(plumedinput,"plumedinput.in")
         
         #Add PlumedForce to OpenMM system
@@ -3705,21 +3712,26 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
 
     #Calling md.run with either native option active or false
     print("Now starting metadynamics simulation")
-    if simulation_steps is not None:
-        simulation = md.run(simulation_steps=simulation_steps, metadynamics=native_MTD, meta_object=meta_object)
-    elif simulation_time is not None:
-        simulation = md.run(simulation_time=simulation_time, metadynamics=native_MTD, meta_object=meta_object)
+
+    if multiplewalkers is True:
+        print(f"Now launching Metadynamics job with {numcores} walkers")
+        ash.functions.functions_parallel.Simple_parallel(md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, 
+                               metadynamics=native_MTD, meta_object=meta_object))
     else:
-        print("Either simulation_steps or simulation_time need to be defined (not both).")
-        ashexit()
+        simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, meta_object=meta_object)
+
     print("Metadynamics simulation done")
 
     #Possible data analysis ??
     if use_plumed is False:
         print("Now analyzing data")
-        CV_data = meta_object.getCollectiveVariables(simulation)
-        print("CV_data", CV_data)
-        print("len of CV_data", len(CV_data))
+        try:
+            CV_data = meta_object.getCollectiveVariables(simulation)
+            print("CV_data", CV_data)
+            print("len of CV_data", len(CV_data))
+        except:
+            pass
+
         print("CV1_bias gridWidth:", CV1_bias.gridWidth)
         #print("CV2_bias gridWidth:", CV2_bias.gridWidth)
         print("CV1_bias biasWidth:", CV1_bias.biasWidth)
@@ -3727,9 +3739,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         free_energy = meta_object.getFreeEnergy()
         print("free_energy:", free_energy)
         print("len free energy", len(free_energy))
-
         np.savetxt("MTD_free_energy.txt", free_energy)
-
         #Manual way (can be called standalone)
         free_energy_manual = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
         print("Manual free energy:", free_energy_manual)
@@ -3879,8 +3889,8 @@ def setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
                        CV1_type,biaswidth_cv1,CV1_atoms,
                        CV2_type,biaswidth_cv2,CV2_atoms,
                        distance_mingrid=0.05, distance_maxgrid=0.3,
-                       multiplewalkers=False, biasdir='.',
-                       walkernum=None, walkerid=None):
+                       multiplewalkers=False, biasdir='.', walkernum=None,
+                       walkerid=None):
     print("Inside setup_plumed_input")
     strideval=savefrequency #allow different ?
     paceval=savefrequency # allow different ?
