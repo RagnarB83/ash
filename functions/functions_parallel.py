@@ -465,13 +465,12 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     #----------
     # START
     #----------
-    results=[]
+
+    #Collecting results in a dict from each process
     results_dict={}
     for process in range(0,numcores):
         print("Starting process:", process)
         res = pool.apply_async(jobfunction, kwds=dict(), error_callback=Terminate_Pool_processes)
-        print("res:", res)                       
-        results.append((process,res.get()))
         results_dict[process] = res.get()
 
     pool.close()
@@ -495,17 +494,9 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     ###########
     # RESULTS
     ###########
-    #Since we don't really know what the result from each process is we will just return a dictionary
-    #final_results_dict={}
-    #for i,r in enumerate(results):
-    #    print("Result {} ready: {}".format(i, r.ready()))
-    #    print("r:", r)
-    #    a = r.get()
-    #    print("a:", a)
-    #    final_results_dict[]=a
-    print("results:", results)
-    print("results_dict:", results_dict)
-
+    # results_dict is a dictionary of a result objection from jobfunction (whatever that may be)
+    # where keys are process-IDs
+    print("Returning result of Simple_parallel as dict:", results_dict)
     return results_dict
 
 
