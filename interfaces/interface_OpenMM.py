@@ -3748,18 +3748,21 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         if numCVs == 2:
             free_energy_manual = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
             print("Manual free energy:", free_energy_manual)
-        
-        print()
-        print("Attemping to plot:")
-        #Save: np.savetxt("MTD_free_energy.txt", free_energy)
-        #Load: free_energy = np.loadtxt("MTD_free_energy.txt")
-        #Plot on screen
-        try:
-            import matplotlib.pyplot as plot
-            plot.imshow(free_energy)
-            plot.show()
-        except ModuleNotFoundError:
-            print("Matplotlib module not available. Please install first")
+            print()
+            print("Attemping to plot:")
+            #Save: np.savetxt("MTD_free_energy.txt", free_energy)
+            #Load: free_energy = np.loadtxt("MTD_free_energy.txt")
+            #Plot on screen
+            
+            try:
+                import matplotlib.pyplot as plot
+                plot.imshow(free_energy)
+                plot.show()
+            except ModuleNotFoundError:
+                print("Matplotlib module not available. Please install first")
+        elif numCVs == 2:
+            print("plot for numcvs=1 not ready")
+            return
 
     else:
         path_to_plumed=os.path.dirname(os.path.dirname(os.path.dirname(openmmplumed.mm.pluginLoadedLibNames[0])))
