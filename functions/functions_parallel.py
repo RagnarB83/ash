@@ -469,22 +469,25 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     #----------
     # START
     #----------
-    #Collecting results in a list of tuples from each process
-    results=[]
-    for process in range(0,numcores):
-        print("Starting process:", process)
-        if separate_dirs is True:
-            workerdir=f"Pooljob_{process}"
+    if separate_dirs is True:
+        for i in range(0,numcores+1)
+            workerdir=f"Pooljob_{i}"
             print(f"separate_dirs option True. Creating dir {workerdir} for this process")
             try:
                 os.mkdir(workerdir)
             except:
                 pass
-
+    #Collecting results in a list of tuples from each process
+    results=[]
+    print("Now looping")
+    for process in range(0,numcores):
+        print("Starting process:", process)
+        workerdir=f"Pooljob_{process}"
         #Adding process_id to parameter_dict
         #NOTE: jobfunction run method must have a process_id keyword to be compatible. Add as needed?
         parameter_dict["process_id"] = process
         parameter_dict["workerdir"] = workerdir
+        print("parameter_dict:", parameter_dict)
         #Calling apply_async. 
         results.append((process,pool.apply_async(jobfunction, kwds=parameter_dict, error_callback=Terminate_Pool_processes)))
         #Exiting dir
