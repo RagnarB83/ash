@@ -44,7 +44,7 @@ def import_mp(version='multiprocessing'):
     ###############################
     #NOTE: Python 3.8 and higher use spawn in MacOS (ash import problems). Unix/Linux uses fork
     if version == 'multiprocessing':
-        print("Singlepoint_parallel: Using version: multiprocessing")
+        print("Using version: multiprocessing")
         import multiprocessing as mp
         from multiprocessing.pool import Pool
         print("multiprocessing library successfully loaded")
@@ -147,6 +147,13 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     #Import multiprocess/multiprocessing library
     mp, Pool = import_mp(version=version)
 
+    #Function to handle exception of child processes
+    def Terminate_Pool_processes(message): 
+        print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
+        print(BC.FAIL,"Exception message:", message, BC.END)
+        pool.terminate()
+        event.set()
+        ashexit()
     pool = Pool(numcores)
     #Manager
     manager = mp.Manager()
@@ -445,6 +452,14 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     manager = mp.Manager()
     event = manager.Event()
 
+    #Function to handle exception of child processes
+    def Terminate_Pool_processes(message): 
+        print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
+        print(BC.FAIL,"Exception message:", message, BC.END)
+        pool.terminate()
+        event.set()
+        ashexit()
+
     #----------
     # START
     #----------
@@ -476,10 +491,4 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
 
     return results
 
-#Function to handle exception of child processes
-def Terminate_Pool_processes(message):
-    print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
-    print(BC.FAIL,"Exception message:", message, BC.END)
-    pool.terminate()
-    event.set()
-    ashexit()
+
