@@ -2904,10 +2904,6 @@ class OpenMM_MDclass:
             print("Creating new OpenMM custom external force for Plumed.")
             self.plumedcustomforce = self.openmmobject.add_custom_external_force()
 
-        #QM MD
-        if self.externalqm is True:
-            print("Creating new OpenMM custom external force for external QM theory.")
-            self.qmcustomforce = self.openmmobject.add_custom_external_force()
         # QM/MM MD
         if self.QM_MM_object is not None:
             print("QM_MM_object provided. Switching to QM/MM loop.")
@@ -3027,6 +3023,11 @@ class OpenMM_MDclass:
 
             self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
 
+        #Case: QM MD
+        if self.externalqm is True:
+            print("Creating new OpenMM custom external force for external QM theory.")
+            self.qmcustomforce = self.openmmobject.add_custom_external_force()
+
         #Creating simulation object
         simulation = self.openmmobject.create_simulation()
         print("Simulation created.")
@@ -3121,7 +3122,6 @@ class OpenMM_MDclass:
                 # Now need to update OpenMM external force with new QM-PC force
                  #The QM_PC gradient (link-atom projected, from QM_MM object) is provided to OpenMM external force
                 CheckpointTime = time.time()
-                print("Updating custom external force")
                 self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,
                                                                self.QM_MM_object.QM_PC_gradient,simulation)
                 print_time_rel(CheckpointTime, modulename='QM/MM openMM: update custom external force', moduleindex=2, 
@@ -3182,8 +3182,7 @@ class OpenMM_MDclass:
                 energy,gradient=self.qmtheory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True, charge=self.charge, mult=self.mult)
                 print("energy:", energy)
                 print_time_rel(checkpoint, modulename="QM run", moduleindex=2)
-
-
+                print("Now here. updating custom")
                 self.openmmobject.update_custom_external_force(self.qmcustomforce,gradient,simulation)
 
                 #Calculate energy associated with external force so that we can subtract it later
