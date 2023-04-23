@@ -3764,25 +3764,26 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     #Possible data analysis ??
     if use_plumed is False:
         print("Now analyzing data")
-        try:
-            CV_data = meta_object.getCollectiveVariables(simulation)
-            print("CV_data", CV_data)
-            print("len of CV_data", len(CV_data))
-        except:
-            pass
-
+        #try:
+        #    CV_data = meta_object.getCollectiveVariables(simulation)
+        #    print("CV_data", CV_data)
+        #    print("len of CV_data", len(CV_data))
+        #except:
+        #    pass
         print("CV1_bias gridWidth:", CV1_bias.gridWidth)
         #print("CV2_bias gridWidth:", CV2_bias.gridWidth)
         print("CV1_bias biasWidth:", CV1_bias.biasWidth)
         #print("CV2_bias biasWidth:", CV2_bias.biasWidth)
-        free_energy = meta_object.getFreeEnergy()
-        print("free_energy:", free_energy)
-        print("len free energy", len(free_energy))
-        np.savetxt("MTD_free_energy.txt", free_energy)
+        #Disabling because we can not access if multiwalker is true:
+        #free_energy = meta_object.getFreeEnergy()
+        #print("free_energy:", free_energy)
+        #print("len free energy", len(free_energy))
+        #np.savetxt("MTD_free_energy.txt", free_energy)
         #Manual way (can be called standalone)
         if numCVs == 2:
-            free_energy_manual = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
-            print("Manual free energy:", free_energy_manual)
+            free_energy = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
+            np.savetxt("MTD_free_energy.txt", free_energy)
+            print("Manual free energy:", free_energy)
             print()
             print("Attemping to plot:")
             #Save: np.savetxt("MTD_free_energy.txt", free_energy)
