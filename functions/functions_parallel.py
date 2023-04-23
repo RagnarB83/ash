@@ -448,6 +448,8 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     ###########
     #Import multiprocess/multiprocessing
     mp, Pool = import_mp(version=version)
+    #Creating Pool
+    print(f"Pool of {numcores} created")
     pool = Pool(numcores)
     manager = mp.Manager()
     event = manager.Event()
@@ -487,7 +489,7 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     ###########
     # RESULTS
     ###########
-    print("result:", results)
+    print("results:", results)
 
     return results
 
