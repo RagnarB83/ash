@@ -510,6 +510,9 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=True, n
     # results_dict is a dictionary of a result objection from jobfunction (whatever that may be)
     # where keys are process-IDs
     print("Returning result of Simple_parallel as dict:", results_dict)
+    #Exiting dir
+    if separate_dirs is True:
+        os.chdir(workerdir)
     return results_dict
 
 
