@@ -3317,13 +3317,15 @@ class OpenMM_MDclass:
         # Updating ASH fragment
         newcoords = self.state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
         print("Updating coordinates in ASH fragment.")
+        print("h0")
         self.fragment.coords = newcoords
+        print("h1")
         #Updating positions array also in case we call run again
         self.positions = newcoords
         
-
+        print("h2")
         print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
-
+        print("h3")
         return simulation
 
 #############################
