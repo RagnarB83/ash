@@ -70,8 +70,6 @@ class xTBTheory:
             except:
                 print("Problem importing xTB library. Have you installed : conda install -c conda-forge xtb-python  ?")
                 ashexit(code=9)
-            self.Calculator=Calculator
-            self.Param=Param
 
             # Creating variable and setting to None. Replaced by run
             self.calcobject=None
@@ -254,16 +252,7 @@ class xTBTheory:
                 elems=None, Grad=False, PC=False, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
 
-
-        # #Verbosity change. May be changed in run (e.g. by Numfreq)
-        # if printlevel != None:
-        #     if printlevel< 2:
-        #         self.verbosity=0
-        #         print("setting verb to 0")
-        #     else:
-        #         self.verbosity=1
-        # else:
-        #     self.verbosity=self.printlevel-1
+        from xtb.interface import Calculator, Param
 
         if MMcharges is None:
             MMcharges=[]
@@ -376,20 +365,20 @@ class xTBTheory:
             #Choosing method
             if self.xtbmethod == 'GFN2':
                 print("Using GFN2 parameterization")
-                param_method=self.Param.GFN2xTB
+                param_method=Param.GFN2xTB
             elif self.xtbmethod == 'GFN1':
                 print("Using GFN1 parameterization")
-                param_method=self.Param.GFN1xTB
+                param_method=Param.GFN1xTB
             elif self.xtbmethod == 'GFN0':
                 print("Using GFN0 parameterization")
-                param_method=self.Param.GFN0xTB
+                param_method=Param.GFN0xTB
             elif self.xtbmethod == 'GFNFF':
                 print("Using GFNFF parameterization")
                 print("warning: experimental")
-                param_method=self.Param.GFNFF
+                param_method=Param.GFNFF
             elif self.xtbmethod == 'IPEA':
                 print("Using IPEA parameterization")
-                param_method=self.Param.IPEAxTB
+                param_method=Param.IPEAxTB
             else:
                 print("unknown xtbmethod")
                 ashexit()
@@ -402,7 +391,7 @@ class xTBTheory:
             #first run call: create new object containing coordinates and settings
             if self.calcobject == None:
                 print("Creating new xTB calc object")
-                self.calcobject = self.Calculator(param_method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
+                self.calcobject = Calculator(param_method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
                 self.calcobject.set_verbosity(self.verbosity)
                 self.calcobject.set_electronic_temperature(self.electronic_temp)
                 self.calcobject.set_max_iterations(self.maxiter)
@@ -657,7 +646,10 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
             print("Something went wrong with xTB. ")
             #TODO: Check for SCF convergence?
             print("Removing xtbrestart MO-file and trying to run again")
-            os.remove("xtbrestart")
+            try:
+                os.remove("xtbrestart")
+            except FileNotFoundError:
+                print("Nof xtbrestart file present")
             shutil.copyfile(basename+'.out', basename+'_firstrun.out')
             try:
                 with open(basename+'.out', 'w') as ofile:
