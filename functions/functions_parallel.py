@@ -474,6 +474,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     for process in range(0,numcores):
         print("Starting process:", process)
         if separate_dirs is True:
+            print("separate_dirs option True. Creating separate dir per process")
             workerdir=f"Pooljob_{process}"
             try:
                 os.mkdir(workerdir)
@@ -516,7 +517,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     print("Returning result of Simple_parallel as dict:", results_dict)
     #Exiting dir
     if separate_dirs is True:
-        os.chdir(workerdir)
+        os.chdir('..')
     return results_dict
 
 
