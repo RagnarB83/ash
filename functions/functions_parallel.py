@@ -436,7 +436,8 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 
 #Simple parallel function for cases where no file handling is needed.
 #parameter_dict: dict of input keywords for jobfunction
-def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=True, numcores=None,printlevel=2, copytheory=False,
+#separate_dirs: creates and enters separate dirs per process
+def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, numcores=None,printlevel=2, copytheory=False,
                          version='multiprocessing'):
     print()
     print_line_with_subheader1("Simple_parallel function")
