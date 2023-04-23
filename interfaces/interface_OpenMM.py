@@ -3326,7 +3326,7 @@ class OpenMM_MDclass:
         print("h2")
         print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
         print("h3")
-        return simulation
+        return
 
 #############################
 #  Multi-step MD protocols  #
