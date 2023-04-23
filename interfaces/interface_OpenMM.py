@@ -3713,7 +3713,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             # Create metadynamics object for 2 CVs
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
             CV2_bias = create_CV_bias(CV2_type,CV2_atoms,CV2_biaswidth,md)
-            metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, CV2_bias":CV2_bias, "temperature":temperature, "biasfactor":biasfactor, 
+            metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "CV2_bias":CV2_bias, "temperature":temperature, "biasfactor":biasfactor, 
                                 "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasDir":biasdir}
 
     else:
