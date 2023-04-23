@@ -2996,8 +2996,9 @@ class OpenMM_MDclass:
                 mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=self.enforcePeriodicBox))
 
-    # Simulation loop
-    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, meta_object=None, plumedinput=None):
+    # Simulation loop.
+    #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
+    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, meta_object=None, plumedinput=None, process_id=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
         import openmm
@@ -3015,8 +3016,14 @@ class OpenMM_MDclass:
 
         #If using Plumed then now we add Plumed-force to system from plumedinput string
         if plumedinput != None:
-            print("Plumed active. Adding Plumedforce to system")
             import openmmplumed
+            print("Plumed active. Adding Plumedforce to system")
+            if process_id != None:
+                print("process_id passed to md.run. This must be a multiwalker Plumed MD run")
+                print("plumedinput:", plumedinput)
+                plumedinput.replace("WALKERID",process_id)
+                print("plumedinput:", plumedinput)
+
             self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
 
         #Creating simulation object
@@ -3930,9 +3937,10 @@ def setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
     if numCVs == 1:
         print("numCVs: 1")
         if multiplewalkers is True:
+            #NOTE: WALKERID set later
             walker_string=f"""
 WALKERS_N={walkernum}
-WALKERS_ID={walkerid}
+WALKERS_ID=WALKERID
 WALKERS_DIR={biasdir}
 WALKERS_RSTRIDE={strideval}
             """
