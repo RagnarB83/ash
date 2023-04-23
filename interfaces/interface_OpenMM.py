@@ -2997,7 +2997,7 @@ class OpenMM_MDclass:
                                               enforcePeriodicBox=self.enforcePeriodicBox))
 
     # Simulation loop
-    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, meta_object=None):
+    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, meta_object=None, plumedinput=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
         import openmm
@@ -3012,6 +3012,13 @@ class OpenMM_MDclass:
         ##################################
         # CREATE SIMULATION OBJECT
         ##################################
+
+        #If using Plumed then now we add Plumed-force to system from plumedinput string
+        if plumedinput != None:
+            print("Plumed active. Adding Plumedforce to system")
+            import openmmplumed
+            self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
+
         #Creating simulation object
         simulation = self.openmmobject.create_simulation()
         print("Simulation created.")
@@ -3123,6 +3130,7 @@ class OpenMM_MDclass:
                 # After MM step, grab coordinates and forces
                 if self.plumed_object is not None:
                     print("Plumed active. Untested. Hopefully works.")
+                    ashexit()
                     #Necessary to call again
                     current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
                     current_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
@@ -3190,6 +3198,7 @@ class OpenMM_MDclass:
                 # After MM step, grab coordinates and forces
                 if self.plumed_object is not None:
                     print("Plumed active. Untested. Hopefully works.")
+                    ashexit()
                     #Necessary to call again
                     current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
                     #Keep coords as default OpenMM nm and forces ad kJ/mol/nm. Avoid conversion
@@ -3674,6 +3683,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     #Setting up collective variables for native case or plumed case
     if use_plumed is False:
         native_MTD=True
+        plumedinput=None
         if numCVs == 1:
             # Create metadynamics object for 1 CV
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
@@ -3693,6 +3703,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         if plumed_input_string != None:
             print("plumed_input_string provided. Will read all options from this string (make sure to provide atom indices in 1-based indexing)")
             writestringtofile(plumed_input_string,"plumedinput.in")
+            plumedinput=plumed_input_string
         #CREATE Plumed input strings based on provided keyword options
         else:
             print("No plumed_input_string provided. Will create based on user-input")
@@ -3704,11 +3715,11 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                        walkerid=walkerid)
             writestringtofile(plumedinput,"plumedinput.in")
         
-        #Add PlumedForce to OpenMM system
-        system.addForce(openmmplumed.PlumedForce(plumedinput))
+        #NOTE: Ading PlumedForce to OpenMM system now done inside md.run instead
 
     #Updating simulation context as the CustomCVForce needs to be added
-    md.openmmobject.create_simulation()
+    #Unnecessary as md.run will create_simulation
+    #md.openmmobject.create_simulation()
 
     #Calling md.run with either native option active or false
     print("Now starting metadynamics simulation")
@@ -3717,10 +3728,10 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         print(f"Now launching Metadynamics job with {numcores} walkers")
         #Input parameters passed as dictionary to Simple_parallel
         ash.functions.functions_parallel.Simple_parallel(jobfunction=
-                                                         md.run, parameter_dict={"simulation_steps":simulation_steps, 
-                                                         "simulation_time":simulation_time, "metadynamics":native_MTD, 
-                                                         "meta_object":meta_object},
-                                                         numcores=numcores, version='multiprocess')
+                                                        md.run, parameter_dict={"simulation_steps":simulation_steps, 
+                                                        "simulation_time":simulation_time, "metadynamics":native_MTD, 
+                                                        "meta_object":meta_object, "plumedinput" : plumedinput}, 
+                                                        numcores=numcores, version='multiprocess')
     else:
         simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, meta_object=meta_object)
 
