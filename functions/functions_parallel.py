@@ -466,7 +466,9 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     # START
     #----------
     results=[]
-    results.append(pool.apply_async(jobfunction, kwds=dict(), error_callback=Terminate_Pool_processes))
+    for process in range(0,numcores):
+        print("Starting process:", process)
+        results.append(pool.apply_async(jobfunction, kwds=dict(), error_callback=Terminate_Pool_processes))
 
     pool.close()
     pool.join()
@@ -489,7 +491,8 @@ def Simple_parallel(jobfunction=None, numcores=None,printlevel=2, copytheory=Fal
     ###########
     # RESULTS
     ###########
-    print("results:", results)
+    for i,r in enumerate(results):
+        print("Result {} ready: {}".format(i, r.ready()))
 
     return results
 
