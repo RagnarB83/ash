@@ -3028,11 +3028,11 @@ class OpenMM_MDclass:
         print("metadynamics:", metadynamics)
         if metadynamics is True:
             #Creating meta_object from settings provided
-            if metadyn_settings["numCV"] == 2:
+            if metadyn_settings["numCVs"] == 2:
                 meta_object = openmm.app.Metadynamics(system, [metadyn_settings["CV1_bias"], metadyn_settings["CV2_bias"]], metadyn_settings["temperature"], 
                                                             metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
                                                             savefrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
-            elif metadyn_settings["numCV"] == 1:
+            elif metadyn_settings["numCVs"] == 1:
                 meta_object = openmm.app.Metadynamics(system, [metadyn_settings["CV1_bias"]], metadyn_settings["temperature"], 
                                                             metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
                                                             savefrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
