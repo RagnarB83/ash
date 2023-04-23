@@ -3031,11 +3031,11 @@ class OpenMM_MDclass:
             if metadyn_settings["numCVs"] == 2:
                 meta_object = openmm.app.Metadynamics(self.openmmobject.system, [metadyn_settings["CV1_bias"], metadyn_settings["CV2_bias"]], metadyn_settings["temperature"], 
                                                             metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
-                                                            savefrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasDir"])
+                                                            saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasDir"])
             elif metadyn_settings["numCVs"] == 1:
                 meta_object = openmm.app.Metadynamics(self.openmmobject.system, [metadyn_settings["CV1_bias"]], metadyn_settings["temperature"], 
                                                             metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
-                                                            savefrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasDir"])
+                                                            saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasDir"])
 
         #Case: QM MD
         if self.externalqm is True:
