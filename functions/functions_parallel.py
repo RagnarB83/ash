@@ -470,7 +470,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     # START
     #----------
     if separate_dirs is True:
-        for i in range(0,numcores+1):
+        for i in range(0,numcores):
             workerdir=f"Pooljob_{i}"
             print(f"separate_dirs option True. Creating dir {workerdir} for this process")
             try:
