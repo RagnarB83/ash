@@ -3022,13 +3022,13 @@ class OpenMM_MDclass:
             import openmmplumed
             print("Plumed active. Adding Plumedforce to system")
             if process_id != None:
-                print(f"process_id ({process_id}) passed to md.run. This must be a multiwalker Plumed MD run")
+                print(f"process_id ({process_id}) passed to md.run. Assuming multiwalker Plumed MD run")
                 print("plumedinput:", plumedinput)
                 plumedinput=plumedinput.replace("WALKERID",str(process_id))
                 print("plumedinput:", plumedinput)
                 writestringtofile(plumedinput,"plumedinput.in")
-
-
+        if process_id == None:
+            process_id=0
 
             self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
 
@@ -3225,11 +3225,11 @@ class OpenMM_MDclass:
                         print("MTD: Writing current collective variables to disk")
                         current_cv = meta_object.getCollectiveVariables(simulation)
                         currtime = step*self.timestep #Time in ps
-                        with open('collective_variables', 'a') as f:
+                        with open(f'{metadyn_settings["biasDir"]}/colvar_walker{process_id}', 'a') as f:
                             if metadyn_settings["numCVs"] == 2:
-                                f.write(f"{currtime} {current_cv[0]} {current_cv[1]}")
+                                f.write(f"{currtime} {current_cv[0]} {current_cv[1]}\n")
                             elif metadyn_settings["numCVs"] == 1:
-                                f.write(f"{currtime} {current_cv[0]} ")
+                                f.write(f"{currtime} {current_cv[0]}\n")
                 else:
                     simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
