@@ -20,6 +20,7 @@ from ash.modules.module_singlepoint import Singlepoint
 from ash.interfaces.interface_plumed import MTD_analyze
 from ash.interfaces.interface_mdtraj import MDtraj_import, MDtraj_imagetraj, MDtraj_RMSF
 import ash.functions.functions_parallel
+import ash.modules.module_plotting
 
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=1, topoforce=False, forcefield=None, topology=None,
@@ -3800,8 +3801,21 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                 plot.show()
             except ModuleNotFoundError:
                 print("Matplotlib module not available. Please install first")
-        elif numCVs == 2:
-            print("plot for numcvs=1 not ready")
+        elif numCVs == 1:
+            conversionfactor=4.184 #kJ/mol to kcal/mol
+            free_energy = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,None,directory=biasdir)
+            xvalues = #Convert from grid to actual unit
+            CVlabel="X-axis (unit)"
+            y_axislabel="Energy (kcal(/mol))"
+            np.savetxt("MTD_free_energy.txt", free_energy)
+
+            #Relative energy
+            rel_free_energy = (free_energy-min(free_energy))/conversionfactor
+
+            eplot = ash.modules.module_plotting.ASH_plot("Plotname", num_subplots=1, 
+                                                         x_axislabel=CVlabel, y_axislabel=y_axislabel)
+            eplot.addseries(0, x_list=xvalues, y_list=rel_free_energy, color='blue', line=True, scatter=False, legend=False)
+            eplot.savefig('MTD.png', imageformat='png', dpi=200)
             return
 
     else:
