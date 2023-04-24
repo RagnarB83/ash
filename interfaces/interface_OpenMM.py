@@ -3796,7 +3796,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             np.savetxt("MTD_free_energy.txt", free_energy)
             print("Manual free energy:", free_energy)
             print("CV1_bias:", CV1_bias)
-            print("CV1_bias dict:"CV1_bias.__dict__)
+            print("CV1_bias dict:",CV1_bias.__dict__)
             print("CV1_bias.minValue:", CV1_bias.minValue)
             print("CV1_bias.maxValue", CV1_bias.maxValue)
             print("CV1_bias.gridWidth", CV1_bias.gridWidth)
