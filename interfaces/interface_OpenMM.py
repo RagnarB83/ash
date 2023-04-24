@@ -3786,7 +3786,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         #np.savetxt("MTD_free_energy.txt", free_energy)
         #Manual way (can be called standalone)
         if numCVs == 2:
-            free_energy = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
+            free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
             np.savetxt("MTD_free_energy.txt", free_energy)
             print("Manual free energy:", free_energy)
             print()
@@ -3803,7 +3803,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                 print("Matplotlib module not available. Please install first")
         elif numCVs == 1:
             conversionfactor=4.184 #kJ/mol to kcal/mol
-            free_energy = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,None,directory=biasdir)
+            free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,None,directory=biasdir)
             xvalues = #Convert from grid to actual unit
             CVlabel="X-axis (unit)"
             y_axislabel="Energy (kcal(/mol))"
@@ -4029,14 +4029,29 @@ def free_energy_from_bias_array(temperature,biasFactor,totalBias):
 #Calculate free-energy from OpenMM biasfiles
 def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridwith,directory='.'):
     import glob
+    #Checking gridwiths
     if CV2_gridwith == None:
         full_bias=np.zeros((CV1_gridwith))
     else:
 	    full_bias=np.zeros((CV1_gridwith,CV2_gridwith))
+    
+    #Looping over bias-files
+    list_of_biases=[]
     for biasfile in glob.glob(f"{directory}/*.npy"):
         data = np.load(biasfile)
         full_bias += data
+        list_of_biases.append(data)
+    
+    #Get final free energy (sum of all)
     free_energy = free_energy_from_bias_array(temperature,biasfactor,full_bias)
+    
+    #Get free-energy per biasfile
+    list_of_free_energies=[]
+    for l in list_of_biases:
+        fe = free_energy_from_bias_array(temperature,biasfactor,l)
+        list_of_free_energies.append(fe)
     #Save: np.savetxt("MTD_free_energy.txt", free_energy)
     #Load: free_energy = np.loadtxt("MTD_free_energy.txt")
-    return free_energy
+
+    #Return final free_energy array and also list of free-energy-arrays for each biasfile
+    return free_energy,list_of_free_energies
