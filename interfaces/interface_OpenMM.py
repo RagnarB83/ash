@@ -3795,6 +3795,17 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
             np.savetxt("MTD_free_energy.txt", free_energy)
             print("Manual free energy:", free_energy)
+            print("CV1_bias:", CV1_bias)
+            print("CV1_bias dict:"CV1_bias.__dict__)
+            print("CV1_bias.minValue:", CV1_bias.minValue)
+            print("CV1_bias.maxValue", CV1_bias.maxValue)
+            print("CV1_bias.gridWidth", CV1_bias.gridWidth)
+            print()
+            print("CV2_bias:", CV2_bias)
+            print("CV2_bias dict:",CV2_bias.__dict__)
+            print("CV2_bias.minValue:", CV2_bias.minValue)
+            print("CV2_bias.maxValue", CV2_bias.maxValue)
+            print("CV2_bias.gridWidth", CV2_bias.gridWidth)
             print()
             print("Attemping to plot:")
             #Plot on screen
@@ -3811,6 +3822,11 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,None,directory=biasdir)
             np.savetxt("MTD_free_energy.txt", free_energy)
 
+            print("CV1_bias:", CV1_bias)
+            print("CV1_bias dict:",CV1_bias.__dict__)
+            print("CV1_bias.minValue:", CV1_bias.minValue)
+            print("CV1_bias.maxValue", CV1_bias.maxValue)
+            print("CV1_bias.gridWidth", CV1_bias.gridWidth)
             #X-values TODO
             xvalues = list(range(0,CV1_bias.gridWidth)) #Convert from grid to actual unit
 
