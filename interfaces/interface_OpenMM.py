@@ -3224,7 +3224,7 @@ class OpenMM_MDclass:
                         print("MTD: Writing current collective variables to disk")
                         current_cv = meta_object.getCollectiveVariables(simulation)
                         currtime = step*self.timestep #Time in ps
-                        with open(f'{metadyn_settings["biasDir"]}/colvar_walker{process_id}', 'a') as f:
+                        with open(f'colvar', 'a') as f:
                             if metadyn_settings["numCVs"] == 2:
                                 f.write(f"{currtime} {current_cv[0]} {current_cv[1]}\n")
                             elif metadyn_settings["numCVs"] == 1:
