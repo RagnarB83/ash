@@ -3218,6 +3218,18 @@ class OpenMM_MDclass:
                 if metadynamics == True:
                     print("Now calling OpenMM native metadynamics and taking 1 step")
                     meta_object.step(simulation, 1)
+
+                    #getCollectiveVariables
+                    print("metadyn_freq ", metadyn_settings["saveFrequency"]*metadyn_settings["frequency"])
+                    if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
+                        print("MTD: Writing current collective variables to disk")
+                        current_cv = meta_object.getCollectiveVariables()
+                        currtime = step*self.timestep #Time in ps
+                        with open('collective_variables', 'a') as f:
+                            if metadyn_settings["numCVs"] == 2:
+                                f.write(f"{currtime} {current_cv[0]} {current_cv[1]}")
+                            elif metadyn_settings["numCVs"] == 1:
+                                f.write(f"{currtime} {current_cv[0]} ")
                 else:
                     simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
@@ -3778,12 +3790,6 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         print("CV1_bias gridWidth:", CV1_bias.gridWidth)
         #print("CV2_bias gridWidth:", CV2_bias.gridWidth)
         print("CV1_bias biasWidth:", CV1_bias.biasWidth)
-        #print("CV2_bias biasWidth:", CV2_bias.biasWidth)
-        #Disabling because we can not access if multiwalker is true:
-        #free_energy = meta_object.getFreeEnergy()
-        #print("free_energy:", free_energy)
-        #print("len free energy", len(free_energy))
-        #np.savetxt("MTD_free_energy.txt", free_energy)
         #Manual way (can be called standalone)
         if numCVs == 2:
             free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
@@ -3791,31 +3797,40 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             print("Manual free energy:", free_energy)
             print()
             print("Attemping to plot:")
-            #Save: np.savetxt("MTD_free_energy.txt", free_energy)
-            #Load: free_energy = np.loadtxt("MTD_free_energy.txt")
             #Plot on screen
-            
+            #TODO: Relative energies and grid stuff
             try:
                 import matplotlib.pyplot as plot
                 plot.imshow(free_energy)
-                plot.show()
+                #plot.show()
+                plot.savefig('MTD', format='png', dpi=200)
             except ModuleNotFoundError:
                 print("Matplotlib module not available. Please install first")
         elif numCVs == 1:
             conversionfactor=4.184 #kJ/mol to kcal/mol
             free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,None,directory=biasdir)
-            xvalues = list(range(0,CV1_bias.gridWidth)) #Convert from grid to actual unit
-            CVlabel="X-axis (unit)"
-            y_axislabel="Energy (kcal(/mol))"
             np.savetxt("MTD_free_energy.txt", free_energy)
+
+            #X-values TODO
+            xvalues = list(range(0,CV1_bias.gridWidth)) #Convert from grid to actual unit
 
             #Relative energy
             rel_free_energy = (free_energy-min(free_energy))/conversionfactor
 
-            eplot = ash.modules.module_plotting.ASH_plot("Plotname", num_subplots=1, 
-                                                         x_axislabel=CVlabel, y_axislabel=y_axislabel)
-            eplot.addseries(0, x_list=xvalues, y_list=rel_free_energy, color='blue', line=True, scatter=False, legend=False)
-            eplot.savefig('MTD.png', imageformat='png', dpi=200)
+            #Plot object
+            CVlabel="X-axis (unit)"
+            y_axislabel="Energy (kcal(/mol))"
+            eplot = ash.modules.module_plotting.ASH_plo("Plotname", num_subplots=1, x_axislabel=CVlabel, y_axislabel=y_axislabel)
+            
+            #Combined series
+            eplot.addseries(0, x_list=xvalues, y_list=rel_free_energy, label='Series1', color='blue', line=True, scatter=False)
+            #Each series
+            for i,fe_per_biasfile in enumerate(list_of_fes_from_biasfiles):
+                rel = (fe_per_biasfile-min(fe_per_biasfile))/conversionfactor
+                eplot.addseries(0, x_list=xvalues, y_list=rel, color='gray', line_linewidth=0.3, line=True, scatter=False, legend=False)
+
+            eplot.savefig('MTD', imageformat='png', dpi=200)
+
             return
 
     else:
