@@ -3013,6 +3013,8 @@ class OpenMM_MDclass:
         ##################################
 
         #Parallelization handling
+        if process_id == None:
+            process_id=0
         if workerdir != None:
             print(f"Workerdir: {workerdir} provided. Entering dir")
             os.chdir(workerdir)
@@ -3027,9 +3029,6 @@ class OpenMM_MDclass:
                 plumedinput=plumedinput.replace("WALKERID",str(process_id))
                 print("plumedinput:", plumedinput)
                 writestringtofile(plumedinput,"plumedinput.in")
-        if process_id == None:
-            process_id=0
-
             self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
 
         #Case native OpenMM metadynamcis
