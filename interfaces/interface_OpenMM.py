@@ -4015,7 +4015,10 @@ def free_energy_from_bias_array(temperature,biasFactor,totalBias):
 #Calculate free-energy from OpenMM biasfiles
 def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridwith,directory='.'):
     import glob
-    full_bias=np.zeros((CV1_gridwith,CV2_gridwith))
+    if CV2_gridwith == None:
+        full_bias=np.zeros((CV1_gridwith))
+    else:
+	    full_bias=np.zeros((CV1_gridwith,CV2_gridwith))
     for biasfile in glob.glob(f"{directory}/*.npy"):
         data = np.load(biasfile)
         full_bias += data
