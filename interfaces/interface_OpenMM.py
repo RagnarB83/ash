@@ -3804,7 +3804,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         elif numCVs == 1:
             conversionfactor=4.184 #kJ/mol to kcal/mol
             free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,None,directory=biasdir)
-            #xvalues = #Convert from grid to actual unit
+            xvalues=list(range(0,CV1_bias.gridWidth)) = #Convert from grid to actual unit
             CVlabel="X-axis (unit)"
             y_axislabel="Energy (kcal(/mol))"
             np.savetxt("MTD_free_energy.txt", free_energy)
