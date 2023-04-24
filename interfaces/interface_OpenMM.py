@@ -3223,7 +3223,7 @@ class OpenMM_MDclass:
                     print("metadyn_freq ", metadyn_settings["saveFrequency"]*metadyn_settings["frequency"])
                     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
                         print("MTD: Writing current collective variables to disk")
-                        current_cv = meta_object.getCollectiveVariables()
+                        current_cv = meta_object.getCollectiveVariables(simulation)
                         currtime = step*self.timestep #Time in ps
                         with open('collective_variables', 'a') as f:
                             if metadyn_settings["numCVs"] == 2:
