@@ -35,7 +35,7 @@ from ash.modules.module_results import ASH_Results
 # Fragment class and coordinate functions
 import ash.modules.module_coords
 from ash.modules.module_coords import get_molecules_from_trajectory, eldict_covrad, write_pdbfile, Fragment, read_xyzfile, \
-    write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile
+    write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile, split_multimolxyzfile
 from ash.modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_system_CHARMM, getwaterconstraintslist,\
     QMregionfragexpand, read_xyzfiles, Reaction
 
@@ -76,7 +76,7 @@ from ash.modules.module_surface import calc_surface, calc_surface_fromXYZ, read_
 
 # QMcode interfaces
 from ash.interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, \
-        run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size, orca_frag_guess
+        run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size, orca_frag_guess, orblocfind
 import ash.interfaces.interface_ORCA
 
 from ash.interfaces.interface_Psi4 import Psi4Theory
@@ -100,7 +100,8 @@ from ash.interfaces.interface_PyMBE import PyMBETheory
 # MM: external and internal
 from ash.interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
      OpenMM_box_relaxation, write_nonbonded_FF_for_ligand, \
-        OpenMM_metadynamics, Gentle_warm_up_MD, check_gradient_for_bad_atoms, get_free_energy_from_biasfiles, free_energy_from_bias_array
+        OpenMM_metadynamics, Gentle_warm_up_MD, check_gradient_for_bad_atoms, get_free_energy_from_biasfiles, \
+        free_energy_from_bias_array,metadynamics_plot_data
 from ash.modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy, coulombcharge, LennardJones, \
     LJCoulombv2, LJCoulomb, MMforcefield_read
 #MDtraj

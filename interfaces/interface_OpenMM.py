@@ -3038,11 +3038,11 @@ class OpenMM_MDclass:
             if metadyn_settings["numCVs"] == 2:
                 meta_object = openmm.app.Metadynamics(self.openmmobject.system, [metadyn_settings["CV1_bias"], metadyn_settings["CV2_bias"]], metadyn_settings["temperature"], 
                                                             metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
-                                                            saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasDir"])
+                                                            saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
             elif metadyn_settings["numCVs"] == 1:
                 meta_object = openmm.app.Metadynamics(self.openmmobject.system, [metadyn_settings["CV1_bias"]], metadyn_settings["temperature"], 
                                                             metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
-                                                            saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasDir"])
+                                                            saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
 
         #Case: QM MD
         if self.externalqm is True:
@@ -3722,15 +3722,29 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         if numCVs == 1:
             # Create metadynamics object for 1 CV
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
+
             metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "temperature":temperature, "biasfactor":biasfactor, 
-                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasDir":biasdir}
+                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir,
+                                "CV1_type":CV1_type,"CV2_type":None, "CV1_gridwidth":CV1_bias.gridWidth, "CV2_gridwidth":None,
+                                "CV1_minvalue":CV1_bias.minValue,"CV1_maxvalue":CV1_bias.maxValue,
+                                "CV2_minvalue":None,"CV2_maxvalue":None,}
+            metadyn_settings_simple = dict(metadyn_settings)
+            del metadyn_settings_simple["CV1_bias"]
             #meta_object = openmm_app.Metadynamics(system, [CV1_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
         elif numCVs == 2:
             # Create metadynamics object for 2 CVs
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
             CV2_bias = create_CV_bias(CV2_type,CV2_atoms,CV2_biaswidth,md)
             metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "CV2_bias":CV2_bias, "temperature":temperature, "biasfactor":biasfactor, 
-                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasDir":biasdir}
+                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir,
+                                "CV1_type":CV1_type,"CV2_type":CV2_type,"CV1_gridwidth":CV1_bias.gridWidth, "CV2_gridwidth":CV2_bias.gridWidth,
+                                "CV1_minvalue":CV1_bias.minValue,"CV1_maxvalue":CV1_bias.maxValue,
+                                "CV2_minvalue":CV2_bias.minValue,"CV2_maxvalue":CV2_bias.maxValue,}
+            metadyn_settings_simple = dict(metadyn_settings)
+            del metadyn_settings_simple["CV1_bias"]
+            del metadyn_settings_simple["CV2_bias"]
+        import json
+        json.dump(metadyn_settings_simple, open(f"{biasdir}/ASH_MTD_parameters.txt",'w'))
 
     else:
         print("Setting up Plumed")
@@ -3777,76 +3791,42 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
 
     print("Metadynamics simulation done")
 
-    #Possible data analysis ??
+    #Data plotting
     if use_plumed is False:
-        print("Now analyzing data")
-        #try:
-        #    CV_data = meta_object.getCollectiveVariables(simulation)
-        #    print("CV_data", CV_data)
-        #    print("len of CV_data", len(CV_data))
-        #except:
-        #    pass
-        print("CV1_bias gridWidth:", CV1_bias.gridWidth)
-        #print("CV2_bias gridWidth:", CV2_bias.gridWidth)
+        print("\nAll bias-files have been written to biasdirectory:", biasdir)
+        print("Dir also contains: ASH_MTD_parameters.txt")
+        print("CV1_bias:", CV1_bias)
+        print("CV1_bias dict:",CV1_bias.__dict__)
+        print("CV1_bias.minValue:", CV1_bias.minValue)
+        print("CV1_bias.maxValue", CV1_bias.maxValue)
+        print("CV1_bias.gridWidth", CV1_bias.gridWidth)
         print("CV1_bias biasWidth:", CV1_bias.biasWidth)
-        #Manual way (can be called standalone)
+        CV1_bias_gridwidth=CV1_bias.gridWidth
+        CV2_bias_gridwidth=None
+        print()
         if numCVs == 2:
-            free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,CV2_bias.gridWidth,directory=biasdir)
-            np.savetxt("MTD_free_energy.txt", free_energy)
-            print("Manual free energy:", free_energy)
-            print("CV1_bias:", CV1_bias)
-            print("CV1_bias dict:",CV1_bias.__dict__)
-            print("CV1_bias.minValue:", CV1_bias.minValue)
-            print("CV1_bias.maxValue", CV1_bias.maxValue)
-            print("CV1_bias.gridWidth", CV1_bias.gridWidth)
-            print()
             print("CV2_bias:", CV2_bias)
             print("CV2_bias dict:",CV2_bias.__dict__)
             print("CV2_bias.minValue:", CV2_bias.minValue)
             print("CV2_bias.maxValue", CV2_bias.maxValue)
             print("CV2_bias.gridWidth", CV2_bias.gridWidth)
-            print()
-            print("Attemping to plot:")
-            #Plot on screen
-            #TODO: Relative energies and grid stuff
-            try:
-                import matplotlib.pyplot as plot
-                plot.imshow(free_energy)
-                #plot.show()
-                plot.savefig('MTD', format='png', dpi=200)
-            except ModuleNotFoundError:
-                print("Matplotlib module not available. Please install first")
-        elif numCVs == 1:
-            conversionfactor=4.184 #kJ/mol to kcal/mol
-            free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias.gridWidth,None,directory=biasdir)
-            np.savetxt("MTD_free_energy.txt", free_energy)
+            print("CV2_bias biasWidth:", CV2_bias.biasWidth)
+            CV1_bias_gridwidth=CV1_bias.gridWidth
+            CV2_bias_gridwidth=CV2_bias.gridWidth
+        #Get free energy surface from biasfiles
+        print("\nReading biasfiles to get free energy surface")
+        free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias_gridwidth,
+                                                                                    CV2_bias_gridwidth,directory=biasdir)
+        print("\nFree energy array:", free_energy)
+        print("Writing to disk: MTD_free_energy.txt")
+        np.savetxt("MTD_free_energy.txt", free_energy)
 
-            print("CV1_bias:", CV1_bias)
-            print("CV1_bias dict:",CV1_bias.__dict__)
-            print("CV1_bias.minValue:", CV1_bias.minValue)
-            print("CV1_bias.maxValue", CV1_bias.maxValue)
-            print("CV1_bias.gridWidth", CV1_bias.gridWidth)
-            #X-values TODO
-            xvalues = list(range(0,CV1_bias.gridWidth)) #Convert from grid to actual unit
-
-            #Relative energy
-            rel_free_energy = (free_energy-min(free_energy))/conversionfactor
-
-            #Plot object
-            CVlabel="X-axis (unit)"
-            y_axislabel="Energy (kcal(/mol))"
-            eplot = ash.modules.module_plotting.ASH_plo("Plotname", num_subplots=1, x_axislabel=CVlabel, y_axislabel=y_axislabel)
-            
-            #Combined series
-            eplot.addseries(0, x_list=xvalues, y_list=rel_free_energy, label='Series1', color='blue', line=True, scatter=False)
-            #Each series
-            for i,fe_per_biasfile in enumerate(list_of_fes_from_biasfiles):
-                rel = (fe_per_biasfile-min(fe_per_biasfile))/conversionfactor
-                eplot.addseries(0, x_list=xvalues, y_list=rel, color='gray', line_linewidth=0.3, line=True, scatter=False, legend=False)
-
-            eplot.savefig('MTD', imageformat='png', dpi=200)
-
-            return
+        print(f"\nWill now attempt to create plot (requires matplotlib) by running: metadynamics_plot_data(biasdir={biasdir})")
+        #try:
+        metadynamics_plot_data(biasdir=biasdir)
+        #except:
+        print("Could not create plot. Try running metadynamics_plot_data manually")
+        #return
 
     else:
         path_to_plumed=os.path.dirname(os.path.dirname(os.path.dirname(openmmplumed.mm.pluginLoadedLibNames[0])))
@@ -4085,3 +4065,140 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
 
     #Return final free_energy array and also list of free-energy-arrays for each biasfile
     return free_energy,list_of_free_energies
+
+#Simple plotting for native OpenMM metadynamics via ASH 
+def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
+
+    import json
+    #Read mtd settings dict from file
+    #NOTE: Only applies to native OpenMM MTD
+    metadyn_settings = json.load(open(f"{biasdir}/ASH_MTD_parameters.txt"))    
+
+    CV1_type=metadyn_settings["CV1_type"]; CV2_type=metadyn_settings["CV2_type"]; temperature=metadyn_settings["temperature"]; 
+    biasfactor=metadyn_settings["biasfactor"]; CV1_gridwidth=metadyn_settings["CV1_gridwidth"]
+    CV2_gridwidth=metadyn_settings["CV2_gridwidth"]; CV1_minvalue=metadyn_settings["CV1_minvalue"]; 
+    CV1_maxvalue=metadyn_settings["CV1_maxvalue"]; CV2_minvalue=metadyn_settings["CV2_minvalue"]; 
+    CV2_maxvalue=metadyn_settings["CV2_maxvalue"]
+
+    e_conversionfactor=4.184 #kJ/mol to kcal/mol
+    if CV2_type != None:
+        numCVs=2
+    else:
+        numCVs=1
+    if numCVs == 2:
+        if CV1_type == 'dihedral' or CV1_type == 'torsion' or CV1_type == 'angle' :
+            cv1_conversionfactor =180/np.pi
+            CV1_unit_label="°"
+        elif CV1_type == 'bond' or CV1_type == 'distance' or CV1_type == 'rmsd':
+            cv1_conversionfactor = 1.0
+            CV1_unit_label="Ang"
+        if CV2_type == 'dihedral' or CV2_type == 'angle' or CV1_type == 'torsion' :
+            cv2_conversionfactor =180/np.pi
+            CV2_unit_label="°"
+        elif CV2_type == 'bond' or CV2_type == 'distance' or CV2_type == 'rmsd':
+            cv2_conversionfactor = 1.0
+            CV2_unit_label="Ang"
+
+        #Get free energy surface from biasfiles
+        free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwidth,
+                                                                                    CV2_gridwidth,directory=biasdir)
+        #Relative free energy in kcal/mol
+        rel_free_energy = (free_energy-np.min(free_energy))/e_conversionfactor
+        #Coordinates in correct unit
+        xvalues = [cv1_conversionfactor*(CV1_minvalue+((CV1_maxvalue - CV1_minvalue) / (CV1_gridwidth-1))*i) for i in range(0,CV1_gridwidth)]
+        yvalues = [cv2_conversionfactor*(CV2_minvalue+((CV2_maxvalue - CV2_minvalue) / (CV2_gridwidth-1))*i) for i in range(0,CV2_gridwidth)]
+
+        #Making surface dictionary
+        #print(f"xvalues ({len(xvalues)}): {xvalues}")
+        #print(f"yvalues ({len(yvalues)}): {yvalues}")
+        #print(f"free_energy ({len(rel_free_energy)}): {rel_free_energy}")
+        surfacedictionary={}
+        for i_x,x in enumerate(xvalues):
+            for i_y,y in enumerate(yvalues):
+                surfacedictionary[(x,y)] = rel_free_energy[i_x,i_y]
+
+        np.savetxt("MTD_free_energy.txt", free_energy)
+        np.savetxt("MTD_free_energy_rel.txt", rel_free_energy)
+        
+        #Plot
+        print("Attemping to plot:")
+        try:
+            import matplotlib.pyplot
+        except:
+            print("Problem importing matplotlib")
+            return
+
+        #Option 1: imshow
+        #plt.clf()
+        colormap_option1='RdYlBu_r' 
+        option1fig,option1ax = matplotlib.pyplot.subplots()
+        print("option1fig:", option1fig)
+        print("option1ax:", option1ax)
+        #print("cv1_conversionfactor*CV1_minvalue:", cv1_conversionfactor*CV1_minvalue)
+        #print("cv1_conversionfactor*CV1_maxvalue:", cv1_conversionfactor*CV1_maxvalue)
+        #print("cv2_conversionfactor*CV2_minvalue:", cv2_conversionfactor*CV2_minvalue)
+        #print("cv2_conversionfactor*CV2_maxvalue:", cv2_conversionfactor*CV2_maxvalue)
+        option1ax.imshow(rel_free_energy, cmap=colormap_option1)
+                         #, extent=[cv1_conversionfactor*CV1_minvalue, cv1_conversionfactor*CV1_maxvalue, 
+                         #                    cv2_conversionfactor*CV2_minvalue, cv2_conversionfactor*CV2_maxvalue])
+        #option1fig.colorbar(option1ax)
+        option1ax.set_xlabel(f'CV1({CV1_unit_label})')
+        option1ax.set_xlabel(f'CV2({CV2_unit_label})')
+        option1fig.savefig('MTD_CV2_option1.png', format=imageformat, dpi=dpi)
+
+        #ashexit()
+        #Option 2: contour plot with gridlines
+        colormap_option2='RdYlBu_r' #inferno_r another option
+        print("Printing option2 plot")
+        ash.modules.module_plotting.contourplot(surfacedictionary, label='_MTD_option2',x_axislabel=f'CV1({CV1_unit_label})', y_axislabel=f'CV2 ({CV2_unit_label})', finalunit='kcal/mol', interpolation='Cubic', 
+            interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
+            contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
+
+        #Option 3: 
+        colormap_option3='RdYlBu_r'
+        #Colormap to use in 2CV plots.
+        # Perceptually uniform sequential: viridis, plasma, inferno, magma, cividis
+        #Others: # RdYlBu_r
+        #See https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
+        X2, Y2 = np.meshgrid(xvalues, yvalues)
+        #print(f"X2:", X2)
+        #print(f"Y2:", Y2)
+        #option3plot=plot.plot()
+        print("Printing option3 plot")
+        option3fig,option3ax = matplotlib.pyplot.subplots()
+        cm = matplotlib.pyplot.cm.get_cmap(colormap_option3)
+        colorscatter=option3ax.scatter(X2, Y2, c=rel_free_energy, marker='o', linestyle='-', linewidth=1, cmap=cm)
+        #Colorbar
+        cbar = matplotlib.pyplot.colorbar(colorscatter)
+        cbar.set_label('ΔG (kcal/mol)',fontweight='bold', fontsize='xx-small')
+        option3fig.savefig('MTD_CV2_option3.png', format=imageformat, dpi=dpi)
+        return
+    
+    elif numCVs == 1:
+        if CV1_type == 'dihedral' or CV1_type == 'torsion' or CV1_type == 'angle':
+            cv1_conversionfactor =180/np.pi
+            CV1_unit_label="°"
+        elif CV1_type == 'bond' or CV1_type == 'distance' or CV1_type == 'rmsd':
+            cv1_conversionfactor = 1.0
+        free_energy, bla = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwidth,None,directory=biasdir)
+        
+        #X-values
+        full_range = CV1_maxvalue - CV1_minvalue
+        increment = full_range / (CV1_gridwidth-1)
+        xvalues = [cv1_conversionfactor*(CV1_minvalue+increment*i) for i in range(0,CV1_gridwidth)]
+        
+        #Relative energy in kcal/mol
+        rel_free_energy = (free_energy-min(free_energy))/e_conversionfactor
+        print("rel_free_energy:", rel_free_energy)
+        #Save stuff
+        np.savetxt("MTD_free_energy.txt", free_energy)
+        np.savetxt("MTD_free_energy_rel.txt", rel_free_energy)
+
+        #Plot object
+        CVlabel=f"{CV1_type} ({CV1_unit_label})"
+        y_axislabel="Energy (kcal(/mol))"
+        eplot = ash.modules.module_plotting.ASH_plot("Metadynamics", num_subplots=1, x_axislabel=CVlabel, y_axislabel=y_axislabel)
+        eplot.addseries(0, x_list=xvalues, y_list=rel_free_energy, legend=None, color='blue', line=True, scatter=False)
+        eplot.savefig('MTD_CV1', imageformat=imageformat, dpi=dpi)
+        
+        return
