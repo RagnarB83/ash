@@ -22,7 +22,7 @@ import ash.functions.functions_parallel
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
-                 moreadfile=None, moreadfile_always=False, bind_to_core_option=True,
+                 moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
@@ -77,6 +77,9 @@ class ORCATheory:
 
         #Create inputfile with generic name
         self.filename=filename
+
+        #Whether to exit ORCA if subprocess command faile
+        self.ignore_ORCA_error=ignore_ORCA_error
 
 
         #MOREAD-file
@@ -257,7 +260,8 @@ class ORCATheory:
         create_orca_input_plain(self.filename, elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                 charge, mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
-        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option)
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option, 
+                            ignore_ORCA_error=self.ignore_ORCA_error)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         outfile=self.filename+'.out'
@@ -492,7 +496,7 @@ end"""
             print(BC.OKGREEN, "ORCA Calculation starting.", BC.END)
 
         run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option,
-                                check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings)
+                                check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings, ignore_ORCA_error=self.ignore_ORCA_error)
         if self.printlevel >= 1:
             print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
@@ -537,15 +541,17 @@ end"""
         self.path_to_last_gbwfile_used=f"{os.getcwd()}/{self.filename}.gbw"
 
 
-        ORCAfinished,numiterations = checkORCAfinished(outfile)
-        #Check if ORCA finished or not. Exiting if so
-        if ORCAfinished is False:
-            print(BC.FAIL,"Problem with ORCA run", BC.END)
-            print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
-            print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
-            ashexit()
-        if self.printlevel >= 1:
-            print(f"ORCA converged in {numiterations} iterations")
+        if self.ignore_ORCA_error is False:
+            ORCAfinished,numiterations = checkORCAfinished(outfile)
+            #Check if ORCA finished or not. Exiting if so
+            if ORCAfinished is False:
+                print(BC.FAIL,"Problem with ORCA run", BC.END)
+                print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+                ashexit()
+
+            if self.printlevel >= 1:
+                print(f"ORCA converged in {numiterations} iterations")
 
         #Print population analysis in each run if requested
         if self.print_population_analysis is True:
@@ -561,9 +567,10 @@ end"""
                     print("{:<2} {:<2}: {:>10.4f} {:>10.4f}".format(i,el,ch,sp))
 
         #Grab energy
-        self.energy=ORCAfinalenergygrab(outfile)
-        if self.printlevel >= 1:
-            print("ORCA energy:", self.energy)
+        if self.ignore_ORCA_error is False:
+            self.energy=ORCAfinalenergygrab(outfile)
+            if self.printlevel >= 1:
+                print("ORCA energy:", self.energy)
 
         #Grab possible properties
         #ICE-CI
@@ -705,7 +712,7 @@ def run_orca_SP(list):
         process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if numcores >1.
-def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True, bind_to_core_option=True):
+def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True, bind_to_core_option=True, ignore_ORCA_error=False):
     if numcores>1:
         palstring='%pal nprocs {} end'.format(numcores)
         with open(inpfile) as ifile:
@@ -728,6 +735,8 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, c
                 grab_ORCA_warnings(basename+'.out')
         except Exception as e:
             print("Subprocess error! Exception message:", e)
+
+
             #We get an exception if 
             print(BC.FAIL,"ASH encountered a problem when running ORCA. Something went wrong, most likely ORCA ran into an error.",BC.END)
             print(BC.FAIL,f"Please check the ORCA outputfile: {basename+'.out'} for error messages", BC.END)
@@ -736,7 +745,12 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, c
                 grab_ORCA_errors(basename+'.out')
             if check_for_warnings:
                 grab_ORCA_warnings(basename+'.out')
-            ashexit()
+            print("ignore_ORCA_error:", ignore_ORCA_error)
+            if ignore_ORCA_error is True:
+                print("ignore_ORCA_error here")
+                return
+            else:
+                ashexit()
 
 def grab_ORCA_warnings(filename):
     warning_lines=[]

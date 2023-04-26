@@ -1381,15 +1381,49 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     os.rename("orca.molden.input", "B.molden.input")
     theory.cleanup()
 
-    #AB
-    theory.orcablocks=theory.orcablocks+"%output Print[P_Iter_F] 1 end"
+    #PromolAB
+    original_orcablocks=theory.orcablocks #Keeping
+    blockaddition="""
+    %output
+    Print[P_Iter_F] 1
+    end
+    %scf
+    maxiter 1
+    end
+    """
+    theory.orcablocks=theory.orcablocks+blockaddition
+    theory.ignore_ORCA_error=True #Otherwise ORCA subprocess will fail due to maxiter=1 fail
     result_calcAB=ash.Singlepoint(theory=theory, fragment=fragment_AB)
+    shutil.copy(f"{theory.filename}.out", "promol.out")
+    #Get Fock matrix of promolstate I
+    Fock_Pi_a, Fock_Pi_b = read_Fock_matrix_from_ORCA(f"{theory.filename}.out")
+    np.savetxt("Fock_Pi_a",Fock_Pi_a)
+    #exit()
     make_molden_file_ORCA(theory.filename+'.gbw')
     os.rename("orca.molden.input", "AB.molden.input")
 
+    #AB
+    theory.ignore_ORCA_error=False #Reverting
+    theory.orcablocks=original_orcablocks+"%output Print[P_Iter_F] 1 end"
+    result_calcAB=ash.Singlepoint(theory=theory, fragment=fragment_AB)
+    #Get Fock matrix of Finalstate F
+    Fock_Pf_a, Fock_Pf_b = read_Fock_matrix_from_ORCA(f"{theory.filename}.out")
+    np.savetxt("Fock_Pf_a",Fock_Pf_a)
+    make_molden_file_ORCA(theory.filename+'.gbw')
+    os.rename("orca.molden.input", "AB.molden.input")
+
+    #Extended transition state
+    #TODO: Beyond RHF/RKS
+    Fock_ETS = 0.5*(Fock_Pi_a +Fock_Pf_a)
+    print("Fock_ETS:", Fock_ETS)
+    np.savetxt("Fock_ETS",Fock_ETS)
+
+    #Fock-file for Multiwfn
+    fockfile="Fock_ETS"
+
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["A.molden.input","B.molden.input"],
-                    fockfile=theory.filename+'.out', numcores=numcores)
+                    fockfile=fockfile, numcores=numcores)
 
     deltaE_int=(result_calcAB.energy - result_calcA.energy - result_calcB.energy)*hartokcal
     deltaE_orb=float(pygrep(" Sum of pair energies:","NOCV.txt")[-2])
@@ -1414,3 +1448,50 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     print()
     print("TODO: NOCV orbital table to come here. See NOCV.txt for now")
 
+
+def read_Fock_matrix_from_ORCA(file):
+    grabA=False
+    grabB=False
+
+    i_counter=0
+    with open(file) as f:
+        for line in f:
+            if 'Number of basis functions                   ...' in line:
+                ndim=int(line.split()[-1])
+                Fock_matrix_a=np.zeros((ndim,ndim))
+                Fock_matrix_b=np.zeros((ndim,ndim))
+            if grabA is True:
+                Acounter+=1                  
+                if Acounter % (ndim+1) == 0:
+                    col_indices=[int(i) for i in line.split()]
+                if Acounter >= 1:
+                    line_vals=[float(i) for i in line.split()[1:]]
+                    for colindex,val in zip(col_indices,line_vals):
+                        a=colindex
+                        b=int(line.split()[0])
+                        Fock_matrix_a[b,a] = val
+                        i_counter+=1
+                    if a == b == ndim-1:
+                        grabA=False
+            if grabB is True:
+                Bcounter+=1                  
+                if Bcounter % (ndim+1) == 0:
+                    col_indices=[int(i) for i in line.split()]
+                if Bcounter >= 1:
+                    line_vals=[float(i) for i in line.split()[1:]]
+                    for colindex,val in zip(col_indices,line_vals):
+                        a=colindex
+                        b=int(line.split()[0])
+                        Fock_matrix_b[b,a] = val
+                        i_counter+=1
+                    if a == b == ndim-1:
+                        grabB=False
+            if 'Fock matrix for operator 0' in line:
+                grabA=True
+                Acounter=-1
+            if 'Fock matrix for operator 1' in line:
+                grabA=True
+                Bcounter=-1
+    np.savetxt("Fock_matrix_a",Fock_matrix_a)
+    np.savetxt("Fock_matrix_b",Fock_matrix_b)
+    return Fock_matrix_a, Fock_matrix_b
