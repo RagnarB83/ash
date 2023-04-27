@@ -1463,8 +1463,9 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     #Call Multiwfn
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["A.molden.input","B.molden.input"],
-                    fockfile=fockfile, numcores=numcores)
+                    fockfile=fockfile, numcores=numcores, openshell=openshell)
 
+    #OTOD: openshell
     deltaE_int=(result_calcAB.energy - result_calcA.energy - result_calcB.energy)*hartokcal
     deltaE_orb=float(pygrep(" Sum of pair energies:","NOCV.txt")[-2])
     deltaE_steric=deltaE_int-deltaE_orb #Elstat+Pauli. Further ecomposition not possibly at the moment
