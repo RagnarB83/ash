@@ -1358,14 +1358,20 @@ def grab_NOCV_interactions(file):
 #If Molden files is the best for Multiwfn then theory levels need to create those.
 #TODO: Make internal theory methods for ORCATheory, xTBtheory, PySCF etc. ?? that outputs a Molden file ???
 #NOTE: Benefit, multiwfn supports open-shell analysis
-#NOTE: ETS analysis is approximate since the correct Fock matrix is not used
-def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, gridlevel=2,
+#NOTE: Proper ETS analysis by fockmatrix_approximation="ETS"
+#NOTE: fockmatrix_approximation: regular gives approximate energies, same as Multiwfn
+def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, gridlevel=2, openshell=False,
                             num_nocv_pairs=5, make_cube_files=True, numcores=1, fockmatrix_approximation="ETS"):
     print_line_with_mainheader("NOCV_Multiwfn")
     print("Will do full NOCV analysis with Multiwfn")
     print("gridlevel:", gridlevel)
     print("Numcores:", numcores)
     print()
+
+    if fragment_AB.mult > 1 or fragment_A.mult > 1 or fragment_B.mult > 1:
+        print("Multiplicity larger than 1. Setting openshell equal to True")
+        openshell=True
+
     if isinstance(theory,ORCATheory) is not True:
         print("NOCV_Multiwfn currently only works with ORCATheory")
         ashexit()
@@ -1414,34 +1420,30 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
 
     #Extended transition state
     #TODO: Beyond RHF/RKS
-    Fock_ETS = 0.5*(Fock_Pi_a +Fock_Pf_a)
-    print("Fock_ETS:", Fock_ETS)
+    Fock_ETS_a = 0.5*(Fock_Pi_a +Fock_Pf_a)
+    print("Fock_ETS_a:", Fock_ETS_a)
+    if openshell is True:
+        Fock_ETS_b = 0.5*(Fock_Pi_b +Fock_Pf_b)
+        print("Fock_ETS_b:", Fock_ETS_b)
+    else:
+        Fock_ETS_b=None
 
     #Write ETS Fock matrix in lower-triangular form for Multiwfn: F(1,1) F(2,1) F(2,2) F(3,1) F(3,2) F(3,3) ... F(nbasis,nbasis)
     if fockmatrix_approximation  == 'ETS':
         print("fockmatrix_approximation: ETS")
         fockfile="Fock_ETS"
-        write_Fock_matrix_ORCA_format(Fock_ETS,fockfile)
+        write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_ETS_a,Fock_b=Fock_ETS_b)
     elif fockmatrix_approximation  == 'regular':
         print("fockmatrix_approximation: regular (converged AB Fock matrix)")
-        fockfile="Fock_Pf_a"
-        write_Fock_matrix_ORCA_format(Fock_Pf_a,fockfile)
+        fockfile="Fock_Pf"
+        write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_Pf_a,Fock_b=Fock_Pf_b)
     else:
         print("Unknown fockmatrix_approximation")
         ashexit()
     print("fockfile:", fockfile)
     #NOTE: Important Writing Fock matrix in ORCA format (with simple header) so that Multiwfn recognized it as such and used ORCA ordering of columns
     # Writing out as simple lower-triangular form does not work due to weird column swapping
-    write_Fock_matrix_ORCA_format(Fock_Pf_a,fockfile)
 
-    #with open("Fock_Pf_a_lowertriang.txt", 'w') as f:
-    #    for i in range(0,Fock_Pf_a.shape[0]):
-    #        for j in range(0,i+1):
-    #            if counter == 4:
-    #                f.write(f"\n")
-    #                counter=0
-    #            f.write(f" {Fock_Pf_a[i,j]} ")
-    #            counter+=1
     #Call Multiwfn
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["A.molden.input","B.molden.input"],
@@ -1463,7 +1465,9 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     print("-"*50)
     print("E(steric) is sum of electrostatic and Pauli repulsion")
     print("dE(orb) is the NOCV-ETS orbital-relaxation of orthogonalized promolecular system")
-    print("Warning: dE(orb) term is approximated when calculated by Multiwfn (as the correct TS Fock matrix is not used)")
+    if fockmatrix_approximation == "regular":
+        print("Warning: Fock matrix approximation is regualr")
+        print("Warning: dE(orb) term is approximated when calculated by Multiwfn (as the correct TS Fock matrix is not used)")
     print("dE(int) is the vertical total interaction energy (without geometric relaxation)")
 
     #TODO: Grab orbital-interaction stuff from NOCV.txt and print here also
@@ -1519,46 +1523,62 @@ def read_Fock_matrix_from_ORCA(file):
     return Fock_matrix_a, Fock_matrix_b
 
 
-def write_Fock_matrix_ORCA_format(Fock,outputfile):
-    dim=Fock.shape[0]
+def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None):
+    
     with open(outputfile,'w') as f:
         f.write("                                 *****************\n")
         f.write("                                 * O   R   C   A *\n")
         f.write("                                 *****************\n")
-        f.write("Fock matrix for operator 0\n")
-        orcacoldim=6
-        index=0
-        tempvar=""
-        chunks=dim//orcacoldim
-        left=dim%orcacoldim
-        xvar="                  "
-        col_list=[]
-        if left > 0:
-            chunks=chunks+1
-        for chunk in range(chunks):
-            if chunk == chunks-1:
-                if left == 0:
-                    left=6
-                for temp in range(index,index+left):
-                    col_list.append(str(temp))
-            else:
-                for temp in range(index,index+orcacoldim):
-                    col_list.append(str(temp))
-            col_list_string='          '.join(col_list)
-            f.write(f"{xvar}{col_list_string}\n")
-            col_list=[]
-            for i in range(0,dim):
 
-                if chunk == chunks-1:
-                    for k in range(index,index+left):
-                        valstring=f"{Fock[i,k]:9.6f}"
-                        tempvar=f"{tempvar}  {str(valstring)}"
-                else:
-                    for k in range(index,index+orcacoldim):
-                        valstring=f"{Fock[i,k]:9.6f}"
-                        tempvar=f"{tempvar}  {str(valstring)}"
-                f.write(f"{i:>7d}    {tempvar}\n")
-                tempvar=""
-            index+=6
+        f.write(f"Fock matrix for operator 0\n")
         f.write("\n")
-    
+        Fock_alpha = get_Fock_matrix_ORCA_format(Fock_a)
+        f.write(Fock_alpha)
+        f.write("\n")
+
+        if Fock_b != None:
+            f.write(f"Fock matrix for operator 1\n")
+            f.write("\n")
+            Fock_beta = get_Fock_matrix_ORCA_format(Fock_b)
+            f.write(Fock_beta)
+
+#Get 
+def get_Fock_matrix_ORCA_format(Fock):
+    finalstring=""
+
+    dim=Fock.shape[0]
+    orcacoldim=6
+    index=0
+    tempvar=""
+    chunks=dim//orcacoldim
+    left=dim%orcacoldim
+    xvar="                  "
+    col_list=[]
+    if left > 0:
+        chunks=chunks+1
+    for chunk in range(chunks):
+        if chunk == chunks-1:
+            if left == 0:
+                left=6
+            for temp in range(index,index+left):
+                col_list.append(str(temp))
+        else:
+            for temp in range(index,index+orcacoldim):
+                col_list.append(str(temp))
+        col_list_string='          '.join(col_list)
+        finalstring=finalstring+f"{xvar}{col_list_string}\n"
+        col_list=[]
+        for i in range(0,dim):
+
+            if chunk == chunks-1:
+                for k in range(index,index+left):
+                    valstring=f"{Fock[i,k]:9.6f}"
+                    tempvar=f"{tempvar}  {str(valstring)}"
+            else:
+                for k in range(index,index+orcacoldim):
+                    valstring=f"{Fock[i,k]:9.6f}"
+                    tempvar=f"{tempvar}  {str(valstring)}"
+            finalstring=finalstring+f"{i:>7d}    {tempvar}\n"
+            tempvar=""
+        index+=6
+    return finalstring
