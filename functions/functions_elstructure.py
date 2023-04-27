@@ -1416,11 +1416,17 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     #TODO: Beyond RHF/RKS
     Fock_ETS = 0.5*(Fock_Pi_a +Fock_Pf_a)
     print("Fock_ETS:", Fock_ETS)
-    np.savetxt("Fock_ETS",Fock_ETS)
 
-    #Fock-file for Multiwfn
-    fockfile="Fock_ETS"
+    #Write ETS Fock matrix in lower-triangular form for Multiwfn: F(1,1) F(2,1) F(2,2) F(3,1) F(3,2) F(3,3) ... F(nbasis,nbasis)
+    fockfile="Fock_ETS.txt"
+    with open(fockfile, 'w') as f:
+        for i in range(0,Fock_ETS.shape[0]):
+            for j in range(0,i+1):
+                f.write(f"{Fock_ETS[i,j]} ")
 
+    #np.savetxt("Fock_ETS",Fock_ETS)
+
+    #Call Multiwfn
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["A.molden.input","B.molden.input"],
                     fockfile=fockfile, numcores=numcores)
