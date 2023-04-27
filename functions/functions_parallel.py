@@ -495,8 +495,8 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
         parameter_dict_new = copy.copy(parameter_dict)
         #Adding process_id to parameter_dict
         #NOTE: jobfunction run method must have a process_id keyword to be compatible. Add as needed?
-        parameter_dict["process_id"] = process
-        parameter_dict["workerdir"] = workerdir
+        parameter_dict_new["process_id"] = process
+        parameter_dict_new["workerdir"] = workerdir
         print("parameter_dict_new:", parameter_dict_new)
         #Calling apply_async. 
         results.append((process,pool.apply_async(jobfunction, kwds=parameter_dict_new, error_callback=Terminate_Pool_processes)))
