@@ -488,7 +488,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     print("parameter_dict:", parameter_dict)
     print("Now looping")
 
-    for process in range(1,numcores+1):
+    for process in range(0,numcores):
         print("Starting process:", process)
         workerdir=f"Pooljob_{process}"
         #Copy of parameter_dict
