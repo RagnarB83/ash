@@ -1536,7 +1536,7 @@ def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None):
         f.write(Fock_alpha)
         f.write("\n")
 
-        if Fock_b != None:
+        if Fock_b is None:
             f.write(f"Fock matrix for operator 1\n")
             f.write("\n")
             Fock_beta = get_Fock_matrix_ORCA_format(Fock_b)
