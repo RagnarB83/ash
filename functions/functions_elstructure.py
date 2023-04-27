@@ -1420,7 +1420,6 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     os.rename("orca.molden.input", "AB.molden.input")
 
     #Extended transition state
-    #TODO: Beyond RHF/RKS
     Fock_ETS_a = 0.5*(Fock_Pi_a +Fock_Pf_a)
     print("Fock_ETS_a:", Fock_ETS_a)
     if openshell is True:
@@ -1433,10 +1432,14 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     if fockmatrix_approximation  == 'ETS':
         print("fockmatrix_approximation: ETS")
         fockfile="Fock_ETS"
+        print("Fock_ETS_a:", Fock_ETS_a)
+        print("Fock_ETS_b:", Fock_ETS_b)
         write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_ETS_a,Fock_b=Fock_ETS_b)
     elif fockmatrix_approximation  == 'regular':
         print("fockmatrix_approximation: regular (converged AB Fock matrix)")
         fockfile="Fock_Pf"
+        print("Fock_Pf_a:", Fock_Pf_a)
+        print("Fock_Pf_b:", Fock_Pf_b)
         write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_Pf_a,Fock_b=Fock_Pf_b)
     else:
         print("Unknown fockmatrix_approximation")
