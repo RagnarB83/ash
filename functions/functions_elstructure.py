@@ -1418,26 +1418,27 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     print("Fock_ETS:", Fock_ETS)
 
     #Write ETS Fock matrix in lower-triangular form for Multiwfn: F(1,1) F(2,1) F(2,2) F(3,1) F(3,2) F(3,3) ... F(nbasis,nbasis)
-    fockfile="Fock_ETS.txt"
-    with open("Fock_ETS_lowertriang.txt", 'w') as f:
-        for i in range(0,Fock_ETS.shape[0]):
-            for j in range(0,i+1):
-                f.write(f"{Fock_ETS[i,j]} ")
-    counter=0
-    with open("Fock_Pf_a_lowertriang.txt", 'w') as f:
-        for i in range(0,Fock_Pf_a.shape[0]):
-            for j in range(0,i+1):
-                if counter == 4:
-                    f.write(f"\n")
-                    counter=0
-                f.write(f"{Fock_Pf_a[i,j]} ")
-                counter+=1
-    with open("Fock_Pi_a_lowertriang.txt", 'w') as f:
-        for i in range(0,Fock_Pi_a.shape[0]):
-            for j in range(0,i+1):
-                f.write(f"{Fock_Pi_a[i,j]} ")
+    fockfile="Fock_Pf.txt"
+    print("fockfile:", fockfile)
+    write_Fock_matrix_ORCA_format(Fock_Pf_a,fockfile)
 
-    fockfile="Fock_Pf_a_lowertriang.txt"
+    #with open("Fock_ETS_lowertriang.txt", 'w') as f:
+    #    for i in range(0,Fock_ETS.shape[0]):
+    #        for j in range(0,i+1):
+    #            f.write(f"{Fock_ETS[i,j]} ")
+    #counter=0
+    #with open("Fock_Pf_a_lowertriang.txt", 'w') as f:
+    #    for i in range(0,Fock_Pf_a.shape[0]):
+    #        for j in range(0,i+1):
+    #            if counter == 4:
+    #                f.write(f"\n")
+    #                counter=0
+    #            f.write(f" {Fock_Pf_a[i,j]} ")
+    #            counter+=1
+    #with open("Fock_Pi_a_lowertriang.txt", 'w') as f:
+    #    for i in range(0,Fock_Pi_a.shape[0]):
+    #        for j in range(0,i+1):
+    #            f.write(f"{Fock_Pi_a[i,j]} ")
     #Call Multiwfn
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["A.molden.input","B.molden.input"],
@@ -1513,3 +1514,48 @@ def read_Fock_matrix_from_ORCA(file):
     np.savetxt("Fock_matrix_a",Fock_matrix_a)
     np.savetxt("Fock_matrix_b",Fock_matrix_b)
     return Fock_matrix_a, Fock_matrix_b
+
+
+def write_Fock_matrix_ORCA_format(Fock,outputfile):
+    dim=Fock.shape[0]
+    with open(outputfile,'w') as f:
+        f.write("                                 *****************\n")
+        f.write("                                 * O   R   C   A *\n")
+        f.write("                                 *****************\n")
+        f.write("Fock matrix for operator 0\n")
+        orcacoldim=6
+        index=0
+        tempvar=""
+        chunks=dim//orcacoldim
+        left=dim%orcacoldim
+        xvar="                  "
+        col_list=[]
+        if left > 0:
+            chunks=chunks+1
+        for chunk in range(chunks):
+            if chunk == chunks-1:
+                if left == 0:
+                    left=6
+                for temp in range(index,index+left):
+                    col_list.append(str(temp))
+            else:
+                for temp in range(index,index+orcacoldim):
+                    col_list.append(str(temp))
+            col_list_string='          '.join(col_list)
+            f.write(f"{xvar}{col_list_string}\n")
+            col_list=[]
+            for i in range(0,dim):
+
+                if chunk == chunks-1:
+                    for k in range(index,index+left):
+                        valstring=f"{Fock[i,k]:9.6f}"
+                        tempvar=f"{tempvar}  {str(valstring)}"
+                else:
+                    for k in range(index,index+orcacoldim):
+                        valstring=f"{Fock[i,k]:9.6f}"
+                        tempvar=f"{tempvar}  {str(valstring)}"
+                f.write(f"{i:>7d}    {tempvar}\n")
+                tempvar=""
+            index+=6
+        f.write("\n")
+    
