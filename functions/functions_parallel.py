@@ -470,6 +470,8 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     # START
     #----------
     if separate_dirs is True:
+        parameter_dict["workerdir"] = workerdir
+        parameter_dict["process_id"] = 1
         for i in range(1,numcores+1):
             workerdir=f"Pooljob_{i}"
             print(f"separate_dirs option True. Creating dir {workerdir}")
@@ -480,6 +482,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     #Collecting results in a list of tuples from each process
     results=[]
     print("Now looping")
+
     for process in range(1,numcores+1):
         print("Starting process:", process)
         workerdir=f"Pooljob_{process}"
