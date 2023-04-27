@@ -78,7 +78,7 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
             ashexit()   
         #Create dummy-input
         write_multiwfn_input_option(option="nocv", grid=grid, fragmentfiles=fragmentfiles, 
-                                    fockfile="orca.out")
+                                    fockfile=fockfile)
     #Density and other options (may or may not work)
     else:
         #Writing input
