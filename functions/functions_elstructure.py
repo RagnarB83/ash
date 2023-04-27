@@ -1441,8 +1441,14 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
         print("Fock_ETS_a:", Fock_ETS_a)
         print("Fock_ETS_b:", Fock_ETS_b)
         write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_ETS_a,Fock_b=Fock_ETS_b, openshell=openshell)
-    elif fockmatrix_approximation  == 'regular':
-        print("fockmatrix_approximation: regular (converged AB Fock matrix)")
+    elif fockmatrix_approximation  == 'initial':
+        print("fockmatrix_approximation: initial (unconverged AB Fock matrix)")
+        fockfile="Fock_Pi"
+        print("Fock_Pi_a:", Fock_Pi_a)
+        print("Fock_Pi_b:", Fock_Pi_b)
+        write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_Pi_a,Fock_b=Fock_Pi_b, openshell=openshell)
+    elif fockmatrix_approximation  == 'final':
+        print("fockmatrix_approximation: final (converged AB Fock matrix)")
         fockfile="Fock_Pf"
         print("Fock_Pf_a:", Fock_Pf_a)
         print("Fock_Pf_b:", Fock_Pf_b)
@@ -1475,8 +1481,8 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     print("-"*50)
     print("E(steric) is sum of electrostatic and Pauli repulsion")
     print("dE(orb) is the NOCV-ETS orbital-relaxation of orthogonalized promolecular system")
-    if fockmatrix_approximation == "regular":
-        print("Warning: Fock matrix approximation is regualr")
+    if fockmatrix_approximation == "initial" or fockmatrix_approximation == "final":
+        print("Warning: Fock matrix approximation is initial or final")
         print("Warning: dE(orb) term is approximated when calculated by Multiwfn (as the correct TS Fock matrix is not used)")
     print("dE(int) is the vertical total interaction energy (without geometric relaxation)")
 
@@ -1526,7 +1532,6 @@ def read_Fock_matrix_from_ORCA(file):
                 Fock_matrix_a=np.zeros((ndim,ndim))
             if 'Fock matrix for operator 1' in line:
                 foundbeta=True
-                print("line:", line)
                 grabB=True
                 Bcounter=-1
                 Fock_matrix_b=np.zeros((ndim,ndim))
@@ -1552,7 +1557,7 @@ def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None, openshell
         #f.write("\n")
         Fock_alpha = get_Fock_matrix_ORCA_format(Fock_a)
         f.write(Fock_alpha)
-        f.write("\n")
+        #f.write("\n")
         if openshell is True:
             print("Writing Fock matrix beta")
             f.write(f"Fock matrix for operator 1\n")
