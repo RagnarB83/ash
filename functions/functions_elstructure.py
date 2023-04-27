@@ -1423,10 +1423,15 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
         for i in range(0,Fock_ETS.shape[0]):
             for j in range(0,i+1):
                 f.write(f"{Fock_ETS[i,j]} ")
+    counter=0
     with open("Fock_Pf_a_lowertriang.txt", 'w') as f:
         for i in range(0,Fock_Pf_a.shape[0]):
             for j in range(0,i+1):
+                if counter == 4:
+                    f.write(f"\n")
+                    counter=0
                 f.write(f"{Fock_Pf_a[i,j]} ")
+                counter+=1
     with open("Fock_Pi_a_lowertriang.txt", 'w') as f:
         for i in range(0,Fock_Pi_a.shape[0]):
             for j in range(0,i+1):
