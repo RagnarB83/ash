@@ -18,7 +18,7 @@ import ash.settings_ash
 #TODO: Support settings.ini file?
 
 def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
-                 fragmentfiles=None, fockfile=None):
+                 fragmentfiles=None, fockfile=None, openshell=False):
     print_line_with_mainheader("multiwfn_run")
 
     print("multiwfndir:", multiwfndir)
@@ -77,8 +77,8 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
             print("NOCV option requires fockfile option (can be ORCA output containing Fock-matrix printout)")
             ashexit()   
         #Create dummy-input
-        write_multiwfn_input_option(option="nocv", grid=grid, fragmentfiles=fragmentfiles, 
-                                    fockfile=fockfile)
+        write_multiwfn_input_option(option="nocv", grid=grid, fragmentfiles=fragmentfiles, openshell=openshell,
+                                    fockfile=fockfile, openshell=openshell)
     #Density and other options (may or may not work)
     else:
         #Writing input
@@ -124,7 +124,7 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
 def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densityfile=None,
-                                fragmentfiles=None,fockfile=None, file4=None):
+                                fragmentfiles=None,fockfile=None, file4=None, openshell=False):
     #Create input formula as file
     if option == 'density':
         denstype=1
@@ -145,6 +145,15 @@ q
         denstype=1
         numprodfrags=len(fragmentfiles)
         fragmentfilenames="\n".join(fragmentfiles)
+
+
+        #If alpha/beta sets
+        if openshell is True:
+            openshell1="y"
+            openshell2="y"
+        else:
+            openshell1=""
+            openshell2=""
         #grid=3 #high-quality grid
         writeoutput=2 #Write Cubefile to current dir
         # 5 Output and plot specific property within a spatial region (calc. grid data)
@@ -157,6 +166,8 @@ q
         inputformula=f"""23
 {numprodfrags}
 {fragmentfilenames}
+{openshell1}
+{openshell2}
 -1
 {fockfile}
 8
