@@ -385,8 +385,6 @@ class xTBTheory:
 
             #Creating calculator using Hamiltonian and coordinates
             #Setting charge and mult
-            #NOTE: New calculator object in every Opt/MD iteration is unnecessary
-            #TODO: change
 
             #first run call: create new object containing coordinates and settings
             if self.calcobject == None:

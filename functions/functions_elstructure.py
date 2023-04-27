@@ -1420,7 +1420,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     os.rename("orca.molden.input", "AB.molden.input")
 
     #Extended transition state
-    Fock_ETS_a = 0.5*(Fock_Pi_a +Fock_Pf_a)
+    Fock_ETS_a = 0.5*(Fock_Pi_a + Fock_Pf_a)
     print("Fock_ETS_a:", Fock_ETS_a)
     if openshell is True:
         print("Fock_Pi_b:", Fock_Pi_b)

@@ -4048,6 +4048,7 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
     #Looping over bias-files
     list_of_biases=[]
     for biasfile in glob.glob(f"{directory}/*.npy"):
+        print("Loading biasfile:", biasfile)
         data = np.load(biasfile)
         full_bias += data
         list_of_biases.append(data)
