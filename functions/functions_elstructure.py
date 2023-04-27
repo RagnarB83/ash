@@ -1418,15 +1418,12 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     print("Fock_ETS:", Fock_ETS)
 
     #Write ETS Fock matrix in lower-triangular form for Multiwfn: F(1,1) F(2,1) F(2,2) F(3,1) F(3,2) F(3,3) ... F(nbasis,nbasis)
-    fockfile="Fock_Pf.txt"
+    fockfile="Fock_ETS"
     print("fockfile:", fockfile)
+    #NOTE: Important Writing Fock matrix in ORCA format (with simple header) so that Multiwfn recognized it as such and used ORCA ordering of columns
+    # Writing out as simple lower-triangular form does not work due to weird column swapping
     write_Fock_matrix_ORCA_format(Fock_Pf_a,fockfile)
 
-    #with open("Fock_ETS_lowertriang.txt", 'w') as f:
-    #    for i in range(0,Fock_ETS.shape[0]):
-    #        for j in range(0,i+1):
-    #            f.write(f"{Fock_ETS[i,j]} ")
-    #counter=0
     #with open("Fock_Pf_a_lowertriang.txt", 'w') as f:
     #    for i in range(0,Fock_Pf_a.shape[0]):
     #        for j in range(0,i+1):
@@ -1435,10 +1432,6 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     #                counter=0
     #            f.write(f" {Fock_Pf_a[i,j]} ")
     #            counter+=1
-    #with open("Fock_Pi_a_lowertriang.txt", 'w') as f:
-    #    for i in range(0,Fock_Pi_a.shape[0]):
-    #        for j in range(0,i+1):
-    #            f.write(f"{Fock_Pi_a[i,j]} ")
     #Call Multiwfn
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["A.molden.input","B.molden.input"],
