@@ -1432,7 +1432,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
             for j in range(0,i+1):
                 f.write(f"{Fock_Pi_a[i,j]} ")
 
-    fockfile="Fock_Pf_a_lowertriang"
+    fockfile="Fock_Pf_a_lowertriang.txt"
     #Call Multiwfn
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["A.molden.input","B.molden.input"],
