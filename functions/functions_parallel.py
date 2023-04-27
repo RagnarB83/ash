@@ -469,21 +469,22 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     #----------
     # START
     #----------
+    parameter_dict["process_id"] = 0
     if separate_dirs is True:
-        parameter_dict["workerdir"] = workerdir
-        parameter_dict["process_id"] = 1
-        for i in range(1,numcores+1):
+        for i in range(0,numcores):
             workerdir=f"Pooljob_{i}"
             print(f"separate_dirs option True. Creating dir {workerdir}")
             try:
                 os.mkdir(workerdir)
             except:
                 pass
+        #Default 0 
+        parameter_dict["workerdir"] = f"Pooljob_0"
     #Collecting results in a list of tuples from each process
     results=[]
     print("Now looping")
 
-    for process in range(1,numcores+1):
+    for process in range(0,numcores):
         print("Starting process:", process)
         workerdir=f"Pooljob_{process}"
         #Copy of parameter_dict
