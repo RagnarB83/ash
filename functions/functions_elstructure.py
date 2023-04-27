@@ -1544,9 +1544,8 @@ def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None, openshell
         f.write("                                 *****************\n")
         f.write("                                 * O   R   C   A *\n")
         f.write("                                 *****************\n")
-
         f.write(f"Fock matrix for operator 0\n")
-        f.write("\n")
+        #f.write("\n")
         Fock_alpha = get_Fock_matrix_ORCA_format(Fock_a)
         f.write(Fock_alpha)
         f.write("\n")
