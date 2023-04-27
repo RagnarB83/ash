@@ -1423,6 +1423,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     Fock_ETS_a = 0.5*(Fock_Pi_a +Fock_Pf_a)
     print("Fock_ETS_a:", Fock_ETS_a)
     if openshell is True:
+        print("Fock_Pi_b:", Fock_Pi_b)
         if Fock_Pi_b is None:
             print("No beta Fock matrix found in ORCA output. Make sure UHF/UKS keywords were added")
             ashexit()
