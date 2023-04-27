@@ -3790,7 +3790,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                                                         md.run, parameter_dict={"simulation_steps":simulation_steps, 
                                                         "simulation_time":simulation_time, "metadynamics":native_MTD, 
                                                         "metadyn_settings":metadyn_settings, "plumedinput" : plumedinput}, 
-                                                        numcores=numcores, version='multiprocess', separate_dirs=True)
+                                                        numcores=numcores, version='multiprocessing', separate_dirs=True)
     else:
         simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, metadyn_settings=metadyn_settings)
 
