@@ -1488,7 +1488,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
 def read_Fock_matrix_from_ORCA(file):
     grabA=False
     grabB=False
-
+    foundbeta=False
     i_counter=0
     with open(file) as f:
         for line in f:
@@ -1525,13 +1525,14 @@ def read_Fock_matrix_from_ORCA(file):
                 Acounter=-1
                 Fock_matrix_a=np.zeros((ndim,ndim))
             if 'Fock matrix for operator 1' in line:
+                foundbeta=True
                 print("line:", line)
                 grabB=True
                 Bcounter=-1
                 Fock_matrix_b=np.zeros((ndim,ndim))
     #Write
     np.savetxt("Fock_matrix_a",Fock_matrix_a)
-    if grabB is True:
+    if foundbeta is True:
         print("Found beta Fock matrix")
         np.savetxt("Fock_matrix_b",Fock_matrix_b)
     else:
