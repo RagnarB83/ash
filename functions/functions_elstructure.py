@@ -1488,8 +1488,6 @@ def read_Fock_matrix_from_ORCA(file):
         for line in f:
             if 'Number of basis functions                   ...' in line:
                 ndim=int(line.split()[-1])
-                Fock_matrix_a=np.zeros((ndim,ndim))
-                Fock_matrix_b=np.zeros((ndim,ndim))
             if grabA is True:
                 Acounter+=1                  
                 if Acounter % (ndim+1) == 0:
@@ -1519,11 +1517,17 @@ def read_Fock_matrix_from_ORCA(file):
             if 'Fock matrix for operator 0' in line:
                 grabA=True
                 Acounter=-1
+                Fock_matrix_a=np.zeros((ndim,ndim))
             if 'Fock matrix for operator 1' in line:
-                grabA=True
+                grabB=True
                 Bcounter=-1
+                Fock_matrix_b=np.zeros((ndim,ndim))
+    #Write
     np.savetxt("Fock_matrix_a",Fock_matrix_a)
-    np.savetxt("Fock_matrix_b",Fock_matrix_b)
+    if grabB is True:
+        np.savetxt("Fock_matrix_b",Fock_matrix_b)
+    else:
+        Fock_matrix_b=None
     return Fock_matrix_a, Fock_matrix_b
 
 
