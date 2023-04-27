@@ -1372,6 +1372,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
         print("Multiplicity larger than 1. Setting openshell equal to True")
         openshell=True
 
+    print("Openshell:", openshell)
     if isinstance(theory,ORCATheory) is not True:
         print("NOCV_Multiwfn currently only works with ORCATheory")
         ashexit()
@@ -1524,7 +1525,9 @@ def read_Fock_matrix_from_ORCA(file):
 
 
 def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None):
-    
+    print("Fock_a:", Fock_a)
+    print("Fock_b:", Fock_b)
+    print("Writing Fock matrix alpha")
     with open(outputfile,'w') as f:
         f.write("                                 *****************\n")
         f.write("                                 * O   R   C   A *\n")
@@ -1537,6 +1540,7 @@ def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None):
         f.write("\n")
 
         if Fock_b is None:
+            print("Writing Fock matrix beta")
             f.write(f"Fock matrix for operator 1\n")
             f.write("\n")
             Fock_beta = get_Fock_matrix_ORCA_format(Fock_b)
@@ -1545,7 +1549,6 @@ def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None):
 #Get 
 def get_Fock_matrix_ORCA_format(Fock):
     finalstring=""
-
     dim=Fock.shape[0]
     orcacoldim=6
     index=0
