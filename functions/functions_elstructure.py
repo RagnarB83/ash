@@ -1360,7 +1360,7 @@ def grab_NOCV_interactions(file):
 #NOTE: Benefit, multiwfn supports open-shell analysis
 #NOTE: ETS analysis is approximate since the correct Fock matrix is not used
 def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=None, gridlevel=2,
-                            num_nocv_pairs=5, make_cube_files=True, numcores=1):
+                            num_nocv_pairs=5, make_cube_files=True, numcores=1, fockmatrix_approximation="ETS"):
     print_line_with_mainheader("NOCV_Multiwfn")
     print("Will do full NOCV analysis with Multiwfn")
     print("gridlevel:", gridlevel)
@@ -1418,7 +1418,17 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     print("Fock_ETS:", Fock_ETS)
 
     #Write ETS Fock matrix in lower-triangular form for Multiwfn: F(1,1) F(2,1) F(2,2) F(3,1) F(3,2) F(3,3) ... F(nbasis,nbasis)
-    fockfile="Fock_ETS"
+    if fockmatrix_approximation  == 'ETS':
+        print("fockmatrix_approximation: ETS")
+        fockfile="Fock_ETS"
+        write_Fock_matrix_ORCA_format(Fock_ETS,fockfile)
+    elif fockmatrix_approximation  == 'regular':
+        print("fockmatrix_approximation: regular (converged AB Fock matrix)")
+        fockfile="Fock_Pf_a"
+        write_Fock_matrix_ORCA_format(Fock_Pf_a,fockfile)
+    else:
+        print("Unknown fockmatrix_approximation")
+        ashexit()
     print("fockfile:", fockfile)
     #NOTE: Important Writing Fock matrix in ORCA format (with simple header) so that Multiwfn recognized it as such and used ORCA ordering of columns
     # Writing out as simple lower-triangular form does not work due to weird column swapping
