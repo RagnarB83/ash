@@ -3671,6 +3671,11 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               biasdir='.', multiplewalkers=False, numcores=1, walkerid=None):
     print_line_with_mainheader("OpenMM metadynamics")
     
+    #Biasdirectory
+    print("biasdirectory chosen to be:", biasdir)
+    biasdir_full_path = os.path.abspath(biasdir)
+    print("Full path to biasdirectory is:", biasdir_full_path)
+
     if CV1_atoms == None or CV1_type == None:
         print("Error: You must specify both CV1_atoms and CV1_type keywords")
         ashexit()
@@ -3724,7 +3729,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
 
             metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "temperature":temperature, "biasfactor":biasfactor, 
-                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir,
+                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
                                 "CV1_type":CV1_type,"CV2_type":None, "CV1_gridwidth":CV1_bias.gridWidth, "CV2_gridwidth":None,
                                 "CV1_minvalue":CV1_bias.minValue,"CV1_maxvalue":CV1_bias.maxValue,
                                 "CV2_minvalue":None,"CV2_maxvalue":None,}
@@ -3736,7 +3741,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,md)
             CV2_bias = create_CV_bias(CV2_type,CV2_atoms,CV2_biaswidth,md)
             metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "CV2_bias":CV2_bias, "temperature":temperature, "biasfactor":biasfactor, 
-                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir,
+                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
                                 "CV1_type":CV1_type,"CV2_type":CV2_type,"CV1_gridwidth":CV1_bias.gridWidth, "CV2_gridwidth":CV2_bias.gridWidth,
                                 "CV1_minvalue":CV1_bias.minValue,"CV1_maxvalue":CV1_bias.maxValue,
                                 "CV2_minvalue":CV2_bias.minValue,"CV2_maxvalue":CV2_bias.maxValue,}
@@ -3744,7 +3749,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             del metadyn_settings_simple["CV1_bias"]
             del metadyn_settings_simple["CV2_bias"]
         import json
-        json.dump(metadyn_settings_simple, open(f"{biasdir}/ASH_MTD_parameters.txt",'w'))
+        json.dump(metadyn_settings_simple, open(f"{biasdir_full_path}/ASH_MTD_parameters.txt",'w'))
 
     else:
         print("Setting up Plumed")
@@ -3762,7 +3767,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             plumedinput = setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
                        CV1_type,CV1_biaswidth,CV1_atoms,
                        CV2_type,CV2_biaswidth,CV2_atoms,
-                       multiplewalkers=multiplewalkers, biasdir=biasdir,
+                       multiplewalkers=multiplewalkers, biasdir=biasdir_full_path,
                        walkernum=numcores,
                        walkerid=walkerid)
             writestringtofile(plumedinput,"plumedinput.in")
@@ -3793,7 +3798,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
 
     #Data plotting
     if use_plumed is False:
-        print("\nAll bias-files have been written to biasdirectory:", biasdir)
+        print("\nAll bias-files have been written to biasdirectory:", biasdir_full_path)
         print("Dir also contains: ASH_MTD_parameters.txt")
         print("CV1_bias:", CV1_bias)
         print("CV1_bias dict:",CV1_bias.__dict__)
@@ -3816,14 +3821,14 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         #Get free energy surface from biasfiles
         print("\nReading biasfiles to get free energy surface")
         free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias_gridwidth,
-                                                                                    CV2_bias_gridwidth,directory=biasdir)
+                                                                                    CV2_bias_gridwidth,directory=biasdir_full_path)
         print("\nFree energy array:", free_energy)
         print("Writing to disk: MTD_free_energy.txt")
         np.savetxt("MTD_free_energy.txt", free_energy)
 
-        print(f"\nWill now attempt to create plot (requires matplotlib) by running: metadynamics_plot_data(biasdir={biasdir})")
+        print(f"\nWill now attempt to create plot (requires matplotlib) by running: metadynamics_plot_data(biasdir={biasdir_full_path})")
         #try:
-        metadynamics_plot_data(biasdir=biasdir)
+        metadynamics_plot_data(biasdir=biasdir_full_path)
         #except:
         print("Could not create plot. Try running metadynamics_plot_data manually")
         #return
