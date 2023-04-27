@@ -1434,13 +1434,13 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
         fockfile="Fock_ETS"
         print("Fock_ETS_a:", Fock_ETS_a)
         print("Fock_ETS_b:", Fock_ETS_b)
-        write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_ETS_a,Fock_b=Fock_ETS_b)
+        write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_ETS_a,Fock_b=Fock_ETS_b, openshell=openshell)
     elif fockmatrix_approximation  == 'regular':
         print("fockmatrix_approximation: regular (converged AB Fock matrix)")
         fockfile="Fock_Pf"
         print("Fock_Pf_a:", Fock_Pf_a)
         print("Fock_Pf_b:", Fock_Pf_b)
-        write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_Pf_a,Fock_b=Fock_Pf_b)
+        write_Fock_matrix_ORCA_format(fockfile, Fock_a=Fock_Pf_a,Fock_b=Fock_Pf_b, openshell=openshell)
     else:
         print("Unknown fockmatrix_approximation")
         ashexit()
@@ -1531,7 +1531,7 @@ def read_Fock_matrix_from_ORCA(file):
     return Fock_matrix_a, Fock_matrix_b
 
 
-def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None):
+def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None, openshell=False):
     print("Fock_a:", Fock_a)
     print("Fock_b:", Fock_b)
     print("Writing Fock matrix alpha")
@@ -1545,8 +1545,7 @@ def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None):
         Fock_alpha = get_Fock_matrix_ORCA_format(Fock_a)
         f.write(Fock_alpha)
         f.write("\n")
-
-        if Fock_b is None:
+        if openshell is True:
             print("Writing Fock matrix beta")
             f.write(f"Fock matrix for operator 1\n")
             f.write("\n")
