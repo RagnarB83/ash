@@ -1525,12 +1525,14 @@ def read_Fock_matrix_from_ORCA(file):
                 Acounter=-1
                 Fock_matrix_a=np.zeros((ndim,ndim))
             if 'Fock matrix for operator 1' in line:
+                print("line:", line)
                 grabB=True
                 Bcounter=-1
                 Fock_matrix_b=np.zeros((ndim,ndim))
     #Write
     np.savetxt("Fock_matrix_a",Fock_matrix_a)
     if grabB is True:
+        print("Found beta Fock matrix")
         np.savetxt("Fock_matrix_b",Fock_matrix_b)
     else:
         Fock_matrix_b=None
