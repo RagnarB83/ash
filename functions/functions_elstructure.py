@@ -1419,13 +1419,20 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
 
     #Write ETS Fock matrix in lower-triangular form for Multiwfn: F(1,1) F(2,1) F(2,2) F(3,1) F(3,2) F(3,3) ... F(nbasis,nbasis)
     fockfile="Fock_ETS.txt"
-    with open(fockfile, 'w') as f:
+    with open("Fock_ETS_lowertriang.txt", 'w') as f:
         for i in range(0,Fock_ETS.shape[0]):
             for j in range(0,i+1):
                 f.write(f"{Fock_ETS[i,j]} ")
+    with open("Fock_Pf_a_lowertriang.txt", 'w') as f:
+        for i in range(0,Fock_Pf_a.shape[0]):
+            for j in range(0,i+1):
+                f.write(f"{Fock_Pf_a[i,j]} ")
+    with open("Fock_Pi_a_lowertriang.txt", 'w') as f:
+        for i in range(0,Fock_Pi_a.shape[0]):
+            for j in range(0,i+1):
+                f.write(f"{Fock_Pi_a[i,j]} ")
 
-    #np.savetxt("Fock_ETS",Fock_ETS)
-
+    fockfile="Fock_Pf_a_lowertriang"
     #Call Multiwfn
     multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
                     fragmentfiles=["A.molden.input","B.molden.input"],
