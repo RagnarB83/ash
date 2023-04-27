@@ -474,9 +474,10 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
         for i in range(0,numcores):
             workerdir=f"Pooljob_{i}"
             print(f"separate_dirs option True. Creating dir {workerdir}")
+            print("Creating workerdir:", workerdir)
             try:
                 os.mkdir(workerdir)
-                print("Created workerdir:", workerdir)
+
             except:
                 pass
         #Default 0 
