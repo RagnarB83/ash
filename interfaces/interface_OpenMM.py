@@ -4165,7 +4165,7 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
         #print("cv2_conversionfactor*CV2_minvalue:", cv2_conversionfactor*CV2_minvalue)
         #print("cv2_conversionfactor*CV2_maxvalue:", cv2_conversionfactor*CV2_maxvalue)
         option1ax.imshow(rel_free_energy, cmap=colormap_option1, extent=[cv1_conversionfactor*CV1_minvalue, cv1_conversionfactor*CV1_maxvalue, 
-                                                                          cv2_conversionfactor*CV2_minvalue, cv2_conversionfactor*CV2_maxvalue])
+                                                                          cv2_conversionfactor*CV2_maxvalue, cv2_conversionfactor*CV2_minvalue])
         #option1fig.colorbar(option1ax)
         option1ax.set_xlabel(f'CV1({CV1_unit_label})')
         option1ax.set_xlabel(f'CV2({CV2_unit_label})')
