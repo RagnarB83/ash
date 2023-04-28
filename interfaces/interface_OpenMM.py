@@ -4116,13 +4116,13 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
             cv1_conversionfactor =180/np.pi
             CV1_unit_label="°"
         elif CV1_type == 'bond' or CV1_type == 'distance' or CV1_type == 'rmsd':
-            cv1_conversionfactor = 1.0
+            cv1_conversionfactor = 10.0
             CV1_unit_label="Ang"
         if CV2_type == 'dihedral' or CV2_type == 'angle' or CV1_type == 'torsion' :
             cv2_conversionfactor =180/np.pi
             CV2_unit_label="°"
         elif CV2_type == 'bond' or CV2_type == 'distance' or CV2_type == 'rmsd':
-            cv2_conversionfactor = 1.0
+            cv2_conversionfactor = 10.0
             CV2_unit_label="Ang"
 
         #Get free energy surface from biasfiles
@@ -4206,7 +4206,7 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
             cv1_conversionfactor =180/np.pi
             CV1_unit_label="°"
         elif CV1_type == 'bond' or CV1_type == 'distance' or CV1_type == 'rmsd':
-            cv1_conversionfactor = 1.0
+            cv1_conversionfactor = 10.0
             CV1_unit_label="Ang"
         free_energy, bla = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwidth,None,directory=biasdir)
         
