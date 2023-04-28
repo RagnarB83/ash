@@ -3933,16 +3933,20 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None):
         if CV_type == "dihedral" or CV_type == "torsion":
             CV_min_val=-np.pi
             CV_max_val=np.pi
+            CV_unit="rad"
         elif CV_type == "angle":
             CV_min_val=0
             CV_max_val=np.pi
+            CV_unit="rad"
         elif CV_type == "distance" or CV_type == "bond" or CV_type == "rmsd" :
-            CV_min_val=0
-            CV_max_val=5
-        print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val}")
+            CV_min_val=0.0
+            CV_max_val=0.5
+            CV_unit="nm"
+        print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val} {CV_unit}")
     else:
         CV_min_val=CV_range[0]
         CV_max_val=CV_range[1]
+        print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val}")
     import openmm
     # Define collective variables for CV1 and CV2.
     if CV_type == "dihedral" or CV_type == "torsion":
