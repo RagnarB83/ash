@@ -4172,9 +4172,9 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
         #Option 2: contour plot with gridlines
         colormap_option2='RdYlBu_r' #inferno_r another option
         print("Printing option2 plot")
-        ash.modules.module_plotting.contourplot(surfacedictionary, label='_MTD_option2',x_axislabel=f'CV1({CV1_unit_label})', y_axislabel=f'CV2 ({CV2_unit_label})', finalunit='kcal/mol', interpolation='Cubic', 
-            interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
-            contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
+        #ash.modules.module_plotting.contourplot(surfacedictionary, label='_MTD_option2',x_axislabel=f'CV1({CV1_unit_label})', y_axislabel=f'CV2 ({CV2_unit_label})', finalunit='kcal/mol', interpolation='Cubic', 
+        #    interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
+        #    contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
 
         #Option 3: 
         colormap_option3='RdYlBu_r'
