@@ -3722,7 +3722,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None,
-              anderson_thermostat=False, restraints=None, rmsd_CV1_reference_indices=None, rmsd_CV2_reference_indices=None,
+              anderson_thermostat=False, restraints=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
@@ -3789,8 +3789,8 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         coords_nm = fragment.coords * 0.1  # converting from Angstrom to nm
         reference_pos = [openmm.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in
                range(len(coords_nm))] * openmm.unit.nanometer
-        print("rmsd_CV1_reference_indices:", rmsd_CV1_reference_indices)
-        print("rmsd_CV2_reference_indices:", rmsd_CV2_reference_indices)
+        print("rmsd_CV1_reference_indices:", CV1_atoms)
+        print("rmsd_CV2_reference_indices:", CV2_atoms)
     
     #Setting up collective variables for native case or plumed case
     if use_plumed is False:
@@ -3799,7 +3799,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         if numCVs == 1:
             # Create metadynamics object for 1 CV
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,CV_range=CV1_range, 
-                                      reference_pos=reference_pos, reference_particles=rmsd_CV1_reference_indices)
+                                      reference_pos=reference_pos, reference_particles=CV1_atoms)
 
 
             metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "temperature":temperature, "biasfactor":biasfactor, 
@@ -3813,9 +3813,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         elif numCVs == 2:
             # Create metadynamics object for 2 CVs
             CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,CV_range=CV1_range,
-                                      reference_pos=reference_pos, reference_particles=rmsd_CV1_reference_indices)
+                                      reference_pos=reference_pos, reference_particles=CV1_atoms)
             CV2_bias = create_CV_bias(CV2_type,CV2_atoms,CV2_biaswidth,CV_range=CV2_range,
-                                      reference_pos=reference_pos, reference_particles=rmsd_CV2_reference_indices)
+                                      reference_pos=reference_pos, reference_particles=CV2_atoms)
             metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "CV2_bias":CV2_bias, "temperature":temperature, "biasfactor":biasfactor, 
                                 "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
                                 "CV1_type":CV1_type,"CV2_type":CV2_type,"CV1_gridwidth":CV1_bias.gridWidth, "CV2_gridwidth":CV2_bias.gridWidth,
@@ -4057,13 +4057,11 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=No
         cv.addBond(*CV_atoms)
         CV_bias = openmm.app.BiasVariable(cv, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
     elif CV_type == "rmsd":
-        if len(CV_atoms) != 2:
-            print("Error: CV_atoms list must contain 2 atom indices")
-            ashexit()
         #http://docs.openmm.org/development/api-python/generated/openmm.openmm.RMSDForce.html
         #reference_pos: A vector of atom positions
         #reference_particles: atom indices used to calculate RMSD
-        cv = openmm.RMSDForce(referencePositions=reference_pos, particles=reference_particles)
+        cv = openmm.RMSDForce(reference_pos)
+        cv.setParticles(reference_particles)
         CV_bias = openmm.app.BiasVariable(cv, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
     else:
         print("unsupported CV_type for native OpenMM metadynamics implementation")
