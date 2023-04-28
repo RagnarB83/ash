@@ -890,6 +890,57 @@ class OpenMMTheory:
         print("Added center force")
         return centerforce
 
+
+    #Add a restraining force
+    def add_restraint_force(self,):
+        import openmm
+
+        #rmsd_cv = openmm.RMSDForce(positions, atom_indicies)
+        energy_expression = f"(k/2)*max(0, RMSD-RMSDmax)^2"
+        restraint_force = openmm.CustomCVForce(energy_expression)
+        restraint_force.addCollectiveVariable('RMSD', CVforce)
+        restraint_force.addGlobalParameter('RMSDmax', 0.4)
+        restraint_force.addGlobalParameter("k", 50)
+
+
+        restraint = openmm.CustomExternalForce('k*periodicdistance(x, y, z, x0, y0, z0)^2')
+        self.system.addForce(restraint)
+        restraint.addGlobalParameter('k', 100.0*kilojoules_per_mole/nanometer)
+        restraint.addPerParticleParameter('x0')
+        restraint.addPerParticleParameter('y0')
+        restraint.addPerParticleParameter('z0')
+        
+        for i in range(self.system.getNumParticles()):
+            restraint.addParticle(i, np.array([0.0, 0.0, 0.0]))
+        self.system.addForce(restraint)
+        print("Added force")
+        return restraint
+
+    #Add a restraining force to CV
+    def add_restraint_CV_force(self, CVforce):
+        import openmm
+
+        #rmsd_cv = openmm.RMSDForce(positions, atom_indicies)
+        energy_expression = f"(k/2)*max(0, RMSD-RMSDmax)^2"
+        restraint_force = openmm.CustomCVForce(energy_expression)
+        restraint_force.addCollectiveVariable('RMSD', CVforce)
+        restraint_force.addGlobalParameter('RMSDmax', 0.4)
+        restraint_force.addGlobalParameter("k", 50)
+
+
+        restraint = openmm.CustomExternalForce('k*periodicdistance(x, y, z, x0, y0, z0)^2')
+        self.system.addForce(restraint)
+        restraint.addGlobalParameter('k', 100.0*kilojoules_per_mole/nanometer)
+        restraint.addPerParticleParameter('x0')
+        restraint.addPerParticleParameter('y0')
+        restraint.addPerParticleParameter('z0')
+        
+        for i in range(self.system.getNumParticles()):
+            restraint.addParticle(i, np.array([0.0, 0.0, 0.0]))
+        self.system.addForce(restraint)
+        print("Added force")
+        return restraint
+
     def add_custom_external_force(self):
         import openmm
         # customforce=None
@@ -980,6 +1031,7 @@ class OpenMMTheory:
 
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
+        print("Adding restraints:", restraints)
         import openmm
         new_restraints = openmm.HarmonicBondForce()
         for i, j, d, k in restraints:
@@ -2996,7 +3048,7 @@ class OpenMM_MDclass:
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
     def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, metadyn_settings=None, 
-            plumedinput=None, process_id=None, workerdir=None):
+            plumedinput=None, process_id=None, workerdir=None, restraints=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
         import openmm
@@ -3048,6 +3100,12 @@ class OpenMM_MDclass:
         if self.externalqm is True:
             print("Creating new OpenMM custom external force for external QM theory.")
             self.qmcustomforce = self.openmmobject.add_custom_external_force()
+
+        #Possible restraints added
+        if restraints != None:
+            print("Adding restraints")
+            self.openmmobject.add_bondrestraints(restraints=restraints)
+
 
         #Creating simulation object
         simulation = self.openmmobject.create_simulation()
@@ -3660,7 +3718,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None,
-              anderson_thermostat=False,
+              anderson_thermostat=False, restraints=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
@@ -3790,9 +3848,11 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                                                         md.run, parameter_dict={"simulation_steps":simulation_steps, 
                                                         "simulation_time":simulation_time, "metadynamics":native_MTD, 
                                                         "metadyn_settings":metadyn_settings, "plumedinput" : plumedinput}, 
-                                                        numcores=numcores, version='multiprocess', separate_dirs=True)
+                                                        numcores=numcores, version='multiprocess', separate_dirs=True,
+                                                        restraints=restraints)
     else:
-        simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, metadyn_settings=metadyn_settings)
+        simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, metadyn_settings=metadyn_settings,
+                            restraints=restraints)
 
     print("Metadynamics simulation done")
 
