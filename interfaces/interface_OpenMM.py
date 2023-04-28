@@ -4181,11 +4181,13 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
         return
     
     elif numCVs == 1:
+
         if CV1_type == 'dihedral' or CV1_type == 'torsion' or CV1_type == 'angle':
             cv1_conversionfactor =180/np.pi
             CV1_unit_label="°"
         elif CV1_type == 'bond' or CV1_type == 'distance' or CV1_type == 'rmsd':
             cv1_conversionfactor = 1.0
+            CV1_unit_label="Ang"
         free_energy, bla = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwidth,None,directory=biasdir)
         
         #X-values
