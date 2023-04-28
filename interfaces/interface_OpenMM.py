@@ -3939,7 +3939,7 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None):
         elif CV_type == "distance" or CV_type == "bond" or CV_type == "rmsd" :
             CV_min_val=0
             CV_max_val=5
-        print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val")
+        print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val}")
     else:
         CV_min_val=CV_range[0]
         CV_max_val=CV_range[1]
