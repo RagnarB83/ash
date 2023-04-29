@@ -159,7 +159,6 @@ class OpenMMTheory:
         else:
             if self.printlevel > 0:
                 print("Using platform:", self.platform_choice)
-        print("self.properties:", self.properties)
         # Whether to do energy decomposition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_decomposition = do_energy_decomposition
 
@@ -3220,6 +3219,8 @@ class OpenMM_MDclass:
                 if metadynamics == True:
                     print("Now calling OpenMM native metadynamics and taking 1 step")
                     meta_object.step(simulation, 1)
+                    print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2)
+                    checkpoint = time.time()
 
                     #getCollectiveVariables
                     print("metadyn_freq ", metadyn_settings["saveFrequency"]*metadyn_settings["frequency"])
@@ -3232,9 +3233,10 @@ class OpenMM_MDclass:
                                 f.write(f"{currtime} {current_cv[0]} {current_cv[1]}\n")
                             elif metadyn_settings["numCVs"] == 1:
                                 f.write(f"{currtime} {current_cv[0]}\n")
+                    print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2)
                 else:
                     simulation.step(1)
-                print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
+                    print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
                 
                 # NOTE: Better to use OpenMM-plumed interface instead??
