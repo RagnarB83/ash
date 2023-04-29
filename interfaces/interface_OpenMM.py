@@ -3214,7 +3214,26 @@ class OpenMM_MDclass:
                 #Accessible: self.QM_MM_object.extforce_energy
                 # Now take OpenMM step (E+G + displacement etc.)
                 checkpoint = time.time()
-                simulation.step(1)
+
+
+                #OpenMM metadynamics
+                if metadynamics == True:
+                    print("Now calling OpenMM native metadynamics and taking 1 step")
+                    meta_object.step(simulation, 1)
+
+                    #getCollectiveVariables
+                    print("metadyn_freq ", metadyn_settings["saveFrequency"]*metadyn_settings["frequency"])
+                    if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
+                        print("MTD: Writing current collective variables to disk")
+                        current_cv = meta_object.getCollectiveVariables(simulation)
+                        currtime = step*self.timestep #Time in ps
+                        with open(f'colvar', 'a') as f:
+                            if metadyn_settings["numCVs"] == 2:
+                                f.write(f"{currtime} {current_cv[0]} {current_cv[1]}\n")
+                            elif metadyn_settings["numCVs"] == 1:
+                                f.write(f"{currtime} {current_cv[0]}\n")
+                else:
+                    simulation.step(1)
                 print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
                 
@@ -3272,8 +3291,6 @@ class OpenMM_MDclass:
                 #TODO: take this and QM energy and add to print_current_step_info
                 extforce_energy=3*np.mean(sum(gradient*current_coords*1.88972612546))
                 print("extforce_energy:", extforce_energy)
-
-
 
                 #OpenMM metadynamics
                 if metadynamics == True:
@@ -3791,7 +3808,8 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                range(len(coords_nm))] * openmm.unit.nanometer
         print("rmsd_CV1_reference_indices:", CV1_atoms)
         print("rmsd_CV2_reference_indices:", CV2_atoms)
-    
+    else:
+        reference_pos=None
     #Setting up collective variables for native case or plumed case
     if use_plumed is False:
         native_MTD=True
@@ -4184,7 +4202,9 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
     return free_energy,list_of_free_energies
 
 #Simple plotting for native OpenMM metadynamics via ASH 
-def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
+#NOTE: plot_xlim/plot_ylim in final CV units (Ang for distance/rmsd and ° for )
+#CV1_minvalue/CV1_maxvalue should be set before simulation
+def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=None, plot_ylim=None ):
 
     import json
     #Read mtd settings dict from file
@@ -4193,9 +4213,14 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
 
     CV1_type=metadyn_settings["CV1_type"]; CV2_type=metadyn_settings["CV2_type"]; temperature=metadyn_settings["temperature"]; 
     biasfactor=metadyn_settings["biasfactor"]; CV1_gridwidth=metadyn_settings["CV1_gridwidth"]
-    CV2_gridwidth=metadyn_settings["CV2_gridwidth"]; CV1_minvalue=metadyn_settings["CV1_minvalue"]; 
-    CV1_maxvalue=metadyn_settings["CV1_maxvalue"]; CV2_minvalue=metadyn_settings["CV2_minvalue"]; 
+    CV2_gridwidth=metadyn_settings["CV2_gridwidth"]
+    
+    CV1_minvalue=metadyn_settings["CV1_minvalue"] 
+    CV1_maxvalue=metadyn_settings["CV1_maxvalue"]
+    CV2_minvalue=metadyn_settings["CV2_minvalue"]
     CV2_maxvalue=metadyn_settings["CV2_maxvalue"]
+    print("Using CV1_minvalue:{CV1_minvalue} CV1_maxvalue:{CV1_maxvalue}")
+    print("Using CV2_minvalue:{CV2_minvalue} CV2_maxvalue:{CV2_maxvalue}")
 
     e_conversionfactor=4.184 #kJ/mol to kcal/mol
     if CV2_type != None:
@@ -4208,13 +4233,13 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
             CV1_unit_label="°"
         elif CV1_type == 'bond' or CV1_type == 'distance' or CV1_type == 'rmsd':
             cv1_conversionfactor = 10.0
-            CV1_unit_label="Ang"
+            CV1_unit_label="Å"
         if CV2_type == 'dihedral' or CV2_type == 'angle' or CV1_type == 'torsion' :
             cv2_conversionfactor =180/np.pi
             CV2_unit_label="°"
         elif CV2_type == 'bond' or CV2_type == 'distance' or CV2_type == 'rmsd':
             cv2_conversionfactor = 10.0
-            CV2_unit_label="Ang"
+            CV2_unit_label="Å"
 
         #Get free energy surface from biasfiles
         free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwidth,
@@ -4224,70 +4249,38 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
         #Coordinates in correct unit
         xvalues = [cv1_conversionfactor*(CV1_minvalue+((CV1_maxvalue - CV1_minvalue) / (CV1_gridwidth-1))*i) for i in range(0,CV1_gridwidth)]
         yvalues = [cv2_conversionfactor*(CV2_minvalue+((CV2_maxvalue - CV2_minvalue) / (CV2_gridwidth-1))*i) for i in range(0,CV2_gridwidth)]
-
-        #Making surface dictionary
-        #print(f"xvalues ({len(xvalues)}): {xvalues}")
-        #print(f"yvalues ({len(yvalues)}): {yvalues}")
-        #print(f"free_energy ({len(rel_free_energy)}): {rel_free_energy}")
-        surfacedictionary={}
-        for i_x,x in enumerate(xvalues):
-            for i_y,y in enumerate(yvalues):
-                surfacedictionary[(x,y)] = rel_free_energy[i_x,i_y]
-
         np.savetxt("MTD_free_energy.txt", free_energy)
         np.savetxt("MTD_free_energy_rel.txt", rel_free_energy)
         
         #Plot
-        print("Attemping to plot:")
+        print("Now plotting:")
         try:
             import matplotlib.pyplot
         except:
             print("Problem importing matplotlib")
             return
-
-        #Option 1: imshow
-        #plt.clf()
-        colormap_option1='RdYlBu_r' 
-        option1fig,option1ax = matplotlib.pyplot.subplots()
-        print("option1fig:", option1fig)
-        print("option1ax:", option1ax)
-        #print("cv1_conversionfactor*CV1_minvalue:", cv1_conversionfactor*CV1_minvalue)
-        #print("cv1_conversionfactor*CV1_maxvalue:", cv1_conversionfactor*CV1_maxvalue)
-        #print("cv2_conversionfactor*CV2_minvalue:", cv2_conversionfactor*CV2_minvalue)
-        #print("cv2_conversionfactor*CV2_maxvalue:", cv2_conversionfactor*CV2_maxvalue)
-        option1ax.imshow(rel_free_energy, cmap=colormap_option1, extent=[cv1_conversionfactor*CV1_minvalue, cv1_conversionfactor*CV1_maxvalue, 
-                                                                          cv2_conversionfactor*CV2_maxvalue, cv2_conversionfactor*CV2_minvalue])
-        #option1fig.colorbar(option1ax)
-        option1ax.set_xlabel(f'CV1({CV1_unit_label})')
-        option1ax.set_xlabel(f'CV2({CV2_unit_label})')
-        option1fig.savefig('MTD_CV2_option1.png', format=imageformat, dpi=dpi)
-
-        #ashexit()
-        #Option 2: contour plot with gridlines
-        colormap_option2='RdYlBu_r' #inferno_r another option
-        print("Printing option2 plot")
-        #ash.modules.module_plotting.contourplot(surfacedictionary, label='_MTD_option2',x_axislabel=f'CV1({CV1_unit_label})', y_axislabel=f'CV2 ({CV2_unit_label})', finalunit='kcal/mol', interpolation='Cubic', 
-        #    interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
-        #    contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
-
-        #Option 3: 
-        colormap_option3='RdYlBu_r'
+        #2D CV plotting uisng scatter with colormap 
         #Colormap to use in 2CV plots.
         # Perceptually uniform sequential: viridis, plasma, inferno, magma, cividis
         #Others: # RdYlBu_r
         #See https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
+        colormap_option3='RdYlBu_r'
         X2, Y2 = np.meshgrid(xvalues, yvalues)
-        #print(f"X2:", X2)
-        #print(f"Y2:", Y2)
-        #option3plot=plot.plot()
-        print("Printing option3 plot")
         option3fig,option3ax = matplotlib.pyplot.subplots()
         cm = matplotlib.pyplot.cm.get_cmap(colormap_option3)
         colorscatter=option3ax.scatter(X2, Y2, c=rel_free_energy, marker='o', linestyle='-', linewidth=1, cmap=cm)
         #Colorbar
         cbar = matplotlib.pyplot.colorbar(colorscatter)
         cbar.set_label('ΔG (kcal/mol)',fontweight='bold', fontsize='xx-small')
-        option3fig.savefig('MTD_CV2_option3.png', format=imageformat, dpi=dpi)
+        #Limits
+        if plot_xlim != None:
+            option3ax.set_xlim(plot_xlim[0], plot_xlim[1])
+        if plot_ylim != None:
+            option3ax.set_ylim(plot_ylim[0], plot_ylim[1])
+        option3ax.set_xlabel(f'CV1:{CV1_type}  ({CV1_unit_label})')
+        option3ax.set_ylabel(f'CV2:{CV2_type}  ({CV2_unit_label})')
+        option3fig.savefig('MTD_CV1_CV2_.png', format=imageformat, dpi=dpi)
+        print("Created file: MTD_CV1_CV2_.png")
         return
     
     elif numCVs == 1:
@@ -4320,3 +4313,39 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png'):
         eplot.savefig('MTD_CV1', imageformat=imageformat, dpi=dpi)
         
         return
+
+
+
+
+
+
+
+#Option 1: imshow
+#plt.clf()
+#colormap_option1='RdYlBu_r' 
+#option1fig,option1ax = matplotlib.pyplot.subplots()
+#print("option1fig:", option1fig)
+#print("option1ax:", option1ax)
+#print("cv1_conversionfactor*CV1_minvalue:", cv1_conversionfactor*CV1_minvalue)
+#print("cv1_conversionfactor*CV1_maxvalue:", cv1_conversionfactor*CV1_maxvalue)
+#print("cv2_conversionfactor*CV2_minvalue:", cv2_conversionfactor*CV2_minvalue)
+#print("cv2_conversionfactor*CV2_maxvalue:", cv2_conversionfactor*CV2_maxvalue)
+#option1ax.imshow(rel_free_energy, cmap=colormap_option1, extent=[cv1_conversionfactor*CV1_minvalue, cv1_conversionfactor*CV1_maxvalue, 
+#                                                                  cv2_conversionfactor*CV2_maxvalue, cv2_conversionfactor*CV2_minvalue],
+#                                                                )
+#option1fig.colorbar(option1ax)
+#option1ax.set_xlabel(f'CV1({CV1_unit_label})')
+#option1ax.set_ylabel(f'CV2({CV2_unit_label})')
+#option1fig.savefig('MTD_CV2_option1.png', format=imageformat, dpi=dpi)
+
+#ashexit()
+#Option 2: contour plot with gridlines
+#surfacedictionary={}
+#for i_x,x in enumerate(xvalues):
+#    for i_y,y in enumerate(yvalues):
+#        surfacedictionary[(x,y)] = rel_free_energy[i_x,i_y]
+#colormap_option2='RdYlBu_r' #inferno_r another option
+#print("Printing option2 plot")
+#ash.modules.module_plotting.contourplot(surfacedictionary, label='_MTD_option2',x_axislabel=f'CV1({CV1_unit_label})', y_axislabel=f'CV2 ({CV2_unit_label})', finalunit='kcal/mol', interpolation='Cubic', 
+#    interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
+#    contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
