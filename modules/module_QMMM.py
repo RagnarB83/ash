@@ -524,7 +524,7 @@ class QMMMTheory:
 
     #This updates the calculated truncated PC gradient to be full-system gradient
     #by combining with the original 1st step correction
-    def TruncatedPCgradientupdate(self,QMgradient_wo_linkatoms,PCgradient):
+    def oldTruncatedPCgradientupdate(self,QMgradient_wo_linkatoms,PCgradient):
 
         #QM part
         #print("Length QMgradient_wo_linkatoms:", len(QMgradient_wo_linkatoms))
@@ -554,6 +554,16 @@ class QMMMTheory:
                 new_full_PC_gradient[i] = self.original_PCcorrection_gradient[i]
 
         return newQMgradient_wo_linkatoms, new_full_PC_gradient
+
+
+    def TruncatedPCgradientupdate(self, QMgradient_wo_linkatoms, PCgradient):
+        newQMgradient_wo_linkatoms = QMgradient_wo_linkatoms + self.original_QMcorrection_gradient
+        
+        new_full_PC_gradient = np.copy(self.original_PCcorrection_gradient)
+        new_full_PC_gradient[self.truncated_PC_region_indices] += PCgradient
+        
+        return newQMgradient_wo_linkatoms, new_full_PC_gradient
+
     def set_numcores(self,numcores):
         print(f"Setting new numcores {numcores}for QMtheory and MMtheory")
         self.qm_theory.set_numcores(numcores)
