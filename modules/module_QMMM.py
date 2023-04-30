@@ -773,7 +773,7 @@ class QMMMTheory:
         # Do linkatom force projections in the end
         #UPDATE: Do MM step in the end now so that we have options for OpenMM extern force
         if Grad == True:
-
+            Grad_prep_CheckpointTime = time.time()
             #assert len(self.allatoms) == len(self.MMgradient)
             
             #Defining QMgradient without linkatoms if present
@@ -821,11 +821,11 @@ class QMMMTheory:
 
 
                 else:
-                    #CheckpointTime = time.time()
+                    CheckpointTime = time.time()
                     #TruncPC correction to QM energy
                     self.QMenergy = QMenergy + self.truncPC_E_correction
                     self.QMgradient_wo_linkatoms, self.PCgradient =  self.TruncatedPCgradientupdate(QMgradient_wo_linkatoms,PCgradient)
-                    #print_time_rel(CheckpointTime, modulename='trunc pcgrad update', moduleindex=3)
+                    print_time_rel(CheckpointTime, modulename='trunc pcgrad update', moduleindex=3)
             else:
                 self.QMenergy = QMenergy
                 #No TruncPC approximation active. No change to original QM and PCgradient from QMcode
@@ -835,6 +835,7 @@ class QMMMTheory:
 
             #Initialize QM_PC gradient (has full system size) and fill up
             #TODO: This can be made more efficient
+            CheckpointTime = time.time()
             self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
             qmcount=0;pccount=0
             for i in self.allatoms:
@@ -849,6 +850,7 @@ class QMMMTheory:
             assert qmcount == len(self.qmatoms)
             assert pccount == len(self.mmatoms)           
             assert qmcount+pccount == len(self.allatoms)
+            print_time_rel(CheckpointTime, modulename='QMpcgrad prepare', moduleindex=3)
             #print(" qmcount+pccount:", qmcount+pccount)
             #print("len(self.allatoms):", len(self.allatoms))
             #print("len self.QM_PC_gradient", len(self.QM_PC_gradient))
@@ -865,7 +867,8 @@ class QMMMTheory:
 
             #LINKATOM FORCE PROJECTION
             # Add contribution to QM1 and MM1 contribution???
-            if self.linkatoms==True:                
+            if self.linkatoms==True:
+                CheckpointTime = time.time()             
                 #print("here")
                 #print("linkatoms_dict: ", linkatoms_dict)
                 #print("linkatoms_indices: ", linkatoms_indices)
@@ -911,7 +914,9 @@ class QMMMTheory:
                     self.QM_PC_gradient[fullatomindex_qm] = newQgrad
                     self.QM_PC_gradient[fullatomindex_mm] = newMgrad                    
 
-            print_time_rel(CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+            
+            print_time_rel(CheckpointTime, modulename='linkatomgrad prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+            print_time_rel(Grad_prep_CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             CheckpointTime = time.time()
         else:
             #No Grad
@@ -953,6 +958,7 @@ class QMMMTheory:
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
             if Grad==True:
+                CheckpointTime = time.time()
                 #print("QM/MM Grad is True")
                 #Provide QM_PC_gradient to OpenMMTheory 
                 if self.openmm_externalforce == True:
@@ -960,6 +966,7 @@ class QMMMTheory:
                     #Calculate energy associated with external force so that we can subtract it later
                     self.extforce_energy=3*np.mean(sum(self.QM_PC_gradient*current_coords*1.88972612546))
 
+                    print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                     #NOTE: Now moved mm_theory.update_custom_external_force call to MD simulation instead
                     # as we don't have access to simulation object here anymore. Uses self.QM_PC_gradient
                     if exit_after_customexternalforce_update==True:
