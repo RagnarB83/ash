@@ -3234,24 +3234,26 @@ class OpenMM_MDclass:
                             elif metadyn_settings["numCVs"] == 1:
                                 f.write(f"{currtime} {current_cv[0]}\n")
                     print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2)
+                    checkpoint = time.time()
                 else:
                     simulation.step(1)
                     print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
+                    checkpoint = time.time()
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
                 
                 # NOTE: Better to use OpenMM-plumed interface instead??
                 # After MM step, grab coordinates and forces
-                if self.plumed_object is not None:
-                    print("Plumed active. Untested. Hopefully works.")
-                    ashexit()
-                    #Necessary to call again
-                    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
-                    current_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
-                    current_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
-                    # Plumed object needs to be configured for OpenMM
-                    energy, newforces = self.plumed_object.run(coords=current_coords, forces=current_forces,
-                                                               step=step)
-                    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces,simulation)
+                #if self.plumed_object is not None:
+                #    print("Plumed active. Untested. Hopefully works.")
+                #    ashexit()
+                #    #Necessary to call again
+                #    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
+                #    current_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
+                #    current_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
+                #    # Plumed object needs to be configured for OpenMM
+                #    energy, newforces = self.plumed_object.run(coords=current_coords, forces=current_forces,
+                #                                               step=step)
+                #    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces,simulation)
 
         #External QM for OpenMMtheory
         #Used to run QM dynamics with OpenMM
