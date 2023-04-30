@@ -793,6 +793,8 @@ class QMMMTheory:
                 #DONE ONCE: CALCULATE FULL PC GRADIENT TO DETERMINE CORRECTION
                 if self.TruncatedPC_recalc_flag is True:
                     CheckpointTime = time.time()
+                    truncfullCheckpointTime = time.time()
+
                     #We have calculated truncated QM and PC gradient
                     QMgradient_trunc = QMgradient
                     PCgradient_trunc = PCgradient
@@ -817,11 +819,13 @@ class QMMMTheory:
                     self.QMenergy = QMenergy + self.truncPC_E_correction
                     #Now determine the correction once and for all
                     self.calculate_truncPC_gradient_correction(QMgradient_full, PCgradient_full, QMgradient_trunc, PCgradient_trunc)
-
+                    print_time_rel(CheckpointTime, modulename='calculate_truncPC_gradient_correction', moduleindex=3)
+                    CheckpointTime = time.time()
+                    
                     #Now defining final QMgradient and PCgradient
                     self.QMgradient_wo_linkatoms, self.PCgradient =  self.TruncatedPCgradientupdate(QMgradient_wo_linkatoms,PCgradient)
-
-                    print_time_rel(CheckpointTime, modulename='trunc-full pcgrad update', moduleindex=3)
+                    print_time_rel(CheckpointTime, modulename='truncPC_gradient update ', moduleindex=3)
+                    print_time_rel(truncfullCheckpointTime, modulename='trunc-full-step pcgrad update', moduleindex=3)
 
                 else:
                     CheckpointTime = time.time()
