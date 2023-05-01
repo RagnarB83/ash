@@ -430,6 +430,15 @@ class QMMMTheory:
                 self.dipole_coords.append(pos_d2)
         #print_time_rel(timeA, modulename="SetDipoleCharges", currprintlevel=self.printlevel, currthreshold=1)
 
+
+    def make_QM_PC_gradient(self):
+        self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
+        qmatom_indices = np.where(np.isin(self.allatoms, self.qmatoms))[0]
+        pcatom_indices = np.where(~np.isin(self.allatoms, self.qmatoms))[0]
+        self.QM_PC_gradient[qmatom_indices] = self.QMgradient_wo_linkatoms[:len(qmatom_indices)]
+        self.QM_PC_gradient[pcatom_indices] = self.PCgradient[:len(pcatom_indices)]
+        return
+
     #TruncatedPCfunction control flow for pointcharge field passed to QM program
     def TruncatedPCfunction(self):
         self.TruncatedPCcalls+=1
@@ -527,34 +536,20 @@ class QMMMTheory:
     def oldTruncatedPCgradientupdate(self,QMgradient_wo_linkatoms,PCgradient):
 
         #QM part
-        #print("Length QMgradient_wo_linkatoms:", len(QMgradient_wo_linkatoms))
-        #print("Length self.original_QMcorrection_gradient:", len(self.original_QMcorrection_gradient))
-        #print("QMgradient_wo_linkatoms:", QMgradient_wo_linkatoms)
-        #print("self.original_QMcorrection_gradient:", self.original_QMcorrection_gradient)
         newQMgradient_wo_linkatoms = QMgradient_wo_linkatoms + self.original_QMcorrection_gradient
-        #print("newQMgradient_wo_linkatoms:", newQMgradient_wo_linkatoms)
-
         #PC part
         #Initialzing new full PC array
         new_full_PC_gradient=np.zeros((len(self.original_PCcorrection_gradient), 3))
-        #print("len new_full_PC_gradient:", len(new_full_PC_gradient))
-        #print("len self.original_PCcorrection_gradient:", len(self.original_PCcorrection_gradient))
-        #print("len PCgradient:", len(PCgradient))
         count=0
         for i in range(0,len(new_full_PC_gradient)):
             if i in self.truncated_PC_region_indices:
-                #print("i:", i)
-                #print("count:", count)
                 #Now updating with gradient from active region
-                #print("self.original_PCcorrection_gradient[i]:", self.original_PCcorrection_gradient[i])
-                #print("PCgradient[count]: ",  PCgradient[count])
                 new_full_PC_gradient[i] = self.original_PCcorrection_gradient[i] + PCgradient[count]
                 count+=1
             else:
                 new_full_PC_gradient[i] = self.original_PCcorrection_gradient[i]
 
         return newQMgradient_wo_linkatoms, new_full_PC_gradient
-
 
     def TruncatedPCgradientupdate(self, QMgradient_wo_linkatoms, PCgradient):
         newQMgradient_wo_linkatoms = QMgradient_wo_linkatoms + self.original_QMcorrection_gradient
@@ -853,21 +848,23 @@ class QMMMTheory:
             #Initialize QM_PC gradient (has full system size) and fill up
             #TODO: This can be made more efficient
             CheckpointTime = time.time()
-            self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
-            qmcount=0;pccount=0
-            for i in self.allatoms:
-                if i in self.qmatoms:
-                    #QM-gradient. Linkatom gradients are skipped
-                    self.QM_PC_gradient[i]=self.QMgradient_wo_linkatoms[qmcount]
-                    qmcount+=1
-                else:
-                    #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
-                    self.QM_PC_gradient[i] = self.PCgradient[pccount]
-                    pccount += 1
-            assert qmcount == len(self.qmatoms)
-            assert pccount == len(self.mmatoms)           
-            assert qmcount+pccount == len(self.allatoms)
+            self.make_QM_PC_gradient() #populates self.QM_PC_gradient
             print_time_rel(CheckpointTime, modulename='QMpcgrad prepare', moduleindex=3)
+            #self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
+            #qmcount=0;pccount=0
+            #for i in self.allatoms:
+            #    if i in self.qmatoms:
+            #        #QM-gradient. Linkatom gradients are skipped
+            #        self.QM_PC_gradient[i]=self.QMgradient_wo_linkatoms[qmcount]
+            #        qmcount+=1
+            #    else:
+            #        #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
+            #        self.QM_PC_gradient[i] = self.PCgradient[pccount]
+            #        pccount += 1
+            #assert qmcount == len(self.qmatoms)
+            #assert pccount == len(self.mmatoms)           
+            #assert qmcount+pccount == len(self.allatoms)
+
             #print(" qmcount+pccount:", qmcount+pccount)
             #print("len(self.allatoms):", len(self.allatoms))
             #print("len self.QM_PC_gradient", len(self.QM_PC_gradient))
