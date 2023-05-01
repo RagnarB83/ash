@@ -770,7 +770,7 @@ class QMMMTheory:
                                                                                          qm_elems=current_qmelems, charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
                     
-                    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
+                    #shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
                 else:
                     QMenergy, QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
@@ -822,10 +822,10 @@ class QMMMTheory:
                                                                                          Grad=True, PC=True, numcores=numcores)
                     print_time_rel(CheckpointTime, modulename='trunc-pc full calculation', moduleindex=3)
                     CheckpointTime = time.time()
-                    try:
-                        shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
-                    except:
-                        pass
+                    #try:
+                    #    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
+                    #except:
+                    #    pass
                     
                     #TruncPC correction to QM energy
                     self.truncPC_E_correction = QMenergy_full - QMenergy
