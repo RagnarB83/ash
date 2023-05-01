@@ -3183,7 +3183,7 @@ def check_gradient_for_bad_atoms(fragment=None,gradient=None, threshold=45000):
 
 #Define XH bond constraints for a given fragment and a set of atomindices (e.g. an active region)
 # and an optional exclusion list (e.g. QM-region)
-def define_XH_constraints(fragment, actatoms=None, conncode='py', excludeatoms=None):
+def define_XH_constraints(fragment, actatoms=None, excludeatoms=None, conncode='py'):
     print("Inside define_XH_constraints function")
     if actatoms == None:
         subset_elems = fragment.elems
