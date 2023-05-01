@@ -981,7 +981,7 @@ class QMMMTheory:
                     self.extforce_energy_old=3*np.mean(sum(self.QM_PC_gradient*current_coords*1.88972612546))
                     print("self.extforce_energy_old:", self.extforce_energy_old)
                     print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
-                    self.extforce_energy_new = 3 * np.mean(np.sum(self.QM_PC_gradient * current_coords * 1.88972612546, axis=1))
+                    self.extforce_energy_new = 3 * np.mean(np.sum(self.QM_PC_gradient * current_coords * 1.88972612546, axis=0))
                     print("self.extforce_energy_new:", self.extforce_energy_new)
                     CheckpointTime = time.time()
                     print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
