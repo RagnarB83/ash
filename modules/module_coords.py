@@ -3179,3 +3179,67 @@ def check_gradient_for_bad_atoms(fragment=None,gradient=None, threshold=45000):
         print()
         print(f"No atoms with gradients larger than threshold: {threshold}")
     return indices
+
+
+#Define XH bond constraints for a given fragment and a set of atomindices (e.g. an active region)
+# and an optional exclusion list (e.g. QM-region)
+def define_XH_constraints(fragment, actatoms=None, conncode='py', excludeatoms=None):
+    print("Inside define_XH_constraints function")
+    if actatoms == None:
+        subset_elems = fragment.elems
+        subset_coords = fragment.coords
+    else:
+        subset_elems = [fragment.elems[i] for i in actatoms]
+        subset_coords = np.take(fragment.coords, actatoms, axis=0)
+
+    print(f"Defining constraints for {len(subset_elems)} atom-region")
+
+    #Finding H-atoms (both act indices and full indices)
+    tempHatoms = [index for index, el in enumerate(subset_elems) if el == 'H']
+    tempHatoms_full = [actindex_to_fullindex(i,actatoms) for i in tempHatoms]
+    Hatoms=[]
+    if excludeatoms != None:
+        print("Checking for exclude atoms")
+        for th,th_f in zip(tempHatoms,tempHatoms_full):
+            if th_f not in excludeatoms:
+                Hatoms.append(th)
+    else:
+        Hatoms=tempHatoms
+
+    #Now finding X-H pairs for active region
+    #py version (slow) but good enough for a few thousand atoms
+    scale = ash.settings_ash.settings_dict["scale"]
+    tol = ash.settings_ash.settings_dict["tol"]
+    if conncode == 'py':
+        act_con_list = []
+        for Hatom in Hatoms:
+            connatoms = get_connected_atoms_np(subset_coords, subset_elems, scale, tol, Hatom)
+            act_con_list.append(connatoms)
+    #Faster Julia function
+    else:
+        print("Loading Julia")
+        try:
+            Juliafunctions = load_julia_interface()
+        except:
+            print("Problem loading Julia")
+            ashexit()
+        act_con_list = Juliafunctions.get_connected_atoms_forlist_julia(subset_coords, subset_elems, scale, tol,
+                                                                        eldict_covrad, Hatoms)
+    #Convert XH actregion indices to finalregion indices
+    final_list=[]
+    for XHpair in act_con_list:
+        if len(XHpair) != 2:
+            print("XHpair is strange:", XHpair)
+            ashexit()
+        final_list.append([actindex_to_fullindex(XHpair[0],actatoms),actindex_to_fullindex(XHpair[1],actatoms)])
+    return final_list
+
+#Simple function to convert atom indices from full system to Active region. Single index case
+def fullindex_to_actindex(fullindex,actatoms):
+    actindex=actatoms.index(fullindex)
+    return actindex
+
+#Simple function to convert atom indices from active region to full-system case.
+def actindex_to_fullindex(actindex,actatoms):
+    fullindex = actatoms[actindex]
+    return fullindex

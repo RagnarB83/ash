@@ -2824,7 +2824,7 @@ class OpenMM_MDclass:
         print("Integrator:", self.integrator)
         print("Timestep: {} ps".format(self.timestep))
         print("Anderon Thermostat:", anderson_thermostat)
-        print("coupling_frequency: {} ps^-1 (for Nosé-Hoover and Langevin integrators)".format(self.coupling_frequency))
+        print("coupling_frequency: {} ps^-1 (for Nose-Hoover and Langevin integrators)".format(self.coupling_frequency))
         print("Barostat:", barostat)
 
         print("")

@@ -37,7 +37,7 @@ import ash.modules.module_coords
 from ash.modules.module_coords import get_molecules_from_trajectory, eldict_covrad, write_pdbfile, Fragment, read_xyzfile, \
     write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile, split_multimolxyzfile
 from ash.modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_system_CHARMM, getwaterconstraintslist,\
-    QMregionfragexpand, read_xyzfiles, Reaction
+    QMregionfragexpand, read_xyzfiles, Reaction, define_XH_constraints
 
 # Singlepoint
 import ash.modules.module_singlepoint
