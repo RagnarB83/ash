@@ -430,11 +430,11 @@ class QMMMTheory:
                 self.dipole_coords.append(pos_d2)
         #print_time_rel(timeA, modulename="SetDipoleCharges", currprintlevel=self.printlevel, currthreshold=1)
 
-
+    #More efficient version than previous loop
     def make_QM_PC_gradient(self):
         self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
         qmatom_indices = np.where(np.isin(self.allatoms, self.qmatoms))[0]
-        pcatom_indices = np.where(~np.isin(self.allatoms, self.qmatoms))[0]
+        pcatom_indices = np.where(~np.isin(self.allatoms, self.qmatoms))[0] # ~ is NOT operator in numpy
         self.QM_PC_gradient[qmatom_indices] = self.QMgradient_wo_linkatoms[:len(qmatom_indices)]
         self.QM_PC_gradient[pcatom_indices] = self.PCgradient[:len(pcatom_indices)]
         return
@@ -498,7 +498,7 @@ class QMMMTheory:
         #num_dipole_charges=len(self.dipole_charges)
         #self.truncated_PC_region_indices = self.truncated_PC_region_indices[0:-num_dipole_charges]
 
-    def calculate_truncPC_gradient_correction(self,QMgradient_full, PCgradient_full, QMgradient_trunc, PCgradient_trunc):
+    def oldcalculate_truncPC_gradient_correction(self,QMgradient_full, PCgradient_full, QMgradient_trunc, PCgradient_trunc):
         #Correction for QM-atom gradient
         self.original_QMcorrection_gradient=np.zeros((len(QMgradient_full)-self.num_linkatoms, 3))
         #Correction for PC gradient
@@ -528,7 +528,18 @@ class QMMMTheory:
             else:
                 # Keep original full contribution
                 self.original_PCcorrection_gradient[i] = PCgradient_full[i]
-
+        return
+    #New more efficient version
+    def calculate_truncPC_gradient_correction(self, QMgradient_full, PCgradient_full, QMgradient_trunc, PCgradient_trunc):
+        #QM part
+        qm_difference = QMgradient_full[:len(QMgradient_full)-self.num_linkatoms] - QMgradient_trunc[:len(QMgradient_full)-self.num_linkatoms]
+        self.original_QMcorrection_gradient = qm_difference
+        #PC part
+        truncated_indices = np.array(self.truncated_PC_region_indices)
+        pc_difference = np.zeros((len(PCgradient_full), 3))
+        pc_difference[truncated_indices] = PCgradient_full[truncated_indices] - PCgradient_trunc
+        pc_difference[~np.isin(np.arange(len(PCgradient_full)), truncated_indices)] = PCgradient_full[~np.isin(np.arange(len(PCgradient_full)), truncated_indices)]
+        self.original_PCcorrection_gradient = pc_difference
         return
 
     #This updates the calculated truncated PC gradient to be full-system gradient
@@ -538,7 +549,6 @@ class QMMMTheory:
         #QM part
         newQMgradient_wo_linkatoms = QMgradient_wo_linkatoms + self.original_QMcorrection_gradient
         #PC part
-        #Initialzing new full PC array
         new_full_PC_gradient=np.zeros((len(self.original_PCcorrection_gradient), 3))
         count=0
         for i in range(0,len(new_full_PC_gradient)):
@@ -548,7 +558,6 @@ class QMMMTheory:
                 count+=1
             else:
                 new_full_PC_gradient[i] = self.original_PCcorrection_gradient[i]
-
         return newQMgradient_wo_linkatoms, new_full_PC_gradient
 
     def TruncatedPCgradientupdate(self, QMgradient_wo_linkatoms, PCgradient):
@@ -823,6 +832,7 @@ class QMMMTheory:
                     print(f"Truncated PC energy correction: {self.truncPC_E_correction} Eh")
                     self.QMenergy = QMenergy + self.truncPC_E_correction
                     #Now determine the correction once and for all
+                    CheckpointTime = time.time()
                     self.calculate_truncPC_gradient_correction(QMgradient_full, PCgradient_full, QMgradient_trunc, PCgradient_trunc)
                     print_time_rel(CheckpointTime, modulename='calculate_truncPC_gradient_correction', moduleindex=3)
                     CheckpointTime = time.time()
@@ -978,14 +988,8 @@ class QMMMTheory:
                 if self.openmm_externalforce == True:
                     print("OpenMM externalforce is True")
                     #Calculate energy associated with external force so that we can subtract it later
-                    self.extforce_energy_old=3*np.mean(sum(self.QM_PC_gradient*current_coords*1.88972612546))
-                    print("self.extforce_energy_old:", self.extforce_energy_old)
-                    print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
-                    self.extforce_energy_new = 3 * np.mean(np.sum(self.QM_PC_gradient * current_coords * 1.88972612546, axis=0))
-                    print("self.extforce_energy_new:", self.extforce_energy_new)
-                    CheckpointTime = time.time()
-                    print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
-
+                    self.extforce_energy = 3 * np.mean(np.sum(self.QM_PC_gradient * current_coords * 1.88972612546, axis=0))
+                    print("self.extforce_energy:", self.extforce_energy)
                     print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                     #NOTE: Now moved mm_theory.update_custom_external_force call to MD simulation instead
                     # as we don't have access to simulation object here anymore. Uses self.QM_PC_gradient

@@ -966,6 +966,7 @@ class OpenMMTheory:
         print("Added force")
         return customforce
 
+    #NOTE: This can take some time but not sure we can make this faster
     def update_custom_external_force(self, customforce, gradient, simulation, conversion_factor=49614.752589207):
         print("Updating custom external force")
         # shiftpar_inkjmol=shiftparameter*2625.4996394799
@@ -982,7 +983,6 @@ class OpenMMTheory:
         # print("Current value of global par 0:", self.externalforce.getGlobalParameterDefaultValue(0))
         # self.externalforce.setGlobalParameterDefaultValue(0, shiftpar_inkjmol)
         # print("Current value of global par 0:", self.externalforce.getGlobalParameterDefaultValue(0))
-
         customforce.updateParametersInContext(simulation.context)
 
     # Write XML-file for full system
@@ -3189,6 +3189,7 @@ class OpenMM_MDclass:
                     print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     checkpoint = time.time()
                     # Manual trajectory option (reporters do not work for manual dynamics steps)
+                    #NOTE: Outdated, since OpenMM update??
                     write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
                     print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                     checkpoint = time.time()
