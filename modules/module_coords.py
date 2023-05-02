@@ -349,23 +349,6 @@ class Fragment:
         # for el in self.elems:
         #    if -
 
-    #Simple get_water constraints for fragment without doing connectivity
-    #Limitation: Assumes all waters from starting index to end and that waters are ordered: O H H
-    def simple_get_water_constraints(self, starting_index=None):
-        if self.elems[starting_index] != 'O':
-            print("Starting atom for water fragment is not oxygen!")
-            print("Make sure starting index ({}) is correct".format(starting_index))
-            print("Also note that water fragments must have O H H order!")
-            ashexit()
-        constraints=[]
-        for i in range(starting_index, self.numatoms):
-            if self.elems[i] == "O":
-                #X-H constraint
-                constraints.append([i,i+1])
-                constraints.append([i,i+2])
-                constraints.append([i+1,i+2])
-        return constraints
-
     def delete_atom(self, atomindex):
         self.coords = np.delete(self.coords, atomindex, axis=0)
         # Deleting from lists
@@ -3243,3 +3226,31 @@ def fullindex_to_actindex(fullindex,actatoms):
 def actindex_to_fullindex(actindex,actatoms):
     fullindex = actatoms[actindex]
     return fullindex
+
+
+#Simple get_water constraints for fragment without doing connectivity
+#Limitation: Assumes all waters from starting index to end and that waters are ordered: O H H
+def simple_get_water_constraints(fragment,starting_index=None, onlyHH=False):
+    print("Inside simple_get_water_constraints function")
+    print("Warning: Note that water residues have to have O,H,H order and have to be at the end of the coordinate file")
+    print("Starting index for first water oxygen:", starting_index)
+    if fragment.elems[starting_index] != 'O':
+        print("Starting atom for water fragment is not oxygen!")
+        print("Make sure starting index ({}) is correct".format(starting_index))
+        print("Also note that water fragments must have O H H order!")
+        ashexit()
+    if onlyHH is False:
+        print("onlyHH is False. Will create list of O-H1, O-H2 and H1-H2 constraints")
+    elif onlyHH is True:
+        print("onlyHH is True. Will create list of H1-H2 constraints only")
+    #
+    constraints=[]
+    for i in range(starting_index, fragment.numatoms):
+        if fragment.elems[i] == "O":
+            #X-H constraint
+            if onlyHH is False:
+                constraints.append([i,i+1])
+                constraints.append([i,i+2])
+            #H-H constraints. i.e. effectively freezing angles
+            constraints.append([i+1,i+2])
+    return constraints
