@@ -27,7 +27,7 @@ sys.path.insert(0, ashpath+"/geometric-master")
 
 
 from ash.functions.functions_general import blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
-    printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile
+    printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit
 
 #Results dataclass 
 from ash.modules.module_results import ASH_Results
