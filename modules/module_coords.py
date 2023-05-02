@@ -3234,6 +3234,9 @@ def simple_get_water_constraints(fragment,starting_index=None, onlyHH=False):
     print("Inside simple_get_water_constraints function")
     print("Warning: Note that water residues have to have O,H,H order and have to be at the end of the coordinate file")
     print("Starting index for first water oxygen:", starting_index)
+    if starting_index == None:
+        print("Error: You must provide a starting_index value!")
+        ashexit()
     if fragment.elems[starting_index] != 'O':
         print("Starting atom for water fragment is not oxygen!")
         print("Make sure starting index ({}) is correct".format(starting_index))
