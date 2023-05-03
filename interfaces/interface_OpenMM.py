@@ -3076,6 +3076,7 @@ class OpenMM_MDclass:
         #Case native OpenMM metadynamcis
         print("metadynamics:", metadynamics)
         if metadynamics is True:
+            biasdir=metadyn_settings["biasdir"]
             try:
                 os.remove("colvar")
             except:
@@ -3132,7 +3133,7 @@ class OpenMM_MDclass:
 
             #Writing metadyn_settings dict to disk
             import json
-            json.dump(metadyn_settings, open(f"{metadyn_settings["biasdir"]}/ASH_MTD_parameters.txt",'w'))
+            json.dump(metadyn_settings, open(f"{biasdir}/ASH_MTD_parameters.txt",'w'))
         #Case: QM MD
         if self.externalqm is True:
             print("Creating new OpenMM custom external force for external QM theory.")
