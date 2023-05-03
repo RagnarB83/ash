@@ -3,6 +3,7 @@ from sys import stdout
 import time
 import numpy as np
 import glob
+import copy
 
 #import ash
 import ash.constants
@@ -889,61 +890,6 @@ class OpenMMTheory:
         print("Added center force")
         return centerforce
 
-
-    #Add a restraining force
-    #NOTE: not ready
-    def add_restraint_force(self,):
-        import openmm
-
-        ashexit()
-        #rmsd_cv = openmm.RMSDForce(positions, atom_indicies)
-        energy_expression = f"(k/2)*max(0, RMSD-RMSDmax)^2"
-        restraint_force = openmm.CustomCVForce(energy_expression)
-        restraint_force.addCollectiveVariable('RMSD', CVforce)
-        restraint_force.addGlobalParameter('RMSDmax', 0.4)
-        restraint_force.addGlobalParameter("k", 50)
-
-
-        restraint = openmm.CustomExternalForce('k*periodicdistance(x, y, z, x0, y0, z0)^2')
-        self.system.addForce(restraint)
-        restraint.addGlobalParameter('k', 100.0*kilojoules_per_mole/nanometer)
-        restraint.addPerParticleParameter('x0')
-        restraint.addPerParticleParameter('y0')
-        restraint.addPerParticleParameter('z0')
-        
-        for i in range(self.system.getNumParticles()):
-            restraint.addParticle(i, np.array([0.0, 0.0, 0.0]))
-        self.system.addForce(restraint)
-        print("Added force")
-        return restraint
-
-    #Add a restraining force to CV
-    #NOTE: not ready
-    def add_restraint_CV_force(self, CVforce):
-        import openmm
-
-        ashexit()
-        #rmsd_cv = openmm.RMSDForce(positions, atom_indicies)
-        energy_expression = f"(k/2)*max(0, RMSD-RMSDmax)^2"
-        restraint_force = openmm.CustomCVForce(energy_expression)
-        restraint_force.addCollectiveVariable('RMSD', CVforce)
-        restraint_force.addGlobalParameter('RMSDmax', 0.4)
-        restraint_force.addGlobalParameter("k", 50)
-
-
-        restraint = openmm.CustomExternalForce('k*periodicdistance(x, y, z, x0, y0, z0)^2')
-        self.system.addForce(restraint)
-        restraint.addGlobalParameter('k', 100.0*kilojoules_per_mole/nanometer)
-        restraint.addPerParticleParameter('x0')
-        restraint.addPerParticleParameter('y0')
-        restraint.addPerParticleParameter('z0')
-        
-        for i in range(self.system.getNumParticles()):
-            restraint.addParticle(i, np.array([0.0, 0.0, 0.0]))
-        self.system.addForce(restraint)
-        print("Added force")
-        return restraint
-
     def add_custom_external_force(self):
         import openmm
         # customforce=None
@@ -984,6 +930,62 @@ class OpenMMTheory:
         # self.externalforce.setGlobalParameterDefaultValue(0, shiftpar_inkjmol)
         # print("Current value of global par 0:", self.externalforce.getGlobalParameterDefaultValue(0))
         customforce.updateParametersInContext(simulation.context)
+
+    # Function to add restraints to system before MD
+    def add_bondrestraints(self, restraints=None):
+        print("Adding restraints:", restraints)
+        import openmm
+        new_restraints = openmm.HarmonicBondForce()
+        for i, j, d, k in restraints:
+            print(
+                "Adding bond restraint between atoms {} and {}. Distance value: {} Å. Force constant: {} kcal/mol*Å^-2".format(
+                    i, j, d, k))
+            new_restraints.addBond(i, j, d * openmm.unit.angstroms,
+                                   k * openmm.unit.kilocalories_per_mole / openmm.unit.angstroms ** 2)
+        self.system.addForce(new_restraints)
+
+    # TODO: Angleconstraints and Dihedral restraints
+
+    #For restraining CVs, used by metadynamics
+    #NOTE: Assuming Angstrom and kcal/mol^2 here like for regular restraints
+    #NOTE: Dihedrals not supported (unclear if useful). Angles are and units are radians
+    def add_CV_restraint(self,cvforce,restraint_par,cvtype):
+        import openmm
+        #Make copy of CVforce (otherwise we can not use it also in restraint)
+        cvforce_copy=copy.copy(cvforce)
+        #TODO: periodic CV vs non-periodic
+        if cvtype == "dihedral" or cvtype == "torsion":
+            print("Adding CV restraints for dihedrals is not available!")
+            ashexit()
+            #Not sure whether there is ever a need
+            #energy_expression = f"0.5*k*(1-cos(var-var_max))"
+        elif cvtype == "angle":
+            energy_expression = f"(k/2)*max(0, var-var_max)^2"
+            print("CV type: angle")
+            print("Note: unit assumed to be in radians")
+            var_unit = openmm.unit.radian
+            var_unit_label="radians"
+        elif cvtype == "bond" or cvtype == "distance" or cvtype == "rmsd" :
+            energy_expression = f"(k/2)*max(0, var-var_max)^2"
+            print("CV type: bond/rmsd")
+            print("Note: unit assumed be in Angstrom")
+            var_unit = openmm.unit.angstroms
+            var_unit_label="Å"
+        else:
+            print("Error: unknown cvtype for add_CV_restraint")
+            ashexit()
+        #Energy unit
+        energy_unit = openmm.unit.kilocalories_per_mole / openmm.unit.angstroms ** 2
+        energy_unit_label="kcal/mol*Å^-2"
+        #Periodic:
+        print("Adding restraint with energy expression:", energy_expression)
+        print(f"Max value (var_max): {restraint_par[0]} {var_unit_label}")
+        print(f"Force constant (k) : {restraint_par[1]} {energy_unit_label}")
+        restraint_force_CV = openmm.CustomCVForce(energy_expression)
+        restraint_force_CV.addCollectiveVariable('var', cvforce_copy)
+        restraint_force_CV.addGlobalParameter('var_max', restraint_par[0]*var_unit)
+        restraint_force_CV.addGlobalParameter("k", restraint_par[1]*energy_unit)                    
+        self.system.addForce(restraint_force_CV)
 
     # Write XML-file for full system
     def saveXML(self, xmlfile="system_full.xml"):
@@ -1031,21 +1033,6 @@ class OpenMMTheory:
                 todelete.append(i)
         for d in reversed(todelete):
             self.system.removeConstraint(d)
-
-    # Function to add restraints to system before MD
-    def add_bondrestraints(self, restraints=None):
-        print("Adding restraints:", restraints)
-        import openmm
-        new_restraints = openmm.HarmonicBondForce()
-        for i, j, d, k in restraints:
-            print(
-                "Adding bond restraint between atoms {} and {}. Distance value: {} Å. Force constant: {} kcal/mol*Å^-2".format(
-                    i, j, d, k))
-            new_restraints.addBond(i, j, d * openmm.unit.angstroms,
-                                   k * openmm.unit.kilocalories_per_mole / openmm.unit.angstroms ** 2)
-        self.system.addForce(new_restraints)
-
-    # TODO: Angleconstraints and Dihedral restraints
 
     # Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential
     # energy-function.
@@ -3089,16 +3076,63 @@ class OpenMM_MDclass:
         #Case native OpenMM metadynamcis
         print("metadynamics:", metadynamics)
         if metadynamics is True:
+            try:
+                os.remove("colvar")
+            except:
+                pass
+            #Reference positions for RMSD. Currently limited to starting position
+            if metadyn_settings["CV1_type"] == 'rmsd' or metadyn_settings["CV2_type"] == 'rmsd':
+                coords_nm = self.fragment.coords * 0.1  # converting from Angstrom to nm
+                reference_pos = [openmm.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in
+                    range(len(coords_nm))] * openmm.unit.nanometer
+            else:
+                reference_pos=None
             #Creating meta_object from settings provided
             if metadyn_settings["numCVs"] == 2:
-                meta_object = openmm.app.Metadynamics(self.openmmobject.system, [metadyn_settings["CV1_bias"], metadyn_settings["CV2_bias"]], metadyn_settings["temperature"], 
-                                                            metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
-                                                            saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
+                #Creating CV biasvariables and forces
+                CV1_bias,cvforce_1 = create_CV_bias(metadyn_settings["CV1_type"],metadyn_settings["CV1_atoms"],metadyn_settings["CV1_biaswidth"],
+                                                    CV_range=metadyn_settings["CV1_range"], reference_pos=reference_pos, reference_particles=metadyn_settings["CV1_atoms"])
+                CV2_bias,cvforce_2 = create_CV_bias(metadyn_settings["CV2_type"],metadyn_settings["CV2_atoms"],metadyn_settings["CV2_biaswidth"],
+                                                    CV_range=metadyn_settings["CV2_range"], reference_pos=reference_pos, reference_particles=metadyn_settings["CV2_atoms"])
+
+                #Gridwidth and min/max values now set. Adding to dict
+                metadyn_settings["CV1_gridwidth"] = CV1_bias.gridWidth
+                metadyn_settings["CV2_gridwidth"] = CV2_bias.gridWidth
+                metadyn_settings["CV1_minvalue"] = CV1_bias.minValue
+                metadyn_settings["CV1_maxvalue"] = CV1_bias.maxValue
+                metadyn_settings["CV2_minvalue"] = CV2_bias.minValue
+                metadyn_settings["CV2_maxvalue"] = CV2_bias.maxValue
+                ##Possible flatbottom or other restraint accompanying CV
+                if metadyn_settings["flatbottom_restraint_CV1"] != None:
+                    print("Adding flatbottom restraint for CV1")
+                    self.openmmobject.add_CV_restraint(cvforce_1, metadyn_settings["flatbottom_restraint_CV1"],metadyn_settings["CV2_type"])
+                if metadyn_settings["flatbottom_restraint_CV2"] != None:
+                    print("Adding flatbottom restraint for CV2")
+                    self.openmmobject.add_CV_restraint(cvforce_2, metadyn_settings["flatbottom_restraint_CV2"],metadyn_settings["CV2_type"])
+
+                    meta_object = openmm.app.Metadynamics(self.openmmobject.system, [CV1_bias,CV2_bias], metadyn_settings["temperature"], 
+                                                                metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
+                                                                saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
             elif metadyn_settings["numCVs"] == 1:
-                meta_object = openmm.app.Metadynamics(self.openmmobject.system, [metadyn_settings["CV1_bias"]], metadyn_settings["temperature"], 
+                #Creating CV biasvariable and force
+                CV1_bias,cvforce_1 = create_CV_bias(metadyn_settings["CV1_type"],metadyn_settings["CV1_atoms"],metadyn_settings["CV1_biaswidth"],
+                                                    CV_range=metadyn_settings["CV1_range"], reference_pos=reference_pos, reference_particles=metadyn_settings["CV1_atoms"])
+                #Gridwidth and min/max values now set. Adding to dict
+                metadyn_settings["CV1_gridwidth"] = CV1_bias.gridWidth
+                metadyn_settings["CV1_minvalue"] = CV1_bias.minValue
+                metadyn_settings["CV1_maxvalue"] = CV1_bias.maxValue
+                ##Possible flatbottom or other restraint accompanying CV
+                if metadyn_settings["flatbottom_restraint_CV1"] != None:
+                    print("Adding flatbottom restraint for CV1")
+                    self.openmmobject.add_CV_restraint(cvforce_1, metadyn_settings["flatbottom_restraint_CV1"],metadyn_settings["CV1_type"])
+
+                meta_object = openmm.app.Metadynamics(self.openmmobject.system, [CV1_bias], metadyn_settings["temperature"], 
                                                             metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
                                                             saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
 
+            #Writing metadyn_settings dict to disk
+            import json
+            json.dump(metadyn_settings, open(f"{metadyn_settings["biasdir"]}/ASH_MTD_parameters.txt",'w'))
         #Case: QM MD
         if self.externalqm is True:
             print("Creating new OpenMM custom external force for external QM theory.")
@@ -3115,16 +3149,6 @@ class OpenMM_MDclass:
         print("Simulation created.")
         print(self.openmmobject.integrator)
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
-        print("OpenMM System forces present:", forceclassnames)
-        if self.openmmobject.Periodic is True:
-            print("Checking Initial PBC vectors.")
-            self.state = simulation.context.getState()
-            a, b, c = self.state.getPeriodicBoxVectors()
-            print(f"A: ", a)
-            print(f"B: ", b)
-            print(f"C: ", c)
-        else:
-            print("System is not periodic")
 
         ##################################
         # PRINT BASICS
@@ -3139,12 +3163,23 @@ class OpenMM_MDclass:
         print()
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
         print("OpenMM System forces present before run:", forceclassnames)
+
+        #Printing PBCs
+        if self.openmmobject.Periodic is True:
+            print("Checking Initial PBC vectors.")
+            self.state = simulation.context.getState()
+            a, b, c = self.state.getPeriodicBoxVectors()
+            print(f"A: ", a)
+            print(f"B: ", b)
+            print(f"C: ", c)
+        else:
+            print("System is not periodic")
         # Delete old traj
-        try:
-            os.remove("OpenMMMD_traj.xyz")
-        # Crashes when permissions not present or file is folder. Should never occur.
-        except FileNotFoundError:
-            pass
+        #try:
+        #    os.remove("OpenMMMD_traj.xyz")
+        ## Crashes when permissions not present or file is folder. Should never occur.
+        #except FileNotFoundError:
+        #    pass
 
         #Make sure file associated with StateDataReporter is open
         if self.datafilename is not None:
@@ -3156,7 +3191,6 @@ class OpenMM_MDclass:
         # Setting coordinates of OpenMM object from current fragment.coords
         self.openmmobject.set_positions(self.positions,simulation)
         print()
-
 
         if self.QM_MM_object is not None:
             #CASE: QM/MM. Custom external force needs to have been created in OpenMMTheory (should be handled by init)
@@ -3188,11 +3222,12 @@ class OpenMM_MDclass:
                     print_current_step_info(step,current_state,self.openmmobject)
                     print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     checkpoint = time.time()
-                    # Manual trajectory option (reporters do not work for manual dynamics steps)
-                    #NOTE: Outdated, since OpenMM update??
-                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
-                    print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
-                    checkpoint = time.time()
+                    # Manual trajectory option (reporters used to not work for manual dynamics steps)
+                    #NOTE: Now outdated, since OpenMM update??
+                    #Disabling for now
+                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    #checkpoint = time.time()
                 
 
                 checkpoint = time.time()
@@ -3280,9 +3315,9 @@ class OpenMM_MDclass:
                     print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     checkpoint = time.time()
                     # Manual trajectory option (reporters do not work for manual dynamics steps)
-                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
-                    print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
-                    checkpoint = time.time()
+                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    #checkpoint = time.time()
 
                 # Run QM step to get full system QM gradient.
                 # Updates OpenMM object with QM forces
@@ -3359,9 +3394,9 @@ class OpenMM_MDclass:
                     print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     checkpoint = time.time()
                     # Manual trajectory option (reporters do not work for manual dynamics steps)
-                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
-                    print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
-                    checkpoint = time.time()
+                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    #checkpoint = time.time()
 
                 simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
@@ -3740,16 +3775,19 @@ def write_nonbonded_FF_for_ligand(fragment=None, xyzfile=None, charge=None, mult
 ################################
 
 # Metadynamics written as a wrapper function around OpenMM_MDclass
+#TODO: Decide units for CV biaswidth range and Gaussian height
+#NOTE: Restraints are in Angstrom and kcal/mol^2
 def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None,
-              anderson_thermostat=False, restraints=None,
+              anderson_thermostat=False, restraints=None, flatbottom_restraint_CV1=None, flatbottom_restraint_CV2=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
               use_plumed=False, plumed_input_string=None,
-              CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, height=1, 
+              CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, 
+              height=1, 
               CV1_biaswidth=0.5, CV2_biaswidth=0.5, CV1_range=None, CV2_range=None,
               frequency=1, savefrequency=10,
               biasdir='.', multiplewalkers=False, numcores=1, walkerid=None):
@@ -3808,9 +3846,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     #If RMSD CV
     if CV1_type == 'rmsd' or CV2_type == 'rmsd':
         #Reference position. For now just use initial cooordinates as reference positions
-        coords_nm = fragment.coords * 0.1  # converting from Angstrom to nm
-        reference_pos = [openmm.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in
-               range(len(coords_nm))] * openmm.unit.nanometer
+        #coords_nm = fragment.coords * 0.1  # converting from Angstrom to nm
+        #reference_pos = [openmm.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in
+        #       range(len(coords_nm))] * openmm.unit.nanometer
         print("rmsd_CV1_reference_indices:", CV1_atoms)
         print("rmsd_CV2_reference_indices:", CV2_atoms)
     else:
@@ -3819,37 +3857,24 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     if use_plumed is False:
         native_MTD=True
         plumedinput=None
+        #Creating dictionary with MTD parameters that will be passed to MD function
         if numCVs == 1:
-            # Create metadynamics object for 1 CV
-            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,CV_range=CV1_range, 
-                                      reference_pos=reference_pos, reference_particles=CV1_atoms)
-
-
-            metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "temperature":temperature, "biasfactor":biasfactor, 
+            # Create metadynamics dict for 1 CV
+            metadyn_settings = {"numCVs":numCVs, "temperature":temperature, "biasfactor":biasfactor, 
                                 "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
-                                "CV1_type":CV1_type,"CV2_type":None, "CV1_gridwidth":CV1_bias.gridWidth, "CV2_gridwidth":None,
-                                "CV1_minvalue":CV1_bias.minValue,"CV1_maxvalue":CV1_bias.maxValue,
-                                "CV2_minvalue":None,"CV2_maxvalue":None,}
-            metadyn_settings_simple = dict(metadyn_settings)
-            del metadyn_settings_simple["CV1_bias"]
-            #meta_object = openmm_app.Metadynamics(system, [CV1_bias], temperature, biasfactor, height, frequency, saveFrequency=savefrequency, biasDir=biasdir)
+                                "CV1_type":CV1_type,"CV2_type":None,
+                                "CV1_atoms":CV1_atoms,"CV2_atoms":CV2_atoms, "CV1_range":CV1_range, "CV2_range":CV2_range, 
+                                "CV1_biaswidth":CV1_biaswidth,"CV2_biaswidth":CV2_biaswidth,
+                                "CV2_minvalue":None,"CV2_maxvalue":None, 
+                                "flatbottom_restraint_CV1":flatbottom_restraint_CV1, "flatbottom_restraint_CV2":flatbottom_restraint_CV2}
         elif numCVs == 2:
             # Create metadynamics object for 2 CVs
-            CV1_bias = create_CV_bias(CV1_type,CV1_atoms,CV1_biaswidth,CV_range=CV1_range,
-                                      reference_pos=reference_pos, reference_particles=CV1_atoms)
-            CV2_bias = create_CV_bias(CV2_type,CV2_atoms,CV2_biaswidth,CV_range=CV2_range,
-                                      reference_pos=reference_pos, reference_particles=CV2_atoms)
-            metadyn_settings = {"numCVs":numCVs, "CV1_bias":CV1_bias, "CV2_bias":CV2_bias, "temperature":temperature, "biasfactor":biasfactor, 
+            metadyn_settings = {"numCVs":numCVs, "temperature":temperature, "biasfactor":biasfactor, 
                                 "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
-                                "CV1_type":CV1_type,"CV2_type":CV2_type,"CV1_gridwidth":CV1_bias.gridWidth, "CV2_gridwidth":CV2_bias.gridWidth,
-                                "CV1_minvalue":CV1_bias.minValue,"CV1_maxvalue":CV1_bias.maxValue,
-                                "CV2_minvalue":CV2_bias.minValue,"CV2_maxvalue":CV2_bias.maxValue,}
-            metadyn_settings_simple = dict(metadyn_settings)
-            del metadyn_settings_simple["CV1_bias"]
-            del metadyn_settings_simple["CV2_bias"]
-        import json
-        json.dump(metadyn_settings_simple, open(f"{biasdir_full_path}/ASH_MTD_parameters.txt",'w'))
-
+                                "CV1_type":CV1_type,"CV2_type":CV2_type,
+                                "CV1_range":CV1_range, "CV2_range":CV2_range, 
+                                "CV1_atoms":CV1_atoms,"CV2_atoms":CV2_atoms, "CV1_biaswidth":CV1_biaswidth,"CV2_biaswidth":CV2_biaswidth,
+                                "flatbottom_restraint_CV1":flatbottom_restraint_CV1, "flatbottom_restraint_CV2":flatbottom_restraint_CV2}
     else:
         print("Setting up Plumed")
         #Setting native_MTD Boolean to False and metaobject to None
@@ -3894,44 +3919,27 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     else:
         simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, metadyn_settings=metadyn_settings,
                             restraints=restraints)
-
     print("Metadynamics simulation done")
 
     #Data plotting
     if use_plumed is False:
         print("\nAll bias-files have been written to biasdirectory:", biasdir_full_path)
         print("Dir also contains: ASH_MTD_parameters.txt")
-        print("CV1_bias:", CV1_bias)
-        print("CV1_bias dict:",CV1_bias.__dict__)
-        print("CV1_bias.minValue:", CV1_bias.minValue)
-        print("CV1_bias.maxValue", CV1_bias.maxValue)
-        print("CV1_bias.gridWidth", CV1_bias.gridWidth)
-        print("CV1_bias biasWidth:", CV1_bias.biasWidth)
-        CV1_bias_gridwidth=CV1_bias.gridWidth
-        CV2_bias_gridwidth=None
+        print("Use function  get_free_energy_from_biasfiles  to create free-energy surface")
+        print("and function metadynamics_plot_data to plot the data")
         print()
-        if numCVs == 2:
-            print("CV2_bias:", CV2_bias)
-            print("CV2_bias dict:",CV2_bias.__dict__)
-            print("CV2_bias.minValue:", CV2_bias.minValue)
-            print("CV2_bias.maxValue", CV2_bias.maxValue)
-            print("CV2_bias.gridWidth", CV2_bias.gridWidth)
-            print("CV2_bias biasWidth:", CV2_bias.biasWidth)
-            CV1_bias_gridwidth=CV1_bias.gridWidth
-            CV2_bias_gridwidth=CV2_bias.gridWidth
-        #Get free energy surface from biasfiles
-        print("\nReading biasfiles to get free energy surface")
-        free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias_gridwidth,
-                                                                                    CV2_bias_gridwidth,directory=biasdir_full_path)
-        print("\nFree energy array:", free_energy)
-        print("Writing to disk: MTD_free_energy.txt")
-        np.savetxt("MTD_free_energy.txt", free_energy)
+        #print("\nReading biasfiles to get free energy surface")
+        #free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias_gridwidth,
+        #                                                                            CV2_bias_gridwidth,directory=biasdir_full_path)
+        #print("\nFree energy array:", free_energy)
+        #print("Writing to disk: MTD_free_energy.txt")
+        #np.savetxt("MTD_free_energy.txt", free_energy)
 
-        print(f"\nWill now attempt to create plot (requires matplotlib) by running: metadynamics_plot_data(biasdir={biasdir_full_path})")
+        #print(f"\nWill now attempt to create plot (requires matplotlib) by running: metadynamics_plot_data(biasdir={biasdir_full_path})")
         #try:
-        metadynamics_plot_data(biasdir=biasdir_full_path)
+        #metadynamics_plot_data(biasdir=biasdir_full_path)
         #except:
-        print("Could not create plot. Try running metadynamics_plot_data manually")
+        #print("Could not create plot. Try running metadynamics_plot_data manually")
         #return
 
     else:
@@ -4023,10 +4031,11 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
     return
 
 #Function to create CV biases in native OpenMM metadynamics
-def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=None, reference_particles=None):
+def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=None, reference_particles=None, flatbottom_restraint=None):
     print("Inside create_CV_bias")
     print("CV_type:", CV_type)
     print("CV_atoms:", CV_atoms)
+    print("CV_range:", CV_range)
     print("biaswidth_cv:", biaswidth_cv)
     if CV_range == None:
         print("Warning: No minx/max value range for CVchosen by user")
@@ -4061,35 +4070,36 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=No
         if len(CV_atoms) != 4:
             print("Error: CV_atoms list must contain 4 atom indices")
             ashexit()
-        cv = openmm.CustomTorsionForce('theta')
-        cv.addTorsion(*CV_atoms)
-        CV_bias = openmm.app.BiasVariable(cv, CV_min_val, CV_max_val, biaswidth_cv, periodic=True)
+        cvforce = openmm.CustomTorsionForce('theta')
+        cvforce.addTorsion(*CV_atoms)
+        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val, CV_max_val, biaswidth_cv, periodic=True)
         #CV_bias = openmm.app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, True)
     elif CV_type == "angle":
         if len(CV_atoms) != 3:
             print("Error: CV_atoms list must contain 3 atom indices")
             ashexit()
-        cv = openmm.CustomAngleForce('theta')
-        cv.addAngle(*CV_atoms)
-        CV_bias = openmm.app.BiasVariable(cv, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
+        cvforce = openmm.CustomAngleForce('theta')
+        cvforce.addAngle(*CV_atoms)
+        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
     elif CV_type == "distance" or CV_type == "bond":
         if len(CV_atoms) != 2:
             print("Error: CV_atoms list must contain 2 atom indices")
             ashexit()
-        cv = openmm.CustomBondForce('r')
-        cv.addBond(*CV_atoms)
-        CV_bias = openmm.app.BiasVariable(cv, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
+        cvforce = openmm.CustomBondForce('r')
+        cvforce.addBond(*CV_atoms)
+        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
     elif CV_type == "rmsd":
         #http://docs.openmm.org/development/api-python/generated/openmm.openmm.RMSDForce.html
         #reference_pos: A vector of atom positions
         #reference_particles: atom indices used to calculate RMSD
-        cv = openmm.RMSDForce(reference_pos)
-        cv.setParticles(reference_particles)
-        CV_bias = openmm.app.BiasVariable(cv, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
+        cvforce = openmm.RMSDForce(reference_pos)
+        cvforce.setParticles(reference_particles)
+        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
     else:
         print("unsupported CV_type for native OpenMM metadynamics implementation")
         ashexit()
-    return CV_bias
+
+    return CV_bias,cvforce
 
 #Standalone function to create Plumed input-string based on basic MTD info and CVs
 #NOTE: SIGMA. Possible unit conversion needed here?
