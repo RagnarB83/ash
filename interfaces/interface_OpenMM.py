@@ -3265,12 +3265,20 @@ class OpenMM_MDclass:
                     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
                         print("MTD: Writing current collective variables to disk")
                         current_cv = meta_object.getCollectiveVariables(simulation)
+                        if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
+                            cv1scaling=10
+                        elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
+                            cv1scaling=180/np.pi
+                        if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
+                            cv2scaling=10
+                        elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
+                            cv2scaling=180/np.pi
                         currtime = step*self.timestep #Time in ps
                         with open(f'colvar', 'a') as f:
                             if metadyn_settings["numCVs"] == 2:
-                                f.write(f"{currtime} {current_cv[0]} {current_cv[1]}\n")
+                                f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
                             elif metadyn_settings["numCVs"] == 1:
-                                f.write(f"{currtime} {current_cv[0]}\n")
+                                f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
                     print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2)
                     checkpoint = time.time()
                 else:
@@ -3344,12 +3352,20 @@ class OpenMM_MDclass:
                     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
                         print("MTD: Writing current collective variables to disk")
                         current_cv = meta_object.getCollectiveVariables(simulation)
+                        if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
+                            cv1scaling=10
+                        elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
+                            cv1scaling=180/np.pi
+                        if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
+                            cv2scaling=10
+                        elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
+                            cv2scaling=180/np.pi
                         currtime = step*self.timestep #Time in ps
                         with open(f'colvar', 'a') as f:
                             if metadyn_settings["numCVs"] == 2:
-                                f.write(f"{currtime} {current_cv[0]} {current_cv[1]}\n")
+                                f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
                             elif metadyn_settings["numCVs"] == 1:
-                                f.write(f"{currtime} {current_cv[0]}\n")
+                                f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
                 else:
                     simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
@@ -4033,40 +4049,71 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
     return
 
 #Function to create CV biases in native OpenMM metadynamics
-def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=None, reference_particles=None, flatbottom_restraint=None):
+def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=None, reference_particles=None):
+    import openmm
     print("Inside create_CV_bias")
     print("CV_type:", CV_type)
     print("CV_atoms:", CV_atoms)
-    print("CV_range:", CV_range)
-    print("biaswidth_cv:", biaswidth_cv)
+    #TODO: Try changing dihedrals/angles to deg units
+    #Most of the time though there is no reason to specify CV min and max for these CVs as you want the full range
+    # However the biaswidth is also in 
     if CV_range == None:
         print("Warning: No minx/max value range for CVchosen by user")
         print("Will choose reasonable values based on CV type:")
         if CV_type == "dihedral" or CV_type == "torsion":
             CV_min_val=-np.pi
             CV_max_val=np.pi
-            CV_unit="rad"
-            print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val} {CV_unit}")
+            CV_unit=openmm.unit.radians
+            CV_unit_label="rad"
+            biaswidth_cv_unit=openmm.unit.radians
+            biaswidth_cv_unit_label="rad"
         elif CV_type == "angle":
             CV_min_val=0
             CV_max_val=np.pi
-            CV_unit="rad"
-            print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val} {CV_unit}")
+            CV_unit=openmm.unit.radians
+            CV_unit_label="rad"
+            biaswidth_cv_unit=openmm.unit.radians
+            biaswidth_cv_unit_label="rad"
         elif CV_type == "distance" or CV_type == "bond":
             CV_min_val=0.0
             CV_max_val=0.5
-            CV_unit="nm"
-            print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val} {CV_unit}")
+            CV_unit=openmm.unit.angstroms
+            CV_unit_label="Å"
+            biaswidth_cv_unit=openmm.unit.angstroms
+            biaswidth_cv_unit_label="Å"
         elif CV_type == "rmsd":
             CV_min_val=0.0
             CV_max_val=0.5
-            CV_unit="nm"
-            print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val} {CV_unit}")
+            CV_unit=openmm.unit.angstroms
+            CV_unit_label="Å"
+            biaswidth_cv_unit=openmm.unit.angstroms
+            biaswidth_cv_unit_label="Å"
     else:
+        print("CV range given.")
         CV_min_val=CV_range[0]
         CV_max_val=CV_range[1]
-        print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val}")
-    import openmm
+        if CV_type == "dihedral" or CV_type == "torsion":
+            CV_unit=openmm.unit.radians
+            CV_unit_label="rad"
+            biaswidth_cv_unit=openmm.unit.radians
+            biaswidth_cv_unit_label="rad"
+        elif CV_type == "angle":
+            CV_unit=openmm.unit.radians
+            CV_unit_label="rad"
+            biaswidth_cv_unit=openmm.unit.radians
+            biaswidth_cv_unit_label="rad"
+        elif CV_type == "distance" or CV_type == "bond":
+            CV_unit=openmm.unit.angstroms
+            CV_unit_label="Å"
+            biaswidth_cv_unit=openmm.unit.angstroms
+            biaswidth_cv_unit_label="Å"
+        elif CV_type == "rmsd":
+            CV_unit=openmm.unit.angstroms
+            CV_unit_label="Å"
+            biaswidth_cv_unit=openmm.unit.angstroms
+            biaswidth_cv_unit_label="Å"
+    print(f"CV_min_val: {CV_min_val} and CV_max_val: {CV_max_val} {CV_unit_label}")
+    print(f"Biaswidth of CV: {biaswidth_cv} {biaswidth_cv_unit_label}")
     # Define collective variables for CV1 and CV2.
     if CV_type == "dihedral" or CV_type == "torsion":
         if len(CV_atoms) != 4:
@@ -4074,7 +4121,7 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=No
             ashexit()
         cvforce = openmm.CustomTorsionForce('theta')
         cvforce.addTorsion(*CV_atoms)
-        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val, CV_max_val, biaswidth_cv, periodic=True)
+        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val*CV_unit, CV_max_val*CV_unit, biaswidth_cv*biaswidth_cv_unit, periodic=True)
         #CV_bias = openmm.app.BiasVariable(cv, -np.pi, np.pi, biaswidth_cv, True)
     elif CV_type == "angle":
         if len(CV_atoms) != 3:
@@ -4082,21 +4129,21 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=No
             ashexit()
         cvforce = openmm.CustomAngleForce('theta')
         cvforce.addAngle(*CV_atoms)
-        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
+        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val*CV_unit, CV_max_val*CV_unit, biaswidth_cv*biaswidth_cv_unit, periodic=False)
     elif CV_type == "distance" or CV_type == "bond":
         if len(CV_atoms) != 2:
             print("Error: CV_atoms list must contain 2 atom indices")
             ashexit()
         cvforce = openmm.CustomBondForce('r')
         cvforce.addBond(*CV_atoms)
-        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
+        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val*CV_unit, CV_max_val*CV_unit, biaswidth_cv*biaswidth_cv_unit, periodic=False)
     elif CV_type == "rmsd":
         #http://docs.openmm.org/development/api-python/generated/openmm.openmm.RMSDForce.html
         #reference_pos: A vector of atom positions
         #reference_particles: atom indices used to calculate RMSD
         cvforce = openmm.RMSDForce(reference_pos)
         cvforce.setParticles(reference_particles)
-        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val, CV_max_val, biaswidth_cv, periodic=False)
+        CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val*CV_unit, CV_max_val*CV_unit, biaswidth_cv*biaswidth_cv_unit, periodic=False)
     else:
         print("unsupported CV_type for native OpenMM metadynamics implementation")
         ashexit()
