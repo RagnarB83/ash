@@ -4276,6 +4276,7 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
 
     CV1_type=metadyn_settings["CV1_type"]; CV2_type=metadyn_settings["CV2_type"]; temperature=metadyn_settings["temperature"]; 
     biasfactor=metadyn_settings["biasfactor"]; CV1_gridwidth=metadyn_settings["CV1_gridwidth"]
+    print("metadyn_settings:", metadyn_settings)
     CV2_gridwidth=metadyn_settings["CV2_gridwidth"]
     
     CV1_minvalue=metadyn_settings["CV1_minvalue"] 
