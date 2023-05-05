@@ -3123,6 +3123,7 @@ class OpenMM_MDclass:
                 metadyn_settings["CV1_gridwidth"] = CV1_bias.gridWidth
                 metadyn_settings["CV1_minvalue"] = CV1_bias.minValue
                 metadyn_settings["CV1_maxvalue"] = CV1_bias.maxValue
+                metadyn_settings["CV2_gridwidth"] = None
                 ##Possible flatbottom or other restraint accompanying CV
                 if metadyn_settings["flatbottom_restraint_CV1"] != None:
                     print("Adding flatbottom restraint for CV1")
@@ -4269,10 +4270,8 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
 #NOTE: plot_xlim/plot_ylim in final CV units (Ang for distance/rmsd and ° for )
 #CV1_minvalue/CV1_maxvalue should be set before simulation
 def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=None, plot_ylim=None ):
-
     import json
     #Read mtd settings dict from file
-    #NOTE: Only applies to native OpenMM MTD
     metadyn_settings = json.load(open(f"{biasdir}/ASH_MTD_parameters.txt"))    
 
     CV1_type=metadyn_settings["CV1_type"]; CV2_type=metadyn_settings["CV2_type"]; temperature=metadyn_settings["temperature"]; 
