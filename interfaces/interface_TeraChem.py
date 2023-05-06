@@ -7,6 +7,7 @@ import numpy as np
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 from ash.modules.module_coords import write_xyzfile
 import ash.settings_ash
+
 #TeraChem Theory object.
 class TeraChemTheory:
     def __init__(self, terachemdir=None, filename='terachem', printlevel=2,
