@@ -4,22 +4,25 @@ import shutil
 import time
 import multiprocessing as mp
 import numpy as np
+import glob
+import copy
 
 import ash.modules.module_coords
 from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
 from ash.modules.module_singlepoint import Singlepoint
 from ash.modules.module_coords import check_charge_mult
-from ash.functions.functions_elstructure import xdm_run, calc_cm5
+#from ash.functions.functions_elstructure import xdm_run, calc_cm5
+import ash.functions.functions_elstructure
 import ash.constants
 import ash.settings_ash
-from ash.functions.functions_parallel import check_OpenMPI
+import ash.functions.functions_parallel
 
 
 #ORCA Theory object.
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
-                 moreadfile=None, moreadfile_always=False,
+                 moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
@@ -35,7 +38,12 @@ class ORCATheory:
         #Checking OpenMPI
         if numcores != 1:
             print(f"ORCA parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
-            check_OpenMPI()
+            ash.functions.functions_parallel.check_OpenMPI()
+
+        #Bind to core option when calling ORCA: i.e. execute: /path/to/orca file.inp "--bind-to none"
+        #TODO: Default False; make True?
+        self.bind_to_core_option=bind_to_core_option
+        print("bind_to_core_option:", self.bind_to_core_option)
 
         #Checking if user added Opt, Freq keywords
         if ' OPT' in orcasimpleinput.upper() or ' FREQ' in orcasimpleinput.upper() :
@@ -70,19 +78,18 @@ class ORCATheory:
         #Create inputfile with generic name
         self.filename=filename
 
+        #Whether to exit ORCA if subprocess command faile
+        self.ignore_ORCA_error=ignore_ORCA_error
+
+
         #MOREAD-file
         self.moreadfile=moreadfile
         self.moreadfile_always=moreadfile_always
         #Autostart
         self.autostart=autostart
-
-        #Using orcadir to set LD_LIBRARY_PATH
-        old = os.environ.get("LD_LIBRARY_PATH")
-        if old:
-            os.environ["LD_LIBRARY_PATH"] = self.orcadir + ":" + old
-        else:
-            os.environ["LD_LIBRARY_PATH"] = self.orcadir
-        #os.environ['LD_LIBRARY_PATH'] = orcadir + ':$LD_LIBRARY_PATH'
+        # Each ORCA calculation will save path to last GBW-file used in case we have switched directories
+        #and we want to use last one
+        self.path_to_last_gbwfile_used=None #default None
 
         #Printlevel
         self.printlevel=printlevel
@@ -155,6 +162,9 @@ class ORCATheory:
         #Overwritten by QMMMtheory, used in Flip-spin
         self.qmatoms=[]
         
+        #Whether to keep a copy of last output (filename_last.out) or not
+        self.keep_last_output=True
+
         #XDM: if True then we add !AIM to input
         self.xdm=False
         if xdm == True:
@@ -187,6 +197,9 @@ class ORCATheory:
         list_files.append(self.filename + '.inp')
         list_files.append(self.filename + '.out')
         list_files.append(self.filename + '.engrad')
+        list_files.append(self.filename + '.cis')
+        list_files.append(self.filename + '_last.out')
+        list_files.append(self.filename + '.xyz')
         for file in list_files:
             try:
                 os.remove(file)
@@ -200,7 +213,7 @@ class ORCATheory:
             pass
 
     #Do an ORCA-optimization instead of ASH optimization. Useful for gas-phase chemistry when ORCA-optimizer is better than geomeTRIC
-    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
+    def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, charge=None, mult=None):
 
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL ORCA OPTIMIZATION-------------", BC.END)
@@ -233,7 +246,7 @@ class ORCATheory:
         self.extraline=self.extraline+"\n! OPT "
 
         print("Running ORCA object with {} cores available".format(numcores))
-        print("Job label:", label)
+        print("Object label:", self.label)
 
         print("Creating inputfile:", self.filename+'.inp')
         print("ORCA input:")
@@ -247,7 +260,8 @@ class ORCATheory:
         create_orca_input_plain(self.filename, elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                 charge, mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
         print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
-        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores)
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option, 
+                            ignore_ORCA_error=self.ignore_ORCA_error)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
         outfile=self.filename+'.out'
@@ -288,7 +302,8 @@ class ORCATheory:
         self.runcalls+=1
         if self.printlevel >= 2:
             print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA INTERFACE-------------", BC.END)
-
+            print("Object-label:", self.label) #To distinguish multiple objects
+            print("Run-label:", label) #Primarily used in multiprocessing
         #Coords provided to run
         if current_coords is not None:
             pass
@@ -321,7 +336,7 @@ class ORCATheory:
             else:
                 fragment_indices=self.fragment_indices
             #extrabasisatomindices if QM/MM
-            print("QM atoms :", self.qmatoms)
+            #print("QM atoms :", self.qmatoms)
             qmatoms_extrabasis=[self.qmatoms.index(i) for i in self.extrabasisatoms]
             #new QM-region indices for atomstoflip if QM/MM
             try:
@@ -351,7 +366,50 @@ end"""
 
         if self.printlevel >= 2:
             print("Running ORCA object with {} cores available".format(numcores))
-            print("Job label:", label)
+
+        #MOREAD. Checking file provided exists and determining what to do if not
+        if self.moreadfile != None:
+            print(f"Moreadfile option active. File path: {self.moreadfile}")
+            if os.path.isfile(self.moreadfile) is True:
+                print(f"File exists in current directory: {os.getcwd()}")
+            else:
+                print(f"File does not exist in current directory: {os.getcwd()}")
+                if os.path.isabs(self.moreadfile) is True:
+                    print("Error: Absolute path provided but file does not exists. Exiting")
+                    ashexit()
+                else:
+                    print("Checking if file exists in parentdir instead:")
+                    if os.path.isfile(f"../{self.moreadfile}") is True:
+                        print("Yes. Copying file to current dir")
+                        shutil.copy(f"../{self.moreadfile}", f"./{self.moreadfile}")
+        else:
+            print("Moreadfile option not active")
+            if os.path.isfile(f"{self.filename}.gbw") is False:
+                print(f"No {self.filename}.gbw file is present in dir.")
+                if self.path_to_last_gbwfile_used != None:
+                    print("Found a path to last GBW-file used by this Theory object. Will try to copy this file do current dir")
+                    try:
+                        shutil.copy(self.path_to_last_gbwfile_used, f"./{self.filename}.gbw")
+                    except FileNotFoundError:
+                        print("File was not found. May have been deleted")
+
+                    if self.autostart is False:
+                        print("Autostart option is False. ORCA will ignore this file")
+                    else:
+                        print("Autostart feature is active. ORCA will read GBW-file present.")
+                else:
+                    print(f"Checking if a file {self.filename}.gbw exists in parentdir:")
+                    if os.path.isfile(f"../{self.filename}.gbw") is True:
+                        print("Yes. Copying file from parentdir to current dir")
+                        shutil.copy(f"../{self.filename}.gbw", f"./{self.filename}.gbw")
+                    else:
+                        print("Found no file. ORCA will guess new orbitals")
+            else:
+                print(f"A GBW-file with same basename : {self.filename}.gbw is present")
+                if self.autostart is False:
+                    print("Autostart is False. ORCA will ignore any file present")
+                else:
+                    print("Autostart feature is active. ORCA will read GBW-file present.")
 
         #TDDFT option
         #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
@@ -437,7 +495,8 @@ end"""
         if self.printlevel >= 2:
             print(BC.OKGREEN, "ORCA Calculation starting.", BC.END)
 
-        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings)
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option,
+                                check_for_errors=self.check_for_errors, check_for_warnings=self.check_for_warnings, ignore_ORCA_error=self.ignore_ORCA_error)
         if self.printlevel >= 1:
             print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
@@ -475,24 +534,30 @@ end"""
             shutil.copy(self.filename+'.out', self.filename+'_run{}'.format(self.runcalls)+'.out')
 
         #Always make copy of last output file
-        shutil.copy(self.filename+'.out', self.filename+'_last.out')
+        if self.keep_last_output is True:
+            shutil.copy(self.filename+'.out', self.filename+'_last.out')
 
-        ORCAfinished,numiterations = checkORCAfinished(outfile)
-        #Check if ORCA finished or not. Exiting if so
-        if ORCAfinished is False:
-            print(BC.FAIL,"Problem with ORCA run", BC.END)
-            print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
-            print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
-            ashexit()
-        if self.printlevel >= 1:
-            print(f"ORCA converged in {numiterations} iterations")
+        #Save path to last GBW-file (used if ASH changes directories, e.g. goes from NumFreq)
+        self.path_to_last_gbwfile_used=f"{os.getcwd()}/{self.filename}.gbw"
+
+
+        if self.ignore_ORCA_error is False:
+            ORCAfinished,numiterations = checkORCAfinished(outfile)
+            #Check if ORCA finished or not. Exiting if so
+            if ORCAfinished is False:
+                print(BC.FAIL,"Problem with ORCA run", BC.END)
+                print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+                ashexit()
+
+            if self.printlevel >= 1:
+                print(f"ORCA converged in {numiterations} iterations")
 
         #Print population analysis in each run if requested
         if self.print_population_analysis is True:
             if self.printlevel >= 2:
                 print("\nPrinting Population analysis:")
                 print("-"*30)
-                print("Spin populations:")
                 charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
                 spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
                 self.properties["Mulliken_charges"] = charges
@@ -502,9 +567,10 @@ end"""
                     print("{:<2} {:<2}: {:>10.4f} {:>10.4f}".format(i,el,ch,sp))
 
         #Grab energy
-        self.energy=ORCAfinalenergygrab(outfile)
-        if self.printlevel >= 1:
-            print("ORCA energy:", self.energy)
+        if self.ignore_ORCA_error is False:
+            self.energy=ORCAfinalenergygrab(outfile)
+            if self.printlevel >= 1:
+                print("ORCA energy:", self.energy)
 
         #Grab possible properties
         #ICE-CI
@@ -527,7 +593,7 @@ end"""
 
         #XDM option: WFX file should have been created.
         if self.xdm == True:
-            dispE,dispgrad = xdm_run(wfxfile=self.filename+'.wfx', a1=self.xdm_a1, a2=self.xdm_a2,functional=self.xdm_func)
+            dispE,dispgrad = ash.functions.functions_elstructure.xdm_run(wfxfile=self.filename+'.wfx', a1=self.xdm_a1, a2=self.xdm_a2,functional=self.xdm_func)
             if self.printlevel >= 2:
                 print("XDM dispersion energy:", dispE)
             self.energy = self.energy + dispE
@@ -548,7 +614,8 @@ end"""
                         print("Time calculating QM-Pointcharge gradient: {} seconds".format(orca_timings["pc_gradient"]))
                 #Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                 self.pcgrad=ORCApcgradientgrab(pcgradfile)
-                print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
+                if self.printlevel >= 2:
+                    print(BC.OKBLUE,BC.BOLD,"------------ENDING ORCA-INTERFACE-------------", BC.END)
                 print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy, self.grad, self.pcgrad
             else:
@@ -574,7 +641,7 @@ end"""
 def check_ORCA_location(orcadir):
     if orcadir != None:
         finalorcadir = orcadir
-        print(BC.OKGREEN,"Using orcadir path provided: {}  (this dir should contain all the ORCA executable programs: orca, orca_scf, orca_mp2 etc.)".format(finalorcadir), BC.END)
+        print(BC.OKGREEN,f"Using orcadir path provided: {finalorcadir}", BC.END)
     else:
         print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable in ASH settings file (~/ash_user_settings.ini)", BC.END)
         try:
@@ -640,33 +707,36 @@ def run_orca_SP(list):
     orcadir=list[0]
     inpfile=list[1]
     print("Running inpfile", inpfile)
-    #if Grad==True:
-    #    with open(inpfile) as ifile:
-    #        insert_line_into_file(inpfile, '!', '! Engrad')
     basename = inpfile.split('.')[0]
     with open(basename+'.out', 'w') as ofile:
         process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if numcores >1.
-# Takes possible Grad boolean argument.
-
-def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True):
+def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True, bind_to_core_option=True, ignore_ORCA_error=False):
     if numcores>1:
         palstring='%pal nprocs {} end'.format(numcores)
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', palstring, Once=True )
-    #basename = inpfile.split('.')[0]
     basename = inpfile.replace('.inp','')
+
+    #LD_LIBRARY_PATH enforce: https://orcaforum.kofo.mpg.de/viewtopic.php?f=11&t=10118
+    #"-x LD_LIBRARY_PATH -x PATH"
+
     with open(basename+'.out', 'w') as ofile:
-        #process = sp.run([orcadir + '/orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         try:
-            process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            if bind_to_core_option is True:
+                #f"\"-x {orcadir} --bind-to none\""
+                process = sp.run([orcadir + '/orca', inpfile, f"--bind-to none"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            else:
+                process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             if check_for_errors:
                 grab_ORCA_errors(basename+'.out')
             if check_for_warnings:
                 grab_ORCA_warnings(basename+'.out')
         except Exception as e:
             print("Subprocess error! Exception message:", e)
+
+
             #We get an exception if 
             print(BC.FAIL,"ASH encountered a problem when running ORCA. Something went wrong, most likely ORCA ran into an error.",BC.END)
             print(BC.FAIL,f"Please check the ORCA outputfile: {basename+'.out'} for error messages", BC.END)
@@ -675,7 +745,12 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, c
                 grab_ORCA_errors(basename+'.out')
             if check_for_warnings:
                 grab_ORCA_warnings(basename+'.out')
-            ashexit()
+            print("ignore_ORCA_error:", ignore_ORCA_error)
+            if ignore_ORCA_error is True:
+                print("ignore_ORCA_error here")
+                return
+            else:
+                ashexit()
 
 def grab_ORCA_warnings(filename):
     warning_lines=[]
@@ -713,7 +788,7 @@ def grab_ORCA_errors(filename):
 
     errors=[]
     #Lines that are not errors
-    ignore_lines=['   Startup', ' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', 
+    ignore_lines=['   Iter.        energy            ||Error||_2',' WARNING: the maximum gradient error','           *** ORCA-CIS/TD-DFT FINISHED WITHOUT ERROR','   Startup', '   DIIS-Error',' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', 
         '  Sum of total UMP2 truncation', ]
     for err in error_lines:
         false_positive = any(err.startswith(ign) for ign in ignore_lines)
@@ -1135,8 +1210,11 @@ def MolecularOrbitalGrab(file):
     else:
         Openshell=False
 
+    #Total number of orbitals
+    totnumorbitals=len(bands_alpha)+len(virtbands_a)
     #Final dict
-    MOdict= {"occ_alpha":bands_alpha, "occ_beta":bands_alpha, "unocc_alpha":virtbands_a, "unocc_beta":virtbands_b, "Openshell":Openshell}
+    MOdict= {"occ_alpha":bands_alpha, "occ_beta":bands_alpha, "unocc_alpha":virtbands_a, "unocc_beta":virtbands_b, "Openshell":Openshell,
+            "totnumorbitals":totnumorbitals}
     return MOdict
 
 
@@ -1622,6 +1700,10 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     grab=False
     coordgrab=False
     spinpops=[]
+    BS=False #if broken-symmetry job
+    #if
+    if len(pygrep2("WARNING: Broken symmetry calculations", outputfile)):
+        BS=True
 
     if chargemodel == "Mulliken":
         with open(outputfile) as ofile:
@@ -1648,13 +1730,20 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     else:
         print("Unknown chargemodel. Exiting...")
         ashexit()
+    #If BS then we have grabbed charges for both high-spin and BS solution
+    if BS is True:
+        print("Broken-symmetry job detected. Only taking BS-state populations")
+        spinpops=spinpops[int(len(spinpops)/2):]
     return spinpops
 
 def grabatomcharges_ORCA(chargemodel,outputfile):
     grab=False
     coordgrab=False
     charges=[]
-
+    BS=False #if broken-symmetry job
+    #if
+    if len(pygrep2("WARNING: Broken symmetry calculations", outputfile)):
+        BS=True
 
     if chargemodel=="NPA" or chargemodel=="NBO":
         print("Warning: NPA/NBO charge-option in ORCA requires setting environment variable NBOEXE:")
@@ -1719,7 +1808,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     grab=True
         print("Hirshfeld charges :", charges)
         atomicnumbers=ash.modules.module_coords.elemstonuccharges(elems)
-        charges = calc_cm5(atomicnumbers, coords, charges)
+        charges = ash.functions.functions_elstructure.calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
     elif chargemodel == "Mulliken":
         with open(outputfile) as ofile:
@@ -1767,14 +1856,30 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
     else:
         print("Unknown chargemodel. Exiting...")
         ashexit()
+    
+    #If BS then we have grabbed charges for both high-spin and BS solution
+    if BS is True:
+        print("Broken-symmetry job detected. Only taking BS-state populations")
+        charges=charges[int(len(charges)/2):]
+
     return charges
 
 
 # Wrapper around interactive orca_plot
 # Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
-def run_orca_plot(filename, option, orcadir=None, gridvalue=40,densityfilename=None, mo_operator=0, mo_number=None):
-
+def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=False, 
+    densityfilename=None, individual_file=False, mo_operator=0, mo_number=None,):
+    print("Running run_orca_plot")
     orcadir = check_ORCA_location(orcadir)
+    def check_if_file_exists():
+        if os.path.isfile(densityfilename) is True:
+            print("File exists")
+        else:
+            print("File does not exist! Skipping")
+            return
+    #If individual_file is True then we can check if file exists (case for MRCI)
+    if individual_file is True:
+        check_if_file_exists()
     # Always creating Cube file (5,7 option)
     #Always setting grid (4,gridvalue option)
     #Always choosing a plot (2,X) option:
@@ -1792,15 +1897,21 @@ def run_orca_plot(filename, option, orcadir=None, gridvalue=40,densityfilename=N
     else:
         plottype = 1
     if option=='density' or option=='spindensity':
-         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                       input='5\n7\n4\n{}\n1\n{}\ny\n10\n11\n\n'.format(gridvalue, plottype), encoding='ascii')       
+        if specify_density is True:
+            print("specify_density: True. Picking density filename:", densityfilename)
+            #Choosing e.g. MRCI density
+            p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
+                input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n10\n11\n\n', encoding='ascii')  
+        else:
+            p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
+                       input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\ny\n10\n11\n\n', encoding='ascii')       
     elif option=='mo':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                       input='5\n7\n4\n{}\n3\n{}\n2\n{}\n10\n11\n\n'.format(gridvalue,mo_operator,mo_number), encoding='ascii')
+                       input=f'5\n7\n4\n{gridvalue}\n3\n{mo_operator}\n2\n{mo_number}\n10\n11\n\n', encoding='ascii')
     #If plotting CIS/TDDFT density then we tell orca_plot explicity.
     elif option == 'cisdensity' or option == 'cisspindensity':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                       input='5\n7\n4\n{}\n1\n{}\nn\n{}\n10\n11\n\n'.format(gridvalue, plottype,densityfilename), encoding='ascii')
+                       input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n10\n11\n\n', encoding='ascii')
 
     #print(p.returncode)
     
@@ -1882,7 +1993,7 @@ def SCF_FODocc_grab(filename):
                         return occupations
             if 'SPIN UP ORBITALS' in line:
                 occgrab=True
-    return natoccupations
+    return occupations
 
 def CASSCF_natocc_grab(filename):
     natoccgrab=False
@@ -2306,3 +2417,205 @@ def grab_coordinates_from_ORCA_output(filename):
                     grab=True
     npcoords=np.array(coords)
     return elems, npcoords
+
+
+
+#Make an ORCA fragment guess
+def orca_frag_guess(fragment=None, theory=None, A_indices=None, B_indices=None, A_charge=None, B_charge=None, A_mult=None, B_mult=None):
+    print_line_with_mainheader("orca_frag_guess")
+
+    elems_A= [fragment.elems[i] for i in A_indices]
+    coords_A= np.take(fragment.coords, A_indices, axis=0)
+
+    elems_B= [fragment.elems[i] for i in B_indices]
+    coords_B= np.take(fragment.coords, B_indices, axis=0)
+
+    fragment_A = ash.Fragment(elems=elems_A, coords=coords_A, charge=A_charge, mult=A_mult)
+    fragment_B = ash.Fragment(elems=elems_B, coords=coords_B, charge=B_charge, mult=B_mult)
+
+    #Early exits
+    if fragment is None:
+        print("You need to provide an ASH fragment")
+        ashexit()
+    if fragment.charge == None or A_mult == None or B_mult == None or A_charge == None or B_charge == None:
+        print("You must provide charge/multiplicity information to all fragments")
+        ashexit()
+    if theory == None or theory.__class__.__name__ != "ORCATheory":
+        print("You must provide an ORCATheory level")
+        ashexit()
+    
+    #Creating copies of theory object provided
+    calc_AB = copy.copy(theory); calc_AB.filename="calcAB"
+    calc_A = copy.copy(theory); calc_A.filename="calcA"
+    calc_B = copy.copy(theory); calc_B.filename="calcB"
+
+    #-------------------------
+    #Calculation on A
+    #------------------------
+    print("-"*120)
+    print("Performing ORCA calculation on fragment A")
+    print("-"*120)
+    #Run A SP
+    result_calcA=ash.Singlepoint(theory=calc_A, fragment=fragment_A)
+
+    #-------------------------
+    #Calculation on B
+    #------------------------
+    print()
+    print("-"*120)
+    print("Performing ORCA calculation on fragment B")
+    print("-"*120)
+    #Run B SP
+    result_calcB=ash.Singlepoint(theory=calc_B, fragment=fragment_B)
+
+    #-----------------------------------------
+    # merge A + B to get promolecular density
+    #-----------------------------------------
+    print()
+    print("-"*120)
+    print("Using orca_mergefrag to combine GBW-files for A and B into AB :")
+    print("-"*120)
+    p = sp.run(['orca_mergefrag', "calcA.gbw", "calcB.gbw", "orca_frag_guess.gbw"], encoding='ascii')
+
+    print("Created new GBW-file: orca_frag_guess.gbw")
+    return "orca_frag_guess.gbw"
+
+
+#Find localized orbitals in ORCA outputfile for a given element
+#Return orbital indices (to be fed into run_orca_plot)
+def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
+    #Elements of interest
+    # Threshold for including orbitals
+    #popthreshold=0.1
+
+    #Atelemindices: 0 => 0Fe
+    #for a in atomindices:
+    #    atomindices
+
+    print("Finding localized orbitals for atomindex_strings:", atomindex_strings, "with threshold:", popthreshold)
+
+    ##################
+    dict_alpha={}
+    dict_beta={}
+
+    stronggrab=False
+    bondgrab=False
+    delocgrab=False
+    with open(outputfile) as f:
+        for line in f:
+            if 'More delocalized orbitals:' in line:
+                #print(line)
+                #print("deloc switch")
+                stronggrab=False
+                bondgrab=False
+                delocgrab=True
+            if 'ORCA ORBITAL LOCALIZATION' in line:
+                loc=True
+            if 'Operator                                 ... 0' in line:
+                operator='alpha'
+            if 'Operator                                 ... 1' in line:
+                operator='beta'
+            if 'Rather strongly localized orbitals:' in line:
+                stronggrab=True
+            if stronggrab == True:
+                for atindex in atomindex_strings:
+                    if str(atindex) in line:
+                        #print(line)
+                        if operator == 'alpha':
+                            atom=line.split()[2]
+                            monumber=line.split()[1][:-1]
+                            dict_alpha.setdefault(atom, []).append(int(monumber))
+                        elif operator == 'beta':
+                            atom=line.split()[2]
+                            monumber=line.split()[1][:-1]
+                            dict_beta.setdefault(atom, []).append(int(monumber))
+                        else:
+                            print("neither wtf")
+                            exit()
+            if bondgrab == True:
+                for atx in atomindex_strings:
+                    if atx in line:
+                        #print(line)
+                        for i in line.split():
+                            if atx in i:
+                                at=i
+                                pos=line.split().index(at)
+                                if float(line.split()[pos+2]) > popthreshold:
+                                    if operator == 'alpha':
+                                        atom=line.split()[pos]
+                                        monumber=line.split()[1][:-1]
+                                        dict_alpha.setdefault(atom, []).append(int(monumber))
+                                    elif operator == 'beta':
+                                        atom=line.split()[pos]
+                                        monumber=line.split()[1][:-1]
+                                        #print("atom is", atom, "and monumber is", monumber)
+                                        dict_beta.setdefault(atom, []).append(int(monumber))
+                                    else:
+                                        print("neither wtf")
+                                        exit()
+            if delocgrab == True:
+                if 'More delocalized orbita' not in line:
+                    for atx in atomindex_strings:
+                        if atx in line:
+                            #print(line)
+                            linechanged=line.replace("-","")
+                            #print(linechanged)
+                            for i in linechanged.split():
+                                if atx in i:
+                                    at=i
+                                    #print("at is", at)
+                                    pos=linechanged.split().index(at)
+                                    #print("pos is", pos)
+                                    #print("float(line.split()[pos+2]) is", float(line.split()[pos+2]))
+                                    if float(linechanged.split()[pos+1]) > popthreshold:
+                                        if operator == 'alpha':
+                                            atom=linechanged.split()[pos]
+                                            monumber=linechanged.split()[1][:-1]
+                                            dict_alpha.setdefault(atom, []).append(int(monumber))
+                                        elif operator == 'beta':
+                                            atom=linechanged.split()[pos]
+                                            monumber=linechanged.split()[1][:-1]
+                                            dict_beta.setdefault(atom, []).append(int(monumber))
+                                        else:
+                                            print("neither wtf")
+                                            exit()
+            if 'Bond-like localized orbitals:' in line:
+                stronggrab=False
+                bondgrab=True
+            if 'Localized MO\'s were stored in:' in line:
+                stronggrab=False
+                bondgrab=False
+                delocgrab=False
+
+    #print("Alpha orbitals")
+    #print(dict_alpha)
+
+    #print("Beta orbitals")
+    #print(dict_beta)
+
+    alphalist=[]
+    betalist=[]
+    for avals in dict_alpha.items():
+        j=sorted(avals[1])
+        #Deleting metal s and p orbitals
+        #j.pop(0);j.pop(0);j.pop(0);j.pop(0)
+        for i in j:
+            alphalist.append(i)
+
+    for bvals in dict_beta.items():
+        j=sorted(bvals[1])
+        #Deleting metal s and p orbitals
+        #j.pop(0);j.pop(0);j.pop(0);j.pop(0)
+        for i in j:
+            betalist.append(i)
+
+    alphalist=sorted(list(set(alphalist)))
+    betalist=sorted(list(set(betalist)))
+    print("")
+
+    print("Alpha orbitals to be plotted with getorbitals:")
+    print(*alphalist, sep=' ')
+    print("Beta orbitals to be plotted with getorbitals:")
+    print(*betalist, sep=' ')
+
+    return alphalist, betalist

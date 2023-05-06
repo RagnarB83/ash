@@ -16,6 +16,7 @@ from ash.functions.functions_general import ashexit, isint, listdiff, print_time
 import ash.dictionaries_lists
 import ash.settings_ash
 import ash.constants
+from ash.dictionaries_lists import eldict
 
 #import ash
 
@@ -84,6 +85,7 @@ class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, grofile=None,
                  amber_inpcrdfile=None, amber_prmtopfile=None,
                  chemshellfile=None, coords=None, elems=None, connectivity=None, atom=None, diatomic=None, diatomic_bondlength=None,
+                 bondlength=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
 
@@ -119,7 +121,7 @@ class Fragment:
         # if atomnames is not None:
         #    self.atomnames=atomnames
         # Hessian. Can be added by Numfreq/Anfreq job
-        self.hessian = []
+        self.hessian = None
 
         # Something perhaps only used by molcrys but defined here. Needed for print_system
         # Todo: revisit this
@@ -141,15 +143,20 @@ class Fragment:
             self.coords = reformat_list_to_array([[0.0,0.0,0.0]])
             #self.update_attributes()
         elif diatomic is not None:
-            print("Creating Diatomic Fragment from formula and diatomic_bondlength")
-            if diatomic_bondlength == None:
-                print(BC.FAIL,"diatomic option requires diatomic_bondlength to be set. Exiting!", BC.END)
-                ashexit()
+            print("Creating Diatomic Fragment from formula and bondlength")
+            if bondlength is None:
+                #TODO: remove diatomic_bondlength and use bondlength only
+                if diatomic_bondlength is None:
+                    print(BC.FAIL,"diatomic option requires bondlength to be set. Exiting!", BC.END)
+                    ashexit()
+                else:
+                    bondlength=diatomic_bondlength
+            
             self.elems=molformulatolist(diatomic)
             if len(self.elems) != 2:
                 print(f"Problem with molecular formula diatomic={diatomic} string!")
                 ashexit()
-            self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(diatomic_bondlength)]])
+            self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(bondlength)]])
             #self.update_attributes()
         # If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
@@ -205,7 +212,9 @@ class Fragment:
             if len(self.connectivity) == 0:
                 self.calc_connectivity(scale=scale, tol=tol)
 
-
+        #Constraints attributes. Used by parallel surface-scan to pass constraints along.
+        #Populated by calc_surface relaxed para
+        self.constraints = None
 
     def update_attributes(self):
         if self.printlevel >= 2:
@@ -339,23 +348,6 @@ class Fragment:
         # Call connectivity routines
         # for el in self.elems:
         #    if -
-
-    #Simple get_water constraints for fragment without doing connectivity
-    #Limitation: Assumes all waters from starting index to end and that waters are ordered: O H H
-    def simple_get_water_constraints(self, starting_index=None):
-        if self.elems[starting_index] != 'O':
-            print("Starting atom for water fragment is not oxygen!")
-            print("Make sure starting index ({}) is correct".format(starting_index))
-            print("Also note that water fragments must have O H H order!")
-            ashexit()
-        constraints=[]
-        for i in range(starting_index, self.numatoms):
-            if self.elems[i] == "O":
-                #X-H constraint
-                constraints.append([i,i+1])
-                constraints.append([i,i+2])
-                constraints.append([i+1,i+2])
-        return constraints
 
     def delete_atom(self, atomindex):
         self.coords = np.delete(self.coords, atomindex, axis=0)
@@ -1049,7 +1041,7 @@ def print_coords_all(coords, elems, indices=None, labels=None, labels2=None):
             else:
                 for i in range(len(elems)):
                     print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6".format(elems[i], coords[i][0], coords[i][1],
-                                                                                   coords[i][2], labels[i], label2[i]))
+                                                                                   coords[i][2], labels[i], labels2[i]))
     else:
         if labels is None:
             for i in range(len(elems)):
@@ -1091,7 +1083,7 @@ def write_coords_all(coords, elems, indices=None, labels=None, labels2=None, fil
                 for i in range(len(elems)):
                     f.write(
                         "{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6\n".format(elems[i], coords[i][0], coords[i][1],
-                                                                                   coords[i][2], labels[i], label2[i]))
+                                                                                   coords[i][2], labels[i], labels2[i]))
     else:
         if labels is None:
             for i in range(len(elems)):
@@ -1259,6 +1251,19 @@ def get_connected_atoms_np(coords, elems, scale, tol, atomindex):
     connatoms = np.where(diff < 0)[0].tolist()
     # print("connatoms ", connatoms)
     return connatoms
+
+
+#Get connected atoms for a small list of atoms with input fragment, includes input atoms
+#Used e.g. in NEB-TS
+def get_conn_atoms_for_list(atoms=None, fragment=None,scale=1.0, tol=0.1):
+    final_list=[]
+    for atom in atoms:
+        conn = ash.modules.module_coords.get_connected_atoms_np(fragment.coords, fragment.elems, scale, tol, atom)
+        final_list.append(conn)
+    #Flatten list
+    final_list  = [item for sublist in final_list for item in sublist]
+    #Remove duplicates and sort
+    return np.unique(final_list).tolist()
 
 
 # Numpy clever loop test.
@@ -1850,7 +1855,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
             if '%FLAG ATOMIC_NUMBER' in line:
                 grab_atomnumber = True
     if len(coords) != len(elems):
-        print(BC.FAIL,"Num coords not equal to num elems. Parsing of Amber files: {} and {} failed. BUG!".format(prmtopfile,inpcrddfile), BC.END)
+        print(BC.FAIL,"Num coords not equal to num elems. Parsing of Amber files: {} and {} failed. BUG!".format(prmtopfile,inpcrdfile), BC.END)
         ashexit()
     return elems, coords, box_dims
 
@@ -1861,7 +1866,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
 # Example, minimal: write_pdbfile(frag)
 # TODO: Add option to write new hybrid-36 standard PDB file instead of current hexadecimal nonstandard fix
 def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,
-                  residlabels=None, segmentlabels=None, dummyname='DUM'):
+                  residlabels=None, segmentlabels=None, dummyname='DUM', charges_column=None):
     print("Writing PDB-file...")
     # Using ASH fragment
     elems = fragment.elems
@@ -1922,12 +1927,19 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
             # Using last 4 letters of atomnmae
             atomnamestring = atomname[-4:]
             # Using string format from: cupnet.net/pdb-format/
-            line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}".format(
-                'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
-                seg[0:3], el, '')
-            #print(line)
-            #print("ATOM      1  N   MET A   1      -4.023 -14.590  -3.242  1.00 10.20           N")
-            #exit()
+
+            #Optional charges column (used by CP2K)
+            if charges_column != None:
+                charge=charges_column[count]
+                line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}{:>10.6f}".format(
+                    'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
+                    seg[0:3], el, charge)
+            #Regular
+            else:
+                line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}".format(
+                    'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
+                    seg[0:3], el, '')
+
             pfile.write(line + '\n')
     print("Wrote PDB file: ", outputname + '.pdb')
 
@@ -2660,7 +2672,7 @@ def cellbasis(angles, edges):
 # NOTE: Deprecated????
 def cut_cluster(coords=None, elems=None, radius=None, center_atomindex=None):
     print("Now cutting spherical cluster with radius {} Å from box.".format(radius))
-
+    ashexit()
     # Getting coordinates of atom to center cluster on
     # origin=np.array([coords[center_atomindex]])
     # comparecoords = np.tile(origin, (len(coords), 1))
@@ -2729,7 +2741,7 @@ def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
     print("set_up_MMwater_bondconstraints")
     print("Assuming oxygen atom type is: ", oxygentype)
     print("Change with keyword arguement: oxygentype='XX")
-
+    ashexit()
     # Go over actatoms and check if oxygen-water type
 
     # Shift nested list by number e.g. shift([[1,2],[100,101]], -1)  gives : [[0,1],[99,100]]
@@ -3143,10 +3155,105 @@ def check_gradient_for_bad_atoms(fragment=None,gradient=None, threshold=45000):
         print()
         print("Index    Element           Coordinates                              Gradient")
         for i in indices:
-            print(f"{i:7} {fragment.elems[i]:>5} {fragment.coords[i][0]:>12.6f} {fragment.coords[i][2]:>12.6f} {fragment.coords[i][2]:>12.6f}      {k[0]:>6.3f} {k[1]:>6.3f} {k[2]:>6.3f}")
+            print(f"{i:7} {fragment.elems[i]:>5} {fragment.coords[i][0]:>12.6f} {fragment.coords[i][2]:>12.6f} {fragment.coords[i][2]:>12.6f}      {gradient[i][0]:>6.3f} {gradient[i][1]:>6.3f} {gradient[i][2]:>6.3f}")
         print()
         print("These atoms may need to be constrained (e.g. if metal-cofactor) or atom positions need to be corrected before starting simulation")
     else:
         print()
         print(f"No atoms with gradients larger than threshold: {threshold}")
     return indices
+
+
+#Define XH bond constraints for a given fragment and a set of atomindices (e.g. an active region)
+# and an optional exclusion list (e.g. QM-region)
+def define_XH_constraints(fragment, actatoms=None, excludeatoms=None, conncode='py'):
+    print("Inside define_XH_constraints function")
+    if actatoms == None:
+        subset_elems = fragment.elems
+        subset_coords = fragment.coords
+    else:
+        subset_elems = [fragment.elems[i] for i in actatoms]
+        subset_coords = np.take(fragment.coords, actatoms, axis=0)
+
+    print(f"Defining constraints for {len(subset_elems)} atom-region")
+
+    #Finding H-atoms (both act indices and full indices)
+    tempHatoms = [index for index, el in enumerate(subset_elems) if el == 'H']
+    tempHatoms_full = [actindex_to_fullindex(i,actatoms) for i in tempHatoms]
+    Hatoms=[]
+    if excludeatoms != None:
+        print("Checking for exclude atoms")
+        for th,th_f in zip(tempHatoms,tempHatoms_full):
+            if th_f not in excludeatoms:
+                Hatoms.append(th)
+    else:
+        Hatoms=tempHatoms
+
+    #Now finding X-H pairs for active region
+    #py version (slow) but good enough for a few thousand atoms
+    scale = ash.settings_ash.settings_dict["scale"]
+    tol = ash.settings_ash.settings_dict["tol"]
+    if conncode == 'py':
+        act_con_list = []
+        for Hatom in Hatoms:
+            connatoms = get_connected_atoms_np(subset_coords, subset_elems, scale, tol, Hatom)
+            act_con_list.append(connatoms)
+    #Faster Julia function
+    else:
+        print("Loading Julia")
+        try:
+            Juliafunctions = load_julia_interface()
+        except:
+            print("Problem loading Julia")
+            ashexit()
+        act_con_list = Juliafunctions.get_connected_atoms_forlist_julia(subset_coords, subset_elems, scale, tol,
+                                                                        eldict_covrad, Hatoms)
+    #Convert XH actregion indices to finalregion indices
+    final_list=[]
+    for XHpair in act_con_list:
+        if len(XHpair) != 2:
+            print("XHpair is strange:", XHpair)
+            ashexit()
+        final_list.append([actindex_to_fullindex(XHpair[0],actatoms),actindex_to_fullindex(XHpair[1],actatoms)])
+    return final_list
+
+#Simple function to convert atom indices from full system to Active region. Single index case
+def fullindex_to_actindex(fullindex,actatoms):
+    actindex=actatoms.index(fullindex)
+    return actindex
+
+#Simple function to convert atom indices from active region to full-system case.
+def actindex_to_fullindex(actindex,actatoms):
+    fullindex = actatoms[actindex]
+    return fullindex
+
+
+#Simple get_water constraints for fragment without doing connectivity
+#Limitation: Assumes all waters from starting index to end and that waters are ordered: O H H
+def simple_get_water_constraints(fragment,starting_index=None, onlyHH=False):
+    print("Inside simple_get_water_constraints function")
+    print("Warning: Note that water residues have to have O,H,H order and have to be at the end of the coordinate file")
+    print("Starting index for first water oxygen:", starting_index)
+    if starting_index == None:
+        print("Error: You must provide a starting_index value!")
+        ashexit()
+    if fragment.elems[starting_index] != 'O':
+        print("Starting atom for water fragment is not oxygen!")
+        print("Make sure starting index ({}) is correct".format(starting_index))
+        print("Also note that water fragments must have O H H order!")
+        ashexit()
+    if onlyHH is False:
+        print("onlyHH is False. Will create list of O-H1, O-H2 and H1-H2 constraints")
+    elif onlyHH is True:
+        print("onlyHH is True. Will create list of H1-H2 constraints only")
+    #
+    constraints=[]
+    for i in range(starting_index, fragment.numatoms):
+        if fragment.elems[i] == "O":
+            #X-H constraint
+            if onlyHH is False:
+                constraints.append([i,i+1])
+                constraints.append([i,i+2])
+            #H-H constraints. i.e. effectively freezing angles
+            constraints.append([i+1,i+2])
+    return constraints

@@ -7,18 +7,18 @@ import subprocess as sp
 from ash.modules.module_coords import split_multimolxyzfile
 from ash.functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel, pygrep
 from ash.modules.module_coords import check_charge_mult, Fragment
-
+import ash.settings_ash
 
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
-               constrained_atoms=None, forceconstant_constraint=0.5):
+               constrained_atoms=None, forceconstant_constraint=0.5, extraoptions=None):
     print_line_with_subheader1("call_crest")
     module_init_time=time.time()
     if crestdir == None:
         print(BC.WARNING, "No crestdir argument passed to call_crest. Attempting to find crestdir variable inside settings_ash", BC.END)
         try:
-            print("settings_ash.settings_dict:", settings_ash.settings_dict)
-            crestdir=settings_ash.settings_dict["crestdir"]
+            print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+            crestdir=ash.settings_ash.settings_dict["crestdir"]
         except:
             print(BC.WARNING,"Found no crestdir variable in settings_ash module either.",BC.END)
             try:
@@ -76,17 +76,25 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
 
     #GBSA solvation or not
     if solvent is None:
-        process = sp.run([crestdir + '/crest', 'initial.xyz', '-T', str(numcores), '-gfn'+str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge), '-uhf', str(mult-1)])
+        solventstring=""
     else:
-        process = sp.run([crestdir + '/crest', 'initial.xyz','-T', str(numcores),  '-gfn' + str(xtbflag), '-ewin', str(energywindow), '-chrg', str(charge),'-gbsa', str(solvent),
-            str(charge), '-uhf', str(mult - 1)])
+        solventstring=f'-gbsa {solvent}'
+    #Extra options or empty. string with extra crest keyword flags
+    if extraoptions == None:
+        extraoptions=""
+    
+    #Run
+    print("Now calling CREST")
+    process = sp.run([crestdir + '/crest', 'initial.xyz','-T', str(numcores),  '-gfn' + str(xtbflag), 
+                      '-ewin', str(energywindow),  str(charge), solventstring, extraoptions,
+                    '-chrg', str(charge), '-uhf', str(mult - 1)])
 
 
     os.chdir('..')
     print_time_rel(module_init_time, modulename='crest run', moduleindex=0)
 
     #Get conformers
-    list_conformers, list_xtb_energies = get_crest_conformers()
+    list_conformers, list_xtb_energies = get_crest_conformers(charge=charge, mult=mult)
 
 
     return list_conformers, list_xtb_energies
@@ -102,8 +110,8 @@ def call_crest_entropy(fragment=None, crestdir=None, charge=None, mult=None, num
     if crestdir == None:
         print(BC.WARNING, "No crestdir argument passed to call_crest. Attempting to find crestdir variable inside settings_ash", BC.END)
         try:
-            print("settings_ash.settings_dict:", settings_ash.settings_dict)
-            crestdir=settings_ash.settings_dict["crestdir"]
+            print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+            crestdir=ash.settings_ash.settings_dict["crestdir"]
         except:
             print(BC.WARNING,"Found no crestdir variable in settings_ash module either.",BC.END)
             try:
@@ -179,7 +187,7 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
         list_xtb_energies.append(en)
 
     for (els,cs,eny) in zip(all_elems,all_coords,list_xtb_energies):
-        conf = Fragment(elems=els, coords=cs, charge=charge, mult=mult)
+        conf = Fragment(elems=els, coords=cs, charge=charge, mult=mult, printlevel=0)
         list_conformers.append(conf)
         conf.energy=eny
 

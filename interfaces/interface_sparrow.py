@@ -42,6 +42,7 @@ class SparrowTheory:
     def cleanup():
         print("Sparrow cleanup not yet implemented.")
     #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
+    #NOTE: Should be possible by adding to subprocess call
 
     #Request Hessian calculation. Will call run.
     def Hessian(self, fragment=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):

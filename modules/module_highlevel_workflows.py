@@ -1048,8 +1048,7 @@ maxiter 150\nend
         # TODO: Keep output files for each step
         os.remove(self.ccsdt_1.filename+'.gbw')
 
-        #return final energy and also dictionary with energy components
-        #TODO: remove E_dict
+        #return only final energy now. Energy components accessible as energy_components attribute
         return E_FINAL
 
 #MRCC version
@@ -1096,7 +1095,6 @@ class MRCC_CC_CBS_Theory:
 
         #Main attributes
         self.cardlabels={2:'D',3:'T',4:'Q',5:"5",6:"6"}
-        self.orcadir = orcadir
         self.elements=elements
         self.cardinals = cardinals
         self.alpha=alpha
@@ -1141,7 +1139,7 @@ class MRCC_CC_CBS_Theory:
         if self.LNO == True:
             print("LNO setting: ", self.lnosetting)
         print("")
-
+        ashexit()
         #Getting basis sets and ECPs for each element for a given basis-family and cardinal
         
         self.Calc1_basis_dict={}
@@ -1281,7 +1279,7 @@ class MRCC_CC_CBS_Theory:
     def run(self, current_coords=None, elems=None, Grad=False, numcores=None, charge=None, mult=None):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING MRCC_CC_CBS_Theory-------------", BC.END)
-
+        ashexit()
         #Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for MRCC_CC_CBS_Theory run", BC.END)
@@ -1733,6 +1731,33 @@ def Extrapolation_twopoint_corr(corr_energies, cardinals, basis_family, beta=Non
 
     return corr_final
 
+
+#2-point formula for CBS extrapolation of correlation energy by Riemann Zeta function
+# Lesiuk, Jeziorski, JCTC 2019, 15, 5398-5403
+def Extrapolation_Riemann_zeta_corr(corr_energies, cardinals):
+
+    if len(corr_energies) != len(cardinals):
+        print("corr_energies and cardinals lists should be same length")
+        ashexit()
+    if len(corr_energies) != 2:
+        print("corr_energies list should be size 2")
+        ashexit()
+
+    #Riemann zeta: ksi(s), ksi(4) = pi^4/90
+    rz4 = math.pi**4/90
+    
+    #a = L^4(E_L - E_L-1)
+    a = cardinals[-1]**4*(corr_energies[1]-corr_energies[0])
+
+    #sum_ang: sum(l^-4 for l=1 to L)
+    sum_ang=sum([l**(-4) for l in range(1,cardinals[1]+1)])
+    
+    #E_L 
+    E_inf = corr_energies[-1] + a*(rz4-sum_ang)
+    print("Cardinals are:", cardinals)
+    print("Correlation energies are:", corr_energies[0], "and", corr_energies[1])
+    print("Correlation Extrapolated value is", E_inf)
+    return E_inf
 
 
 def FCI_extrapolation(E):
@@ -2569,6 +2594,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
     #MBE-FCI via PyMBE
     if MBE_FCI is True:
         print("MBE_FCI is True")
+        ashexit()
         print("mbe_thres_inc:", mbe_thres_inc)
         print("mbe_orbs_choice:", mbe_orbs_choice)
         print("mbe_ref_orblist:", mbe_ref_orblist)

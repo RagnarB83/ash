@@ -1,10 +1,12 @@
 import statistics
 import time
+import os
+import numpy as np
 
 from ash.interfaces.interface_ORCA import checkORCAfinished,finalenergiesgrab,create_orca_inputVIEcomp_pc,create_orca_inputVIEcomp_gas,create_orca_inputVIE_pc
 import ash.constants
 from ash.interfaces.interface_xtb import xtbfinalenergygrab,xtbVIPgrab
-from ash.functions.functions_general import ashexit, listdiff,blankline
+from ash.functions.functions_general import ashexit, listdiff,blankline, BC
 from ash.modules.module_coords import get_molecule_members_loop,read_chemshellfragfile_xyz
 
 def TestModerunAB():

@@ -345,7 +345,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 #grab_Mossbauer_from_ORCA_output(theory.filename)
 
             elif property == 'NMR':
-                pass
+                ashexit()
                 Proptype='NMR'
                 theory.propertyblock="\n%eprnmr\nnuclei = all {} {fgrad}\n".format(property_element)
 

@@ -21,6 +21,7 @@ from ash.modules.module_plotting import ASH_plot
 from ash.modules.module_singlepoint import ReactionEnergy
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_freq import thermochemcalc
+from ash.interfaces.interface_ORCA import ORCATheory
 
 #Simple class to keep track of results. To be extended
 #Deprecated?. Use ASH_Results instead?
@@ -41,7 +42,8 @@ class ProjectResults():
 
 #Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
 def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
-                         HLtheory=None, numcores=1, charge=None, mult=None):
+                         HLtheory=None, numcores=1, charge=None, mult=None, crestoptions=None,
+                         optimizer_maxiter=200):
     """[summary]
 
     Args:
@@ -65,24 +67,30 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
 
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
-    ash.interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, charge=charge, mult=mult, numcores=numcores)
+    list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, 
+                                                                                   charge=charge, mult=mult, numcores=numcores, extraoptions=crestoptions)
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
-    list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.get_crest_conformers(charge=charge, mult=mult)
+    #list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.get_crest_conformers(charge=charge, mult=mult)
+    print("Crest Conformer Search done. Found {} conformers".format(len(xtb_energies)))
+    #Printing relative energies
+    min_xtbenergy=min(xtb_energies)
+    harkcal = 627.50946900
+    print(" Conformer   xTB-energy (Eh)  dE (kcal/mol)")
+    print("----------------------------------------------------------------")
+    for index,xtb_en in enumerate(xtb_energies):
+        rel_xtb=(xtb_en-min_xtbenergy)*harkcal
+        print("{:10} {:13.10f} {:13.3f}".format(index,xtb_en,rel_xtb))
 
-    print("list_conformer_frags:", list_conformer_frags)
-    print("")
-    print("Crest Conformer Searches done. Found {} conformers".format(len(xtb_energies)))
-    print("xTB energies: ", xtb_energies)
 
     #3. Run ML (e.g. DFT) geometry optimizations for each crest-conformer
-
     ML_energies=[]
     print("")
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        ash.interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, coordsystem='tric', charge=charge, mult=mult)
+        ash.interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, 
+                                                        coordsystem='tric', charge=charge, mult=mult, maxiter=optimizer_maxiter)
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
         os.rename('Fragment-optimized.ygg', 'Conformer{}_ML.ygg'.format(index))
@@ -93,14 +101,16 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     print("ML_energies: ", ML_energies)
 
     #4.Run high-level thery. Provide HLtheory object (typically ORCATheory)
-    HL_energies=[]
-    for index,conformer in enumerate(list_conformer_frags):
-        print("")
-        print("Performing High-level calculation for ML-optimized Conformer ", index)
-        HLresult = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
-        HLenergy = HLresult.energy
-        HL_energies.append(HLenergy)
-
+    if HLtheory != None:
+        HL_energies=[]
+        for index,conformer in enumerate(list_conformer_frags):
+            print("")
+            print("Performing High-level calculation for ML-optimized Conformer ", index)
+            HLresult = ash.Singlepoint(theory=HLtheory, fragment=conformer, charge=charge, mult=mult)
+            HLenergy = HLresult.energy
+            HL_energies.append(HLenergy)
+    else:
+        HL_energies=[0 for i in list_conformer_frags]
 
     print("")
     print("=================")
@@ -1062,6 +1072,7 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
 #NOTE: not ready
 def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=None, BS_flip_options=None, charge=None, mult=None):
 
+    ashexit()
     if theory == None or fragment == None or flip_atoms == None or BS_flip_options==None:
         print("Please set theory, fragment, flip_atoms and BS_flip_options keywords")
         exit()
@@ -1071,9 +1082,9 @@ def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=N
 
     #Getting full-system atom numbers for each BS-flip
     atomstoflip=[flip_atoms[i-1] for i in BSflip]
-    orcaobject = ORCATheory(orcadir=orcadir, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
-                        brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, nprocs=numcores, extrabasisatoms=extrabasisatoms,
-                        extrabasis="ZORA-def2-TZVP")
+    #orcaobject = ORCATheory(orcadir=orcadir, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
+    #                    brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, nprocs=numcores, extrabasisatoms=extrabasisatoms,
+    #                    extrabasis="ZORA-def2-TZVP")
 
 
     #Looping over BS-flips

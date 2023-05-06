@@ -1,3 +1,4 @@
+import numpy as np
 #Dynamics in ASH
 
 #Molecular dynamics
@@ -11,7 +12,7 @@ class Simulation:
         self.tau=tau
         self.thermostat=thermostat
         #Provide or get from fragment
-        self.elems=elems
+        #self.elems=elems
         #masslist, define here or get masses from fragment
         self.masslist=[]
         #Create from masslist ?

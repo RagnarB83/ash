@@ -175,6 +175,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     # Initialize second run of neb
     # --------------------------------------------------------------------------------
     if second_run:
+        print("zoom is not available yet")
+        exit()
         # Get Zoom Region
         CI = np.argmax(path.GetEnergy())
         Ereactant = path.GetEnergy()[0]
@@ -459,7 +461,9 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         if (maxf < tol_turn_on_ci or tol_turn_on_ci == 0.0):
             if not startci and doci:
                 checkmax = np.argmax(path.GetEnergy())
+                #Not turning on if highest-energy image is first or last
                 if checkmax != 0 and checkmax != path.GetNim() - 1:
+                    print("Turning on CI")
                     startci = True
                     #Rmod:
                     calculator.ISCION = True
@@ -473,6 +477,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                     # print '%6s %4s %2s %10s %8s %13s %5s %11s  %11s %11s %13s' \
                     # % ("Optim.", "iter", "FC", "Objf", "dS", "maxE", "CI", "rmsF'(i)", "rmsF(CI)", "maxF'",
                     #   "maxF(CI)")
+                else:
+                    print(f"Highest energy image is {checkmax}. Not turning on CI")
         if startci:
             if (it % 5) == 0:
                 newci = np.argmax(path.GetEnergy())
@@ -607,7 +613,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 extra="CI"
             else: extra=""
             print('%4i %6.2f %12.6f %12.4f %12.6f %6s' % (
-                i, s[i], 1/(27.211386245988)*path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - Ereactant),
+                i, s[i], 1/(27.211386245988)*path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - path.GetEnergy()[0][0]),
                 np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()])),extra))
 
         WritePath(basename + "_MEP.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
@@ -619,20 +625,24 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         E_barrier=(path.GetEnergy()[CI][0] - path.GetEnergy()[0][0])*23.060541945329334
         print(f"\nBarrier energy: {E_barrier} kcal/mol")
 
-        PrintAtomMatrix("\nSaddle point geometry (Å):", path.GetNDimIm(),
-                        path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()],
-                        path.GetSymbols())
+        #Disabled as too much for e.g. QM/MM 1000-atom QM-region
+        #PrintAtomMatrix("\nSaddle point geometry (Å):", path.GetNDimIm(),
+        #                path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()],
+        #                path.GetSymbols())
 
-        PrintAtomMatrix("Atomic forces(eV/Å):", path.GetNDofIm(),
-                        path.GetForces()[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
-                        path.GetSymbols())
+        #No longer printing (too big for large act region)
+        #PrintAtomMatrix("Atomic forces(eV/Å):", path.GetNDofIm(),
+        #                path.GetForces()[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
+        #                path.GetSymbols())
 
         tang = GetTangent(path.GetNDofIm(), path.GetNim(), path.GetR(), path.GetEnergy(),
                           tangent_type, pbc=path.GetPBC(), cell=path.GetCell())
 
-        PrintAtomMatrix("Tangent to path:", path.GetNDofIm(),
-                        tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
-                        path.GetSymbols())
+        #No longer printing (too big for large act region)
+        #PrintAtomMatrix("Tangent to path:", path.GetNDofIm(),
+        #                tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
+        #                path.GetSymbols())
+        
         #RB addition: Provide final tangent to calculator
         tang_2d_CI = np.reshape(tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],(int(path.ndofIm/3),3))
         calculator.tangent = tang_2d_CI

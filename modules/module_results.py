@@ -23,6 +23,9 @@ class ASH_Results:
     gradients: list = None
     energies_dict: dict = None
     gradients_dict: dict = None
+    #parallel Multi-energy job
+    #Name of worker directories that could be accessed later
+    worker_dirnames: dict = None
     #Geometry informaiton
     geometry: np.array = None
     initial_geometry: np.array = None

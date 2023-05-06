@@ -13,7 +13,7 @@ import math
 
 #import ash
 from ash.interfaces.interface_ORCA import checkORCAfinished,scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output
-from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel
+from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel,find_between
 from ash.functions.functions_elstructure import HOMOnumbercalc,modosplot,write_cube_diff,read_cube
 import ash.constants
 
@@ -111,7 +111,10 @@ def get_smat_from_gbw(file1, file2='', orcadir=None):
 
 #Get MO coefficients from GBW file.
 def get_MO_from_gbw(filename,restr,frozencore,orcadir):
-
+    print("filename:", filename)
+    print("restr:", restr)
+    print("frozencore:", frozencore)
+    print("orcadir:", orcadir)
     # run orca_fragovl
     string=orcadir+'/orca_fragovl %s %s' % (filename,filename)
     try:
@@ -943,7 +946,7 @@ def grab_dets_from_CASSCF_output(file):
 
 #Grab determinants from MRCI-ORCA output with option PrintWF det
 def grab_dets_from_MRCI_output(file, SORCI=False):
-
+    print("file:", file)
     #If SORCI True then multiple MRCI output sections. we want last one
     if SORCI is True:
         final_part=False
@@ -1524,7 +1527,7 @@ def delete_wrong_det(file,reference_mult):
 
 # Calculate PES spectra using the Dyson orbital approach.
 # Memory for WFoverlap in MB. Hardcoded
-def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
+def oldPhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, path_wfoverlap=None, tda=True,
                           brokensym=False, HSmult=None, atomstoflip=None, initialorbitalfiles=None, Densities='None', densgridvalue=100,
                           CAS=False, CAS_Initial=None, CAS_Final = None, memory=40000, numcores=1, noDyson=False, CASCI=False, MRCI=False, MREOM=False,
@@ -1811,9 +1814,10 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
             os.chdir('Calculated_densities')
             print("Density option active. Calling orca_plot to create Cube-file for Initial state SCF.")
             shutil.copyfile('../' + theory.filename + '.gbw', './'+theory.filename + '.gbw')
+            shutil.copyfile('../' + theory.filename + '.densities', './'+theory.filename + '.densities')
             #Electron density
             run_orca_plot(orcadir=theory.orcadir,filename=theory.filename + '.gbw', option='density', gridvalue=densgridvalue)
-            os.rename(theory.filename+'.scfp','Init_State.scfp')
+            os.rename(theory.filename+'.densities','Init_State.scfp')
             shutil.copyfile(theory.filename + '.eldens.cube', './' + 'Init_State' + '.eldens.cube')
 
             # Read Initial-state-SCF density Cube file into memory
@@ -2158,16 +2162,17 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
                     print("Density option active. Calling orca_plot to create Cube-file for Final state SCF.")
                     os.chdir('Calculated_densities')
                     shutil.copyfile('../' + theory.filename + '.gbw', './' + theory.filename + '.gbw')
+                    shutil.copyfile('../' + theory.filename + '.densities', './'+theory.filename + '.densities')
                     #Electron density
                     run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='density',
                                  gridvalue=densgridvalue)
-                    os.rename(theory.filename + '.scfp', 'Final_State_mult' + str(fstate.mult) + '.scfp')
+                    os.rename(theory.filename + '.densities', 'Final_State_mult' + str(fstate.mult) + '.scfp')
                     shutil.copyfile(theory.filename + '.eldens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.eldens.cube')
                     #Spin density
                     if fstate.hftyp == "UHF":
                         run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='spindensity',
                                  gridvalue=densgridvalue)
-                        os.rename(theory.filename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
+                        #os.rename(theory.filename + '.scfr', 'Final_State_mult' + str(fstate.mult) + '.scfr')
                         shutil.copyfile(theory.filename + '.spindens.cube', './' + 'Final_State_mult' + str(fstate.mult) + '.spindens.cube')
                     os.chdir('..')
             blankline()
@@ -2245,7 +2250,7 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
     if noDyson is True:
         print("NoDyson is True. Exiting...")
-        return
+        return FinalIPs, None
 
 
     if CAS is not True and MRCI is not True and EOM is not True:
@@ -2599,18 +2604,18 @@ def PhotoElectronSpectrum(theory=None, fragment=None, Initialstate_charge=None, 
 
                     ash.Singlepoint(fragment=fragment, theory=theory, charge=fstate.charge, mult=fstate.mult)
                     # TDDFT state done. Renaming cisp and cisr files
-                    os.rename(theory.filename+'.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
-                    os.rename(theory.filename+'.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
+                    #os.rename(theory.filename+'.cisp', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp')
+                    #os.rename(theory.filename+'.cisr', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr')
                     print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                     #Doing spin-density Cubefilefor each cisr file
                     run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisspindensity',gridvalue=densgridvalue,
-                                  densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisr' )
+                                  densityfilename=theory.filename+'.cisr' )
                     os.rename(theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
                     #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
 
                     run_orca_plot(orcadir=theory.orcadir, filename=theory.filename + '.gbw', option='cisdensity',gridvalue=densgridvalue,
-                                  densityfilename='Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.cisp' )
+                                  densityfilename=theory.filename+'.cisp' )
                     os.rename(theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
 
                     final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'

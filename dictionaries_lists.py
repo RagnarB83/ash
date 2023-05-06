@@ -2,6 +2,7 @@
 Various lists and dictionaries of elements etc.
 """
 
+
 # List of elements
 elements = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
             'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb',
@@ -9,7 +10,8 @@ elements = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'A
             'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta',
             'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa',
             'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
-
+#Other form
+eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11,'Mg':12,'Al':13,'Si':14,'P':15,'S':16,'Cl':17,'Ar':18,'K':19,'Ca':20,'Sc':21,'Ti':22,'V':23,'Cr':24,'Mn':25,'Fe':26,'Co':27,'Ni':28,'Cu':29,'Zn':30,'Ga':31,'Ge':32,'As':33,'Se':34,'Br':35,'Kr':36,'Mo':42,'W':74,'Ru':44,'I':53}
 # Conversion of common atom types or atomnames to elements.
 # Used by: module_coords: conv_atomtypes_elems and read_gromacsfile. Also in read_pdbfile when atomnames option is active
 # Added MW as atomtype for M-site. Problem for QM-code
@@ -22,19 +24,24 @@ atomtypes_dict = {'H': 'H', 'HA': 'H', 'HB': 'H', 'HW': 'H', 'HH': 'H', 'HN': 'H
                   'HE1': 'H', 'HE2': 'H', 'HE3': 'H', 'HD1': 'H', 'HD2': 'H', '1HH1': 'H', '2HH1': 'H', '1HH2': 'H',
                   '2HH2': 'H',
                   '1HG1': 'H', '2HG1': 'H', '3HG1': 'H', '1HG2': 'H', '2HG2': 'H', '3HG2': 'H', '1HD1': 'H',
-                  '2HD1': 'H', '3HD1': 'H', '1HD2': 'H', '2HD2': 'H', '3HD2': 'H',
+                  '2HD1': 'H', '3HD1': 'H', '1HD2': 'H', '2HD2': 'H', '3HD2': 'H', 'H4':'H',
                   'HD3': 'H', '1HE2': 'H', '2HE2': 'H', 'HZ1': 'H', 'HZ2': 'H', 'HZ3': 'H', 'HB3': 'H', 'HA1': 'H',
-                  'HA2': 'H', 'HA3': 'H', 'HH2': 'H', 'HOB': 'H', 'HW1': 'H', 'HW2': 'H',
-                  'HO': 'H',
+                  'HA2': 'H', 'HA3': 'H', 'HH2': 'H', 'HOB': 'H', 'HW1': 'H', 'HW2': 'H', 'HO1':'H', 'H5':'H', 'H61':'H',
+                  'HO': 'H', 'H62':'H', 'HO6':'H', 'H12':'H', 'H52':'H', 'H22':'H', 'HO22':'H', 'H32':'H', 'HO32':'H',
+                  'H631':'H','H632':'H','H633':'H', 'H43':'H', 'HO43':'H', 'H33':'H', 'HO33':'H', 'H23':'H', 'HO23':'H',
+                  'H53':'H', 'HO53':'H', 'H42':'H', 'HO42':'H', 'H621':'H', 'H622':'H', 'HO62':'H', 'H13':'H',
                   'NA': 'Na', 'SOD': 'Na',
                   'C': 'C', 'CD': 'C', 'CH': 'C', 'CH2': 'C', 'CA': 'C', 'CB': 'C', 'CG': 'C', 'CZ': 'C', 'CE': 'C',
-                  'CG1': 'C', 'CG2': 'C', 'CD1': 'C', 'CD2': 'C', 'CE1': 'C', 'CE2': 'C', 'CE3': 'C',
-                  'CZ3': 'C', 'CZ2': 'C', 'CX': 'C', 'CBC': 'C', 'CAC': 'C', 'CDC': 'C',
-                  'S': 'S', 'SD': 'S', 'SG': 'S', 'S1': 'S', 'S2': 'S', 'S3': 'S', 'S4': 'S', 'S5': 'S', 'S6': 'S',
+                  'CG1': 'C', 'CG2': 'C', 'CD1': 'C', 'CD2': 'C', 'CE1': 'C', 'CE2': 'C', 'CE3': 'C', 'C5':'C', 'C3':'C', 'C6':'C',
+                  'CZ3': 'C', 'CZ2': 'C', 'CX': 'C', 'CBC': 'C', 'CAC': 'C', 'CDC': 'C', 'C1':'C', 'C2':'C', 'CT':'C', 'C4':'C',
+                  'C12':'C', 'C52':'C', 'C22':'C', 'C32':'C', 'C42':'C', 'C62':'C', 'C13':'C', 'C53':'C', 'C23':'C', 'C33':'C',
+                  'C43':'C', 'C63':'C',
+                  'S': 'S', 'SD': 'S', 'SG': 'S', 'S1': 'S', 'S2': 'S', 'S3': 'S', 'S4': 'S', 'S5': 'S', 'S6': 'S', 
                   'S7': 'S', 'S8': 'S', 'S9': 'S',
                   'O': 'O', 'OE': 'O', 'OG': 'O', 'OH': 'O', 'OW': 'O', 'OT': 'O', 'OD': 'O', 'OP': 'O', 'OE1': 'O',
-                  'OE2': 'O', 'OD1': 'O', 'OD2': 'O', 'OG1': 'O', 'OT1': 'O', 'OH2': 'O', 'OXT': 'O',
-                  'OT2': 'O', 'OHB': 'O', 'OB1': 'O', 'OB2': 'O', 'OA1': 'O', 'OA2': 'O',
+                  'OE2': 'O', 'OD1': 'O', 'OD2': 'O', 'OG1': 'O', 'OT1': 'O', 'OH2': 'O', 'OXT': 'O', 'O1':'O', 'O5':'O',
+                  'OT2': 'O', 'OHB': 'O', 'OB1': 'O', 'OB2': 'O', 'OA1': 'O', 'OA2': 'O', 'O3':'O', 'O4':'O', 'O6':'O',
+                  'O52':'O', 'O22':'O', 'O32':'O', 'O42':'O', 'O62':'O', 'O53':'O', 'O23':'O', 'O33':'O', 'O43':'O',
                   'N': 'N', 'NZ': 'N', 'NH': 'N', 'NE': 'N', 'ND': 'N', 'NH1': 'N', 'NH2': 'N', 'NE1': 'N', 'NE2': 'N',
                   'ND1': 'N', 'ND2': 'N',
                   'CL': 'Cl', 'CLA': 'Cl',

@@ -13,8 +13,8 @@ import glob
 
 import ash.functions.functions_solv
 from ash.functions.functions_general import blankline,BC,listdiff,print_time_rel_and_tot,print_line_with_mainheader,print_line_with_subheader1, ashexit
-from ash.module_coords import read_fragfile_xyz
-from ash.interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
+from ash.modules.module_coords import read_fragfile_xyz
+from ash.interfaces.interface_ORCA import run_inputfiles_in_parallel,finalenergiesgrab,run_orca_SP_ORCApar
 import ash.settings_solvation
 import ash.constants
 

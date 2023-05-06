@@ -1,4 +1,4 @@
-#Non-intrusive interface to Knarr
+#Interface to Knarr
 #Assumes that Knarr directory exists inside ASH
 import numpy as np
 import sys
@@ -7,25 +7,26 @@ import copy
 import shutil
 import time
 
-
 import ash
 import ash.constants as constants
 from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC,print_line_with_subheader1,print_line_with_subheader2
-from ash.modules.module_coords import check_charge_mult, write_xyzfile
+from ash.modules.module_coords import check_charge_mult, write_xyzfile, get_conn_atoms_for_list
 from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from_smaller, calc_model_Hessian_ORCA, read_tangent, calc_hessian_xtb
 from ash.modules.module_results import ASH_Results
 
 #This makes Knarr part of python path
-#Recommended way?
 ashpath = os.path.dirname(ash.__file__)
 sys.path.insert(0,ashpath+'/knarr')
 
 from KNARRio.system_print import PrintHeader, PrintDivider, PrintCredit
-from KNARRatom.utilities import InitializeAtomObject, InitializePathObject
+from KNARRatom.utilities import InitializeAtomObject, InitializePathObject, RMS, RMS3
 from KNARRjobs.path import DoPathInterpolation
 from KNARRio.io import ReadTraj
 from KNARRjobs.neb import DoNEB
 import KNARRatom.atom
+
+#TODO: Need to remove QM-specific things (ORCA in particular)
+
 
 #LOG of Knarr-code modifications
 #1. Various python2 print-statements to print-functions changes
@@ -69,6 +70,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
              "FD_STEP": 0.001,
              "LINESEARCH": None}
 
+
 #NEB-TS: NEB-CI + OptTS
 #Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
@@ -104,22 +106,27 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     print(f"{cores_for_TSopt} CPU cores will be used to parallize theory during Opt-TS part.")
 
     #CI-NEB step
-    SP,energies_dict = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
+    NEB_results = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
             conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
             interpolation=interpolation, idpp_maxiter=idpp_maxiter, 
             restart_file=restart_file, TS_guess=TS_guess, mofilesdir=mofilesdir)
-
+    #Saddlepoint fragment
+    SP = NEB_results.saddlepoint_fragment
+    #Dictionary of images
+    energies_dict = NEB_results.MEP_energies_dict
+    
     if SP == None:
         print("NEB-CI job failed. Exiting NEBTS.")
         return None
-        #ashexit()
 
     #SP.write_xyzfile(xyzfilename='Saddlepoint-NEBCI-approx.xyz')
     print("NEB-CI job is complete. Now choosing Hessian option to use for Opt-TS job.")
 
-    #Prepare Hessian option
+    #############################
+    #SETTING UP INITIAL HESSIAN
+    ##############################
     #Hessianfile should be a simple text file with 1 row per line, values space-separated and no header.
     #Default: 
     if hessian_for_TS == None:
@@ -132,9 +139,24 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             hessianfile="Hessian_from_dualtheory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
+        elif isinstance(theory,ash.QMMMTheory):
+            #NOTE: More sensible default than below
+            #NOTE: This is different from partial approach below. Need to change
+            print("QM/MM Theory is recognized. Doing by default partial Hessian using whole QM-region")
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, 
+                                    numcores=numcores, hessatoms=theory.qmatoms)
+
+            #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
+            #Large Hessian is the actatoms Hessian if actatoms provided
+            combined_hessian = approximate_full_Hessian_from_smaller(SP,result_freq.hessian,theory.qmatoms, 
+                                                                     large_atomindices=actatoms, restHessian=modelhessian)
+            #Write combined Hessian to disk
+            hessianfile="Hessian_from_partial"
+            write_hessian(combined_hessian,hessfile=hessianfile)
+            hessianoption='file:'+str(hessianfile)            
         else:
             print("Doing Numfreq")
-            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint='1', runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, numcores=numcores)
             hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
@@ -181,7 +203,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         write_hessian(hessian,hessfile=hessianfile)
         #Creating string 
         hessianoption='file:'+str(hessianfile)
-    #Finding atoms that contribute the most to saddlepoint mode according to CI-NEB. Perform partial Hessian optimization
+    #Finding atoms that contribute the most to saddlepoint mode according to CI-NEB. 
+    # Add connecting atoms and erform partial Hessian optimization
     elif hessian_for_TS == 'partial':
         print("hessian_for_TS option: partial")
         print(f"Using climbing image tangent to find dominant atoms in approximate TS mode (tsmode_tangent_threshold={tsmode_tangent_threshold})")
@@ -189,24 +212,40 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         #Getting tangent and atoms that contribute at least X to tangent where X is tsmode_tangent_threshold=0.1 (default)
         tangent = read_tangent("CItangent.xyz")
         TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
+        #Convert activeregion atom indices to full system indices
+        print("Determining atoms contributing the most to TS mode")
+        if ActiveRegion is True:
+            print("TSmodeatoms (active region):", TSmodeatoms)
+            TSmodeatoms = [actatoms[a] for a in TSmodeatoms]
+            print("TSmodeatoms (full system):", TSmodeatoms)
+        else:
+            print("TSmodeatoms (full system):", TSmodeatoms)
+        #Now finding the atoms that TSmodeatoms are connected to, for both R, P and SP
+        print("Now finding connected atoms to TSmode-atoms")
+        result_R = get_conn_atoms_for_list(fragment=reactant, atoms=TSmodeatoms)
+        print("result_R:", result_R)
+        result_P = get_conn_atoms_for_list(fragment=product, atoms=TSmodeatoms)
+        print("result_P:", result_P)
+        result_SP = get_conn_atoms_for_list(fragment=SP, atoms=TSmodeatoms)
+        print("result_SP:", result_SP)
+        #Combining
+        Final_partial_hessatoms = np.unique(result_R + result_P + result_SP).tolist()
 
-        print(f"Performing partial Hessian calculation using atoms: {TSmodeatoms}")
-        #TODO: Make this work for QMMMTheory
+        print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
+        print("This corresponds to atoms contributing to the TS-mode and connected atoms")
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization 
-        #if isinstance(theory,ash.DualTheory): theory.switch_to_theory(2)
-        result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=TSmodeatoms, runmode=runmode, numcores=numcores)
+        result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=Final_partial_hessatoms, runmode=runmode, numcores=numcores)
 
         #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
         #Large Hessian is the actatoms Hessian if actatoms provided
-        combined_hessian = approximate_full_Hessian_from_smaller(SP,result_freq.hessian,TSmodeatoms, large_atomindices=actatoms, restHessian=modelhessian)
+        combined_hessian = approximate_full_Hessian_from_smaller(SP,result_freq.hessian,Final_partial_hessatoms, large_atomindices=actatoms, restHessian=modelhessian)
 
         #Write combined Hessian to disk
         hessianfile="Hessian_from_partial"
         write_hessian(combined_hessian,hessfile=hessianfile)
         #Creating string 
         hessianoption='file:'+str(hessianfile)
-
     else:
         print("Unknown hessian_for_TS option")
         ashexit()
@@ -216,17 +255,15 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
     #TSopt
     print(f"Now starting Optimizer job from NEB-CI saddlepoint with TSOpt=True with hessian option: {hessianoption}")
-    print(f"Changing number of cores of Theory object from : {theory.numcores} cores ", end="")
+    print(f"Changing number of cores of Theory object from {theory.numcores} to {cores_for_TSopt} cores ")
     theory.set_numcores(cores_for_TSopt)
-    print(f"to: {cores_for_TSopt} cores")
 
-    ash.Optimizer(theory=theory, fragment=SP, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter, 
+    ash.Optimizer(theory=theory, fragment=SP, TSOpt=True, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter, 
                 ActiveRegion=ActiveRegion, actatoms=actatoms, convergence_setting=OptTS_convergence_setting, 
-                conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list, TSOpt=True,
+                conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list, 
                 hessian=hessianoption, subfrctor=subfrctor)
 
     #TODO: Test if Optimizer converged or not. Currently there would be an error from geometric.
-    # 
     # Finalprintout here with energies of all images, CI image pointed out and TS image also.
     #Also write-out NEB-CI image as Saddlepoint-NEBCI-approx.xyz and Saddlepoint-OptTS.xyz
 
@@ -256,11 +293,9 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         else:
             #If regular image
             relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
-            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f}")            
-    
+            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f}")
     print("-"*80)
     print()
-
     #Writing final geometries for clarity
     SP.write_xyzfile(xyzfilename='Saddlepoint-OptTS.xyz')
 
@@ -273,14 +308,13 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         saddlepoint_fragment=SP, charge=charge, mult=mult, MEP_energies_dict=energies_dict,
         barrier_energy=SP_relenergy)
     return result
-    #return SP
 
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
-        charge=None, mult=None,printlevel=0, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=700, 
+        charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
+        interpolation="IDPP", idpp_maxiter=700, zoom=False,
         restart_file=None, TS_guess=None, mofilesdir=None):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
@@ -306,6 +340,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} CPU cores available to this ASH job on the computing node", BC.END)
     elif runmode == 'serial' and numcores == 1:
         print (BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
+        print("theory:", theory)
+        print("theory.numcors:", theory.numcores)
         if theory.numcores > 1:
             print(BC.WARNING,f"Theory parallelization is active and will utilize: {theory.numcores} CPU cores per image.",BC.END)
         else:
@@ -320,9 +356,6 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
     #Number of total images that Knarr wants. images input referring to intermediate images is now consistent with ORCA
     total_num_images=images+2
-    
-
-
     
 
     #Zero-valued constraints list. We probably won't use constraints for now
@@ -399,6 +432,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     neb_settings["TOL_RMS_F"] = tol_rms_f
     neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
     optimizer["MAX_ITER"] = maxiter
+    #Turning on ZOOM
+    neb_settings["ZOOM"] = zoom
     #Setting number of images of Knarr
     path_parameters["NIMAGES"]=total_num_images
 
@@ -432,13 +467,6 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     print()
     print("Optimizer parameters:\n", optimizer)
     print()
-
-
-
-
-
-
-
     print("\nLaunching Knarr")
     print()
     PrintDivider()
@@ -514,7 +542,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         #Now starting NEB from path object, using neb_settings and optimizer settings
         print("neb_settings:", neb_settings)
         print("optimizer:", optimizer)
-        DoNEB(path, calculator, neb_settings, optimizer)
+        DoNEB(path, calculator, neb_settings, optimizer, second_run=zoom)
 
         ###########################################################
         # CHECKING CONVERGENCE AND PREPARING FINAL OUTPUT
@@ -535,7 +563,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             print('KNARR successfully terminated')
             print()
             Saddlepoint_fragment = prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, "NEBCIapprox")
-            print("WARNING: The NEB-CI saddlepoint is usually close to the true saddlepoint. Needs confirmation by Hessian.")
+            print("Warning: The NEB-CI saddlepoint is only an approximation to the true saddlepoint.")
+            print("An OptTS job and confirmation of Hessian is usually necessary.")
             print()
 
         print("\nThe Knarr-NEB code is based on work described in the following article. Please consider citing it:")
@@ -609,7 +638,8 @@ def coords_to_Knarr(coords):
 #Wrapper around ASH object passed onto Knarr
 class KnarrCalculator:
     def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None, numcores=1,
-                 full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False, charge=None, mult=None, mofilesdir=None ):
+                 full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False, charge=None, mult=None, 
+                 mofilesdir=None):
         self.numcores=numcores
         self.FreeEnd=FreeEnd
         self.numimages=numimages
@@ -633,6 +663,7 @@ class KnarrCalculator:
         self.actatoms=actatoms
         self.full_coords_images_dict={}
         self.energies_dict={}
+        self.gradient_dict={} #Keeps track of gradients for each image. Should only be active-space gradients
         self.converged=False 
         #Activating ORCA flag if theory or QM-region theory
         self.ORCAused = False
@@ -643,6 +674,7 @@ class KnarrCalculator:
                 self.ORCAused = True
         #Final tangent of saddlepoint. Will be available if job converges
         self.tangent=None
+
     #Function that Knarr will use to signal convergence and set self.converged to True. Otherwise it is False
     def status(self,converged):
         self.converged=converged
@@ -667,7 +699,7 @@ class KnarrCalculator:
         if self.runmode=='serial':
             print("Starting NEB calculations in serial mode")
             for image_number in list_to_compute:
-                print("Computing image: ", image_number)
+                print("\nComputing image: ", image_number)
 
                 #Creating dir 
                 try:
@@ -712,22 +744,26 @@ class KnarrCalculator:
                     else:
                         if self.printlevel >= 1:
                             print(f"current_image_file {current_image_file} DOES NOT exist")
-                        if isinstance(self.theory,ash.QMMMTheory):
+                        if isinstance(self.theory,ash.modules.module_QMMM.QMMMTheory):
                             if os.path.exists(self.theory.qm_theory.filename+".gbw"):
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.qm_theory.filename}.gbw file does exist. Will use.")
                             else:
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.qm_theory.filename}.gbw file DOES NOT exist.")
-                                    #If not image_0 let's try to copy GBW file from image_0 dir first
-                                    if image_number != 0:
-                                        print("Will try to copy GBW file from image_0 dir first")
-                                        try:
-                                            shutil.copyfile(f"../image_0/{self.qm_theory.filename}.gbw",f"./{self.qm_theory.filename}.gbw")
-                                            print(f"Found a file : ../image_0/{self.qm_theory.filename}.gbw  Copying to dir: image_{image_number}")
-                                        except:
-                                            print(f"No {self.qm_theory.filename}.gbw file found in image_0 dir. Will use ORCATheory settings.")
-                                    else:
+                                #If not image_0 let's try to copy GBW file from image_0 dir
+                                if image_number != 0:
+                                    if self.printlevel >= 1:
+                                        print("Will try to copy GBW file from image_0 dir")
+                                    try:
+                                        shutil.copyfile(f"../image_0/{self.theory.qm_theory.filename}.gbw",f"./{self.theory.qm_theory.filename}.gbw")
+                                        if self.printlevel >= 1:
+                                            print(f"Found a file : ../image_0/{self.theory.qm_theory.filename}.gbw  Copying to dir: image_{image_number}")
+                                    except:
+                                        if self.printlevel >= 1:
+                                            print(f"No {self.theory.qm_theory.filename}.gbw file found in image_0 dir. Will use ORCATheory settings.")
+                                else:
+                                    if self.printlevel >= 1:
                                         print("Will use ORCATheory settings")
                         else:
                             if os.path.exists(self.theory.filename+".gbw"):
@@ -736,15 +772,19 @@ class KnarrCalculator:
                             else:
                                 if self.printlevel >= 1:
                                     print(f"A file {self.theory.filename}.gbw file DOES NOT exist.")
-                                    #If not image_0 let's try to copy GBW file from image_0 dir first
-                                    if image_number != 0:
-                                        print("Will try to copy GBW file from image_0 dir first")
-                                        try:
-                                            shutil.copyfile(f"../image_0/{self.theory.filename}.gbw",f"./{self.theory.filename}.gbw")
+                                #If not image_0 let's try to copy GBW file from image_0 dir
+                                if image_number != 0:
+                                    if self.printlevel >= 1:
+                                        print("Will try to copy GBW file from image_0 dir")
+                                    try:
+                                        shutil.copyfile(f"../image_0/{self.theory.filename}.gbw",f"./{self.theory.filename}.gbw")
+                                        if self.printlevel >= 1:
                                             print(f"Found a file in : ../image_0/{self.theory.filename}.gbw  Copying to dir: image_{image_number}")
-                                        except:
+                                    except:
+                                        if self.printlevel >= 1:
                                             print(f"No {self.theory.filename}.gbw file found in image_0 dir. Will use ORCATheory settings.")
-                                    else:
+                                else:
+                                    if self.printlevel >= 1:
                                         print("Will use ORCATheory settings")
                 if self.ActiveRegion == True:
                     currcoords=image_coords
@@ -776,13 +816,14 @@ class KnarrCalculator:
                                                                 elems=self.full_fragment_reactant.elems, Grad=True, label="image_"+str(image_number))
 
                     if self.ORCAused == True:
-
-                        if self.printlevel >= 1:
-                            print(f"ORCA run done. Copying {self.theory.filename}.gbw to {current_image_file} for next time")
                         
                         if isinstance(self.theory,ash.QMMMTheory):
+                            if self.printlevel >= 1:
+                                print(f"ORCA run done. Copying {self.theory.qm_theory.filename}.gbw to {current_image_file} for next time")
                             shutil.copyfile(self.theory.qm_theory.filename+".gbw",current_image_file)
                         else:
+                            if self.printlevel >= 1:
+                                print(f"ORCA run done. Copying {self.theory.filename}.gbw to {current_image_file} for next time")
                             shutil.copyfile(self.theory.filename+".gbw",current_image_file)
                     if self.printlevel >= 2:
                         print("Energy of image {} is : {}".format(image_number,En_image))
@@ -791,6 +832,8 @@ class KnarrCalculator:
 
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
+                    #Keeping track of (active-region) gradients for each image in a dict
+                    self.gradient_dict[image_number]=Grad_image
 
                 else:
 
@@ -810,7 +853,8 @@ class KnarrCalculator:
                     
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
-
+                    #Keeping track of  gradients for each image in a dict
+                    self.gradient_dict[image_number]=Grad_image
                 
                 counter += 1
                 #Energies array for all images
@@ -854,8 +898,12 @@ class KnarrCalculator:
                             if os.path.exists(path_to_imagefile):
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} DOES exist")
-                                    print(f"Copying file {path_to_imagefile} to dir {workerdir} as {self.theory.filename}.gbw")
-                                shutil.copyfile(path_to_imagefile,workerdir+"/"+self.theory.filename+".gbw") #Copying to Pooljob_image_X as orca.gbw
+                                    if isinstance(self.theory,ash.QMMMTheory):
+                                        print(f"Copying file {path_to_imagefile} to dir {workerdir} as {self.theory.qm_theory.filename}.gbw")
+                                        shutil.copyfile(path_to_imagefile,workerdir+"/"+self.theory.qm_theory.filename+".gbw") #Copying to Pooljob_image_X as orca.gbw
+                                    else:
+                                        print(f"Copying file {path_to_imagefile} to dir {workerdir} as {self.theory.filename}.gbw")
+                                        shutil.copyfile(path_to_imagefile,workerdir+"/"+self.theory.filename+".gbw") #Copying to Pooljob_image_X as orca.gbw
                             else:
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} does NOT exist. Continuing.")
@@ -881,7 +929,6 @@ class KnarrCalculator:
                             curr_c, currcoords = currcoords[0], currcoords[1:]
                             full_coords[i] = curr_c
                     full_current_image_coords = full_coords
-
                     full_frag=ash.Fragment(coords=full_current_image_coords, elems=self.full_fragment_reactant.elems,charge=self.charge, mult=self.mult, label="image_"+str(image_number), printlevel=self.printlevel)
                     all_image_fragments.append(full_frag)
                 else:
@@ -890,18 +937,27 @@ class KnarrCalculator:
                     all_image_fragments.append(frag)
 
             #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
-            result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
-                allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel)
-            en_dict = result_par.energies_dict
-            gradient_dict = result_par.gradients_dict
 
+            #TODO: Add alternative option here for theories that can not be pickled
+            #if theory.picklable is False:
+            #   Maybe launch Singlepoint_parallel with a simple ScriptTheory that only executes a runscript.py and grabs E+G from
+            # files that are created
+            #else:
+            result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
+                allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
+            en_dict = result_par.energies_dict
+            #Now looping over gradients present (done to avoid overwriting frozen-image gradients)
+            #self.gradient_dict = result_par.gradients_dict
+            for gradkey in result_par.gradients_dict:
+                im=int(gradkey.replace("image_",""))
+                self.gradient_dict[im] = result_par.gradients_dict[gradkey]
             #Keeping track of energies for each image in a dict
             for i in en_dict.keys():
                 #i is image_X
                 im=int(i.replace("image_",""))
                 En_image=en_dict[i]
                 if self.printlevel >= 2:
-                    print("Energy of image {} is : {}".format(image_number,En_image))
+                    print("Energy of image {} is : {}".format(im,En_image))
 
                 #Keeping track of images in Eh
                 self.energies_dict[im] = En_image
@@ -911,11 +967,11 @@ class KnarrCalculator:
                 #Forces array for all images
                 #ActiveRegion: Trim Full gradient down to only act-atoms gradient
                 if self.ActiveRegion is True:
-                    Grad_image_full = gradient_dict[i]
+                    Grad_image_full = self.gradient_dict[im]
                     #Trimming gradient if active region
                     Grad_image = np.array([Grad_image_full[i] for i in self.actatoms])
                 else:
-                    Grad_image = gradient_dict[i]
+                    Grad_image = self.gradient_dict[im]
 
                 #Convert ASH gradient to force and convert to ev/Ang instead of Eh/Bohr
                 force = -1 * np.reshape(Grad_image,(int(path.ndofIm),1)) * 51.42210665240553
@@ -928,19 +984,25 @@ class KnarrCalculator:
         path.AddFC(counter)
         print("NEB iteration calculations done\n")
 
-        #Printing table of energies
-        print("Current energies of all images (in Eh and kcal/mol)")
-        print("-"*70)
+        #Printing table of images
+        print("Overview of images")        
+        header=f"Image  Energy(Eh)  dE(kcal/mol)  State     RMSF(eV/Ang)    MaxF(eV/Ang)"
+        print(header)
+        print("-"*75)
         for i in sorted(self.energies_dict.keys()):
+            #RMSF and MaxF in eV/Angstrom
+            rms_f=RMSfunc(self.gradient_dict[i])*51.42210665240553
+            max_f=np.max(self.gradient_dict[i])*51.42210665240553
             if self.FreeEnd == False and (i == 0 or i == self.numimages-1):
                 relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
-                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f} (frozen)")
+                #print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f} (frozen) RMSF: {rms_f:6.4f} MaxF: {max_f:6.4f}")
+                print(f" {i:<4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'frozen':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
             else:
                 relenergy=(self.energies_dict[i]-self.energies_dict[0])*ash.constants.hartokcal
-                print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f}")
-        print("-"*70)
+                #print(f"Image: {i:<4}Energy:{self.energies_dict[i]:12.6f}  {relenergy:8.2f}          RMSF: {rms_f:6.4f} MaxF: {max_f:6.4f}")
+                print(f" {i:<4}{self.energies_dict[i]:>12.6f}{relenergy:>11.2f}{'active':>12s}{rms_f:>12.4f}{max_f:>16.4f}")
+        print("-"*75)
         print()
-
         #Write out full MEP path in each NEB iteration.
         if self.ActiveRegion is True:
             if self.iterations >= 0:
@@ -990,26 +1052,28 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
 
         if ActiveRegion == True:
             print("Getting saddlepoint geometry and creating new fragment for Full system")
-            print("Has not been confirmed to work...")
             #Finding CI coords and energy
             CI = np.argmax(path.GetEnergy())
             print("Saddlepoint assumed to be image no.", CI)
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (numatoms, 3))
             saddle_energy = path.GetEnergy()[CI][0]*constants.hartoeV
-
             #Combinining frozen region with optimized active-region for saddle-point
             # Defining full_coords as original coords temporarily
             full_saddleimage_coords = copy.deepcopy(reactant.coords)
             # Replacing act-region coordinates with coords from currcoords
-            for i, c in enumerate(saddle_coords):
-                if i in actatoms:
+            #for i, c in enumerate(saddle_coords):
+            #    if i in actatoms:
                     # Silly. Pop-ing first coord from currcoords until done
-                    curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
-                    full_saddleimage_coords[i] = curr_c
+            #        curr_c, saddle_coords = saddle_coords[0], saddle_coords[1:]
+            #        full_saddleimage_coords[i] = curr_c
+                    #Replacing act-region coordinates in full_coords with coords from currcoords
+            for act_i,curr_i in zip(actatoms,saddle_coords):
+                full_saddleimage_coords[act_i] = curr_i
 
             #Creating new ASH fragment for Full Saddle-point geometry
-            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, connectivity=reactant.connectivity, charge=charge, mult=mult)
+            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, 
+                                                    connectivity=reactant.connectivity, charge=charge, mult=mult)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Adding atomtypes and charges if present.
             Saddlepoint_fragment.update_atomcharges(reactant.atomcharges)
@@ -1022,7 +1086,7 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
         else:
             #Finding CI coords and energy
             CI = np.argmax(path.GetEnergy())
-            print("Saddlepoint assumed to be image no.", CI)
+            print("Saddlepoint is image no.", CI)
             saddle_coords_1d=path.GetCoords()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()]
             saddle_coords=np.reshape(saddle_coords_1d, (reactant.numatoms, 3))
             saddle_energy = path.GetEnergy()[CI][0]/constants.hartoeV
@@ -1035,3 +1099,10 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
             Saddlepoint_fragment.write_xyzfile(xyzfilename=f'Saddlepoint-{label}.xyz')
         print(f"{label} Saddlepoint energy: {saddle_energy} Eh")
         return Saddlepoint_fragment
+
+#Simple RMS function for np array
+def RMSfunc(x):
+    rms = 0.0
+    for v in x.reshape(1, x.size).flatten():
+        rms +=v*v
+    return np.sqrt((1.0 / float(x.size)) * rms)

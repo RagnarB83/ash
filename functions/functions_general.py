@@ -6,6 +6,7 @@ import time
 from functools import wraps
 import math
 import shutil
+import re
 
 import ash.settings_ash
 from ash import ashpath
@@ -49,6 +50,32 @@ def ashexit(errormessage=None, code=1):
     #raise SystemExit(code)
     sys.exit(1)
 
+#Attempt to generally find a 3rd-party program based on path, exename etc.
+#Either programdir variable is already set, else we try to find based on programdirname or exename
+def find_program(programdir,programdirname,exename,theorynamelabel):
+    if programdir == None:
+        print(BC.WARNING, f"No {programdirname} argument passed to {theorynamelabel}Theory. Attempting to find {programdir} variable inside settings_ash", BC.END)
+        try:
+            print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+            finalpath=ash.settings_ash.settings_dict[programdirname]
+        except KeyError:
+            print(BC.WARNING,f"Found no {programdirname} variable in settings_ash module either.",BC.END)
+            try:
+                finalpath = os.path.dirname(os.path.dirname(shutil.which(exename)))
+                print(BC.OKGREEN,f"Found {exename} executable in PATH. Setting {programdir} to:", finalpath, BC.END)
+            except:
+                print(BC.FAIL,f"Found no {exename} executable in PATH.", BC.END)
+                ashexit()
+    else:
+        print("Program directory chosen to be:", programdir)
+     #Check if dir exists
+        if os.path.exists(programdir):
+            print("It exists.")
+        else:
+            print(f"Chosen directory : {programdir} does not exist. Exiting...")
+            ashexit()
+        finalpath = programdir   
+    return finalpath
 
 def load_pythoncall():
     print("Now trying pythoncall/juliacall package. This will fail if :\n\
@@ -505,6 +532,8 @@ def clean_number(number):
     return np.real_if_close(number)
 
 
+
+
 # Function to get unique values
 def uniq(seq, idfun=None):
     # order preserving
@@ -605,27 +634,8 @@ class Timings:
 
     def print(self, inittime):
         totalwalltime = time.time() - inittime
-
-        print("Note: module-timings are a work in progress (report bugs!)")
         print("To turn off timing output add to settings file: ~/ash_user_settings.ini")
         print("print_full_timings = False   ")
-        ######################
-        # Old way of printing
-        # Sort dict by value
-        # simple_dict_ordered=dict(sorted(self.simple_dict.items(), key=lambda item: item[1]))
-        # print("")
-        # idea: if module labelled submodule add ---> or something and dont't include in totalsumtime above ??
-        # print("{:35}{:>20}{:>20}{:>17}".format("Modulename", "Time (sec)", "Percentage of total", "Times called"))
-        # print("-"*100)
-        # for dictitem in simple_dict_ordered:
-        #    mmtime=simple_dict_ordered[dictitem]
-        #    time_per= 100*(mmtime/totalwalltime)
-        #    print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
-        # print("")
-        # print("{:35}{:>20.2f}".format("Sum of all moduletimes (flawed)", self.totalsumtime))
-        # print("{:35}{:>20.2f}{:>10}".format("Total walltime", totalwalltime, 100.0))
-        # print("-"*100)
-
         print("")
         print("{:35}{:>20}{:>20}{:>17}".format("Modulename", "Time (sec)", "Percentage of total", "Times called"))
         print("-" * 100)

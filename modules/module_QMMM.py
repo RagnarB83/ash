@@ -6,6 +6,7 @@ import shutil
 
 #functions related to QM/MM
 import ash.modules.module_coords
+from ash.modules.module_coords import Fragment, write_pdbfile
 from ash.functions.functions_general import ashexit, BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
 import ash.settings_ash
 
@@ -286,10 +287,10 @@ class QMMMTheory:
                 #Deleting Coulomb exception interactions involving QM and MM atoms
                 self.mm_theory.delete_exceptions(self.qmatoms)
                 #Option to create OpenMM externalforce that handles full system
-                if openmm_externalforce == True:
+                if self.openmm_externalforce == True:
                     print("openmm_externalforce is True")
-                    print("Creating new OpenMM custom external force")
-                    self.openmm_externalforceobject = self.mm_theory.add_custom_external_force()
+                    #print("Creating new OpenMM custom external force")
+                    #MOVED FROM HERE TO OPENMM_MD
 
             #Printing charges: all or only QM
             if self.printlevel > 2:
@@ -429,6 +430,15 @@ class QMMMTheory:
                 self.dipole_coords.append(pos_d2)
         #print_time_rel(timeA, modulename="SetDipoleCharges", currprintlevel=self.printlevel, currthreshold=1)
 
+    #More efficient version than previous loop
+    def make_QM_PC_gradient(self):
+        self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
+        qmatom_indices = np.where(np.isin(self.allatoms, self.qmatoms))[0]
+        pcatom_indices = np.where(~np.isin(self.allatoms, self.qmatoms))[0] # ~ is NOT operator in numpy
+        self.QM_PC_gradient[qmatom_indices] = self.QMgradient_wo_linkatoms[:len(qmatom_indices)]
+        self.QM_PC_gradient[pcatom_indices] = self.PCgradient[:len(pcatom_indices)]
+        return
+
     #TruncatedPCfunction control flow for pointcharge field passed to QM program
     def TruncatedPCfunction(self):
         self.TruncatedPCcalls+=1
@@ -488,7 +498,7 @@ class QMMMTheory:
         #num_dipole_charges=len(self.dipole_charges)
         #self.truncated_PC_region_indices = self.truncated_PC_region_indices[0:-num_dipole_charges]
 
-    def calculate_truncPC_gradient_correction(self,QMgradient_full, PCgradient_full, QMgradient_trunc, PCgradient_trunc):
+    def oldcalculate_truncPC_gradient_correction(self,QMgradient_full, PCgradient_full, QMgradient_trunc, PCgradient_trunc):
         #Correction for QM-atom gradient
         self.original_QMcorrection_gradient=np.zeros((len(QMgradient_full)-self.num_linkatoms, 3))
         #Correction for PC gradient
@@ -518,46 +528,72 @@ class QMMMTheory:
             else:
                 # Keep original full contribution
                 self.original_PCcorrection_gradient[i] = PCgradient_full[i]
-
+        return
+    #New more efficient version
+    def calculate_truncPC_gradient_correction(self, QMgradient_full, PCgradient_full, QMgradient_trunc, PCgradient_trunc):
+        #QM part
+        qm_difference = QMgradient_full[:len(QMgradient_full)-self.num_linkatoms] - QMgradient_trunc[:len(QMgradient_full)-self.num_linkatoms]
+        self.original_QMcorrection_gradient = qm_difference
+        #PC part
+        truncated_indices = np.array(self.truncated_PC_region_indices)
+        pc_difference = np.zeros((len(PCgradient_full), 3))
+        pc_difference[truncated_indices] = PCgradient_full[truncated_indices] - PCgradient_trunc
+        pc_difference[~np.isin(np.arange(len(PCgradient_full)), truncated_indices)] = PCgradient_full[~np.isin(np.arange(len(PCgradient_full)), truncated_indices)]
+        self.original_PCcorrection_gradient = pc_difference
         return
 
     #This updates the calculated truncated PC gradient to be full-system gradient
     #by combining with the original 1st step correction
-    def TruncatedPCgradientupdate(self,QMgradient_wo_linkatoms,PCgradient):
+    def oldTruncatedPCgradientupdate(self,QMgradient_wo_linkatoms,PCgradient):
 
         #QM part
-        #print("Length QMgradient_wo_linkatoms:", len(QMgradient_wo_linkatoms))
-        #print("Length self.original_QMcorrection_gradient:", len(self.original_QMcorrection_gradient))
-        #print("QMgradient_wo_linkatoms:", QMgradient_wo_linkatoms)
-        #print("self.original_QMcorrection_gradient:", self.original_QMcorrection_gradient)
         newQMgradient_wo_linkatoms = QMgradient_wo_linkatoms + self.original_QMcorrection_gradient
-        #print("newQMgradient_wo_linkatoms:", newQMgradient_wo_linkatoms)
-
         #PC part
-        #Initialzing new full PC array
         new_full_PC_gradient=np.zeros((len(self.original_PCcorrection_gradient), 3))
-        #print("len new_full_PC_gradient:", len(new_full_PC_gradient))
-        #print("len self.original_PCcorrection_gradient:", len(self.original_PCcorrection_gradient))
-        #print("len PCgradient:", len(PCgradient))
         count=0
         for i in range(0,len(new_full_PC_gradient)):
             if i in self.truncated_PC_region_indices:
-                #print("i:", i)
-                #print("count:", count)
                 #Now updating with gradient from active region
-                #print("self.original_PCcorrection_gradient[i]:", self.original_PCcorrection_gradient[i])
-                #print("PCgradient[count]: ",  PCgradient[count])
                 new_full_PC_gradient[i] = self.original_PCcorrection_gradient[i] + PCgradient[count]
                 count+=1
             else:
                 new_full_PC_gradient[i] = self.original_PCcorrection_gradient[i]
-
         return newQMgradient_wo_linkatoms, new_full_PC_gradient
+
+    def TruncatedPCgradientupdate(self, QMgradient_wo_linkatoms, PCgradient):
+        newQMgradient_wo_linkatoms = QMgradient_wo_linkatoms + self.original_QMcorrection_gradient
+        
+        new_full_PC_gradient = np.copy(self.original_PCcorrection_gradient)
+        new_full_PC_gradient[self.truncated_PC_region_indices] += PCgradient
+        
+        return newQMgradient_wo_linkatoms, new_full_PC_gradient
+
     def set_numcores(self,numcores):
         print(f"Setting new numcores {numcores}for QMtheory and MMtheory")
         self.qm_theory.set_numcores(numcores)
         self.mm_theory.set_numcores(numcores)
+    #General run
     def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
+
+        if self.embedding == "Mechanical":
+            return self.mech_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
+                label=label, charge=charge, mult=mult)
+        elif self.embedding == "Elstat":
+            return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
+                label=label, charge=charge, mult=mult)
+        else:
+            print("Unknown embedding. Exiting")
+            ashexit()
+
+    #Mechanical embedding run
+    def mech_run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
+        print("Mechanical embedding not ready yet")
+        #Since elstat-run is so complicated it is easier to just write new mechanical run
+        #mechanical embedding may also come with its own complexities
+        #NOTE: We should also reduce complexity of elstat-run by moving code into methods
+        ashexit()
+    #Electrostatic embedding run
+    def elstat_run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
         module_init_time=time.time()
         CheckpointTime = time.time()
         if self.printlevel >= 2:
@@ -609,7 +645,6 @@ class QMMMTheory:
 
         self.qmelems=[self.elems[i] for i in self.qmatoms]
         self.mmelems=[self.elems[i] for i in self.mmatoms]
-        
         
         
         #LINKATOMS
@@ -673,9 +708,10 @@ class QMMMTheory:
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
             #If no linkatoms then self.pointcharges are just original charges with QM-region zeroed
-            self.pointcharges=[self.charges_qmregionzeroed[i] for i in self.mmatoms]
-            #If no linkatoms MM coordinates are the same
-            self.pointchargecoords=self.mmcoords
+            if self.embedding=="Elstat":
+                self.pointcharges=[self.charges_qmregionzeroed[i] for i in self.mmatoms]
+                #If no linkatoms MM coordinates are the same
+                self.pointchargecoords=self.mmcoords
        
         #NOTE: Now we have updated MM-coordinates (if doing linkatoms, wtih dipolecharges etc) and updated mm-charges (more, due to dipolecharges if linkatoms)
         # We also have MMcharges that have been set to zero due to QM/mm
@@ -708,36 +744,6 @@ class QMMMTheory:
             print("No QMtheory. Skipping QM calc")
             QMenergy=0.0;self.linkatoms=False;PCgradient=np.array([0.0, 0.0, 0.0])
             QMgradient=np.array([0.0, 0.0, 0.0])
-        #TODO: Revisit Psi4 and remove this is pointcharge gradients have been implemented
-        elif self.qm_theory_name == "Psi4Theory":
-            #Calling Psi4 theory, providing current QM and MM coordinates.
-            if Grad==True:
-                if PC==True:
-                    print(BC.WARNING, "Pointcharge gradient for Psi4 is not implemented.",BC.END)
-                    print(BC.WARNING, "Warning: Only calculating QM-region contribution, skipping electrostatic-embedding gradient on pointcharges", BC.END)
-                    print(BC.WARNING, "Only makes sense if MM region is frozen! ", BC.END)
-                    QMenergy, QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                                                         current_MM_coords=self.pointchargecoords,
-                                                                                         MMcharges=self.pointcharges,
-                                                                                         qm_elems=current_qmelems, charge=charge, mult=mult,
-                                                                                         Grad=True, PC=True, numcores=numcores)
-                    #Creating zero-gradient array
-                    PCgradient = np.zeros((len(self.mmatoms), 3))
-                else:
-                    print("grad. mech embedding. not ready")
-                    ashexit()
-                    QMenergy, QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
-                                                      qm_elems=current_qmelems, Grad=True, PC=False, numcores=numcores)
-            else:
-                if PC == True:
-                    print("PC embed true. not ready")
-                    QMenergy = self.qm_theory.run(current_coords=self.qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, charge=charge, mult=mult,
-                                                      qm_elems=current_qmelems, Grad=False, PC=PC, numcores=numcores)
-                else:
-                    print("mech true, not ready")
-                    ashexit()
         #General QM-code energy+gradient call.
         #TODO: Add check whether QM-code supports both pointcharges and pointcharge-gradient?
         else:
@@ -745,13 +751,26 @@ class QMMMTheory:
             if Grad==True:
                 if PC==True:
 
+                    #NOTE: Nasty temporary CP2K special case. Replace with qm_theory.method call instead?
+                    if isinstance(self.qm_theory,ash.CP2KTheory):
+                        print("here")
+                        #Write special PDB-file here manually for CP2K. Should contain MM and QM atoms, linkatoms, dipole atoms etc.
+                        #
+                        #resnames=['XY' for i in range(0,frag.numatoms)] #QM MM label
+                        #residlabels=[1 for i in range(0,frag.numatoms)] #1 and 2
+                        #charges
+
+                        #write_pdbfile(self.fragment, outputname="cp2k.pdb", resnames=resnames,
+                        #                residlabels=residlabels, charges_column=charges)
+
+                        #Also write qm-list to disk, that CP2K will read.
                     QMenergy, QMgradient, PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
                                                                                          qm_elems=current_qmelems, charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
                     
-                    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
+                    #shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
                 else:
                     QMenergy, QMgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                       current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
@@ -768,7 +787,7 @@ class QMMMTheory:
         # Do linkatom force projections in the end
         #UPDATE: Do MM step in the end now so that we have options for OpenMM extern force
         if Grad == True:
-
+            Grad_prep_CheckpointTime = time.time()
             #assert len(self.allatoms) == len(self.MMgradient)
             
             #Defining QMgradient without linkatoms if present
@@ -787,6 +806,8 @@ class QMMMTheory:
             if self.TruncatedPC is True:
                 #DONE ONCE: CALCULATE FULL PC GRADIENT TO DETERMINE CORRECTION
                 if self.TruncatedPC_recalc_flag is True:
+                    CheckpointTime = time.time()
+                    truncfullCheckpointTime = time.time()
 
                     #We have calculated truncated QM and PC gradient
                     QMgradient_trunc = QMgradient
@@ -799,28 +820,34 @@ class QMMMTheory:
                                                                                          MMcharges=self.pointcharges_full,
                                                                                          qm_elems=current_qmelems, charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
-                    try:
-                        shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
-                    except:
-                        pass
+                    print_time_rel(CheckpointTime, modulename='trunc-pc full calculation', moduleindex=3)
+                    CheckpointTime = time.time()
+                    #try:
+                    #    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
+                    #except:
+                    #    pass
                     
                     #TruncPC correction to QM energy
                     self.truncPC_E_correction = QMenergy_full - QMenergy
                     print(f"Truncated PC energy correction: {self.truncPC_E_correction} Eh")
                     self.QMenergy = QMenergy + self.truncPC_E_correction
                     #Now determine the correction once and for all
+                    CheckpointTime = time.time()
                     self.calculate_truncPC_gradient_correction(QMgradient_full, PCgradient_full, QMgradient_trunc, PCgradient_trunc)
-
+                    print_time_rel(CheckpointTime, modulename='calculate_truncPC_gradient_correction', moduleindex=3)
+                    CheckpointTime = time.time()
+                    
                     #Now defining final QMgradient and PCgradient
                     self.QMgradient_wo_linkatoms, self.PCgradient =  self.TruncatedPCgradientupdate(QMgradient_wo_linkatoms,PCgradient)
-
+                    print_time_rel(CheckpointTime, modulename='truncPC_gradient update ', moduleindex=3)
+                    print_time_rel(truncfullCheckpointTime, modulename='trunc-full-step pcgrad update', moduleindex=3)
 
                 else:
-                    #CheckpointTime = time.time()
+                    CheckpointTime = time.time()
                     #TruncPC correction to QM energy
                     self.QMenergy = QMenergy + self.truncPC_E_correction
                     self.QMgradient_wo_linkatoms, self.PCgradient =  self.TruncatedPCgradientupdate(QMgradient_wo_linkatoms,PCgradient)
-                    #print_time_rel(CheckpointTime, modulename='trunc pcgrad update', moduleindex=3)
+                    print_time_rel(CheckpointTime, modulename='trunc pcgrad update', moduleindex=3)
             else:
                 self.QMenergy = QMenergy
                 #No TruncPC approximation active. No change to original QM and PCgradient from QMcode
@@ -830,20 +857,24 @@ class QMMMTheory:
 
             #Initialize QM_PC gradient (has full system size) and fill up
             #TODO: This can be made more efficient
-            self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
-            qmcount=0;pccount=0
-            for i in self.allatoms:
-                if i in self.qmatoms:
-                    #QM-gradient. Linkatom gradients are skipped
-                    self.QM_PC_gradient[i]=self.QMgradient_wo_linkatoms[qmcount]
-                    qmcount+=1
-                else:
-                    #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
-                    self.QM_PC_gradient[i] = self.PCgradient[pccount]
-                    pccount += 1
-            assert qmcount == len(self.qmatoms)
-            assert pccount == len(self.mmatoms)           
-            assert qmcount+pccount == len(self.allatoms)
+            CheckpointTime = time.time()
+            self.make_QM_PC_gradient() #populates self.QM_PC_gradient
+            print_time_rel(CheckpointTime, modulename='QMpcgrad prepare', moduleindex=3)
+            #self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
+            #qmcount=0;pccount=0
+            #for i in self.allatoms:
+            #    if i in self.qmatoms:
+            #        #QM-gradient. Linkatom gradients are skipped
+            #        self.QM_PC_gradient[i]=self.QMgradient_wo_linkatoms[qmcount]
+            #        qmcount+=1
+            #    else:
+            #        #Pointcharge-gradient. Dipole-charge gradients are skipped (never reached)
+            #        self.QM_PC_gradient[i] = self.PCgradient[pccount]
+            #        pccount += 1
+            #assert qmcount == len(self.qmatoms)
+            #assert pccount == len(self.mmatoms)           
+            #assert qmcount+pccount == len(self.allatoms)
+
             #print(" qmcount+pccount:", qmcount+pccount)
             #print("len(self.allatoms):", len(self.allatoms))
             #print("len self.QM_PC_gradient", len(self.QM_PC_gradient))
@@ -860,7 +891,8 @@ class QMMMTheory:
 
             #LINKATOM FORCE PROJECTION
             # Add contribution to QM1 and MM1 contribution???
-            if self.linkatoms==True:                
+            if self.linkatoms==True:
+                CheckpointTime = time.time()             
                 #print("here")
                 #print("linkatoms_dict: ", linkatoms_dict)
                 #print("linkatoms_indices: ", linkatoms_indices)
@@ -906,7 +938,9 @@ class QMMMTheory:
                     self.QM_PC_gradient[fullatomindex_qm] = newQgrad
                     self.QM_PC_gradient[fullatomindex_mm] = newMgrad                    
 
-            print_time_rel(CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+            
+            print_time_rel(CheckpointTime, modulename='linkatomgrad prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+            print_time_rel(Grad_prep_CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             CheckpointTime = time.time()
         else:
             #No Grad
@@ -948,21 +982,22 @@ class QMMMTheory:
             #Todo: Need to make sure OpenMM skips QM-QM Lj interaction => Exclude
             #Todo: Need to have OpenMM skip frozen region interaction for speed  => => Exclude
             if Grad==True:
+                CheckpointTime = time.time()
                 #print("QM/MM Grad is True")
                 #Provide QM_PC_gradient to OpenMMTheory 
                 if self.openmm_externalforce == True:
                     print("OpenMM externalforce is True")
-                    #Take QM_PC gradient (link-atom projected) and provide to OpenMM external force
-                    CheckpointTime = time.time()
-                    self.mm_theory.update_custom_external_force(self.openmm_externalforceobject,self.QM_PC_gradient)
-
-                    print_time_rel(CheckpointTime, modulename='QM/MM openMM: update custom external force', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+                    #Calculate energy associated with external force so that we can subtract it later
+                    self.extforce_energy = 3 * np.mean(np.sum(self.QM_PC_gradient * current_coords * 1.88972612546, axis=0))
+                    print("self.extforce_energy:", self.extforce_energy)
+                    print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+                    #NOTE: Now moved mm_theory.update_custom_external_force call to MD simulation instead
+                    # as we don't have access to simulation object here anymore. Uses self.QM_PC_gradient
                     if exit_after_customexternalforce_update==True:
                         print("OpenMM custom external force updated. Exit requested")
                         #This is used if OpenMM MD is handling forces and dynamics
                         return
-                    #Calculate energy associated with external force so that we can subtract it later
-                    self.extforce_energy=3*np.mean(sum(self.QM_PC_gradient*current_coords*1.88972612546))
+
                 self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms, Grad=True)
             else:
                 print("QM/MM Grad is false")
@@ -993,10 +1028,11 @@ class QMMMTheory:
 
         #FINAL QM/MM GRADIENT ASSEMBLY
         if Grad == True:
-
             #If OpenMM external force method then QM/MM gradient is already complete
+            #NOTE: Not possible anymore 
             if self.openmm_externalforce == True:
-                self.QM_MM_gradient = self.MMgradient
+                pass
+            #    self.QM_MM_gradient = self.MMgradient
             #Otherwise combine
             else:
                 #Now assemble full QM/MM gradient
@@ -1218,6 +1254,24 @@ def grab_resids_from_pdbfile(pdbfile):
                 resids.append(resid_part)
     return resids
 
+#Read atomic charges present in PSF-file. assuming Xplor format
+def read_charges_from_psf(file):
+    charges=[]
+    grab=False
+    with open(file) as f:
+        for line in f:
+            if len(line.split()) == 9:
+                if 'REMARKS' not in line:
+                    grab=True
+            if len(line.split()) < 8:
+                grab=False
+            if 'NBOND' in line:
+                return charges
+            if grab is True:
+                charge=float(line.split()[6])
+                charges.append(charge)
+    return charges
+
 #Define active region based on radius from an origin atom.
 #Requires fragment (for coordinates) and resids list inside OpenMMTheory object
 #TODO: Also allow PDBfile to grab resid information from?? Prettier since we don't have to create an OpenMMTheory object
@@ -1274,7 +1328,7 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
 
     origincoords=fragment.coords[originatom]
     act_indices=[]
-    
+    #print("resids:", resids)
     for index,allc in enumerate(fragment.coords):
         #print("index:", index)
         #print("allc:", allc)
@@ -1295,6 +1349,7 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
                     act_indices.append(k)
 
     #Only unique and sorting:
+    print("act_indices:", act_indices)
     act_indices = np.unique(act_indices).tolist()
 
     #Print indices to output
