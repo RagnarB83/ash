@@ -2629,10 +2629,14 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             results_cc['OO-SCS-MP2'] = result_SCSOOMP2.reaction_energy
 
     if DoCC is True:
-        #TODO: Reduce numcores here for small systems. CC-code complains if numcores exceeds pairs.
-        #  Do it for smallest fragment?
-        #numcores = check_cores_vs_electrons(reaction.fragments[0].elems,numcores,charge)
-
+        #Reducing numcores here for small systems. CC-code complains if numcores exceeds pairs.
+        print("")
+        nuccharges = [frag.nuccharge for frag in reaction.fragments]
+        smallest_frag=nuccharges.index(min(nuccharges))
+        newnumcores = check_cores_vs_electrons(reaction.fragments[smallest_frag].elems,numcores,reaction.fragments[smallest_frag].charge)
+        if newnumcores != numcores:
+            print("Reducing number of cores based on system-size")
+            numcores=newnumcores
         ccblocks=f"""
         %maxcore 11000
         %mdci
