@@ -3079,6 +3079,7 @@ class OpenMM_MDclass:
         #Case native OpenMM metadynamcis
         print("metadynamics:", metadynamics)
         if metadynamics is True:
+
             biasdir=metadyn_settings["biasdir"]
             try:
                 os.remove("colvar")
@@ -3114,9 +3115,9 @@ class OpenMM_MDclass:
                     print("Adding flatbottom restraint for CV2")
                     self.openmmobject.add_CV_restraint(cvforce_2, metadyn_settings["flatbottom_restraint_CV2"],metadyn_settings["CV2_type"])
 
-                    meta_object = openmm.app.Metadynamics(self.openmmobject.system, [CV1_bias,CV2_bias], metadyn_settings["temperature"], 
-                                                                metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
-                                                                saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
+                meta_object = openmm.app.Metadynamics(self.openmmobject.system, [CV1_bias,CV2_bias], metadyn_settings["temperature"], 
+                                                            metadyn_settings["biasfactor"], metadyn_settings["height"], metadyn_settings["frequency"],
+                                                            saveFrequency=metadyn_settings["saveFrequency"], biasDir=metadyn_settings["biasdir"])
             elif metadyn_settings["numCVs"] == 1:
                 #Creating CV biasvariable and force
                 CV1_bias,cvforce_1 = create_CV_bias(metadyn_settings["CV1_type"],metadyn_settings["CV1_atoms"],metadyn_settings["CV1_biaswidth"],

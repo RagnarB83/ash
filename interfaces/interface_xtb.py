@@ -13,9 +13,9 @@ from ash.modules.module_coords import elemstonuccharges, check_multiplicity, che
 
 
 #Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
-#
+#TODO: QM/MM pointcharges for library
 #TODO: THis should be a general interface so remove settings_solvation calls.
-#TODO: xtb. Need to combine OMP-parallelization of xtb and multiprocessing if possible
+#TODO: xtb. Need to check how compatible threading and multiprocessing of xtb is
 
 
 class xTBTheory:
@@ -24,14 +24,6 @@ class xTBTheory:
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
-
-        #SOlvent
-        #TODO: Only available for inputfile interface right now
-        if solvent != None:
-            self.solvent_line="--alpb {}".format(solvent)
-        else:
-            self.solvent_line=""
-
 
         #Hardness of pointcharge. GAM factor. Big number means PC behaviour
         self.hardness=hardness_PC
@@ -76,25 +68,17 @@ class xTBTheory:
             # Creating variable and setting to None. Replaced by run
             self.calcobject=None
             print("xTB method:", self.xtbmethod)
-        #OLD library.
-        elif self.runmode=='oldlibrary':
-            print("Using old library-based xTB interface")
-            print("Loading library...")
-            # Load xtB library and ctypes datatypes that run uses
-            try:
-                #import xtb_interface_library
-                import ash.interfaces.interface_xtb_library
-                self.xtbobject = ash.interfaces.interface_xtb_library.XTBLibrary()
-            except:
-                print("Problem importing xTB library. Check that the library dir (containing libxtb.so) is available in LD_LIBRARY_PATH.")
-                print("e.g. export LD_LIBRARY_PATH=/path/to/xtb_6.X.X/lib64:$LD_LIBRARY_PATH")
-                print("Or that the MKL library is available and loaded")
-                ashexit(code=9)
-            from ctypes import c_int, c_double
-            #Needed for complete interface?:
-            # from ctypes import Structure, c_int, c_double, c_bool, c_char_p, c_char, POINTER, cdll, CDLL
-            self.c_int = c_int
-            self.c_double = c_double
+
+            #Creating solvent object if solvent requested
+            if solvent != None:
+                from xtb.utils import get_solvent, Solvent
+                self.solvent_object = get_solvent(solvent)
+                if self.solvent_object == None:
+                    print("Unknown solvent. Not found in xtb.utils.get_solvent")
+                    ashexit()
+            else:
+                self.solvent_object=None
+        #Inputfile
         elif self.runmode=='inputfile':
             if xtbdir == None:
                 print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xtbdir variable inside settings_ash", BC.END)
@@ -111,9 +95,17 @@ class xTBTheory:
                         ashexit()
             else:
                 self.xtbdir = xtbdir
+
+            #Solvent line to be passed to run-call
+            if solvent != None:
+                self.solvent_line="--alpb {}".format(solvent)
+            else:
+                self.solvent_line=""
+
         else:
             print("unknown runmode. exiting")
             ashexit()
+
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -396,7 +388,11 @@ class xTBTheory:
                 self.calcobject.set_electronic_temperature(self.electronic_temp)
                 self.calcobject.set_max_iterations(self.maxiter)
                 self.calcobject.set_accuracy(self.accuracy)
-            #nextt run calls: only update coordinates
+                #Solvent
+                if self.solvent_object != None:
+                    print("Setting solvent to:", self.solvent_object)
+                    self.calcobject.set_solvent(self.solvent_object)
+            #next run calls: only update coordinates
             else:
                 print("Updating coordinates in xTB calcobject")
                 self.calcobject.update(coords_au)
@@ -458,63 +454,6 @@ class xTBTheory:
                 print("------------ENDING XTB-INTERFACE-------------")
                 print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                 return self.energy
-
-        elif self.runmode=='oldlibrary':
-
-            if PC==True:
-                print("Pointcharge-embedding on but xtb-runmode is library!")
-                print("The xtb library-interface is not yet ready for QM/MM calculations")
-                print("Use runmode='inputfile' for now")
-                ashexit()
-
-
-            #Hard-coded options. Todo: revisit
-            options = {
-                "print_level": 1,
-                "parallel": 0,
-                "accuracy": 0.1,
-                "electronic_temperature": 300.0,
-                "gradient": True,
-                "restart": True,
-                "ccm": True,
-                "max_iterations": 30,
-                "solvent": "none",
-            }
-
-            #Using the xtbobject previously defined
-            num_qmatoms=len(current_coords)
-            #num_mmatoms=len(MMcharges)
-            nuc_charges=np.array(ash.modules.module_coords.elemstonuccharges(qm_elems), dtype=self.c_int)
-
-            #Converting coords to numpy-array and then to Bohr.
-            current_coords_bohr=np.array(current_coords)*ash.constants.ang2bohr
-            positions=np.array(current_coords_bohr, dtype=self.c_double)
-            args = (num_qmatoms, nuc_charges, positions, options, 0.0, 0, "-")
-            print("------------Running xTB-------------")
-            if self.xtbmethod=='GFN1':
-                results = self.xtbobject.GFN1Calculation(*args)
-            elif self.xtbmethod=='GFN2':
-                results = self.xtbobject.GFN2Calculation(*args)
-            else:
-                print("Unknown xtbmethod.")
-                ashexit()
-            print("------------xTB calculation done-------------")
-            if Grad==True:
-                self.energy = float(results['energy'])
-                self.grad = results['gradient']
-                print("------------ENDING XTB-INTERFACE-------------")
-                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
-                return self.energy, self.grad
-            else:
-                self.energy = float(results['energy'])
-                print("------------ENDING XTB-INTERFACE-------------")
-                print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
-                return self.energy
-        else:
-            print("Unknown option to xTB interface")
-            ashexit()
-
-
 
 #Grab Final single point energy
 def xtbfinalenergygrab(file):
