@@ -431,7 +431,10 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             energy = result.energy
                             print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
                             if keepoutputfiles == True:
-                                shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                                try:
+                                    shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                                except:
+                                    pass
                             if keepmofiles == True:
                                 shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
@@ -467,7 +470,10 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         energy = result.energy
                         print("RCvalue1: {} Energy: {}".format(RCvalue1, energy))
                         if keepoutputfiles == True:
-                            shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                            try:
+                                shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                            except:
+                                pass
                         if keepmofiles == True:
                             shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                         surfacedictionary[(RCvalue1)] = energy

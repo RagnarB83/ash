@@ -960,6 +960,8 @@ class OpenMMTheory:
             #Not sure whether there is ever a need
             #energy_expression = f"0.5*k*(1-cos(var-var_max))"
         elif cvtype == "angle":
+            print("Adding CV restraints for angles is not available!")
+            ashexit()
             energy_expression = f"(k/2)*max(0, var-var_max)^2"
             print("CV type: angle")
             print("Note: unit assumed to be in radians")
@@ -3947,20 +3949,6 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         print("Use function  get_free_energy_from_biasfiles  to create free-energy surface")
         print("and function metadynamics_plot_data to plot the data")
         print()
-        #print("\nReading biasfiles to get free energy surface")
-        #free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_bias_gridwidth,
-        #                                                                            CV2_bias_gridwidth,directory=biasdir_full_path)
-        #print("\nFree energy array:", free_energy)
-        #print("Writing to disk: MTD_free_energy.txt")
-        #np.savetxt("MTD_free_energy.txt", free_energy)
-
-        #print(f"\nWill now attempt to create plot (requires matplotlib) by running: metadynamics_plot_data(biasdir={biasdir_full_path})")
-        #try:
-        #metadynamics_plot_data(biasdir=biasdir_full_path)
-        #except:
-        #print("Could not create plot. Try running metadynamics_plot_data manually")
-        #return
-
     else:
         path_to_plumed=os.path.dirname(os.path.dirname(os.path.dirname(openmmplumed.mm.pluginLoadedLibNames[0])))
         print("You can now call MTD_analyze in a separate ASH script to analyze/plot data (requires presence of HILLS and COLVAR files in directory)")
@@ -3972,8 +3960,6 @@ CV1_indices={CV1_atoms}, plumed_energy_unit='kj/mol', Plot_To_Screen=False)")
             print(f"MTD_analyze(path_to_plumed={path_to_plumed}, CV1_type='{CV1_type}', CV2_type='{CV2_type}', temperature={temperature}, \
 CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', Plot_To_Screen=False)")
         print("\n")
-        #print("Disabled MTD_analyze call as HILLS/COLVAR  files may not have been flushed")
-
     return
 
 #
@@ -4251,7 +4237,8 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
         data = np.load(biasfile)
         full_bias += data
         list_of_biases.append(data)
-    
+    print("full_bias list:", full_bias)
+    print("len full_bias:", len(full_bias))
     #Get final free energy (sum of all)
     free_energy = free_energy_from_bias_array(temperature,biasfactor,full_bias)
     
@@ -4267,7 +4254,7 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
     return free_energy,list_of_free_energies
 
 #Simple plotting for native OpenMM metadynamics via ASH 
-#NOTE: plot_xlim/plot_ylim in final CV units (Ang for distance/rmsd and ° for )
+#NOTE: plot_xlim/plot_ylim in final CV units (Ang for distance/rmsd and ° for dihedrals/angles)
 #CV1_minvalue/CV1_maxvalue should be set before simulation
 def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=None, plot_ylim=None ):
     import json
@@ -4315,6 +4302,9 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
         yvalues = [cv2_conversionfactor*(CV2_minvalue+((CV2_maxvalue - CV2_minvalue) / (CV2_gridwidth-1))*i) for i in range(0,CV2_gridwidth)]
         np.savetxt("MTD_free_energy.txt", free_energy)
         np.savetxt("MTD_free_energy_rel.txt", rel_free_energy)
+        np.savetxt("CV1_coord_values.txt", xvalues)
+        np.savetxt("CV2_coord_values.txt", yvalues)
+
         
         #Plot
         print("Now plotting:")
@@ -4361,7 +4351,7 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
         full_range = CV1_maxvalue - CV1_minvalue
         increment = full_range / (CV1_gridwidth-1)
         xvalues = [cv1_conversionfactor*(CV1_minvalue+increment*i) for i in range(0,CV1_gridwidth)]
-        
+        np.savetxt("CV1_coord_values.txt", xvalues)
         #Relative energy in kcal/mol
         rel_free_energy = (free_energy-min(free_energy))/e_conversionfactor
         print("rel_free_energy:", rel_free_energy)
@@ -4370,12 +4360,12 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
         np.savetxt("MTD_free_energy_rel.txt", rel_free_energy)
 
         #Plot object
+        print("Now plotting:")
         CVlabel=f"{CV1_type} ({CV1_unit_label})"
         y_axislabel="Energy (kcal(/mol))"
         eplot = ash.modules.module_plotting.ASH_plot("Metadynamics", num_subplots=1, x_axislabel=CVlabel, y_axislabel=y_axislabel)
         eplot.addseries(0, x_list=xvalues, y_list=rel_free_energy, legend=None, color='blue', line=True, scatter=False)
         eplot.savefig('MTD_CV1', imageformat=imageformat, dpi=dpi)
-        
         return
 
 
