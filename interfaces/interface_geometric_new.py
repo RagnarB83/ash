@@ -248,6 +248,7 @@ class GeomeTRICOptimizerClass:
                         else:
                             confile.write(f'angle {angleentry[0]+1} {angleentry[1]+1} {angleentry[2]+1}\n')
             if dihedralconstraints is not None:
+                print("dihedralconstraints:", dihedralconstraints)
                 self.constraintsfile='constraints.txt'
                 with open("constraints.txt", 'a') as confile:
                     if constrainvalue is True:
@@ -258,9 +259,10 @@ class GeomeTRICOptimizerClass:
                         #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
                         #print("dihedralentry", dihedralentry)
                         if constrainvalue is True:
-                            confile.write(f'dihedral {dihedralentry[0]+1} {dihedralentry[1]+1} {dihedralentry[2]+1} {dihedralentry[3]+1} {dihedralentry[4]}\n')
+                            dihed_indices=dihedralentry[0]; dihed_val=dihedralentry[1]
+                            confile.write(f'dihedral {dihed_indices[0]+1} {dihed_indices[1]+1} {dihed_indices[2]+1} {dihed_indices[3]+1} {dihed_val}\n')
                         else:
-                            confile.write(f'dihedral {dihedralentry[0]+1} {dihedralentry[1]+1} {dihedralentry[2]+1} {dihedralentry[3]+1}\n')
+                            confile.write(f'dihedral {dihed_indices[0]+1} {dihed_indices[1]+1} {dihed_indices[2]+1} {dihed_indices[3]+1}\n')
 
         def cleanup(self):
             #Clean-up before we begin

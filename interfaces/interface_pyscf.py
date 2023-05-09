@@ -34,7 +34,7 @@ class PySCFTheory:
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, 
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
-                  mcpdft=False, mcpdft_functional=None, specialrun=False):
+                  mcpdft=False, mcpdft_functional=None):
 
         self.theorytype="QM"
         print_line_with_mainheader("PySCFTheory initialization")
@@ -168,7 +168,7 @@ class PySCFTheory:
         self.sgx=sgx #Semi-numerical exchange 
 
         #Special PySCF run option
-        self.specialrun=specialrun
+        #self.specialrun=specialrun
 
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
@@ -706,25 +706,24 @@ class PySCFTheory:
             self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
 
-    #General run function to distinguish  specialrun and mainrun
+    #General run function to distinguish  possible specialrun (disabled) and mainrun
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
             charge=None, mult=None):
 
-        if self.specialrun is True:
+        #if self.specialrun is True:
             #Attempt at having special run method
             #Create pyscf inputscript that defines mol object in script
             #Writes things that should be run etc and then executes by launching separate process
             #Not ready
-            ashexit()
-            energy=random.random()
-            grad=np.random.random([len(elems),3])
-            return energy, grad
-        else:
-
-            return self.mainrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
-            elems=elems, Grad=Grad, PC=PC, numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
-            charge=charge, mult=mult)
+        #    ashexit()
+        #    energy=random.random()
+        #    grad=np.random.random([len(elems),3])
+        #    return energy, grad
+        #else:
+        return self.mainrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
+        elems=elems, Grad=Grad, PC=PC, numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
+        charge=charge, mult=mult)
 
     #Main Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def mainrun(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,

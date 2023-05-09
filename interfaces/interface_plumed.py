@@ -7,203 +7,6 @@ import glob
 
 from ash.functions.functions_general import ashexit, natural_sort, print_line_with_mainheader,print_time_rel
 
-#Interface to Plumed
-#PLUMED_ASH class: Works with ASE but not confirmed to work with OpenMM at present.
-#NOTE: OpenMM also has native metadynamics and its own interface to Plumed
-class plumed_ASH():
-    def __init__(self, path_to_plumed_kernel=None, bias_type="MTD", fragment=None, CV1_type=None, CV1_indices=None,
-                CV2_type=None, CV2_indices=None,
-                temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma1=None, sigma2=None, biasfactor=6.0, timestep=None,
-                stride_num=10, pace_num=500, dynamics_program=None,
-                numwalkers=None, debug=False):
-        print_line_with_mainheader("Plumed ASH interface")
-
-        if dynamics_program == None:
-            print("Please specify dynamics program: e.g. dynamics_program=\"ASE\" or dynamics_program=\"OpenMM\"" )
-            ashexit()
-        # Making sure both Plumed kernel and Python wrappers are available
-        if path_to_plumed_kernel == None:
-            print("plumed_MD requires path_to_plumed_kernel argument to be set")
-            print("Should point to: /path/to/libplumedKernel.so or /path/to/libplumedKernel.dylib")
-            ashexit()
-        #Path to Plumed (used by MTD_analyze)
-        if '.dylib' in path_to_plumed_kernel:
-            self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.dylib","")
-        else:
-            self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.so","")
-        
-        try:
-            import plumed
-        except:
-            print("Found no plumed library. Install via: pip install plumed")
-            ashexit()
-        if timestep==None:
-            print("timestep= needs to be provided to plumed object")
-            ashexit()
-        self.plumed=plumed
-        self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
-
-        #Basic settings in Plumed object
-        self.plumedobj.cmd("setMDEngine","python")
-        #Timestep needs to be set
-        self.plumedobj.cmd("setTimestep", timestep)
-        #Not sure about KbT
-        #self.plumedobj.cmd("setKbT", 2.478957)
-        self.plumedobj.cmd("setNatoms",fragment.numatoms)
-        self.plumedobj.cmd("setLogFile","plumed.log")
-        
-        self.debug=debug
-
-        #Initialize object
-        self.plumedobj.cmd("init")
-
-        #Choose Plumed units based on what the dynamics program is:
-        #By using same units as dynamics program, we can avoid unit-conversion of forces
-        if dynamics_program == "ASE":
-            print("Dynamics program ASE is recognized. Setting Plumed units to Angstrom (distance), eV (energy) and ps (time).")
-            print("sigma and height values should reflect this. ")
-            self.plumed_length_unit="A" #Plumed-label for Angstrom
-            self.plumed_energy_unit="eV"
-            self.plumed_time_unit="ps"
-        elif dynamics_program == "OpenMM":
-            print("Dynamics program OpenMM is recognized. Setting Plumed units to nm (distance), kJ/mol (energy) and ps (time).")
-            print("sigma and height values should reflect this. ")
-            self.plumed_length_unit="nm"
-            self.plumed_energy_unit="kj/mol"
-            self.plumed_time_unit="ps"
-        else:
-            print("unknown dynamics_program. Exiting")
-            ashexit()
-        self.plumedobj.cmd("readInputLine","UNITS LENGTH={} ENERGY={} TIME={}".format(self.plumed_length_unit,self.plumed_energy_unit,self.plumed_time_unit))
-        self.CV1_type=CV1_type
-        self.CV2_type=CV2_type
-        self.CV1_indices=CV1_indices
-        self.CV2_indices=CV2_indices
-        self.temperature=temperature
-        print("")
-        print("Settings")
-        print("")
-        print("Path to Plumed kernel:", path_to_plumed_kernel)
-        print("Dynamics program:", dynamics_program)
-        print("Bias type:", bias_type)
-        print("CV1 type:", self.CV1_type)
-        print("CV1 indices:", self.CV1_indices)
-        print("CV2 type:", self.CV2_type)
-        print("CV2 indices:", self.CV2_indices)
-        print("")
-        print("Temperature:", temperature)
-        print("Gaussian height: {} {}".format(height, self.plumed_energy_unit))
-
-        
-        if self.CV1_type.upper() == "DISTANCE" or self.CV1_type.upper() == "RMSD":
-            print("Gaussian sigma for CV1: {} {}".format(sigma1,self.plumed_length_unit))
-        elif self.CV1_type.upper() == "TORSION" or self.CV1_type.upper() == "ANGLE":
-            print("Gaussian sigma for CV1: {} {}".format(sigma1,"rad"))
-        else:
-            print("unknown CV1 type. Exiting")
-            ashexit()
-        if self.CV2_type != None:
-            if self.CV2_type.upper() == "DISTANCE" or self.CV2_type.upper() == "RMSD":
-                print("Gaussian sigma for CV2: {} {}".format(sigma2,self.plumed_length_unit))
-            elif self.CV2_type.upper() == "TORSION" or self.CV2_type.upper() == "ANGLE":
-                print("Gaussian sigma for CV2: {} {}".format(sigma2,"rad"))
-            else:
-                print("unknown CV2 type. Exiting")
-                ashexit()     
-        print("Bias factor:", biasfactor)
-        print("Timestep: {} {}".format(timestep, self.plumed_time_unit))
-        print("")
-        print("HILLS filename:", hills_file)
-        print("COLVAR filename:", colvar_file)
-        print("Stride number", stride_num)
-        print("Pace number", pace_num)
-        
-        self.numwalkers=numwalkers
-        #Store masses
-        self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
-        print("Masses:", self.masses)
-        
-        if bias_type == "MTD":
-            #1D metadynamics
-            CV1_indices_string = ','.join(map(str, [i+1 for i in CV1_indices])) #Change from 0 to 1 based indexing and converting to text-string
-            self.plumedobj.cmd("readInputLine","cv1: {} ATOMS={}".format(self.CV1_type.upper(), CV1_indices_string))
-            CV_string="cv1"
-            sigma_string=sigma1
-            #2D metadynamics if CV2_type has been set
-            if CV2_type != None:
-                CV2_indices_string = ','.join(map(str, [i+1 for i in CV2_indices]))
-                self.plumedobj.cmd("readInputLine","cv2: {} ATOMS={}".format(self.CV2_type.upper(), CV2_indices_string))
-                CV_string="cv1,cv2"
-                sigma_string=str(sigma1)+","+str(sigma2)
-            
-            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG={} PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(CV_string,pace_num, 
-                height, sigma_string, hills_file, biasfactor, temperature))
-            
-            #Multiple walker option. Not confirmed to work
-            if numwalkers != None:
-                print("not ready")
-                ashexit()
-                self.plumedobj.cmd("readInputLine",str(numwalkers))
-                self.plumedobj.cmd("readInputLine","WALKERS_ID=SET_WALKERID") #NOTE: How to set this??
-                self.plumedobj.cmd("readInputLine","WALKERS_DIR=../")
-                self.plumedobj.cmd("readInputLine","WALKERS_RSTRIDE={}".format(stride_num))
-            self.plumedobj.cmd("readInputLine","PRINT STRIDE={} ARG={},MTD.bias FILE={}".format(stride_num, CV_string, colvar_file))
-        else:
-            print("bias_type not implemented")
-            ashexit()
-        #Write Plumed info file
-        with open ("plumed_ash.info", 'w') as pfile:
-            pfile.write("path_to_plumed {}\n".format(self.path_to_plumed))
-            pfile.write("CV1_type {}\n".format(self.CV1_type))
-            pfile.write("CV1_indices {}\n".format(self.CV1_indices))
-            if self.CV2_type != None:
-                pfile.write("CV2_type {}\n".format(self.CV2_type))
-                pfile.write("CV2_indices {}\n".format(self.CV2_indices))
-            pfile.write("temperature {}\n".format(self.temperature))
-            pfile.write("plumed_length_unit {}\n".format(self.plumed_length_unit))
-            pfile.write("plumed_energy_unit {}\n".format(self.plumed_energy_unit))
-            pfile.write("plumed_time_unit {}\n".format(self.plumed_time_unit))
-
-
-    def run(self, coords=None, forces=None, step=None):
-        #module_init_time = time.time()
-        #Setting step
-        self.plumedobj.cmd("setStep",step)
-        #Setting masses. Must be done after Step
-        self.plumedobj.cmd("setMasses", np.array(self.masses))
-
-        #Necessary?
-        box=np.zeros(9)
-        virial=np.zeros(9)
-        self.plumedobj.cmd("setBox", box )
-        self.plumedobj.cmd("setVirial", virial )
-
-        #Setting current coordinates and forces
-        self.plumedobj.cmd("setPositions", coords )
-        self.plumedobj.cmd("setForces", forces )
-        
-        #Running
-        print("Running Plumed bias calculation")
-        if self.debug is True:
-            print("forces before:", forces)
-        self.plumedobj.cmd("calc")
-        print("Plumed calc done")
-        if self.debug is True:
-            print("forces after:", forces)
-        #bias = np.zeros((1),dtype=np.float64)
-        #self.plumedobj.cmd("getBias", bias )
-        # print("forces are now:", forces)
-        #print("bias:", bias)
-        #print("virial:", virial)
-        #print("coords", coords)
-        energy=999.9999
-        #print_time_rel(module_init_time, modulename='Plumed run', moduleindex=2)
-        return energy,forces
-
-    def close(self):
-        #Properly close Plumed object (flushes outputfiles etc)
-        self.plumedobj.finalize()
-
 #Standalone function to call plumed binary and get fes.dat
 def call_plumed_sum_hills(path_to_plumed,hillsfile,ndim=None, binsg=[99,99], ming=[0,0], maxg=[10,10]):
         print("Running plumed sum_hills on hills file")
@@ -225,8 +28,7 @@ def call_plumed_sum_hills(path_to_plumed,hillsfile,ndim=None, binsg=[99,99], min
             print(f"Calling plumed sum_hills with  grid settings: --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}")
             os.system(f'plumed sum_hills --hills HILLS --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}')
         
-#Metadynamics visualization tool
-
+#Metadynamics visualization function for Plumed runs
 def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
                 CV1_indices=None, CV2_indices=None, plumed_length_unit=None, plumed_energy_unit=None, plumed_time_unit=None,
                 CV1_grid_limits=None,CV2_grid_limits=None):
@@ -892,3 +694,201 @@ def read_plumed_inputfile(plumedinputfile="plumed.in"):
             print("Unknown exception occurred when reading plumed.in")
             print("Setting temp to unknown")
             temperature="Unknown"
+
+
+#Old Interface to Plumed (deprecated)
+#PLUMED_ASH class: Works with ASE but not confirmed to work with OpenMM at present.
+
+class plumed_ASH():
+    def __init__(self, path_to_plumed_kernel=None, bias_type="MTD", fragment=None, CV1_type=None, CV1_indices=None,
+                CV2_type=None, CV2_indices=None,
+                temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma1=None, sigma2=None, biasfactor=6.0, timestep=None,
+                stride_num=10, pace_num=500, dynamics_program=None,
+                numwalkers=None, debug=False):
+        print_line_with_mainheader("Plumed ASH interface")
+
+        if dynamics_program == None:
+            print("Please specify dynamics program: e.g. dynamics_program=\"ASE\" or dynamics_program=\"OpenMM\"" )
+            ashexit()
+        # Making sure both Plumed kernel and Python wrappers are available
+        if path_to_plumed_kernel == None:
+            print("plumed_MD requires path_to_plumed_kernel argument to be set")
+            print("Should point to: /path/to/libplumedKernel.so or /path/to/libplumedKernel.dylib")
+            ashexit()
+        #Path to Plumed (used by MTD_analyze)
+        if '.dylib' in path_to_plumed_kernel:
+            self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.dylib","")
+        else:
+            self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.so","")
+        
+        try:
+            import plumed
+        except:
+            print("Found no plumed library. Install via: pip install plumed")
+            ashexit()
+        if timestep==None:
+            print("timestep= needs to be provided to plumed object")
+            ashexit()
+        self.plumed=plumed
+        self.plumedobj=self.plumed.Plumed(kernel=path_to_plumed_kernel)
+
+        #Basic settings in Plumed object
+        self.plumedobj.cmd("setMDEngine","python")
+        #Timestep needs to be set
+        self.plumedobj.cmd("setTimestep", timestep)
+        #Not sure about KbT
+        #self.plumedobj.cmd("setKbT", 2.478957)
+        self.plumedobj.cmd("setNatoms",fragment.numatoms)
+        self.plumedobj.cmd("setLogFile","plumed.log")
+        
+        self.debug=debug
+
+        #Initialize object
+        self.plumedobj.cmd("init")
+
+        #Choose Plumed units based on what the dynamics program is:
+        #By using same units as dynamics program, we can avoid unit-conversion of forces
+        if dynamics_program == "ASE":
+            print("Dynamics program ASE is recognized. Setting Plumed units to Angstrom (distance), eV (energy) and ps (time).")
+            print("sigma and height values should reflect this. ")
+            self.plumed_length_unit="A" #Plumed-label for Angstrom
+            self.plumed_energy_unit="eV"
+            self.plumed_time_unit="ps"
+        elif dynamics_program == "OpenMM":
+            print("Dynamics program OpenMM is recognized. Setting Plumed units to nm (distance), kJ/mol (energy) and ps (time).")
+            print("sigma and height values should reflect this. ")
+            self.plumed_length_unit="nm"
+            self.plumed_energy_unit="kj/mol"
+            self.plumed_time_unit="ps"
+        else:
+            print("unknown dynamics_program. Exiting")
+            ashexit()
+        self.plumedobj.cmd("readInputLine","UNITS LENGTH={} ENERGY={} TIME={}".format(self.plumed_length_unit,self.plumed_energy_unit,self.plumed_time_unit))
+        self.CV1_type=CV1_type
+        self.CV2_type=CV2_type
+        self.CV1_indices=CV1_indices
+        self.CV2_indices=CV2_indices
+        self.temperature=temperature
+        print("")
+        print("Settings")
+        print("")
+        print("Path to Plumed kernel:", path_to_plumed_kernel)
+        print("Dynamics program:", dynamics_program)
+        print("Bias type:", bias_type)
+        print("CV1 type:", self.CV1_type)
+        print("CV1 indices:", self.CV1_indices)
+        print("CV2 type:", self.CV2_type)
+        print("CV2 indices:", self.CV2_indices)
+        print("")
+        print("Temperature:", temperature)
+        print("Gaussian height: {} {}".format(height, self.plumed_energy_unit))
+
+        
+        if self.CV1_type.upper() == "DISTANCE" or self.CV1_type.upper() == "RMSD":
+            print("Gaussian sigma for CV1: {} {}".format(sigma1,self.plumed_length_unit))
+        elif self.CV1_type.upper() == "TORSION" or self.CV1_type.upper() == "ANGLE":
+            print("Gaussian sigma for CV1: {} {}".format(sigma1,"rad"))
+        else:
+            print("unknown CV1 type. Exiting")
+            ashexit()
+        if self.CV2_type != None:
+            if self.CV2_type.upper() == "DISTANCE" or self.CV2_type.upper() == "RMSD":
+                print("Gaussian sigma for CV2: {} {}".format(sigma2,self.plumed_length_unit))
+            elif self.CV2_type.upper() == "TORSION" or self.CV2_type.upper() == "ANGLE":
+                print("Gaussian sigma for CV2: {} {}".format(sigma2,"rad"))
+            else:
+                print("unknown CV2 type. Exiting")
+                ashexit()     
+        print("Bias factor:", biasfactor)
+        print("Timestep: {} {}".format(timestep, self.plumed_time_unit))
+        print("")
+        print("HILLS filename:", hills_file)
+        print("COLVAR filename:", colvar_file)
+        print("Stride number", stride_num)
+        print("Pace number", pace_num)
+        
+        self.numwalkers=numwalkers
+        #Store masses
+        self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
+        print("Masses:", self.masses)
+        
+        if bias_type == "MTD":
+            #1D metadynamics
+            CV1_indices_string = ','.join(map(str, [i+1 for i in CV1_indices])) #Change from 0 to 1 based indexing and converting to text-string
+            self.plumedobj.cmd("readInputLine","cv1: {} ATOMS={}".format(self.CV1_type.upper(), CV1_indices_string))
+            CV_string="cv1"
+            sigma_string=sigma1
+            #2D metadynamics if CV2_type has been set
+            if CV2_type != None:
+                CV2_indices_string = ','.join(map(str, [i+1 for i in CV2_indices]))
+                self.plumedobj.cmd("readInputLine","cv2: {} ATOMS={}".format(self.CV2_type.upper(), CV2_indices_string))
+                CV_string="cv1,cv2"
+                sigma_string=str(sigma1)+","+str(sigma2)
+            
+            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG={} PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(CV_string,pace_num, 
+                height, sigma_string, hills_file, biasfactor, temperature))
+            
+            #Multiple walker option. Not confirmed to work
+            if numwalkers != None:
+                print("not ready")
+                ashexit()
+                self.plumedobj.cmd("readInputLine",str(numwalkers))
+                self.plumedobj.cmd("readInputLine","WALKERS_ID=SET_WALKERID") #NOTE: How to set this??
+                self.plumedobj.cmd("readInputLine","WALKERS_DIR=../")
+                self.plumedobj.cmd("readInputLine","WALKERS_RSTRIDE={}".format(stride_num))
+            self.plumedobj.cmd("readInputLine","PRINT STRIDE={} ARG={},MTD.bias FILE={}".format(stride_num, CV_string, colvar_file))
+        else:
+            print("bias_type not implemented")
+            ashexit()
+        #Write Plumed info file
+        with open ("plumed_ash.info", 'w') as pfile:
+            pfile.write("path_to_plumed {}\n".format(self.path_to_plumed))
+            pfile.write("CV1_type {}\n".format(self.CV1_type))
+            pfile.write("CV1_indices {}\n".format(self.CV1_indices))
+            if self.CV2_type != None:
+                pfile.write("CV2_type {}\n".format(self.CV2_type))
+                pfile.write("CV2_indices {}\n".format(self.CV2_indices))
+            pfile.write("temperature {}\n".format(self.temperature))
+            pfile.write("plumed_length_unit {}\n".format(self.plumed_length_unit))
+            pfile.write("plumed_energy_unit {}\n".format(self.plumed_energy_unit))
+            pfile.write("plumed_time_unit {}\n".format(self.plumed_time_unit))
+
+
+    def run(self, coords=None, forces=None, step=None):
+        #module_init_time = time.time()
+        #Setting step
+        self.plumedobj.cmd("setStep",step)
+        #Setting masses. Must be done after Step
+        self.plumedobj.cmd("setMasses", np.array(self.masses))
+
+        #Necessary?
+        box=np.zeros(9)
+        virial=np.zeros(9)
+        self.plumedobj.cmd("setBox", box )
+        self.plumedobj.cmd("setVirial", virial )
+
+        #Setting current coordinates and forces
+        self.plumedobj.cmd("setPositions", coords )
+        self.plumedobj.cmd("setForces", forces )
+        
+        #Running
+        print("Running Plumed bias calculation")
+        if self.debug is True:
+            print("forces before:", forces)
+        self.plumedobj.cmd("calc")
+        print("Plumed calc done")
+        if self.debug is True:
+            print("forces after:", forces)
+        #bias = np.zeros((1),dtype=np.float64)
+        #self.plumedobj.cmd("getBias", bias )
+        # print("forces are now:", forces)
+        #print("bias:", bias)
+        #print("virial:", virial)
+        #print("coords", coords)
+        energy=999.9999
+        #print_time_rel(module_init_time, modulename='Plumed run', moduleindex=2)
+        return energy,forces
+
+    def close(self):
+        #Properly close Plumed object (flushes outputfiles etc)
+        self.plumedobj.finalize()

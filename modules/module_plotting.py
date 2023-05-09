@@ -241,7 +241,8 @@ class ASH_plot():
 #NOTE: Partially deprecated thanks to ASHplot. Relative energy option is useful though. 
 #TODO: Keep but call ASHplot here instead of doing separate plotting 
 def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, mode='pyplot',
-                         imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue' ):
+                         imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue',
+                        filename='Plot'):
 
     print_line_with_mainheader("reactionprofile_plot")
 
@@ -279,9 +280,9 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
         plt.title(label)
         plt.xlabel(x_axislabel)
         plt.ylabel('{} ({})'.format(y_axislabel,finalunit))
-        plt.savefig('Plot{}.{}'.format(label,imageformat), format=imageformat, dpi=dpi)
+        plt.savefig(f'{filename}.{imageformat}', format=imageformat, dpi=dpi)
         plt.legend(shadow=True, fontsize='small')
-        print("Created file: Plot{}.{}".format(label,imageformat))
+        print(f"Created file: {filename}.{imageformat}")
     else:
         #OO style
         fig, ax = plt.subplots(figsize=(5, 2.7), layout='constrained')
