@@ -3077,7 +3077,6 @@ class OpenMM_MDclass:
             self.openmmobject.system.addForce(openmmplumed.PlumedForce(plumedinput))
 
         #Case native OpenMM metadynamcis
-        print("metadynamics:", metadynamics)
         if metadynamics is True:
 
             biasdir=metadyn_settings["biasdir"]
