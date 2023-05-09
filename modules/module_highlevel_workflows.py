@@ -2446,6 +2446,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                         ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
                             maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
                         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+                        ice.cleanup()
                         energy_ICE = result_ICE.energy
                         reaction.energies.append(energy_ICE)
                         #WF info
@@ -2484,6 +2485,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                         ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
                             maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
                         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+                        ice.cleanup()
                         energy_ICE = result_ICE.energy
                         print("energy_ICE:", energy_ICE)
                         reaction.energies.append(energy_ICE)
@@ -2516,6 +2518,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                         ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
                             maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
                         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
+                        ice.cleanup()
                         energy_ICE = result_ICE.energy
                         reaction.energies.append(energy_ICE)
                         #WF info
@@ -2591,31 +2594,6 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             #TODO
         print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
 
-    #MBE-FCI via PyMBE
-    if MBE_FCI is True:
-        print("MBE_FCI is True")
-        ashexit()
-        print("mbe_thres_inc:", mbe_thres_inc)
-        print("mbe_orbs_choice:", mbe_orbs_choice)
-        print("mbe_ref_orblist:", mbe_ref_orblist)
-
-        ref_orblist=[0,1, 2, 3, 4, 5, 6]
-        #symmetry: 'symmetry': 'c2v'
-        #'base' : {'method': 'ccsd(t)'},
-        pymbedict={ 'system' : {'basis': basis, },
-'model' : {'method': 'fci'},
-'target' : {'energy': True},
-'ref' : {'method': 'casci', 'select': mbe_ref_orblist},
-'orbs' : {'type': mbe_orbs_choice},
-'thres' : {'inc': mbe_thres_inc}
-}
-
-        pymbe = PyMBETheory(pymbedict=pymbedict, pymbedir=pymbedir, numcores=numcores)
-        for frag in reaction.fragments:
-            res = Singlepoint(theory=pymbe, fragment=frag)
-            e = res.energy
-            print("e:", e)
-            ashexit()
 
     #Running regular single-reference WF methods
     results_cc={}
