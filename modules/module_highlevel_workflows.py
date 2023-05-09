@@ -2624,7 +2624,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         %maxcore 11000
         """
         hf = ash.ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=hfblocks, basis_per_element=basis_per_element,numcores=numcores, label='HF', save_output_with_label=True)
-        result_HF = ash.Singlepoint_reaction(reaction=reaction, theory=hf, unit=reaction.unit)
+        result_HF = ash.Singlepoint_reaction(reaction=reaction, theory=hf)
         results_cc['HF'] = result_HF.reaction_energy
     if DoMP2 is True:
         mp2blocks=f"""
@@ -2632,15 +2632,15 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         """
         mp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='MP2', save_output_with_label=True)
         scsmp2 = ash.ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='SCSMP2', save_output_with_label=True)
-        result_MP2 = ash.Singlepoint_reaction(reaction=reaction, theory=mp2, unit=reaction.unit)
-        result_SCSMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsmp2, unit=reaction.unit)
+        result_MP2 = ash.Singlepoint_reaction(reaction=reaction, theory=mp2
+        result_SCSMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsmp2)
         results_cc['MP2'] = result_MP2.reaction_energy
         results_cc['SCS-MP2'] = result_SCSMP2.reaction_energy
         if Do_OOMP2 is True:
             oomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-MP2 autoaux {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='OOMP2', save_output_with_label=True)
             scsoomp2 = ash.ORCATheory(orcasimpleinput=f"! OO-RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='OOSCSMP2', save_output_with_label=True)
-            result_OOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=oomp2, unit=reaction.unit)
-            result_SCSOOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsoomp2, unit=reaction.unit)
+            result_OOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=oomp2)
+            result_SCSOOMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsoomp2)
             results_cc['OO-MP2'] = result_OOMP2.reaction_energy
             results_cc['OO-SCS-MP2'] = result_SCSOOMP2.reaction_energy
 
@@ -2668,16 +2668,16 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             pccsd_1a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD1a', save_output_with_label=True)
             pccsd_2a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD2a', save_output_with_label=True)
             
-            result_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd, unit=reaction.unit)
-            result_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd, unit=reaction.unit)
-            result_pCCSD1a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_1a, unit=reaction.unit)
-            result_pCCSD2a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_2a, unit=reaction.unit)
+            result_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd)
+            result_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd)
+            result_pCCSD1a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_1a)
+            result_pCCSD2a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_2a)
             results_cc['CCSD'] = result_CCSD.reaction_energy
             results_cc['BCCD'] = result_BCCD.reaction_energy
             
             if Do_OOCC is True:
                 ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCD', save_output_with_label=True)
-                result_OOCCD = ash.Singlepoint_reaction(reaction=reaction, theory=ooccd, unit=reaction.unit)
+                result_OOCCD = ash.Singlepoint_reaction(reaction=reaction, theory=ooccd)
                 results_cc['OOCCD'] = result_OOCCD.reaction_energy
             results_cc['pCCSD/1a'] = result_pCCSD1a.reaction_energy
             results_cc['pCCSD/2a'] = result_pCCSD2a.reaction_energy
@@ -2688,7 +2688,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             #CCSD(T) extrapolated to FCI
             if basis_per_element ==None:
                 ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
-                result_CCSDT_FCI_extrap = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap, unit=reaction.unit)
+                result_CCSDT_FCI_extrap = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_fci_extrap)
                 results_cc['CCSD(T)-FCI-extrap'] = result_CCSDT_FCI_extrap.reaction_energy
             else:
                 print("Warning: Basisdict per element provided. Can currently not do CCSD(T) FCI ORCA_CC_CBS_Theory job. SKipping")
@@ -2697,17 +2697,17 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             #ccsdt_mp2nat = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSDT_mp2nat', save_output_with_label=True, moreadfile="ICEcalc_MP2natorbs.mp2nat")
             #ccsdt_icecinat = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, numcores=numcores, label='CCSDT_icecinat', save_output_with_label=True, moreadfile="ICEcalc_ICEnatorbs.gbw")
             #Run
-            result_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction.unit)
-            result_CCSDT_QRO = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro, unit=reaction.unit)
+            result_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt)
+            result_CCSDT_QRO = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro)
             
-            result_BCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=bccdt, unit=reaction.unit)
+            result_BCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=bccdt)
             #relE_CCSDT_mp2nat = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_mp2nat, unit=reaction.unit)
             #relE_CCSDT_icecinat = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_icecinat, unit=reaction.unit)
             results_cc['CCSD(T)'] = result_CCSDT.reaction_energy
             results_cc['CCSD(T)-QRO'] = result_CCSDT_QRO.reaction_energy
             if Do_OOCC is True:
                 ooccdt = ash.ORCATheory(orcasimpleinput=f"! OOCCD(T) {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCDT', save_output_with_label=True)
-                result_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt, unit=reaction.unit)
+                result_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt)
                 results_cc['OOCCD(T)'] = result_OOCCDT.reaction_energy
             results_cc['BCCD(T)'] = result_BCCDT.reaction_energy
             
@@ -2718,7 +2718,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                     print("Doing orbitals from:", functional)
                     #Hybrid KS reference requires auxC basis (singles term) so adding autoaux
                     ccsdt_dft = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {functional} {basis} autoaux tightscf", orcablocks=ccblocks, numcores=numcores, label=f'CCSDT_{functional}', save_output_with_label=True)
-                    result_CCSDT_DFT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_dft, unit=reaction.unit)
+                    result_CCSDT_DFT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_dft)
                     results_cc[f'CCSD(T)-{functional}'] = result_CCSDT_DFT.reaction_energy
         
         if DoCC_MRCC is True:
@@ -2744,8 +2744,8 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             """
             ccsdt = ash.MRCCTheory(mrccinput=ccsdt_mrccinput,numcores=numcores, label='MRCC-CCSDT')
 
-            result_CCSD_T = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd_t, unit=reaction.unit)
-            result_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction.unit)
+            result_CCSD_T = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd_t)
+            result_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt)
             results_cc['MRCC-CCSD(T)'] = result_CCSD_T.reaction_energy
             results_cc['MRCC-CCSDT'] = result_CCSDT.reaction_energy
         if DoCC_CFour is True:
@@ -2785,8 +2785,8 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             }
             ccsdt = ash.CFourTheory(cfouroptions=cfouroptions,numcores=numcores, label='CFour-CCSDT')
 
-            result_CCSD_T = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd_t, unit=reaction.unit)
-            result_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt, unit=reaction.unit)
+            result_CCSD_T = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd_t)
+            result_CCSDT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt)
             results_cc['C4-CCSD(T)'] = result_CCSD_T.reaction_energy
             results_cc['C4-CCSDT'] = result_CCSDT.reaction_energy
 
