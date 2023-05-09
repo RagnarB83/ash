@@ -2632,7 +2632,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         """
         mp2 = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='MP2', save_output_with_label=True)
         scsmp2 = ash.ORCATheory(orcasimpleinput=f"! SCS-MP2 {basis} tightscf", orcablocks=mp2blocks, basis_per_element=basis_per_element,numcores=numcores, label='SCSMP2', save_output_with_label=True)
-        result_MP2 = ash.Singlepoint_reaction(reaction=reaction, theory=mp2
+        result_MP2 = ash.Singlepoint_reaction(reaction=reaction, theory=mp2)
         result_SCSMP2 = ash.Singlepoint_reaction(reaction=reaction, theory=scsmp2)
         results_cc['MP2'] = result_MP2.reaction_energy
         results_cc['SCS-MP2'] = result_SCSMP2.reaction_energy
