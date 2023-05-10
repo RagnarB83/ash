@@ -33,7 +33,15 @@ class xTBTheory:
 
         #Printlevel
         self.printlevel=printlevel
-        self.verbosity=printlevel-1
+        
+        #Controlling output in xtb-library
+        if self.printlevel >= 3:
+            self.verbosity = "full" #Full output
+        elif self.printlevel == 2:
+            self.verbosity = "minimal" #  SCC iterations
+        elif self.printlevel <= 1:
+            self.verbosity = "muted" #nothing
+
         #Label to distinguish different xtb objects
         self.label=label
 
@@ -349,29 +357,34 @@ class xTBTheory:
                 return self.energy
         
         elif self.runmode =='library':
-            print("------------Running xTB (library)-------------")
+            if self.printlevel >= 1:
+                print("------------Running xTB (library)-------------")
             #Converting Angstroms to Bohr
             coords_au=np.array(current_coords)*ash.constants.ang2bohr
             #Converting element-symbols to nuclear charges
             qm_elems_numbers=np.array(elemstonuccharges(qm_elems))
             assert len(coords_au) == len(qm_elems_numbers)
-            print("Number of xTB atoms:", len(coords_au))
             #Choosing method
             if self.xtbmethod == 'GFN2':
-                print("Using GFN2 parameterization")
+                if self.printlevel >= 2:
+                    print("Using GFN2 parameterization")
                 param_method=Param.GFN2xTB
             elif self.xtbmethod == 'GFN1':
-                print("Using GFN1 parameterization")
+                if self.printlevel >= 2:
+                    print("Using GFN1 parameterization")
                 param_method=Param.GFN1xTB
             elif self.xtbmethod == 'GFN0':
-                print("Using GFN0 parameterization")
+                if self.printlevel >= 2:
+                    print("Using GFN0 parameterization")
                 param_method=Param.GFN0xTB
             elif self.xtbmethod == 'GFNFF':
-                print("Using GFNFF parameterization")
-                print("warning: experimental")
+                if self.printlevel >= 2:
+                    print("Using GFNFF parameterization")
+                    print("warning: experimental")
                 param_method=Param.GFNFF
             elif self.xtbmethod == 'IPEA':
-                print("Using IPEA parameterization")
+                if self.printlevel >= 2:
+                    print("Using IPEA parameterization")
                 param_method=Param.IPEAxTB
             else:
                 print("unknown xtbmethod")
@@ -394,13 +407,15 @@ class xTBTheory:
                     self.calcobject.set_solvent(self.solvent_object)
             #next run calls: only update coordinates
             else:
-                print("Updating coordinates in xTB calcobject")
+                if self.printlevel >= 2:
+                    print("Updating coordinates in xTB calcobject")
                 self.calcobject.update(coords_au)
 
             #QM/MM pointcharge field
             #calc.
             if PC==True:
-                print("Using PointCharges")
+                if self.printlevel >= 2:
+                    print("Using PointCharges")
                 mmcharges=np.array(MMcharges)
                 #print("Setting external point charges")
                 #print("num MM charges", len(MMcharges))
@@ -416,11 +431,14 @@ class xTBTheory:
 
             #Run
             #TODO: Can we turn off gradient calculation somewhere?
-            print("Running xtB using {} cores".format(self.numcores))
+            if self.printlevel >= 2:
+                print("Running xtB using {} cores".format(self.numcores))
             res = self.calcobject.singlepoint()
-            print("------------xTB calculation done-------------")
+            if self.printlevel >= 2:
+                print("------------xTB calculation done-------------")
             if Grad == True:
-                print("Grad is True")
+                if self.printlevel >= 2:
+                    print("Grad is True")
                 self.energy = res.get_energy()
                 self.grad =res.get_gradient()
                 if self.printlevel >= 2:
@@ -442,8 +460,10 @@ class xTBTheory:
                     print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                     return self.energy, self.grad, self.pcgrad
                 else:
-                    print("------------ENDING XTB-INTERFACE-------------")
-                    print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
+                    if self.printlevel >= 2:
+                        print("------------ENDING XTB-INTERFACE-------------")
+                    if self.printlevel >= 2:
+                        print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                     return self.energy, self.grad
 
             else:

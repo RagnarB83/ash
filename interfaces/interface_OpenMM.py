@@ -914,7 +914,8 @@ class OpenMMTheory:
 
     #NOTE: This can take some time but not sure we can make this faster
     def update_custom_external_force(self, customforce, gradient, simulation, conversion_factor=49614.752589207):
-        print("Updating custom external force")
+        if self.printlevel >= 2:
+            print("Updating custom external force")
         # shiftpar_inkjmol=shiftparameter*2625.4996394799
         # Convert Eh/Bohr gradient to force in kj/mol nm
         # *49614.501681716106452
@@ -2755,7 +2756,7 @@ class OpenMM_MDclass:
         # Distinguish between OpenMM theory QM/MM theory or QM theory
         self.dummy_MM=dummy_MM
 
-        #Printlevel (not used much right now)
+        #Printlevel
         self.printlevel=printlevel
 
         #Case: OpenMMTheory
@@ -2776,7 +2777,7 @@ class OpenMM_MDclass:
             print("Now creating OpenMMTheory object")
             print("OpenMM platform:", platform)
             #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
-            self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform) #NOTE: might add more options here
+            self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel) #NOTE: might add more options here
             self.QM_MM_object = None
             self.qmtheory=theory
         
@@ -3203,10 +3204,11 @@ class OpenMM_MDclass:
             for step in range(simulation_steps):
                 checkpoint_begin_step = time.time()
                 checkpoint = time.time()
-                print("Step:", step)
+                if self.printlevel >= 2:
+                    print("Step:", step)
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
                 current_state=simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
-                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
@@ -3224,9 +3226,10 @@ class OpenMM_MDclass:
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
                     # Manual step info option
-                    print_current_step_info(step,current_state,self.openmmobject)
-                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
-                    checkpoint = time.time()
+                    if self.printlevel >= 2:
+                        print_current_step_info(step,current_state,self.openmmobject)
+                    #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
+                    #checkpoint = time.time()
                     # Manual trajectory option (reporters used to not work for manual dynamics steps)
                     #NOTE: Now outdated, since OpenMM update??
                     #Disabling for now
@@ -3236,11 +3239,11 @@ class OpenMM_MDclass:
                 
 
                 checkpoint = time.time()
-                print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2)
+                print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 # Run QM/MM step to get full system QM+PC gradient.
                 self.QM_MM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
                                       exit_after_customexternalforce_update=True, charge=self.charge, mult=self.mult)
-                print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2)
+                print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 
                 # Now need to update OpenMM external force with new QM-PC force
                  #The QM_PC gradient (link-atom projected, from QM_MM object) is provided to OpenMM external force
@@ -3258,15 +3261,16 @@ class OpenMM_MDclass:
 
                 #OpenMM metadynamics
                 if metadynamics == True:
-                    print("Now calling OpenMM native metadynamics and taking 1 step")
+                    if self.printlevel >= 2:
+                        print("Now calling OpenMM native metadynamics and taking 1 step")
                     meta_object.step(simulation, 1)
-                    print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2)
+                    print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
 
                     #getCollectiveVariables
-                    print("metadyn_freq ", metadyn_settings["saveFrequency"]*metadyn_settings["frequency"])
                     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
-                        print("MTD: Writing current collective variables to disk")
+                        if self.printlevel >= 2:
+                            print("MTD: Writing current collective variables to disk")
                         current_cv = meta_object.getCollectiveVariables(simulation)
                         if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
                             cv1scaling=10
@@ -3282,15 +3286,15 @@ class OpenMM_MDclass:
                                 f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
                             elif metadyn_settings["numCVs"] == 1:
                                 f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
-                    print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2)
+                    print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
                 else:
                     simulation.step(1)
-                    print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2)
+                    print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
-                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 
-                # NOTE: Better to use OpenMM-plumed interface instead??
+                # NOTE: Better to use OpenMM-plumed interface
                 # After MM step, grab coordinates and forces
                 #if self.plumed_object is not None:
                 #    print("Plumed active. Untested. Hopefully works.")
@@ -3307,26 +3311,29 @@ class OpenMM_MDclass:
         #External QM for OpenMMtheory
         #Used to run QM dynamics with OpenMM
         elif self.externalqm is True:
-            print("External QM with OpenMM option")
+            if self.printlevel >= 2:
+                print("External QM with OpenMM option")
             for step in range(simulation_steps):
                 checkpoint_begin_step = time.time()
                 checkpoint = time.time()
-                print("Step:", step)
+                if self.printlevel >= 2:
+                    print("Step:", step)
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
                 current_state=simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
-                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
-                print_time_rel(checkpoint, modulename="get current coords", moduleindex=2)
+                print_time_rel(checkpoint, modulename="get current coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
 
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
                     # Manual step info option
-                    print_current_step_info(step,current_state,self.openmmobject)
-                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
-                    checkpoint = time.time()
+                    if self.printlevel >= 2:
+                        print_current_step_info(step,current_state,self.openmmobject)
+                    #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
+                    #checkpoint = time.time()
                     # Manual trajectory option (reporters do not work for manual dynamics steps)
                     #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
                     #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
@@ -3335,25 +3342,27 @@ class OpenMM_MDclass:
                 # Run QM step to get full system QM gradient.
                 # Updates OpenMM object with QM forces
                 energy,gradient=self.qmtheory.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True, charge=self.charge, mult=self.mult)
-                print("energy:", energy)
-                print_time_rel(checkpoint, modulename="QM run", moduleindex=2)
-                print("Now here. updating custom")
+                if self.printlevel >= 2:
+                    print("Energy:", energy)
+                print_time_rel(checkpoint, modulename="QM run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 self.openmmobject.update_custom_external_force(self.qmcustomforce,gradient,simulation)
 
                 #Calculate energy associated with external force so that we can subtract it later
                 #TODO: take this and QM energy and add to print_current_step_info
                 extforce_energy=3*np.mean(sum(gradient*current_coords*1.88972612546))
-                print("extforce_energy:", extforce_energy)
+                if self.printlevel >= 2:
+                    print("extforce_energy:", extforce_energy)
 
                 #OpenMM metadynamics
                 if metadynamics == True:
-                    print("Now calling OpenMM native metadynamics and taking 1 step")
+                    if self.printlevel >= 2:
+                        print("Now calling OpenMM native metadynamics and taking 1 step")
                     meta_object.step(simulation, 1)
 
                     #getCollectiveVariables
-                    print("metadyn_freq ", metadyn_settings["saveFrequency"]*metadyn_settings["frequency"])
                     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
-                        print("MTD: Writing current collective variables to disk")
+                        if self.printlevel >= 2:
+                            print("MTD: Writing current collective variables to disk")
                         current_cv = meta_object.getCollectiveVariables(simulation)
                         if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
                             cv1scaling=10
@@ -3371,27 +3380,25 @@ class OpenMM_MDclass:
                                 f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
                 else:
                     simulation.step(1)
-                print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
-                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
+                print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
 
-                # NOTE: Better to use OpenMM-plumed interface instead??
+                # NOTE: Better to use OpenMM-plumed interface
                 # After MM step, grab coordinates and forces
-                if self.plumed_object is not None:
-                    print("Plumed active. Untested. Hopefully works.")
-                    ashexit()
-                    #Necessary to call again
-                    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
-                    #Keep coords as default OpenMM nm and forces ad kJ/mol/nm. Avoid conversion
-                    plumed_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
-                    plumed_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
-                    # Plumed object needs to be configured for OpenMM
-                    energy, newforces = self.plumed_object.run(coords=plumed_coords, forces=plumed_forces,
-                                                               step=step)
-                    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces, 
-                                                                   simulation,conversion_factor=1.0)
-
-
+                #if self.plumed_object is not None:
+                #    print("Plumed active. Untested. Hopefully works.")
+                #    ashexit()
+                #    #Necessary to call again
+                #    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
+                #    #Keep coords as default OpenMM nm and forces ad kJ/mol/nm. Avoid conversion
+                #    plumed_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
+                #    plumed_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
+                #    # Plumed object needs to be configured for OpenMM
+                #    energy, newforces = self.plumed_object.run(coords=plumed_coords, forces=plumed_forces,
+                #                                               step=step)
+                #    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces, 
+                #                                                   simulation,conversion_factor=1.0)
 
         #TODO: Delete at some point once testing and debugging are over
         elif self.dummy_MM is True:
@@ -3402,17 +3409,17 @@ class OpenMM_MDclass:
                 print("Step:", step)
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
                 current_state=simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
-                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
-                print_time_rel(checkpoint, modulename="get current coords", moduleindex=2)
+                print_time_rel(checkpoint, modulename="get current coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
                     # Manual step info option
                     print_current_step_info(step,current_state,self.openmmobject)
-                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
+                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
                     # Manual trajectory option (reporters do not work for manual dynamics steps)
                     #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
@@ -3420,8 +3427,8 @@ class OpenMM_MDclass:
                     #checkpoint = time.time()
 
                 simulation.step(1)
-                print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2)
-                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2)
+                print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
         else:
             #OpenMM metadynamics
             if metadynamics == True:
@@ -3810,7 +3817,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6, 
               height=1, 
               CV1_biaswidth=0.5, CV2_biaswidth=0.5, CV1_range=None, CV2_range=None,
-              frequency=1, savefrequency=10,
+              frequency=1, savefrequency=10, printlevel=2,
               biasdir='.', multiplewalkers=False, numcores=1, walkerid=None):
     print_line_with_mainheader("OpenMM metadynamics")
     
@@ -3858,7 +3865,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                         datafilename=datafilename, dummy_MM=dummy_MM, platform=platform,
                         plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
                         center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
-                        barostat_frequency=barostat_frequency, specialbox=specialbox)
+                        barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
 
     #Load OpenMM.app
     import openmm
