@@ -357,29 +357,34 @@ class xTBTheory:
                 return self.energy
         
         elif self.runmode =='library':
+            #if self.printlevel >= 2:
             print("------------Running xTB (library)-------------")
             #Converting Angstroms to Bohr
             coords_au=np.array(current_coords)*ash.constants.ang2bohr
             #Converting element-symbols to nuclear charges
             qm_elems_numbers=np.array(elemstonuccharges(qm_elems))
             assert len(coords_au) == len(qm_elems_numbers)
-            print("Number of xTB atoms:", len(coords_au))
             #Choosing method
             if self.xtbmethod == 'GFN2':
-                print("Using GFN2 parameterization")
+                if self.printlevel >= 2:
+                    print("Using GFN2 parameterization")
                 param_method=Param.GFN2xTB
             elif self.xtbmethod == 'GFN1':
-                print("Using GFN1 parameterization")
+                if self.printlevel >= 2:
+                    print("Using GFN1 parameterization")
                 param_method=Param.GFN1xTB
             elif self.xtbmethod == 'GFN0':
-                print("Using GFN0 parameterization")
+                if self.printlevel >= 2:
+                    print("Using GFN0 parameterization")
                 param_method=Param.GFN0xTB
             elif self.xtbmethod == 'GFNFF':
-                print("Using GFNFF parameterization")
-                print("warning: experimental")
+                if self.printlevel >= 2:
+                    print("Using GFNFF parameterization")
+                    print("warning: experimental")
                 param_method=Param.GFNFF
             elif self.xtbmethod == 'IPEA':
-                print("Using IPEA parameterization")
+                if self.printlevel >= 2:
+                    print("Using IPEA parameterization")
                 param_method=Param.IPEAxTB
             else:
                 print("unknown xtbmethod")
