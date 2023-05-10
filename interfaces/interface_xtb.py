@@ -357,8 +357,8 @@ class xTBTheory:
                 return self.energy
         
         elif self.runmode =='library':
-            #if self.printlevel >= 2:
-            print("------------Running xTB (library)-------------")
+            if self.printlevel >= 1:
+                print("------------Running xTB (library)-------------")
             #Converting Angstroms to Bohr
             coords_au=np.array(current_coords)*ash.constants.ang2bohr
             #Converting element-symbols to nuclear charges
