@@ -914,7 +914,8 @@ class OpenMMTheory:
 
     #NOTE: This can take some time but not sure we can make this faster
     def update_custom_external_force(self, customforce, gradient, simulation, conversion_factor=49614.752589207):
-        print("Updating custom external force")
+        if self.printlevel >= 2:
+            print("Updating custom external force")
         # shiftpar_inkjmol=shiftparameter*2625.4996394799
         # Convert Eh/Bohr gradient to force in kj/mol nm
         # *49614.501681716106452
@@ -2776,7 +2777,7 @@ class OpenMM_MDclass:
             print("Now creating OpenMMTheory object")
             print("OpenMM platform:", platform)
             #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
-            self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform) #NOTE: might add more options here
+            self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel) #NOTE: might add more options here
             self.QM_MM_object = None
             self.qmtheory=theory
         
