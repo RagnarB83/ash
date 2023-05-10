@@ -3294,7 +3294,7 @@ class OpenMM_MDclass:
                     checkpoint = time.time()
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 
-                # NOTE: Better to use OpenMM-plumed interface instead??
+                # NOTE: Better to use OpenMM-plumed interface
                 # After MM step, grab coordinates and forces
                 #if self.plumed_object is not None:
                 #    print("Plumed active. Untested. Hopefully works.")
@@ -3384,21 +3384,21 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
 
-                # NOTE: Better to use OpenMM-plumed interface instead??
+                # NOTE: Better to use OpenMM-plumed interface
                 # After MM step, grab coordinates and forces
-                if self.plumed_object is not None:
-                    print("Plumed active. Untested. Hopefully works.")
-                    ashexit()
-                    #Necessary to call again
-                    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
-                    #Keep coords as default OpenMM nm and forces ad kJ/mol/nm. Avoid conversion
-                    plumed_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
-                    plumed_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
-                    # Plumed object needs to be configured for OpenMM
-                    energy, newforces = self.plumed_object.run(coords=plumed_coords, forces=plumed_forces,
-                                                               step=step)
-                    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces, 
-                                                                   simulation,conversion_factor=1.0)
+                #if self.plumed_object is not None:
+                #    print("Plumed active. Untested. Hopefully works.")
+                #    ashexit()
+                #    #Necessary to call again
+                #    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
+                #    #Keep coords as default OpenMM nm and forces ad kJ/mol/nm. Avoid conversion
+                #    plumed_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
+                #    plumed_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
+                #    # Plumed object needs to be configured for OpenMM
+                #    energy, newforces = self.plumed_object.run(coords=plumed_coords, forces=plumed_forces,
+                #                                               step=step)
+                #    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces, 
+                #                                                   simulation,conversion_factor=1.0)
 
         #TODO: Delete at some point once testing and debugging are over
         elif self.dummy_MM is True:
