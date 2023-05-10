@@ -33,7 +33,13 @@ class xTBTheory:
 
         #Printlevel
         self.printlevel=printlevel
-        self.verbosity=printlevel-1
+        if self.printlevel == 2:
+            self.verbosity = "full"
+        elif self.printlevel == 1:
+            self.verbosity = "minimal"
+        elif self.printlevel == 0:
+            self.verbosity = "muted" 
+
         #Label to distinguish different xtb objects
         self.label=label
 

@@ -2755,7 +2755,7 @@ class OpenMM_MDclass:
         # Distinguish between OpenMM theory QM/MM theory or QM theory
         self.dummy_MM=dummy_MM
 
-        #Printlevel (not used much right now)
+        #Printlevel
         self.printlevel=printlevel
 
         #Case: OpenMMTheory
