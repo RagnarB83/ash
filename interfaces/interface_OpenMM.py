@@ -4235,7 +4235,7 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
     if CV2_gridwith == None:
         full_bias=np.zeros((CV1_gridwith))
     else:
-	    full_bias=np.zeros((CV1_gridwith,CV2_gridwith))
+	    full_bias=np.zeros((CV2_gridwith,CV1_gridwith))
     
     #Looping over bias-files
     print("full_bias shape:", full_bias.shape)
