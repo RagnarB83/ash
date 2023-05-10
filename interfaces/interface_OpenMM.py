@@ -4242,10 +4242,14 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
     list_of_biases=[]
     for biasfile in glob.glob(f"{directory}/*.npy"):
         print("Loading biasfile:", biasfile)
-        data = np.load(biasfile)
-        print("data shape:", data.shape)
-        full_bias += data
-        list_of_biases.append(data)
+        try:
+            data = np.load(biasfile)
+            print("data shape:", data.shape)
+            full_bias += data
+            list_of_biases.append(data)
+        except FileNotFoundError:
+            print("File not found error: Simulation probably still running. skipping file")
+
     print("full_bias list:", full_bias)
     print("len full_bias:", len(full_bias))
     #Get final free energy (sum of all)
