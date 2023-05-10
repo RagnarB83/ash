@@ -4238,10 +4238,12 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
 	    full_bias=np.zeros((CV1_gridwith,CV2_gridwith))
     
     #Looping over bias-files
+    print("full_bias shape:", full_bias.shape)
     list_of_biases=[]
     for biasfile in glob.glob(f"{directory}/*.npy"):
         print("Loading biasfile:", biasfile)
         data = np.load(biasfile)
+        print("data shape:", data.shape)
         full_bias += data
         list_of_biases.append(data)
     print("full_bias list:", full_bias)
