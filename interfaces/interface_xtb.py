@@ -462,7 +462,8 @@ class xTBTheory:
                 else:
                     if self.printlevel >= 2:
                         print("------------ENDING XTB-INTERFACE-------------")
-                    print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
+                    if self.printlevel >= 2:
+                        print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                     return self.energy, self.grad
 
             else:
