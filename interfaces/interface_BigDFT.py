@@ -77,9 +77,7 @@ class BigDFTTheory:
         #self.inp.set_rmult([3.5,9.0])
         self.inp.set_xc(functional)
 
-        print("self.inp:", self.inp)
-        print("self.inp:", type(self.inp))
-
+        print("BigDFT input object:", self.inp)
 
     #Set numcores method
     def set_numcores(self,numcores):
@@ -103,6 +101,8 @@ class BigDFTTheory:
         if MMcharges is None:
             MMcharges=[]
 
+
+        #NOTE: CHECK
         if numcores is None:
             numcores=self.numcores
 
@@ -143,12 +143,7 @@ class BigDFTTheory:
         #NOTE: Parallelization. OMP_NUM_THREADS ???
         result = self.study.run(input=self.inp)
 
-        print("result:", result)
-        print("result.__dict__", result.__dict__)
         self.energy = result.energy
-
-        #TODO: Grab energy and grdient from result or log.yaml ??
-        #Logfile: ./log.yaml
 
         #Check if finished. Grab energy
         if Grad==True:
