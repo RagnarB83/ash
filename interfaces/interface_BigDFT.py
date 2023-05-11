@@ -79,7 +79,8 @@ class BigDFTTheory:
 
         if use_gpu is True:
             print("use_gpu:", use_gpu)
-            BigDFT.InputAction.use_gpu_acceleration(self.inp)
+            from BigDFT import InputActions
+            InputActions.use_gpu_acceleration(self.inp)
 
         print("BigDFT input object:", self.inp)
 
