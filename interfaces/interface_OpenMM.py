@@ -4283,8 +4283,8 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
     CV1_maxvalue=metadyn_settings["CV1_maxvalue"]
     CV2_minvalue=metadyn_settings["CV2_minvalue"]
     CV2_maxvalue=metadyn_settings["CV2_maxvalue"]
-    print("Using CV1_minvalue:{CV1_minvalue} CV1_maxvalue:{CV1_maxvalue}")
-    print("Using CV2_minvalue:{CV2_minvalue} CV2_maxvalue:{CV2_maxvalue}")
+    print(f"Using CV1_minvalue:{CV1_minvalue} CV1_maxvalue:{CV1_maxvalue}")
+    print(f"Using CV2_minvalue:{CV2_minvalue} CV2_maxvalue:{CV2_maxvalue}")
 
     e_conversionfactor=4.184 #kJ/mol to kcal/mol
     if CV2_type != None:
