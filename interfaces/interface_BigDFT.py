@@ -15,8 +15,8 @@ from ash.modules.module_coords import elemstonuccharges, check_multiplicity, che
 #BIGDFT
 
 class BigDFTTheory:
-    def __init__(self, numcores=1, printlevel=2, filename='bigdft_', maxiter=500, electronic_temp=300, label=None,
-                 hgrid=0.4, functional=None):
+    def __init__(self, printlevel=2, filename='bigdft_', maxiter=500, electronic_temp=300, label=None,
+                 hgrid=0.4, functional=None, threads=1, mpiprocs=1, numcores=1):
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
@@ -46,7 +46,23 @@ class BigDFTTheory:
 
         #???
         #reload(calc)
-        self.study = calc.SystemCalculator()
+        #Specifying 
+        if threads == 1 and mpiprocs == 1 and numcores == 1:
+            print(f"Threads: {threads} MPIprocs:{mpiprocs} and numcores:{numcores}")
+            print("Using default of 1 OMP thread")
+            self.study = calc.SystemCalculator(omp=1)
+        elif mpiprocs != 1 and threads == 1:
+            print("MPI procs set to ", mpiprocs)
+            self.study = calc.SystemCalculator(omp=1,mpi_run=f'mpirun -np {mpiprocs}')
+        elif threads != 1 and mpiprocs == 1:
+            print("Threads set to ", threads)
+            self.study = calc.SystemCalculator(omp=threads)
+        elif threads != 1 and mpiprocs != 1:
+            print(f"Threads: {threads} MPIprocs:{mpiprocs} and numcores:{numcores}")
+            self.study = calc.SystemCalculator(omp=threads,mpi_run=f'mpirun -np {mpiprocs}')
+        elif numcores != 1:
+            print("Numcores set. Setting threads equal to numcores keyword", numcores)
+            self.study = calc.SystemCalculator(omp=numcores)
         print("self.study:", self.study)
 
         if functional is None:
