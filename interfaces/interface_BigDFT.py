@@ -132,9 +132,6 @@ class BigDFTTheory:
         self.energy = result.energy
         print("self.energy:", self.energy)
 
-        self.grad = 
-
-
         #TODO: Grab energy and grdient from result or log.yaml ??
         #Logfile: ./log.yaml
 
