@@ -163,7 +163,7 @@ def grab_gradient_bigdft(numatoms):
                 gradient[i,1] = -1*float(line.split()[2])
                 gradient[i,2] = -1*float(line.split()[3])
                 i+=1
-            if ' forces' in line:
+            if line.startswith(' forces'):
                 print("grab set to True")
                 grab=True
     print("gradient:", gradient)
