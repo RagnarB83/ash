@@ -49,20 +49,23 @@ class BigDFTTheory:
         #Specifying 
         if threads == 1 and mpiprocs == 1 and numcores == 1:
             print(f"Threads: {threads} MPIprocs:{mpiprocs} and numcores:{numcores}")
-            print("Using default of 1 OMP thread")
+            print("Using the default of 1 OMP thread")
             self.study = calc.SystemCalculator(omp=1)
         elif mpiprocs != 1 and threads == 1:
-            print("MPI procs set to ", mpiprocs)
+            print("Setting MPI procs to ", mpiprocs)
             self.study = calc.SystemCalculator(omp=1,mpi_run=f'mpirun -np {mpiprocs}')
         elif threads != 1 and mpiprocs == 1:
-            print("Threads set to ", threads)
+            print("Setting Threads to ", threads)
             self.study = calc.SystemCalculator(omp=threads)
         elif threads != 1 and mpiprocs != 1:
-            print(f"Threads: {threads} MPIprocs:{mpiprocs} and numcores:{numcores}")
+            print(f"Setting Threads: {threads} and MPIprocs:{mpiprocs}")
             self.study = calc.SystemCalculator(omp=threads,mpi_run=f'mpirun -np {mpiprocs}')
         elif numcores != 1:
-            print("Numcores set. Setting threads equal to numcores keyword", numcores)
-            self.study = calc.SystemCalculator(omp=numcores)
+            print("Numcores set. Setting MPI-processes equal to numcores (MPI is faster than threading)", numcores)
+            self.study = calc.SystemCalculator(omp=1,mpi_run=f'mpirun -np {mpiprocs}')
+        else:
+            print("Unknown parallelization option")
+            ashexit()
         print("self.study:", self.study)
 
         if functional is None:
