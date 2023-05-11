@@ -128,9 +128,11 @@ class BigDFTTheory:
         result = self.study.run(input=self.inp)
 
         print("result:", result)
-        print("result.__dict__")
+        print("result.__dict__", result.__dict__)
         self.energy = result.energy
         print("self.energy:", self.energy)
+
+        self.grad = 
 
 
         #TODO: Grab energy and grdient from result or log.yaml ??
@@ -138,15 +140,30 @@ class BigDFTTheory:
 
         #Check if finished. Grab energy
         if Grad==True:
-            #TODO: grab energy and gradient
-            #self.energy,self.grad=
+            grab_gradient_bigdft(len(qm_elems))
             print("BigDFT energy :", self.energy)
             print("------------ENDING BIGDFT-INTERFACE-------------")
             print_time_rel(module_init_time, modulename='BigDFT run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             return self.energy, self.grad
         else:
-            #TODO: grab energy
             print("BigDFT energy :", self.energy)
             print("------------ENDING BIGDFT-INTERFACE-------------")
             print_time_rel(module_init_time, modulename='BIGDFT run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             return self.energy
+
+
+
+def grab_gradient_bigdft(numatoms):
+    grab=False
+    gradient=np.zeros((numatoms,3))
+    i=0
+    with open("forces_posinp.xyz") as f:
+        for line in f:
+            if grab is True:
+                gradient[i,0] = -1*float(line.split()[1])
+                gradient[i,1] = -1*float(line.split()[2])
+                gradient[i,2] = -1*float(line.split()[3])
+                i+=1
+            if ' forces' in line:
+                grab=True
+    print("gradient:", gradient)
