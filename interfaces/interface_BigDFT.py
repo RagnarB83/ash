@@ -15,7 +15,8 @@ from ash.modules.module_coords import elemstonuccharges, check_multiplicity, che
 #BIGDFT
 
 class BigDFTTheory:
-    def __init__(self, numcores=1, printlevel=2, filename='bigdft_', maxiter=500, electronic_temp=300, label=None):
+    def __init__(self, numcores=1, printlevel=2, filename='bigdft_', maxiter=500, electronic_temp=300, label=None,
+                 hgrid=0.4, functional=None):
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
@@ -48,15 +49,21 @@ class BigDFTTheory:
         self.study = calc.SystemCalculator()
         print("self.study:", self.study)
 
-        
+        if functional is None:
+            print("functional keyword not set. Exiting")
+            ashexit()
         #Define inputobject
         from BigDFT import Inputfiles as I
         self.inp=I.Inputfile()
-        self.inp.set_hgrid(0.55)
-        self.inp.set_rmult([3.5,9.0])
+
+        #Settings
+        self.inp.set_hgrid(hgrid)
+        #self.inp.set_rmult([3.5,9.0])
+        self.inp.set_xc(functional)
 
         print("self.inp:", self.inp)
         print("self.inp:", type(self.inp))
+
 
     #Set numcores method
     def set_numcores(self,numcores):
@@ -110,12 +117,21 @@ class BigDFTTheory:
         ash.modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename, printlevel=self.printlevel)
         self.inp.set_atomic_positions(f'{self.filename}.xyz')
 
+        if Grad is True:
+            print("Grad is True")
+            self.inp["perf"] = {"calculate_forces": True}
+
+
         print("------------Running BigDFT-------------")
         #Call BigDFT run
         #NOTE: Parallelization. OMP_NUM_THREADS ???
         result = self.study.run(input=self.inp)
 
         print("result:", result)
+        print("result.__dict__")
+        self.energy = result.energy
+        print("self.energy:", self.energy)
+
 
         #TODO: Grab energy and grdient from result or log.yaml ??
         #Logfile: ./log.yaml
