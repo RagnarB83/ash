@@ -16,7 +16,7 @@ from ash.modules.module_coords import elemstonuccharges, check_multiplicity, che
 
 class BigDFTTheory:
     def __init__(self, printlevel=2, filename='bigdft_', maxiter=500, electronic_temp=300, label=None,
-                 hgrid=0.4, functional=None, threads=1, mpiprocs=1, numcores=1):
+                 hgrid=0.4, functional=None, threads=1, mpiprocs=1, numcores=1, use_gpu=False):
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
@@ -76,6 +76,10 @@ class BigDFTTheory:
         self.inp.set_hgrid(hgrid)
         #self.inp.set_rmult([3.5,9.0])
         self.inp.set_xc(functional)
+
+        if use_gpu is True:
+            print("use_gpu:", use_gpu)
+            BigDFT.InputAction.use_gpu_acceleration(self.inp)
 
         print("BigDFT input object:", self.inp)
 
