@@ -136,11 +136,11 @@ class BigDFTTheory:
 
         #Check if finished. Grab energy
         if Grad==True:
-            grab_gradient_bigdft(len(qm_elems))
+            self.gradient = grab_gradient_bigdft(len(qm_elems))
             print("BigDFT energy :", self.energy)
             print("------------ENDING BIGDFT-INTERFACE-------------")
             print_time_rel(module_init_time, modulename='BigDFT run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
-            return self.energy, self.grad
+            return self.energy, self.gradient
         else:
             print("BigDFT energy :", self.energy)
             print("------------ENDING BIGDFT-INTERFACE-------------")
@@ -152,18 +152,14 @@ class BigDFTTheory:
 def grab_gradient_bigdft(numatoms):
     grab=False
     gradient=np.zeros((numatoms,3))
-    print("gradient:", gradient)
     i=0
     with open("forces_posinp.xyz") as f:
         for line in f:
-            print("line:", line)
             if grab is True:
-                print("grab True")
                 gradient[i,0] = -1*float(line.split()[1])
                 gradient[i,1] = -1*float(line.split()[2])
                 gradient[i,2] = -1*float(line.split()[3])
                 i+=1
             if line.startswith(' forces'):
-                print("grab set to True")
                 grab=True
-    print("gradient:", gradient)
+    return gradient
