@@ -130,7 +130,6 @@ class BigDFTTheory:
         print("result:", result)
         print("result.__dict__", result.__dict__)
         self.energy = result.energy
-        print("self.energy:", self.energy)
 
         #TODO: Grab energy and grdient from result or log.yaml ??
         #Logfile: ./log.yaml
@@ -153,14 +152,18 @@ class BigDFTTheory:
 def grab_gradient_bigdft(numatoms):
     grab=False
     gradient=np.zeros((numatoms,3))
+    print("gradient:", gradient)
     i=0
     with open("forces_posinp.xyz") as f:
         for line in f:
+            print("line:", line)
             if grab is True:
+                print("grab True")
                 gradient[i,0] = -1*float(line.split()[1])
                 gradient[i,1] = -1*float(line.split()[2])
                 gradient[i,2] = -1*float(line.split()[3])
                 i+=1
             if ' forces' in line:
+                print("grab set to True")
                 grab=True
     print("gradient:", gradient)
