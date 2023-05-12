@@ -80,7 +80,7 @@ class BigDFTTheory:
         #self.inp.set_rmult([3.5,9.0])
         self.inp.set_xc(functional)
         
-        self.inp.["perf"]={}
+        self.inp["perf"]={}
 
         if use_gpu is True:
             print("use_gpu:", use_gpu)
