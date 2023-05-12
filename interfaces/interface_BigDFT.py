@@ -143,7 +143,9 @@ class BigDFTTheory:
 
         if Grad is True:
             print("Grad is True")
-            self.inp["perf"] = {"calculate_forces": True}
+            self.inp["perf"]["calculate_forces"] = True
+
+            print(" self.inp:",  self.inp)
 
 
         print("------------Running BigDFT-------------")
