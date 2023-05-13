@@ -119,24 +119,21 @@ with open(fragfile) as file:
 
 
 #Write modified ASH XYZ-file
-print("xyz_elems:", xyz_elems)
-print("xyz_coords:", xyz_coords)
 atindex=0
 with open(fragfile,'w') as newfile:
     for i,line in enumerate(fragfile_lines):
         if i-2 in qmatoms:
-            print("i-2:", i-2)
+            #print("i-2:", i-2)
             newel = xyz_elems.pop(0)
             newcoords=xyz_coords.pop(0)
-            newline = f"{newel} {newcoords[0]} {newcoords[1]} {newcoords[2]}"
-            print("old line:", line)
-            print("newline:", newline)
+            newline = f"{newel} {newcoords[0]} {newcoords[1]} {newcoords[2]}\n"
+            #print("old line:", line)
+            #print("newline:", newline)
             newfile.write(newline)
         else:
             newfile.write(line)
 
-print("xyz_elems:", xyz_elems)
-print("xyz_coords:", xyz_coords)
+
 # coordline=False
 # with open(fragfile, 'w') as newfile:
 #     for line in fragfile_lines:
