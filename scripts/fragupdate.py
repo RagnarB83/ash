@@ -121,7 +121,7 @@ with open(fragfile) as file:
 #Write modified ASH XYZ-file
 atindex=0
 with open(fragfile) as newfile:
-    for i,line in enumerate(file):
+    for i,line in enumerate(newfile):
         if i-2 in qmatoms:
             print("i-2:", i-2)
             newel = xyz_elems.pop(0)
