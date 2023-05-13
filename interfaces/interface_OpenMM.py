@@ -4250,8 +4250,8 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
         except FileNotFoundError:
             print("File not found error: Simulation probably still running. skipping file")
 
-    print("full_bias list:", full_bias)
-    print("len full_bias:", len(full_bias))
+    #print("full_bias list:", full_bias)
+    #print("len full_bias:", len(full_bias))
     #Get final free energy (sum of all)
     free_energy = free_energy_from_bias_array(temperature,biasfactor,full_bias)
     
