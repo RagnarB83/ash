@@ -4070,14 +4070,14 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=No
             biaswidth_cv_unit_label="rad"
         elif CV_type == "distance" or CV_type == "bond":
             CV_min_val=0.0
-            CV_max_val=0.5
+            CV_max_val=5.0
             CV_unit=openmm.unit.angstroms
             CV_unit_label="Å"
             biaswidth_cv_unit=openmm.unit.angstroms
             biaswidth_cv_unit_label="Å"
         elif CV_type == "rmsd":
             CV_min_val=0.0
-            CV_max_val=0.5
+            CV_max_val=5.0
             CV_unit=openmm.unit.angstroms
             CV_unit_label="Å"
             biaswidth_cv_unit=openmm.unit.angstroms
