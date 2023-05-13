@@ -157,4 +157,4 @@ with open(fragfile) as newfile:
 #             coordline=True
 
 #         newfile.write(line)
-print(fragfile"Updated file {fragfile} with coordinates from file {xyzfile}")
+print(f"Updated file {fragfile} with coordinates from file {xyzfile}")
