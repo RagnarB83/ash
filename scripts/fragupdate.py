@@ -119,8 +119,8 @@ with open(fragfile) as file:
 
 
 #Write modified ASH XYZ-file
-print("newel:", newel)
-print("newcoords:", newcoords)
+print("xyz_elems:", xyz_elems)
+print("xyz_coords:", xyz_coords)
 atindex=0
 with open(fragfile,'w') as newfile:
     for i,line in enumerate(fragfile_lines):
@@ -135,8 +135,8 @@ with open(fragfile,'w') as newfile:
         else:
             newfile.write(line)
 
-print("newel:", newel)
-print("newcoords:", newcoords)
+print("xyz_elems:", xyz_elems)
+print("xyz_coords:", xyz_coords)
 # coordline=False
 # with open(fragfile, 'w') as newfile:
 #     for line in fragfile_lines:
