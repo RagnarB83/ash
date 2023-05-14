@@ -26,6 +26,7 @@ class DiceTheory:
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None, SHCI_active_space_range=None,
+                SHCI_active_all_but_core=None,
                 Dice_SHCI_direct=None, fcidumpfile=None, Dice_refdeterminant=None,
                 QMC_trialWF=None, QMC_SHCI_numdets=1000, QMC_dt=0.005, QMC_nsteps=50, QMC_nblocks=1000, QMC_nwalkers_per_proc=5):
 
@@ -133,6 +134,7 @@ class DiceTheory:
             self.SHCI_cas_nmax=SHCI_cas_nmax
             self.SHCI_active_space=SHCI_active_space #Alternative to SHCI_cas_nmin/SHCI_cas_nmax
             self.SHCI_active_space_range=SHCI_active_space_range #Alternative (suitable when el-number changes)
+            self.SHCI_active_all_but_core=SHCI_active_all_but_core
         #QMC options
         self.QMC_trialWF=QMC_trialWF
         self.QMC_SHCI_numdets=QMC_SHCI_numdets
@@ -178,6 +180,7 @@ class DiceTheory:
             print("SHCI_sampleN:", self.SHCI_sampleN)
             print("SHCI_nroots:", self.SHCI_nroots)
             print("SHCI_active_space_range:", self.SHCI_active_space_range)
+            print("SHCI_active_all_but_core:", SHCI_active_all_but_core)
             print("SHCI_active_space:", self.SHCI_active_space)
             print("SHCI CAS NO nmin", self.SHCI_cas_nmin)
             print("SHCI CAS NO nmax", self.SHCI_cas_nmax)
@@ -376,7 +379,7 @@ noio
         #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
         if self.moreadfile == None:
             print("No checkpoint file given (moreadfile option).")
-            print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Dice CAS job")
+            print(f"Will calculate PySCF {self.initial_orbitals} (natural) orbitals to use as input in Dice CAS job")
             if self.initial_orbitals not in ['RKS', 'UKS', 'RHF', 'UHF', 'canMP2','MP2','DFMP2', 'DFMP2relax', 'CCSD','CCSD(T)', 'SHCI', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
@@ -472,7 +475,17 @@ noio
             print("Active space range:", self.SHCI_active_space_range)
             self.norb = len(occupations[self.SHCI_active_space_range[0]:self.SHCI_active_space_range[1]])
             self.nelec = round(sum(occupations[self.SHCI_active_space_range[0]:self.SHCI_active_space_range[1]]))
-            print(f"Selected active space from range: CAS({self.nelec},{self.norb})")      
+            print(f"Selected active space from range: CAS({self.nelec},{self.norb})")
+        elif self.SHCI_active_all_but_core != None:
+            print("SHCI_active_all_but_core option is active")
+            print("Will select all active space except the chosen number of core orbitals to skip")
+
+            self.norb = len(occupations[SHCI_active_all_but_core:])
+            self.nelec = round(sum(occupations[SHCI_active_all_but_core:]))
+
+            print(f"Selected active space : CAS({self.nelec},{self.norb})")
+
+
         else:
             print(f"SHCI Active space determined from {self.initial_orbitals} NO threshold parameters: SHCI_cas_nmin={self.SHCI_cas_nmin} and SHCI_cas_nmax={self.SHCI_cas_nmax}")
             print("Note: Use active_space keyword if you want to select active space manually instead")
