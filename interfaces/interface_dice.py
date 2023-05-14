@@ -377,10 +377,10 @@ noio
         if self.moreadfile == None:
             print("No checkpoint file given (moreadfile option).")
             print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Dice CAS job")
-            if self.initial_orbitals not in ['canMP2','MP2','DFMP2', 'DFMP2relax', 'CCSD','CCSD(T)', 'SHCI', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
+            if self.initial_orbitals not in ['RKS', 'UKS', 'RHF', 'UHF', 'canMP2','MP2','DFMP2', 'DFMP2relax', 'CCSD','CCSD(T)', 'SHCI', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
-            print("Options are: MP2, CCSD, CCSD(T), SHCI, AVAS-CASSCF, DMET-CASSCF")
+            print("Options are: RHF, UHF, RKS, UKS, MP2, CCSD, CCSD(T), SHCI, AVAS-CASSCF, DMET-CASSCF")
             #Option to do small-eps SHCI step 
             if self.initial_orbitals == 'SHCI':
                 print("SHCI initial orbital option")
@@ -411,6 +411,13 @@ noio
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals, 
                                                                 CAS_AO_labels=self.CAS_AO_labels, elems=elems, numcores=self.numcores)
+            #If 
+            elif self.initial_orbitals in ['RHF','UHF','RKS','UKS']:
+                print("Initial orbital option is original SCF orbitals. Using MO-coeffs from ")
+                mo_coefficients = self.pyscftheoryobject.mf.mo_coeff
+                occupations = self.pyscftheoryobject.mf.mo_occ
+                print("occupations:", occupations)
+            #Assuming MP2/CCSD/CCSD(T) natural orbitals
             else:
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
@@ -642,7 +649,7 @@ noio
         else:
             self.frozen_core_orbs=0
 
-        # NOW RUNNING
+        # NOW RUNNING MAIN JOB
         #NEVPT2
         if self.NEVPT2 is True:
             #NOTE: Requires fixes to getDets function in QMCUtils.py
