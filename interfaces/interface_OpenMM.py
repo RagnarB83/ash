@@ -3473,7 +3473,8 @@ class OpenMM_MDclass:
         # System. Necessary
         self.openmmobject.system.setDefaultPeriodicBoxVectors(a, b, c)
 
-        # Writing final frame to disk as PDB
+        # Writing final frame to disk as PDB. 
+        # NOTE: Convenient for using as a topology file for mdtraj
         with open(self.trajfilename+'.pdb', 'w') as f:
             openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
         with open(self.trajfilename+'.pdb', 'a') as f:
