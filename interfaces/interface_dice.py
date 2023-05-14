@@ -237,6 +237,9 @@ MPIPREFIX=""
             bkpfiles=glob.glob('*.bkp')
             for bkpfile in bkpfiles:
                 os.remove(bkpfile)
+        print("Also cleaning up pyscf ")
+        self.pyscftheoryobject.cleanup()
+
     def determine_frozen_core(self,elems):
         print("Determining frozen core based on system list of elements")
         #Main elements 
