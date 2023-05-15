@@ -391,6 +391,7 @@ noio
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
                 MP2nat_occupations, MP2nat_mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method='MP2', elems=elems, numcores=self.numcores)
+                print("MP2 step done. Now setting up SHCI calc (initial orbital-run)")
                 self.setup_active_space(occupations=MP2nat_occupations)
                 self.setup_SHCI_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True
                 self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
@@ -479,7 +480,7 @@ noio
         elif self.SHCI_active_all_but_core != None:
             print("SHCI_active_all_but_core option is active")
             print("Will select all active space except the chosen number of core orbitals to skip")
-
+            print("Warning untested...")
             self.norb = len(occupations[SHCI_active_all_but_core:])
             self.nelec = round(sum(occupations[SHCI_active_all_but_core:]))
 
