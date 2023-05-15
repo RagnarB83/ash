@@ -42,6 +42,7 @@ class xTBTheory:
         elif self.printlevel <= 1:
             self.verbosity = "muted" #nothing
 
+
         #Label to distinguish different xtb objects
         self.label=label
 

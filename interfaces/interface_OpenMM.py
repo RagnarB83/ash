@@ -2700,7 +2700,7 @@ def read_NPT_statefile(npt_output):
 def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
-              coupling_frequency=1, charge=None, mult=None, printlevel=2,
+              coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
               anderson_thermostat=False, platform='CPU',
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
@@ -2711,7 +2711,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
-                        datafilename=datafilename, dummy_MM=dummy_MM, printlevel=printlevel,
+                        datafilename=datafilename, dummy_MM=dummy_MM, printlevel=printlevel, hydrogenmass=hydrogenmass,
                         plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
                         center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
                         barostat_frequency=barostat_frequency, specialbox=specialbox)
@@ -2729,7 +2729,7 @@ class OpenMM_MDclass:
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
                  barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
                  coupling_frequency=1, printlevel=2, platform='CPU',
-                 anderson_thermostat=False,
+                 anderson_thermostat=False, hydrogenmass=1.5,
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
                  center_force_atoms=None, centerforce_constant=1.0,
@@ -2777,7 +2777,8 @@ class OpenMM_MDclass:
             print("Now creating OpenMMTheory object")
             print("OpenMM platform:", platform)
             #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
-            self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel) #NOTE: might add more options here
+            self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
+                                hydrogenmass=hydrogenmass) #NOTE: might add more options here
             self.QM_MM_object = None
             self.qmtheory=theory
         
@@ -3473,7 +3474,8 @@ class OpenMM_MDclass:
         # System. Necessary
         self.openmmobject.system.setDefaultPeriodicBoxVectors(a, b, c)
 
-        # Writing final frame to disk as PDB
+        # Writing final frame to disk as PDB. 
+        # NOTE: Convenient for using as a topology file for mdtraj
         with open(self.trajfilename+'.pdb', 'w') as f:
             openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
         with open(self.trajfilename+'.pdb', 'a') as f:
@@ -3808,7 +3810,7 @@ def write_nonbonded_FF_for_ligand(fragment=None, xyzfile=None, charge=None, mult
 def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
-              coupling_frequency=1, charge=None, mult=None, platform='CPU',
+              coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5,
               anderson_thermostat=False, restraints=None, flatbottom_restraint_CV1=None, flatbottom_restraint_CV2=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
@@ -3862,7 +3864,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
-                        datafilename=datafilename, dummy_MM=dummy_MM, platform=platform,
+                        datafilename=datafilename, dummy_MM=dummy_MM, platform=platform, hydrogenmass=hydrogenmass,
                         plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
                         center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
                         barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
@@ -4070,14 +4072,14 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=No
             biaswidth_cv_unit_label="rad"
         elif CV_type == "distance" or CV_type == "bond":
             CV_min_val=0.0
-            CV_max_val=0.5
+            CV_max_val=5.0
             CV_unit=openmm.unit.angstroms
             CV_unit_label="Å"
             biaswidth_cv_unit=openmm.unit.angstroms
             biaswidth_cv_unit_label="Å"
         elif CV_type == "rmsd":
             CV_min_val=0.0
-            CV_max_val=0.5
+            CV_max_val=5.0
             CV_unit=openmm.unit.angstroms
             CV_unit_label="Å"
             biaswidth_cv_unit=openmm.unit.angstroms
@@ -4235,17 +4237,23 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
     if CV2_gridwith == None:
         full_bias=np.zeros((CV1_gridwith))
     else:
-	    full_bias=np.zeros((CV1_gridwith,CV2_gridwith))
+	    full_bias=np.zeros((CV2_gridwith,CV1_gridwith))
     
     #Looping over bias-files
+    print("full_bias shape:", full_bias.shape)
     list_of_biases=[]
     for biasfile in glob.glob(f"{directory}/*.npy"):
         print("Loading biasfile:", biasfile)
-        data = np.load(biasfile)
-        full_bias += data
-        list_of_biases.append(data)
-    print("full_bias list:", full_bias)
-    print("len full_bias:", len(full_bias))
+        try:
+            data = np.load(biasfile)
+            print("data shape:", data.shape)
+            full_bias += data
+            list_of_biases.append(data)
+        except FileNotFoundError:
+            print("File not found error: Simulation probably still running. skipping file")
+
+    #print("full_bias list:", full_bias)
+    #print("len full_bias:", len(full_bias))
     #Get final free energy (sum of all)
     free_energy = free_energy_from_bias_array(temperature,biasfactor,full_bias)
     
@@ -4277,8 +4285,8 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
     CV1_maxvalue=metadyn_settings["CV1_maxvalue"]
     CV2_minvalue=metadyn_settings["CV2_minvalue"]
     CV2_maxvalue=metadyn_settings["CV2_maxvalue"]
-    print("Using CV1_minvalue:{CV1_minvalue} CV1_maxvalue:{CV1_maxvalue}")
-    print("Using CV2_minvalue:{CV2_minvalue} CV2_maxvalue:{CV2_maxvalue}")
+    print(f"Using CV1_minvalue:{CV1_minvalue} CV1_maxvalue:{CV1_maxvalue}")
+    print(f"Using CV2_minvalue:{CV2_minvalue} CV2_maxvalue:{CV2_maxvalue}")
 
     e_conversionfactor=4.184 #kJ/mol to kcal/mol
     if CV2_type != None:

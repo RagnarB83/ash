@@ -3,8 +3,8 @@
 Stand-alone script for updating ASH fragment using XYZ information. Companion script to fragedit.py
 
 Usage:
-python3 fragupdate.py fragfile.ygg (assumes fragment.xyz and qmatoms file present)
-python3 fragupdate.py fragfile.ygg filewithindices ((assumes fragment.xyz )
+python3 fragupdate.py fragfile.xyz (assumes fragment.xyz and qmatoms file present)
+python3 fragupdate.py fragfile.xyz filewithindices ((assumes fragment.xyz )
 
 Reads in ASH fragment file and qmatoms and XYZ file and updates ASH fragment
 
@@ -88,12 +88,12 @@ def read_xyzfile(filename):
 try:
     fragfile=sys.argv[1]
 except:
-    print("Please provide an XYZ-file (or ASH .ygg file) as argument")
+    print("Please provide an XYZ-file as argument")
     exit(1)
 #Try to process a qmatoms file if provided
 try:
     qmatoms_file = sys.argv[2]
-    read_intlist_from_file(qmatoms_file)
+    qmatoms = read_intlist_from_file(qmatoms_file)
 except:
     print("No atomlist-file provided as 2nd argument. Attempting to read file named qmatoms from disk")
     qmatoms = read_intlist_from_file("qmatoms")
@@ -112,34 +112,49 @@ elems=[]
 coords=[]
 fragfile_lines=[]
 
-#Read ASH fragfile
+#Read ASH fragfile (XYZ-file)
 with open(fragfile) as file:
     for line in file:
         fragfile_lines.append(line)
 
 
-#Write modified ASH fragfile
-coordline=False
-with open(fragfile, 'w') as newfile:
-    for line in fragfile_lines:
-        if '=====' in line:
-            coordline=False
-        if coordline==True:
-            if int(line.split()[0]) in qmatoms:
-                #print("int(line.split()[0]):", int(line.split()[0]))
-                #print("line:", line)
-                at=int(line.split()[0])
-                el=line.split()[1]
-                charge=float(line.split()[5])
-                label=line.split()[6]
-                atomtype=line.split()[7]
-                newcoords=xyz_coords.pop(0)
-                #print("newcoords:", newcoords)
-                line = "{:>6} {:>6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:12} {:>21}\n".format(at, el, newcoords[0],
-                                                                                                    newcoords[1], newcoords[2],
-                                                                                                    charge, label, atomtype)
-        if '-----------------------' in line:
-            coordline=True
+#Write modified ASH XYZ-file
+atindex=0
+with open(fragfile,'w') as newfile:
+    for i,line in enumerate(fragfile_lines):
+        if i-2 in qmatoms:
+            #print("i-2:", i-2)
+            newel = xyz_elems.pop(0)
+            newcoords=xyz_coords.pop(0)
+            newline = f"{newel} {newcoords[0]} {newcoords[1]} {newcoords[2]}\n"
+            #print("old line:", line)
+            #print("newline:", newline)
+            newfile.write(newline)
+        else:
+            newfile.write(line)
 
-        newfile.write(line)
-print("Updated file {} with coordinates from file {}".format(fragfile,xyzfile))
+
+# coordline=False
+# with open(fragfile, 'w') as newfile:
+#     for line in fragfile_lines:
+#         if '=====' in line:
+#             coordline=False
+#         if coordline==True:
+#             if int(line.split()[0]) in qmatoms:
+#                 #print("int(line.split()[0]):", int(line.split()[0]))
+#                 #print("line:", line)
+#                 at=int(line.split()[0])
+#                 el=line.split()[1]
+#                 charge=float(line.split()[5])
+#                 label=line.split()[6]
+#                 atomtype=line.split()[7]
+#                 newcoords=xyz_coords.pop(0)
+#                 #print("newcoords:", newcoords)
+#                 line = "{:>6} {:>6}  {:12.6f}  {:12.6f}  {:12.6f}  {:12.6f} {:12} {:>21}\n".format(at, el, newcoords[0],
+#                                                                                                     newcoords[1], newcoords[2],
+#                                                                                                     charge, label, atomtype)
+#         if '-----------------------' in line:
+#             coordline=True
+
+#         newfile.write(line)
+print(f"Updated file {fragfile} with coordinates from file {xyzfile}")

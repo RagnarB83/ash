@@ -281,12 +281,14 @@ class PySCFTheory:
         pyscf.lib.num_threads(numcores)
     #Cleanup after run.
     def cleanup(self):
+        files=['timer.dat', self.filename+'.dat',self.filename+'.chk' ]
         print("Cleaning up old PySCF files")
-        try:
-            os.remove('timer.dat')
-            os.remove(self.filename+'.dat')
-        except:
-            pass
+        for f in files:
+            print("Removing file:", f)
+            try:
+                os.remove(f)
+            except:
+                print("Error removing file", f)
     def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies, label="orbs"):
         import pyscf
         from pyscf.tools import molden

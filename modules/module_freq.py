@@ -34,7 +34,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         #TODO: diagonalize it ourselves. Need to finish projection
         # For now, we grab frequencies from ORCA Hessian file
         frequencies = ash.interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
-        
+        print("Frequencies:", frequencies)
         hessatoms=list(range(0,fragment.numatoms))
         thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
 

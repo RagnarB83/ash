@@ -140,6 +140,57 @@ def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
         print("Unknown trajectory format.")
     return
 
+#Function to get internal coordinates from trajectory fast
+#Give trajectory file
+def MDtraj_coord_analyze(trajectory, pdbtopology=None, periodic=True, indices=None):
+    print("Inside MDtraj_coord_analyze")
+    if indices is None:
+        print("indices needs to be set")
+        ashexit()
+    print("Trajectory:", trajectory)
+    print("Topology:", pdbtopology)
+    print("Atom indices:", indices)
+    #Import mdtraj library
+    mdtraj = MDtraj_import()
+
+    if pdbtopology == None:
+        print("A topology is required but was not provided")
+        print("Checking if trajectory.pdb file (created by ASH_OpenMM_MD) is available:")
+        try:
+            pdbtopology=("trajectory.pdb")
+        except:
+            print("Found no file. Exiting")
+            ashexit()
+
+    # Load trajectory
+    print("Loading trajectory using mdtraj.")
+    traj = mdtraj.load(trajectory, top=pdbtopology)
+    print(f"This trajectory contains {traj.n_frames} frames")
+    if len(indices) == 4:
+        print("4 atom indices given. This must be a dihedral angle.  Returning dihedral in radians")
+        output = mdtraj.compute_dihedrals(traj, [indices], periodic=periodic, opt=True)
+        unit_label = "radians"
+    elif len(indices) == 3:
+        print("3 atom indices given. This must be an angle. Returning angle in radians")
+        output = mdtraj.compute_angles(traj, [indices], periodic=periodic, opt=True)
+        unit_label = "radians"
+    elif len(indices) == 2:
+        print("2 atom indices given. This must be a distance.  Returning angle in Angstrom")
+        output = mdtraj.compute_distances(traj, [indices], periodic=periodic, opt=True)
+        output = 10*output
+        unit_label = "Angstrom"
+    else:
+        print("something wrong with indices supplied:", indices)
+        ashexit()
+    print(f"List of coordinates ({len(output)}) for each frame:", output)
+
+    ave = np.mean(output)
+    stdev = np.std(output)
+    print(f"Mean: {ave} {unit_label}")
+    print(f"Standard deviation: {stdev} {unit_label}")
+
+    return output
+
 
 
 #Initial unfinished interface to mdanalysis
