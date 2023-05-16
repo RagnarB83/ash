@@ -1151,6 +1151,9 @@ class PySCFTheory:
                     vdw_energy = with_vdw.eng
                     vdw_gradient = with_vdw.grad
                     print(f"{self.dispersion} dispersion energy is: {vdw_energy}")
+                elif self.dispersion == "VV10" or self.dispersion == "NL":
+                    print("Dispersion correction: VV10. No post-SCF step")
+                    vdw_energy=0.0
                 else:
                     #For TS and MBD it is calculated by the wrapper and already included in thh SCF
                     vdw_energy=0.0 #to avoid double-counting
