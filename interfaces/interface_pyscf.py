@@ -942,6 +942,14 @@ class PySCFTheory:
                 print("MBD correction on")
                 from vdw import to_mbd
                 self.mf = to_mbd(self.mf, variant="rsscs", do_grad=Grad) 
+            elif self.dispersion == 'VV10' or self.dispersion == 'NLC':
+                print("Built-in VV10 NLC dispersion is on")
+                self.mf.nlc='VV10'
+                #TODO: Deal with grids
+                #self.mf.grids.atom_grid={'H': (99,590),'F': (99,590)}
+                #self.mf.grids.prune=None
+                #self.mf.nlcgrids.atom_grid={'H': (50,194),'F': (50,194)}
+                #self.mf.nlcgrids.prune=dft.gen_grid.sg1_prune
 
 
         ##############################
