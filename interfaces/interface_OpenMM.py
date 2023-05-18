@@ -2701,14 +2701,14 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
-              anderson_thermostat=False, platform='CPU',
+              anderson_thermostat=False, platform='CPU', constraints=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False):
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, constraints=constraints,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, printlevel=printlevel, hydrogenmass=hydrogenmass,
@@ -2729,7 +2729,7 @@ class OpenMM_MDclass:
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
                  barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
                  coupling_frequency=1, printlevel=2, platform='CPU',
-                 anderson_thermostat=False, hydrogenmass=1.5,
+                 anderson_thermostat=False, hydrogenmass=1.5, constraints=None,
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
                  center_force_atoms=None, centerforce_constant=1.0,
@@ -2778,7 +2778,7 @@ class OpenMM_MDclass:
             print("OpenMM platform:", platform)
             #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
             self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
-                                hydrogenmass=hydrogenmass) #NOTE: might add more options here
+                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
             self.QM_MM_object = None
             self.qmtheory=theory
         
@@ -3810,7 +3810,7 @@ def write_nonbonded_FF_for_ligand(fragment=None, xyzfile=None, charge=None, mult
 def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
-              coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5,
+              coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
               anderson_thermostat=False, restraints=None, flatbottom_restraint_CV1=None, flatbottom_restraint_CV2=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
@@ -3860,7 +3860,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
 
     #Creating MDclass
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
-                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
+                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints,
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
