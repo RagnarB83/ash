@@ -259,9 +259,10 @@ def n_max_values(l,num):
 # FUNCTIONS TO PRINT MODULE AND SUBMODULE HEADERS
 
 
-# Printlevel?
-#def print_if_level(var, printlevel):
-#    if printlevel 
+# Print string if printlevel equals or larger than reference
+def print_if_level(var, printlevel,refprintlevel):
+    if printlevel >= refprintlevel:
+        print(var)
 
 # Debug print. Behaves like print but reads global debug var first
 def printdebug(string, var=''):
