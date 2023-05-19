@@ -496,7 +496,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 #Both unrelaxed (single-point) and relaxed (opt) is now possible
 # Parallelization and MOREAD complete
 # TODO: Parallelization and Relaxed mode
-def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimension=None, resultfile='surface_results.txt', scantype='Unrelaxed',runmode='serial',
+def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=None, mult=None, dimension=None, resultfile='surface_results.txt', scantype='Unrelaxed',runmode='serial',
                          coordsystem='dlc', maxiter=150, extraconstraints=None, convergence_setting=None, numcores=None,
                          RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True, keepmofiles=False,
                          read_mofiles=False, mofilesdir=None):
@@ -511,6 +511,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
         print(BC.FAIL, "Error. Dimension keyword needs to be set (1 or 2)", BC.END)
         ashexit()
     print("XYZdir:", xyzdir)
+    print("multixyzfile:", multixyzfile)
     print("Theory:", theory)
     print("Dimension:", dimension)
     print("Resultfile:", resultfile)
@@ -531,10 +532,17 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
     print("")
 
     #Points
-    totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
-    if totalnumpoints == 0:
-        print("Found no XYZ-files in directory. Exiting")
+    if xyzdir != None:
+        totalnumpoints=len(glob.glob(xyzdir+'/*.xyz'))
+        if totalnumpoints == 0:
+            print("Found no XYZ-files in directory. Exiting")
+            ashexit()
+        xyzfile_list = glob.glob(xyzdir+'/*.xyz')
+    elif multixyzfile != None:
+        print("multixyzfile option is not ready")
         ashexit()
+
+
     print("totalnumpoints:", totalnumpoints)
     if len(surfacedictionary) == totalnumpoints:
         print("Surface dictionary size {} matching total number of XYZ files {}. We should have all data".format(len(surfacedictionary),totalnumpoints))
@@ -620,7 +628,7 @@ def calc_surface_fromXYZ(xyzdir=None, theory=None, charge=None, mult=None, dimen
         print("")
         print("Reading XYZ files, expecting format:  RC1_value1-RC2_value2.xyz     Example:  RC1_2.0-RC2_180.0.xyz")
         print("")
-        for count,file in enumerate(glob.glob(xyzdir+'/*.xyz')):
+        for count,file in xyzfile_list:
             relfile=os.path.basename(file)
             #Getting RC values from XYZ filename e.g. RC1_2.0-RC2_180.0.xyz
             if dimension == 2:

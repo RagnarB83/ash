@@ -89,7 +89,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        ash.interfaces.interface_geometric.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, 
+        ash.interfaces.interface_geometric_new.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, 
                                                         coordsystem='tric', charge=charge, mult=mult, maxiter=optimizer_maxiter)
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
@@ -164,7 +164,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     if fragment.numatoms != 1:
         if Opt_theory != None:
             #DFT-opt
-            ash.interfaces.interface_geometric.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment, charge=charge, mult=mult)
+            ash.interfaces.interface_geometric_new.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment, charge=charge, mult=mult)
             print("-------------------------------------------------------------------------")
             print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
             print("-------------------------------------------------------------------------")
@@ -584,7 +584,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
                 xtbcalc.cleanup()
             
             #Now doing actual OPT
-            optenergy = ash.interfaces.interface_geometric.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
+            optenergy = ash.interfaces.interface_geometric_new.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
             theory.cleanup()
             energy=optenergy
             optenergies.append(optenergy)

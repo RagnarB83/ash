@@ -942,6 +942,14 @@ class PySCFTheory:
                 print("MBD correction on")
                 from vdw import to_mbd
                 self.mf = to_mbd(self.mf, variant="rsscs", do_grad=Grad) 
+            elif self.dispersion == 'VV10' or self.dispersion == 'NLC':
+                print("Built-in VV10 NLC dispersion is on")
+                self.mf.nlc='VV10'
+                #TODO: Deal with grids
+                #self.mf.grids.atom_grid={'H': (99,590),'F': (99,590)}
+                #self.mf.grids.prune=None
+                #self.mf.nlcgrids.atom_grid={'H': (50,194),'F': (50,194)}
+                #self.mf.nlcgrids.prune=dft.gen_grid.sg1_prune
 
 
         ##############################
@@ -1143,6 +1151,9 @@ class PySCFTheory:
                     vdw_energy = with_vdw.eng
                     vdw_gradient = with_vdw.grad
                     print(f"{self.dispersion} dispersion energy is: {vdw_energy}")
+                elif self.dispersion == "VV10" or self.dispersion == "NL":
+                    print("Dispersion correction: VV10. No post-SCF step")
+                    vdw_energy=0.0
                 else:
                     #For TS and MBD it is calculated by the wrapper and already included in thh SCF
                     vdw_energy=0.0 #to avoid double-counting

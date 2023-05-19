@@ -2682,7 +2682,6 @@ def read_NPT_statefile(npt_output):
         for row in reader:
             for (k, v) in row.items():
                 columns[k].append(v)
-
     # Extract step number, volume and density and cast as floats
     steps = np.array(columns['#"Step"'])
     volume = np.array(columns["Box Volume (nm^3)"]).astype(float)
@@ -2701,14 +2700,14 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
-              anderson_thermostat=False, platform='CPU',
+              anderson_thermostat=False, platform='CPU', constraints=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False):
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, constraints=constraints,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, printlevel=printlevel, hydrogenmass=hydrogenmass,
@@ -2729,7 +2728,7 @@ class OpenMM_MDclass:
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
                  barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
                  coupling_frequency=1, printlevel=2, platform='CPU',
-                 anderson_thermostat=False, hydrogenmass=1.5,
+                 anderson_thermostat=False, hydrogenmass=1.5, constraints=None,
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
                  center_force_atoms=None, centerforce_constant=1.0,
@@ -2778,7 +2777,7 @@ class OpenMM_MDclass:
             print("OpenMM platform:", platform)
             #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
             self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
-                                hydrogenmass=hydrogenmass) #NOTE: might add more options here
+                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
             self.QM_MM_object = None
             self.qmtheory=theory
         
@@ -2931,6 +2930,9 @@ class OpenMM_MDclass:
         self.datafilename=datafilename
         if self.datafilename is not None:
             #Remove old file
+            #Added because of problems (19 May 2023 by CVS) in read NPT data file (OpenMM box relaxation) as header is printed each time
+            #Now removing file before starting. Possibly better to put this elsewhere as we may sometimes
+            # want to keep running simulation while appending to datafile
             try:
                 os.remove(self.datafilename)
             except FileNotFoundError:
@@ -3190,6 +3192,12 @@ class OpenMM_MDclass:
 
         #Make sure file associated with StateDataReporter is open
         if self.datafilename is not None:
+            #RB addition: Delete file after each run
+            print("Deleting old datafile:", self.datafilename)
+            try:
+                os.remove(self.datafilename)
+            except:
+                pass
             self.dataoutputoption = open(self.datafilename,'a')
 
         #Setup data and simulation reporters for simulation object
@@ -3526,7 +3534,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
 
     if numsteps_per_NPT < traj_frequency:
         print("Parameter 'numpsteps_per_NPT' must be greater than 'traj_frequency', otherwise"
-              "no data will be written during the relaxation!")
+              " no data will be written during the relaxation!")
         ashexit()
 
     print_line_with_subheader2("Relaxation Parameters")
@@ -3560,6 +3568,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
 
         # Read reporter file and calculate stdev
         NPTresults = read_NPT_statefile(datafilename)
+
         volume = NPTresults["volume"][-traj_frequency:]
         density = NPTresults["density"][-traj_frequency:]
         # volume = volume[-traj_frequency:]
@@ -3574,16 +3583,11 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
         print("Current Volume SD:", volume_std)
         print("Current Density", density[-1])
         print("Current Density SD", density_std)
-        # print("Steps\tVolume\tVol. SD\tDensity\tDens. SD")
-        # print(f"{steps}\t{volume[-1]}\t{volume_std}\t{density[-1]}\t{density_std}")
-        # print("{} steps taken. Volume : {} stdev: {}\tDensity: {} stdev: {}".format(steps,
-        #                                                                                     volume[-1],
-        #                                                                                      volume_std,
-        #                                                                                      density[-1],
-        #                                                                                      density_std))
+        print("Volume SD threshold:", volume_threshold)
+        print("Density SD threshold:", density_threshold)
 
     print("Relaxation of periodic box size finished!\n")
-    return theory.simulation.context.getState().getPeriodicBoxVectors()
+    return md.state.getPeriodicBoxVectors()
 
 
 #Kinetic energy from velocities
@@ -3810,7 +3814,7 @@ def write_nonbonded_FF_for_ligand(fragment=None, xyzfile=None, charge=None, mult
 def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
-              coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5,
+              coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
               anderson_thermostat=False, restraints=None, flatbottom_restraint_CV1=None, flatbottom_restraint_CV2=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
@@ -3860,7 +3864,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
 
     #Creating MDclass
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
-                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
+                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints,
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,

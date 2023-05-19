@@ -3171,6 +3171,7 @@ def define_XH_constraints(fragment, actatoms=None, excludeatoms=None, conncode='
     if actatoms == None:
         subset_elems = fragment.elems
         subset_coords = fragment.coords
+        actatoms = fragment.atomlist
     else:
         subset_elems = [fragment.elems[i] for i in actatoms]
         subset_coords = np.take(fragment.coords, actatoms, axis=0)
