@@ -444,7 +444,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
 #plot_Spectrum reads stick-values (e.g. absorption energie or IPs) and intensities, broadens spectrum (writes out dat and stk files) and then creates image-file using Matplotlib.
 #TODO: Currently only Gaussian broadening. Add Lorentzian and Voight
 def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, 
-    imageformat='png', dpi=200, matplotlib=True, CSV=True, color='blue'):
+    imageformat='png', dpi=200, matplotlib=True, CSV=True, color='blue', plot_sticks=True):
     
     print_line_with_mainheader("plot_Spectrum")
     if xvalues is None or yvalues is None:
@@ -509,7 +509,8 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
         fig, ax = plt.subplots()
 
         ax.plot(x, spectrum, 'C3', label=plotname, color=color)
-        ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt=color, use_line_collection=True)
+        if plot_sticks is True:
+            ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt=color, use_line_collection=True)
         plt.xlabel(unit)
         plt.ylabel('Intensity')
         #################################

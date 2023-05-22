@@ -858,6 +858,21 @@ class OpenMMTheory:
         self.system.removeForce(-1)
 
 
+    #Option to make sure small solute in water behaves for PBC
+    #NOTE: DOes not work
+    def add_custom_bond_force(self,i,j,forceconstant):
+        import openmm
+        print(f"Adding custom bond force between atom index i={i} and j={j} with forceconstant={forceconstant}")
+        bond_force = openmm.CustomBondForce("0.5*k*(r-r0)^2")
+        bond_force.addGlobalParameter("k", forceconstant)
+        bond_force.addGlobalParameter("r0", 1.0)
+        #bond_force = openmm.HarmonicBondForce()
+        #bond_force.addBond(i,j,0.0,forceconstant)
+        bond_force.addBond(i, j)
+        print("bond_force getBondParameters:", bond_force.getBondParameters(0))
+        bond_force.setUsesPeriodicBoundaryConditions(True)
+        self.system.addForce(bond_force)
+    
     # This is custom externa force that restrains group of atoms to center of system
     def add_center_force(self, center_coords=None, atomindices=None, forceconstant=1.0):
         import openmm
@@ -3506,7 +3521,8 @@ class OpenMM_MDclass:
 #Note: dummyatomrestraints necessary for NPT simulation when constraining atoms in space
 def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
                           volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.004,
-                          traj_frequency=100, trajfilename='relaxbox_NPT', trajectory_file_option='DCD', coupling_frequency=1,
+                          traj_frequency=100, trajfilename='relaxbox_NPT', trajectory_file_option='DCD', 
+                          coupling_frequency=1, enforcePeriodicBox=True, 
                           dummyatomrestraint=False, solute_indices=None, barostat_frequency=25):
     """NPT simulations until volume and density stops changing
 
@@ -3556,7 +3572,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
     density_std = 1
 
     md = OpenMM_MDclass(fragment=fragment, theory=theory, timestep=timestep, traj_frequency=traj_frequency,
-                        temperature=temperature, integrator="LangevinMiddleIntegrator",
+                        temperature=temperature, integrator="LangevinMiddleIntegrator", enforcePeriodicBox=enforcePeriodicBox,
                         coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat', trajfilename=trajfilename,
                         datafilename=datafilename, trajectory_file_option=trajectory_file_option,
                         dummyatomrestraint=dummyatomrestraint, solute_indices=solute_indices,
