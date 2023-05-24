@@ -7,7 +7,7 @@ import shutil
 #functions related to QM/MM
 import ash.modules.module_coords
 from ash.modules.module_coords import Fragment, write_pdbfile
-from ash.functions.functions_general import ashexit, BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile
+from ash.functions.functions_general import ashexit, BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile,print_if_level
 import ash.settings_ash
 
 #QM/MM theory object.
@@ -859,7 +859,7 @@ class QMMMTheory:
             #TODO: This can be made more efficient
             CheckpointTime = time.time()
             self.make_QM_PC_gradient() #populates self.QM_PC_gradient
-            print_time_rel(CheckpointTime, modulename='QMpcgrad prepare', moduleindex=3)
+            print_time_rel(CheckpointTime, modulename='QMpcgrad prepare', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
             #self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
             #qmcount=0;pccount=0
             #for i in self.allatoms:
@@ -986,15 +986,15 @@ class QMMMTheory:
                 #print("QM/MM Grad is True")
                 #Provide QM_PC_gradient to OpenMMTheory 
                 if self.openmm_externalforce == True:
-                    print("OpenMM externalforce is True")
+                    print_if_level(f"OpenMM externalforce is True", self.printlevel,2)
                     #Calculate energy associated with external force so that we can subtract it later
                     self.extforce_energy = 3 * np.mean(np.sum(self.QM_PC_gradient * current_coords * 1.88972612546, axis=0))
-                    print("self.extforce_energy:", self.extforce_energy)
+                    print_if_level(f"Extforce energy: {self.extforce_energy}", self.printlevel,2)
                     print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                     #NOTE: Now moved mm_theory.update_custom_external_force call to MD simulation instead
                     # as we don't have access to simulation object here anymore. Uses self.QM_PC_gradient
                     if exit_after_customexternalforce_update==True:
-                        print("OpenMM custom external force updated. Exit requested")
+                        print_if_level(f"OpenMM custom external force updated. Exit requested", self.printlevel,2)
                         #This is used if OpenMM MD is handling forces and dynamics
                         return
 

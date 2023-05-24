@@ -7,7 +7,7 @@ import time
 import ash.constants
 import ash.settings_solvation
 import ash.settings_ash
-from ash.functions.functions_general import ashexit, blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader
+from ash.functions.functions_general import ashexit, blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader,print_if_level
 import ash.modules.module_coords
 from ash.modules.module_coords import elemstonuccharges, check_multiplicity, check_charge_mult
 
@@ -255,7 +255,8 @@ class xTBTheory:
                 elems=None, Grad=False, PC=False, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
 
-        from xtb.interface import Calculator, Param
+        if self.runmode == 'library':
+            from xtb.interface import Calculator, Param
 
         if MMcharges is None:
             MMcharges=[]
@@ -591,7 +592,7 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
         with open(basename+'.out', 'w') as ofile:
             process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             if process.returncode == 0:
-                print("xTB job succeeded.")
+                print_if_level(f"xTB job succeeded.",printlevel,2)
                 return
     except sp.CalledProcessError:
         print("xTB subprocess gave error.")
