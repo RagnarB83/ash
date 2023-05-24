@@ -448,7 +448,9 @@ class xTBTheory:
                 if PC == True:
                     #pcgrad
                     #get pcgrad
-                    print("pc grad is not yet implemented. ")
+                    print("pc grad is not yet implemented for runmode library ")
+                    print("If you were trying to use xtb in a QM/MM object then you have to switch to runmode='inputfile' instead")
+                    ashexit()
 
                     #_gradient = np.zeros((len(self), 3))
                     #_lib.xtb_getGradient(self._env, self._res, _cast("double*", _gradient))
