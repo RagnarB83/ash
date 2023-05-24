@@ -255,7 +255,8 @@ class xTBTheory:
                 elems=None, Grad=False, PC=False, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
 
-        from xtb.interface import Calculator, Param
+        if self.runmode == 'library':
+            from xtb.interface import Calculator, Param
 
         if MMcharges is None:
             MMcharges=[]
