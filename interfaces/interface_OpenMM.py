@@ -10,10 +10,10 @@ import ash.constants
 
 ashpath = os.path.dirname(ash.__file__)
 from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile
+    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile, search_list_of_lists_for_index,create_conn_dict
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
-    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms
+    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2
 from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
 from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
@@ -3196,6 +3196,8 @@ class OpenMM_MDclass:
             print(f"A: ", a)
             print(f"B: ", b)
             print(f"C: ", c)
+            boxlength = a[0].value_in_unit(openmm.unit.angstrom) #Box length in Angstrom
+            print(f"Boxlength: {boxlength} Angstrom")
         else:
             print("System is not periodic")
         # Delete old traj
@@ -3223,13 +3225,23 @@ class OpenMM_MDclass:
         print()
 
         if self.QM_MM_object is not None:
+            print("QM/MM MD run beginning")
             #CASE: QM/MM. Custom external force needs to have been created in OpenMMTheory (should be handled by init)
             
+            #Get connectivity from OpenMM topology
+            connectivity = []
+            for resi in self.openmmobject.topology.residues():
+                resatoms = [i.index for i in list(resi.atoms())]
+                connectivity.append(resatoms)
+            #Convert to dict
+            connectivity_dict = create_conn_dict(connectivity)
+
             for step in range(simulation_steps):
                 checkpoint_begin_step = time.time()
                 checkpoint = time.time()
                 if self.printlevel >= 2:
                     print("Step:", step)
+                
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
                 current_state=simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
                 print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
@@ -3237,14 +3249,26 @@ class OpenMM_MDclass:
                 # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
 
+                #QM/MM periodic. Translating coords outside of box, back in
+                if self.openmmobject.Periodic is True:
+                    print("Periodic QM/MM is on")
+                    if self.enforcePeriodicBox is True:
+                        print("enforcePeriodicBox is True. Wrapping handling by OpenMM")
+                    elif self.enforcePeriodicBox is False:
+                        print("enforcePeriodicBox is False. Wrapping handled by ASH")
+                        print("Note: only cubic PBC boxes supported")
+                        checkpoint = time.time()
+                        current_coords = wrap_box_coords(self.fragment.elems,current_coords,boxlength,connectivity_dict,connectivity)
+                        print_time_rel(checkpoint, modulename="wrapping")
+
                 #TODO: Translate box coordinates so that they are centered on solute
                 #Do manually or use mdtraj, mdanalysis or something??
-                if self.specialbox is True:
-                    print("not ready")
-                    ashexit()
-                    solute_coords = np.take(current_coords, solute_indices, axis=0)
-                    changed_origin_coords = change_origin_to_centroid(self.fragment.coords, subsetcoords=solute_coords)
-                    current_coords = center_coordinates(current_coords,)
+                #if self.specialbox is True:
+                #    print("not ready")
+                #    ashexit()
+                #    solute_coords = np.take(current_coords, solute_indices, axis=0)
+                #    changed_origin_coords = change_origin_to_centroid(self.fragment.coords, subsetcoords=solute_coords)
+                #    current_coords = center_coordinates(current_coords,)
 
                 
                 #Printing step-info or write-trajectory at regular intervals
@@ -3252,14 +3276,12 @@ class OpenMM_MDclass:
                     # Manual step info option
                     if self.printlevel >= 2:
                         print_current_step_info(step,current_state,self.openmmobject)
-                    #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
-                    #checkpoint = time.time()
-                    # Manual trajectory option (reporters used to not work for manual dynamics steps)
-                    #NOTE: Now outdated, since OpenMM update??
-                    #Disabling for now
-                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
-                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
-                    #checkpoint = time.time()
+
+                    #print("QM/MM step. Writing unwrapped to trajfile: OpenMMMD_traj_unwrapped.xyz")
+                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_unwrapped", printlevel=1, writemode='a')
+                    
+                    print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
+                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
                 
 
                 checkpoint = time.time()
@@ -4438,3 +4460,72 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
 #ash.modules.module_plotting.contourplot(surfacedictionary, label='_MTD_option2',x_axislabel=f'CV1({CV1_unit_label})', y_axislabel=f'CV2 ({CV2_unit_label})', finalunit='kcal/mol', interpolation='Cubic', 
 #    interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
 #    contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
+
+
+#Function to wrap coordinates of whole molecules outside box
+def wrap_box_coords(allelems,allcoords,boxlength,connectivity_dict,connectivity):
+    #checkpoint = time.time()
+    #searchtime=0.0
+    boxlength_half=boxlength/2
+    #Get atom indices for atoms that have a x,y or z coordinate outside box
+    mask = np.any(np.abs(allcoords) > boxlength_half, axis=1)
+    #print("4time.time() - checkpoint:", time.time() - checkpoint)
+    #print_time_rel(checkpoint, modulename="mask")
+    indices = np.where(mask)[0]
+    #print(f"Found {len(indices)} atoms outside box")
+    #print_time_rel(checkpoint, modulename="indices")
+    #print("5time.time() - checkpoint:", time.time() - checkpoint)
+    for i in indices:
+        #print("-----------------")
+        #print(f"{i}   {allelems[i]} {allcoords[i]}")
+        #Get connected members of each atom
+        #member_coords = get_connected_atoms_np(allcoords, allelems, 1.2, 0.1, i)
+        #members = get_molecule_members_loop_np2(allcoords, allelems, 99, 1.0, 0.1,
+        #                                    atomindex=i)
+        #checkpoint=time.time()
+        #connlist_index = search_list_of_lists_for_index(i,connectivity)
+        connlist_index = connectivity_dict.get(i)
+        #print("6time.time() - checkpoint:", time.time() - checkpoint)
+        #dt = time.time() - checkpoint
+        #print("dt:", dt)
+        #searchtime+=dt
+        members = connectivity[connlist_index]
+        #print("7time.time() - checkpoint:", time.time() - checkpoint)
+        #print_time_rel(checkpoint, modulename="member conn")
+        #print("members:", members)
+        member_coords = np.take(allcoords, members, axis=0)
+        #print("8time.time() - checkpoint:", time.time() - checkpoint)
+        #print_time_rel(checkpoint, modulename="np take")
+        #print("member_coords:", member_coords)
+        #Check if all members are outside
+        mask2 = np.any(np.abs(member_coords) > boxlength_half, axis=1)
+        #print("9time.time() - checkpoint:", time.time() - checkpoint)
+        #print("mask:", mask)
+        #print(type(mask))
+        #Only wrap if all outside
+        if np.all(mask2) == True:
+            #print(f"Whole molecule (members:{members}) outside. Wrapping")
+            #print("true")
+            #Get whether x,y or z column and pos or neg
+            colindex = np.where(member_coords[0] > boxlength_half)
+            colindex2 = np.where(member_coords[0] < -boxlength_half)
+            #print("colindex:", colindex)
+            #print("colindex2:", colindex2)
+            #Translate
+            if len(colindex[0]) > 0:
+                #print("case1")
+                member_coords[:, colindex] -= boxlength
+            elif len(colindex2[0]) > 0:
+                #print("case2")
+                member_coords[:, colindex2] += boxlength
+            #print("new member_coords:", member_coords)
+            allcoords[members] = member_coords
+            #print("9b time.time() - checkpoint:", time.time() - checkpoint)
+        #print("10time.time() - checkpoint:", time.time() - checkpoint)
+        #print_time_rel(checkpoint, modulename="loop iter done")
+        #ashexit()
+    #print_time_rel(checkpoint, modulename="end")
+    #print("wrap done")
+    #print("searchtime:", searchtime)
+    #print("20time.time() - checkpoint:", time.time() - checkpoint)
+    return allcoords

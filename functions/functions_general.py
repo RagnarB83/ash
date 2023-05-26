@@ -378,10 +378,25 @@ def is_string_float_withdecimal(s):
 
 
 #Search list of lists. Returns list-index if match
-def search_list_of_lists_for_index(i,l):
+
+def search_list_of_lists_for_index(i, l):
+    return next((c for c, f in enumerate(l) if i in f), None)
+
+#convert list of lists to dict
+def create_conn_dict(l):
+    index = {}
+    for c, sublist in enumerate(l):
+        for value in sublist:
+            if value not in index:
+                index[value] = c
+    return index
+
+
+def search_list_of_lists_for_index_old(i,l):
     for c,f in enumerate(l):
         if i in f:
             return c
+            break
 
 # Check if list of integers is sorted or not.
 def is_integerlist_ordered(list):
@@ -566,7 +581,7 @@ def print_time_rel(timestamp, modulename='Unknown', moduleindex=4, currprintleve
     mins = secs / 60
     if currprintlevel >= currthreshold:
         print_line_with_subheader2(
-            "Time to calculate step ({}): {:3.1f} seconds, {:3.1f} minutes.".format(modulename, secs, mins))
+            "Time to calculate step ({}): {:3.2f} seconds, {:3.1f} minutes.".format(modulename, secs, mins))
     # Adding time to Timings object
     timingsobject.add(modulename, secs, moduleindex=moduleindex)
 
