@@ -4,6 +4,7 @@ import time
 import numpy as np
 import glob
 import copy
+import itertools
 
 #import ash
 import ash.constants
@@ -2537,12 +2538,20 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
                                                             solvent_boxdims[2]) * openmm_unit.angstrom)
 
     # Write out solvated system coordinates
+    print("Creating PDB-file: system_aftersolvent.pdb")
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
     print_systemsize()
     # Create ASH fragment and write to disk
     newfragment = Fragment(pdbfile="system_aftersolvent.pdb")
     newfragment.print_system(filename="newfragment.ygg")
     newfragment.write_xyzfile(xyzfilename="newfragment.xyz")
+    print("Creating XYZ-file: newfragment.xyz")
+    print()
+    print("\nTo use this system setup to define a future OpenMMTheory object you can  do:\n")
+
+    print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\"], pdbfile=\"system_aftersolvent.pdb\", periodic=True, rigidwater=True)",BC.END)
+    print()
+    print()
 
     # Return forcefield object,  topology object and ASH fragment
     return forcefield, modeller.topology, newfragment
@@ -3258,7 +3267,7 @@ class OpenMM_MDclass:
                         print("enforcePeriodicBox is False. Wrapping handled by ASH")
                         print("Note: only cubic PBC boxes supported")
                         checkpoint = time.time()
-                        current_coords = wrap_box_coords(self.fragment.elems,current_coords,boxlength,connectivity_dict,connectivity)
+                        current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity)
                         print_time_rel(checkpoint, modulename="wrapping")
 
                 #TODO: Translate box coordinates so that they are centered on solute
@@ -4463,8 +4472,8 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
 
 
 #Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords(allelems,allcoords,boxlength,connectivity_dict,connectivity):
-    #checkpoint = time.time()
+def wrap_box_coords_old(allcoords,boxlength,connectivity_dict,connectivity):
+    checkpoint = time.time()
     #searchtime=0.0
     boxlength_half=boxlength/2
     #Get atom indices for atoms that have a x,y or z coordinate outside box
@@ -4475,20 +4484,10 @@ def wrap_box_coords(allelems,allcoords,boxlength,connectivity_dict,connectivity)
     #print(f"Found {len(indices)} atoms outside box")
     #print_time_rel(checkpoint, modulename="indices")
     #print("5time.time() - checkpoint:", time.time() - checkpoint)
+    molcounter=0
     for i in indices:
-        #print("-----------------")
-        #print(f"{i}   {allelems[i]} {allcoords[i]}")
-        #Get connected members of each atom
-        #member_coords = get_connected_atoms_np(allcoords, allelems, 1.2, 0.1, i)
-        #members = get_molecule_members_loop_np2(allcoords, allelems, 99, 1.0, 0.1,
-        #                                    atomindex=i)
-        #checkpoint=time.time()
-        #connlist_index = search_list_of_lists_for_index(i,connectivity)
+
         connlist_index = connectivity_dict.get(i)
-        #print("6time.time() - checkpoint:", time.time() - checkpoint)
-        #dt = time.time() - checkpoint
-        #print("dt:", dt)
-        #searchtime+=dt
         members = connectivity[connlist_index]
         #print("7time.time() - checkpoint:", time.time() - checkpoint)
         #print_time_rel(checkpoint, modulename="member conn")
@@ -4504,6 +4503,7 @@ def wrap_box_coords(allelems,allcoords,boxlength,connectivity_dict,connectivity)
         #print(type(mask))
         #Only wrap if all outside
         if np.all(mask2) == True:
+            molcounter+=1
             #print(f"Whole molecule (members:{members}) outside. Wrapping")
             #print("true")
             #Get whether x,y or z column and pos or neg
@@ -4528,4 +4528,48 @@ def wrap_box_coords(allelems,allcoords,boxlength,connectivity_dict,connectivity)
     #print("wrap done")
     #print("searchtime:", searchtime)
     #print("20time.time() - checkpoint:", time.time() - checkpoint)
+    #print("molcounter:", molcounter)
     return allcoords
+
+
+#Function to wrap coordinates of whole molecules outside box
+def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
+    #checkpoint = time.time()
+    boxlength_half=boxlength/2
+    #Get atom indices for atoms that have a x,y or z coordinate outside box
+    mask = np.any(np.abs(allcoords) > boxlength_half, axis=1)
+    indices = np.where(mask)[0]
+    #Get indices of all whole molecules
+    all_mol_indices = [connectivity[connectivity_dict.get(i)] for i in indices]
+    #Removing duplicates
+    trimmed_all_mol_indices = trim_list_of_lists(all_mol_indices)
+    #Get all coordinates
+    allmol_coords = np.take(allcoords, trimmed_all_mol_indices, axis=0)
+    #Looping over indices
+    for members,member_coords in zip(trimmed_all_mol_indices,allmol_coords):
+        #Check if all members are outside
+        mask2 = np.any(np.abs(member_coords) > boxlength_half, axis=1)
+        #Only wrap if all outside
+        if np.all(mask2) == True:
+            #Get whether x,y or z column and pos or neg
+            colindex = np.where(member_coords[0] > boxlength_half)
+            colindex2 = np.where(member_coords[0] < -boxlength_half)
+            #Translate
+            if len(colindex[0]) > 0:
+                member_coords[:, colindex] -= boxlength
+            elif len(colindex2[0]) > 0:
+                member_coords[:, colindex2] += boxlength
+            allcoords[members] = member_coords
+    return allcoords
+
+def trim_list_of_lists(k):
+    k = sorted(k)
+    return list(k for k, _ in itertools.groupby(k))
+
+#Slower
+def trim_list_of_lists2(k):
+    new_k = []
+    for elem in k:
+        if elem not in new_k:
+            new_k.append(elem)
+    return new_k
