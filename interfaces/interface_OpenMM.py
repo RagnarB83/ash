@@ -4534,7 +4534,7 @@ def wrap_box_coords_old(allcoords,boxlength,connectivity_dict,connectivity):
 
 #Function to wrap coordinates of whole molecules outside box
 def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
-    checkpoint = time.time()
+    #checkpoint = time.time()
     boxlength_half=boxlength/2
     #Get atom indices for atoms that have a x,y or z coordinate outside box
     mask = np.any(np.abs(allcoords) > boxlength_half, axis=1)
@@ -4578,7 +4578,7 @@ def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
 
 #Function to wrap coordinates of whole molecules outside box
 def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
-    checkpoint = time.time()
+    #checkpoint = time.time()
     boxlength_half=boxlength/2
     #Get atom indices for atoms that have a x,y or z coordinate outside box
     mask = np.any(np.abs(allcoords) > boxlength_half, axis=1)
