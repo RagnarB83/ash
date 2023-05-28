@@ -4533,7 +4533,7 @@ def wrap_box_coords_old(allcoords,boxlength,connectivity_dict,connectivity):
 
 
 #Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
+def wrap_box_coords_old2(allcoords,boxlength,connectivity_dict,connectivity):
     #checkpoint = time.time()
     boxlength_half=boxlength/2
     #Get atom indices for atoms that have a x,y or z coordinate outside box
@@ -4561,6 +4561,82 @@ def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
                 member_coords[:, colindex2] += boxlength
             allcoords[members] = member_coords
     return allcoords
+
+#Function to wrap coordinates of whole molecules outside box
+def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
+    #checkpoint = time.time()
+    boxlength_half=boxlength/2
+    #Get atom indices for atoms that have a x,y or z coordinate outside box
+    mask = np.any(np.abs(allcoords) > boxlength_half, axis=1)
+    indices = np.where(mask)[0]
+    #20488
+    #Get indices of all whole molecules
+    all_mol_indices = [connectivity[connectivity_dict.get(i)] for i in indices]
+    #print(all_mol_indices)
+    #print(all_mol_indices[3399])
+    #Removing duplicates
+    trimmed_all_mol_indices = trim_list_of_lists(all_mol_indices)
+    #print(trimmed_all_mol_indices)
+    #Get all coordinates
+    allmol_coords = np.take(allcoords, trimmed_all_mol_indices, axis=0)
+    #print(allmol_coords)
+    #Check if all members are outside
+    allmol_outside_bools = [np.any(np.abs(m) > boxlength_half, axis=1) for m in allmol_coords]
+    #print(allmol_outside_bools)
+    #print(allmol_outside_bools)
+    #allmol_outside_bools_single = [np.all(j) for j in allmol_outside_bools]
+    allmol_outside_bools_single = [np.all(j) for j in allmol_outside_bools]
+    #print(allmol_outside_bools_single)
+    #print(allmol_outside_bools_single)
+    #exit()   
+    #Looping over indices
+    for members,member_coords,mol_outside_bool in zip(trimmed_all_mol_indices,allmol_coords,allmol_outside_bools_single):
+        #if 20488 in members:
+            #print("members:", members)
+            #print("member_coords:", member_coords)
+            #print("mol_outside_bool:", mol_outside_bool)
+            #print(allcoords[members])
+            #exit()
+        #Only wrap if all outside
+        if mol_outside_bool:
+            #print("here")
+            #Get whether x,y or z column and pos or neg
+            #colindex = np.where(member_coords[0] > boxlength_half)
+            #colindex2 = np.where(member_coords[0] < -boxlength_half)
+            #print(colindex)
+            #print(colindex2)
+            ##Translate
+            #if len(colindex[0]) > 0:
+            #    print("x")
+            #    member_coords[:, colindex] -= boxlength
+            #elif len(colindex2[0]) > 0:
+            #    print("y")
+            #    member_coords[:, colindex2] += boxlength
+            #print(member_coords)
+            #print(member_coords[0])
+            out_cols = np.where(abs(member_coords[0]) > boxlength_half)[0]
+            #print("out_cols:", out_cols)
+            for c in out_cols:
+                #print("c:", c)
+                #print(type(c))
+                if member_coords[0][c] > 0:
+                    #print("c1")
+                    member_coords[:, c] -= boxlength
+                elif member_coords[0][c] < 0:
+                    #print("c2")
+                    member_coords[:, c] += boxlength
+            #print(member_coords)
+            #exit()
+            allcoords[members] = member_coords
+            #if 20488 in members:
+            #    print("exiting")
+            #    print(allcoords[members])
+            #    ashexit()
+        #else:
+        #    print("here2")
+        #    exit()
+    return allcoords
+
 
 def trim_list_of_lists(k):
     k = sorted(k)
