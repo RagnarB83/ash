@@ -4470,70 +4470,8 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
 #    interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
 #    contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
 
-
 #Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords_old(allcoords,boxlength,connectivity_dict,connectivity):
-    checkpoint = time.time()
-    #searchtime=0.0
-    boxlength_half=boxlength/2
-    #Get atom indices for atoms that have a x,y or z coordinate outside box
-    mask = np.any(np.abs(allcoords) > boxlength_half, axis=1)
-    #print("4time.time() - checkpoint:", time.time() - checkpoint)
-    #print_time_rel(checkpoint, modulename="mask")
-    indices = np.where(mask)[0]
-    #print(f"Found {len(indices)} atoms outside box")
-    #print_time_rel(checkpoint, modulename="indices")
-    #print("5time.time() - checkpoint:", time.time() - checkpoint)
-    molcounter=0
-    for i in indices:
-
-        connlist_index = connectivity_dict.get(i)
-        members = connectivity[connlist_index]
-        #print("7time.time() - checkpoint:", time.time() - checkpoint)
-        #print_time_rel(checkpoint, modulename="member conn")
-        #print("members:", members)
-        member_coords = np.take(allcoords, members, axis=0)
-        #print("8time.time() - checkpoint:", time.time() - checkpoint)
-        #print_time_rel(checkpoint, modulename="np take")
-        #print("member_coords:", member_coords)
-        #Check if all members are outside
-        mask2 = np.any(np.abs(member_coords) > boxlength_half, axis=1)
-        #print("9time.time() - checkpoint:", time.time() - checkpoint)
-        #print("mask:", mask)
-        #print(type(mask))
-        #Only wrap if all outside
-        if np.all(mask2) == True:
-            molcounter+=1
-            #print(f"Whole molecule (members:{members}) outside. Wrapping")
-            #print("true")
-            #Get whether x,y or z column and pos or neg
-            colindex = np.where(member_coords[0] > boxlength_half)
-            colindex2 = np.where(member_coords[0] < -boxlength_half)
-            #print("colindex:", colindex)
-            #print("colindex2:", colindex2)
-            #Translate
-            if len(colindex[0]) > 0:
-                #print("case1")
-                member_coords[:, colindex] -= boxlength
-            elif len(colindex2[0]) > 0:
-                #print("case2")
-                member_coords[:, colindex2] += boxlength
-            #print("new member_coords:", member_coords)
-            allcoords[members] = member_coords
-            #print("9b time.time() - checkpoint:", time.time() - checkpoint)
-        #print("10time.time() - checkpoint:", time.time() - checkpoint)
-        #print_time_rel(checkpoint, modulename="loop iter done")
-        #ashexit()
-    #print_time_rel(checkpoint, modulename="end")
-    #print("wrap done")
-    #print("searchtime:", searchtime)
-    #print("20time.time() - checkpoint:", time.time() - checkpoint)
-    #print("molcounter:", molcounter)
-    return allcoords
-
-
-#Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
+def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
     #checkpoint = time.time()
     boxlength_half=boxlength/2
     #Get atom indices for atoms that have a x,y or z coordinate outside box
@@ -4577,7 +4515,7 @@ def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
     return allcoords
 
 #Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
+def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
     #checkpoint = time.time()
     boxlength_half=boxlength/2
     #Get atom indices for atoms that have a x,y or z coordinate outside box
@@ -4640,11 +4578,3 @@ def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
 def trim_list_of_lists(k):
     k = sorted(k)
     return np.array(list((k for k, _ in itertools.groupby(k))))
-
-#Slower
-def trim_list_of_lists2(k):
-    new_k = []
-    for elem in k:
-        if elem not in new_k:
-            new_k.append(elem)
-    return new_k
