@@ -1213,8 +1213,8 @@ class PySCFTheory:
                 if self.scf_type == 'UHF' or self.scf_type == 'UKS':
                     print("UHF/UKS MOM calculation")
                     print("Previous SCF MO occupations are:")
-                    print("Alpha:", occ[0])
-                    print("Beta:", occ[1])
+                    print("Alpha:", occ[0].tolist())
+                    print("Beta:", occ[1].tolist())
                     spinmanifold = self.mom_spinmanifold
                     HOMOnum = list(occ[spinmanifold]).index(0.0)-1
                     LUMOnum = HOMOnum + self.mom_virtindex
@@ -1255,18 +1255,18 @@ class PySCFTheory:
                     print()
                     print(f"delta-SCF transition energy {trans_energy} eV")
                     print()
-                    print('Alpha electron occupation pattern of ground state : %s' %(self.mf.mo_occ[0]))
-                    print('Beta electron occupation pattern of ground state : %s' %(self.mf.mo_occ[1]))
+                    print('Alpha electron occupation pattern of ground state : %s' %(self.mf.mo_occ[0].tolist()))
+                    print('Beta electron occupation pattern of ground state : %s' %(self.mf.mo_occ[1].tolist()))
                     print()
-                    print('Alpha electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[0]))
-                    print('Beta electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[1]))
+                    print('Alpha electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[0].tolist()))
+                    print('Beta electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[1].tolist()))
 
                 elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS' or self.scf_type == 'RHF' or self.scf_type == 'RKS':
                     print("ROHF/ROKS MOM calculation")
                     HOMOnum = list(occ).index(0.0)-1
                     LUMOnum = HOMOnum + self.mom_virtindex
                     spinmanifold = self.mom_spinmanifold
-                    print("Previous SCF MO occupations are:", occ)
+                    print("Previous SCF MO occupations are:", occ.tolist())
                     print("HOMO index:", HOMOnum)
                     print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
                     print("Spin manifold:", self.mom_spinmanifold)
@@ -1306,8 +1306,8 @@ class PySCFTheory:
                     print()
                     print(f"delta-SCF transition energy {trans_energy} eV")
                     print()
-                    print('Electron occupation pattern of ground state : %s' %(self.mf.mo_occ))
-                    print('Electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ))
+                    print('Electron occupation pattern of ground state : %s' %(self.mf.mo_occ.tolist()))
+                    print('Electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ.tolist()))
                 else:
                     print("Unknown scf-type for MOM")
                     ashexit()
