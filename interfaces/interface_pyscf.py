@@ -1220,7 +1220,7 @@ class PySCFTheory:
                     LUMOnum = HOMOnum + self.mom_virtindex
 
                     print(f"HOMO (spinmanifold:{spinmanifold}) index:", HOMOnum)
-                    print("LUMO index to excite into:", LUMOnum)
+                    print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
                     print("Spin manifold:", self.mom_spinmanifold)
                     print("Modifying guess")
                     # Assign initial occupation pattern
@@ -1229,21 +1229,21 @@ class PySCFTheory:
 
                     # New SCF caculation
                     if self.scf_type == 'UKS':
-                        b = pyscf.scf.UKS(self.mol)
-                        b.xc = self.functional
+                        MOMSCF = pyscf.scf.UKS(self.mol)
+                        MOMSCF.xc = self.functional
                     elif self.scf_type == 'UHF':
-                        b = pyscf.scf.UHF(self.mol)
+                        MOMSCF = pyscf.scf.UHF(self.mol)
 
                     # Construct new dnesity matrix with new occpuation pattern
-                    dm_u = b.make_rdm1(mo0, occ)
+                    dm_u = MOMSCF.make_rdm1(mo0, occ)
                     # Apply mom occupation principle
-                    b = pyscf.scf.addons.mom_occ(b, mo0, occ)
+                    MOMSCF = pyscf.scf.addons.mom_occ(MOMSCF, mo0, occ)
                     # Start new SCF with new density matrix
                     print("Starting new SCF with modified MO guess")
-                    b.scf(dm_u)
+                    MOMSCF.scf(dm_u)
 
                     #delta-SCF transition energy
-                    trans_energy = (b.e_tot - self.mf.e_tot)*27.211
+                    trans_energy = (MOMSCF.e_tot - self.mf.e_tot)*27.211
                     print()
                     print("-"*40)
                     print("DELTA-SCF RESULTS")
@@ -1251,15 +1251,15 @@ class PySCFTheory:
                     
                     print()
                     print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
-                    print(f"Excited-state SCF energy {b.e_tot} Eh")
+                    print(f"Excited-state SCF energy {MOMSCF.e_tot} Eh")
                     print()
                     print(f"delta-SCF transition energy {trans_energy} eV")
                     print()
                     print('Alpha electron occupation pattern of ground state : %s' %(self.mf.mo_occ[0]))
                     print('Beta electron occupation pattern of ground state : %s' %(self.mf.mo_occ[1]))
                     print()
-                    print('Alpha electron occupation pattern of excited state : %s' %(b.mo_occ[0]))
-                    print('Beta electron occupation pattern of excited state : %s' %(b.mo_occ[1]))
+                    print('Alpha electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[0]))
+                    print('Beta electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[1]))
 
                 elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS' or self.scf_type == 'RHF' or self.scf_type == 'RKS':
                     print("ROHF/ROKS MOM calculation")
@@ -1268,7 +1268,7 @@ class PySCFTheory:
                     spinmanifold = self.mom_spinmanifold
                     print("Previous SCF MO occupations are:", occ)
                     print("HOMO index:", HOMOnum)
-                    print("LUMO index to excite into:", LUMOnum)
+                    print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
                     print("Spin manifold:", self.mom_spinmanifold)
                     print("Modifying guess")
                     setocc = np.zeros((2, occ.size))
@@ -1281,33 +1281,33 @@ class PySCFTheory:
 
                     # New ROKS/ROHF SCF calculation
                     if self.scf_type == 'ROHF' or self.scf_type == 'RHF':
-                        d = pyscf.scf.ROHF(self.mol)
+                        MOMSCF = pyscf.scf.ROHF(self.mol)
                     elif self.scf_type == 'ROKS' or self.scf_type == 'RKS':
-                        d = pyscf.scf.ROKS(self.mol)
-                        d.xc = self.functional
+                        MOMSCF = pyscf.scf.ROKS(self.mol)
+                        MOMSCF.xc = self.functional
 
                     # Construct new density matrix with new occpuation pattern
-                    dm_ro = d.make_rdm1(mo0, ro_occ)
+                    dm_ro = MOMSCF.make_rdm1(mo0, ro_occ)
                     # Apply mom occupation principle
-                    d = pyscf.scf.addons.mom_occ(d, mo0, setocc)
+                    MOMSCF = pyscf.scf.addons.mom_occ(MOMSCF, mo0, setocc)
                     # Start new SCF with new density matrix
                     print("Starting new SCF with modified MO guess")
-                    d.scf(dm_ro)
+                    MOMSCF.scf(dm_ro)
 
                     #delta-SCF transition energy in eV
-                    trans_energy = (d.e_tot - self.mf.e_tot)*27.211
+                    trans_energy = (MOMSCF.e_tot - self.mf.e_tot)*27.211
                     print()
                     print("-"*40)
                     print("DELTA-SCF RESULTS")
                     print("-"*40)
                     print()
                     print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
-                    print(f"Excited-state SCF energy {d.e_tot} Eh")
+                    print(f"Excited-state SCF energy {MOMSCF.e_tot} Eh")
                     print()
                     print(f"delta-SCF transition energy {trans_energy} eV")
                     print()
                     print('Electron occupation pattern of ground state : %s' %(self.mf.mo_occ))
-                    print('Electron occupation pattern of excited state : %s' %(d.mo_occ))
+                    print('Electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ))
                 else:
                     print("Unknown scf-type for MOM")
                     ashexit()
@@ -1530,10 +1530,7 @@ class PySCFTheory:
         if Grad==True:
             if self.printlevel >1:
                 print("Gradient requested")
-            if self.postSCF is True:
-                print("Gradient for postSCF methods is not implemented in ASH interface")
-                #TODO: Enable TDDFT, CASSCF, MP2, CC gradient etc
-                ashexit()
+                    
             if PC is True:
                 print("Gradient with PC is not quite ready")
                 #print("Units need to be checked.")
@@ -1541,6 +1538,24 @@ class PySCFTheory:
                 hfg = mm_charge_grad(grad.dft.RKS(self.mf), current_MM_coords, MMcharges)
                 #                grad = self.mf.nuc_grad_method()
                 self.gradient = hfg.kernel()
+            if self.postSCF is True:
+                #MOM-SCF
+                if self.mom is True:
+                    if self.printlevel >1:
+                        print("Calculating SCF-MOM gradient")                    
+                    self.gradient = MOMSCF.nuc_grad_method().kernel()
+                    if self.dispersion != None:
+                        if self.dispersion == "D3" or self.dispersion == "D4":
+                            self.gradient = self.gradient + vdw_gradient
+                            if self.printlevel > 1:
+                                    print("vdw_gradient", vdw_gradient)
+
+                    if self.printlevel >1:
+                        print("MOM-SCF Gradient calculation done")
+                else:
+                    print("Gradient for postSCF methods  is not implemented in ASH interface")
+                    #TODO: Enable TDDFT, CASSCF, MP2, CC gradient etc
+                    ashexit()
             else:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
@@ -1557,7 +1572,6 @@ class PySCFTheory:
                     print("Gradient calculation done")
 
         #TODO: write in error handling here
-
         print()
         print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
         if Grad == True:
