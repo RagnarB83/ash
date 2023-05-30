@@ -15,7 +15,6 @@ import copy
 #TODO: PE: Polarizable embedding (CPPE). Revisit
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Dirac HF/KS
-#TODO: Maximum overlap method, and implement STEP
 #TODO: Look into pointcharge gradient
 #TODO: Gradient for post-SCF methods and TDDFT
 
@@ -25,7 +24,7 @@ class PySCFTheory:
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
-                  TDDFT=False, tddft_numstates=10, mom=False,
+                  TDDFT=False, tddft_numstates=10, mom=False, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
@@ -142,7 +141,8 @@ class PySCFTheory:
         self.tddft_numstates=tddft_numstates
         #MOM
         self.mom=mom
-
+        self.mom_virtindex=mom_virtindex # The relative virtual orbital index to excite into. Default 1 (LUMO). Choose 2 for LUMO+1 etc.
+        self.mom_spinmanifold=mom_spinmanifold #The spin-manifold (0: alpha or 1: beta) to excited electron in. Default: 0 (alpha)
         #SCF max iterations
         self.scf_maxiter=scf_maxiter
 
@@ -1203,7 +1203,7 @@ class PySCFTheory:
             #MOM
             #####################
             if self.mom is True:
-                print("Maximum Overlap Method calculation is ON!")
+                print("\nMaximum Overlap Method calculation is ON!")
 
                 # Change 1-dimension occupation number list into 2-dimension occupation number
                 # list like the pattern in unrestircted calculation
@@ -1212,9 +1212,20 @@ class PySCFTheory:
 
                 if self.scf_type == 'UHF' or self.scf_type == 'UKS':
                     print("UHF/UKS MOM calculation")
+                    print("Previous SCF MO occupations are:")
+                    print("Alpha:", occ[0])
+                    print("Beta:", occ[1])
+                    spinmanifold = self.mom_spinmanifold
+                    HOMOnum = list(occ[spinmanifold]).index(0.0)-1
+                    LUMOnum = HOMOnum + self.mom_virtindex
+
+                    print(f"HOMO (spinmanifold:{spinmanifold}) index:", HOMOnum)
+                    print("LUMO index to excite into:", LUMOnum)
+                    print("Spin manifold:", self.mom_spinmanifold)
+                    print("Modifying guess")
                     # Assign initial occupation pattern
-                    occ[0][4]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
-                    occ[0][5]=1	 # it is still a singlet state
+                    occ[spinmanifold][HOMOnum]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    occ[spinmanifold][LUMOnum]=1	 # it is still a singlet state
 
                     # New SCF caculation
                     if self.scf_type == 'UKS':
@@ -1228,6 +1239,7 @@ class PySCFTheory:
                     # Apply mom occupation principle
                     b = pyscf.scf.addons.mom_occ(b, mo0, occ)
                     # Start new SCF with new density matrix
+                    print("Starting new SCF with modified MO guess")
                     b.scf(dm_u)
 
                     #delta-SCF transition energy
@@ -1250,18 +1262,27 @@ class PySCFTheory:
                     print('Beta electron occupation pattern of excited state : %s' %(b.mo_occ[1]))
 
                 elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS' or self.scf_type == 'RHF' or self.scf_type == 'RKS':
+                    print("ROHF/ROKS MOM calculation")
+                    HOMOnum = list(occ).index(0.0)-1
+                    LUMOnum = HOMOnum + self.mom_virtindex
+                    spinmanifold = self.mom_spinmanifold
+                    print("Previous SCF MO occupations are:", occ)
+                    print("HOMO index:", HOMOnum)
+                    print("LUMO index to excite into:", LUMOnum)
+                    print("Spin manifold:", self.mom_spinmanifold)
+                    print("Modifying guess")
                     setocc = np.zeros((2, occ.size))
                     setocc[:, occ==2] = 1
 
                     # Assigned initial occupation pattern
-                    setocc[0][4] = 0    # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
-                    setocc[0][5] = 1    # it is still a singlet state
+                    setocc[0][HOMOnum] = 0    # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    setocc[0][LUMOnum] = 1    # it is still a singlet state
                     ro_occ = setocc[0][:] + setocc[1][:]    # excited occupation pattern within RO style
 
                     # New ROKS/ROHF SCF calculation
-                    if self.scf_type == 'ROHF':
+                    if self.scf_type == 'ROHF' or self.scf_type == 'RHF':
                         d = pyscf.scf.ROHF(self.mol)
-                    elif self.scf_type == 'ROKS':
+                    elif self.scf_type == 'ROKS' or self.scf_type == 'RKS':
                         d = pyscf.scf.ROKS(self.mol)
                         d.xc = self.functional
 
@@ -1270,6 +1291,7 @@ class PySCFTheory:
                     # Apply mom occupation principle
                     d = pyscf.scf.addons.mom_occ(d, mo0, setocc)
                     # Start new SCF with new density matrix
+                    print("Starting new SCF with modified MO guess")
                     d.scf(dm_ro)
 
                     #delta-SCF transition energy in eV
