@@ -8,6 +8,7 @@ import glob
 import numpy as np
 from functools import reduce
 import random
+import copy
 
 #PySCF Theory object.
 #TODO: Somehow support reading in user mf object ?
@@ -24,7 +25,7 @@ class PySCFTheory:
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
-                  TDDFT=False, tddft_numstates=10,
+                  TDDFT=False, tddft_numstates=10, mom=False,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
@@ -139,6 +140,9 @@ class PySCFTheory:
         #TDDFT
         self.TDDFT=TDDFT
         self.tddft_numstates=tddft_numstates
+        #MOM
+        self.mom=mom
+
         #SCF max iterations
         self.scf_maxiter=scf_maxiter
 
@@ -192,7 +196,8 @@ class PySCFTheory:
             self.postSCF=True
         if self.TDDFT is True:
             self.postSCF=True
-
+        if self.mom is True:
+            self.postSCF=True
 
         #Are we doing an initial SCF calculation or not
         #Generally yes.
@@ -801,6 +806,10 @@ class PySCFTheory:
         #TODO: Dirac HF and KS also
         if self.scf_type == 'RKS':
             self.mf = pyscf.scf.RKS(self.mol)
+        elif self.scf_type == 'ROKS':
+            self.mf = pyscf.scf.ROKS(self.mol)
+        elif self.scf_type == 'ROHF':
+            self.mf = pyscf.scf.ROHF(self.mol)
         elif self.scf_type == 'UKS':
             self.mf = pyscf.scf.UKS(self.mol)
         elif self.scf_type == 'RHF':
@@ -1134,6 +1143,13 @@ class PySCFTheory:
                     s2, spinmult = self.mf.spin_square()
                     print("GHF/GKS <S**2>:", s2)
                     print("GHF/GKS spinmult:", spinmult)
+            elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS':
+                #NOTE: not checked
+                num_scf_orbitals_alpha=len(scf_result.mo_occ)
+                if self.printlevel >1:
+                    print("Total num. orbitals:", num_scf_orbitals_alpha)
+                if self.printlevel >1:
+                    self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             else:
                 #UHF/UKS
                 num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
@@ -1182,6 +1198,97 @@ class PySCFTheory:
 
         if self.postSCF is True:
             print("postSCF is True")
+
+            #####################
+            #MOM
+            #####################
+            if self.mom is True:
+                print("Maximum Overlap Method calculation is ON!")
+
+                # Change 1-dimension occupation number list into 2-dimension occupation number
+                # list like the pattern in unrestircted calculation
+                mo0 = copy.copy(self.mf.mo_coeff)
+                occ = copy.copy(self.mf.mo_occ)
+
+                if self.scf_type == 'UHF' or self.scf_type == 'UKS':
+                    print("UHF/UKS MOM calculation")
+                    # Assign initial occupation pattern
+                    occ[0][4]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    occ[0][5]=1	 # it is still a singlet state
+
+                    # New SCF caculation
+                    if self.scf_type == 'UKS':
+                        b = pyscf.scf.UKS(self.mol)
+                        b.xc = self.functional
+                    elif self.scf_type == 'UHF':
+                        b = pyscf.scf.UHF(self.mol)
+
+                    # Construct new dnesity matrix with new occpuation pattern
+                    dm_u = b.make_rdm1(mo0, occ)
+                    # Apply mom occupation principle
+                    b = pyscf.scf.addons.mom_occ(b, mo0, occ)
+                    # Start new SCF with new density matrix
+                    b.scf(dm_u)
+
+                    #delta-SCF transition energy
+                    trans_energy = (b.e_tot - self.mf.e_tot)*27.211
+                    print()
+                    print("-"*40)
+                    print("DELTA-SCF RESULTS")
+                    print("-"*40)
+                    
+                    print()
+                    print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
+                    print(f"Excited-state SCF energy {b.e_tot} Eh")
+                    print()
+                    print(f"delta-SCF transition energy {trans_energy} eV")
+                    print()
+                    print('Alpha electron occupation pattern of ground state : %s' %(self.mf.mo_occ[0]))
+                    print('Beta electron occupation pattern of ground state : %s' %(self.mf.mo_occ[1]))
+                    print()
+                    print('Alpha electron occupation pattern of excited state : %s' %(b.mo_occ[0]))
+                    print('Beta electron occupation pattern of excited state : %s' %(b.mo_occ[1]))
+
+                elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS' or self.scf_type == 'RHF' or self.scf_type == 'RKS':
+                    setocc = np.zeros((2, occ.size))
+                    setocc[:, occ==2] = 1
+
+                    # Assigned initial occupation pattern
+                    setocc[0][4] = 0    # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    setocc[0][5] = 1    # it is still a singlet state
+                    ro_occ = setocc[0][:] + setocc[1][:]    # excited occupation pattern within RO style
+
+                    # New ROKS/ROHF SCF calculation
+                    if self.scf_type == 'ROHF':
+                        d = pyscf.scf.ROHF(self.mol)
+                    elif self.scf_type == 'ROKS':
+                        d = pyscf.scf.ROKS(self.mol)
+                        d.xc = self.functional
+
+                    # Construct new density matrix with new occpuation pattern
+                    dm_ro = d.make_rdm1(mo0, ro_occ)
+                    # Apply mom occupation principle
+                    d = pyscf.scf.addons.mom_occ(d, mo0, setocc)
+                    # Start new SCF with new density matrix
+                    d.scf(dm_ro)
+
+                    #delta-SCF transition energy in eV
+                    trans_energy = (d.e_tot - self.mf.e_tot)*27.211
+                    print()
+                    print("-"*40)
+                    print("DELTA-SCF RESULTS")
+                    print("-"*40)
+                    print()
+                    print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
+                    print(f"Excited-state SCF energy {d.e_tot} Eh")
+                    print()
+                    print(f"delta-SCF transition energy {trans_energy} eV")
+                    print()
+                    print('Electron occupation pattern of ground state : %s' %(self.mf.mo_occ))
+                    print('Electron occupation pattern of excited state : %s' %(d.mo_occ))
+                else:
+                    print("Unknown scf-type for MOM")
+                    ashexit()
             #####################
             #TDDFT
             #####################

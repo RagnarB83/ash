@@ -245,7 +245,7 @@ class ORCATheory:
 
         self.extraline=self.extraline+"\n! OPT "
 
-        print("Running ORCA object with {} cores available".format(numcores))
+        print("Running ORCA with {} cores available".format(numcores))
         print("Object label:", self.label)
 
         print("Creating inputfile:", self.filename+'.inp')
@@ -365,7 +365,7 @@ end"""
             self.orcablocks = self.orcablocks + basisblock
 
         if self.printlevel >= 2:
-            print("Running ORCA object with {} cores available".format(numcores))
+            print("Running ORCA with {} cores available".format(numcores))
 
         #MOREAD. Checking file provided exists and determining what to do if not
         if self.moreadfile != None:
