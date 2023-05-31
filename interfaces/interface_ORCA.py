@@ -8,7 +8,7 @@ import glob
 import copy
 
 import ash.modules.module_coords
-from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index
+from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index,print_if_level
 from ash.modules.module_singlepoint import Singlepoint
 from ash.modules.module_coords import check_charge_mult
 #from ash.functions.functions_elstructure import xdm_run, calc_cm5
@@ -245,7 +245,7 @@ class ORCATheory:
 
         self.extraline=self.extraline+"\n! OPT "
 
-        print("Running ORCA object with {} cores available".format(numcores))
+        print("Running ORCA with {} cores available".format(numcores))
         print("Object label:", self.label)
 
         print("Creating inputfile:", self.filename+'.inp')
@@ -365,51 +365,50 @@ end"""
             self.orcablocks = self.orcablocks + basisblock
 
         if self.printlevel >= 2:
-            print("Running ORCA object with {} cores available".format(numcores))
+            print("Running ORCA with {} cores available".format(numcores))
 
         #MOREAD. Checking file provided exists and determining what to do if not
         if self.moreadfile != None:
-            print(f"Moreadfile option active. File path: {self.moreadfile}")
+            print_if_level(f"Moreadfile option active. File path: {self.moreadfile}", self.printlevel,2)
             if os.path.isfile(self.moreadfile) is True:
-                print(f"File exists in current directory: {os.getcwd()}")
+                print_if_level(f"File exists in current directory: {os.getcwd()}", self.printlevel,2)
             else:
-                print(f"File does not exist in current directory: {os.getcwd()}")
+                print_if_level(f"File does not exist in current directory: {os.getcwd()}", self.printlevel,2)
                 if os.path.isabs(self.moreadfile) is True:
                     print("Error: Absolute path provided but file does not exists. Exiting")
                     ashexit()
                 else:
-                    print("Checking if file exists in parentdir instead:")
+                    print_if_level("Checking if file exists in parentdir instead:", self.printlevel,2)
                     if os.path.isfile(f"../{self.moreadfile}") is True:
-                        print("Yes. Copying file to current dir")
+                        print_if_level("Yes. Copying file to current dir", self.printlevel,2)
                         shutil.copy(f"../{self.moreadfile}", f"./{self.moreadfile}")
         else:
-            print("Moreadfile option not active")
+            print_if_level(f"Moreadfile option not active", self.printlevel,2)
             if os.path.isfile(f"{self.filename}.gbw") is False:
-                print(f"No {self.filename}.gbw file is present in dir.")
+                print_if_level(f"No {self.filename}.gbw file is present in dir.", self.printlevel,2)
                 if self.path_to_last_gbwfile_used != None:
-                    print("Found a path to last GBW-file used by this Theory object. Will try to copy this file do current dir")
+                    print_if_level("Found a path to last GBW-file used by this Theory object. Will try to copy this file do current dir", self.printlevel,2)
                     try:
                         shutil.copy(self.path_to_last_gbwfile_used, f"./{self.filename}.gbw")
                     except FileNotFoundError:
-                        print("File was not found. May have been deleted")
-
+                        print_if_level("File was not found. May have been deleted", self.printlevel,2)
                     if self.autostart is False:
-                        print("Autostart option is False. ORCA will ignore this file")
+                        print_if_level("Autostart option is False. ORCA will ignore this file", self.printlevel,2)
                     else:
-                        print("Autostart feature is active. ORCA will read GBW-file present.")
+                        print_if_level("Autostart feature is active. ORCA will read GBW-file present.", self.printlevel,2)
                 else:
-                    print(f"Checking if a file {self.filename}.gbw exists in parentdir:")
+                    print_if_level(f"Checking if a file {self.filename}.gbw exists in parentdir:", self.printlevel,2)
                     if os.path.isfile(f"../{self.filename}.gbw") is True:
-                        print("Yes. Copying file from parentdir to current dir")
+                        print_if_level("Yes. Copying file from parentdir to current dir", self.printlevel,2)
                         shutil.copy(f"../{self.filename}.gbw", f"./{self.filename}.gbw")
                     else:
-                        print("Found no file. ORCA will guess new orbitals")
+                        print_if_level("Found no file. ORCA will guess new orbitals", self.printlevel,2)
             else:
-                print(f"A GBW-file with same basename : {self.filename}.gbw is present")
+                print_if_level(f"A GBW-file with same basename : {self.filename}.gbw is present", self.printlevel,2)
                 if self.autostart is False:
-                    print("Autostart is False. ORCA will ignore any file present")
+                    print_if_level("Autostart is False. ORCA will ignore any file present", self.printlevel,2)
                 else:
-                    print("Autostart feature is active. ORCA will read GBW-file present.")
+                    print_if_level("Autostart feature is active. ORCA will read GBW-file present.", self.printlevel,2)
 
         #TDDFT option
         #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead

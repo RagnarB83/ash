@@ -550,7 +550,6 @@ class Fragment:
         # Calculate connectivity by looping over all atoms
         timestampA = time.time()
         print("codeversion:", codeversion)
-        print("julia")
         if codeversion == 'py':
             print("Calculating connectivity of fragment using py.")
             fraglist = calc_conn_py(self.coords, self.elems, conndepth, scale, tol)
@@ -1249,7 +1248,6 @@ def get_connected_atoms_np(coords, elems, scale, tol, atomindex):
     diff = distances - thresholds
     # Getting connatoms by finding indices of diff with negative values (i.e. where distance is smaller than threshold)
     connatoms = np.where(diff < 0)[0].tolist()
-    # print("connatoms ", connatoms)
     return connatoms
 
 

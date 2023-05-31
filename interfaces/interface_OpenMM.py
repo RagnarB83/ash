@@ -4,16 +4,17 @@ import time
 import numpy as np
 import glob
 import copy
+import itertools
 
 #import ash
 import ash.constants
 
 ashpath = os.path.dirname(ash.__file__)
 from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile
+    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile, search_list_of_lists_for_index,create_conn_dict
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
-    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms
+    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2
 from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
 from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
@@ -2537,12 +2538,20 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
                                                             solvent_boxdims[2]) * openmm_unit.angstrom)
 
     # Write out solvated system coordinates
+    print("Creating PDB-file: system_aftersolvent.pdb")
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
     print_systemsize()
     # Create ASH fragment and write to disk
     newfragment = Fragment(pdbfile="system_aftersolvent.pdb")
     newfragment.print_system(filename="newfragment.ygg")
     newfragment.write_xyzfile(xyzfilename="newfragment.xyz")
+    print("Creating XYZ-file: newfragment.xyz")
+    print()
+    print("\nTo use this system setup to define a future OpenMMTheory object you can  do:\n")
+
+    print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\"], pdbfile=\"system_aftersolvent.pdb\", periodic=True, rigidwater=True)",BC.END)
+    print()
+    print()
 
     # Return forcefield object,  topology object and ASH fragment
     return forcefield, modeller.topology, newfragment
@@ -3196,6 +3205,8 @@ class OpenMM_MDclass:
             print(f"A: ", a)
             print(f"B: ", b)
             print(f"C: ", c)
+            boxlength = a[0].value_in_unit(openmm.unit.angstrom) #Box length in Angstrom
+            print(f"Boxlength: {boxlength} Angstrom")
         else:
             print("System is not periodic")
         # Delete old traj
@@ -3223,13 +3234,23 @@ class OpenMM_MDclass:
         print()
 
         if self.QM_MM_object is not None:
+            print("QM/MM MD run beginning")
             #CASE: QM/MM. Custom external force needs to have been created in OpenMMTheory (should be handled by init)
             
+            #Get connectivity from OpenMM topology
+            connectivity = []
+            for resi in self.openmmobject.topology.residues():
+                resatoms = [i.index for i in list(resi.atoms())]
+                connectivity.append(resatoms)
+            #Convert to dict
+            connectivity_dict = create_conn_dict(connectivity)
+
             for step in range(simulation_steps):
                 checkpoint_begin_step = time.time()
                 checkpoint = time.time()
                 if self.printlevel >= 2:
                     print("Step:", step)
+                
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
                 current_state=simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
                 print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
@@ -3237,14 +3258,26 @@ class OpenMM_MDclass:
                 # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
 
+                #QM/MM periodic. Translating coords outside of box, back in
+                if self.openmmobject.Periodic is True:
+                    print("Periodic QM/MM is on")
+                    if self.enforcePeriodicBox is True:
+                        print("enforcePeriodicBox is True. Wrapping handling by OpenMM")
+                    elif self.enforcePeriodicBox is False:
+                        print("enforcePeriodicBox is False. Wrapping handled by ASH")
+                        print("Note: only cubic PBC boxes supported")
+                        checkpoint = time.time()
+                        current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity)
+                        print_time_rel(checkpoint, modulename="wrapping")
+
                 #TODO: Translate box coordinates so that they are centered on solute
                 #Do manually or use mdtraj, mdanalysis or something??
-                if self.specialbox is True:
-                    print("not ready")
-                    ashexit()
-                    solute_coords = np.take(current_coords, solute_indices, axis=0)
-                    changed_origin_coords = change_origin_to_centroid(self.fragment.coords, subsetcoords=solute_coords)
-                    current_coords = center_coordinates(current_coords,)
+                #if self.specialbox is True:
+                #    print("not ready")
+                #    ashexit()
+                #    solute_coords = np.take(current_coords, solute_indices, axis=0)
+                #    changed_origin_coords = change_origin_to_centroid(self.fragment.coords, subsetcoords=solute_coords)
+                #    current_coords = center_coordinates(current_coords,)
 
                 
                 #Printing step-info or write-trajectory at regular intervals
@@ -3252,14 +3285,12 @@ class OpenMM_MDclass:
                     # Manual step info option
                     if self.printlevel >= 2:
                         print_current_step_info(step,current_state,self.openmmobject)
-                    #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
-                    #checkpoint = time.time()
-                    # Manual trajectory option (reporters used to not work for manual dynamics steps)
-                    #NOTE: Now outdated, since OpenMM update??
-                    #Disabling for now
-                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
-                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
-                    #checkpoint = time.time()
+
+                    #print("QM/MM step. Writing unwrapped to trajfile: OpenMMMD_traj_unwrapped.xyz")
+                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_unwrapped", printlevel=1, writemode='a')
+                    
+                    print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
+                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
                 
 
                 checkpoint = time.time()
@@ -4438,3 +4469,112 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
 #ash.modules.module_plotting.contourplot(surfacedictionary, label='_MTD_option2',x_axislabel=f'CV1({CV1_unit_label})', y_axislabel=f'CV2 ({CV2_unit_label})', finalunit='kcal/mol', interpolation='Cubic', 
 #    interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
 #    contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
+
+#Function to wrap coordinates of whole molecules outside box
+def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
+    #checkpoint = time.time()
+    boxlength_half=boxlength/2
+    #Get atom indices for atoms that have a x,y or z coordinate outside box
+    mask = np.any(np.abs(allcoords) > boxlength_half, axis=1)
+    indices = np.where(mask)[0]
+    #20488
+    #Get indices of all whole molecules
+    all_mol_indices = [connectivity[connectivity_dict.get(i)] for i in indices]
+    #print(all_mol_indices)
+    #print(all_mol_indices[3399])
+    #Removing duplicates
+    trimmed_all_mol_indices = trim_list_of_lists(all_mol_indices)
+    #print(trimmed_all_mol_indices)
+    #Get all coordinates
+    allmol_coords = np.take(allcoords, trimmed_all_mol_indices, axis=0)
+    #print(allmol_coords)
+    #Check if all members are outside
+    allmol_outside_bools = [np.any(np.abs(m) > boxlength_half, axis=1) for m in allmol_coords]
+    #print(allmol_outside_bools)
+    #print(allmol_outside_bools)
+    #allmol_outside_bools_single = [np.all(j) for j in allmol_outside_bools]
+    allmol_outside_bools_single = [np.all(j) for j in allmol_outside_bools]
+    #print(allmol_outside_bools_single)
+    #print(allmol_outside_bools_single)
+    #exit()
+
+    #allmol_outside_cols = [np.any(np.abs(m) > boxlength_half, axis=1) for m in allmol_coords]
+    #Looping over indices
+    #print(f"6Time:{time.time()-checkpoint}")
+    for members,member_coords,mol_outside_bool in zip(trimmed_all_mol_indices,allmol_coords,allmol_outside_bools_single):
+        #Only wrap if all outside
+        #NOTE: if water molecule has gone even further (to next box) then currently this code doesn't wrap it completely
+        if mol_outside_bool:
+            out_cols = np.where(abs(member_coords[0]) > boxlength_half)[0]
+            for c in out_cols:
+                if member_coords[0][c] > 0:
+                    allcoords[members, c] -= boxlength + boxlength * (abs(member_coords[0][c]) // (boxlength * 1.5))
+                elif member_coords[0][c] < 0:
+                    allcoords[members, c] += boxlength + boxlength * (abs(member_coords[0][c]) // (boxlength * 1.5))
+    #print(f"FinalTime:{time.time()-checkpoint}")
+    return allcoords
+
+#Function to wrap coordinates of whole molecules outside box
+def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
+    #checkpoint = time.time()
+    boxlength_half=boxlength/2
+    #Get atom indices for atoms that have a x,y or z coordinate outside box
+    mask = np.any(np.abs(allcoords) > boxlength_half, axis=1)
+    indices = np.where(mask)[0]
+    #print(f"1Time:{time.time()-checkpoint}")
+    #20488
+    #Get indices of all whole molecules
+    all_mol_indices = [connectivity[connectivity_dict.get(i)] for i in indices]
+    #print(f"1aTime:{time.time()-checkpoint}")
+    #print(all_mol_indices)
+    #print(all_mol_indices[3399])
+    #Removing duplicates
+    #print(f"1bTime:{time.time()-checkpoint}")
+    trimmed_all_mol_indices = trim_list_of_lists(all_mol_indices)
+    #print("len trimmed_all_mol_indices:", len(trimmed_all_mol_indices))
+    #Get all coordinates
+    #print(f"2Time:{time.time()-checkpoint}")
+    allmol_coords = np.take(allcoords, trimmed_all_mol_indices, axis=0)
+    #print(f"3Time:{time.time()-checkpoint}")
+    #print(allmol_coords)
+    #Check if all members are outside
+    allmol_outside_bools = [np.any(np.abs(m) > boxlength_half, axis=1) for m in allmol_coords]
+    #print(allmol_outside_bools)
+    #print(allmol_outside_bools)
+    #allmol_outside_bools_single = [np.all(j) for j in allmol_outside_bools]
+    #print(f"4Time:{time.time()-checkpoint}")
+    allmol_outside_bools_single = [np.all(j) for j in allmol_outside_bools]
+    
+    #print("allmol_outside_bools_single:", allmol_outside_bools_single)
+    #print(len(allmol_outside_bools_single))
+    outside_mol_indices=[i for i, x in enumerate(allmol_outside_bools_single) if x]
+    
+    #print("len outside_mol_indices:", len(outside_mol_indices))
+
+    #exit()
+    #print(allmol_outside_bools_single)
+    #exit()
+    #print(f"5Time:{time.time()-checkpoint}")
+    #allmol_outside_cols = [np.any(np.abs(m) > boxlength_half, axis=1) for m in allmol_coords]
+    allmol_outside_cols = [np.where(abs(member_coords[0]) > boxlength_half)[0] for member_coords in allmol_coords]
+    #print("allmol_outside_cols:", allmol_outside_cols)
+    #exit()
+    #Looping over indices
+    #print(f"6Time:{time.time()-checkpoint}")
+    #for members,member_coords,mol_outside_bool,out_cols in zip(trimmed_all_mol_indices,allmol_coords,allmol_outside_bools_single,allmol_outside_cols):
+    #Looping over molindices outside box
+    for outmolindex in outside_mol_indices:
+        members = trimmed_all_mol_indices[outmolindex]
+        member_coords = allmol_coords[outmolindex]
+        for c in allmol_outside_cols[outmolindex]:
+            colval=member_coords[0][c]
+            if colval > 0:
+                allcoords[members, c] -= boxlength + boxlength * (abs(colval) // (boxlength * 1.5))
+            elif colval < 0:
+                allcoords[members, c] += boxlength + boxlength * (abs(colval) // (boxlength * 1.5))
+    #print(f"FinalTime:{time.time()-checkpoint}")
+    return allcoords
+
+def trim_list_of_lists(k):
+    k = sorted(k)
+    return np.array(list((k for k, _ in itertools.groupby(k))))

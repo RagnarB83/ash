@@ -136,6 +136,9 @@ def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
     elif format == 'PDB':
         tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.pdb')
         print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.pdb')
+    elif format == 'XYZ':
+        tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.xyz')
+        print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.xyz')
     else:
         print("Unknown trajectory format.")
     return

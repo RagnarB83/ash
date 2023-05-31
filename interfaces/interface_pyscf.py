@@ -8,13 +8,13 @@ import glob
 import numpy as np
 from functools import reduce
 import random
+import copy
 
 #PySCF Theory object.
 #TODO: Somehow support reading in user mf object ?
 #TODO: PE: Polarizable embedding (CPPE). Revisit
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Dirac HF/KS
-#TODO: Maximum overlap method, and implement STEP
 #TODO: Look into pointcharge gradient
 #TODO: Gradient for post-SCF methods and TDDFT
 
@@ -24,7 +24,7 @@ class PySCFTheory:
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
-                  TDDFT=False, tddft_numstates=10,
+                  TDDFT=False, tddft_numstates=10, mom=False, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
@@ -139,6 +139,10 @@ class PySCFTheory:
         #TDDFT
         self.TDDFT=TDDFT
         self.tddft_numstates=tddft_numstates
+        #MOM
+        self.mom=mom
+        self.mom_virtindex=mom_virtindex # The relative virtual orbital index to excite into. Default 1 (LUMO). Choose 2 for LUMO+1 etc.
+        self.mom_spinmanifold=mom_spinmanifold #The spin-manifold (0: alpha or 1: beta) to excited electron in. Default: 0 (alpha)
         #SCF max iterations
         self.scf_maxiter=scf_maxiter
 
@@ -192,7 +196,8 @@ class PySCFTheory:
             self.postSCF=True
         if self.TDDFT is True:
             self.postSCF=True
-
+        if self.mom is True:
+            self.postSCF=True
 
         #Are we doing an initial SCF calculation or not
         #Generally yes.
@@ -801,6 +806,10 @@ class PySCFTheory:
         #TODO: Dirac HF and KS also
         if self.scf_type == 'RKS':
             self.mf = pyscf.scf.RKS(self.mol)
+        elif self.scf_type == 'ROKS':
+            self.mf = pyscf.scf.ROKS(self.mol)
+        elif self.scf_type == 'ROHF':
+            self.mf = pyscf.scf.ROHF(self.mol)
         elif self.scf_type == 'UKS':
             self.mf = pyscf.scf.UKS(self.mol)
         elif self.scf_type == 'RHF':
@@ -1008,6 +1017,7 @@ class PySCFTheory:
         if PC is True:
             import pyscf.qmmm
             # QM/MM pointcharge embedding
+            print("PC True. Adding pointcharges")
             self.mf = pyscf.qmmm.mm_charge(self.mf, current_MM_coords, MMcharges)
 
         #Polarizable embedding option
@@ -1134,6 +1144,13 @@ class PySCFTheory:
                     s2, spinmult = self.mf.spin_square()
                     print("GHF/GKS <S**2>:", s2)
                     print("GHF/GKS spinmult:", spinmult)
+            elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS':
+                #NOTE: not checked
+                num_scf_orbitals_alpha=len(scf_result.mo_occ)
+                if self.printlevel >1:
+                    print("Total num. orbitals:", num_scf_orbitals_alpha)
+                if self.printlevel >1:
+                    self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             else:
                 #UHF/UKS
                 num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
@@ -1182,6 +1199,126 @@ class PySCFTheory:
 
         if self.postSCF is True:
             print("postSCF is True")
+
+            #####################
+            #MOM
+            #####################
+            if self.mom is True:
+                print("\nMaximum Overlap Method calculation is ON!")
+
+                # Change 1-dimension occupation number list into 2-dimension occupation number
+                # list like the pattern in unrestircted calculation
+                mo0 = copy.copy(self.mf.mo_coeff)
+                occ = copy.copy(self.mf.mo_occ)
+
+                if self.scf_type == 'UHF' or self.scf_type == 'UKS':
+                    print("UHF/UKS MOM calculation")
+                    print("Previous SCF MO occupations are:")
+                    print("Alpha:", occ[0].tolist())
+                    print("Beta:", occ[1].tolist())
+                    spinmanifold = self.mom_spinmanifold
+                    HOMOnum = list(occ[spinmanifold]).index(0.0)-1
+                    LUMOnum = HOMOnum + self.mom_virtindex
+
+                    print(f"HOMO (spinmanifold:{spinmanifold}) index:", HOMOnum)
+                    print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
+                    print("Spin manifold:", self.mom_spinmanifold)
+                    print("Modifying guess")
+                    # Assign initial occupation pattern
+                    occ[spinmanifold][HOMOnum]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    occ[spinmanifold][LUMOnum]=1	 # it is still a singlet state
+
+                    # New SCF caculation
+                    if self.scf_type == 'UKS':
+                        MOMSCF = pyscf.scf.UKS(self.mol)
+                        MOMSCF.xc = self.functional
+                    elif self.scf_type == 'UHF':
+                        MOMSCF = pyscf.scf.UHF(self.mol)
+
+                    # Construct new dnesity matrix with new occpuation pattern
+                    dm_u = MOMSCF.make_rdm1(mo0, occ)
+                    # Apply mom occupation principle
+                    MOMSCF = pyscf.scf.addons.mom_occ(MOMSCF, mo0, occ)
+                    # Start new SCF with new density matrix
+                    print("Starting new SCF with modified MO guess")
+                    MOMSCF.scf(dm_u)
+
+                    #delta-SCF transition energy
+                    trans_energy = (MOMSCF.e_tot - self.mf.e_tot)*27.211
+                    print()
+                    print("-"*40)
+                    print("DELTA-SCF RESULTS")
+                    print("-"*40)
+                    
+                    print()
+                    print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
+                    print(f"Excited-state SCF energy {MOMSCF.e_tot} Eh")
+                    print()
+                    print(f"delta-SCF transition energy {trans_energy} eV")
+                    print()
+                    print('Alpha electron occupation pattern of ground state : %s' %(self.mf.mo_occ[0].tolist()))
+                    print('Beta electron occupation pattern of ground state : %s' %(self.mf.mo_occ[1].tolist()))
+                    print()
+                    print('Alpha electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[0].tolist()))
+                    print('Beta electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[1].tolist()))
+
+                elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS' or self.scf_type == 'RHF' or self.scf_type == 'RKS':
+                    print("ROHF/ROKS MOM calculation")
+                    HOMOnum = list(occ).index(0.0)-1
+                    LUMOnum = HOMOnum + self.mom_virtindex
+                    spinmanifold = self.mom_spinmanifold
+                    print("Previous SCF MO occupations are:", occ.tolist())
+                    print("HOMO index:", HOMOnum)
+                    print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
+                    print("Spin manifold:", self.mom_spinmanifold)
+                    print("Modifying guess")
+                    setocc = np.zeros((2, occ.size))
+                    setocc[:, occ==2] = 1
+
+                    # Assigned initial occupation pattern
+                    setocc[0][HOMOnum] = 0    # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    setocc[0][LUMOnum] = 1    # it is still a singlet state
+                    ro_occ = setocc[0][:] + setocc[1][:]    # excited occupation pattern within RO style
+
+                    # New ROKS/ROHF SCF calculation
+                    if self.scf_type == 'ROHF' or self.scf_type == 'RHF':
+                        MOMSCF = pyscf.scf.ROHF(self.mol)
+                    elif self.scf_type == 'ROKS' or self.scf_type == 'RKS':
+                        MOMSCF = pyscf.scf.ROKS(self.mol)
+                        MOMSCF.xc = self.functional
+
+                    # Construct new density matrix with new occpuation pattern
+                    dm_ro = MOMSCF.make_rdm1(mo0, ro_occ)
+                    # Apply mom occupation principle
+                    MOMSCF = pyscf.scf.addons.mom_occ(MOMSCF, mo0, setocc)
+                    # Start new SCF with new density matrix
+                    print("Starting new SCF with modified MO guess")
+                    MOMSCF.scf(dm_ro)
+
+                    #delta-SCF transition energy in eV
+                    trans_energy = (MOMSCF.e_tot - self.mf.e_tot)*27.211
+                    print()
+                    print("-"*40)
+                    print("DELTA-SCF RESULTS")
+                    print("-"*40)
+                    print()
+                    print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
+                    print(f"Excited-state SCF energy {MOMSCF.e_tot} Eh")
+                    print()
+                    print(f"delta-SCF transition energy {trans_energy} eV")
+                    print()
+                    print('Electron occupation pattern of ground state : %s' %(self.mf.mo_occ.tolist()))
+                    print('Electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ.tolist()))
+                else:
+                    print("Unknown scf-type for MOM")
+                    ashexit()
+                #Overlap
+                #print("self.mf.get_ovlp():", self.mf.get_ovlp())
+                #overlap = pyscf.scf.uhf.det_ovlp(self.mf.mo_coeff,MOMSCF.mo_coeff,self.mf.mo_occ,MOMSCF.mo_occ,self.mf.get_ovlp())
+                #print("overlap:", overlap)
+                #Transition density matrix
+                #D_12 = MOMSCF.mo_coeff* adjugate(overlap)*self.mf.mo_occ * self.mf.mo_coeff
+                #https://github.com/pyscf/pyscf/blob/master/examples/scf/51-elecoup_mom.py
             #####################
             #TDDFT
             #####################
@@ -1397,46 +1534,81 @@ class PySCFTheory:
         ##############
         #GRADIENT
         ##############
-        #NOTE: only SCF supported for now
         if Grad==True:
             if self.printlevel >1:
                 print("Gradient requested")
+
+            #postSCF method gradient
+            #NOTE: only MOM-SCF for now
             if self.postSCF is True:
-                print("Gradient for postSCF methods is not implemented in ASH interface")
-                #TODO: Enable TDDFT, CASSCF, MP2, CC gradient etc
-                ashexit()
-            if PC is True:
-                print("Gradient with PC is not quite ready")
-                #print("Units need to be checked.")
-                ashexit()
-                hfg = mm_charge_grad(grad.dft.RKS(self.mf), current_MM_coords, MMcharges)
-                #                grad = self.mf.nuc_grad_method()
-                self.gradient = hfg.kernel()
+                #MOM-SCF
+                if self.mom is True:
+                    if self.printlevel >1:
+                        print("Calculating SCF-MOM gradient")                    
+                    self.gradient = MOMSCF.nuc_grad_method().kernel()
+                    if self.printlevel >1:
+                        print("MOM-SCF Gradient calculation done")
+                else:
+                    print("Gradient for postSCF methods  is not implemented in ASH interface")
+                    #TODO: Enable TDDFT, CASSCF, MP2, CC gradient etc
+                    ashexit()
+            #Caluclate regular SCF gradient
             else:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
-                
                 self.gradient = self.mf.nuc_grad_method().kernel()
 
-                if self.dispersion != None:
-                    if self.dispersion == "D3" or self.dispersion == "D4":
-                        self.gradient = self.gradient + vdw_gradient
-                        if self.printlevel > 1:
-                                print("vdw_gradient", vdw_gradient)
+            #Applying dispersion gradient last
+            if self.dispersion != None:
+                if self.dispersion == "D3" or self.dispersion == "D4":
+                    self.gradient += vdw_gradient
+                    if self.printlevel > 1:
+                            print("vdw_gradient", vdw_gradient)
 
-                if self.printlevel >1:
-                    print("Gradient calculation done")
+            #Pointcharge-gradient (separate)
+            if PC is True:
+                print("Calculating pointcharge gradient")
+                #Make density matrix
+                dm = self.mf.make_rdm1()
+                current_MM_coords_bohr = current_MM_coords*ash.constants.ang2bohr
+                self.pcgrad = pyscf_pointcharge_gradient(self.mol,current_MM_coords_bohr,MMcharges,dm)
 
-        #TODO: write in error handling here
+            if self.printlevel >1:
+                print("Gradient calculation done")
 
         print()
         print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point PySCF energy:", self.energy)
             print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
-            return self.energy, self.gradient
+            if PC is True:
+                return self.energy, self.gradient, self.pcgrad
+            else:
+                return self.energy, self.gradient
         else:
             print("Single-point PySCF energy:", self.energy)
             print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
             return self.energy
+
+
+#Based on https://github.com/pyscf/pyscf/blob/master/examples/qmmm/30-force_on_mm_particles.py
+#Uses pyscf mol and MM coords and charges and provided density matrix to get pointcharge gradient
+def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
+    # The interaction between QM atoms and MM particles
+    # \sum_K d/dR (1/|r_K-R|) = \sum_K (r_K-R)/|r_K-R|^3
+    qm_coords = mol.atom_coords()
+    qm_charges = mol.atom_charges()
+    dr = qm_coords[:,None,:] - mm_coords
+    r = np.linalg.norm(dr, axis=2)
+    g = np.einsum('r,R,rRx,rR->Rx', qm_charges, mm_charges, dr, r**-3)
+    # The interaction between electron density and MM particles
+    # d/dR <i| (1/|r-R|) |j> = <i| d/dR (1/|r-R|) |j> = <i| -d/dr (1/|r-R|) |j>
+    #   = <d/dr i| (1/|r-R|) |j> + <i| (1/|r-R|) |d/dr j>
+    for i, q in enumerate(mm_charges):
+        with mol.with_rinv_origin(mm_coords[i]):
+            v = mol.intor('int1e_iprinv')
+        f =(np.einsum('ij,xji->x', dm, v) +
+            np.einsum('ij,xij->x', dm, v.conj())) * -q
+        g[i] += f
+    return g
 
