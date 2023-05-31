@@ -10,7 +10,11 @@ import ash.constants
 # Simple nonbonded MM theory. Charges and LJ-potentials
 class NonBondedTheory:
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
-                 codeversion=None, printlevel=2, numcores=1):
+                 codeversion=None, printlevel=2, numcores=1, nonbonded_type="Coulomb-LJ"):
+
+        if atomtypes == None:
+            print("Error: NonBondedTheory needs atomtypes to be defined")
+            ashexit()
 
         #Indicate that this is a MMtheory
         self.theorytype="MM"
@@ -34,6 +38,9 @@ class NonBondedTheory:
         #
         self.numatoms = len(self.atomtypes)
         self.LJcombrule=LJcombrule
+
+        #Nonbonded type. Options: 'Coulomb-LJ', 'Coulomb', 'LJ
+        self.nonbonded_type=nonbonded_type
 
         #Todo: Delete
         # If qmatoms list passed to Nonbonded theory then we are doing QM/MM
@@ -272,14 +279,17 @@ class NonBondedTheory:
         #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
         #Todo: if actatoms have been defined this will be skipped in pairlist creation
         #if frozenatoms passed frozen-frozen interactions will be skipped
-        if self.pairarrays_assigned is False:
-            print("Calling LJ pairpot calc")
-            self.calculate_LJ_pairpotentials(qmatoms=qmatoms,actatoms=actatoms)
+        if 'LJ' in self.nonbonded_type:
+            if self.pairarrays_assigned is False:
+                print("Calling LJ pairpot calc")
+                self.calculate_LJ_pairpotentials(qmatoms=qmatoms,actatoms=actatoms)
+            else:
+                print("LJ pairpot arrays exist...")
+            if len(self.LJpairpotentials) > 0:
+                LJ=True
         else:
-            print("LJ pairpot arrays exist...")
+            LJ=False
 
-        if len(self.LJpairpotentials) > 0:
-            LJ=True
         #If charges not provided to run function. Use object charges
         if charges == None:
             charges=self.atom_charges
@@ -295,9 +305,10 @@ class NonBondedTheory:
         #initializing
         self.Coulombchargeenergy=0
         self.LJenergy=0
-        self.MMGradient=[]
-        self.Coulombchargegradient=[]
-        self.LJgradient=[]
+        self.MMEnergy=0.0
+        self.MMGradient=np.zeros((len(current_coords),3))
+        self.Coulombchargegradient=np.zeros((len(current_coords),3))
+        self.LJgradient=np.zeros((len(current_coords),3))
 
         #Slow Python version
         if self.codeversion=='py':
@@ -312,21 +323,25 @@ class NonBondedTheory:
                     print("")
                     #print("self.Coulombchargegradient:", self.Coulombchargegradient)
                 blankline()
+                self.MMEnergy += self.Coulombchargeenergy
+                self.MMGradient += self.Coulombchargegradient
             # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
             if LJ==True:
+                print("xx")
+                exit()
                 #LennardJones(coords, epsij, sigmaij, connectivity=[], qmatoms=[])
                 #self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
                 self.LJenergy,self.LJgradient = LennardJones(current_coords,self.epsij,self.sigmaij)
                 #print("Lennard-Jones Energy (au):", self.LJenergy)
                 #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*ash.constants.harkcal)
-            self.MMEnergy = self.Coulombchargeenergy+self.LJenergy
-            if Grad==True:
-                self.MMGradient = self.Coulombchargegradient+self.LJgradient
+                self.MMEnergy += self.LJenergy
+                self.MMGradient += self.LJgradient
+                
         #Combined Coulomb+LJ Python version. Slow
         elif self.codeversion=='py_comb':
             print("not active")
             ashexit()
-            self.MMenergy, self.MMgradient = LJCoulpy(current_coords, self.atomtypes, charges, self.LJpairpotentials,
+            self.MMenergy, self.MMGradient = LJCoulpy(current_coords, self.atomtypes, charges, self.LJpairpotentials,
                                                           connectivity=connectivity)
         elif self.codeversion=='f2py':
             if self.printlevel >= 2:

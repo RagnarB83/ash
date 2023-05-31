@@ -1017,6 +1017,7 @@ class PySCFTheory:
         if PC is True:
             import pyscf.qmmm
             # QM/MM pointcharge embedding
+            print("PC True. Adding pointcharges")
             self.mf = pyscf.qmmm.mm_charge(self.mf, current_MM_coords, MMcharges)
 
         #Polarizable embedding option
@@ -1311,6 +1312,13 @@ class PySCFTheory:
                 else:
                     print("Unknown scf-type for MOM")
                     ashexit()
+                #Overlap
+                #print("self.mf.get_ovlp():", self.mf.get_ovlp())
+                #overlap = pyscf.scf.uhf.det_ovlp(self.mf.mo_coeff,MOMSCF.mo_coeff,self.mf.mo_occ,MOMSCF.mo_occ,self.mf.get_ovlp())
+                #print("overlap:", overlap)
+                #Transition density matrix
+                #D_12 = MOMSCF.mo_coeff* adjugate(overlap)*self.mf.mo_occ * self.mf.mo_coeff
+                #https://github.com/pyscf/pyscf/blob/master/examples/scf/51-elecoup_mom.py
             #####################
             #TDDFT
             #####################
@@ -1526,60 +1534,81 @@ class PySCFTheory:
         ##############
         #GRADIENT
         ##############
-        #NOTE: only SCF supported for now
         if Grad==True:
             if self.printlevel >1:
                 print("Gradient requested")
-                    
-            if PC is True:
-                print("Gradient with PC is not quite ready")
-                #print("Units need to be checked.")
-                ashexit()
-                hfg = mm_charge_grad(grad.dft.RKS(self.mf), current_MM_coords, MMcharges)
-                #                grad = self.mf.nuc_grad_method()
-                self.gradient = hfg.kernel()
+
+            #postSCF method gradient
+            #NOTE: only MOM-SCF for now
             if self.postSCF is True:
                 #MOM-SCF
                 if self.mom is True:
                     if self.printlevel >1:
                         print("Calculating SCF-MOM gradient")                    
                     self.gradient = MOMSCF.nuc_grad_method().kernel()
-                    if self.dispersion != None:
-                        if self.dispersion == "D3" or self.dispersion == "D4":
-                            self.gradient = self.gradient + vdw_gradient
-                            if self.printlevel > 1:
-                                    print("vdw_gradient", vdw_gradient)
-
                     if self.printlevel >1:
                         print("MOM-SCF Gradient calculation done")
                 else:
                     print("Gradient for postSCF methods  is not implemented in ASH interface")
                     #TODO: Enable TDDFT, CASSCF, MP2, CC gradient etc
                     ashexit()
+            #Caluclate regular SCF gradient
             else:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
-                
                 self.gradient = self.mf.nuc_grad_method().kernel()
 
-                if self.dispersion != None:
-                    if self.dispersion == "D3" or self.dispersion == "D4":
-                        self.gradient = self.gradient + vdw_gradient
-                        if self.printlevel > 1:
-                                print("vdw_gradient", vdw_gradient)
+            #Applying dispersion gradient last
+            if self.dispersion != None:
+                if self.dispersion == "D3" or self.dispersion == "D4":
+                    self.gradient += vdw_gradient
+                    if self.printlevel > 1:
+                            print("vdw_gradient", vdw_gradient)
 
-                if self.printlevel >1:
-                    print("Gradient calculation done")
+            #Pointcharge-gradient (separate)
+            if PC is True:
+                print("Calculating pointcharge gradient")
+                #Make density matrix
+                dm = self.mf.make_rdm1()
+                current_MM_coords_bohr = current_MM_coords*ash.constants.ang2bohr
+                self.pcgrad = pyscf_pointcharge_gradient(self.mol,current_MM_coords_bohr,MMcharges,dm)
 
-        #TODO: write in error handling here
+            if self.printlevel >1:
+                print("Gradient calculation done")
+
         print()
         print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point PySCF energy:", self.energy)
             print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
-            return self.energy, self.gradient
+            if PC is True:
+                return self.energy, self.gradient, self.pcgrad
+            else:
+                return self.energy, self.gradient
         else:
             print("Single-point PySCF energy:", self.energy)
             print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
             return self.energy
+
+
+#Based on https://github.com/pyscf/pyscf/blob/master/examples/qmmm/30-force_on_mm_particles.py
+#Uses pyscf mol and MM coords and charges and provided density matrix to get pointcharge gradient
+def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
+    # The interaction between QM atoms and MM particles
+    # \sum_K d/dR (1/|r_K-R|) = \sum_K (r_K-R)/|r_K-R|^3
+    qm_coords = mol.atom_coords()
+    qm_charges = mol.atom_charges()
+    dr = qm_coords[:,None,:] - mm_coords
+    r = np.linalg.norm(dr, axis=2)
+    g = np.einsum('r,R,rRx,rR->Rx', qm_charges, mm_charges, dr, r**-3)
+    # The interaction between electron density and MM particles
+    # d/dR <i| (1/|r-R|) |j> = <i| d/dR (1/|r-R|) |j> = <i| -d/dr (1/|r-R|) |j>
+    #   = <d/dr i| (1/|r-R|) |j> + <i| (1/|r-R|) |d/dr j>
+    for i, q in enumerate(mm_charges):
+        with mol.with_rinv_origin(mm_coords[i]):
+            v = mol.intor('int1e_iprinv')
+        f =(np.einsum('ij,xji->x', dm, v) +
+            np.einsum('ij,xij->x', dm, v.conj())) * -q
+        g[i] += f
+    return g
 
