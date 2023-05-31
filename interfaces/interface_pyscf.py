@@ -1569,9 +1569,13 @@ class PySCFTheory:
             if PC is True:
                 print("Calculating pointcharge gradient")
                 #Make density matrix
+                checkpoint=time.time()
                 dm = self.mf.make_rdm1()
+                print_time_rel(checkpoint, modulename='pySCF make_rdm1 for PC', moduleindex=2)
                 current_MM_coords_bohr = current_MM_coords*ash.constants.ang2bohr
+                checkpoint=time.time()
                 self.pcgrad = pyscf_pointcharge_gradient(self.mol,current_MM_coords_bohr,MMcharges,dm)
+                print_time_rel(checkpoint, modulename='pyscf_pointcharge_gradient', moduleindex=2)
 
             if self.printlevel >1:
                 print("Gradient calculation done")
