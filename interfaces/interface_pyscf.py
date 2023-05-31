@@ -1598,6 +1598,10 @@ class PySCFTheory:
 #Based on https://github.com/pyscf/pyscf/blob/master/examples/qmmm/30-force_on_mm_particles.py
 #Uses pyscf mol and MM coords and charges and provided density matrix to get pointcharge gradient
 def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
+    if dm.shape[0] == 2:
+        dmf = dm[0] + dm[1] #unrestricted
+    else:
+        dmf=dm
     # The interaction between QM atoms and MM particles
     # \sum_K d/dR (1/|r_K-R|) = \sum_K (r_K-R)/|r_K-R|^3
     qm_coords = mol.atom_coords()
@@ -1611,8 +1615,8 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
     for i, q in enumerate(mm_charges):
         with mol.with_rinv_origin(mm_coords[i]):
             v = mol.intor('int1e_iprinv')
-        f =(np.einsum('ij,xji->x', dm, v) +
-            np.einsum('ij,xij->x', dm, v.conj())) * -q
+        f =(np.einsum('ij,xji->x', dmf, v) +
+            np.einsum('ij,xij->x', dmf, v.conj())) * -q
         g[i] += f
     return g
 
