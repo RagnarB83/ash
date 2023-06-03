@@ -555,7 +555,7 @@ end"""
         #Print population analysis in each run if requested
         if self.print_population_analysis is True:
             if self.printlevel >= 2:
-                print("\nPrinting Population analysis:")
+                print("\nPrinting Mulliken Population analysis:")
                 print("-"*30)
                 charges = grabatomcharges_ORCA("Mulliken",self.filename+'.out')
                 spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')

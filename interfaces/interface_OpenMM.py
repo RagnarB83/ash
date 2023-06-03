@@ -1077,7 +1077,7 @@ class OpenMMTheory:
             self.system.setParticleMass(am, changed_masses[am] * openmm.unit.daltons)
 
         #Update list of current masses
-        self.system_masses = [self.system.getParticleMass(i)._value for i in openmm.allatoms]
+        self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
 
     def unfreeze_atoms(self):
         # Looping over system_masses if frozen, otherwise empty list
