@@ -135,8 +135,12 @@ def write_quick_input(quickinputline,charge,mult,elems,coords,pc_coords=None, pc
     gradkeyword=""
     if Grad is True:
         gradkeyword="GRADIENT"
+    print("pc_coords:", pc_coords)
     if pc_coords is not None:
+        print("PC true")
         pckeyword="EXTCHARGES"
+    else:
+        print("PC false")
     with open(f"{filename}.in", 'w') as inpfile:
         inpfile.write(f"{quickinputline} {gradkeyword} CHARGE={charge} {pckeyword}")
         inpfile.write('\n')
