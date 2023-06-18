@@ -90,6 +90,9 @@ class QUICKTheory:
         #Grab energy and gradient
         if Grad==True:
             if PC is True:
+                print("Grad true, PC true")
+                print("current_MM_coords:", current_MM_coords)
+                print("MMcharges:", MMcharges)
                 write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True, 
                         pc_coords=current_MM_coords,pc_values=MMcharges,filename=self.filename)
             else:
