@@ -90,9 +90,6 @@ class QUICKTheory:
         #Grab energy and gradient
         if Grad==True:
             if PC is True:
-                print("Grad true, PC true")
-                print("current_MM_coords:", current_MM_coords)
-                print("MMcharges:", MMcharges)
                 write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True, 
                         pc_coords=current_MM_coords,pc_values=MMcharges,filename=self.filename)
             else:
@@ -106,8 +103,6 @@ class QUICKTheory:
                 self.gradient,self.pcgradient = grab_gradient_quick(self.filename+'.out',len(current_coords), numpc=len(MMcharges))
             else:
                 self.gradient,self.pcgradient = grab_gradient_quick(self.filename+'.out',len(current_coords))
-            print("self.gradient", self.gradient)
-            print("pcgradient:", self.pcgradient)
         else:
             if PC is True:
                 write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=False, 
@@ -142,7 +137,6 @@ def write_quick_input(quickinputline,charge,mult,elems,coords,pc_coords=None, pc
     gradkeyword=""
     if Grad is True:
         gradkeyword="GRADIENT"
-    print("pc_coords:", pc_coords)
     if pc_coords is not None:
         print("PC true")
         pckeyword="EXTCHARGES"
@@ -156,9 +150,6 @@ def write_quick_input(quickinputline,charge,mult,elems,coords,pc_coords=None, pc
             inpfile.write('{}   {} {} {}\n'.format(el,c[0],c[1],c[2]))
         inpfile.write('\n')
         if pc_coords is not None:
-            print("pc true")
-            print("pc_coords:", pc_coords)
-            print("pc_values:", pc_values)
             for c,v in zip(pc_coords,pc_values):
                 inpfile.write(f'{c[0]} {c[1]} {c[2]} {v}\n')
         inpfile.write('\n')
