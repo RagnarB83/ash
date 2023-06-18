@@ -109,7 +109,11 @@ class QUICKTheory:
             print("self.gradient", self.gradient)
             print("pcgradient:", self.pcgradient)
         else:
-            write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=False)
+            if PC is True:
+                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=False, 
+                        pc_coords=current_MM_coords,pc_values=MMcharges,filename=self.filename)
+            else:
+                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=False)
             run_quick(self.quickdir,self.filename+'.in',quickbinary=self.quickbinary)
             self.energy=grab_energy_quick(self.filename+'.out')
 
