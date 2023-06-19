@@ -145,9 +145,6 @@ def write_quick_input(quickinputline,charge,mult,elems,coords,pc_coords=None, pc
             inpfile.write('{}   {} {} {}\n'.format(el,c[0],c[1],c[2]))
         inpfile.write('\n')
         if pc_coords is not None:
-            print("pc active")
-            print("pc_coords:", pc_coords)
-            print("pc_values:", pc_values)
             for c,v in zip(pc_coords,pc_values):
                 inpfile.write(f'{c[0]} {c[1]} {c[2]} {v}\n')
         inpfile.write('\n')
