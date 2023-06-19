@@ -1853,7 +1853,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
             if '%FLAG ATOMIC_NUMBER' in line:
                 grab_atomnumber = True
     if len(coords) != len(elems):
-        print(BC.FAIL,f"Num coords ({len(coords)}) not equal to num elems ({len(elems)}). Parsing of Amber files: {} and {} failed. BUG!".format(prmtopfile,inpcrdfile), BC.END)
+        print(BC.FAIL,f"Num coords ({len(coords)}) not equal to num elems ({len(elems)}). Parsing of Amber files: {prmtopfile} and {inpcrdfile} failed. BUG!", BC.END)
         ashexit()
     return elems, coords, box_dims
 
