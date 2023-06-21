@@ -487,6 +487,10 @@ maxiter 150\nend
             print("error")
             ashexit()
 
+        #Memory
+        blocks = f"%maxcore {self.memory}\n" + blocks
+
+
         #PNO setting to use for T1 correction
         if pnosetting == 'NormalPNO':
             thresholdsetting=NormalPNO_thresholds
@@ -497,7 +501,7 @@ maxiter 150\nend
         elif pnosetting =='TightPNO':
             thresholdsetting=TightPNO_thresholds
 
-        mp2block=f"""%maxcore {self.memory}\n%mp2
+        mp2block=f"""\n%mp2
     TCutPNO {thresholdsetting['TCutPNO']}
     TCutDO {thresholdsetting["TCutDO"]}
     TCutMKN {thresholdsetting["TCutMKN"]}
