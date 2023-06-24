@@ -8,7 +8,7 @@ import time
 
 from ash.functions.functions_general import ashexit, listdiff, clean_number, blankline,BC,print_time_rel, print_line_with_mainheader,isodd, isint
 import ash.modules.module_coords
-from ash.modules.module_coords import check_charge_mult, check_multiplicity
+from ash.modules.module_coords import check_charge_mult, check_multiplicity,read_xyzfile,write_multi_xyz_file
 from ash.modules.module_results import ASH_Results
 import ash.interfaces.interface_ORCA
 from ash.interfaces.interface_ORCA import read_ORCA_Hessian
@@ -1816,8 +1816,8 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
         return False
 
 
-#Simple function to get Wigner distribution from geometr
-def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperature=300, num_samples=100):
+#Simple function to get Wigner distribution from geometry
+def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperature=300, num_samples=100,dirname="wigner"):
     print_line_with_mainheader("Wigner distribution")
 
     if fragment is None:
@@ -1838,64 +1838,53 @@ def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperat
         print("You need to provide either hessian, normal_modes or a hessian as part of fragment")
         ashexit()
 
-    #Checklinear
-    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
-        TRmodenum=5
-    else:
-        TRmodenum=6
-
     #Clean up frequencies
     frequencies = clean_frequencies(frequencies)
     print("Fragment:", fragment)
-    #print("Hessian:", hessian)
     print("Frequencies:", frequencies)
-    #print("Normal modes:", normal_modes)
     print(f"Temperature {temperature} K")
     print("Number of samples:", num_samples)
+    #NOTE: Projection  required before passing normal modes
+    #Checklinear
+    #if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+    #    TRmodenum=5
+    #else:
+    #    TRmodenum=6
+    #print("Before:")
+    #print(f"Num normal_modes ({len(normal_modes)})")
+    #print(f"Frequencies: ({len(frequencies)})", frequencies)
+    #print("normal_modes:", normal_modes)
+    #print()
+    #print("Removing first 6 freqs and modes:")
+    #frequencies_proj=frequencies[TRmodenum:]
+    #evectors_proj=evectors[TRmodenum:]
+    #print(f"Num evectors_proj ({len(evectors_proj)})")
+    #print("evectors_proj:", evectors_proj)
+    #print(f"Frequencies (proj): ({len(frequencies_proj)})", frequencies_proj)
 
-    #NOTE: Projection probably required first
-    print("Before:")
-    print(f"Num normal_modes ({len(normal_modes)})")
-    print(f"Frequencies: ({len(frequencies)})", frequencies)
-    print("Removing first 6 freqs and modes:")
-
-    frequencies_proj=frequencies[TRmodenum:]
-    normal_modes_proj=frequencies[TRmodenum:]
-    print(f"Num normal_modes ({len(normal_modes_proj)})")
-    print(f"Frequencies: ({len(frequencies_proj)})", frequencies_proj)
-    #Currently calling geometric to get wigner distribution
-    from geometric.normal_modes import wigner_sample
-    print("Calling wigner_sample")
     #Converting coords to Bohr
     coords_in_au = fragment.coords * ash.constants.ang2bohr
-    #NOTE: Not working for some reason
-    #wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies), normal_modes, temperature, num_samples, '.', True)
-    exit()
-    #coords_collection=[]
-    #vel_collection=[]
-    #random_Q=1
-    #random_P=1
+    print("Calling wigner_sample")
 
-    #print("fragment.elems:", fragment.elems)
-    #print("fragment.coords:", fragment.coords)
-    #for freq,mode in zip(frequencies,normal_modes):
-    #    print("Freq:", freq)
-     #   print("mode:", mode)
-     #   for i, (el,coord,mass) in enumerate(zip(fragment.elems,fragment.coords,fragment.masses)):
-     #       print("mass:", mass)
-     #       for xyz in range(3):
-     #           #coord
-     #           atom.coord[xyz] += random_Q * mode[i][xyz] * math.sqrt(1./mass)
-     #           #vel
-     #           atom.veloc[xyz] += random_P * mode[i][xyz] * math.sqrt(1./mass)
-    #Print XYZ trajectory of coordinates
-    #Also print velocities in some format
+    #NOTE: Easiest to just call geometric frequency-analysis for now so that we get correct projection
+    from geometric.normal_modes import frequency_analysis
+    frequency_analysis(coords_in_au, hessian, elem=fragment.elems, mass=fragment.masses, temperature=temperature, wigner=(num_samples,dirname))
 
-    final_coords=None
-    final_vels=None
+    #NOTE: Below will work onlywhen we have correct projected eigenvectors
+    #from geometric.normal_modes import wigner_sample
+    #wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, '.', True)
+    
+    #Grabbing all coordinates from wigner-dir into one list
+    final_coords=[]
+    for dir in sorted(os.listdir(dirname)):
+        e,c = read_xyzfile(f"{dirname}/{dir}/coords.xyz")
+        final_coords.append((e,c))
+    
+    #Write multi-XYZ file
+    write_multi_xyz_file(final_coords,fragment.numatoms,filename="Wigner_traj.xyz")
 
-    #Return collection of coordinates and velocities
-    return final_coords, final_vels
+    #Return 
+    return
 
 
 #Simple function to get the relevant part (real or imaginary) part of a complex number

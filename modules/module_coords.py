@@ -668,7 +668,6 @@ class Fragment:
                 line = "{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
 
-
     # Print system-fragment information to file. Default name of file: "fragment.ygg
     def print_system(self, filename='fragment.ygg'):
         if self.printlevel >= 2:
@@ -1021,6 +1020,15 @@ def write_XYZ_for_atoms(coords, elems, members, name):
             line = "{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el, c[0], c[1], c[2])
             ofile.write(line + '\n')
 
+#Write a multi-XYZ-file, i.e. XYZ trajectory from a list with each sublist containing list of elements and np array of coords
+#el_and_coords : [[['O','H','H'],np.array([[0.0, 0.0, 0.0],[0.0,0.0,1.0],[0.0,0.0,-1.0]])],etc.]
+def write_multi_xyz_file(el_and_coords,numatoms,filename,label=""):
+    with open(filename,"w") as f:
+        for coord in el_and_coords:
+            f.write(f"{numatoms}\n")
+            f.write(f"{label}\n")
+            for el,co in zip(coord[0],coord[1]):
+                f.write(f"{el} {co[0]} {co[1]} {co[2]}\n")
 
 # From lists of coords,elems and atom indices, print coords with elems
 # If list of atom indices provided, print as leftmost column

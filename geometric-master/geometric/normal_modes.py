@@ -225,6 +225,10 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
     assert coords.shape == (na, 3)
     assert Hessian.shape == (3*na, 3*na)
 
+    print("coords", coords)
+    print("Hessian", Hessian)
+    print("elem", elem)
+    print("mass", mass)
     # Convert Hessian eigenvalues into wavenumbers:
     # 
     # omega = sqrt(k/m)
@@ -448,6 +452,12 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
         if nSample < 0:
             nSample = abs(nSample)
             overwrite = True
+        print("coords:", coords)
+        print(mass)
+        print(elem)
+        print(freqs_wavenumber)
+        print("normal_modes:", normal_modes)
+        print("now calling wigner_sample")
         wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperature, nSample, dirname, overwrite)
     return freqs_wavenumber, normal_modes_cart, G_tot_au
 
