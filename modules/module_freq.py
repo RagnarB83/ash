@@ -8,7 +8,7 @@ import time
 
 from ash.functions.functions_general import ashexit, listdiff, clean_number, blankline,BC,print_time_rel, print_line_with_mainheader,isodd, isint
 import ash.modules.module_coords
-from ash.modules.module_coords import check_charge_mult, check_multiplicity,read_xyzfile,write_multi_xyz_file
+from ash.modules.module_coords import check_charge_mult, check_multiplicity,read_xyzfile,write_multi_xyz_file, Fragment
 from ash.modules.module_results import ASH_Results
 import ash.interfaces.interface_ORCA
 from ash.interfaces.interface_ORCA import read_ORCA_Hessian
@@ -37,6 +37,9 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         print("Frequencies:", frequencies)
         hessatoms=list(range(0,fragment.numatoms))
         thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
+
+        #Write Hessian to file
+        write_hessian(hessian,hessfile="Hessian")
 
         #freqoutputdict object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
         #freqoutputdict['hessian'] = hessian
@@ -1728,15 +1731,25 @@ def S_vib_QRRHO(freqs,T,omega_0=100,I_av=None):
 
 
 #Write Hessian to file
+#def write_hessian(hessian,hessfile="Hessian"):
+#    with open(hessfile, 'w') as hfile:
+#        #RB note: Skipping header to be compatible with geometric format
+#        #hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
+#        for row in hessian:
+#            rowline=' '.join(map(str, row))
+#            hfile.write(str(rowline)+'\n')
+#        blankline()
+#        
+
 def write_hessian(hessian,hessfile="Hessian"):
-    with open(hessfile, 'w') as hfile:
-        #RB note: Skipping header to be compatible with geometric format
-        #hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
-        for row in hessian:
-            rowline=' '.join(map(str, row))
-            hfile.write(str(rowline)+'\n')
-        blankline()
-        print(f"Wrote Hessian to file: {hessfile}")
+    np.savetxt(hessfile, hessian)
+    print(f"Wrote Hessian to file: {hessfile}")
+
+#Read Hessian from file
+def read_hessian(file):
+    print(f"Reading Hessian from file: {file}")
+    hessian = np.loadtxt(file)
+    return hessian
 
 #Read tangent file
 def read_tangent(tangentfile):
@@ -1868,23 +1881,29 @@ def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperat
 
     #NOTE: Easiest to just call geometric frequency-analysis for now so that we get correct projection
     from geometric.normal_modes import frequency_analysis
+    try:
+        os.rmdir(dirname)
+    except:
+        pass
     frequency_analysis(coords_in_au, hessian, elem=fragment.elems, mass=fragment.masses, temperature=temperature, wigner=(num_samples,dirname))
 
-    #NOTE: Below will work onlywhen we have correct projected eigenvectors
+    #NOTE: Below will work only when we have correct projected eigenvectors
     #from geometric.normal_modes import wigner_sample
     #wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, '.', True)
     
-    #Grabbing all coordinates from wigner-dir into one list
+    #Grabbing all coordinates from wigner-dir into one list and create fragments
     final_coords=[]
+    final_frags=[]
     for dir in sorted(os.listdir(dirname)):
-        e,c = read_xyzfile(f"{dirname}/{dir}/coords.xyz")
+        e,c = read_xyzfile(f"{dirname}/{dir}/coords.xyz",printlevel=0)
         final_coords.append((e,c))
-    
-    #Write multi-XYZ file
-    write_multi_xyz_file(final_coords,fragment.numatoms,filename="Wigner_traj.xyz")
+        newfrag = Fragment(coords=c, elems=e, charge=fragment.charge, mult=fragment.mult, printlevel=0)
+        final_frags.append(newfrag)
 
-    #Return 
-    return
+    #Write multi-XYZ file (Used by PES module e.g.)
+    write_multi_xyz_file(final_coords,fragment.numatoms,filename="Wigner_traj.xyz")
+    #Return list of ASH fragments 
+    return final_frags
 
 
 #Simple function to get the relevant part (real or imaginary) part of a complex number

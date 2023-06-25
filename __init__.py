@@ -52,7 +52,7 @@ Singlepoint_parallel = Job_parallel
 
 # Freq
 from ash.modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants,\
-    get_dominant_atoms_in_mode, write_normalmode,calc_hessian_xtb, wigner_distribution
+    get_dominant_atoms_in_mode, write_normalmode,calc_hessian_xtb, wigner_distribution,write_hessian,read_hessian
 
 # Constants
 import ash.constants

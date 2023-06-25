@@ -25,6 +25,7 @@ from ash.dictionaries_lists import eldict
 #TODO: SHCI
 #TODO: Look into AGF2 as an addition
 #TODO: Combine with Auto Non-Aufbau calc?
+#TODO: SOC. Added as input option already. Need to grab SOC eigenvalues.  Best to do from section "Doing QDPT with ONLY SOC!" in MRCI output
 #https://github.com/pyscf/pyscf/blob/master/examples/agf2/03-photoemission_spectra.py
 
 #Wrapper function around PhotoElectron()
@@ -36,7 +37,7 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None,
                         CASCI_Final=False,
-                        MRCI_CASCI_Final=False,
+                        MRCI_CASCI_Final=False, MRCI_SOC=False,
                         btPNO=False, DLPNO=False, no_shakeup=False, virt_offset=0,
                         path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False):
     """
@@ -54,7 +55,7 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
                         tda=tda,brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, check_stability=check_stability,
                         CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
-                        MRCI_CASCI_Final=MRCI_CASCI_Final, CASCI_Final=CASCI_Final,
+                        MRCI_CASCI_Final=MRCI_CASCI_Final, MRCI_SOC=MRCI_SOC, CASCI_Final=CASCI_Final,
                         btPNO=btPNO, DLPNO=DLPNO, 
                         path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson)
     result = photo.run()
@@ -70,7 +71,7 @@ class PhotoElectronClass:
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
-                        MRCI_CASCI_Final=False, CASCI_Final=False, 
+                        MRCI_CASCI_Final=False, MRCI_SOC=False, CASCI_Final=False, 
                         btPNO=False, DLPNO=False, 
                         path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False):
         """
@@ -172,6 +173,7 @@ class PhotoElectronClass:
         self.MRCI_Final = CAS_Final
         self.tprintwfvalue=tprintwfvalue
         self.MRCI_CASCI_Final=MRCI_CASCI_Final
+        self.MRCI_SOC=MRCI_SOC
         self.btPNO=btPNO 
         self.DLPNO=DLPNO 
         self.label=label
@@ -189,6 +191,7 @@ class PhotoElectronClass:
                 print("SORCI is True!")
             else:
                 self.SORCI=False
+            print("MRCI_SOC:", self.MRCI_SOC)
         #TDDFT-specific settings print
         if self.method == 'TDDFT':
             if self.tda == True:
@@ -450,12 +453,17 @@ class PhotoElectronClass:
                 self.theory.orcablocks = self.theory.orcablocks + "%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n"
             else:
                 self.theory.orcablocks = self.theory.orcablocks.replace("%mdci\n","%mdci\nSTol 1e-7\nmaxiter 2700\nDoSingularPT true\nend\n")
-                
+        
+        #Possible SOC
+        if self.MRCI_SOC is True:
+            socblock="""soc dosoc true end"""
+        else:
+            socblock=""
         #Defining simple MRCI block. States defined
         if '%mrci' not in self.theory.orcablocks:
-            self.theory.orcablocks = self.theory.orcablocks + "%mrci\n" + "printwf det\nTPrintwf {}\n".format(self.tprintwfvalue) + "end"
+            self.theory.orcablocks = self.theory.orcablocks + f"%mrci\n printwf det\nTPrintwf {self.tprintwfvalue}\n {socblock}\n end"
         else:
-            self.theory.orcablocks = self.theory.orcablocks.replace("%mrci\n","%mrci\n"+"printwf det\nTPrintwf {}\n".format(self.tprintwfvalue))
+            self.theory.orcablocks = self.theory.orcablocks.replace(f"%mrci\n",f"%mrci\nprintwf det\nTPrintwf {self.tprintwfvalue}\n {sockblock}\n")
         #Trimming
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
@@ -601,9 +609,7 @@ class PhotoElectronClass:
                         #Copy density files for each final state over to Calculated_densities
                         shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{fstate.label}_state{numstate}.spindens.cube")
                         os.remove(self.theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp')
-        #PREPARE Final IPs and energies
-        self.FinalIPs = []
-        self.Finalionstates = []        
+        #PREPARE Final IPs and energies    
         for fstate in self.Finalstates:
             #Each fstate linked with same GBW file and outfile
             fstate.gbwfile = "Final_State" + ".gbw"
@@ -803,8 +809,6 @@ end")
             fstate.outfile = "Final_State" + ".out"
 
         #Assembling Final energies, IPs etc.
-        self.FinalIPs = []
-        self.Finalionstates = []
         print(BC.OKBLUE,"Initial State energy:", self.stateI.energy, "au",BC.ENDC)
         print(BC.OKBLUE,"Final State energies:", fstates_dict, BC.ENDC)
         for fstate in self.Finalstates:
@@ -917,7 +921,6 @@ end")
 
 
         #Printing initial results
-        self.FinalIPs = []; self.Finalionstates = []; self.FinalTDtransitionenergies =[]
         print(BC.OKBLUE,"\nInitial State SCF energy:", self.stateI.energy, "au",BC.ENDC)
         print("")
         for fstate in self.Finalstates:
@@ -1066,7 +1069,6 @@ end")
 
         #lowest_mult_fstate.TDtransitionenergies  TODO
         #Printing initial results
-        self.FinalIPs = []; self.Finalionstates = []; self.FinalTDtransitionenergies =[]
         print(BC.OKBLUE,"\nInitial State SCF energy:", self.stateI.energy, "au",BC.ENDC)
         print("")
         print("---------------------------------------------------------------------------")
@@ -1103,17 +1105,15 @@ end")
         print(BC.OKBLUE, f"Ion-state energies (au) for mult: {lowest_mult_fstate.mult} \n", BC.ENDC, lowest_mult_fstate.ionstates)
         print("")
 
-        self.FinalIPs = highest_mult_fstate.IPs + lowest_mult_fstate.IPs
-        self.Finalionstates = highest_mult_fstate.ionstates + lowest_mult_fstate.ionstates
-        self.FinalTDtransitionenergies = highest_mult_fstate.TDtransitionenergies + lowest_mult_fstate.TDtransitionenergies
+        self.FinalIPs = self.FinalIPs + highest_mult_fstate.IPs + lowest_mult_fstate.IPs
+        self.Finalionstates = self.Finalionstates + highest_mult_fstate.ionstates + lowest_mult_fstate.ionstates
+        self.FinalTDtransitionenergies = self.FinalTDtransitionenergies + highest_mult_fstate.TDtransitionenergies + lowest_mult_fstate.TDtransitionenergies
 
 
     def run_EOM(self,fragment):
         print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
 
         #NOTE: EOM will not call Init-State SCF
-        #Preserve old
-        orig_orcablocks=copy.copy(self.theory.orcablocks)
         
         #Will calculate IPs directly
         print("Adding MDCI block for initial state")
@@ -1135,10 +1135,13 @@ end")
 
 
 
-        self.FinalIPs=[]
+        #self.FinalIPs=[]
         fstates_dict={}
         for fstate in self.Finalstates:
             print(BC.OKGREEN, "Calculating IPs directly via IP-EOM-CCSD. ", BC.ENDC)
+            print("fstate.mult:", fstate.mult)
+            print("self.stateI.mult:", self.stateI.mult)
+
             if fstate.mult > self.stateI.mult:
                 print("Final state mult {}, setting DoBeta true".format(fstate.mult))
                 Electron_ion_line='DoBeta true'
@@ -1146,7 +1149,7 @@ end")
                 print("Final state mult {}, setting DoAlpha true".format(fstate.mult))
                 Electron_ion_line='DoAlpha true'
             #Add nel,norb and nroots lines back in. Also determinant printing option
-            self.theory.orcablocks = orig_orcablocks + '\n%mdci\n' + 'nroots {}\n'.format(fstate.numionstates) + Electron_ion_line+'\n' + 'maxiter 200\n'+'end\n'
+            self.theory.orcablocks = self.orig_orcablocks + '\n%mdci\n' + 'nroots {}\n'.format(fstate.numionstates) + Electron_ion_line+'\n' + 'maxiter 200\n'+'end\n'
             self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
             self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')        
         
@@ -1209,7 +1212,6 @@ end")
             print(BC.OKBLUE,"Final State CCSD+EOM-IP energies:", fstates_dict, BC.ENDC)
             #IPs already calculated
             print("FinalIPs:", self.FinalIPs)
-            self.Finalionstates = []; self.finaldysonnorms=[]
             for fstate in self.Finalstates:
                 print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))  
                 self.Finalionstates = self.Finalionstates + fstate.ionstates      
@@ -1562,6 +1564,11 @@ end")
         #Cleaning up old files to make sure no interference
         self.cleanup()
 
+        #Initializing (necessary for ensemble)
+        self.FinalIPs = []; self.Finalionstates = []; self.finaldysonnorms=[]; self.FinalTDtransitionenergies =[]
+        #Preserve old
+        self.orig_orcablocks=copy.copy(self.theory.orcablocks)
+
         if self.vibrational_option == "ensemble":
             print("Ensemble option is active. Reading coordinates from trajectory file:", self.trajectory)
             fragments = split_multimolxyzfile(self.trajectory, return_fragments=True)
@@ -1603,8 +1610,8 @@ end")
             self.setup_ORCA_object()
             for fragment in fragments:
                 self.run_EOM(fragment)
-            if self.densities != None:
-                print("No densities are available for EOM yet. Skipping")
+                if self.densities != None:
+                    print("No densities are available for EOM yet. Skipping")
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
         #CASSCF, CAS-CI and NEVPT2
@@ -2406,7 +2413,7 @@ def nevpt2_state_energies_grab(file):
 
 #MRCI: Grabbing all root energies
 #If SORCI then multiple MRCI output
-def mrci_state_energies_grab(file,SORCI=False):
+def mrci_state_energies_grab(file,SORCI=False, SOC=False):
     
     #If SORCI True then multiple MRCI output sections. we want last one
     if SORCI is True:

@@ -1455,7 +1455,7 @@ def molformulatolist(formulastring):
 
 
 # Read XYZ file
-def read_xyzfile(filename):
+def read_xyzfile(filename,printlevel=2):
     # Will accept atom-numbers as well as symbols
     elements = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
                 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
@@ -1467,7 +1467,8 @@ def read_xyzfile(filename):
                 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
                 'Pa',
                 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
-    print("Reading coordinates from XYZ file '{}'.".format(filename))
+    if printlevel >= 2:
+        print("Reading coordinates from XYZ file '{}'.".format(filename))
     coords = []
     elems = []
     with open(filename) as f:
@@ -1607,7 +1608,7 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1,return_fragments=Fal
                     if writexyz is True:
                         # Alternative option: write each conformer/molecule to disk as XYZfile
                         write_xyzfile(elems, coords, "molecule" + str(molcounter))
-                    frag = Fragment(coords=coords,elems=elems)
+                    frag = Fragment(coords=coords,elems=elems,printlevel=0)
                     fragments.append(frag)
                     coords = []
                     elems = []

@@ -1027,7 +1027,7 @@ def xesgrab(file):
                 xesgrab=True
     return xesenergies,intensities
 
-#Grab TDDFT states from ORCA output
+#Grab TDDFT state energies from ORCA output
 def tddftgrab(file):
     tddftstates=[]
     tddft=True
@@ -1043,6 +1043,21 @@ def tddftgrab(file):
                 if 'the weight of the individual excitations' in line:
                     tddftgrab=True
     return tddftstates
+
+#Grab TDDFT state intensities from ORCA output
+def tddftintens_grab(file):
+    intensities=[]
+    tddftgrab=False
+    with open(file) as f:
+        for line in f:
+            if tddftgrab==True:
+                if len(line.split()) == 8:
+                        intensities.append(float(line.split()[3]))
+                if len(line.split()) == 0:
+                    tddftgrab=False
+            if 'State   Energy    Wavelength  fosc         T2        TX        TY        TZ' in line:
+                tddftgrab=True
+    return intensities
 
 #Grab TDDFT orbital pairs from ORCA output
 def tddft_orbitalpairs_grab(file):
