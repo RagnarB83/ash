@@ -15,12 +15,12 @@ from difflib import SequenceMatcher
 from ash.interfaces.interface_ORCA import scfenergygrab,tddftgrab,orbitalgrab,run_orca_plot,grabEOMIPs,check_stability_in_output, ORCATheory, finalenergiesgrab
 from ash.functions.functions_general import ashexit, writestringtofile,BC,blankline,isint,islist,print_time_rel,print_line_with_mainheader,find_between
 from ash.functions.functions_elstructure import modosplot,write_cube_diff,read_cube
+from ash.modules.module_coords import split_multimolxyzfile
 import ash.constants
 from ash.dictionaries_lists import eldict
 
 
 #TODO: pyscf addition
-#TODO: Wigner option
 #TODO: Finish No-Shakeup option
 #TODO: SHCI
 #TODO: Look into AGF2 as an addition
@@ -28,10 +28,10 @@ from ash.dictionaries_lists import eldict
 #https://github.com/pyscf/pyscf/blob/master/examples/agf2/03-photoemission_spectra.py
 
 #Wrapper function around PhotoElectron()
-def PhotoElectron(theory=None, fragment=None, method=None,
+def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=None, trajectory=None,
                         numcores=1, memory=40000,label=None, 
                         Initialstate_charge=None, Initialstate_mult=None,
-                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, 
+                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5, 
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None,
@@ -48,7 +48,7 @@ def PhotoElectron(theory=None, fragment=None, method=None,
     #So much of the code is theory-specific anyway
     #Method then selects class to use. Probably should switch to dictionaries for all the keywords then
 
-    photo=PhotoElectronClass(theory=theory, fragment=fragment, method=method, numcores=numcores, memory=memory,label=label, 
+    photo=PhotoElectronClass(theory=theory, fragment=fragment, method=method, vibrational_option=vibrational_option, trajectory=trajectory, numcores=numcores, memory=memory,label=label, 
                         Initialstate_charge=Initialstate_charge, Initialstate_mult=Initialstate_mult,
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates, 
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
@@ -64,9 +64,9 @@ def PhotoElectron(theory=None, fragment=None, method=None,
 
 
 class PhotoElectronClass:
-    def __init__(self,theory=None, fragment=None, method=None, numcores=1, memory=40000,label=None, 
+    def __init__(self,theory=None, fragment=None, method=None, vibrational_option=None, trajectory=None, numcores=1, memory=40000,label=None, 
                         Initialstate_charge=None, Initialstate_mult=None,
-                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=None, 
+                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5, 
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
@@ -117,22 +117,25 @@ class PhotoElectronClass:
         if Initialstate_charge is None or Initialstate_mult is None or Ionizedstate_charge is None or Ionizedstate_mult is None:
             print("Provide charge and spin multiplicity of initial and ionized state: Initialstate_charge, Initialstate_mult, Ionizedstate_charge,Ionizedstate_mult ")
             ashexit()
+        if theory is None:
+            print("A theory object must be provided")
+            ashexit()
         if isinstance(theory, ORCATheory) is False:
             print("Theory not supported for PhotoElectronSpectrum")
             print("Only ORCATheory supported for now")
-            ashexit()
-        if len(Ionizedstate_mult) != len(numionstates):
-            print(f"If 2 ionized state multiplicities are chosen (Ionizedstate_mult={Ionizedstate_mult}) then numionstates list must contain 2 numbers")
             ashexit()
         if theory.numcores != numcores:
             print(f"Warning: Numcores={numcores} provided to PhotoElectron does not match number of cores in theory level.")
             print("Assuming this is a mistake and changing theory numcores now")
             theory.numcores=numcores
-
+        #if len(Ionizedstate_mult) == 2 and isint(numionstates):
+        #    print(f"If 2 ionized state multiplicities are chosen (Ionizedstate_mult={Ionizedstate_mult}) then numionstates list must contain 2 numbers")
+        #    ashexit()
         #Numionstates can be number or list of numbers (states for each multiplicity for CAS/MRCI)
         if isint(numionstates):
             self.numionstates_A=numionstates
             self.numionstates_B=numionstates
+            self.numionstates=self.numionstates_A 
         elif islist(numionstates):
             if len(numionstates)==2:
                 #A,B: first and second multiplicity in Ionizedstate_mult
@@ -174,7 +177,9 @@ class PhotoElectronClass:
         self.label=label
         self.check_stability=check_stability
         self.no_shakeup=no_shakeup
-        self.virt_offset=virt_offset  #For no_shakeup option. Whether to allow more than LUMO virtual excitations or not (default 0)
+        self.virt_offset=virt_offset
+        self.vibrational_option=vibrational_option  #For no_shakeup option. Whether to allow more than LUMO virtual excitations or not (default 0)
+        self.trajectory=trajectory
 
         print("PES method:", self.method)
         if self.method == 'MRCI' or self.method=='MREOM':
@@ -210,6 +215,14 @@ class PhotoElectronClass:
         print("HS mult:", self.HSmult)
         print("atomstoflip:", self.atomstoflip)
 
+        #VIBRATIONAL OPTION
+        print("Vibrational option:", self.vibrational_option)
+        #TODO: Later more options will be here
+        if self.vibrational_option == "ensemble":
+            print("Ensemble trajectory:", self.trajectory)
+            if self.trajectory == None:
+                print("Provide ensemble traj file as trajectory keyword")
+                ashexit()
 
         #Initizalign final list (necessary)
         self.finaldysonnorms=[]
@@ -300,7 +313,7 @@ class PhotoElectronClass:
             if 'UKS' not in self.theory.orcasimpleinput.upper():
                 self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
 
-    def run_tddft_densities(self):
+    def run_tddft_densities(self,fragment):
         print("Inside run_tddft_densities")
         #Here doing densities for each TDDFT-state. SCF-states already done.
         print("")
@@ -354,7 +367,7 @@ class PhotoElectronClass:
                     print("Turning off stability analysis.")
                     self.theory.orcablocks=self.theory.orcablocks.replace("stabperform true", "stabperform false")
 
-                ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
+                ash.Singlepoint(fragment=fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
                 print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                 #Doing spin-density Cubefile for each cisr file
@@ -418,7 +431,7 @@ class PhotoElectronClass:
             self.theory.orcablocks= self.theory.orcablocks + '\n%casscf\n'  + "nel {}\n".format(self.MRCI_Initial[0]) + "norb {}\n".format(self.MRCI_Initial[1]) + "nroots {}\nend\n".format(1)
 
     #MRCI for initial state
-    def run_MRCI_Initial(self):
+    def run_MRCI_Initial(self,fragment):
         print("MRCI/MREOM option active!")
         print("Will do CASSCF orbital optimization for initial-state, followed by MRCI/MREOM")
         print("Modifying MRCI block for initial state, CAS({},{})".format(self.MRCI_Initial[0],self.MRCI_Initial[1]))
@@ -470,7 +483,7 @@ class PhotoElectronClass:
 
 
         #Calling SCF run
-        result = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.stateI.charge, mult=self.stateI.mult)
+        result = ash.Singlepoint(fragment=fragment, theory=self.theory, charge=self.stateI.charge, mult=self.stateI.mult)
         self.stateI.energy=result.energy
 
         #Keeping copy of input/outputfile and GBW file
@@ -493,7 +506,7 @@ class PhotoElectronClass:
                 shutil.copyfile(self.theory.filename + '.spindens.cube', './Calculated_densities/' + f"{self.stateI.label}.spindens.cube")
                 os.remove(self.theory.filename + f'.state_0_block_0.spin.tmp')
 
-    def run_MRCI_Final(self):
+    def run_MRCI_Final(self,fragment):
         if self.MRCI_CASCI_Final is True:
             print("Will do CAS-CI reference (using initial-state orbitals) for final-states") 
             #In Final-state MRCI we  use the previous CASSCF-orbitals. Hence CAS-CI and noiter
@@ -545,7 +558,7 @@ class PhotoElectronClass:
                 print("Only 1 GBW file was specified in initialorbitalfiles list.")
                 print("Continuing, will use orbitals from previous Init-state calculation instead.")
         #RUNNING JOB
-        ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
+        ash.Singlepoint(fragment=fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
 
         #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
         fstates_dict = mrci_state_energies_grab(self.theory.filename+'.out', SORCI=self.SORCI)
@@ -635,7 +648,7 @@ class PhotoElectronClass:
             #Checking if wrong determinant in file and delete
             check_and_delete_wrong_det("dets_final_mult" + str(fstate.mult),fstate.mult)
 
-    def run_CAS(self):
+    def run_CAS(self,fragment):
         print("Using TprintWF value of ", self.tprintwfvalue)
         print("Adding CASSCF block for initial state, CAS({},{})".format(self.CAS_Initial[0],self.CAS_Initial[1]))
         print("{} electrons in {} orbitals".format(self.CAS_Initial[0],self.CAS_Initial[1]))
@@ -675,7 +688,7 @@ end")
                 self.theory.orcasimpleinput = self.theory.orcasimpleinput + " keepdens "
 
         #Calling SCF run
-        self.run_SCF_InitState()
+        self.run_SCF_InitState(fragment)
         #Note: Using SCF energy and not Final Single Point energy (does not work for TDDFT)
         print("After CASSCF run")
         if self.method =='CASSCF' or self.method == 'CASCI':
@@ -750,7 +763,7 @@ end")
                 print("Only 1 GBW file was specified in initialorbitalfiles list. Ignoring.")
                 print("Continuing, will use orbitals from previous Init-state calculation instead.")
 
-        ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
+        ash.Singlepoint(fragment=fragment, theory=self.theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
 
         #Getting state-energies of all states for each spin multiplicity (state-averaged calculation)
         if self.NEVPT2 is True:
@@ -803,13 +816,13 @@ end")
             self.Finalionstates = self.Finalionstates + fstate.ionstates
 
     # Calculate Ionized state via SCF+TDDFT approach
-    def run_TDDFT(self):
+    def run_TDDFT(self,fragment):
         print("TDDFT option chosen:")
         print(BC.OKBLUE,"Total ion states:", self.numionstates, BC.ENDC)
         print(BC.OKBLUE,"TDDFT-calculated ion states:", self.numionstates-1, BC.ENDC)
 
         #Run Initial-State SCF
-        self.run_SCF_InitState()
+        self.run_SCF_InitState(fragment)
 
         ###################
         #FINAL STATE
@@ -848,7 +861,7 @@ end")
                     print("Continuing, will use orbitals from previous Init-state calculation instead.")
 
             #Run SCF+TDDDFT
-            ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
+            ash.Singlepoint(fragment=fragment, theory=self.theory, charge=fstate.charge, mult=fstate.mult)
             stability = check_stability_in_output(self.theory.filename+'.out')
             if stability is False and self.check_stability is True:
                 print("PES: Unstable final state. Exiting...")
@@ -935,13 +948,13 @@ end")
 
     # Calculate Ionized state via SPIN-FLIP SCF+TDDFT approach
     #Will calculate highest-multiplicity state with SCF + TDDFT and then do same state with SCF+-SF-TDDFT
-    def run_SF_TDDFT(self):
+    def run_SF_TDDFT(self,fragment):
         print("SF-TDDFT option chosen:")
         print(BC.OKBLUE,"Total ion states:", self.numionstates, BC.ENDC)
         print(BC.OKBLUE,"SF_TDDFT-calculated ion states:", self.numionstates-1, BC.ENDC)
 
         #Run Initial-State SCF
-        self.run_SCF_InitState()
+        self.run_SCF_InitState(fragment)
 
         ###################
         #FINAL STATE
@@ -967,7 +980,7 @@ end")
         #TODO: Initial orbitalfiles
         #Run SCF+TDDDFT
         print(BC.OKGREEN, f"\nCalculating Higher-spinmultiplicity (mult: {highest_mult_fstate.mult}) State SCF and TDDFT.",BC.ENDC)
-        ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=highest_mult_fstate.charge, mult=highest_mult_fstate.mult)
+        ash.Singlepoint(fragment=fragment, theory=self.theory, charge=highest_mult_fstate.charge, mult=highest_mult_fstate.mult)
         stability = check_stability_in_output(self.theory.filename+'.out')
         if stability is False and self.check_stability is True:
             print("PES: Unstable final state. Exiting...")
@@ -1018,7 +1031,7 @@ end")
             tddftstring="%tddft\n"+"sf true\n"+"tda true\n"+"nroots " + str(lowest_mult_fstate.numionstates) + '\n'+"maxdim 25\n"+"end\n"+"\n"
         self.theory.extraline=tddftstring
         #Run Spin-Flip TDDFT, using highest-spin multiplicity
-        ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=lowest_mult_fstate.charge, mult=highest_mult_fstate.mult)
+        ash.Singlepoint(fragment=fragment, theory=self.theory, charge=lowest_mult_fstate.charge, mult=highest_mult_fstate.mult)
         stability = check_stability_in_output(self.theory.filename+'.out')
         if stability is False and self.check_stability is True:
             print("PES: Unstable final state. Exiting...")
@@ -1095,7 +1108,7 @@ end")
         self.FinalTDtransitionenergies = highest_mult_fstate.TDtransitionenergies + lowest_mult_fstate.TDtransitionenergies
 
 
-    def run_EOM(self):
+    def run_EOM(self,fragment):
         print("EOM is True. Will do EOM-IP-CCSD calculations to calculate IPs directly.")
 
         #NOTE: EOM will not call Init-State SCF
@@ -1147,7 +1160,7 @@ end")
                     print("Only 1 GBW file was specified in initialorbitalfiles list. Ignoring.")
                     print("Continuing, will use orbitals from previous Init-state calculation instead.")
             #NOTE: Using initial state charge/mult here because EOM
-            init_EOM = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
+            init_EOM = ash.Singlepoint(fragment=fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
             energy = init_EOM.energy
             self.stateI.energy= energy
 
@@ -1206,8 +1219,8 @@ end")
         print(BC.WARNING,"WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation",BC.ENDC)
         print("Approximate Dyson norms: ", self.finaldysonnorms)
 
-
-    def run_SCF_InitState(self):
+    #run SCF on init-state on specified fragment
+    def run_SCF_InitState(self,fragment):
         print(BC.OKGREEN, "\nCalculating Initial State SCF.",BC.ENDC)
 
         if self.initialorbitalfiles is not None:
@@ -1216,7 +1229,7 @@ end")
             shutil.copyfile(self.initialorbitalfiles[0], self.theory.filename + '.gbw')
 
 
-        self.InitSCF = ash.Singlepoint(fragment=self.fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
+        self.InitSCF = ash.Singlepoint(fragment=fragment, theory=self.theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
         finalsinglepointenergy = self.InitSCF.energy
         stability = check_stability_in_output(self.theory.filename+'.out')
         if stability is False and self.check_stability is True:
@@ -1492,7 +1505,7 @@ end")
         # Check if binary exists
         if self.path_wfoverlap == None:
             print("path_wfoverlap is not set. Exiting")
-            ashexit()
+            return
         elif os.path.exists(self.path_wfoverlap) is False:
             print("Path {} does NOT exist !".format(self.path_wfoverlap))
             ashexit()
@@ -1549,35 +1562,47 @@ end")
         #Cleaning up old files to make sure no interference
         self.cleanup()
 
+        if self.vibrational_option == "ensemble":
+            print("Ensemble option is active. Reading coordinates from trajectory file:", self.trajectory)
+            fragments = split_multimolxyzfile(self.trajectory, return_fragments=True)
+            print("Number of geometries:", len(fragments))
+        else:
+            fragments = [self.fragment]
         #######################################################
         # CALL EOM, MRCI/MREOM, CAS or TDDFT to get states
         #######################################################
         if self.method =='TDDFT':
             print("TDDFT option is active")
             self.setup_ORCA_object()
-            self.run_TDDFT()
-            #Diff density
-            if self.densities == 'SCF' or self.densities == 'All':
-                self.make_diffdensities(statetype='SCF')
-            # MO-spectrum 
-            self.mo_spectrum()
-            #For wfoverlap
-            self.prepare_mos_file()
+
+            for i,fragment in enumerate(fragments):
+                print(f"\nRunning geometry {i+1} of {len(fragments)}")
+                self.run_TDDFT(fragment)
+                # MO-spectrum 
+                self.mo_spectrum()
+                #For wfoverlap
+                self.prepare_mos_file()
+                #Diff density
+                if self.densities == 'SCF' or self.densities == 'All':
+                    self.make_diffdensities(statetype='SCF')
+
         elif self.method =='SF-TDDFT':
             print("SpinFlip TDDFT option is active")
             self.setup_ORCA_object()
-            self.run_SF_TDDFT()
-            #Diff density
-            #if self.densities == 'SCF' or self.densities == 'All':
-            #    self.make_diffdensities(statetype='SCF')
-            # MO-spectrum 
-            self.mo_spectrum()
-            #For wfoverlap
-            self.prepare_mos_file()
+            for fragment in fragments:
+                self.run_SF_TDDFT(fragment)
+                #Diff density
+                #if self.densities == 'SCF' or self.densities == 'All':
+                #    self.make_diffdensities(statetype='SCF')
+                # MO-spectrum 
+                self.mo_spectrum()
+                #For wfoverlap
+                self.prepare_mos_file()
         elif self.method =='EOM':
             print("Calling EOM")
             self.setup_ORCA_object()
-            self.run_EOM()
+            for fragment in fragments:
+                self.run_EOM(fragment)
             if self.densities != None:
                 print("No densities are available for EOM yet. Skipping")
             #No MO-spectrum since WFT
@@ -1586,31 +1611,33 @@ end")
         elif self.method =='CASSCF' or self.method=='CASCI' or self.method == 'NEVPT2' or self.method == 'NEVPT2-F12':
             print("CASSCF/CASCI option active!")
             self.setup_ORCA_object()
-            self.run_CAS()
-            #Diff density
-            if self.densities == 'SCF' or self.densities == 'All':
-                print("Calling make_diffdensities")
-                self.make_diffdensities(statetype='CAS')
-            #Prepare determinants and MOs for Wfoverlap Dyson calculations
-            self.CAS_dets_prep()
-            #For wfoverlap
-            self.prepare_mos_file()
+            for fragment in fragments:
+                self.run_CAS(fragment)
+                #Diff density
+                if self.densities == 'SCF' or self.densities == 'All':
+                    print("Calling make_diffdensities")
+                    self.make_diffdensities(statetype='CAS')
+                #Prepare determinants and MOs for Wfoverlap Dyson calculations
+                self.CAS_dets_prep()
+                #For wfoverlap
+                self.prepare_mos_file()
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
         #Simplifies things. MREOM uses MRCI so let's use same logic.
         elif self.method =='MRCI' or self.method=='MREOM':
             print("MRCI/MREOM option active!")
             self.setup_ORCA_object()
-            self.run_MRCI_Initial()
-            self.run_MRCI_Final()
-            #Difference densities
-            if self.densities == 'SCF' or self.densities == 'All':
+            for fragment in fragments:
+                self.run_MRCI_Initial(fragment)
+                self.run_MRCI_Final(fragment)
                 #Difference densities
-                print("Calling make_diffdensities")
-                self.make_diffdensities(statetype='MRCI')
-            #Prepare determinants and MOs for Wfoverlap Dyson calculations
-            self.MRCI_prepare_determinants()
-            self.prepare_mos_file()
+                if self.densities == 'SCF' or self.densities == 'All':
+                    #Difference densities
+                    print("Calling make_diffdensities")
+                    self.make_diffdensities(statetype='MRCI')
+                #Prepare determinants and MOs for Wfoverlap Dyson calculations
+                self.MRCI_prepare_determinants()
+                self.prepare_mos_file()
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
 
@@ -1649,8 +1676,10 @@ end")
         #FINAL OUTPUT
         ########################
         #PRINT FINAL TABLE
-        self.print_final_table()
-
+        if len(fragments) == 1:
+            self.print_final_table()
+        else:
+            print("Final table for vibrational averaging is not yet ready")
         #Writing stuff to file. Useful for separate plotting of IPs and Dysonnorms
         print("")
         print("Printing IPs, Dyson-norms, MOs to file: PES-Results.txt")
@@ -1670,7 +1699,7 @@ end")
         if self.method =='TDDFT':
             #Create Cube file of electron/spin density using orca_plot for INITIAL STATE
             if self.densities =='All':
-                self.run_tddft_densities()
+                self.run_tddft_densities(self.fragment)
                 print("Printing final results table again for convenience")
                 #PRINT FINAL TABLE
                 self.print_final_table()

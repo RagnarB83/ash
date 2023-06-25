@@ -1578,7 +1578,7 @@ def write_xyzfile(elems, coords, name, printlevel=2, writemode='w'):
 # Function that reads XYZ-file with multiple files, splits and return list of coordinates
 # Created for splitting crest_conformers.xyz but may also be used for MD traj.
 # Also grabs last word in title line. Typically an energy (has to be converted to float outside)
-def split_multimolxyzfile(file, writexyz=False, skipindex=1):
+def split_multimolxyzfile(file, writexyz=False, skipindex=1,return_fragments=False):
     all_coords = []
     all_elems = []
     all_titles = []
@@ -1587,6 +1587,7 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1):
     titlegrab = False
     coords = []
     elems = []
+    fragments=[]
     with open(file) as f:
         for index, line in enumerate(f):
             if index == 0:
@@ -1606,6 +1607,8 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1):
                     if writexyz is True:
                         # Alternative option: write each conformer/molecule to disk as XYZfile
                         write_xyzfile(elems, coords, "molecule" + str(molcounter))
+                    frag = Fragment(coords=coords,elems=elems)
+                    fragments.append(frag)
                     coords = []
                     elems = []
             # Grab title
@@ -1631,7 +1634,10 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1):
                         titlegrab = True
                         coordgrab = False
                         # ashexit()
-    return all_elems, all_coords, all_titles
+    if return_fragments is True:
+        return fragments
+    else:
+        return all_elems, all_coords, all_titles
 
 
 # Read Tcl-Chemshell fragment file and grab elems and coords. Coordinates converted from Bohr to Angstrom
