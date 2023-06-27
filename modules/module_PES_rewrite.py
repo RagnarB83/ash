@@ -935,6 +935,8 @@ end")
             print(BC.OKBLUE, "TDDFT transition energies (eV) for FinalState (mult: {}) : {}\n".format(fstate.mult, fstate.TDtransitionenergies), BC.ENDC, )
 
             # Adding GS-IP to IP-list and GS ion to ionstate
+            fstate.IPs=[]
+            fstate.ionstates=[]
             fstate.IPs.append(fstate.GSIP)
             fstate.ionstates.append(fstate.energy)
             for e in fstate.TDtransitionenergies:
@@ -945,6 +947,7 @@ end")
             print(BC.OKBLUE, "Ion-state energies (au):\n", BC.ENDC, fstate.ionstates)
             print("")
             self.FinalIPs = self.FinalIPs + fstate.IPs
+            print("self.FinalIPs:", self.FinalIPs)
             self.Finalionstates = self.Finalionstates + fstate.ionstates
             self.FinalTDtransitionenergies = self.FinalTDtransitionenergies + fstate.TDtransitionenergies
 
@@ -1506,8 +1509,7 @@ end")
 
         if self.noDyson is True:
             print("NoDyson is True. Setting all Dyson norms to 0.0")
-            #self.finaldysonnorms=[0.0]*self.numionstates
-            self.finaldysonnorms=self.finaldysonnorms+[0.0]*len(self.FinalIPs)
+            self.finaldysonnorms=[0.0]*len(self.FinalIPs)
             return
 
         #Call Dyson orb calc
@@ -1607,6 +1609,8 @@ end")
                 self.TDDFT_dets_prep()
                 #Dyson
                 self.run_dyson_calc()
+                print(f"IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
+                print(f"Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
 
         elif self.method =='SF-TDDFT':
             print("SpinFlip TDDFT option is active")
@@ -1675,12 +1679,12 @@ end")
         ##########
         #Results
         ##########
-        print("\nAll combined Final IPs:", self.FinalIPs)
+        print("\nAll calculations done!")
         print("All combined Ion-state energies (au):", self.Finalionstates)
         print("")
         print(BC.OKBLUE, "Final combined Dyson norms ({}):".format(len(self.finaldysonnorms)), BC.ENDC)
         print(self.finaldysonnorms)
-        print(f"FinalIPs ({len(self.FinalIPs)}):", self.FinalIPs)
+        print(f"All combined Final IPs ({len(self.FinalIPs)}):", self.FinalIPs)
         assert len(self.FinalIPs) == len(self.finaldysonnorms), "List of Dysonnorms not same size as list of IPs."
         print("")
 
