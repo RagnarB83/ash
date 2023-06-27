@@ -1507,7 +1507,7 @@ end")
         if self.noDyson is True:
             print("NoDyson is True. Setting all Dyson norms to 0.0")
             #self.finaldysonnorms=[0.0]*self.numionstates
-            self.finaldysonnorms=[0.0]*len(self.FinalIPs)
+            self.finaldysonnorms=self.finaldysonnorms+[0.0]*len(self.FinalIPs)
             return
 
         #Call Dyson orb calc
