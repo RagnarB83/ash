@@ -1680,7 +1680,7 @@ end")
         print("")
         print(BC.OKBLUE, "Final combined Dyson norms ({}):".format(len(self.finaldysonnorms)), BC.ENDC)
         print(self.finaldysonnorms)
-        print("FinalIPs:", self.FinalIPs)
+        print(f"FinalIPs ({len(self.FinalIPs)}):", self.FinalIPs)
         assert len(self.FinalIPs) == len(self.finaldysonnorms), "List of Dysonnorms not same size as list of IPs."
         print("")
 
