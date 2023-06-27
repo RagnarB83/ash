@@ -1925,7 +1925,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     #NOTE: Easiest to just call geometric frequency-analysis for now so that we get correct projection
     from geometric.normal_modes import frequency_analysis
     try:
-        os.rmdir(dirname)
+        shutil.rmtree(dirname)
     except:
         pass
     frequency_analysis(coords_in_au, hessian, elem=fragment.elems, mass=fragment.masses, temperature=temperature, wigner=(num_samples,dirname))
