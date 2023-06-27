@@ -178,7 +178,7 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
     os.chdir(crest_calcdir)
     list_conformers=[]
     list_xtb_energies=[]
-    all_elems, all_coords, all_titles = split_multimolxyzfile(conf_file,writexyz=True)
+    all_elems, all_coords, all_titles = split_multimolxyzfile(conf_file,writexyz=True,return_fragments=False)
     print("Found {} Crest conformers".format(len(all_elems)))
     
     #Getting energies from title lines

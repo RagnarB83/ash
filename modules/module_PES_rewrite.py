@@ -1503,6 +1503,17 @@ end")
     def run_dyson_calc(self):
         module_init_time=time.time()
         print("Inside run_dyson_calc")
+
+        if self.noDyson is True:
+            print("NoDyson is True. Setting all Dyson norms to 0.0")
+            #self.finaldysonnorms=[0.0]*self.numionstates
+            self.finaldysonnorms=[0.0]*len(self.FinalIPs)
+            return
+
+        #Call Dyson orb calc
+        if self.NEVPT2 is True:
+            print("Warning: IEs are NEVPT2 but Dyson norms are from CASSCF WF.")
+
         # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.
         # Check if binary exists
         if self.path_wfoverlap == None:
@@ -1592,6 +1603,10 @@ end")
                 #Diff density
                 if self.densities == 'SCF' or self.densities == 'All':
                     self.make_diffdensities(statetype='SCF')
+                #For wfoverlap
+                self.TDDFT_dets_prep()
+                #Dyson
+                self.run_dyson_calc()
 
         elif self.method =='SF-TDDFT':
             print("SpinFlip TDDFT option is active")
@@ -1605,6 +1620,9 @@ end")
                 self.mo_spectrum()
                 #For wfoverlap
                 self.prepare_mos_file()
+                #Dyson
+                self.run_dyson_calc()
+
         elif self.method =='EOM':
             print("Calling EOM")
             self.setup_ORCA_object()
@@ -1612,6 +1630,8 @@ end")
                 self.run_EOM(fragment)
                 if self.densities != None:
                     print("No densities are available for EOM yet. Skipping")
+                print("Dyson orbital calculation not available for EOM.")
+                print("Skipping")
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
         #CASSCF, CAS-CI and NEVPT2
@@ -1628,6 +1648,8 @@ end")
                 self.CAS_dets_prep()
                 #For wfoverlap
                 self.prepare_mos_file()
+                #Dyson
+                self.run_dyson_calc()
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
         #Simplifies things. MREOM uses MRCI so let's use same logic.
@@ -1645,33 +1667,16 @@ end")
                 #Prepare determinants and MOs for Wfoverlap Dyson calculations
                 self.MRCI_prepare_determinants()
                 self.prepare_mos_file()
+                #Dyson
+                self.run_dyson_calc()
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
 
+        ##########
+        #Results
+        ##########
         print("\nAll combined Final IPs:", self.FinalIPs)
         print("All combined Ion-state energies (au):", self.Finalionstates)
-
-
-
-        #################################
-        # PES intensities (Dyson norms)
-        #################################
-        if self.method =='TDDFT':
-            self.TDDFT_dets_prep()
-
-        if self.noDyson is True:
-            print("NoDyson is True. Setting all Dyson norms to 0.0")
-            #self.finaldysonnorms=[0.0]*self.numionstates
-            self.finaldysonnorms=[0.0]*len(self.FinalIPs)
-        elif self.method == 'EOM':
-            print("Dyson orbital calculation not available for EOM.")
-            print("Skipping")
-        else:
-            #Call Dyson orb calc
-            if self.NEVPT2 is True:
-                print("Warning: IEs are NEVPT2 but Dyson norms are from CASSCF WF.")
-            self.run_dyson_calc()
-
         print("")
         print(BC.OKBLUE, "Final combined Dyson norms ({}):".format(len(self.finaldysonnorms)), BC.ENDC)
         print(self.finaldysonnorms)
