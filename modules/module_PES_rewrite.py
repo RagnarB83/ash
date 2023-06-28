@@ -1178,6 +1178,7 @@ end")
             
             fstate.IPs=IPs
             fstate.dysonnorms=amplitudes
+            print("fstate.dysonnorms:", fstate.dysonnorms)
 
             #EOM may have found fewer roots than requested. Updating 
             if len(IPs) != fstate.numionstates:
@@ -1215,8 +1216,10 @@ end")
             print(BC.OKBLUE,"Final State CCSD+EOM-IP energies:", fstates_dict, BC.ENDC)
             #IPs already calculated
             print("FinalIPs:", self.FinalIPs)
+            print("self.finaldysonnorms:", self.finaldysonnorms)
             for fstate in self.Finalstates:
-                print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))  
+                print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
+                print("fstate.dysonnorms :", fstate.dysonnorms)
                 self.Finalionstates = self.Finalionstates + fstate.ionstates      
                 self.finaldysonnorms = self.finaldysonnorms + fstate.dysonnorms 
 
