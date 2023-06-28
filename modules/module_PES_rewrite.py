@@ -1211,17 +1211,17 @@ end")
             fstate.outfile = 'Final_State_mult' + str(fstate.mult)+'.out'
             print("")
 
-            #Final states
-            print(BC.OKBLUE,"Initial State CCSD energy:", self.stateI.energy, "au",BC.ENDC)
-            print(BC.OKBLUE,"Final State CCSD+EOM-IP energies:", fstates_dict, BC.ENDC)
-            #IPs already calculated
-            print("FinalIPs:", self.FinalIPs)
-            print("self.finaldysonnorms:", self.finaldysonnorms)
-            for fstate in self.Finalstates:
-                print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
-                print("fstate.dysonnorms :", fstate.dysonnorms)
-                self.Finalionstates = self.Finalionstates + fstate.ionstates      
-                self.finaldysonnorms = self.finaldysonnorms + fstate.dysonnorms 
+        #Final states
+        print(BC.OKBLUE,"Initial State CCSD energy:", self.stateI.energy, "au",BC.ENDC)
+        print(BC.OKBLUE,"Final State CCSD+EOM-IP energies:", fstates_dict, BC.ENDC)
+        #IPs already calculated
+        print("FinalIPs:", self.FinalIPs)
+        print("self.finaldysonnorms:", self.finaldysonnorms)
+        for fstate in self.Finalstates:
+            print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
+            print("fstate.dysonnorms :", fstate.dysonnorms)
+            self.Finalionstates = self.Finalionstates + fstate.ionstates      
+            self.finaldysonnorms = self.finaldysonnorms + fstate.dysonnorms 
 
 
         print(BC.WARNING,"WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation",BC.ENDC)
