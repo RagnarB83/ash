@@ -539,7 +539,6 @@ end"""
         #Save path to last GBW-file (used if ASH changes directories, e.g. goes from NumFreq)
         self.path_to_last_gbwfile_used=f"{os.getcwd()}/{self.filename}.gbw"
 
-
         if self.ignore_ORCA_error is False:
             ORCAfinished,numiterations = checkORCAfinished(outfile)
             #Check if ORCA finished or not. Exiting if so
@@ -583,6 +582,14 @@ end"""
             self.properties["num_after_SD_CFGs"] = num_after_SD_CFGs
         except:
             pass
+
+        #TDDFT results
+        if self.TDDFT is True:
+            transition_energies = tddftgrab(f"{self.filename}.out")
+            transition_intensities = tddftintens_grab(f"{self.filename}.out")
+
+            self.properties["TDDFT_transition_energies"] = transition_energies
+            self.properties["TDDFT_transition_intensities"] = transition_intensities
 
         #Grab timings from ORCA output
         orca_timings = ORCAtimingsgrab(outfile)
