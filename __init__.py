@@ -144,13 +144,13 @@ from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT
 # Workflows, benchmarking etc
 import ash.modules.module_workflows
 import ash.modules.module_highlevel_workflows
-from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory, Reaction_FCI_Analysis, make_ICE_theory,TDDFT_vib_ave
+from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory, Reaction_FCI_Analysis, make_ICE_theory
 
 CC_CBS_Theory = ORCA_CC_CBS_Theory #TODO: Temporary alias
 
 from ash.modules.module_workflows import ReactionEnergy, thermochemprotocol_reaction, thermochemprotocol_single, \
     confsampler_protocol, auto_active_space, calc_xyzfiles, ProjectResults, Reaction_Highlevel_Analysis, FormationEnthalpy, \
-    AutoNonAufbau, ExcitedStateSCFOptimizer
+    AutoNonAufbau, ExcitedStateSCFOptimizer,TDDFT_vib_ave
 import ash.modules.module_benchmarking
 from ash.modules.module_benchmarking import run_benchmark
 
