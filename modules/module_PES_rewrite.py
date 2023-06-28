@@ -1619,6 +1619,7 @@ end")
             print("SpinFlip TDDFT option is active")
             self.setup_ORCA_object()
             for fragment in fragments:
+                print(f"\nRunning geometry {i+1} of {len(fragments)}")
                 self.run_SF_TDDFT(fragment)
                 #Diff density
                 #if self.densities == 'SCF' or self.densities == 'All':
@@ -1634,7 +1635,10 @@ end")
             print("Calling EOM")
             self.setup_ORCA_object()
             for fragment in fragments:
+                print(f"\nRunning geometry {i+1} of {len(fragments)}")
                 self.run_EOM(fragment)
+                print(f"IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
+                print(f"Approximate Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
                 if self.densities != None:
                     print("No densities are available for EOM yet. Skipping")
                 print("Dyson orbital calculation not available for EOM.")
@@ -1646,6 +1650,7 @@ end")
             print("CASSCF/CASCI option active!")
             self.setup_ORCA_object()
             for fragment in fragments:
+                print(f"\nRunning geometry {i+1} of {len(fragments)}")
                 self.run_CAS(fragment)
                 #Diff density
                 if self.densities == 'SCF' or self.densities == 'All':
@@ -1664,6 +1669,7 @@ end")
             print("MRCI/MREOM option active!")
             self.setup_ORCA_object()
             for fragment in fragments:
+                print(f"\nRunning geometry {i+1} of {len(fragments)}")
                 self.run_MRCI_Initial(fragment)
                 self.run_MRCI_Final(fragment)
                 #Difference densities
