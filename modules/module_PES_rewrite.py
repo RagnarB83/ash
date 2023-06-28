@@ -1618,7 +1618,7 @@ end")
         elif self.method =='SF-TDDFT':
             print("SpinFlip TDDFT option is active")
             self.setup_ORCA_object()
-            for fragment in fragments:
+            for i,fragment in enumerate(fragments):
                 print(f"\nRunning geometry {i+1} of {len(fragments)}")
                 self.run_SF_TDDFT(fragment)
                 #Diff density
@@ -1634,7 +1634,7 @@ end")
         elif self.method =='EOM':
             print("Calling EOM")
             self.setup_ORCA_object()
-            for fragment in fragments:
+            for i,fragment in enumerate(fragments):
                 print(f"\nRunning geometry {i+1} of {len(fragments)}")
                 self.run_EOM(fragment)
                 print(f"IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
@@ -1649,7 +1649,7 @@ end")
         elif self.method =='CASSCF' or self.method=='CASCI' or self.method == 'NEVPT2' or self.method == 'NEVPT2-F12':
             print("CASSCF/CASCI option active!")
             self.setup_ORCA_object()
-            for fragment in fragments:
+            for i,fragment in enumerate(fragments):
                 print(f"\nRunning geometry {i+1} of {len(fragments)}")
                 self.run_CAS(fragment)
                 #Diff density
@@ -1668,7 +1668,7 @@ end")
         elif self.method =='MRCI' or self.method=='MREOM':
             print("MRCI/MREOM option active!")
             self.setup_ORCA_object()
-            for fragment in fragments:
+            for i,fragment in enumerate(fragments):
                 print(f"\nRunning geometry {i+1} of {len(fragments)}")
                 self.run_MRCI_Initial(fragment)
                 self.run_MRCI_Final(fragment)
