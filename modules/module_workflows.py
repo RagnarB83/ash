@@ -1536,9 +1536,11 @@ def ExcitedStateSCFOptimizer(theory=None, fragment=None, autononaufbaudict=None,
 
 #Function to perform ensemble-averaged absorption calculations on a trajectory
 def TDDFT_vib_ave(theory=None,trajectory=None, plot_range=[0,10],broadening=0.1, points=1000,
-                    imageformat='png',dpi=200):
+                    imageformat='png',dpi=200,charge=0,mult=1):
 
     print_line_with_mainheader("TDDFT_vib_ave function")
+
+
     print("Theory:", theory)
     print("Trajectory:", trajectory)
     print("Plot range:", plot_range)
@@ -1555,6 +1557,9 @@ def TDDFT_vib_ave(theory=None,trajectory=None, plot_range=[0,10],broadening=0.1,
     print("Reading geometries from trajectory")
     fragments = get_molecules_from_trajectory(trajectory)
 
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragments[0], "TDDFT_vib_ave", theory=theory)
+
     #List of results
     all_trans_energies=[]
     all_trans_intensities=[]
@@ -1563,7 +1568,7 @@ def TDDFT_vib_ave(theory=None,trajectory=None, plot_range=[0,10],broadening=0.1,
     print("Now looping over fragments")
     for frag in fragments:
         #Perform single-point TDDFT calculation
-        result = ash.Singlepoint(theory=theory, fragment=frag)
+        result = ash.Singlepoint(theory=theory, fragment=frag,charge=charge,mult=mult)
         #Grab TDDFT properties from theory object
         all_trans_energies += theory.properties["TDDFT_transition_energies"]
         all_trans_intensities += theory.properties["TDDFT_transition_intensities"]
