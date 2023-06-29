@@ -139,7 +139,7 @@ Optimizer = geomeTRICOptimizer
 Opt = geomeTRICOptimizer
 
 # PES
-from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT, plot_PES_Spectrum
+from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT, plot_PES_Spectrum,Read_old_PES_results
 
 # Workflows, benchmarking etc
 import ash.modules.module_workflows
