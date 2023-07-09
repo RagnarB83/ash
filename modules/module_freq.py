@@ -1872,68 +1872,57 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
 #Simple function to get Wigner distribution from geometry
 def wigner_distribution(fragment=None, hessian=None, temperature=300, num_samples=100,dirname="wigner",projection=True):
     print_line_with_mainheader("Wigner distribution")
+
+    if fragment is None:
+        print("You need to provide an ASH fragment")
+        ashexit()
+
     #Checking for linearity. Determines how many Trans+Rot modes 
     if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
         TRmodenum=5
     else:
         TRmodenum=6
 
-    if fragment is None:
-        print("You need to provide an ASH fragment")
-        ashexit()
     #Get or calculate normal_modes
     if hessian is not None:
         print("Hessian provided")
         print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,hessian,fragment.masses,fragment.elems,TRmodenum=TRmodenum,projection=projection)
+        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,hessian,fragment.masses,fragment.elems,
+                                                                 TRmodenum=TRmodenum,projection=projection)
     elif fragment.hessian is not None:
         print("Hessian found inside Fragment")
         print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,fragment.hessian,fragment.masses,fragment.elems,TRmodenum=TRmodenum,projection=projection)
+        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,fragment.hessian,fragment.masses,fragment.elems,
+                                                                 TRmodenum=TRmodenum,projection=projection)
     else:
-        print("You need to provide either hessian, normal_modes or a hessian as part of fragment")
+        print("You need to provide either hessian, a hessian as part of fragment")
         ashexit()
 
-    #Clean up frequencies
-    frequencies = clean_frequencies(frequencies)
-    print("Fragment:", fragment)
+
     print("Frequencies:", frequencies)
     print(f"Temperature {temperature} K")
     print("Number of samples:", num_samples)
-    #NOTE: Projection  required before passing normal modes
-    #Checklinear
-    #if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
-    #    TRmodenum=5
-    #else:
-    #    TRmodenum=6
-    #print("Before:")
-    #print(f"Num normal_modes ({len(normal_modes)})")
-    #print(f"Frequencies: ({len(frequencies)})", frequencies)
-    #print("normal_modes:", normal_modes)
-    #print()
-    #print("Removing first 6 freqs and modes:")
-    #frequencies_proj=frequencies[TRmodenum:]
-    #evectors_proj=evectors[TRmodenum:]
-    #print(f"Num evectors_proj ({len(evectors_proj)})")
-    #print("evectors_proj:", evectors_proj)
-    #print(f"Frequencies (proj): ({len(frequencies_proj)})", frequencies_proj)
+    #NOTE: Removing T+R modes before passing freqs and normal modes
+    frequencies_proj=frequencies[TRmodenum:]
+    evectors_proj=evectors[TRmodenum:]
 
     #Converting coords to Bohr
     coords_in_au = fragment.coords * ash.constants.ang2bohr
     print("Calling wigner_sample")
 
-    #NOTE: Easiest to just call geometric frequency-analysis for now so that we get correct projection
-    from geometric.normal_modes import frequency_analysis
+    #Importing wigner_sample
+    print("Importing wigner_sample from geometric library")
+    from geometric.normal_modes import frequency_analysis, wigner_sample
     try:
         shutil.rmtree(dirname)
     except:
         pass
-    frequency_analysis(coords_in_au, hessian, elem=fragment.elems, mass=fragment.masses, temperature=temperature, wigner=(num_samples,dirname))
 
-    #NOTE: Below will work only when we have correct projected eigenvectors
-    #from geometric.normal_modes import wigner_sample
-    #wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, '.', True)
-    
+    #Calling geometric 
+    #frequency_analysis(coords_in_au, hessian, elem=fragment.elems, mass=fragment.masses, temperature=temperature, wigner=(num_samples,dirname))
+    os.mkdir(dirname)
+    wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, dirname, True)
+
     #Grabbing all coordinates from wigner-dir into one list and create fragments
     final_coords=[]
     final_frags=[]
