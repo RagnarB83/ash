@@ -1406,23 +1406,29 @@ def Hessgrab(hessfile):
     grabsize=False
     with open(hessfile) as hfile:
         for line in hfile:
+
             if '$vibrational_frequencies' in line:
                 hesstake=False
                 continue
             if hesstake==True and len(line.split()) == 1 and grabsize==True:
+                print("x1 line:", line)
                 grabsize=False
                 hessdim=int(line.split()[0])
 
                 hessarray2d=np.zeros((hessdim, hessdim))
-            if hesstake==True and len(line.split()) == 5:
-                continue
-                #Headerline
+
             if hesstake==True and lastchunk==True:
+                print("x3 line:", line)
                 if len(line.split()) == hessdim - shiftpar +1:
                     for i in range(0,hessdim - shiftpar):
                         hessarray2d[j,i+shiftpar]=line.split()[i+1]
                     j+=1
+            elif hesstake==True and len(line.split()) == 5:
+                print("x2 line:", line)
+                continue
+                #Headerline
             if hesstake==True and len(line.split()) == 6:
+                print("x4 line:", line)
                 # Hessianline
                 for i in range(0, orcacoldim):
                     hessarray2d[j, i + shiftpar] = line.split()[i + 1]
@@ -1433,6 +1439,7 @@ def Hessgrab(hessfile):
                     if hessdim - shiftpar < orcacoldim:
                         lastchunk = True
             if '$hessian' in line:
+                print("hesstake set to true")
                 hesstake = True
                 grabsize = True
         return hessarray2d
