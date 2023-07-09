@@ -539,7 +539,6 @@ end"""
         #Save path to last GBW-file (used if ASH changes directories, e.g. goes from NumFreq)
         self.path_to_last_gbwfile_used=f"{os.getcwd()}/{self.filename}.gbw"
 
-
         if self.ignore_ORCA_error is False:
             ORCAfinished,numiterations = checkORCAfinished(outfile)
             #Check if ORCA finished or not. Exiting if so
@@ -583,6 +582,14 @@ end"""
             self.properties["num_after_SD_CFGs"] = num_after_SD_CFGs
         except:
             pass
+
+        #TDDFT results
+        if self.TDDFT is True:
+            transition_energies = tddftgrab(f"{self.filename}.out")
+            transition_intensities = tddftintens_grab(f"{self.filename}.out")
+
+            self.properties["TDDFT_transition_energies"] = transition_energies
+            self.properties["TDDFT_transition_intensities"] = transition_intensities
 
         #Grab timings from ORCA output
         orca_timings = ORCAtimingsgrab(outfile)
@@ -1027,7 +1034,7 @@ def xesgrab(file):
                 xesgrab=True
     return xesenergies,intensities
 
-#Grab TDDFT states from ORCA output
+#Grab TDDFT state energies from ORCA output
 def tddftgrab(file):
     tddftstates=[]
     tddft=True
@@ -1043,6 +1050,21 @@ def tddftgrab(file):
                 if 'the weight of the individual excitations' in line:
                     tddftgrab=True
     return tddftstates
+
+#Grab TDDFT state intensities from ORCA output
+def tddftintens_grab(file):
+    intensities=[]
+    tddftgrab=False
+    with open(file) as f:
+        for line in f:
+            if tddftgrab==True:
+                if len(line.split()) == 8:
+                        intensities.append(float(line.split()[3]))
+                if len(line.split()) == 0:
+                    tddftgrab=False
+            if 'State   Energy    Wavelength  fosc         T2        TX        TY        TZ' in line:
+                tddftgrab=True
+    return intensities
 
 #Grab TDDFT orbital pairs from ORCA output
 def tddft_orbitalpairs_grab(file):
@@ -1384,23 +1406,29 @@ def Hessgrab(hessfile):
     grabsize=False
     with open(hessfile) as hfile:
         for line in hfile:
+
             if '$vibrational_frequencies' in line:
                 hesstake=False
                 continue
             if hesstake==True and len(line.split()) == 1 and grabsize==True:
+                print("x1 line:", line)
                 grabsize=False
                 hessdim=int(line.split()[0])
 
                 hessarray2d=np.zeros((hessdim, hessdim))
-            if hesstake==True and len(line.split()) == 5:
-                continue
-                #Headerline
+
             if hesstake==True and lastchunk==True:
+                print("x3 line:", line)
                 if len(line.split()) == hessdim - shiftpar +1:
                     for i in range(0,hessdim - shiftpar):
                         hessarray2d[j,i+shiftpar]=line.split()[i+1]
                     j+=1
+            elif hesstake==True and len(line.split()) == 5:
+                print("x2 line:", line)
+                continue
+                #Headerline
             if hesstake==True and len(line.split()) == 6:
+                print("x4 line:", line)
                 # Hessianline
                 for i in range(0, orcacoldim):
                     hessarray2d[j, i + shiftpar] = line.split()[i + 1]
@@ -1411,6 +1439,7 @@ def Hessgrab(hessfile):
                     if hessdim - shiftpar < orcacoldim:
                         lastchunk = True
             if '$hessian' in line:
+                print("hesstake set to true")
                 hesstake = True
                 grabsize = True
         return hessarray2d

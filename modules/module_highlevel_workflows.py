@@ -39,8 +39,8 @@ class ORCA_CC_CBS_Theory:
     def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', guessmode='Cmatrix', memory=5000, numcores=1, 
             cardinals=None, basisfamily=None, Triplesextrapolation=False, SCFextrapolation=True, alpha=None, beta=None, 
             stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
-            DLPNO=False, pnosetting='extrapolation', pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO'], FullLMP2Guess=False, OOCC=False,
-            T1=False, T1correction=False, T1corrbasis_size='Small', T1corrpnosetting='NormalPNOreduced', 
+            DLPNO=False, pnosetting='extrapolation', pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO'], FullLMP2Guess=False, MP2_PNO_correction=False,
+            OOCC=False,T1=False, T1correction=False, T1corrbasis_size='Small', T1corrpnosetting='NormalPNOreduced', 
             relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False):
 
         print_line_with_mainheader("ORCA_CC_CBS_Theory")
@@ -106,6 +106,7 @@ class ORCA_CC_CBS_Theory:
         self.memory=memory
         self.pnosetting=pnosetting
         self.pnoextrapolation=pnoextrapolation
+        self.MP2_PNO_correction=MP2_PNO_correction
         self.T1=T1
         self.T1correction=T1correction
         self.T1corrbasis_size=T1corrbasis_size
@@ -160,6 +161,9 @@ class ORCA_CC_CBS_Theory:
                 print("T1corrbasis_size:", self.T1corrbasis_size)
                 print("T1corrpnosetting:", self.T1corrpnosetting)
             print("FullLMP2Guess ", self.FullLMP2Guess)
+            if self.MP2_PNO_correction is True:
+                print("MP2_PNO correction is active")
+                print("This means the PNO-limit is estimated via a DLPNO-MP2->MP2 correction")
             if self.pnosetting == "extrapolation":
                 print("PNO extrapolation parameters:", self.pnoextrapolation)
             #Setting Full LMP2 to false in general for DLPNO
@@ -252,27 +256,31 @@ maxiter 150\nend
                     basis0_block=basis0_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
 
             #Adding basis set info for each element into blocks
-            basis1_block="%basis\n"
+            self.basis1_block="%basis\n"
             for el,bas_ecp in self.Calc1_basis_dict.items():
-                basis1_block=basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                self.basis1_block=self.basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
                 if bas_ecp[1] != None:
                     #Setting ECP flag to True
                     self.ECPflag=True
-                    basis1_block=basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+                    self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
                     
             #Adding basis set info for each element into blocks
-            basis2_block="%basis\n"
+            self.basis2_block="%basis\n"
             for el,bas_ecp in self.Calc2_basis_dict.items():
-                basis2_block=basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                self.basis2_block=self.basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
                 if bas_ecp[1] != None:
                     #Setting ECP flag to True
                     self.ECPflag=True
-                    basis2_block=basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+                    self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
 
             #Adding auxiliary basis to all defined blocks
-            self.blocks0= self.blocks +basis0_block+finalauxbasis+"\nend" #Used in CCSD and CCSD(T) calcs
-            self.blocks1= self.blocks +basis1_block+finalauxbasis+"\nend" #Used in CCSD and CCSD(T) calcs
-            self.blocks2= self.blocks +basis2_block+finalauxbasis+"\nend" #Used in CCSD calcs only
+            self.basis0_block=self.basis0_block+finalauxbasis+"\nend" 
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
+            self.basis2_block=self.basis2_block+finalauxbasis+"\nend" 
+
+            self.blocks0= self.blocks +basis0_block #Used in CCSD and CCSD(T) calcs
+            self.blocks1= self.blocks +self.basis1_block #Used in CCSD and CCSD(T) calcs
+            self.blocks2= self.blocks +self.basis2_block  #Used in CCSD calcs only
         elif len(self.cardinals) == 2:
 
             self.Calc1_basis_dict={}
@@ -290,34 +298,38 @@ maxiter 150\nend
             print("Calc2_basis_dict", self.Calc2_basis_dict)
 
             #Adding basis set info for each element into blocks
-            basis1_block="%basis\n"
+            self.basis1_block="%basis\n"
             for el,bas_ecp in self.Calc1_basis_dict.items():
-                basis1_block=basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                self.basis1_block=self.basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
                 if bas_ecp[1] != None:
                     #Setting ECP flag to True
                     self.ECPflag=True
-                    basis1_block=basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+                    self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
 
             #Adding basis set info for each element into blocks
-            basis1_block="%basis\n"
+            self.basis1_block="%basis\n"
             for el,bas_ecp in self.Calc1_basis_dict.items():
-                basis1_block=basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                self.basis1_block=self.basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
                 if bas_ecp[1] != None:
                     #Setting ECP flag to True
                     self.ECPflag=True
-                    basis1_block=basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+                    self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
 
             #Adding basis set info for each element into blocks
-            basis2_block="%basis\n"
+            self.basis2_block="%basis\n"
             for el,bas_ecp in self.Calc2_basis_dict.items():
-                basis2_block=basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                self.basis2_block=self.basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
                 if bas_ecp[1] != None:
                     #Setting ECP flag to True
                     self.ECPflag=True
-                    basis2_block=basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+                    self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+
             #Adding auxiliary basis to all defined blocks
-            self.blocks1= self.blocks +basis1_block+finalauxbasis+"\nend" #Used in CCSD(T) calcs
-            self.blocks2= self.blocks +basis2_block+finalauxbasis+"\nend"#Used in CCSD(T) calcs
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
+            self.basis2_block=self.basis2_block+finalauxbasis+"\nend" 
+
+            self.blocks1= self.blocks +self.basis1_block #Used in CCSD(T) calcs
+            self.blocks2= self.blocks +self.basis2_block #Used in CCSD(T) calcs
 
         elif len(self.cardinals) == 1:
             #Single-basis calculation
@@ -328,15 +340,15 @@ maxiter 150\nend
             print("Basis set definitions for each element:")
             print("Calc1_basis_dict:", self.Calc1_basis_dict)
             #Adding basis set info for each element into blocks
-            basis1_block="%basis\n"
+            self.basis1_block="%basis\n"
             for el,bas_ecp in self.Calc1_basis_dict.items():
-                basis1_block=basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                self.basis1_block=self.basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
                 if bas_ecp[1] != None:
                     #Setting ECP flag to True
                     self.ECPflag=True
-                    basis1_block=basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
-            
-            self.blocks1= self.blocks +basis1_block+finalauxbasis+"\nend" 
+                    self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
+            self.blocks1= self.blocks +self.basis1_block
 
 
         #Auxiliary basis to self.blcoks. Used by CVSR only:
@@ -388,10 +400,10 @@ maxiter 150\nend
                 else:
                     self.ccsdtkeyword='DLPNO-CCSD(T)'
             #Add PNO keyword in simpleinputline or not (if extrapolation)
-            if self.pnosetting != "extrapolation":
-                self.pnokeyword=self.pnosetting
-            else:
+            if self.pnosetting == "extrapolation":
                 self.pnokeyword=""
+            else:
+                self.pnokeyword=self.pnosetting
         #Regular CCSD(T)
         else:
             #No PNO keyword
@@ -458,6 +470,66 @@ maxiter 150\nend
     def cleanup(self):
         print("Cleanup called")
 
+
+    #MP2 CPS correction step (A. Kubas and coworkers JCTC 2023)
+    def MP2correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis=None, pnosetting='NormalPNO'):
+        print("\nNow doing MP2 CPS correction. Getting CPS correction via DLPNO-MP2 and RI-MP2 difference")
+
+        #Using basic theory line but changing DLPNO-CCSD(T) to DLPNO-MP2 and MP2
+        dlpno_mp2_line=self.ccsdt_line.replace('DLPNO-CCSD(T)','DLPNO-MP2 noiter ')
+        can_mp2_line=self.ccsdt_line.replace('DLPNO-CCSD(T)','RI-MP2 noiter')
+        #Using Large basis by default
+        if basis == 1:
+            blocks = self.basis1_block
+        elif basis == 2:
+            blocks = self.basis2_block
+        else:
+            print("error")
+            ashexit()
+
+        #Memory
+        blocks = f"%maxcore {self.memory}\n" + blocks
+
+
+        #PNO setting to use for T1 correction
+        if pnosetting == 'NormalPNO':
+            thresholdsetting=NormalPNO_thresholds
+        elif pnosetting =='NormalPNOreduced':
+            thresholdsetting=NormalPNOreduced_thresholds
+        elif pnosetting =='LoosePNO':
+            thresholdsetting=LoosePNO_thresholds
+        elif pnosetting =='TightPNO':
+            thresholdsetting=TightPNO_thresholds
+
+        mp2block=f"""\n%mp2
+    TCutPNO {thresholdsetting['TCutPNO']}
+    TCutDO {thresholdsetting["TCutDO"]}
+    TCutMKN {thresholdsetting["TCutMKN"]}
+end
+        """
+
+        #Defining and running canonical MP2 theory
+        can_mp2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=can_mp2_line, orcablocks=blocks, numcores=self.numcores)
+        mp2_energy = can_mp2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        mp2_corr_energy = float(pygrep('RI-MP2 CORRELATION ENERGY:', can_mp2.filename+'.out')[-2].split()[-1])
+        shutil.copyfile(can_mp2.filename+'.out', './' + calc_label + 'MP2' + '.out')
+        shutil.copyfile(can_mp2.filename+'.gbw', './' + calc_label + 'MP2' + '.gbw')
+
+        #Defining and running DLPNO-MP2 theory
+        dlpno_mp2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=dlpno_mp2_line, orcablocks=blocks + '\n' + mp2block, numcores=self.numcores)
+        dlpno_mp2_energy = dlpno_mp2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        dlpnomp2_corr_energy = float(pygrep('DLPNO-MP2 CORRELATION ENERGY:', can_mp2.filename+'.out')[-2].split()[-1])
+        shutil.copyfile(dlpno_mp2.filename+'.out', './' + calc_label + 'DLPNO-MP2' + '.out')
+        shutil.copyfile(dlpno_mp2.filename+'.gbw', './' + calc_label + 'DLPNO-MP2' + '.gbw')
+
+        print("RI-MP2 correlation energy:", mp2_corr_energy)
+        print("DLPNO-MP2 correlation energy:", dlpnomp2_corr_energy)
+        E_MP2corr = mp2_corr_energy - dlpnomp2_corr_energy
+        print("deltaE_MP2_CPS correction:", E_MP2corr)
+
+        return E_MP2corr
+
+
     #T1 correction 
     def T1correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis='Large', pnosetting='NormalPNO'):
         print("\nNow doing T1 correction. Getting T0 and T1 triples from a single calculation")
@@ -488,7 +560,7 @@ maxiter 150\nend
     TCutPairs {thresholdsetting["TCutPairs"]}
     TCutDO {thresholdsetting["TCutDO"]}
     TCutMKN {thresholdsetting["TCutMKN"]}
-    end
+end
         """
         blocks = blocks + '\n' + mdciblock
 
@@ -578,14 +650,14 @@ maxiter 150\nend
     TCutPairs {thresholdsetting["TCutPairs"]}
     TCutDO {thresholdsetting["TCutDO"]}
     TCutMKN {thresholdsetting["TCutMKN"]}
-    end
+end
         """
         #TCutPNO option Y
         mdciblockY=f"""\n%mdci
     TCutPNO {self.pnoextrapolation[1]}
     TCutPairs {thresholdsetting["TCutPairs"]}
     TCutDO {thresholdsetting["TCutDO"]}
-    TCutMKN {thresholdsetting["TCutMKN"]}
+TCutMKN {thresholdsetting["TCutMKN"]}
     end
         """
 
@@ -706,6 +778,9 @@ maxiter 150\nend
         numcores = check_cores_vs_electrons(elems,numcores,charge)
 
 
+        #Settings things to 0.0
+        #E_corr_MP2PNOcorr=0.0
+
         # EXTRAPOLATION TO PNO LIMIT BY 2 PNO calculations
         if self.pnosetting=="extrapolation":
             print("\nPNO Extrapolation option chosen.")
@@ -812,10 +887,8 @@ maxiter 150\nend
                     #E_corr_CBS = Extrapolation_twopoint_corr(corr_energies, self.cardinals, self.basisfamily, 
                     #    beta=self.beta) #2-point extrapolation     
 
-
         # OR no PNO extrapolation
         else:
-
             #SINGLE BASIS CORRELATION JOB
             if self.singlebasis is True:
                 self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
@@ -823,9 +896,16 @@ maxiter 150\nend
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                 shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
                 print("CCSDT_1_dict:", CCSDT_1_dict)
+
+                if self.MP2_PNO_correction is True:
+                    CCSDT_1_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores, 
+                                                            charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting)
+                else:
+                    CCSDT_1_MP2_CPS_corr=0.0
+
                 E_SCF_CBS = CCSDT_1_dict['HF']
-                E_corr_CBS = CCSDT_1_dict['full_corr']
-                E_corrCCSD_CBS = CCSDT_1_dict['CCSD_corr']
+                E_corr_CBS = CCSDT_1_dict['full_corr']  + CCSDT_1_MP2_CPS_corr
+                E_corrCCSD_CBS = CCSDT_1_dict['CCSD_corr'] + CCSDT_1_MP2_CPS_corr
                 E_corrCCT_CBS = CCSDT_1_dict['CCSD(T)_corr']
             #REGULAR CBS EXTRAPOLATION WITHOUT PNO EXTRAPOLATION:
             else:
@@ -848,6 +928,12 @@ maxiter 150\nend
                     shutil.copyfile(self.ccsd_2.filename+'.gbw', './' + calc_label + 'CCSD_2' + '.gbw')
                     print("CCSD_2_dict:", CCSD_2_dict)
 
+                    if self.MP2_PNO_correction is True:
+                        CCSDT_2_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_2step", numcores, 
+                                                                charge=charge, mult=mult, basis=2, pnosetting=self.pnosetting)
+                    else:
+                        CCSDT_2_MP2_CPS_corr=0.0
+
                     print("Next running CCSD(T) calculations to get separate triples contribution:")
                     print(f"Running CCSD(T) calculations with cardinals: {self.cardinals[0]} and {self.cardinals[1]}")
                     #Doing the (T) calculations with the smaller basis
@@ -858,16 +944,23 @@ maxiter 150\nend
                     print("CCSDT_0_dict:", CCSDT_0_dict)
 
                     self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+
                     CCSDT_1_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
                     shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                     shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
                     print("CCSDT_1_dict:", CCSDT_1_dict)
 
+                    if self.MP2_PNO_correction is True:
+                        CCSDT_1_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores, 
+                                                                charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting)
+                    else:
+                        CCSDT_1_MP2_CPS_corr=0.0
+
                     #Taking SCF and CCSD energies from largest CCSD job (cardinal no. 2) and largest CCSD(T) job (cardinal no. 1)
                     # CCSD energies from CCSD jobs (last 2 cardinals)
                     # (T) energies from the 2 CCSD(T) jobs (first 2 cardinals)
                     scf_energies = [CCSDT_1_dict['HF'], CCSD_2_dict['HF']]
-                    ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr'], CCSD_2_dict['CCSD_corr']]
+                    ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr']+CCSDT_1_MP2_CPS_corr, CCSD_2_dict['CCSD_corr']+CCSDT_2_MP2_CPS_corr]
                     triplescorr_energies = [CCSDT_0_dict['CCSD(T)_corr'], CCSDT_1_dict['CCSD(T)_corr']]
                     #Combining corr energies in a silly way
                     #corr_energies = list(np.array(ccsdcorr_energies)+np.array(triplescorr_energies))
@@ -898,15 +991,27 @@ maxiter 150\nend
                     shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
                     print("CCSDT_1_dict:", CCSDT_1_dict)
 
+                    if self.MP2_PNO_correction is True:
+                        CCSDT_1_MP2corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores, 
+                                                                charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting)
+                    else:
+                        CCSDT_1_MP2corr=0.0
+
                     self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
                     CCSDT_2_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
                     shutil.copyfile(self.ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
                     shutil.copyfile(self.ccsdt_2.filename+'.gbw', './' + calc_label + 'CCSDT_2' + '.gbw')
                     print("CCSDT_2_dict:", CCSDT_2_dict)
 
+                    if self.MP2_PNO_correction is True:
+                        CCSDT_2_MP2corr = self.MP2correction_Step(current_coords, elems,"CCSDT_2step", numcores, 
+                                                                charge=charge, mult=mult, basis=2, pnosetting=self.pnosetting)
+                    else:
+                        CCSDT_2_MP2corr=0.0
+
                     #List of all SCF energies  all CCSD-corr energies  and all (T) corr energies from the 2 jobs
                     scf_energies = [CCSDT_1_dict['HF'], CCSDT_2_dict['HF']]
-                    ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr'], CCSDT_2_dict['CCSD_corr']]
+                    ccsdcorr_energies = [CCSDT_1_dict['CCSD_corr']+CCSDT_1_MP2corr, CCSDT_2_dict['CCSD_corr']+CCSDT_2_MP2corr]
                     triplescorr_energies = [CCSDT_1_dict['CCSD(T)_corr'], CCSDT_2_dict['CCSD(T)_corr']]
 
                     print("")
@@ -1157,27 +1262,27 @@ class MRCC_CC_CBS_Theory:
             print("Calc2_basis_dict", self.Calc2_basis_dict)
 
         #Adding basis set info for each element into blocks
-        basis1_block="%basis\n"
+        self.basis1_block="%basis\n"
         for el,bas_ecp in self.Calc1_basis_dict.items():
-            basis1_block=basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+            self.basis1_block=self.basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
             if bas_ecp[1] != None:
                 #Setting ECP flag to True
                 self.ECPflag=True
-                basis1_block=basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+                self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
         #Adding auxiliary basis
-        basis1_block=basis1_block+finalauxbasis
-        basis1_block=basis1_block+"\nend"
-        self.blocks1= self.blocks +basis1_block
+        self.basis1_block=self.basis1_block+finalauxbasis
+        self.basis1_block=self.basis1_block+"\nend"
+        self.blocks1= self.blocks +self.basis1_block
         if self.singlebasis is False:
-            basis2_block="%basis\n"
+            self.basis2_block="%basis\n"
             for el,bas_ecp in self.Calc2_basis_dict.items():
-                basis2_block=basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                self.basis2_block=self.basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
                 if bas_ecp[1] != None:
-                    basis2_block=basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+                    self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
             #Adding auxiliary basis
-            basis2_block=basis2_block+finalauxbasis
-            basis2_block=basis2_block+"\nend"
-            self.blocks2= self.blocks +basis2_block
+            self.basis2_block=self.basis2_block+finalauxbasis
+            self.basis2_block=self.basis2_block+"\nend"
+            self.blocks2= self.blocks +self.basis2_block
 
         #MOdifying self.blocks to add finalauxbasis. Used by CVSR only
         self.blocks=self.blocks+"%basis {} end".format(finalauxbasis)

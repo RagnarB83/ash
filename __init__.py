@@ -52,7 +52,7 @@ Singlepoint_parallel = Job_parallel
 
 # Freq
 from ash.modules.module_freq import AnFreq, NumFreq, approximate_full_Hessian_from_smaller, calc_rotational_constants,\
-    get_dominant_atoms_in_mode, write_normalmode,calc_hessian_xtb, wigner_distribution
+    get_dominant_atoms_in_mode, write_normalmode,calc_hessian_xtb, wigner_distribution,write_hessian,read_hessian
 
 # Constants
 import ash.constants
@@ -60,7 +60,7 @@ import ash.constants
 # functions related to electronic structure
 import ash.functions.functions_elstructure
 from ash.functions.functions_elstructure import read_cube, write_cube_diff, \
-    NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn
+    NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb
 
 #multiwfn interface
 import ash.interfaces.interface_multiwfn
@@ -75,7 +75,7 @@ from ash.modules.module_surface import calc_surface, calc_surface_fromXYZ, read_
     write_surfacedict_to_file
 
 # QMcode interfaces
-from ash.interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, \
+from ash.interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, MolecularOrbitalGrab, \
         run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size, orca_frag_guess, orblocfind, ORCAfinalenergygrab
 import ash.interfaces.interface_ORCA
 
@@ -139,7 +139,7 @@ Optimizer = geomeTRICOptimizer
 Opt = geomeTRICOptimizer
 
 # PES
-from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT, plot_PES_Spectrum
+from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT, plot_PES_Spectrum,Read_old_PES_results
 
 # Workflows, benchmarking etc
 import ash.modules.module_workflows
@@ -150,7 +150,7 @@ CC_CBS_Theory = ORCA_CC_CBS_Theory #TODO: Temporary alias
 
 from ash.modules.module_workflows import ReactionEnergy, thermochemprotocol_reaction, thermochemprotocol_single, \
     confsampler_protocol, auto_active_space, calc_xyzfiles, ProjectResults, Reaction_Highlevel_Analysis, FormationEnthalpy, \
-    AutoNonAufbau, ExcitedStateSCFOptimizer
+    AutoNonAufbau, ExcitedStateSCFOptimizer,TDDFT_vib_ave
 import ash.modules.module_benchmarking
 from ash.modules.module_benchmarking import run_benchmark
 

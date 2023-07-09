@@ -6,7 +6,7 @@ hartokcal = 627.5094740631
 harkcal = 627.5094740631
 hartocm = 219474.6313702
 # hartokj = 2625.5002
-hartokj = 2625.4996394799
+hartokj = 2625.4996394798254
 hartree2j = 4.3597438e-18
 hartoeV = 27.211386245988
 
@@ -29,6 +29,7 @@ hc = h_planck*2.99792458e10
 # Distance conversions
 bohr2ang = 0.52917721067
 ang2bohr = 1.88972612546
+bohr2nm = bohr2ang / 10
 bohr2m = 5.29177210903e-11
 amu2kg = 1.66053906660e-27
 ang2m = 1e-10

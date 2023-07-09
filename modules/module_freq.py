@@ -8,7 +8,7 @@ import time
 
 from ash.functions.functions_general import ashexit, listdiff, clean_number, blankline,BC,print_time_rel, print_line_with_mainheader,isodd, isint
 import ash.modules.module_coords
-from ash.modules.module_coords import check_charge_mult, check_multiplicity
+from ash.modules.module_coords import check_charge_mult, check_multiplicity,read_xyzfile,write_multi_xyz_file, Fragment
 from ash.modules.module_results import ASH_Results
 import ash.interfaces.interface_ORCA
 from ash.interfaces.interface_ORCA import read_ORCA_Hessian
@@ -37,6 +37,9 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         print("Frequencies:", frequencies)
         hessatoms=list(range(0,fragment.numatoms))
         thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
+
+        #Write Hessian to file
+        write_hessian(hessian,hessfile="Hessian")
 
         #freqoutputdict object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
         #freqoutputdict['hessian'] = hessian
@@ -100,6 +103,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     allatoms=list(range(0,numatoms))
     if hessatoms is None:
         hessatoms=allatoms
+        projection=True
+    else:
+        print("Hessatoms provided. This is partial Hessian. Turning off rot+trans projection")
+        projection=False
     #Making sure hessatoms list is sorted
     hessatoms.sort()
     #Optional hessatoms_masses list
@@ -445,11 +452,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     else:
         TRmodenum=6
     
-    #######################################################################
-    #Project out Translation+Rotational modes (unless we have frozen atoms)
-    #TODO
-    #######################################################################
-
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
     hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
@@ -461,8 +463,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     hesscoords = [fragment.coords[i] for i in hessatoms]
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
-    #Todo: Note. elems is redefined here. Not ideal
-    frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
+
+    frequencies, nmodes, evectors = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
+
+    #Evectors: eigenvectors of the mass-weighed Hessian
+    #Normal modes: unweighted 
 
     #Clean up the complex frequencies before using further
     frequencies = clean_frequencies(frequencies)
@@ -549,25 +554,42 @@ def get_partial_matrix(matrix,hessatoms):
 
 
 #Diagonalize Hessian from input Hessian, masses and element-strings
-def diagonalizeHessian(hessian, masses, elems):
+def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum=None):
     print("Diagonalizing Hessian")
     numatoms=len(elems)
     atomlist = []
     for i, j in enumerate(elems):
         atomlist.append(str(j) + '-' + str(i))
-    # Massweight Hessian
-    mwhessian, massmatrix = massweight(hessian, masses, numatoms)
+    
+    #Projecting out translations and rotations
+    if projection is True:
+        print("Projection of out rotational and translational modes active!")
+        vfreqs,evectors,nmodes = project_rot_and_trans(coords,masses,hessian)
 
-    # Diagonalize mass-weighted Hessian
-    evalues, evectors = np.linalg.eigh(mwhessian)
-    evectors = np.transpose(evectors)
+        #Adding TRmodes zeros to vfreqs list
+        for i in range(0,TRmodenum):
+            vfreqs = np.insert(vfreqs,0,0.0)
+        #Adding zero TSmode vectors to evectors and nmodes
+        for i in range (0,TRmodenum):
+            evectors = np.insert(evectors,0,[0.0]*evectors.shape[1],axis=0)
+            nmodes = np.insert(nmodes,0,[0.0]*nmodes.shape[1],axis=0)
 
-    # Calculate frequencies from eigenvalues
-    vfreqs = calcfreq(evalues)
+        return vfreqs,nmodes,evectors
+    else:
+        print("No projection of rotational and translational modes active!")
+        # Massweight Hessian
+        mwhessian, massmatrix = massweight(hessian, masses, numatoms)
 
-    # Unweight eigenvectors to get normal modes
-    nmodes = np.dot(evectors, massmatrix)
-    return vfreqs,nmodes,numatoms,elems,evectors,atomlist,masses
+        # Diagonalize mass-weighted Hessian
+        evalues, evectors = np.linalg.eigh(mwhessian)
+        evectors = np.transpose(evectors)
+
+        # Calculate frequencies from eigenvalues
+        vfreqs = calcfreq(evalues)
+
+        # Unweight eigenvectors to get normal modes
+        nmodes = np.dot(evectors, massmatrix)
+        return vfreqs,nmodes,evectors
 
 
 # Massweight Hessian
@@ -1208,7 +1230,8 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     #    capping_atom_hessian_indices=[3*i+j for i in capping_atoms for j in [0,1,2]]
     #else:
     #    capping_atom_hessian_indices=[]
-def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindices,large_atomindices=None,restHessian='Almloef'):
+#NOTE: Trans+rot projection off right now
+def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindices,large_atomindices=None,restHessian='Almloef',projection=False):
 
     write_hessian(hessian_small,hessfile="smallhessian")
 
@@ -1282,8 +1305,14 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
             fullhessian[i,j] = hessian_small[s_i,s_j]
     print("Final fullhessian:", fullhessian)
     #NOTE: Diagonalizing full Hessian just to see
+    #Checking for linearity. Determines how many Trans+Rot modes 
+    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+        TRmodenum=5
+    else:
+        TRmodenum=6
+
     print("Now diagonalizing full Hessian")
-    frequencies, normal_modes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(fullhessian,usedfragment.masses,usedfragment.elems)
+    frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,fullhessian,usedfragment.masses,usedfragment.elems,TRmodenum=TRmodenum,projection=projection)
     print("Size:", fullhessian.size)
     print("Frequencies of full Hessian:", frequencies)
     write_hessian(fullhessian,hessfile="Finalfullhessian")
@@ -1292,8 +1321,10 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
 
 #Change isotopes of Hessian. Read-in hessian array or hessfile
 #TODO: generalize. Input isotope-pair: 'H': 1.0, 'D' : '2.0' or something
-def isotope_change_Hessian(hessfile=None, hessian=None, elems=None, masses=None,
-                           isotope_change="deuterium"):
+#NOTE: Projection is off by default since coordinates are required for projection.
+#NOTE: We could change this after testing
+def isotope_change_Hessian(fragment=None, hessfile=None, hessian=None, elems=None, masses=None,
+                           isotope_change="deuterium", projection=False):
     if hessfile==None and hessian==None or hessfile!=None and hessian!=None:
         print("Please provide either hessfile (ORCA-style) or hessian keyword")
         return
@@ -1318,11 +1349,18 @@ def isotope_change_Hessian(hessfile=None, hessian=None, elems=None, masses=None,
         ashexit()
     print("masses_mod:", masses_mod)
 
+    #Checking for linearity. Determines how many Trans+Rot modes 
+    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+        TRmodenum=5
+    else:
+        TRmodenum=5
+
     #Regular mass-weighted Hessian
-    vfreqs1,nmodes1,numatoms1,elems1,evectors1,atomlist1,masses1 = diagonalizeHessian(hessian, masses, elems)
+    coords=fragment.coords
+    vfreqs1,nmodes1,evectors1 = diagonalizeHessian(coords,hessian, masses, elems,TRmodenum=TRmodenum,projection=projection)
 
     #Mass- substituted
-    vfreqs2,nmodes2,numatoms2,elems2,evectors2,atomlist2,masses2 = diagonalizeHessian(hessian, masses_mod, elems)
+    vfreqs2,nmodes2,evectors2 = diagonalizeHessian(coords,hessian, masses_mod, elems, TRmodenum=TRmodenum, projection=projection)
 
     print("masses:", masses)
     print("masses_mod:", masses)
@@ -1437,7 +1475,7 @@ def normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, silent=False, 
 #Get atoms that contribute most to specific mode of Hessian
 #Example: get atoms (atom indices) most involved in imaginary mode of transition state
 #TODO: Support partial Hessian
-def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3, hessatoms=None):
+def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3, hessatoms=None,projection=True):
     
     print_line_with_mainheader("get_dominant_atoms_in_mode")
     print("Threshold:", threshold)
@@ -1456,8 +1494,13 @@ def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3, hessatoms=None
     hessmasses=fragment.list_of_masses
     hesselems=fragment.elems
 
+    #Checking for linearity. Determines how many Trans+Rot modes 
+    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+        TRmodenum=5
+    else:
+        TRmodenum=6
     #Diagonalize Hessian
-    frequencies, nmodes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,hessmasses,hesselems)
+    frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
 
     #Get full list of atom contributions to mode
     normcomplist_for_mode = normalmodecomp_all(mode,fragment,evectors, hessatoms=hessatoms)
@@ -1728,15 +1771,25 @@ def S_vib_QRRHO(freqs,T,omega_0=100,I_av=None):
 
 
 #Write Hessian to file
+#def write_hessian(hessian,hessfile="Hessian"):
+#    with open(hessfile, 'w') as hfile:
+#        #RB note: Skipping header to be compatible with geometric format
+#        #hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
+#        for row in hessian:
+#            rowline=' '.join(map(str, row))
+#            hfile.write(str(rowline)+'\n')
+#        blankline()
+#        
+
 def write_hessian(hessian,hessfile="Hessian"):
-    with open(hessfile, 'w') as hfile:
-        #RB note: Skipping header to be compatible with geometric format
-        #hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
-        for row in hessian:
-            rowline=' '.join(map(str, row))
-            hfile.write(str(rowline)+'\n')
-        blankline()
-        print(f"Wrote Hessian to file: {hessfile}")
+    np.savetxt(hessfile, hessian)
+    print(f"Wrote Hessian to file: {hessfile}")
+
+#Read Hessian from file
+def read_hessian(file):
+    print(f"Reading Hessian from file: {file}")
+    hessian = np.loadtxt(file)
+    return hessian
 
 #Read tangent file
 def read_tangent(tangentfile):
@@ -1816,86 +1869,74 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
         return False
 
 
-#Simple function to get Wigner distribution from geometr
-def wigner_distribution(fragment=None, hessian=None, normal_modes=None, temperature=300, num_samples=100):
+#Simple function to get Wigner distribution from geometry
+def wigner_distribution(fragment=None, hessian=None, temperature=300, num_samples=100,dirname="wigner",projection=True):
     print_line_with_mainheader("Wigner distribution")
 
     if fragment is None:
         print("You need to provide an ASH fragment")
         ashexit()
-    #Get or calculate normal_modes
-    if hessian is not None:
-        print("Hessian provided")
-        print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(hessian,fragment.masses,fragment.elems)
-    elif normal_modes is not None:
-        print("Normal modes provided")
-    elif fragment.hessian is not None:
-        print("Hessian found inside Fragment")
-        print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, numatoms, elems, evectors, atomlist, masses = diagonalizeHessian(fragment.hessian,fragment.masses,fragment.elems)
-    else:
-        print("You need to provide either hessian, normal_modes or a hessian as part of fragment")
-        ashexit()
 
-    #Checklinear
+    #Checking for linearity. Determines how many Trans+Rot modes 
     if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
         TRmodenum=5
     else:
         TRmodenum=6
 
-    #Clean up frequencies
-    frequencies = clean_frequencies(frequencies)
-    print("Fragment:", fragment)
-    #print("Hessian:", hessian)
+    #Get or calculate normal_modes
+    if hessian is not None:
+        print("Hessian provided")
+        print("Diagonalizing to get normal modes")
+        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,hessian,fragment.masses,fragment.elems,
+                                                                 TRmodenum=TRmodenum,projection=projection)
+    elif fragment.hessian is not None:
+        print("Hessian found inside Fragment")
+        print("Diagonalizing to get normal modes")
+        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,fragment.hessian,fragment.masses,fragment.elems,
+                                                                 TRmodenum=TRmodenum,projection=projection)
+    else:
+        print("You need to provide either hessian, a hessian as part of fragment")
+        ashexit()
+
+
     print("Frequencies:", frequencies)
-    #print("Normal modes:", normal_modes)
     print(f"Temperature {temperature} K")
     print("Number of samples:", num_samples)
-
-    #NOTE: Projection probably required first
-    print("Before:")
-    print(f"Num normal_modes ({len(normal_modes)})")
-    print(f"Frequencies: ({len(frequencies)})", frequencies)
-    print("Removing first 6 freqs and modes:")
-
+    #NOTE: Removing T+R modes before passing freqs and normal modes
     frequencies_proj=frequencies[TRmodenum:]
-    normal_modes_proj=frequencies[TRmodenum:]
-    print(f"Num normal_modes ({len(normal_modes_proj)})")
-    print(f"Frequencies: ({len(frequencies_proj)})", frequencies_proj)
-    #Currently calling geometric to get wigner distribution
-    from geometric.normal_modes import wigner_sample
-    print("Calling wigner_sample")
+    evectors_proj=evectors[TRmodenum:]
+
     #Converting coords to Bohr
     coords_in_au = fragment.coords * ash.constants.ang2bohr
-    #NOTE: Not working for some reason
-    #wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies), normal_modes, temperature, num_samples, '.', True)
-    exit()
-    #coords_collection=[]
-    #vel_collection=[]
-    #random_Q=1
-    #random_P=1
+    print("Calling wigner_sample")
 
-    #print("fragment.elems:", fragment.elems)
-    #print("fragment.coords:", fragment.coords)
-    #for freq,mode in zip(frequencies,normal_modes):
-    #    print("Freq:", freq)
-     #   print("mode:", mode)
-     #   for i, (el,coord,mass) in enumerate(zip(fragment.elems,fragment.coords,fragment.masses)):
-     #       print("mass:", mass)
-     #       for xyz in range(3):
-     #           #coord
-     #           atom.coord[xyz] += random_Q * mode[i][xyz] * math.sqrt(1./mass)
-     #           #vel
-     #           atom.veloc[xyz] += random_P * mode[i][xyz] * math.sqrt(1./mass)
-    #Print XYZ trajectory of coordinates
-    #Also print velocities in some format
+    #Importing wigner_sample
+    print("Importing wigner_sample from geometric library")
+    from geometric.normal_modes import frequency_analysis, wigner_sample
+    try:
+        shutil.rmtree(dirname)
+    except:
+        pass
 
-    final_coords=None
-    final_vels=None
+    #Calling geometric 
+    #frequency_analysis(coords_in_au, hessian, elem=fragment.elems, mass=fragment.masses, temperature=temperature, wigner=(num_samples,dirname))
+    os.mkdir(dirname)
+    wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, dirname, True)
 
-    #Return collection of coordinates and velocities
-    return final_coords, final_vels
+    #Grabbing all coordinates from wigner-dir into one list and create fragments
+    final_coords=[]
+    final_frags=[]
+    for dir in sorted(os.listdir(dirname)):
+        e,c = read_xyzfile(f"{dirname}/{dir}/coords.xyz",printlevel=0)
+        final_coords.append((e,c))
+        newfrag = Fragment(coords=c, elems=e, charge=fragment.charge, mult=fragment.mult, printlevel=0)
+        final_frags.append(newfrag)
+
+    #Write multi-XYZ file (Used by PES module e.g.)
+    write_multi_xyz_file(final_coords,fragment.numatoms,filename="Wigner_traj.xyz")
+    print("Wrote file: Wigner_traj.xyz")
+    #Return list of ASH fragments 
+    return final_frags
 
 
 #Simple function to get the relevant part (real or imaginary) part of a complex number
@@ -1909,3 +1950,109 @@ def get_relevant_part_of_complex(numb):
 
 def clean_frequencies(freqs):
     return [get_relevant_part_of_complex(f) for f in freqs]
+
+
+
+def project_rot_and_trans(coords,mass,Hessian):
+
+    mass = np.array(mass)
+    coords = np.array(coords)*ash.constants.ang2bohr
+    coords = coords.copy().reshape(-1, 3)
+    na = coords.shape[0]
+    wavenumber_scaling = 1e10*np.sqrt(ash.constants.hartokj / ash.constants.bohr2nm**2)/(2*np.pi*ash.constants.c*0.01)
+    TotDOF = 3*na
+
+    #mass weighted Hessian matrix
+    invsqrtm3 = 1.0/np.sqrt(np.repeat(mass, 3))
+    wHessian = Hessian.copy() * np.outer(invsqrtm3, invsqrtm3)
+
+    # Compute the center of mass
+    cxyz = np.sum(coords * mass[:, np.newaxis], axis=0)/np.sum(mass)
+
+    # Coordinates in the center-of-mass frame
+    xcm = coords - cxyz[np.newaxis, :]
+    
+    # Moment of inertia tensor
+    I = np.sum([mass[i] * (np.eye(3)*(np.dot(xcm[i], xcm[i])) - np.outer(xcm[i], xcm[i])) for i in range(na)], axis=0)
+
+    # Principal moments
+    Ivals, Ivecs = np.linalg.eigh(I)
+    # Eigenvectors are in the rows after transpose
+    Ivecs = Ivecs.T 
+
+    # Obtain the number of rotational degrees of freedom
+    RotDOF = 0
+    for i in range(3):
+        if abs(Ivals[i]) > 1.0e-10:
+            RotDOF += 1
+    TR_DOF = 3 + RotDOF
+    if TR_DOF not in (5, 6):
+        print("Unexpected number of trans+rot DOF: {TR_DOF} not in (5, 6)")
+
+    # Internal coordinates of the Eckart frame
+    ic_eckart=np.zeros((6, TotDOF))
+    for i in range(na):
+        # The dot product of (the coordinates of the atoms with respect to the center of mass) and 
+        # the corresponding row of the matrix used to diagonalize the moment of inertia tensor
+        p_vec = np.dot(Ivecs, xcm[i])
+        smass = np.sqrt(mass[i]) 
+        ic_eckart[0,3*i  ] = smass 
+        ic_eckart[1,3*i+1] = smass 
+        ic_eckart[2,3*i+2] = smass 
+        for ix in range(3):
+            ic_eckart[3,3*i+ix] = smass*(Ivecs[2,ix]*p_vec[1] - Ivecs[1,ix]*p_vec[2])
+            ic_eckart[4,3*i+ix] = smass*(Ivecs[2,ix]*p_vec[0] - Ivecs[0,ix]*p_vec[2])
+            ic_eckart[5,3*i+ix] = smass*(Ivecs[0,ix]*p_vec[1] - Ivecs[1,ix]*p_vec[0])
+    
+    # Sort the rotation ICs by their norm in descending order, then normalize them
+    ic_eckart_norm = np.sqrt(np.sum(ic_eckart**2, axis=1))
+    # If the norm is equal to zero, then do not scale.
+    ic_eckart_norm += (ic_eckart_norm == 0.0)
+    sortidx = np.concatenate((np.array([0,1,2]), 3+np.argsort(ic_eckart_norm[3:])[::-1]))
+    ic_eckart1 = ic_eckart[sortidx, :]
+    ic_eckart1 /= ic_eckart_norm[sortidx, np.newaxis]
+    ic_eckart = ic_eckart1.copy()
+
+    # Using Gram-Schmidt orthogonalization, create a basis where translation 
+    # and rotation is projected out of Cartesian coordinates
+    proj_basis = np.identity(TotDOF)
+    maxIt = 100
+    for iteration in range(maxIt):
+        max_overlap = 0.0
+        for i in range(TotDOF):
+            for n in range(TR_DOF):
+                proj_basis[i] -= np.dot(ic_eckart[n], proj_basis[i]) * ic_eckart[n] 
+            overlap = np.sum(np.dot(ic_eckart, proj_basis[i]))
+            max_overlap = max(overlap, max_overlap)        
+        if max_overlap < 1e-12 : break
+        if iteration == maxIt - 1:
+            print(f"Gram-Schmidt orthogonalization failed after {maxIt} iterations")
+    
+    # Diagonalize the overlap matrix to create (3N-6) orthonormal basis vectors
+    # constructed from translation and rotation-projected proj_basis
+    proj_overlap = np.dot(proj_basis, proj_basis.T)
+    proj_vals, proj_vecs = np.linalg.eigh(proj_overlap)
+    proj_vecs = proj_vecs.T
+
+    # Make sure number of vanishing eigenvalues is roughly equal to TR_DOF
+    numzero_upper = np.sum(abs(proj_vals) < 1.0e-8)  # Liberal counting of zeros - should be more than TR_DOF
+    numzero_lower = np.sum(abs(proj_vals) < 1.0e-12) # Conservative counting of zeros - should be less than TR_DOF
+    # Construct eigenvectors of unit length in the space of Cartesian displacements
+    VibDOF = TotDOF - TR_DOF
+    norm_vecs = proj_vecs[TR_DOF:] / np.sqrt(proj_vals[TR_DOF:, np.newaxis])
+
+    # These are the orthonormal, TR-projected internal coordinates
+    ic_basis = np.dot(norm_vecs, proj_basis)
+    # Calculate the internal coordinate Hessian and diagonalize
+    ic_hessian = np.linalg.multi_dot((ic_basis, wHessian, ic_basis.T))
+    ichess_vals, ichess_vecs = np.linalg.eigh(ic_hessian)
+    ichess_vecs = ichess_vecs.T
+    normal_modes = np.dot(ichess_vecs, ic_basis)
+    # mass unweighting
+    normal_modes_cart = normal_modes * invsqrtm3[np.newaxis, :]
+
+    # Convert to wavenumbers
+    freqs_wavenumber = wavenumber_scaling * np.sqrt(np.abs(ichess_vals)) * np.sign(ichess_vals)
+
+    return freqs_wavenumber,normal_modes,normal_modes_cart
+

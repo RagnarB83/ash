@@ -668,7 +668,6 @@ class Fragment:
                 line = "{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
 
-
     # Print system-fragment information to file. Default name of file: "fragment.ygg
     def print_system(self, filename='fragment.ygg'):
         if self.printlevel >= 2:
@@ -1021,6 +1020,15 @@ def write_XYZ_for_atoms(coords, elems, members, name):
             line = "{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el, c[0], c[1], c[2])
             ofile.write(line + '\n')
 
+#Write a multi-XYZ-file, i.e. XYZ trajectory from a list with each sublist containing list of elements and np array of coords
+#el_and_coords : [[['O','H','H'],np.array([[0.0, 0.0, 0.0],[0.0,0.0,1.0],[0.0,0.0,-1.0]])],etc.]
+def write_multi_xyz_file(el_and_coords,numatoms,filename,label=""):
+    with open(filename,"w") as f:
+        for coord in el_and_coords:
+            f.write(f"{numatoms}\n")
+            f.write(f"{label}\n")
+            for el,co in zip(coord[0],coord[1]):
+                f.write(f"{el} {co[0]} {co[1]} {co[2]}\n")
 
 # From lists of coords,elems and atom indices, print coords with elems
 # If list of atom indices provided, print as leftmost column
@@ -1447,7 +1455,7 @@ def molformulatolist(formulastring):
 
 
 # Read XYZ file
-def read_xyzfile(filename):
+def read_xyzfile(filename,printlevel=2):
     # Will accept atom-numbers as well as symbols
     elements = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
                 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
@@ -1459,7 +1467,8 @@ def read_xyzfile(filename):
                 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
                 'Pa',
                 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
-    print("Reading coordinates from XYZ file '{}'.".format(filename))
+    if printlevel >= 2:
+        print("Reading coordinates from XYZ file '{}'.".format(filename))
     coords = []
     elems = []
     with open(filename) as f:
@@ -1570,7 +1579,7 @@ def write_xyzfile(elems, coords, name, printlevel=2, writemode='w'):
 # Function that reads XYZ-file with multiple files, splits and return list of coordinates
 # Created for splitting crest_conformers.xyz but may also be used for MD traj.
 # Also grabs last word in title line. Typically an energy (has to be converted to float outside)
-def split_multimolxyzfile(file, writexyz=False, skipindex=1):
+def split_multimolxyzfile(file, writexyz=False, skipindex=1,return_fragments=False):
     all_coords = []
     all_elems = []
     all_titles = []
@@ -1579,6 +1588,7 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1):
     titlegrab = False
     coords = []
     elems = []
+    fragments=[]
     with open(file) as f:
         for index, line in enumerate(f):
             if index == 0:
@@ -1598,6 +1608,8 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1):
                     if writexyz is True:
                         # Alternative option: write each conformer/molecule to disk as XYZfile
                         write_xyzfile(elems, coords, "molecule" + str(molcounter))
+                    frag = Fragment(coords=coords,elems=elems,printlevel=0)
+                    fragments.append(frag)
                     coords = []
                     elems = []
             # Grab title
@@ -1623,7 +1635,10 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1):
                         titlegrab = True
                         coordgrab = False
                         # ashexit()
-    return all_elems, all_coords, all_titles
+    if return_fragments is True:
+        return fragments
+    else:
+        return all_elems, all_coords, all_titles
 
 
 # Read Tcl-Chemshell fragment file and grab elems and coords. Coordinates converted from Bohr to Angstrom
@@ -1853,7 +1868,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
             if '%FLAG ATOMIC_NUMBER' in line:
                 grab_atomnumber = True
     if len(coords) != len(elems):
-        print(BC.FAIL,"Num coords not equal to num elems. Parsing of Amber files: {} and {} failed. BUG!".format(prmtopfile,inpcrdfile), BC.END)
+        print(BC.FAIL,f"Num coords ({len(coords)}) not equal to num elems ({len(elems)}). Parsing of Amber files: {prmtopfile} and {inpcrdfile} failed. BUG!", BC.END)
         ashexit()
     return elems, coords, box_dims
 
@@ -2594,7 +2609,7 @@ def get_molecules_from_trajectory(file, writexyz=False, skipindex=1, conncalc=Fa
     print("Finding molecules/snapshots in multi-XYZ trajectory file and creating ASH fragments...")
     print("Taking every {}th entry".format(skipindex))
     list_of_molecules = []
-    all_elems, all_coords, all_titles = split_multimolxyzfile(file, writexyz=writexyz, skipindex=skipindex)
+    all_elems, all_coords, all_titles = split_multimolxyzfile(file, writexyz=writexyz, skipindex=skipindex,return_fragments=False)
     print("Found {} molecules in file.".format(len(all_elems)))
     for els, cs in zip(all_elems, all_coords):
         conf = ash.Fragment(elems=els, coords=cs, conncalc=conncalc, printlevel=0)

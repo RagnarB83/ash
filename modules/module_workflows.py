@@ -15,13 +15,15 @@ import ash.interfaces.interface_crest
 from ash.functions.functions_general import BC,print_time_rel,print_line_with_mainheader,pygrep, ashexit,n_max_values
 #from ash.modules.module_singlepoint import Singlepoint_fragments
 from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
-from ash.modules.module_coords import read_xyzfiles
+from ash.modules.module_coords import read_xyzfiles,get_molecules_from_trajectory
 import ash.functions.functions_elstructure
-from ash.modules.module_plotting import ASH_plot
+from ash.modules.module_plotting import ASH_plot,plot_Spectrum
 from ash.modules.module_singlepoint import ReactionEnergy
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_freq import thermochemcalc
 from ash.interfaces.interface_ORCA import ORCATheory
+
+
 
 #Simple class to keep track of results. To be extended
 #Deprecated?. Use ASH_Results instead?
@@ -1530,3 +1532,48 @@ def ExcitedStateSCFOptimizer(theory=None, fragment=None, autononaufbaudict=None,
     if Freq:
         print("Freq true. Doing excited state numerical frequencies")
         result_freq = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, runmode='serial', charge=charge, mult=mult)
+
+
+#Function to perform ensemble-averaged absorption calculations on a trajectory
+def TDDFT_vib_ave(theory=None,trajectory=None, plot_range=[0,10],broadening=0.1, points=1000,
+                    imageformat='png',dpi=200,charge=0,mult=1):
+
+    print_line_with_mainheader("TDDFT_vib_ave function")
+
+
+    print("Theory:", theory)
+    print("Trajectory:", trajectory)
+    print("Plot range:", plot_range)
+    print("Broadening:", broadening)
+    print("Points:", points)
+    print ("Image format:", imageformat)
+    print("DPI:", dpi)
+
+    if isinstance(theory,ash.ORCATheory) is False:
+        print("TDDFT_vib_ave only works with ORCATheory objects")
+        ashexit()
+
+    #Read in structures from trajectory as a list of ASH fragments
+    print("Reading geometries from trajectory")
+    fragments = get_molecules_from_trajectory(trajectory)
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragments[0], "TDDFT_vib_ave", theory=theory)
+
+    #List of results
+    all_trans_energies=[]
+    all_trans_intensities=[]
+
+    #Loop over fragments and perform TDDFT calculation
+    print("Now looping over fragments")
+    for frag in fragments:
+        #Perform single-point TDDFT calculation
+        result = ash.Singlepoint(theory=theory, fragment=frag,charge=charge,mult=mult)
+        #Grab TDDFT properties from theory object
+        all_trans_energies += theory.properties["TDDFT_transition_energies"]
+        all_trans_intensities += theory.properties["TDDFT_transition_intensities"]
+
+    # Plot spectrum (applies broadening to every stick)
+    plot_Spectrum(xvalues=all_trans_energies, yvalues=all_trans_intensities, plotname='TDDFT',
+        range=plot_range, unit='eV', broadening=broadening, points=points, imageformat=imageformat, dpi=dpi, 
+        matplotlib=True, CSV=True, color='blue', plot_sticks=True)
