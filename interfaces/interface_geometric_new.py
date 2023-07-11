@@ -228,10 +228,11 @@ class GeomeTRICOptimizerClass:
                     for bondpair in bondconstraints:
                         #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
                         #print("bondpair", bondpair)
+                        bond_indices=bondpair[0]; bond_val=bondpair[1]
                         if constrainvalue is True:
-                            confile.write(f'distance {bondpair[0]+1} {bondpair[1]+1} {bondpair[2]}\n')                    
+                            confile.write(f'distance {bond_indices[0]+1} {bond_indices[1]+1} {bond_val}\n')                    
                         else:    
-                            confile.write(f'distance {bondpair[0]+1} {bondpair[1]+1}\n')
+                            confile.write(f'distance {bond_indices[0]+1} {bond_indices[1]+1}\n')
             #Angle constraints
             if angleconstraints is not None :
                 self.constraintsfile='constraints.txt'
@@ -241,12 +242,13 @@ class GeomeTRICOptimizerClass:
                     else:
                         confile.write('$freeze\n')
                     for angleentry in angleconstraints:
+                        angle_indices=angleentry[0]; angle_val=angleentry[1]
                         #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
                         #print("angleentry", angleentry)
                         if constrainvalue is True:
-                            confile.write(f'angle {angleentry[0]+1} {angleentry[1]+1} {angleentry[2]+1} {angleentry[3]}\n')
+                            confile.write(f'angle {angle_indices[0]+1} {angle_indices[1]+1} {angle_indices[2]+1} {angle_val}\n')
                         else:
-                            confile.write(f'angle {angleentry[0]+1} {angleentry[1]+1} {angleentry[2]+1}\n')
+                            confile.write(f'angle {angle_indices[0]+1} {angle_indices[1]+1} {angle_indices[2]+1}\n')
             if dihedralconstraints is not None:
                 print("dihedralconstraints:", dihedralconstraints)
                 self.constraintsfile='constraints.txt'
