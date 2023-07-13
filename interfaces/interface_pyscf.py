@@ -1438,6 +1438,10 @@ class PySCFTheory:
                     entropies = np.random.choice(np.arange(len(self.mf.mo_occ)),len(self.mf.mo_occ),replace=False)
                     chooser = apc.Chooser(self.mf.mo_coeff,self.mf.mo_occ,entropies,max_size=self.apc_max_size)
                     norb_cas, nel_cas, orbitals, active_idx = chooser.kernel()
+                    print("norb_cas:", norb_cas)
+                    print("nel_cas:", nel_cas)
+                    print("orbitals:", orbitals)
+                    print("active_idx:", active_idx)
                 elif self.moreadfile != None:
                     print("moreadfile option was specified")
                     print("This means that SCF-orbitals are ignored and we will read MO coefficients from chkfile:", self.moreadfile)
