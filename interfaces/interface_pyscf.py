@@ -1443,7 +1443,7 @@ class PySCFTheory:
                     print("norb_cas:", norb_cas)
                     print("nel_cas:", nel_cas)
                     print("orbitals:", orbitals)
-                    print("active_idx:", active_idx)
+                    #print("active_idx:", active_idx)
                 elif self.moreadfile != None:
                     print("moreadfile option was specified")
                     print("This means that SCF-orbitals are ignored and we will read MO coefficients from chkfile:", self.moreadfile)
