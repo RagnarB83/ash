@@ -1435,9 +1435,11 @@ class PySCFTheory:
                 elif self.APC is True:
                     from pyscf.mcscf import apc
                     print("APC automatic CAS option chosen")
-                    entropies = np.random.choice(np.arange(len(self.mf.mo_occ)),len(self.mf.mo_occ),replace=False)
-                    chooser = apc.Chooser(self.mf.mo_coeff,self.mf.mo_occ,entropies,max_size=self.apc_max_size)
-                    norb_cas, nel_cas, orbitals, active_idx = chooser.kernel()
+                    #entropies = np.random.choice(np.arange(len(self.mf.mo_occ)),len(self.mf.mo_occ),replace=False)
+                    #chooser = apc.Chooser(self.mf.mo_coeff,self.mf.mo_occ,entropies,max_size=self.apc_max_size)
+                    #norb_cas, nel_cas, orbitals, active_idx = chooser.kernel()
+                    myapc = apc.APC(self.mf,max_size=self.apc_max_size)
+                    norb_cas,nel_cas,orbitals = myapc.kernel()
                     print("norb_cas:", norb_cas)
                     print("nel_cas:", nel_cas)
                     print("orbitals:", orbitals)
