@@ -31,7 +31,7 @@ class PySCFTheory:
                   CAS=False, CASSCF=False, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
-                  AVAS=False, DMET_CAS=False, CAS_AO_labels=None, 
+                  AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None):
@@ -104,6 +104,8 @@ class PySCFTheory:
         self.casscf_maxcycle=casscf_maxcycle
 
         #Auto-CAS options
+        self.APC=APC
+        self.apc_max_size=apc_max_size
         self.AVAS=AVAS
         self.DMET_CAS=DMET_CAS
         self.CAS_AO_labels=CAS_AO_labels
@@ -178,12 +180,15 @@ class PySCFTheory:
         self.postSCF=False
         if self.CAS is True:
             self.postSCF=True
-            print("CAS is True. Active_space keyword should be defined unless AVAS or DMET_CAS is True.")
+            print("CAS is True. Active_space keyword should be defined unless AVAS, APC or DMET_CAS is True.")
             if self.AVAS is True or self.DMET_CAS is True: 
                 print("AVAS/DMET_CAS is True")
                 if self.CAS_AO_labels is None:
                     print("AVAS/DMET_CAS requires CAS_AO_labels keyword. Specify as e.g. CAS_AO_labels=['Fe 3d', 'Fe 4d', 'C 2pz']")
                     ashexit()
+            if self.APC is True:
+                print("Ranked-orbital APC method is True")
+                print("APC max size:", self.apc_max_size)
             elif self.cas_nmin != None or self.cas_nmax != None:
                 print("Keyword cas_nmin and cas_nmax provided")
                 print("Will use together with MP2 natural orbitals to choose CAS")
@@ -239,6 +244,8 @@ class PySCFTheory:
         print("CASSCF maxcycles:", self.casscf_maxcycle)
         print("AVAS:", self.AVAS)
         print("DMET_CAS:", self.DMET_CAS)
+        print("APC:", self.APC)
+        print("APC max size:", self.apc_max_size)
         print("CAS_AO_labels (for AVAS/DMET_CAS)", self.CAS_AO_labels)
         print("CAS_nmin:", self.cas_nmin)
         print("CAS_nmax:", self.cas_nmax)
@@ -1136,7 +1143,6 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Total num. orbitals:", num_scf_orbitals_alpha)
                 if self.printlevel >1:
-                    print("here")
                     self.mf.canonicalize(self.mf.mo_coeff, self.mf.mo_occ)
                     self.mf.analyze()
                     #self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
@@ -1426,6 +1432,12 @@ class PySCFTheory:
                     print("DMET_CAS automatic CAS option chosen")
                     norb_cas, nel_cas, orbitals = dmet_cas.guess_cas(self.mf, self.mf.make_rdm1(), self.CAS_AO_labels)
                     print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
+                elif self.APC is True:
+                    from pyscf.mcscf import apc
+                    print("APC automatic CAS option chosen")
+                    entropies = np.random.choice(np.arange(len(self.mf.mo_occ)),len(self.mf.mo_occ),replace=False)
+                    chooser = apc.Chooser(self.mf.mo_coeff,self.mf.mo_occ,entropies,max_size=self.apc_max_size)
+                    norb_cas, nel_cas, orbitals, active_idx = chooser.kernel()
                 elif self.moreadfile != None:
                     print("moreadfile option was specified")
                     print("This means that SCF-orbitals are ignored and we will read MO coefficients from chkfile:", self.moreadfile)

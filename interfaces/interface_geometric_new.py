@@ -162,6 +162,8 @@ class GeomeTRICOptimizerClass:
             self.constrainvalue=constrainvalue
         #Parse the constraints into bond, angle, dihedral
         def define_constraints(self,constraints):
+            print("Inside define_constraints")
+            print("Constraints:", constraints)
             ########################################
             #CONSTRAINTS
             ########################################
@@ -197,6 +199,8 @@ class GeomeTRICOptimizerClass:
             return bondconstraints, angleconstraints, dihedralconstraints
 
         def write_constraintsfile(self,frozenatoms,bondconstraints,constrainvalue,angleconstraints,dihedralconstraints):
+            print("Inside write_constraintsfile")
+
             #Delete possible old constraintsfile
             try:
                 os.remove('constraints.txt')
@@ -219,20 +223,26 @@ class GeomeTRICOptimizerClass:
                         confile.write(f'xyz {frozenatomindex}\n')
             #Bond constraints
             if bondconstraints is not None :
+                print("bondconstraints", bondconstraints)
+                exit()
                 self.constraintsfile='constraints.txt'
                 with open("constraints.txt", 'a') as confile:
                     if constrainvalue is True:
                         confile.write('$set\n')            
                     else:
                         confile.write('$freeze\n')
+
                     for bondpair in bondconstraints:
                         #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
-                        #print("bondpair", bondpair)
-                        bond_indices=bondpair[0]; bond_val=bondpair[1]
+                        print("bondpair", bondpair)
                         if constrainvalue is True:
+                            print("constrainvalue True")
+                            bond_indices=bondpair[0]; bond_val=bondpair[1]
                             confile.write(f'distance {bond_indices[0]+1} {bond_indices[1]+1} {bond_val}\n')                    
-                        else:    
-                            confile.write(f'distance {bond_indices[0]+1} {bond_indices[1]+1}\n')
+                        else:
+                            print("dd")
+                            print(bondpair)
+                            confile.write(f'distance {bondpair[0]+1} {bondpair[1]+1}\n')
             #Angle constraints
             if angleconstraints is not None :
                 self.constraintsfile='constraints.txt'

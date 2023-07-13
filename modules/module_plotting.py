@@ -29,19 +29,24 @@ def load_matplotlib():
     import matplotlib.pyplot as plt 
     return plt
 
-
-
-
 def Gaussian(x, mu, strength, sigma):
     "Produces a Gaussian curve"
-    #print("x:", x,)
-    #print( "mu:", mu, "strength:", strength, "sigma:", sigma)
-    #print(strength / (sigma*np.sqrt(2*np.pi)))
-    #bandshape = (strength / (sigma*np.sqrt(2*np.pi)))  * np.exp(-1*((x-mu))**2/(2*(sigma**2)))
     bandshape = (strength)  * np.exp(-1*((x-mu))**2/(2*(sigma**2)))
     return bandshape
 
+def Lorentz(x, x0, strength, gamma):
+    "Produces a Lorentz lineshape"
+    lineshape = (strength / (1 + ((x - x0) / gamma)**2))
+    return lineshape
 
+def Voigt(x, x0, strength,sigma, gamma):
+    "Produces a Voigt lineshape with approximately matching height to Gaussian"
+    from scipy.special import voigt_profile
+    # Calculate the Gaussian height
+    gaussian_height = strength * np.sqrt(2 * np.pi * sigma**2)
+    # Calculate the Voigt profile using scipy's voigt_profile function
+    lineshape = 2*gaussian_height * voigt_profile(x - x0, sigma, gamma)
+    return lineshape
 
 class ASH_plot():
     def __init__(self, figuretitle='Plottyplot', num_subplots=1, dpi=200, imageformat='png', figsize=(9,5),
@@ -442,13 +447,13 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     
     
 #plot_Spectrum reads stick-values (e.g. absorption energie or IPs) and intensities, broadens spectrum (writes out dat and stk files) and then creates image-file using Matplotlib.
-#TODO: Currently only Gaussian broadening. Add Lorentzian and Voight
+#Default Gaussian broadening, Lorentz and Gaussian-Lorentzian (Voigt) also possible.
 def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, 
-    imageformat='png', dpi=200, matplotlib=True, CSV=True, color='blue', plot_sticks=True):
+    imageformat='png', dpi=200, matplotlib=True, CSV=True, color='blue', plot_sticks=True, lineshape='Gaussian', voigt_broadening=None):
     
     print_line_with_mainheader("plot_Spectrum")
-    if xvalues is None or yvalues is None:
-        print("plot_Spectrum requires xvalues and yvalues variables")
+    if xvalues is None or yvalues is None or range is None:
+        print("plot_Spectrum requires xvalues, yvalues and range variables")
         ashexit()
     assert len(xvalues) == len(yvalues), "List of yvalues not same size as list of xvalues." 
 
@@ -467,19 +472,44 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
         ashexit()
 
     #########################
-    # Plot spectra.
+    # Broaden spectra
     ########################
     print(BC.OKGREEN, "Plotting-range chosen:", start, "-", finish, unit, "with ", points, "points and ",
             broadening, "{} broadening.".format(unit), BC.END)
 
     # X-range
     x = np.linspace(start, finish, points)
-    stkheight = 0.5
-    strength = 1.0
+
+    #Lineshape function
+    if lineshape == 'Gaussian':
+        print("Gaussian lineshape chosen")
+        print("Setting sigma equal to broadening value:", broadening)
+        sigma=broadening
+    elif lineshape == 'Lorentz':
+        print("Lorentz lineshape chosen")
+        print("Setting gamma equal to broadening value:", broadening)
+        gamma=broadening
+    elif lineshape == 'Voigt':
+        print("Voigt lineshape chosen")
+        if voigt_broadening is None:
+            print("voigt_broadening (list of sigma and gamma values) not provided. Using broadening value for both sigma and gamma")
+            sigma=broadening
+            gamma=broadening
+            print(f"Setting sigma={sigma} and gamma={gamma}")
+        else:
+            print("voigt_broadening values provided")
+            sigma=voigt_broadening[0]
+            gamma=voigt_broadening[1]
+            print(f"Setting sigma={sigma} and gamma={gamma}")
 
     spectrum = 0
     for peak, strength in zip(xvalues, yvalues):
-        broadenedpeak = Gaussian(x, peak, strength, broadening)
+        if lineshape == 'Gaussian':
+            broadenedpeak = Gaussian(x, peak, strength, sigma)
+        elif lineshape == 'Lorentz':
+            broadenedpeak = Lorentz(x, peak, strength, gamma)
+        elif lineshape == 'Voigt':
+            broadenedpeak = Voigt(x, peak, strength, sigma,gamma)
         spectrum += broadenedpeak
 
     #Save dat file
@@ -560,120 +590,3 @@ def MOplot_vertical(mos_dict, pointsize=4000, linewidth=2, label="Label", yrange
 
     print("Created plot:", label+"."+imageformat)
 
-
-
-
-
-
-
-def sdfdsf(mos_alpha=None, mos_beta=None, plotname='MO-plot', start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None, matplotlib=True, imageformat='png'):
-    print("todo??")
-    ashexit()
- 
-    blankline()
-    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
-    print(bcolors.OKGREEN,"plot_MO_Spectrum",bcolors.ENDC)
-    print(bcolors.OKGREEN,"-------------------------------------------------------------------",bcolors.ENDC)
-    blankline()
-
-
-
-    #########################
-    # Plot spectra.
-    ########################
-    print(bcolors.OKGREEN, "Plotting-range chosen:", start, "-", finish, "eV", "with ", points, "points and ",
-              broadening, "eV broadening.", bcolors.ENDC)
-
-    # X-range is electron binding energy
-    x = np.linspace(start, finish, points)
-    stkheight = 0.5
-    strength = 1.0
-
-    ######################
-    # MO-dosplot
-    ######################
-    if hftyp_I is None:
-        print("hftyp_I not set (value: RHF or UHF). Assuming hftyp_I=RHF and ignoring beta MOs.")
-        blankline()
-    # Creates DOS out of electron binding energies (negative of occupied MO energies)
-    # alpha
-    occDOS_alpha = 0
-    for count, peak in enumerate(mos_alpha):
-        occdospeak = Gaussian(x, peak, strength, broadening)
-        #virtdospeak = Gaussian(x, peak, strength, broadening)
-        occDOS_alpha += occdospeak
-    # beta
-    if hftyp_I == "UHF":
-        occDOS_beta = 0
-        for count, peak in enumerate(mos_beta):
-            occdospeak = Gaussian(x, peak, strength, broadening)
-            #virtdospeak = Gaussian(x, peak, strength, broadening)
-            occDOS_beta += occdospeak
-
-    # Write dat/stk files for MO-DOS
-    datfile = open('MO-DOSPLOT' + '.dat', 'w')
-    stkfile_a = open('MO-DOSPLOT' + '_a.stk', 'w')
-    if hftyp_I == "UHF":
-        stkfile_b = open('MO-DOSPLOT' + '_b.stk', 'w')
-
-    for i in range(0, len(x)):
-        datfile.write(str(x[i]) + " ")
-        datfile.write(str(occDOS_alpha[i]) + " \n")
-        if hftyp_I == "UHF":
-            datfile.write(str(occDOS_beta[i]) + "\n")
-    datfile.close()
-    # Creating stk file for alpha. Only including sticks for plotted region
-    stk_alpha2 = []
-    stk_alpha2height = []
-    for i in mos_alpha:
-        if i > x[-1]:
-            # print("i is", i)
-            continue
-        else:
-            stkfile_a.write(str(i) + " " + str(stkheight) + "\n")
-            stk_alpha2.append(i)
-            stk_alpha2height.append(stkheight)
-    stkfile_a.close()
-    stk_beta2 = []
-    stk_beta2height = []
-    if hftyp_I == "UHF":
-        for i in mos_beta:
-            if i > x[-1]:
-                continue
-            else:
-                stkfile_b.write(str(i) + " " + str(stkheight) + "\n")
-                stk_beta2.append(i)
-                stk_beta2height.append(stkheight)
-        stkfile_b.close()
-
-    ##################################
-    # Plot with Matplotlib
-    ####################################
-    if matplotlib is True:
-        print("Creating plot with Matplotlib")
-        import matplotlib
-        matplotlib.use('Agg')
-        import matplotlib.pyplot as plt
-        fig, ax = plt.subplots()
-        if MOPlot is True:
-            # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
-            ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
-            ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
-            if hftyp_I == "UHF":
-                ax.plot(x, occDOS_beta, 'C2', label='betaMO')
-                ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
-
-
-        ##############
-        # TDDFT-STATES
-        ###############
-        plt.xlabel('eV')
-        plt.ylabel('Intensity')
-        #################################
-        plt.xlim(start, finish)
-        plt.legend(shadow=True, fontsize='small')
-        plt.savefig(plotname + imageformat, format=imageformat, dpi=200)
-        # plt.show()
-    else:
-        print("Skipped Matplotlib part.")
-    print(BC.OKGREEN,"ALL DONE!", BC.END)
