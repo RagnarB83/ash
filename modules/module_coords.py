@@ -955,7 +955,7 @@ def print_internal_coordinate_table(fragment, actatoms=None):
                 # bondpairs.append([atom,conn_i,dist])
                 bondpairsdict[frozenset((atom, conn_i))] = dist
 
-    print_line_with_subheader2("Optimized internal coordinates")
+    print_line_with_subheader2("Internal coordinates")
 
     # Using frozenset: https://stackoverflow.com/questions/46633065/multiples-keys-dictionary-where-key-order-doesnt-matter
     print_line_with_subheader2("Bond lengths (Å):")
