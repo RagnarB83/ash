@@ -538,7 +538,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
         plt = load_matplotlib()
         fig, ax = plt.subplots()
 
-        ax.plot(x, spectrum, 'C3', label=plotname, color=color)
+        ax.plot(x, spectrum, label=plotname, color=color)
         if plot_sticks is True:
             ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt=color, use_line_collection=True)
         plt.xlabel(unit)
