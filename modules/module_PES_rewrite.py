@@ -1646,6 +1646,11 @@ end")
             dysonnorms=grabDysonnorms()
             print(BC.OKBLUE,"\nDyson norms ({}):".format(len(dysonnorms)),BC.ENDC)
             print(dysonnorms)
+            if self.MRCI_SOC is True:
+                print("MRCI-SOC option is on. Modifying Dyson norms list to account for this")
+                dysonnorms=list(np.repeat(dysonnorms,2))
+                print(BC.OKBLUE,"\nNew Dyson norms ({}):".format(len(dysonnorms)),BC.ENDC)
+                print(dysonnorms)
             if len(dysonnorms) == 0:
                 print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
                 print("Setting Dyson norms to zero and continuing.")
