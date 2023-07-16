@@ -444,7 +444,7 @@ class PhotoElectronClass:
         print("Will do CASSCF orbital optimization for initial-state, followed by MRCI/MREOM")
         print("Modifying MRCI block for initial state, CAS({},{})".format(self.MRCI_Initial[0],self.MRCI_Initial[1]))
         print("{} electrons in {} orbitals".format(self.MRCI_Initial[0],self.MRCI_Initial[1]))
-        print("WARNING: MRCI determinant-printing read will only work for ORCA-current or ORCA 5.0, not older ORCA versions like ORCA 4.2")
+        print("WARNING: MRCI determinant-printing read will only work for ORCA version 5.0 or newer.")
         #CASSCF/MRCI wavefunction interpreted as restricted (important for get_MO_from_gbw)
         self.stateI.restricted = True
         for fstate in self.Finalstates:
@@ -468,7 +468,7 @@ class PhotoElectronClass:
         if '%mrci' not in self.theory.orcablocks:
             self.theory.orcablocks = self.theory.orcablocks + f"%mrci\n printwf det\nTPrintwf {self.tprintwfvalue}\n {socblock}\n end"
         else:
-            self.theory.orcablocks = self.theory.orcablocks.replace(f"%mrci\n",f"%mrci\nprintwf det\nTPrintwf {self.tprintwfvalue}\n {sockblock}\n")
+            self.theory.orcablocks = self.theory.orcablocks.replace(f"%mrci\n",f"%mrci\nprintwf det\nTPrintwf {self.tprintwfvalue}\n {socblock}\n")
         #Trimming
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
         self.theory.orcablocks = self.theory.orcablocks.replace('\n\n','\n')
