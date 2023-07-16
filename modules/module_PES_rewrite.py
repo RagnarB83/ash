@@ -630,9 +630,11 @@ class PhotoElectronClass:
                 fstate.outfile = "Final_State" + ".out"
                 fstate.ionstates = fstates_dict[fstate.mult]
                 for ionstate in fstate.ionstates:
-                    fstate.IPs.append((ionstate-self.stateI.energy)*ash.constants.hartoeV)
+                    IP = (ionstate-self.stateI.energy)*ash.constants.hartoeV
+                    fstate.IPs.append(IP)
                 print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
-                IPs_all.append(fstate.IPs)
+                IPs_all += fstate.IPs
+                Ionstates_energies_all += fstate.ionstates
                 self.FinalIPs = self.FinalIPs + fstate.IPs
                 self.Finalionstates = self.Finalionstates + fstate.ionstates
             print(BC.OKBLUE,"Initial State energy:", self.stateI.energy, "au",BC.ENDC)
