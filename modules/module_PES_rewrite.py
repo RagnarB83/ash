@@ -183,9 +183,9 @@ class PhotoElectronClass:
         self.DLPNO=DLPNO 
         self.label=label
         self.check_stability=check_stability
-        self.no_shakeup=no_shakeup
+        self.no_shakeup=no_shakeup   #For no_shakeup option. Whether to allow more than LUMO virtual excitations or not (default 0)
         self.virt_offset=virt_offset
-        self.vibrational_option=vibrational_option  #For no_shakeup option. Whether to allow more than LUMO virtual excitations or not (default 0)
+        self.vibrational_option=vibrational_option
         self.trajectory=trajectory
 
         print("PES method:", self.method)

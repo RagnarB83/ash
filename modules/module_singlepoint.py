@@ -264,6 +264,8 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
         #Orbital file for ORCATheory, PySCFTheory, DiceTheory or any other using moreadfile
         try:
             theory.moreadfile=reaction.orbital_dictionary[moreadfiles][i]
+            print("Found orbital dictionary in reaction object")
+            print("Using orbital file:", theory.moreadfile)
         except:
             try:
                 theory.moreadfile=moreadfiles[i]

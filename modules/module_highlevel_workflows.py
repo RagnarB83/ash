@@ -2469,7 +2469,8 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 Do_TGen_fixed_series=True, fixed_tvar=1e-11, Do_Tau3_series=True, Do_Tau7_series=True, Do_EP_series=True,
                 tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
                 separate_MP2_nat_initial_orbitals=True,
-                DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_CFour=False,
+                DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_CFour=False, DoCAS=False,
+                active_space_for_each=None,
                 DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'], Do_OOCC=True, Do_OOMP2=True,
                 maxcorememory=10000, numcores=1, ice_ci_maxiter=30, ice_etol=1e-6,
                 upper_sel_threshold=1.999, lower_sel_threshold=0,
@@ -2824,7 +2825,8 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                     result_CCSDT_DFT = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_dft)
                     ccsdt_dft.cleanup()
                     results_cc[f'CCSD(T)-{functional}'] = result_CCSDT_DFT.reaction_energy
-        
+
+
         if DoCC_MRCC is True:
             print("CC calculations using MRCC")
             print("not ready")
@@ -2899,6 +2901,61 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             results_cc['C4-CCSDT'] = result_CCSDT.reaction_energy
 
 
+    #Running multireference methods
+    if DoCAS is True:
+        results_cas={}
+        casscf_energies=[]
+        caspt2_energies=[]
+        nevpt2_energies=[]
+        mrciq_energies=[]
+    
+    for i,frag in enumerate(reaction.fragments):
+        casblocks=f"""%maxcore 11000
+%casscf
+nel {active_space_for_each[i][0]}
+norb {active_space_for_each[i][1]}
+maxiter	300
+end
+"""
+        caslabel=f'CASSCF_{active_space_for_each[i][0]}_{active_space_for_each[i][1]}'
+        casscf = ash.ORCATheory(orcasimpleinput=f"! CASSCF {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
+                                numcores=numcores, label=caslabel, save_output_with_label=True,
+                                moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+        caspt2 = ash.ORCATheory(orcasimpleinput=f"! CASPT2 {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
+                                numcores=numcores, label=caslabel, save_output_with_label=True)
+        nevpt2 = ash.ORCATheory(orcasimpleinput=f"! NEVPT2 {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
+                                numcores=numcores, label=caslabel, save_output_with_label=True)
+        mrci_q = ash.ORCATheory(orcasimpleinput=f"! MRCI+Q {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
+                                numcores=numcores, label=caslabel, save_output_with_label=True)
+        
+        result_CASSCF = ash.Singlepoint(fragment=frag, theory=casscf)
+        casscf_energies.append(result_CASSCF.energy)
+        result_CASPT2 = ash.Singlepoint(fragment=frag, theory=caspt2)
+        caspt2_energies.append(result_CASPT2.energy)
+        result_NEVPT2 = ash.Singlepoint(fragment=frag, theory=nevpt2)
+        nevpt2_energies.append(result_NEVPT2.energy)
+        result_MRCIQ = ash.Singlepoint(fragment=frag, theory=mrci_q)
+        mrciq_energies.append(result_MRCIQ.energy)
+
+
+
+    #Reaction energies
+    reaction_energy_casscf = ash.ReactionEnergy(list_of_energies=casscf_energies, stoichiometry=reaction.stoichiometry, 
+                                                unit=reaction.unit, silent=False)[0]
+    reaction_energy_caspt2 = ash.ReactionEnergy(list_of_energies=caspt2_energies, stoichiometry=reaction.stoichiometry, 
+                                                unit=reaction.unit, silent=False)[0]
+    reaction_energy_nevpt2 = ash.ReactionEnergy(list_of_energies=nevpt2_energies, stoichiometry=reaction.stoichiometry, 
+                                                unit=reaction.unit, silent=False)[0]
+    reaction_energy_mrciq = ash.ReactionEnergy(list_of_energies=mrciq_energies, stoichiometry=reaction.stoichiometry, 
+                                                unit=reaction.unit, silent=False)[0]
+
+    results_cas['CASSCF'] = reaction_energy_casscf
+    results_cas['CASPT2'] = reaction_energy_caspt2
+    results_cas['NEVPT2'] = reaction_energy_nevpt2
+    results_cas['MRCI+Q'] = reaction_energy_mrciq
+
+
+
 
     ##########################################
     #Printing final results
@@ -2937,6 +2994,12 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
     print(f" WF           Energy ({reaction.unit})")
     print("-------------------------------------------------")
     for i,(w, e) in enumerate(results_cc.items()):
+        print("{:<22} {:<13.8f}".format(w,e))
+        if plot is True:
+            SR_WF_indices.append(i)
+            SR_WF_energies.append(e)
+            SR_WF_labels.append(w)
+    for i,(w, e) in enumerate(results_cas.items()):
         print("{:<22} {:<13.8f}".format(w,e))
         if plot is True:
             SR_WF_indices.append(i)
