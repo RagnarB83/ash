@@ -2759,17 +2759,17 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         if DoCC_CCSD is True:
             ccsd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSD', save_output_with_label=True)
             bccd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, basis_per_element=basis_per_element,numcores=numcores, label='BCCD', save_output_with_label=True)
-            pccsd_1a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD1a', save_output_with_label=True)
-            pccsd_2a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD2a', save_output_with_label=True)
+            #pccsd_1a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD1a', save_output_with_label=True)
+            #pccsd_2a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD2a', save_output_with_label=True)
             
             result_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd)
             ccsd.cleanup()
             result_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd)
             bccd.cleanup()
-            result_pCCSD1a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_1a)
-            pccsd_1a.cleanup()
-            result_pCCSD2a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_2a)
-            pccsd_2a.cleanup()
+            #result_pCCSD1a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_1a)
+            #pccsd_1a.cleanup()
+            #result_pCCSD2a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_2a)
+            #pccsd_2a.cleanup()
             results_cc['CCSD'] = result_CCSD.reaction_energy
             results_cc['BCCD'] = result_BCCD.reaction_energy
             
@@ -2778,8 +2778,8 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 result_OOCCD = ash.Singlepoint_reaction(reaction=reaction, theory=ooccd)
                 ooccd.cleanup()
                 results_cc['OOCCD'] = result_OOCCD.reaction_energy
-            results_cc['pCCSD/1a'] = result_pCCSD1a.reaction_energy
-            results_cc['pCCSD/2a'] = result_pCCSD2a.reaction_energy
+            #results_cc['pCCSD/1a'] = result_pCCSD1a.reaction_energy
+            #results_cc['pCCSD/2a'] = result_pCCSD2a.reaction_energy
         if DoCC_CCSDT is True:
             ccsdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSDT', save_output_with_label=True)
             ccsdt_qro = ash.ORCATheory(orcasimpleinput=f"! UHF CCSD(T) {basis} UNO tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSDT_QRO', save_output_with_label=True)
@@ -2961,6 +2961,8 @@ end
     #Printing final results
     ##########################################
     SR_WF_indices=[];SR_WF_energies=[];SR_WF_labels=[]
+    MR_WF_indices=[];MR_WF_energies=[];MR_WF_labels=[]
+
 
     print()
     print()
@@ -2993,18 +2995,20 @@ end
     print("Other methods:")
     print(f" WF           Energy ({reaction.unit})")
     print("-------------------------------------------------")
+    #SR
     for i,(w, e) in enumerate(results_cc.items()):
         print("{:<22} {:<13.8f}".format(w,e))
         if plot is True:
             SR_WF_indices.append(i)
             SR_WF_energies.append(e)
             SR_WF_labels.append(w)
+    #MR
     for i,(w, e) in enumerate(results_cas.items()):
         print("{:<22} {:<13.8f}".format(w,e))
         if plot is True:
-            SR_WF_indices.append(i)
-            SR_WF_energies.append(e)
-            SR_WF_labels.append(w)
+            MR_WF_indices.append(i)
+            MR_WF_energies.append(e)
+            MR_WF_labels.append(w)
     print();print()
 
     #Plotting if plot is True and if matplotlib worked
@@ -3020,10 +3024,12 @@ end
         else:
             basislabel=basis
 
-
-
-        eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'{y_axis_label} ({reaction.unit})'], subplot_titles=[f"ICE-CI/{basislabel}",f"Single ref. methods/{basislabel}"],
-            ylimit=ylimits, horizontal=True, padding=padding)
+        if DoCAS is True:
+            eplot = ASH_plot("Plotname", num_subplots=3, x_axislabels=["TGen", "Method","Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'',f''], subplot_titles=[f"ICE-CI/{basislabel}",f"Singleref./{basislabel}",f"Multiref./{basislabel}"],
+                ylimit=ylimits, horizontal=True, padding=padding)
+        else:
+            eplot = ASH_plot("Plotname", num_subplots=2, x_axislabels=["TGen", "Method"], y_axislabels=[f'{y_axis_label} ({reaction.unit})',f'{y_axis_label} ({reaction.unit})',], subplot_titles=[f"ICE-CI/{basislabel}",f"Singleref./{basislabel}"],
+                ylimit=ylimits, horizontal=True, padding=padding)
         print("eplot:", eplot)
         if eplot.working is not False:
             #Inverting x-axis on subplot 0
@@ -3042,6 +3048,9 @@ end
                         eplot.addseries(0, x_list=tgen_thresholds[2:], y_list=tau3_EP_series_3p, label=f"EP-Tau3-3point", color='purple', line=True, scatter=True, x_scale_log=True)
             #Plotting method labels on x-axis with rotation to make things fit
             eplot.addseries(1, x_list=SR_WF_indices, y_list=SR_WF_energies, x_labels=SR_WF_labels, label=reaction.label, color='red', line=True, scatter=True, xticklabelrotation=80)
+            #Plotting method labels on x-axis with rotation to make things fit
+            if DoCAS is True:
+                eplot.addseries(2, x_list=MR_WF_indices, y_list=MR_WF_energies, x_labels=MR_WF_labels, label=reaction.label, color='purple', line=True, scatter=True, xticklabelrotation=80)
             #Save figure
             eplot.savefig(f'{reaction.label}_FCI')
         else:

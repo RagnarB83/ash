@@ -135,11 +135,19 @@ class ASH_plot():
 
 
         elif self.num_subplots == 3:
-            self.plotlistnames=['upleft','upright','low']
-            self.fig, axs_dict = matplotlib.pyplot.subplot_mosaic([['upleft', 'upright'],
-                               ['low', 'low']])
-            self.axs=[axs_dict['upleft'],axs_dict['upright'],axs_dict['low']]
-            self.axiscount=0
+            if horizontal is True:
+                self.fig, self.axs = matplotlib.pyplot.subplots(1, 3, figsize=figsize)  # a figure with a 1x4 grid of Axes
+                self.axiscount=0
+            else:
+                self.plotlistnames=['upleft','upright','low']
+                self.fig, axs_dict = matplotlib.pyplot.subplot_mosaic([['upleft', 'upright'],
+                                ['low', 'low']])
+                self.axs=[axs_dict['upleft'],axs_dict['upright'],axs_dict['low']]
+                self.axiscount=0
+            if ylimit != None:
+                self.axs[0].set_ylim(ylimit[0], ylimit[1])
+                self.axs[1].set_ylim(ylimit[0], ylimit[1])
+                self.axs[2].set_ylim(ylimit[0], ylimit[1])
         elif self.num_subplots == 4:
             self.fig, axs = matplotlib.pyplot.subplots(2, 2, figsize=figsize)  # a figure with a 2x2 grid of Axes
             self.axs=[axs[0][0],axs[0][1], axs[1][0], axs[1][1]]
