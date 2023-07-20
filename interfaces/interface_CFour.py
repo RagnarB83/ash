@@ -10,7 +10,7 @@ import ash.settings_ash
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
-                 filename='cfourjob', specialbasis=None, ash_basisfile='def2-SVP'):
+                 filename='cfourjob', specialbasis=None, ash_basisfile=None):
         
         #Indicate that this is a QMtheory
         self.theorytype="QM"
