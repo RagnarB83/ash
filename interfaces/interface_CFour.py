@@ -64,15 +64,6 @@ class CFourTheory:
                 ashexit()
         else:
             self.specialbasis=[]
-        
-        #Copying ASH basis file to dir if requested
-        if ash_basisfile != None:
-            #ash_basisfile
-            print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,ash.settings_ash.ashpath+'/basis-sets/cfour/'))
-            shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
-
-
-
 
 
         if cfourdir == None:
@@ -86,6 +77,17 @@ class CFourTheory:
                 ashexit()
         else:
             self.cfourdir = cfourdir
+
+        #Copying ASH basis file to dir if requested
+        if ash_basisfile != None:
+            #ash_basisfile
+            print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,ash.settings_ash.ashpath+'/basis-sets/cfour/'))
+            shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
+        else:
+            print("No ASH basis-file provided. Copying GENBAS from CFour directory.")
+            shutil.copyfile(cfourdir+'../basis/GENBAS', 'GENBAS')
+            shutil.copyfile(cfourdir+'../basis/ECPDATA', 'ECPDATA')
+
         
         #Clean-up of possible old Cfour files before beginning
         #TODO: Skip cleanup of chosen files?
