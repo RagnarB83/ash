@@ -113,10 +113,17 @@ class CFourTheory:
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
-    def cfour_call(self):
+    def cfour_call(self,Grad=False):
         with open(self.filename+'.out', 'w') as ofile:
             #export CFOUR_NUM_CORES=1
             process = sp.run([self.cfourdir + '/xcfour'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+    
+        #Running gradient calculation. Produces file GRD containing gradient
+        with open("cfour_grad.out", 'w') as gfile:
+            process = sp.run([self.cfourdir + '/xvdint'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
+
+    
     def cleanup(self):
         print("Cleaning up old Cfour files")
         files=['MOABCD', 'MOINTS', 'JOBARC', 'NEWMOS', 'BASINFO.DATA', 'den.dat', 'DIPOL', 'DPTDIPOL', 'DPTEFG', 'ERREX', 'EFG','FILES', 'GAMLAM', 'IIII', 'JAINDX',
@@ -196,18 +203,16 @@ class CFourTheory:
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                inpfile.write("""*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={}\nMULT={},FROZEN_CORE={},MEM_UNIT={},MEMORY={},SCF_MAXCYC={}\n\
-GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
-LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".format(
-                    self.method,self.basis,self.reference,charge,mult,self.frozen_core,self.memory_unit,self.memory,self.scf_maxcyc,self.guessoption,self.propoption,
-                    self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
+                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
                         inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
                 inpfile.write("\n")
             
             #Calling CFour
-            self.cfour_call()
+            self.cfour_call(Grad=True)
             #Grabbing energy and gradient
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
@@ -218,11 +223,9 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".form
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                inpfile.write("""*CFOUR(CALC={},BASIS={},COORD=CARTESIAN,REF={},CHARGE={}\nMULT={},FROZEN_CORE={},MEM_UNIT={},MEMORY={},SCF_MAXCYC={}\n\
-GUESS={},PROP={},CC_PROG={},SCF_CONV={}\n\
-LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
-                    self.method,self.basis,self.reference,charge,mult,self.frozen_core,self.memory_unit,self.memory,self.scf_maxcyc,self.guessoption,self.propoption,
-                    self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
+                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis})\n\n""")
                 #for specbas in self.specialbasis.items():
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
