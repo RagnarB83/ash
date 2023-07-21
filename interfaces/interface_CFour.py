@@ -24,7 +24,7 @@ class CFourTheory:
         self.method='CCSD(T)'
         self.memory=4
         self.memory_unit='GB'
-        self.reference='UHF'
+        self.reference='RHF'
         self.frozen_core='ON'
         self.guessoption='MOREAD'
         self.propoption='OFF'
@@ -42,6 +42,7 @@ class CFourTheory:
         if 'CALC' in cfouroptions: self.method=cfouroptions['CALC']
         if 'MEMORY' in cfouroptions: self.memory=cfouroptions['MEMORY']
         if 'MEM_UNIT' in cfouroptions: self.memory_unit=cfouroptions['MEM_UNIT']
+        if 'REF' in cfouroptions: self.reference=cfouroptions['REF']
         if 'REFERENCE' in cfouroptions: self.reference=cfouroptions['REFERENCE']
         if 'FROZEN_CORE' in cfouroptions: self.frozen_core=cfouroptions['FROZEN_CORE']
         if 'GUESS' in cfouroptions: self.guessoption=cfouroptions['GUESS']
@@ -54,6 +55,23 @@ class CFourTheory:
         if 'SYMMETRY' in cfouroptions: self.symmetry=cfouroptions['SYMMETRY']
         if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']        
         
+        #Printing
+        print("BASIS:", self.BASIS)
+        print("CALC:", self.CALC)
+        print("MEMORY:", self.MEMORY)
+        print("MEM_UNIT:", self.MEM_UNIT)
+        print("REFERENCE:", self.REFERENCE)
+        print("FROZEN_CORE:", self.FROZEN_CORE)
+        print("GUESS:", self.GUESS)
+        print("PROP:", self.PROP)
+        print("CC_PROG:", self.CC_PROG)
+        print("SCF_CONV:", self.SCF_CONV)
+        print("SCF_MAXCYC:", self.SCF_MAXCYC)
+        print("LINEQ_CONV:", self.LINEQ_CONV)
+        print("CC_MAXCYC:", self.CC_MAXCYC)
+        print("SYMMETRY:", self.SYMMETRY)
+        print("HFSTABILITY:", self.HFSTABILITY)
+
         #Getting special basis dict etc
         if self.basis=='SPECIAL':
             if specialbasis != None:
@@ -71,7 +89,7 @@ class CFourTheory:
             print("cfourdir keyword argument not provided to CfourTheory object. Trying to find xcfour in PATH")
             try:
                 self.cfourdir = os.path.dirname(shutil.which('xcfour'))
-                print("Found xcfour in path. Setting cfourdir.")
+                print("Found xcfour in path. Setting cfourdir to:", cfourdir)
             except:
                 print("Found no xcfour executable in path. Exiting... ")
                 ashexit()
@@ -97,6 +115,7 @@ class CFourTheory:
         self.numcores=numcores
     def cfour_call(self):
         with open(self.filename+'.out', 'w') as ofile:
+            #export CFOUR_NUM_CORES=1
             process = sp.run([self.cfourdir + '/xcfour'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
     def cleanup(self):
         print("Cleaning up old Cfour files")
@@ -216,10 +235,10 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={})\n\n""".format(
         if Grad == True:
             print("Single-point CFour energy:", self.energy)
             print("Single-point CFour gradient:", self.gradient)
-            print_time_rel(module_init_time, modulename='Cfour run', moduleindex=2)
+            print_time_rel(module_init_time, modulename='CFour run', moduleindex=2)
             return self.energy, self.gradient
         else:
             print("Single-point CFour energy:", self.energy)
-            print_time_rel(module_init_time, modulename='Cfour run', moduleindex=2)
+            print_time_rel(module_init_time, modulename='CFour run', moduleindex=2)
             return self.energy
 
