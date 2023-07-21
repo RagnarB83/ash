@@ -56,21 +56,21 @@ class CFourTheory:
         if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']        
         
         #Printing
-        print("BASIS:", self.BASIS)
-        print("CALC:", self.CALC)
-        print("MEMORY:", self.MEMORY)
-        print("MEM_UNIT:", self.MEM_UNIT)
-        print("REFERENCE:", self.REFERENCE)
-        print("FROZEN_CORE:", self.FROZEN_CORE)
-        print("GUESS:", self.GUESS)
-        print("PROP:", self.PROP)
-        print("CC_PROG:", self.CC_PROG)
-        print("SCF_CONV:", self.SCF_CONV)
-        print("SCF_MAXCYC:", self.SCF_MAXCYC)
-        print("LINEQ_CONV:", self.LINEQ_CONV)
-        print("CC_MAXCYC:", self.CC_MAXCYC)
-        print("SYMMETRY:", self.SYMMETRY)
-        print("HFSTABILITY:", self.HFSTABILITY)
+        print("BASIS:", self.basis)
+        print("CALC:", self.method)
+        print("MEMORY:", self.memory)
+        print("MEM_UNIT:", self.memory_unit)
+        print("REFERENCE:", self.reference)
+        print("FROZEN_CORE:", self.frozen_core)
+        print("GUESS:", self.guessoption)
+        print("PROP:", self.propoption)
+        print("CC_PROG:", self.cc_prog)
+        print("SCF_CONV:", self.scf_conv)
+        print("SCF_MAXCYC:", self.scf_maxcyc)
+        print("LINEQ_CONV:", self.lineq_conv)
+        print("CC_MAXCYC:", self.cc_maxcyc)
+        print("SYMMETRY:", self.symmetry)
+        print("HFSTABILITY:", self.stabilityanalysis)
 
         #Getting special basis dict etc
         if self.basis=='SPECIAL':
