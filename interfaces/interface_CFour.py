@@ -120,7 +120,7 @@ class CFourTheory:
     
         #Running gradient calculation. Produces file GRD containing gradient
         with open("cfour_grad.out", 'w') as gfile:
-            process = sp.run([self.cfourdir + '/xvdint'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            process = sp.run([self.cfourdir + '/xvdint'], check=True, stdout=gfile, stderr=gfile, universal_newlines=True)
 
 
     
