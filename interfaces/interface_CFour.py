@@ -2,6 +2,7 @@ import subprocess as sp
 import shutil
 import os
 import time
+import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel
 import ash.settings_ash
