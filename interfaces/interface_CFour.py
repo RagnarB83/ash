@@ -153,7 +153,7 @@ class CFourTheory:
                 if i==0:
                     numatoms=int(line.split()[0])
                     gradient=np.zeros((numatoms,3))
-                if i>numatoms:
+                if i>0:
                     gradient[atomcount,0] = float(line.split()[1])
                     gradient[atomcount,1] = float(line.split()[2])
                     gradient[atomcount,2] = float(line.split()[3])
