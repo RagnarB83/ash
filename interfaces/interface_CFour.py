@@ -202,9 +202,13 @@ LINEQ_CONV={},CC_MAXCYC={},SYMMETRY={},HFSTABILITY={},DERIV_LEVEL=1)\n\n""".form
                     self.method,self.basis,self.reference,charge,mult,self.frozen_core,self.memory_unit,self.memory,self.scf_maxcyc,self.guessoption,self.propoption,
                     self.cc_prog,self.scf_conv,self.lineq_conv,self.cc_maxcyc,self.symmetry,self.stabilityanalysis))
                 for el in qm_elems:
-                    inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
+                    if len(self.specialbasis) > 0:
+                        inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
                 inpfile.write("\n")
+            
+            #Calling CFour
             self.cfour_call()
+            #Grabbing energy and gradient
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
             self.gradient=self.cfour_grabgradient()
