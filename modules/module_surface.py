@@ -931,7 +931,13 @@ def read_surfacedict_from_file(file, dimension=None):
         print("No file found.")
         return dictionary
     with open(file) as f:
-        for line in f:
+        for i,line in enumerate(f):
+            if i == 0:
+                numcols = len(line.split())
+                if numcols == 2:
+                    dimension = 1
+                elif numcols == 3:
+                    dimension = 2
             if '#' not in line:
                 if len(line) > 1:
                     if dimension==1:
