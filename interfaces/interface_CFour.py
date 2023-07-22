@@ -106,11 +106,11 @@ class CFourTheory:
             print("No ASH basis-file provided. Copying GENBAS from CFour directory.")
             try:
                 shutil.copyfile(self.cfourdir+'/../basis/GENBAS', 'GENBAS')
-            except shutil.SameFileError
+            except shutil.SameFileError:
                 pass
             try:
                 shutil.copyfile(self.cfourdir+'/../basis/ECPDATA', 'ECPDATA')
-            except shutil.SameFileError
+            except shutil.SameFileError:
                 pass
             
 
