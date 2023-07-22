@@ -121,14 +121,11 @@ class CFourTheory:
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
-    def cfour_call(self,Grad=False):
+    def cfour_call(self):
         with open(self.filename+'.out', 'w') as ofile:
             #export CFOUR_NUM_CORES=1
             process = sp.run([self.cfourdir + '/xcfour'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-    
-        #Running gradient calculation. Produces file GRD containing gradient
-        with open("cfour_grad.out", 'w') as gfile:
-            process = sp.run([self.cfourdir + '/xvdint'], check=True, stdout=gfile, stderr=gfile, universal_newlines=True)
+
 
 
     
