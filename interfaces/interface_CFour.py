@@ -104,8 +104,15 @@ class CFourTheory:
             shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
         else:
             print("No ASH basis-file provided. Copying GENBAS from CFour directory.")
-            shutil.copyfile(self.cfourdir+'/../basis/GENBAS', 'GENBAS')
-            shutil.copyfile(self.cfourdir+'/../basis/ECPDATA', 'ECPDATA')
+            try:
+                shutil.copyfile(self.cfourdir+'/../basis/GENBAS', 'GENBAS')
+            except shutil.SameFileError
+                pass
+            try:
+                shutil.copyfile(self.cfourdir+'/../basis/ECPDATA', 'ECPDATA')
+            except shutil.SameFileError
+                pass
+            
 
         
         #Clean-up of possible old Cfour files before beginning
