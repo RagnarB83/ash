@@ -244,7 +244,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             #Grabbing energy and gradient
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
-            self.gradient=self.cfour_grabgradient()
+            self.gradient=self.cfour_grabgradient(self.filename+'.out',len(qm_elems))
         else:
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
