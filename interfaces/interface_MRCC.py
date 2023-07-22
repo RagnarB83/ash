@@ -89,9 +89,8 @@ class MRCCTheory:
 
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in MRCC
+        
         if Grad==True:
-            print("Grad not ready")
-            ashexit()
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
@@ -134,7 +133,7 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
-def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores):
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False):
     with open("MINP", 'w') as inpfile:
         inpfile.write(mrccinput + '\n')
         inpfile.write(f'ccsdthreads={numcores}\n')
@@ -142,6 +141,9 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores):
         inpfile.write('unit=angs\n')
         inpfile.write('charge={}\n'.format(charge))
         inpfile.write('mult={}\n'.format(mult))
+        #If Grad true set density to first-order. Gives properties and gradient
+        if Grad is True:
+            inpfile.write('dens=1\n')
         #inpfile.write('dens=2\n')
         inpfile.write('geom=xyz\n')
         inpfile.write('{}\n'.format(len(elems)))
@@ -160,17 +162,18 @@ def grab_energy_mrcc(outfile):
     return energy
 
 
-def grab_gradient_mrcc(self):
-    pass
-   # atomcount=0
-   # with open('GRD') as grdfile:
-   #     for i,line in enumerate(grdfile):
-   #         if i==0:
-   #             numatoms=int(line.split()[0])
-   #             gradient=np.zeros((numatoms,3))
-   #         if i>numatoms:
-   #             gradient[atomcount,0] = float(line.split()[1])
-   #             gradient[atomcount,1] = float(line.split()[2])
-   #              gradient[atomcount,2] = float(line.split()[3])
-   #             atomcount+=1
-   # return gradient    
+def grab_gradient_mrcc(file,numatoms):
+    grab=False
+    atomcount=0
+    gradient=np.zeros((numatoms,3))
+    with open(file) as f:
+        for line in f:
+            if Grab is True:
+                if len(line.split())==5:
+                    gradient[atomcount,0] = float(line.split()[-3])
+                    gradient[atomcount,1] = float(line.split()[-2])
+                    gradient[atomcount,2] = float(line.split()[-1])
+                    atomcount+=1
+            if ' Molecular gradient [au]:' in line:
+                grab=True
+    return gradient
