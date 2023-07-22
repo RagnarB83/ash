@@ -92,7 +92,7 @@ class MRCCTheory:
         #TODO: No qm/MM yet. need to check if possible in MRCC
 
         if Grad==True:
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
@@ -134,7 +134,7 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
-def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False):
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False:
     with open("MINP", 'w') as inpfile:
         inpfile.write(mrccinput + '\n')
         inpfile.write(f'ccsdthreads={numcores}\n')
