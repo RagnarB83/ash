@@ -112,27 +112,27 @@ class MRCCTheory:
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
             return self.energy
 
-def run_mrcc(mrccdir,filename,parallelization):
+def run_mrcc(mrccdir,filename,parallelization,numcores):
     with open(filename, 'w') as ofile:
         #process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
         if parallelization == 'MKL':
-            print(f"MKL parallelization is active. Using MKL_NUM_THREADS={self.numcores}")
-            os.environ['MKL_NUM_THREADS'] = str(self.numcores)
+            print(f"MKL parallelization is active. Using MKL_NUM_THREADS={numcores}")
+            os.environ['MKL_NUM_THREADS'] = str(numcores)
             os.environ['OMP_NUM_THREADS'] = str(1)
             process = sp.run([mrccdir + '/dmrcc'], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         elif parallelization == 'OMP':
-            print(f"OMP parallelization is active. Using OMP_NUM_THREADS={self.numcores}")
-            os.environ['OMP_NUM_THREADS'] = str(self.numcores)
+            print(f"OMP parallelization is active. Using OMP_NUM_THREADS={numcores}")
+            os.environ['OMP_NUM_THREADS'] = str(numcores)
             os.environ['MKL_NUM_THREADS'] = str(1)
             process = sp.run([mrccdir + '/dmrcc'], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         elif parallelization == 'OMP-and-MKL':
-            print(f"OMP-and-MKL parallelization is active. Both OMP_NUM_THREADS and MKL_NUM_THREADS set to: {self.numcores}")
-            os.environ['OMP_NUM_THREADS'] = str(self.numcores)
-            os.environ['MKL_NUM_THREADS'] = str(self.numcores)
+            print(f"OMP-and-MKL parallelization is active. Both OMP_NUM_THREADS and MKL_NUM_THREADS set to: {numcores}")
+            os.environ['OMP_NUM_THREADS'] = str(numcores)
+            os.environ['MKL_NUM_THREADS'] = str(numcores)
             process = sp.run([mrccdir + '/dmrcc'], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         elif parallelization == 'MPI':
-            print(f"MPI parallelization active. Will use {self.numcores} MPI processes. (OMP and MKL disabled)")
+            print(f"MPI parallelization active. Will use {numcores} MPI processes. (OMP and MKL disabled)")
             os.environ['MKL_NUM_THREADS'] = str(1)
             os.environ['OMP_NUM_THREADS'] = str(1)
             process = sp.run([mrccdir + '/dmrcc'], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
