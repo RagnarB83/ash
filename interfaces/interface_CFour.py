@@ -130,14 +130,15 @@ class CFourTheory:
 
     
     def cleanup(self):
-        print("Cleaning up old Cfour files")
-        files=['MOABCD', 'MOINTS', 'JOBARC', 'NEWMOS', 'BASINFO.DATA', 'den.dat', 'DIPOL', 'DPTDIPOL', 'DPTEFG', 'ERREX', 'EFG','FILES', 'GAMLAM', 'IIII', 'JAINDX',
-               'NEWFOCK', 'NTOTAL', 'NATMOS', 'MOLDEN', 'MOLDEN_NAT', 'MOLECULE.INP', 'MOL', 'JMOLplot', 'OPTARC', 'THETA', 'VPOUT']
-        for file in files:
-            try:
-                os.remove(file)
-            except:
-                pass
+        print("Cleaning up old Cfour files using xwipeout")
+        sp.run([self.cfourdir + '/xwipeout'])
+        #files=['MOABCD', 'MOINTS', 'JOBARC', 'NEWMOS', 'BASINFO.DATA', 'den.dat', 'DIPOL', 'DPTDIPOL', 'DPTEFG', 'ERREX', 'EFG','FILES', 'GAMLAM', 'IIII', 'JAINDX',
+        #       'NEWFOCK', 'NTOTAL', 'NATMOS', 'MOLDEN', 'MOLDEN_NAT', 'MOLECULE.INP', 'MOL', 'JMOLplot', 'OPTARC', 'THETA', 'VPOUT']
+        #for file in files:
+        #    try:
+        #        os.remove(file)
+        #    except:
+        #        pass
     def cfour_grabenergy(self):
         #Other things to possibly grab in future:
         #HF-SCF energy
