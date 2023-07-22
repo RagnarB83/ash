@@ -37,6 +37,7 @@ class CFourTheory:
         self.symmetry='OFF'
         self.stabilityanalysis='OFF'
         self.specialbasis=[]
+        self.extern_pot='OFF' #Pointcharge potential off by default
         #Overriding default
         #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
         if 'BASIS' in cfouroptions: self.basis=cfouroptions['BASIS']
@@ -161,9 +162,9 @@ class CFourTheory:
                     grab = False
                 if grab is True:
                     if '#' in line:
-                        gradient[atomcount,0] = float(line.split()[-3])
-                        gradient[atomcount,1] = float(line.split()[-2])
-                        gradient[atomcount,2] = float(line.split()[-1])
+                        gradient[atomcount,0] = -1*float(line.split()[-3])
+                        gradient[atomcount,1] = -1*float(line.split()[-2])
+                        gradient[atomcount,2] = -1*float(line.split()[-1])
                         atomcount+=1
                 if '                            Molecular gradient' in line:
                     grab=True
@@ -217,9 +218,19 @@ class CFourTheory:
             else:
                 qm_elems = elems
 
+        if PC is True:
+            self.extern_pot='ON'
+            #Turning symmetry off
+            self.symmetry='OFF'
+            self.FIXGEOM='ON'
+
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in CFour
         if Grad==True:
+
+            #FIXGEOM='ON'
+            #SYMMETRY
+
             if self.propoption != 'OFF':
                 #TODO: Check whether we can avoid this limitation
                 print("Warning: Cfour property keyword can not be active when doing gradient. Turning off")
@@ -250,7 +261,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
                 inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis})\n\n""")
                 #for specbas in self.specialbasis.items():
                 for el in qm_elems:
