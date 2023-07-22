@@ -225,7 +225,7 @@ class CFourTheory:
             if self.propoption != 'OFF':
                 #TODO: Check whether we can avoid this limitation
                 print("Warning: Cfour property keyword can not be active when doing gradient. Turning off")
-                self.propoption != 'OFF'
+                self.propoption == 'OFF'
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
