@@ -152,7 +152,7 @@ class CFourTheory:
             print("Problem reading energy from Cfour outputfile. Check:", self.filename+'.out')
             ashexit()
         return energy
-    def cfour_grabgradient(self,file,numatoms):
+    def cfour_grabgradient(self,file,numatoms,symmetry=False):
         atomcount=0
         grab=False
         gradient=np.zeros((numatoms,3))
@@ -162,10 +162,12 @@ class CFourTheory:
                     grab = False
                 if grab is True:
                     if '#' in line:
-                        gradient[atomcount,0] = -1*float(line.split()[-3])
-                        gradient[atomcount,1] = -1*float(line.split()[-2])
-                        gradient[atomcount,2] = -1*float(line.split()[-1])
-                        atomcount+=1
+                        if 'x' not in line:
+                            if 'y' not in line:
+                                gradient[atomcount,0] = -1*float(line.split()[-3])
+                                gradient[atomcount,1] = -1*float(line.split()[-2])
+                                gradient[atomcount,2] = -1*float(line.split()[-1])
+                                atomcount+=1
                 if '                            Molecular gradient' in line:
                     grab=True
         return gradient
