@@ -9,7 +9,7 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 #MRCC Theory object.
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
-                mrccinput=None, numcores=1, parallelization='OMP'):
+                mrccinput=None, numcores=1, parallelization='OMP-and-MKL'):
 
         print_line_with_mainheader("MRCCTheory initialization")
 
