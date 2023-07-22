@@ -161,9 +161,9 @@ class CFourTheory:
                     grab = False
                 if grab is True:
                     if '#' in line:
-                        gradient[atomcount,0] = float(line.split()[2])
-                        gradient[atomcount,1] = float(line.split()[3])
-                        gradient[atomcount,2] = float(line.split()[4])
+                        gradient[atomcount,0] = float(line.split()[-3])
+                        gradient[atomcount,1] = float(line.split()[-2])
+                        gradient[atomcount,2] = float(line.split()[-1])
                         atomcount+=1
                 if '                            Molecular gradient' in line:
                     grab=True
