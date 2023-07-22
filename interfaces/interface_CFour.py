@@ -238,7 +238,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
                 inpfile.write("\n")
             
             #Calling CFour
-            self.cfour_call(Grad=True)
+            self.cfour_call()
             #Grabbing energy and gradient
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
