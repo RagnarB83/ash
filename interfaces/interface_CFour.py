@@ -136,15 +136,13 @@ class CFourTheory:
             if self.parallelization == 'MKL':
                 print(f"MKL parallelization is active. Using MKL_NUM_THREADS={self.numcores}")
                 os.environ['MKL_NUM_THREADS'] = str(self.numcores)
-                print("os.environ:",os.environ)
-                process = sp.run([f"{self.cfourdir}/xcfour"], env=os.environ, 
-                                 check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                process = sp.run([f"{self.cfourdir}/xcfour"], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             elif self.parallelization == 'MPI':
                 print(f"MPI parallelization active. Will use {self.numcores} MPI processes. (OMP and MKL disabled)")
                 print("Note. Assumes Cfour compilation with MPI support with CFOUR_NUM_CORES variable used.")
-                process = sp.run([f"{self.cfourdir}/xcfour"], env=dict(CFOUR_NUM_CORES=str(self.numcores),MKL_NUM_THREADS=str(1), 
-                                                                       OMP_NUM_THREADS=str(1), **os.environ), 
-                                                                        check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                os.environ['MKL_NUM_THREADS'] = str(1)
+                os.environ['OMP_NUM_THREADS'] = str(1)
+                process = sp.run([f"{self.cfourdir}/xcfour"], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
     
     def cleanup(self):
