@@ -11,7 +11,8 @@ import ash.settings_ash
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
-                 filename='cfourjob', specialbasis=None, ash_basisfile=None):
+                 filename='cfourjob', specialbasis=None, ash_basisfile=None,
+                 parallelization='OMP'):
         
         #Indicate that this is a QMtheory
         self.theorytype="QM"
@@ -19,6 +20,10 @@ class CFourTheory:
         self.printlevel=printlevel
         self.numcores=numcores
         self.filename=filename
+
+        #Type of parallelization. Options: 'OMP', 'MKL' or 'MPI.
+        #MPI not yet implemented.
+        self.parallelization='OMP'
         
         #Default Cfour settings
         self.basis='SPECIAL' #this is default and preferred
@@ -123,13 +128,24 @@ class CFourTheory:
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cfour_call(self):
+        print("Calling CFour via xcfour executable")
         with open(self.filename+'.out', 'w') as ofile:
             #export CFOUR_NUM_CORES=1
             #sp.run(["env"],env=dict(OMP_NUM_THREADS=str(1), **os.environ))
             #os.environ['CFOUR_NUM_CORES'] = str(self.numcores)
-            process = sp.run([f"{self.cfourdir}/xcfour"], env=dict(OMP_NUM_THREADS=str(self.numcores), **os.environ), check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-
-
+            if self.parallelization == 'OMP':
+                print(f"OMP parallelization is active. Using OMP_NUM_THREADS={self.numcores}")
+                process = sp.run([f"{self.cfourdir}/xcfour"], env=dict(OMP_NUM_THREADS=str(self.numcores), MKL_NUM_THREADS=str(1), **os.environ), 
+                                 check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            elif self.parallelization == 'MKL':
+                print(f"OMP parallelization is active. Using MKL_NUM_THREADS={self.numcores}")
+                process = sp.run([f"{self.cfourdir}/xcfour"], env=dict(MKL_NUM_THREADS=str(self.numcores), OMP_NUM_THREADS=str(1), **os.environ), 
+                                 check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            elif self.parallelization == 'MPI':
+                print(f"MPI parallelization active. Using {self.numcores} MPI processes. (OMP and MKL disabled)")
+                exit()
+                process = sp.run([f"{self.cfourdir}/xcfour"], env=dict(MKL_NUM_THREADS=str(1), OMP_NUM_THREADS=str(1), **os.environ), 
+                                 check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
     
     def cleanup(self):
