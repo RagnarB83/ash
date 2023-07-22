@@ -43,7 +43,7 @@ class MRCCTheory:
         self.mrccinput=mrccinput
         self.numcores=numcores
 
-        #Parallelization strategy: 'MKL', 'OMP', 'OMP-and-MKL' or 'MPI'
+        #Parallelization strategy: 'OMP', 'OMP-and-MKL' or 'MPI'
         self.parallelization=parallelization
 
     #Set numcores method
@@ -116,12 +116,7 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
     with open(filename, 'w') as ofile:
         #process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
-        if parallelization == 'MKL':
-            print(f"MKL parallelization is active. Using MKL_NUM_THREADS={numcores}")
-            os.environ['MKL_NUM_THREADS'] = str(numcores)
-            os.environ['OMP_NUM_THREADS'] = str(1)
-            process = sp.run([mrccdir + '/dmrcc'], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-        elif parallelization == 'OMP':
+        if parallelization == 'OMP':
             print(f"OMP parallelization is active. Using OMP_NUM_THREADS={numcores}")
             os.environ['OMP_NUM_THREADS'] = str(numcores)
             os.environ['MKL_NUM_THREADS'] = str(1)
