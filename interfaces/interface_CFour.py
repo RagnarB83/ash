@@ -225,13 +225,12 @@ class CFourTheory:
             if self.propoption != 'OFF':
                 #TODO: Check whether we can avoid this limitation
                 print("Warning: Cfour property keyword can not be active when doing gradient. Turning off")
-                self.propoption == 'OFF'
+                self.propoption = 'OFF'
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                print("self.propoption:",self.propoption)
                 inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
