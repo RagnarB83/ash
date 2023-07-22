@@ -146,19 +146,35 @@ class CFourTheory:
             print("Problem reading energy from Cfour outputfile. Check:", self.filename+'.out')
             ashexit()
         return energy
-    def cfour_grabgradient(self):
+    def cfour_grabgradient(self,file,numatoms):
         atomcount=0
-        with open('GRD') as grdfile:
-            for i,line in enumerate(grdfile):
-                if i==0:
-                    numatoms=int(line.split()[0])
-                    gradient=np.zeros((numatoms,3))
-                if i>0:
-                    gradient[atomcount,0] = float(line.split()[1])
-                    gradient[atomcount,1] = float(line.split()[2])
-                    gradient[atomcount,2] = float(line.split()[3])
-                    atomcount+=1
-        return gradient    
+        grab=False
+        gradient=np.zeros((numatoms,3))
+        with open(file) as f:
+            for line in f:
+                if '  Molecular gradient norm' in line:
+                    grab = False
+                if grab is True:
+                    if '#' in line:
+                        gradient[atomcount,0] = float(line.split()[2])
+                        gradient[atomcount,1] = float(line.split()[3])
+                        gradient[atomcount,2] = float(line.split()[4])
+                        atomcount+=1
+                if '                            Molecular gradient' in line:
+                    grab=True
+        return gradient
+        #GRD may contain multiple gradients for different methods
+        #with open('GRD') as grdfile:
+        #    for i,line in enumerate(grdfile):
+        #        if i==0:
+        #            numatoms=int(line.split()[0])
+        #            gradient=np.zeros((numatoms,3))
+        #        if i>0:
+        #            gradient[atomcount,0] = float(line.split()[1])
+        #            gradient[atomcount,1] = float(line.split()[2])
+        #            gradient[atomcount,2] = float(line.split()[3])
+        #            atomcount+=1
+  
     def cfour_grab_spinexpect(self):
         linetograb="Expectation value of <S**2>"
         s2line=pygrep(linetograb,self.filename+'.out')
@@ -199,6 +215,10 @@ class CFourTheory:
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in CFour
         if Grad==True:
+            if self.propoption != 'OFF':
+                #TODO: Check whether we can avoid this limitation
+                print("Warning: Cfour property keyword can not be active when doing gradient. Turning off")
+                self.propoption != 'OFF'
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
