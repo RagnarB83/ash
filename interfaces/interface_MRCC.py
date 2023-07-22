@@ -96,6 +96,7 @@ class MRCCTheory:
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
+
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
@@ -105,6 +106,7 @@ class MRCCTheory:
         print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point MRCC energy:", self.energy)
+            print("MRCC gradient:", self.gradient)
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
             return self.energy, self.gradient
         else:
