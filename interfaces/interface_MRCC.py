@@ -89,12 +89,12 @@ class MRCCTheory:
 
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in MRCC
-        
+
         if Grad==True:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
-            self.gradient = grab_gradient_mrcc()
+            self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
