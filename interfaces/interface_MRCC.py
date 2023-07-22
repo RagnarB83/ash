@@ -93,12 +93,12 @@ class MRCCTheory:
             print("Grad not ready")
             ashexit()
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
-            run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization)
+            run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc()
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
-            run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization)
+            run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
         #TODO: write in error handling here
