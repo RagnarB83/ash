@@ -169,7 +169,7 @@ def grab_gradient_mrcc(file,numatoms):
     gradient=np.zeros((numatoms,3))
     with open(file) as f:
         for line in f:
-            if Grab is True:
+            if grab is True:
                 if len(line.split())==5:
                     gradient[atomcount,0] = float(line.split()[-3])
                     gradient[atomcount,1] = float(line.split()[-2])
