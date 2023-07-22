@@ -125,7 +125,7 @@ class CFourTheory:
     def cfour_call(self):
         with open(self.filename+'.out', 'w') as ofile:
             #export CFOUR_NUM_CORES=1
-            process = sp.run([f"export CFOUR_NUM_CORES={self.numcores} {self.cfourdir}/xcfour"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            process = sp.run([f"export CFOUR_NUM_CORES={self.numcores}; {self.cfourdir}/xcfour"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 
 
