@@ -81,7 +81,7 @@ import ash.interfaces.interface_ORCA
 
 from ash.interfaces.interface_Psi4 import Psi4Theory
 from ash.interfaces.interface_dalton import DaltonTheory
-from ash.interfaces.interface_pyscf import PySCFTheory
+from ash.interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction
 from ash.interfaces.interface_ipie import ipieTheory
 from ash.interfaces.interface_dice import DiceTheory
 from ash.interfaces.interface_block import BlockTheory
