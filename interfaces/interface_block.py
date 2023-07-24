@@ -342,12 +342,12 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             # Determing active space from natorb thresholds
             nat_occs_for_thresholds=[i for i in occupations if i < self.cas_nmin and i > self.cas_nmax]
             indices_for_thresholds=[i for i,j in enumerate(occupations) if j < self.cas_nmin and j > self.cas_nmax]
-            firstMO_index=indices_for_thresholds[0]
-            lastMO_index=indices_for_thresholds[-1]
+            self.firstMO_index=indices_for_thresholds[0]
+            self.lastMO_index=indices_for_thresholds[-1]
             self.norb = len(nat_occs_for_thresholds)
             self.nelec = round(sum(nat_occs_for_thresholds))
             print(f"To get this same active space in another calculation you can also do: \nactive_space=[{self.nelec},{self.norb}]")
-            print(f"or: \nactive_space_range=[{firstMO_index},{lastMO_index}]")
+            print(f"or: \nactive_space_range=[{self.firstMO_index},{self.lastMO_index}]")
         #Check if active space still not defined and exit if so
         if self.norb == None:
             print("No active space has been defined!")
