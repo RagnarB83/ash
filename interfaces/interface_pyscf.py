@@ -719,6 +719,53 @@ class PySCFTheory:
             self.loscmf=loscmf
             self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
+    def run_CC(self,mf, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
+        print("Inside run_CC")
+        import pyscf.cc as pyscf_cc
+        #CCSD-part as RCCSD or UCCSD
+        print()
+        print("All frozen_orbital_indices:", frozen_orbital_indices)
+        print("Total number of frozen orbitals:", len(frozen_orbital_indices))
+        print("Total number of orbitals:", len(mf.mo_occ))
+        print("Number of active orbitals:", len(mf.mo_occ)-len(frozen_orbital_indices))
+        print()
+        print("Now starting CCSD calculation")
+        if self.scf_type == "RHF":
+            cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "UHF":
+            cc = pyscf_cc.UCCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
+            
+        elif self.scf_type == "RKS":
+            print("Warning: CCSD on top of RKS determinant")
+            cc = pyscf_cc.CCSD(mf.to_rhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "UKS":
+            print("Warning: CCSD on top of UKS determinant")
+            cc = pyscf_cc.UCCSD(mf.to_uhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
+
+        #Setting CCSD maxcycles (default 200)
+        cc.max_cycle=self.cc_maxcycle
+        cc.verbose=5 #Shows CC iterations with 5
+
+        #Switch to integral-direct CC if user-requested
+        #NOTE: Faster but only possible for small/medium systems
+        cc.direct = self.CC_direct
+        
+        result = cc.run()
+        print("Reference energy:", result.e_hf)
+        #CCSD energy
+        energy = result.e_tot
+        print("CCSD energy:", energy)
+        
+        #(T) part
+        if CCmethod == 'CCSD(T)':
+            print("Calculating triples ")
+            et = cc.ccsd_t()
+            print("Triples energy:", et)
+            energy = result.e_tot + et
+            print("Final CCSD(T) energy:", energy)
+        
+        return energy
+
 
     #General run function to distinguish  possible specialrun (disabled) and mainrun
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -1352,7 +1399,7 @@ class PySCFTheory:
                 #Default MO coefficients None (unless MP2natorbs option below)
                 mo_coefficients=None
 
-                #Optional MP2 natural orbitals
+                #Optional Frozen natural orbital approach via MP2 natural orbitals
                 if self.FNO is True:
                     print("FNO is True")
                     print("MP2 natural orbitals on!")
@@ -1370,45 +1417,10 @@ class PySCFTheory:
                         print("List of frozen virtuals:", virt_frozen)            
                         self.frozen_orbital_indices = self.frozen_orbital_indices + virt_frozen
             
-                #CCSD-part as RCCSD or UCCSD
-                print()
-                print("All frozen_orbital_indices:", self.frozen_orbital_indices)
-                print("Total number of frozen orbitals:", len(self.frozen_orbital_indices))
-                print("Total number of orbitals:", num_scf_orbitals_alpha)
-                print("Number of active orbitals:", num_scf_orbitals_alpha-len(self.frozen_orbital_indices))
-                print()
-                print("Now starting CCSD calculation")
-                if self.scf_type == "RHF":
-                    cc = pyscf_cc.CCSD(self.mf, self.frozen_orbital_indices,mo_coeff=mo_coefficients)
-                elif self.scf_type == "UHF":
-                    cc = pyscf_cc.UCCSD(self.mf,self.frozen_orbital_indices,mo_coeff=mo_coefficients)
-                    
-                elif self.scf_type == "RKS":
-                    print("Warning: CCSD on top of RKS determinant")
-                    cc = pyscf_cc.CCSD(self.mf.to_rhf(), self.frozen_orbital_indices,mo_coeff=mo_coefficients)
-                elif self.scf_type == "UKS":
-                    print("Warning: CCSD on top of UKS determinant")
-                    cc = pyscf_cc.UCCSD(self.mf.to_uhf(),self.frozen_orbital_indices,mo_coeff=mo_coefficients)
-
-                #Setting CCSD maxcycles (default 200)
-                cc.max_cycle=self.cc_maxcycle
-                cc.verbose=5 #Shows CC iterations with 5
-
-                #Switch to integral-direct CC if user-requested
-                #NOTE: Faster but only possible for small/medium systems
-                cc.direct = self.CC_direct
-                
-                result = cc.run()
-                print("Reference energy:", result.e_hf)
-                #CCSD energy
-                self.energy = result.e_tot
-                #(T) part
-                if self.CCmethod == 'CCSD(T)':
-                    print("Calculating triples ")
-                    et = cc.ccsd_t()
-                    print("Triples energy:", et)
-                    self.energy = result.e_tot + et
-                    print("Final CCSD(T) energy:", self.energy)
+                #Calling CC method
+                CC_energy = self.run_CC(self.mf,frozen_orbital_indices=self.frozen_orbital_indices, CCmethod=self.CCmethod, 
+                            CC_direct=self.CC_direct, mo_coefficients=mo_coefficients)
+                self.energy = CC_energy
             
             #####################
             #CAS-CI and CASSCF
@@ -1637,4 +1649,6 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
             np.einsum('ij,xij->x', dmf, v.conj())) * -q
         g[i] += f
     return g
+
+
 
