@@ -146,7 +146,11 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False):
         inpfile.write('mult={}\n'.format(mult))
         #If Grad true set density to first-order. Gives properties and gradient
         if Grad is True:
-            inpfile.write('dens=1\n')
+            #dens=2 for RHF
+            if "calc=RHF" in mrccinput:
+                inpfile.write('dens=2\n')
+            else:
+                inpfile.write('dens=1\n')
         #inpfile.write('dens=2\n')
         inpfile.write('geom=xyz\n')
         inpfile.write('{}\n'.format(len(elems)))
