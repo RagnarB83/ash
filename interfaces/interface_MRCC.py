@@ -171,11 +171,15 @@ def grab_energy_mrcc(outfile):
 
 def grab_gradient_mrcc(file,numatoms):
     grab=False
+    grab2=False
     atomcount=0
     gradient=np.zeros((numatoms,3))
     with open(file) as f:
         for line in f:
-            if grab is True:
+            if grab is True or grab2 is True:
+                if '*******' in line:
+                    grab=False
+                    grab2=False
                 if len(line.split())==5:
                     gradient[atomcount,0] = float(line.split()[-3])
                     gradient[atomcount,1] = float(line.split()[-2])
@@ -183,4 +187,6 @@ def grab_gradient_mrcc(file,numatoms):
                     atomcount+=1
             if ' Molecular gradient [au]:' in line:
                 grab=True
+            if ' Cartesian gradient [au]:' in line:
+                grab2=True
     return gradient
