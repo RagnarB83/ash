@@ -90,9 +90,10 @@ class MRCCTheory:
 
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in MRCC
+        #Note: for gradient and QM/MM it is best to keep_orientation=True in write_mrcc_input
 
         if Grad==True:
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=True)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
@@ -136,7 +137,7 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
-def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False):
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False):
     with open("MINP", 'w') as inpfile:
         inpfile.write(mrccinput + '\n')
         inpfile.write(f'ccsdthreads={numcores}\n')
@@ -144,6 +145,15 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False):
         inpfile.write('unit=angs\n')
         inpfile.write('charge={}\n'.format(charge))
         inpfile.write('mult={}\n'.format(mult))
+
+        #Preserve orientation by this hack
+        if keep_orientation is True:
+            print("keep_orientation is True. Turning off symmetry and doing dummy QM/MM calculation to preserve orientation")"")
+            inpfile.write('symm=off\n')
+            inpfile.write('qmmm=Amber\n')
+            inpfile.write('pointcharges\n')
+            inpfile.write('0\n')
+
         #If Grad true set density to first-order. Gives properties and gradient
         if Grad is True:
             #dens=2 for RHF
