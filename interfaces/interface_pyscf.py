@@ -1652,8 +1652,10 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
 
 
 #Function to do multireference correction via pyscf-based theories: Dice or Block. 
-# Calculate difference w.r.t CCSD(T)
+# Calculates difference w.r.t CCSD(T)
 def pyscf_MR_correction(fragment, theory=None):
+    print_line_with_mainheader("pyscf_MR_correction")
+    print("Multireference correction via pyscf-based theories: Dice or Block. Calculates difference w.r.t CCSD(T)")
     #Checking that correct theory is provided
     if theory == None:
         print("Theory must be provided")
