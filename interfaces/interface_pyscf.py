@@ -1651,16 +1651,23 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
     return g
 
 
-#Function to do multireference correction via either Dice or Block via pyscf. Calculate difference w.r.t CCSD(T)
-def pyscf_MR_correction(fragment, dice_theory=None, block_theory=None):
-
-    if dice_theory == None and block_theory == None:
-        print("Either dice_theory or block_theory must be provided")
+#Function to do multireference correction via pyscf-based theories: Dice or Block. 
+# Calculate difference w.r.t CCSD(T)
+def pyscf_MR_correction(fragment, theory=None):
+    #Checking that correct theory is provided
+    if theory == None:
+        print("Theory must be provided")
+        ashexit()
+    elif isinstance(theory,ash.DiceTheory):
+        print("DiceTheory object provided")
+    elif isinstance(theory,ash.BlockTheory):
+        print("BlockTheory object provided")
     else:
-        HLTheory= dice_theory if dice_theory != None else block_theory
+        print("Unreconigzed theory object provided. Must be DiceTheory or BlockTheory")
+        ashexit()
         
     #Now calling Singlepoint on the HLTheory
-    result_HL = ash.Singlepoint(fragment=fragment, theory=HLTheory)
+    result_HL = ash.Singlepoint(fragment=fragment, theory=theory)
 
     ###################################
     #Active space CCSD(T) via pyscf
@@ -1668,18 +1675,18 @@ def pyscf_MR_correction(fragment, dice_theory=None, block_theory=None):
     #1. Use exactly the same MO-coefficients (MP2/CC natural orbitals) as used in Dice/Block calculation
     #2. Use exactly same active space
     ###################################
-    full_list = list(range(0,len(HLTheory.pyscftheoryobject.mf.mo_occ))) #From 0 to last virtual orbital
+    full_list = list(range(0,len(theory.pyscftheoryobject.mf.mo_occ))) #From 0 to last virtual orbital
     print("Size of full orbital list:", len(full_list))
-    act_list=list(range(HLTheory.firstMO_index,HLTheory.lastMO_index+1)) #The range that Dice-SHCI used. Generalize this to DMRGTheory also ?
+    act_list=list(range(theory.firstMO_index,theory.lastMO_index+1)) #The range that Dice-SHCI used. Generalize this to DMRGTheory also ?
     print("Size of active-space list:", len(act_list))
     print(act_list)
     frozen_orbital_indices= listdiff(full_list,act_list)
     print("Number of frozen_orbital_indices:", len(frozen_orbital_indices))
     print("Indices:", frozen_orbital_indices)
-    mo_coefficients=HLTheory.mch.mo_coeffs  #The MO coefficients used by Dice/Block
+    mo_coefficients=theory.mch.mo_coeffs  #The MO coefficients used by Dice/Block
 
     #Calling CC PySCF method direct with our mf object and the orbital indices and MO coeffs we want
-    CC_energy = HLTheory.pyscftheoryobject.run_CC(HLTheory.pyscftheoryobject.mf,frozen_orbital_indices=frozen_orbital_indices, CCmethod='CCSD(T)',
+    CC_energy = theory.pyscftheoryobject.run_CC(theory.pyscftheoryobject.mf,frozen_orbital_indices=frozen_orbital_indices, CCmethod='CCSD(T)',
                                 CC_direct=False, mo_coefficients=mo_coefficients)
 
     print("\nCC_energy:", CC_energy)
