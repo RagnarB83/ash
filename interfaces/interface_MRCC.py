@@ -151,8 +151,6 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
             print("keep_orientation is True. Turning off symmetry and doing dummy QM/MM calculation to preserve orientation")
             inpfile.write('symm=off\n')
             inpfile.write('qmmm=Amber\n')
-            inpfile.write('pointcharges\n')
-            inpfile.write('0\n')
 
         #If Grad true set density to first-order. Gives properties and gradient
         if Grad is True:
@@ -168,6 +166,9 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
         for el,c in zip(elems,coords):
             inpfile.write('{}   {} {} {}\n'.format(el,c[0],c[1],c[2]))
         inpfile.write('\n')
+        if keep_orientation is True:
+            inpfile.write('pointcharges\n')
+            inpfile.write('0\n')
 
 def grab_energy_mrcc(outfile):
     #Option 1. Grabbing all lines containing energy in outputfile. Take last entry.
