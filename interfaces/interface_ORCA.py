@@ -613,6 +613,8 @@ end"""
         if Grad == True:
             grad =ORCAgradientgrab(engradfile)
             self.grad = self.grad + grad
+            if self.printlevel >= 3:
+                print("ORCA gradient:", self.grad)
             if PC == True:
                 #Print time to calculate ORCA QM-PC gradient
                 if "pc_gradient" in orca_timings:
