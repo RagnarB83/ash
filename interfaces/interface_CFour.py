@@ -179,24 +179,13 @@ class CFourTheory:
                     if '#' in line:
                         if 'x' not in line:
                             if 'y' not in line:
-                                gradient[atomcount,0] = -1*float(line.split()[-3])
-                                gradient[atomcount,1] = -1*float(line.split()[-2])
-                                gradient[atomcount,2] = -1*float(line.split()[-1])
+                                gradient[atomcount,0] = float(line.split()[-3])
+                                gradient[atomcount,1] = float(line.split()[-2])
+                                gradient[atomcount,2] = float(line.split()[-1])
                                 atomcount+=1
                 if '                            Molecular gradient' in line:
                     grab=True
         return gradient
-        #GRD may contain multiple gradients for different methods
-        #with open('GRD') as grdfile:
-        #    for i,line in enumerate(grdfile):
-        #        if i==0:
-        #            numatoms=int(line.split()[0])
-        #            gradient=np.zeros((numatoms,3))
-        #        if i>0:
-        #            gradient[atomcount,0] = float(line.split()[1])
-        #            gradient[atomcount,1] = float(line.split()[2])
-        #            gradient[atomcount,2] = float(line.split()[3])
-        #            atomcount+=1
   
     def cfour_grab_spinexpect(self):
         linetograb="Expectation value of <S**2>"
