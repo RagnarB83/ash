@@ -2390,7 +2390,7 @@ def basis_for_element(element,basisfamily,cardinal):
 #TODO: Allow basis-set element dictionary
 #TODO: Allow external basis set file
 def make_ICE_theory(basis,tgen, tvar, numcores, nel=None, norb=None, nmin_nmax=False, ice_nmin=None,ice_nmax=None, 
-    autoice=False, basis_per_element=None, maxcorememory=10000, maxiter=20, etol=1e-6, moreadfile=None):
+    autoice=False, basis_per_element=None, maxcorememory=10000, maxiter=20, etol=1e-6, moreadfile=None,label=""):
     print_line_with_mainheader("make_ICE_theory")
     print("Simple function to create ICE-CI ORCATheory object")
     print()
@@ -2454,7 +2454,7 @@ maxiter {maxiter}
 etol {etol}
 end
 """
-    icetheory = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, basis_per_element=basis_per_element, label=f'ICE_tgen{tgen}_tvar_{tvar}', save_output_with_label=True)
+    icetheory = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, basis_per_element=basis_per_element, label=f'{label}ICE_tgen{tgen}_tvar_{tvar}', save_output_with_label=True)
     return icetheory
 
 #Function to do ICE-CI FCI with multiple thresholds and simpler WF method comparison and plotting
@@ -2550,7 +2550,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 if (tgen,tvar) not in results_ice_tgen_tvar:
                     for i,frag in enumerate(reaction.fragments):
                         ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
-                            maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                            maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i], label=f"Frag_{str(frag.formula)}")
                         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
                         ice.cleanup()
                         energy_ICE = result_ICE.energy
@@ -2589,7 +2589,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 if (tgen,tvar) not in results_ice_tgen_tvar:
                     for i,frag in enumerate(reaction.fragments):
                         ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
-                            maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                            maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i], label=f"Frag_{str(frag.formula)}")
                         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
                         ice.cleanup()
                         energy_ICE = result_ICE.energy
@@ -2622,7 +2622,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 if (tgen,tvar) not in results_ice_tgen_tvar:
                     for i,frag in enumerate(reaction.fragments):
                         ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
-                            maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                            maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i], label=f"Frag_{str(frag.formula)}")
                         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
                         ice.cleanup()
                         energy_ICE = result_ICE.energy
@@ -3120,7 +3120,7 @@ def Reaction_FCI_correction(reaction=None, basis=None, basis_per_element=None, n
         ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], 
                         norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
                         maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, 
-                        moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+                        moreadfile=reaction.orbital_dictionary["MP2nat"][i], label=f"Frag_{str(frag.formula)}")
         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
         energy_ICE = result_ICE.energy
         ice_energies.append(energy_ICE)
