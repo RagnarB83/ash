@@ -148,7 +148,7 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
 
         #Preserve orientation by this hack
         if keep_orientation is True:
-            print("keep_orientation is True. Turning off symmetry and doing dummy QM/MM calculation to preserve orientation")"")
+            print("keep_orientation is True. Turning off symmetry and doing dummy QM/MM calculation to preserve orientation")
             inpfile.write('symm=off\n')
             inpfile.write('qmmm=Amber\n')
             inpfile.write('pointcharges\n')
