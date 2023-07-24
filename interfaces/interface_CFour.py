@@ -130,9 +130,6 @@ class CFourTheory:
     def cfour_call(self):
         print("Calling CFour via xcfour executable")
         with open(self.filename+'.out', 'w') as ofile:
-            #export CFOUR_NUM_CORES=1
-            #sp.run(["env"],env=dict(OMP_NUM_THREADS=str(1), **os.environ))
-            #os.environ['CFOUR_NUM_CORES'] = str(self.numcores)
             if self.parallelization == 'MKL':
                 print(f"MKL parallelization is active. Using MKL_NUM_THREADS={self.numcores}")
                 os.environ['MKL_NUM_THREADS'] = str(self.numcores)
@@ -148,13 +145,7 @@ class CFourTheory:
     def cleanup(self):
         print("Cleaning up old Cfour files using xwipeout")
         sp.run([self.cfourdir + '/xwipeout'])
-        #files=['MOABCD', 'MOINTS', 'JOBARC', 'NEWMOS', 'BASINFO.DATA', 'den.dat', 'DIPOL', 'DPTDIPOL', 'DPTEFG', 'ERREX', 'EFG','FILES', 'GAMLAM', 'IIII', 'JAINDX',
-        #       'NEWFOCK', 'NTOTAL', 'NATMOS', 'MOLDEN', 'MOLDEN_NAT', 'MOLECULE.INP', 'MOL', 'JMOLplot', 'OPTARC', 'THETA', 'VPOUT']
-        #for file in files:
-        #    try:
-        #        os.remove(file)
-        #    except:
-        #        pass
+
     def cfour_grabenergy(self):
         #Other things to possibly grab in future:
         #HF-SCF energy

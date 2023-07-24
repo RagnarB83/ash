@@ -282,8 +282,9 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
         finalvalues=rele
     else:
         finalvalues=e
-    print("Coords:", coords)
-    print("Relative energies({}): {}".format(finalunit,finalvalues))
+    print(f"Coords ({len(coords)}): {coords}")
+    print(f"finalvalues ({len(finalvalues)}): {finalvalues}")
+    print(f"Relative energies({finalunit}): {finalvalues}")
     
     if mode == 'pyplot':
         plt.close() #Clear memory of previous plots
