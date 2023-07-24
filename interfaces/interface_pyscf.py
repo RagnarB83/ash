@@ -1,6 +1,6 @@
 import time
 
-from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
 import ash.modules.module_coords
 import os
 import sys
