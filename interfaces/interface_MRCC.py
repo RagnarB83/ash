@@ -166,6 +166,9 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
         for el,c in zip(elems,coords):
             inpfile.write('{}   {} {} {}\n'.format(el,c[0],c[1],c[2]))
         inpfile.write('\n')
+        #Pointcharges for QM/MM
+
+        #Or dummy PC for orientation
         if keep_orientation is True:
             inpfile.write('pointcharges\n')
             inpfile.write('0\n')
