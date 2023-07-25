@@ -15,7 +15,7 @@ class CFourTheory:
                  parallelization='MKL'):
         
         self.theorynamelabel="CFour"
-        print
+        self.analytic_hessian=True
         #Indicate that this is a QMtheory
         self.theorytype="QM"
         

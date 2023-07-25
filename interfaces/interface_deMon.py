@@ -22,7 +22,9 @@ class deMon2kTheory:
     def __init__(self, demondir=None, filename='deMon', binary_name='binary', printlevel=2, numcores=1, 
                 functional='PBE', scf_type='UKS', basis_name='cc-pVDZ', auxis_name='GEN-A3*', grid='MEDIUM'):
 
+        self.theorytype="QM"
         self.theorynamelabel="deMon2k"
+        self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         #EARLY EXITS
@@ -52,8 +54,6 @@ class deMon2kTheory:
         #The name of the deMon executable. Often named binary
         self.binary_name=binary_name
         
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
 
         #Printlevel
         self.printlevel=printlevel

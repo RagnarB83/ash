@@ -11,8 +11,9 @@ class DaltonTheory:
                 numcores=1, pe=False, potfile='', label=None, dalton_input=None, 
                 basis_name=None, basis_dir=None):
 
-        #Indicate that this is a QMtheory
         self.theorytype="QM"
+        self.theorynamelabel="Dalton"
+        self.analytic_hessian=False
 
         if daltondir is None:
             print("No daltondir argument passed to DaltonTheory. Attempting to find daltondir variable inside settings_ash module")

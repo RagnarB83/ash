@@ -13,6 +13,8 @@ class MRCCTheory:
                 mrccinput=None, numcores=1, parallelization='OMP-and-MKL'):
 
         self.theorynamelabel="MRCC"
+        self.theorytype="QM"
+        self.analytic_hessian=False
 
         print_line_with_mainheader("MRCCTheory initialization")
 
@@ -36,9 +38,6 @@ class MRCCTheory:
         else:
             self.mrccdir = mrccdir
 
-
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
 
         #Printlevel
         self.printlevel=printlevel

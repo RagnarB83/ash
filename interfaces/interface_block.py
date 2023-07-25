@@ -31,6 +31,8 @@ class BlockTheory:
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
+        self.analytic_hessian=False
+        
         self.blockversion=blockversion
         exename="block2main"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")

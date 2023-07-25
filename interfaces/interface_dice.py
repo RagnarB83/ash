@@ -32,6 +32,7 @@ class DiceTheory:
 
         self.theorynamelabel="Dice"
         self.theorytype="QM"
+        self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
         
 

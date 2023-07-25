@@ -29,9 +29,8 @@ class ORCATheory:
 
 
         self.theorynamelabel="ORCA"
-
-        #Indicate that this is a QMtheory
         self.theorytype="QM"
+        self.analytic_hessian=True
 
         #Making sure we have a working ORCA location
         print("Checking for ORCA location")

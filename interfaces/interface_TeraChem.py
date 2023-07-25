@@ -14,6 +14,8 @@ class TeraChemTheory:
                 teracheminput=None, numcores=1):
 
         self.theorynamelabel="TeraChem"
+        self.theorytype="QM"
+        self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         if teracheminput is None:
@@ -35,8 +37,6 @@ class TeraChemTheory:
                     #ashexit()
         else:
             self.terachemdir = terachemdir
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
 
         #Printlevel
         self.printlevel=printlevel

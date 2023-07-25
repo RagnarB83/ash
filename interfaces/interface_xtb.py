@@ -22,8 +22,9 @@ class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None):
 
-        #Indicate that this is a QMtheory
+        self.theorynamelabel="xTB"
         self.theorytype="QM"
+        self.analytic_hessian=False
 
         #Hardness of pointcharge. GAM factor. Big number means PC behaviour
         self.hardness=hardness_PC

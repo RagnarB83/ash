@@ -13,6 +13,8 @@ class QUICKTheory:
                 quickinput=None, numcores=1, quickbinary="quick.cuda"):
 
         self.theorynamelabel="QUICK"
+        self.theorytype="QM"
+        self.analytic_hessian=False
         print_line_with_mainheader("QUICKTheory initialization")
 
         if quickinput is None:
@@ -34,9 +36,6 @@ class QUICKTheory:
                     ashexit()
         else:
             self.quickdir = quickdir
-
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
 
         #Printlevel
         self.printlevel=printlevel

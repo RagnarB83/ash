@@ -36,7 +36,10 @@ class PySCFTheory:
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None):
 
+        self.theorynamelabel="PySCF"
         self.theorytype="QM"
+        self.analytic_hessian=False
+
         print_line_with_mainheader("PySCFTheory initialization")
         #Exit early if no SCF-type
         if scf_type is None:
