@@ -12,6 +12,8 @@ class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
                 mrccinput=None, numcores=1, parallelization='OMP-and-MKL'):
 
+        self.theorynamelabel="MRCC"
+
         print_line_with_mainheader("MRCCTheory initialization")
 
         if mrccinput is None:

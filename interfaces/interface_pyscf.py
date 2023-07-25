@@ -732,11 +732,15 @@ class PySCFTheory:
         print("Now starting CCSD calculation")
         if self.scf_type == "RHF":
             cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "ROHF":
+            cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
         elif self.scf_type == "UHF":
-            cc = pyscf_cc.UCCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
-            
+            cc = pyscf_cc.UCCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients) 
         elif self.scf_type == "RKS":
             print("Warning: CCSD on top of RKS determinant")
+            cc = pyscf_cc.CCSD(mf.to_rhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "ROKS":
+            print("Warning: CCSD on top of ROKS determinant")
             cc = pyscf_cc.CCSD(mf.to_rhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
         elif self.scf_type == "UKS":
             print("Warning: CCSD on top of UKS determinant")

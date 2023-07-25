@@ -15,25 +15,31 @@ from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
 #Analytical frequencies function
-#Only works for ORCAtheory at the moment
+#Only works for ORCAtheory and CFourTheory at the moment
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=298.15, pressure=1.0, QRRHO_omega_0=100):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
-    if theory.__class__.__name__ == "ORCATheory":
-        print("Requesting analytical Hessian calculation from ORCATheory")
+    if theory.__class__.__name__ == "ORCATheory" or theory.__class__.__name__ == "CFourTheory":
+        print(f"Requesting analytical Hessian calculation from {theory.theorynamelabel})
         print("")
         #Check charge/mult
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "AnFreq", theory=theory)
-        #Do single-point ORCA Anfreq job
+        #Do single-point theory run with Hessian=True
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True, numcores=numcores)
-        #Grab Hessian
-        hessian = ash.interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
+        
+        #Grab Hessian from theory
+        if theory.__class__.__name__ == "ORCATheory":
+            hessian = ash.interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
+            #TODO: diagonalize it ourselves.
+            # For now, we grab frequencies from ORCA Hessian file
+            frequencies = ash.interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
+        elif theory.__class__.__name__ == "CFourTheory":
+            print("not ready")
+            exit()
+
         #Add Hessian to fragment
         fragment.hessian=hessian
         
-        #TODO: diagonalize it ourselves. Need to finish projection
-        # For now, we grab frequencies from ORCA Hessian file
-        frequencies = ash.interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         print("Frequencies:", frequencies)
         hessatoms=list(range(0,fragment.numatoms))
         thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)

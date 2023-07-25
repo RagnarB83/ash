@@ -27,6 +27,9 @@ class ORCATheory:
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
 
+
+        self.theorynamelabel="ORCA"
+
         #Indicate that this is a QMtheory
         self.theorytype="QM"
 

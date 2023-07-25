@@ -14,6 +14,8 @@ class CFourTheory:
                  filename='cfourjob', specialbasis=None, ash_basisfile=None,
                  parallelization='MKL'):
         
+        self.theorynamelabel="CFour"
+        print
         #Indicate that this is a QMtheory
         self.theorytype="QM"
         
@@ -188,7 +190,7 @@ class CFourTheory:
         return S2
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, Hessian=False,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, charge=None, mult=None):
         module_init_time=time.time()
         if numcores == None:
@@ -224,7 +226,37 @@ class CFourTheory:
 
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in CFour
-        if Grad==True:
+        if Hessian is True:
+            print("CFour Hessian calculation on!")
+            #print("Warning: Hessian=True FIXGEOM turned on.")
+            #self.FIXGEOM='ON'
+            #print("Warning: Grad=True, symmetry turned off.")
+            #self.symmetry='OFF'
+            #SYMMETRY
+
+            #if self.propoption != 'OFF':
+            #    #TODO: Check whether we can avoid this limitation
+            #    print("Warning: Cfour property keyword can not be active when doing gradient. Turning off")
+            #    self.propoption = 'OFF'
+            with open("ZMAT", 'w') as inpfile:
+                inpfile.write('ASH-created inputfile\n')
+                for el,c in zip(qm_elems,current_coords):
+                    inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
+                inpfile.write('\n')
+                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},FIXGEOM={self.FIXGEOM}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
+                for el in qm_elems:
+                    if len(self.specialbasis) > 0:
+                        inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
+                inpfile.write("\n")
+            
+            #Calling CFour
+            self.cfour_call()
+            self.energy=self.cfour_grabenergy()
+            #TODO: Grab Hessian
+
+        elif Grad==True:
             print("Warning: Grad=True. FIXGEOM turned on.")
             self.FIXGEOM='ON'
             print("Warning: Grad=True, symmetry turned off.")
