@@ -20,7 +20,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
     if theory.__class__.__name__ == "ORCATheory" or theory.__class__.__name__ == "CFourTheory":
-        print(f"Requesting analytical Hessian calculation from {theory.theorynamelabel})
+        print(f"Requesting analytical Hessian calculation from {theory.theorynamelabel}")
         print("")
         #Check charge/mult
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "AnFreq", theory=theory)
