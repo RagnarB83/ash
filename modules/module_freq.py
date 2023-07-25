@@ -14,8 +14,7 @@ import ash.interfaces.interface_ORCA
 from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
-#Analytical frequencies function
-#Only works for ORCAtheory and CFourTheory at the moment
+#Analytical frequencies function. For ORCAtheory and CFourTheory
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=298.15, pressure=1.0, QRRHO_omega_0=100):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
@@ -25,7 +24,9 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         TRmodenum=5
     else:
         TRmodenum=6
-
+    #Hessian atoms
+    hessatoms=list(range(0,fragment.numatoms))
+    
     if theory.__class__.__name__ == "ORCATheory" or theory.__class__.__name__ == "CFourTheory":
         print(f"Requesting analytical Hessian calculation from {theory.theorynamelabel}")
         print("")
@@ -34,40 +35,27 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         #Do single-point theory run with Hessian=True
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True, numcores=numcores)
         
-        #Grab Hessian from theory
-        if theory.__class__.__name__ == "ORCATheory":
-            hessian = ash.interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
-            #TODO: diagonalize it ourselves.
-            # For now, we grab frequencies from ORCA Hessian file
-            frequencies = ash.interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
-        elif theory.__class__.__name__ == "CFourTheory":
-            hessian = theory.hessian
-            frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
-                                                               TRmodenum=TRmodenum,projection=True)
-
-        #Add Hessian to fragment
-        fragment.hessian=hessian
-        
-        print("Frequencies:", frequencies)
-        hessatoms=list(range(0,fragment.numatoms))
+        #Grab Hessian from theory object
+        hessian = theory.hessian
+        #Diagonalize
+        frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
+                                                            TRmodenum=TRmodenum,projection=True)
+        #Print out Freq output. Maybe print normal mode compositions here instead???
+        printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
+        print("\n\n")
+        print("Normal mode composition factors by element")
+        printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms,TRmodenum=TRmodenum)
         thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
 
-        #Write Hessian to file
+        #Add Hessian to fragment and write to file
+        fragment.hessian=hessian
         write_hessian(hessian,hessfile="Hessian")
-
-        #freqoutputdict object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
-        #freqoutputdict['hessian'] = hessian
-        
-        #TODO: To add once we diagonalize 
-        #freqoutputdict['evectors'] = evectors
-        #freqoutputdict['nmodes'] = nmodes
-        #freqoutputdict['hessatoms'] = hessatoms
 
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
         print_time_rel(module_init_time, modulename='AnFreq', moduleindex=1)
         
-        result = ASH_Results(label="Anfreq", hessian=None, frequencies=frequencies, 
-            normal_modes=None, thermochemistry=thermodict)        
+        result = ASH_Results(label="Anfreq", hessian=hessian, frequencies=frequencies,
+                             vib_eigenvectors=evectors, normal_modes=nmodes, thermochemistry=thermodict)
         return result
         
     else:
@@ -545,7 +533,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         frequencies=frequencies, 
         normal_modes=nmodes, thermochemistry=thermodict)        
     return result
-    #return freqoutputdict
+
 
 
 

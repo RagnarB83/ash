@@ -611,7 +611,9 @@ end"""
             #TODO: dispgrad not yet done
             self.grad = self.grad + dispgrad
 
-
+        #Hessian
+        print("Reading Hessian from file:", self.filename+".hess")
+        self.hessian = Hessgrab(self.filename+".hess")
 
         if Grad == True:
             grad =ORCAgradientgrab(engradfile)
