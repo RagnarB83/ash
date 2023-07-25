@@ -265,6 +265,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             #Calling CFour
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
+            print("Reading CFour Hessian from file")
             self.hessian = self.cfour_grabhessian(len(qm_elems),hessfile="FCMFINAL")
 
         elif Grad==True:

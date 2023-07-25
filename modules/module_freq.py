@@ -36,6 +36,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True, numcores=numcores)
         
         #Grab Hessian from theory object
+        print("Getting Hessian from theory object")
         hessian = theory.hessian
         #Diagonalize
         frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
