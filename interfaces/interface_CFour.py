@@ -12,7 +12,7 @@ import ash.settings_ash
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
                  filename='cfourjob', specialbasis=None, ash_basisfile=None,
-                 parallelization='MKL'):
+                 parallelization='MKL', DBOC=False):
         
         self.theorynamelabel="CFour"
         self.analytic_hessian=True
@@ -45,6 +45,7 @@ class CFourTheory:
         self.stabilityanalysis='OFF'
         self.specialbasis=[]
         self.extern_pot='OFF' #Pointcharge potential off by default
+        self.DBOC=DBOC
         #Overriding default
         #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
         if 'BASIS' in cfouroptions: self.basis=cfouroptions['BASIS']
@@ -203,7 +204,7 @@ class CFourTheory:
         return S2
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, Hessian=False,
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, Hessian=False, DBOC=False,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, charge=None, mult=None):
         module_init_time=time.time()
         if numcores == None:
@@ -221,6 +222,9 @@ class CFourTheory:
         else:
             print("no current_coords")
             ashexit()
+
+        if self.DBOC is True:
+            DBOC=True
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
@@ -297,6 +301,24 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
             self.gradient=self.cfour_grabgradient(self.filename+'.out',len(qm_elems))
+        elif DBOC is True:
+            with open("ZMAT", 'w') as inpfile:
+                inpfile.write('ASH-created inputfile\n')
+                for el,c in zip(qm_elems,current_coords):
+                    inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
+                inpfile.write('\n')
+                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
+                #for specbas in self.specialbasis.items():
+                for el in qm_elems:
+                    if len(self.specialbasis) > 0:
+                        inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
+                inpfile.write("\n")
+            self.cfour_call()
+            self.energy=self.cfour_grabenergy()
+            self.S2=self.cfour_grab_spinexpect()
+
         else:
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
@@ -328,4 +350,36 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             print("Single-point CFour energy:", self.energy)
             print_time_rel(module_init_time, modulename='CFour run', moduleindex=2)
             return self.energy
+
+#CFour DBOC correction on fragment. Either provide CFourTheory object or use default settings
+def run_DBOC_correction(fragment=None,theory=None, numcores=1):
+    #CFour Theory
+    cfouroptions = {
+    'CALC':'RHF',
+    'BASIS':'PVDZ',
+    'REF':'RHF',
+    'FROZEN_CORE':'ON',
+    'MEM_UNIT':'MB',
+    'MEMORY':3100,
+    'PROP':'FIRST_ORDER',
+    'CC_PROG':'ECC',
+    'SCF_CONV':10,
+    'LINEQ_CONV':10,
+    'CC_MAXCYC':300,
+    'SYMMETRY':'OFF',
+    'HFSTABILITY':'OFF',
+    }
+    if theory is None:
+        theory = CFourTheory(cfouroptions=cfouroptions, DBOC=True,numcores=numcores)
+    else:
+        theory.DBOC=True
+    ash.Singlepoint(theory=theory, fragment=fragment)
+
+    dboc_correction = None
+    with open(theory.filename+'.out', 'r') as outfile:
+        for line in outfile:
+            if 'The total diagonal Born-Oppenheimer correction (DBOC) is:' in line:
+                if 'au' in line:
+                    dboc_correction = float(line.split()[-2])
+    return dboc_correction
 
