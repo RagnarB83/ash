@@ -173,7 +173,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
             
             #Checking analyticHessian compatible with Theory
             if analyticHessian is True:
-                if theory.analytic_hessian is True:
+                if Opt_theory.analytic_hessian is True:
                     analyticHessian=True
                 else:
                     analyticHessian=False
