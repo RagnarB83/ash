@@ -228,16 +228,15 @@ class CFourTheory:
         #TODO: No qm/MM yet. need to check if possible in CFour
         if Hessian is True:
             print("CFour Hessian calculation on!")
-            #print("Warning: Hessian=True FIXGEOM turned on.")
-            #self.FIXGEOM='ON'
-            #print("Warning: Grad=True, symmetry turned off.")
-            #self.symmetry='OFF'
-            #SYMMETRY
+            print("Warning: Hessian=True FIXGEOM turned on.")
+            self.FIXGEOM='ON'
+            print("Warning: Hessian=True, symmetry turned off.")
+            self.symmetry='OFF'
 
-            #if self.propoption != 'OFF':
+            if self.propoption != 'OFF':
             #    #TODO: Check whether we can avoid this limitation
-            #    print("Warning: Cfour property keyword can not be active when doing gradient. Turning off")
-            #    self.propoption = 'OFF'
+                print("Warning: Cfour property keyword can not be active when doing Hessian. Turning off")
+                self.propoption = 'OFF'
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
@@ -245,7 +244,7 @@ class CFourTheory:
                 inpfile.write('\n')
                 inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},FIXGEOM={self.FIXGEOM}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
                         inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
