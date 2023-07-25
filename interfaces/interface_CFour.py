@@ -179,7 +179,20 @@ class CFourTheory:
                 if '                            Molecular gradient' in line:
                     grab=True
         return gradient
-  
+    def cfour_grabhessian(self,numatoms,hessfile="FCMFINAL"):
+        hessdim=3*numatoms
+        hessian=np.zeros((hessdim,hessdim))
+        i=0; j=0
+        with open(hessfile) as f:
+            for num,line in enumerate(f):
+                if num > 0:
+                    l = line.split()
+                    if j == hessdim:
+                    i+=1;j=0
+                    for val in l:
+                        hessian[i,j] = val
+                        j+=1
+        return hessian
     def cfour_grab_spinexpect(self):
         linetograb="Expectation value of <S**2>"
         s2line=pygrep(linetograb,self.filename+'.out')
@@ -254,6 +267,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
             #TODO: Grab Hessian
+
 
         elif Grad==True:
             print("Warning: Grad=True. FIXGEOM turned on.")
