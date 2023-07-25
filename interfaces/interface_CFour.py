@@ -7,7 +7,6 @@ import numpy as np
 from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel
 import ash.settings_ash
 
-
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
@@ -302,6 +301,9 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.S2=self.cfour_grab_spinexpect()
             self.gradient=self.cfour_grabgradient(self.filename+'.out',len(qm_elems))
         elif DBOC is True:
+            if self.propoption != 'OFF':
+                print("Warning: Cfour property keyword can not be active when doing DBOC calculation. Turning off")
+                self.propoption = 'OFF'
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
@@ -361,7 +363,6 @@ def run_DBOC_correction(fragment=None,theory=None, numcores=1):
     'FROZEN_CORE':'ON',
     'MEM_UNIT':'MB',
     'MEMORY':3100,
-    'PROP':'FIRST_ORDER',
     'CC_PROG':'ECC',
     'SCF_CONV':10,
     'LINEQ_CONV':10,
@@ -379,7 +380,10 @@ def run_DBOC_correction(fragment=None,theory=None, numcores=1):
     with open(theory.filename+'.out', 'r') as outfile:
         for line in outfile:
             if 'The total diagonal Born-Oppenheimer correction (DBOC) is:' in line:
-                if 'au' in line:
+                print(line)
+                if 'a.u.' in line:
+                    print("here")
                     dboc_correction = float(line.split()[-2])
+    print("Diagonal Born-Oppenheimer correction (DBOC):", dboc_correction, "au")
     return dboc_correction
 
