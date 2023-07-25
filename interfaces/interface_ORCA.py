@@ -1423,13 +1423,11 @@ def Hessgrab(hessfile):
                 hessarray2d=np.zeros((hessdim, hessdim))
 
             if hesstake==True and lastchunk==True:
-                print("x3 line:", line)
                 if len(line.split()) == hessdim - shiftpar +1:
                     for i in range(0,hessdim - shiftpar):
                         hessarray2d[j,i+shiftpar]=line.split()[i+1]
                     j+=1
             elif hesstake==True and len(line.split()) == 5:
-                print("x2 line:", line)
                 continue
                 #Headerline
             if hesstake==True and len(line.split()) == 6:

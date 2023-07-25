@@ -188,7 +188,7 @@ class CFourTheory:
                 if num > 0:
                     l = line.split()
                     if j == hessdim:
-                    i+=1;j=0
+                        i+=1;j=0
                     for val in l:
                         hessian[i,j] = val
                         j+=1
@@ -262,19 +262,16 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
                     if len(self.specialbasis) > 0:
                         inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
                 inpfile.write("\n")
-            
             #Calling CFour
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
-            #TODO: Grab Hessian
-
+            self.hessian = self.cfour_grabhessian(len(qm_elems),hessfile="FCMFINAL")
 
         elif Grad==True:
             print("Warning: Grad=True. FIXGEOM turned on.")
             self.FIXGEOM='ON'
             print("Warning: Grad=True, symmetry turned off.")
             self.symmetry='OFF'
-            #SYMMETRY
 
             if self.propoption != 'OFF':
                 #TODO: Check whether we can avoid this limitation

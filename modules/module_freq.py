@@ -19,6 +19,13 @@ import ash.constants
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=298.15, pressure=1.0, QRRHO_omega_0=100):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
+
+    #Checking for linearity. Determines how many Trans+Rot modes 
+    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+        TRmodenum=5
+    else:
+        TRmodenum=6
+
     if theory.__class__.__name__ == "ORCATheory" or theory.__class__.__name__ == "CFourTheory":
         print(f"Requesting analytical Hessian calculation from {theory.theorynamelabel}")
         print("")
@@ -34,8 +41,9 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
             # For now, we grab frequencies from ORCA Hessian file
             frequencies = ash.interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
         elif theory.__class__.__name__ == "CFourTheory":
-            print("not ready")
-            exit()
+            hessian = theory.hessian
+            frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
+                                                               TRmodenum=TRmodenum,projection=True)
 
         #Add Hessian to fragment
         fragment.hessian=hessian
