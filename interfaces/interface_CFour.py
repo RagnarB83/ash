@@ -354,11 +354,11 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             return self.energy
 
 #CFour DBOC correction on fragment. Either provide CFourTheory object or use default settings
-def run_DBOC_correction(fragment=None,theory=None, numcores=1):
+def run_CFour_DBOC_correction(fragment=None,theory=None, numcores=1):
     #CFour Theory
     cfouroptions = {
     'CALC':'RHF',
-    'BASIS':'PVDZ',
+    'BASIS':'PVTZ',
     'REF':'RHF',
     'FROZEN_CORE':'ON',
     'MEM_UNIT':'MB',
@@ -387,3 +387,42 @@ def run_DBOC_correction(fragment=None,theory=None, numcores=1):
     print("Diagonal Born-Oppenheimer correction (DBOC):", dboc_correction, "au")
     return dboc_correction
 
+
+#CFour CCSDT correction on fragment. Either provide CFourTheory object or use default settings
+def run_CFour_CCSDT_correction(fragment=None,theory=None, numcores=1):
+    #CFour Theory
+    cfouroptions = {
+    'CALC':'CCSDT',
+    'BASIS':'PVTZ',
+    'REF':'RHF',
+    'FROZEN_CORE':'ON',
+    'MEM_UNIT':'MB',
+    'MEMORY':3100,
+    'CC_PROG':'ECC',
+    'SCF_CONV':10,
+    'LINEQ_CONV':10,
+    'CC_MAXCYC':300,
+    'SYMMETRY':'OFF',
+    'HFSTABILITY':'OFF',
+    }
+    if theory is None:
+        #CCSDT
+        theory = CFourTheory(cfouroptions=cfouroptions, numcores=numcores)
+        result_ccsdt = ash.Singlepoint(theory=theory,fragment=fragment)
+        #CCSD(T)
+        theory.method='CCSD(T)'
+        result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
+
+        delta_corr = result_ccsdt.energy - result_ccsd_t.energy
+
+        print("High-level CFour CCSD(T)->CCSDT correction:", delta_corr, "au")
+    else:
+        #Running HL calculation provided
+        result_big = ash.Singlepoint(theory=theory,fragment=fragment)
+        #Changing CALC level to CCSD(T)
+        theory.method='CCSD(T)'
+        result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
+
+        delta_corr = result_big.energy - result_ccsd_t.energy
+        print("High-level CFour correction:", delta_corr, "au")
+    return delta_corr
