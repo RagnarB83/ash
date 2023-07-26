@@ -424,12 +424,13 @@ def run_CFour_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='P
     else:
         #Running HL calculation provided
         theory.filename='CFour_HLC_HL'
-        print("Changing method in CFourTheory object to CCSD(T)")
+        
         print("Now running CFour HLC calculation")
         result_big = ash.Singlepoint(theory=theory,fragment=fragment)
         #Changing CALC level to CCSD(T)
         theory.method='CCSD(T)'
         theory.filename='CFour_HLC_ccsd_t'
+        print("Changing method in CFourTheory object to CCSD(T)")
         print("Now running CFour CCSD(T) calculation on fragment")
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
 

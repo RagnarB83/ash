@@ -229,9 +229,9 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc
     """
     if theory is None:
         #HL calculation
-        theory_HL = MRCCTheory(mrccinput=mrccinput_HL, numcores=numcores)
+        theory_HL = MRCCTheory(mrccinput=mrccinput_HL, numcores=numcores, filename='MRCC_HLC_HL')
         print("Now running MRCC HLC calculation on fragment")
-        result_HL = ash.Singlepoint(theory=theory_HL,fragment=fragment, filename='MRCC_HLC_HL')
+        result_HL = ash.Singlepoint(theory=theory_HL,fragment=fragment)
 
         #CCSD(T) calculation
         theory_ccsd_t = MRCCTheory(mrccinput=mrccinput_ccsd_t, numcores=numcores, filename='MRCC_HLC_ccsd_t')
