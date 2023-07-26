@@ -251,7 +251,7 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc
         #Changing method to CCSD(T)
         for i in theory.mrccinput.split():
             if 'calc=' in i:
-                theory.mrccinput.replace(i,"calc=CCSD(T)")
+                theory.mrccinput = theory.mrccinput.replace(i,"calc=CCSD(T)")
         theory.filename='MRCC_HLC_ccsd_t'
         print("Changing method in MRCCTheory object to CCSD(T)")
         print("Now running MRCC CCSD(T) calculation on fragment")
