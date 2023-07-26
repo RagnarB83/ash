@@ -218,6 +218,7 @@ q
 97
 ./{densityfile}
 {frozenorbitals}
+y
 100
 2
 6
