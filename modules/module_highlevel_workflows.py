@@ -1137,12 +1137,16 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             if self.HOCC_program == 'CFour':
                 from ash.interfaces.interface_CFour import run_CFour_HLC_correction
                 print("Doing HOCC correction via the CFour program")
-                E_HOCC = run_CFour_HLC_correction(coords=current_coords, elems=elems, theory=None, method=self.HOCC_method, basis=self.HOCC_basis, ref=self.HOCC_ref, numcores=numcores)
+                E_HOCC = run_CFour_HLC_correction(coords=current_coords, elems=elems, charge=charge, mult=mult,
+                                                  theory=None, method=self.HOCC_method, basis=self.HOCC_basis, 
+                                                  ref=self.HOCC_ref, numcores=numcores)
 
             elif self.HOCC_program == 'MRCC':
                 print("Doing HOCC correction via the MRCC program")
                 from ash.interfaces.interface_MRCC import run_MRCC_HLC_correction
-                E_HOCC = run_MRCC_HLC_correction(fragment=None,theory=None, method=self.HOCC_method, basis=self.HOCC_basis, ref=self.HOCC_ref,numcores=numcores)
+                E_HOCC = run_MRCC_HLC_correction(coords=current_coords, elems=elems, charge=charge, mult=mult,
+                                                 theory=None, method=self.HOCC_method, basis=self.HOCC_basis, 
+                                                 ref=self.HOCC_ref,numcores=numcores)
         else:
             E_HOCC = 0.0
         ############################################################
@@ -1154,7 +1158,8 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             if self.DBOC_program == 'CFour':
                 from ash.interfaces.interface_CFour import run_CFour_DBOC_correction
                 print("Doing HOCC correction via CFour")
-                E_DBOC = run_CFour_DBOC_correction(coords=current_coords, elems=elems, method=self.DBOC_method, basis=self.DBOC_basis, numcores=numcores)
+                E_DBOC = run_CFour_DBOC_correction(coords=current_coords, elems=elems, charge=charge, mult=mult,
+                                                   method=self.DBOC_method, basis=self.DBOC_basis, numcores=numcores)
         else:
             E_DBOC = 0.0
         ############################################################
