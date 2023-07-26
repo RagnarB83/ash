@@ -63,11 +63,15 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
         shutil.copy(moldenfile, "mrcc.molden")
         #First Multiwfn call. Create new Moldenfile based on correlated density
         write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile)
+        print("Now calling Multiwfn to process the MRCC, Molden and CCDENSITIES files")
         with open("mwfnoptions") as input:
             sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
+        print("Multiwfn is done with this part")
         #Writes: mrccnew.molden a proper Molden WF file for MRCC WF. Now we can proceed
         option="density"
         moldenfile="mrccnew.molden"
+        #Now make new mwfnoptions file for the density generation
+        write_multiwfn_input_option(option="density", grid=grid)
     elif option == 'nocv':
         print("NOCV option")
         print("fragmentfiles:", fragmentfiles)
