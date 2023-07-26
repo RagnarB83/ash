@@ -755,8 +755,11 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             ashexit()
 
 
+        #Used by CFour and MRCC
         if mult > 1:
             openshell = True
+        else:
+            openshell = False
 
 
         if Grad == True:
