@@ -43,7 +43,7 @@ class ORCA_CC_CBS_Theory:
             OOCC=False,T1=False, T1correction=False, T1corrbasis_size='Small', T1corrpnosetting='NormalPNOreduced', 
             relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False, 
             HOCCcorrection=False, HOCC_program='CFour', HOCC_method='CCSDT', HOCC_basis='DZ', HOCC_ref='RHF', 
-            DBOCcorrection=False, DBOC_program='CFour', DBOC_method='RHF', DBOC_basis='TZ', DBOC_ref='RHF'):
+            DBOCcorrection=False, DBOC_program='CFour', DBOC_method='CISD', DBOC_basis='TZ', DBOC_ref='RHF'):
 
         print_line_with_mainheader("ORCA_CC_CBS_Theory")
 
