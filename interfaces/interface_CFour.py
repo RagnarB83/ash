@@ -358,13 +358,13 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
 
 #CFour DBOC correction on fragment. Either provide CFourTheory object or use default settings
 # Either provide fragment or provide coords and elems
-def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, basis='TZ', fragment=None,theory=None, numcores=1):
+def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, method='RHF',basis='TZ', fragment=None,theory=None, numcores=1):
     if fragment is None:
         fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
     print("\nNow running CFour DBOC correction")
     #CFour Theory
     cfouroptions = {
-    'CALC':'RHF',
+    'CALC':method,
     'BASIS':CFour_basis_dict[basis],
     'REF':'RHF',
     'FROZEN_CORE':'ON',
