@@ -344,7 +344,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
 
             if self.propoption != 'OFF':
                 print("Preserving MOLDEN_NAT file")
-                os.copyfile('MOLDEN_NAT','MOLDEN_NAT_CFOUR')
+                shutil.copyfile('MOLDEN_NAT','MOLDEN_NAT_CFOUR')
 
         #Full cleanup
         self.cleanup()
