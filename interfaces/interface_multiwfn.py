@@ -223,6 +223,7 @@ y
 2
 6
 mrccnew.molden
+0
 q
 
         """
