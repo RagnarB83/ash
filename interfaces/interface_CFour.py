@@ -408,10 +408,11 @@ def run_CFour_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='V
     }
     if theory is None:
         #High-level calc
-        theory = CFourTheory(cfouroptions=cfouroptions, numcores=numcores)
+        theory = CFourTheory(cfouroptions=cfouroptions, numcores=numcores, filename='CFour_HLC_HL')
         result_HL = ash.Singlepoint(theory=theory,fragment=fragment)
         #CCSD(T) calc
         theory.method='CCSD(T)'
+        theory.filename='CFour_HLC_ccsd_t'
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
 
         delta_corr = result_HL.energy - result_ccsd_t.energy
@@ -419,9 +420,11 @@ def run_CFour_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='V
         print("High-level CFour CCSD(T)-> Highlevel correction:", delta_corr, "au")
     else:
         #Running HL calculation provided
+        theory.filename='CFour_HLC_HL'
         result_big = ash.Singlepoint(theory=theory,fragment=fragment)
         #Changing CALC level to CCSD(T)
         theory.method='CCSD(T)'
+        theory.filename='CFour_HLC_ccsd_t'
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
 
         delta_corr = result_big.energy - result_ccsd_t.energy

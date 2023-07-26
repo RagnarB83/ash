@@ -209,7 +209,7 @@ def grab_gradient_mrcc(file,numatoms):
 
 #CFour HLC correction on fragment. Either provide MRCCTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
-def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', method='CCSDT', basis='cc-pVTZ', ref='RHF',numcores=1):
+def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc-pVTZ', ref='RHF',numcores=1):
     #MRCCTheory
     mrccinput_HL=f"""
     basis={basis}
@@ -229,11 +229,11 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', method='C
     """
     if theory is None:
         #HL calculation
-        theory_HL = MRCCTheory(mrccinput=mrccinput, numcores=numcores)
-        result_HL = ash.Singlepoint(theory=theory_HL,fragment=fragment)
+        theory_HL = MRCCTheory(mrccinput=mrccinput_HL, numcores=numcores)
+        result_HL = ash.Singlepoint(theory=theory_HL,fragment=fragment, filename='MRCC_HLC_HL')
 
         #CCSD(T) calculation
-        theory_ccsd_t = MRCCTheory(mrccinput=mrccinput_ccsd_t, numcores=numcores)
+        theory_ccsd_t = MRCCTheory(mrccinput=mrccinput_ccsd_t, numcores=numcores, filename='MRCC_HLC_ccsd_t')
         result_ccsd_t = ash.Singlepoint(theory=theory_ccsd_t,fragment=fragment)
 
         delta_corr = result_HL.energy - result_ccsd_t.energy
@@ -241,12 +241,14 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', method='C
         print("High-level MRCC CCSD(T)-> Highlevel correction:", delta_corr, "au")
     else:
         #Running HL calculation provided
+        theory.filename='MRCC_HLC_HL.out'
         result_big = ash.Singlepoint(theory=theory,fragment=fragment)
 
         #Changing method to CCSD(T)
         for i in theory.mrccinput.split():
             if 'calc=' in i:
                 theory.mrccinput.replace(i,"calc=CCSD(T)")
+        theory.filename='MRCC_HLC_ccsd_t'
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
 
         delta_corr = result_big.energy - result_ccsd_t.energy
