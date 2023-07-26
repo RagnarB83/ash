@@ -311,8 +311,6 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
         delta_SO_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit=unit, label='ΔSO')[0]
         finaldict['delta_SO_corr']=delta_SO_corr
     if 'E_HOCC' in componentsdict:
-        print("componentsdict:", componentsdict)
-        print("list_of_dicts:",list_of_dicts)
         HOCC_parts=[d['E_HOCC'] for d in list_of_dicts]
         delta_HOCC_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=HOCC_parts, unit=unit, label='ΔHOCC')[0]
         finaldict['delta_HOCC_corr']=delta_HOCC_corr
