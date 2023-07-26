@@ -207,7 +207,7 @@ def grab_gradient_mrcc(file,numatoms):
     return gradient
 
 
-#CFour HLC correction on fragment. Either provide MRCCTheory object or use default settings
+#MRCC HLC correction on fragment. Either provide MRCCTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
 def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc-pVTZ', ref='RHF',numcores=1):
     #MRCCTheory
@@ -235,6 +235,7 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc
 
         #CCSD(T) calculation
         theory_ccsd_t = MRCCTheory(mrccinput=mrccinput_ccsd_t, numcores=numcores, filename='MRCC_HLC_ccsd_t')
+        print("Changing method in MRCCTheory object to CCSD(T)")
         print("Now running MRCC CCSD(T) calculation on fragment")
         result_ccsd_t = ash.Singlepoint(theory=theory_ccsd_t,fragment=fragment)
 
@@ -252,6 +253,7 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc
             if 'calc=' in i:
                 theory.mrccinput.replace(i,"calc=CCSD(T)")
         theory.filename='MRCC_HLC_ccsd_t'
+        print("Changing method in MRCCTheory object to CCSD(T)")
         print("Now running MRCC CCSD(T) calculation on fragment")
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
 
