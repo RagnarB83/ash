@@ -85,7 +85,7 @@ from ash.interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction
 from ash.interfaces.interface_ipie import ipieTheory
 from ash.interfaces.interface_dice import DiceTheory
 from ash.interfaces.interface_block import BlockTheory
-from ash.interfaces.interface_MRCC import MRCCTheory
+from ash.interfaces.interface_MRCC import MRCCTheory, run_MRCC_HLC_correction
 from ash.interfaces.interface_QUICK import QUICKTheory
 from ash.interfaces.interface_TeraChem import TeraChemTheory
 from ash.interfaces.interface_sparrow import SparrowTheory
@@ -94,7 +94,7 @@ from ash.interfaces.interface_CP2K import CP2KTheory
 from ash.interfaces.interface_BigDFT import BigDFTTheory
 from ash.interfaces.interface_deMon import deMon2kTheory
 
-from ash.interfaces.interface_CFour import CFourTheory
+from ash.interfaces.interface_CFour import CFourTheory, run_CFour_CCSDT_correction, run_CFour_DBOC_correction
 from ash.interfaces.interface_xtb import xTBTheory
 from ash.interfaces.interface_PyMBE import PyMBETheory
 
