@@ -148,8 +148,17 @@ class CFourTheory:
 
     
     def cleanup(self):
-        print("Cleaning up old CFour files using xwipeout")
-        sp.run([self.cfourdir + '/xwipeout'])
+        print("Cleaning up old CFOUR files")
+        #Problematic, since it removes by globbing
+        #print("Cleaning up old CFour files using xwipeout")
+        #sp.run([self.cfourdir + '/xwipeout'])
+        files=["THETA", "NTOTAL", "MOINTS", "NATMOS", "DIPOL", "FILES", "IIII", "JMOLplot", "MOABCD", "JOBARC", "OPTARC", "NEWMOS", "EFG", "BASINFO.DATA", "VPOUT", "OLDMOS", "NEWFOCK", "MOL",
+"JAINDX", "GAMLAM", "ECPDATA", "den.dat"]
+        for file in files:
+            try:
+                os.remove(file)
+            except:
+                pass
 
     def cfour_grabenergy(self):
         #Other things to possibly grab in future:
