@@ -426,6 +426,7 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
         theory = CFourTheory(cfouroptions=cfouroptions, numcores=numcores, filename='CFour_HLC_HL')
         print("Now running CFour HLC calculation with", method, "method and", basis, "basis")
         result_HL = ash.Singlepoint(theory=theory,fragment=fragment)
+        theory.cleanup()
         #CCSD(T) calc
         theory.method='CCSD(T)'
         theory.filename='CFour_HLC_ccsd_t'
