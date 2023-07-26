@@ -388,13 +388,14 @@ def run_CFour_DBOC_correction(fragment=None,theory=None, numcores=1):
     return dboc_correction
 
 
-#CFour CCSDT correction on fragment. Either provide CFourTheory object or use default settings
-def run_CFour_CCSDT_correction(fragment=None,theory=None, numcores=1):
+#CFour HLC correction on fragment. Either provide CFourTheory object or use default settings
+# Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
+def run_CFour_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='VTZ', ref='RHF',numcores=1):
     #CFour Theory
     cfouroptions = {
-    'CALC':'CCSDT',
-    'BASIS':'PVTZ',
-    'REF':'RHF',
+    'CALC': method,
+    'BASIS':basis,
+    'REF':ref,
     'FROZEN_CORE':'ON',
     'MEM_UNIT':'MB',
     'MEMORY':3100,
@@ -406,16 +407,16 @@ def run_CFour_CCSDT_correction(fragment=None,theory=None, numcores=1):
     'HFSTABILITY':'OFF',
     }
     if theory is None:
-        #CCSDT
+        #High-level calc
         theory = CFourTheory(cfouroptions=cfouroptions, numcores=numcores)
-        result_ccsdt = ash.Singlepoint(theory=theory,fragment=fragment)
-        #CCSD(T)
+        result_HL = ash.Singlepoint(theory=theory,fragment=fragment)
+        #CCSD(T) calc
         theory.method='CCSD(T)'
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
 
-        delta_corr = result_ccsdt.energy - result_ccsd_t.energy
+        delta_corr = result_HL.energy - result_ccsd_t.energy
 
-        print("High-level CFour CCSD(T)->CCSDT correction:", delta_corr, "au")
+        print("High-level CFour CCSD(T)-> Highlevel correction:", delta_corr, "au")
     else:
         #Running HL calculation provided
         result_big = ash.Singlepoint(theory=theory,fragment=fragment)

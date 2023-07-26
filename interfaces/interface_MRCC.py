@@ -205,3 +205,50 @@ def grab_gradient_mrcc(file,numatoms):
             if ' Cartesian gradient [au]:' in line:
                 grab2=True
     return gradient
+
+
+#CFour HLC correction on fragment. Either provide MRCCTheory object or use default settings
+# Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
+def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', method='CCSDT', basis='cc-pVTZ', ref='RHF',numcores=1):
+    #MRCCTheory
+    mrccinput_HL=f"""
+    basis={basis}
+    calc={method}
+    mem=9000MB
+    scftype={ref}
+    ccmaxit=150
+    core=frozen
+    """
+    mrccinput_ccsd_t=f"""
+    basis={basis}
+    calc=CCSD(T)
+    mem=9000MB
+    scftype={ref}
+    ccmaxit=150
+    core=frozen
+    """
+    if theory is None:
+        #HL calculation
+        theory_HL = MRCCTheory(mrccinput=mrccinput, numcores=numcores)
+        result_HL = ash.Singlepoint(theory=theory_HL,fragment=fragment)
+
+        #CCSD(T) calculation
+        theory_ccsd_t = MRCCTheory(mrccinput=mrccinput_ccsd_t, numcores=numcores)
+        result_ccsd_t = ash.Singlepoint(theory=theory_ccsd_t,fragment=fragment)
+
+        delta_corr = result_HL.energy - result_ccsd_t.energy
+
+        print("High-level MRCC CCSD(T)-> Highlevel correction:", delta_corr, "au")
+    else:
+        #Running HL calculation provided
+        result_big = ash.Singlepoint(theory=theory,fragment=fragment)
+
+        #Changing method to CCSD(T)
+        for i in theory.mrccinput.split():
+            if 'calc=' in i:
+                theory.mrccinput.replace(i,"calc=CCSD(T)")
+        result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
+
+        delta_corr = result_big.energy - result_ccsd_t.energy
+        print("High-level MRCC correction:", delta_corr, "au")
+    return delta_corr
