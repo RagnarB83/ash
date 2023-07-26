@@ -415,7 +415,7 @@ def run_CFour_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='P
         theory.method='CCSD(T)'
         theory.filename='CFour_HLC_ccsd_t'
         print("Changing method in CFourTheory object to CCSD(T)")
-        rint("Now running CFour CCSD(T) calculation on fragment with basis:", basis)
+        print("Now running CFour CCSD(T) calculation on fragment with basis:", basis)
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
 
         delta_corr = result_HL.energy - result_ccsd_t.energy
