@@ -13,7 +13,7 @@ import ash.dictionaries_lists
 import ash.interfaces.interface_ORCA
 from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size
 from ash.functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
-from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader, pygrep2, pygrep
+from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader, pygrep2, pygrep,print_time_rel
 from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
 from ash.modules.module_plotting import ASH_plot
 from ash.modules.module_singlepoint import print_fragments_table
@@ -625,6 +625,7 @@ end
     #NOTE: Now no longer including relativity here. Best to include relativity from the beginning in all calculations and only do the CV as correction.
     #NOTE: Too messy to manage otherwise
     def CVSR_Step(self, current_coords, elems, reloption,calc_label, numcores, charge=None, mult=None):
+        init_time=time.time()
         print("\nCVSR_Step")
 
         ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {}".format(self.ccsdtkeyword,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
@@ -645,6 +646,7 @@ end
         #Core-correlation is total energy difference between NoFC-DKH and FC-norel
         E_corecorr_and_SR = energy_ccsdt_mtsmall_nofc - energy_ccsdt_mtsmall_fc
         print("E_corecorr_and_SR:", E_corecorr_and_SR)
+        print_time_rel(init_time, modulename='CVSR step', moduleindex=2)
         return E_corecorr_and_SR
 
 

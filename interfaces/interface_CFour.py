@@ -360,6 +360,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
 # Either provide fragment or provide coords and elems
 def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, method='CCSD',basis='TZ', 
                               fragment=None, theory=None, openshell=False, numcores=1):
+    init_time = time.time()
     if fragment is None:
         fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
     if openshell is True:
@@ -395,6 +396,7 @@ def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, m
                 if 'a.u.' in line:
                     dboc_correction = float(line.split()[-2])
     print("Diagonal Born-Oppenheimer correction (DBOC):", dboc_correction, "au")
+    print_time_rel(init_time, modulename='run_CFour_DBOC_correction', moduleindex=2)
     return dboc_correction
 
 
@@ -403,6 +405,7 @@ def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, m
 # Either use fragment or provide coordinates and elements
 def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fragment=None,theory=None, method='CCSDT', 
                              basis='TZ', ref='RHF', openshell=False, numcores=1):
+    init_time = time.time()
     if fragment is None:
         fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
     if openshell is True:
@@ -458,4 +461,5 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
 
         delta_corr = result_big.energy - result_ccsd_t.energy
         print("High-level CFour CCSD(T) -> Highlevel correction:", delta_corr, "au")
+    print_time_rel(init_time, modulename='run_CFour_HLC_correction', moduleindex=2)
     return delta_corr

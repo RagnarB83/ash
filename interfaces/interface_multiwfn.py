@@ -48,8 +48,10 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
         print(f"The selected Moldenfile: {moldenfile} does not exist. Exiting")
         ashexit()
 
+
     #MRCC density special case
     if option=="mrcc-density":
+        print("Option mrcc-density chosen")
         if mrccoutputfile == None:
             print("MRCC outputfile should also be provided")
             ashexit()
@@ -222,14 +224,6 @@ q
 mrccnew.molden
 q
 
-        """
-    elif option == 'hirshfeld':        
-        inputformula=f"""7
-1
-1
-y
-0
-q
         """
     elif option =="mayerbondorder":
         pass

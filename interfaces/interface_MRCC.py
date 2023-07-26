@@ -215,6 +215,7 @@ def grab_gradient_mrcc(file,numatoms):
 #Either use fragment or provide coords and elems
 def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None, mult=None, theory=None, method='CCSDT', basis='TZ', 
                             ref='RHF', openshell=False, numcores=1):
+    init_time=time.time()
     if fragment is None:
         fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
     if openshell is True:
@@ -271,4 +272,5 @@ def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None,
 
         delta_corr = result_big.energy - result_ccsd_t.energy
         print("High-level MRCC correction:", delta_corr, "au")
+    print_time_rel(init_time, modulename='run_MRCC_HLC_correction', moduleindex=2)
     return delta_corr
