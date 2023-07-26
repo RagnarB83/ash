@@ -21,6 +21,12 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
                  fragmentfiles=None, fockfile=None, openshell=False):
     print_line_with_mainheader("multiwfn_run")
 
+    multiwfn_citation_string="""\nDon't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    """
+    print(multiwfn_citation_string)
+    print()
     print("multiwfndir:", multiwfndir)
     print("Molden file:", moldenfile) #Inputfile is typically a Molden file
     print("Option:", option)
@@ -47,6 +53,12 @@ def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=Non
     if os.path.isfile(moldenfile) is False:
         print(f"The selected Moldenfile: {moldenfile} does not exist. Exiting")
         ashexit()
+    
+    #Rename MOLDEN-file. Necessary for some reason. MOLDEN_NAT does not work 
+    if moldenfile == "MOLDEN_NAT":
+        print("Renaming MOLDEN_NAT to MOLDEN_NAT.molden")
+        os.rename(moldenfile, "MOLDEN_NAT.molden")
+        moldenfile="MOLDEN_NAT.molden"
 
 
     #MRCC density special case
@@ -349,3 +361,8 @@ def read_fchkfile(file):
 #  17 Electronegativity Equalization Method (EEM) atomic charge
 #  18 Restrained ElectroStatic Potential (RESP) atomic charge
 #  19 Gasteiger (PEOE) charge
+
+
+def fix_molden_file(file):
+    with open(file,"r") as f:
+        for line in f:
