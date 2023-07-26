@@ -361,8 +361,3 @@ def read_fchkfile(file):
 #  17 Electronegativity Equalization Method (EEM) atomic charge
 #  18 Restrained ElectroStatic Potential (RESP) atomic charge
 #  19 Gasteiger (PEOE) charge
-
-
-def fix_molden_file(file):
-    with open(file,"r") as f:
-        for line in f:
