@@ -425,8 +425,8 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
     }
     if theory is None:
         #High-level calc
-        theory.cleanup()
         theory = CFourTheory(cfouroptions=cfouroptions, numcores=numcores, filename='CFour_HLC_HL')
+        theory.cleanup()
         print("Now running CFour HLC calculation with", method, "method and", basis, "basis")
         result_HL = ash.Singlepoint(theory=theory,fragment=fragment)
         theory.cleanup()
