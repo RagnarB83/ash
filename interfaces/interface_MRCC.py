@@ -230,10 +230,12 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc
     if theory is None:
         #HL calculation
         theory_HL = MRCCTheory(mrccinput=mrccinput_HL, numcores=numcores)
+        print("Now running MRCC HLC calculation on fragment")
         result_HL = ash.Singlepoint(theory=theory_HL,fragment=fragment, filename='MRCC_HLC_HL')
 
         #CCSD(T) calculation
         theory_ccsd_t = MRCCTheory(mrccinput=mrccinput_ccsd_t, numcores=numcores, filename='MRCC_HLC_ccsd_t')
+        print("Now running MRCC CCSD(T) calculation on fragment")
         result_ccsd_t = ash.Singlepoint(theory=theory_ccsd_t,fragment=fragment)
 
         delta_corr = result_HL.energy - result_ccsd_t.energy
@@ -242,6 +244,7 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc
     else:
         #Running HL calculation provided
         theory.filename='MRCC_HLC_HL.out'
+        print("Now running MRCC HLC calculation on fragment")
         result_big = ash.Singlepoint(theory=theory,fragment=fragment)
 
         #Changing method to CCSD(T)
@@ -249,6 +252,7 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc
             if 'calc=' in i:
                 theory.mrccinput.replace(i,"calc=CCSD(T)")
         theory.filename='MRCC_HLC_ccsd_t'
+        print("Now running MRCC CCSD(T) calculation on fragment")
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
 
         delta_corr = result_big.energy - result_ccsd_t.energy
