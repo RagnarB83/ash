@@ -807,6 +807,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         if numcores == None:
             numcores=self.numcores
 
+        original_numcores = numcores
         #Reduce numcores if required
         #NOTE: self.numcores is thus ignored if check_cores_vs_electrons reduces value based on system-size
         numcores = check_cores_vs_electrons(elems,numcores,charge)
@@ -1147,14 +1148,14 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                 print("Doing HOCC correction via the CFour program")
                 E_HOCC = run_CFour_HLC_correction(coords=current_coords, elems=elems, charge=charge, mult=mult,
                                                   theory=None, method=self.HOCC_method, basis=self.HOCC_basis, 
-                                                  ref=self.HOCC_ref, numcores=numcores, openshell=openshell)
+                                                  ref=self.HOCC_ref, numcores=original_numcores, openshell=openshell)
 
             elif self.HOCC_program == 'MRCC':
                 print("Doing HOCC correction via the MRCC program")
                 from ash.interfaces.interface_MRCC import run_MRCC_HLC_correction
                 E_HOCC = run_MRCC_HLC_correction(coords=current_coords, elems=elems, charge=charge, mult=mult,
                                                  theory=None, method=self.HOCC_method, basis=self.HOCC_basis, 
-                                                 ref=self.HOCC_ref,numcores=numcores, openshell=openshell)
+                                                 ref=self.HOCC_ref,numcores=original_numcores, openshell=openshell)
         else:
             E_HOCC = 0.0
         ############################################################
@@ -1167,7 +1168,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                 from ash.interfaces.interface_CFour import run_CFour_DBOC_correction
                 print("Doing HOCC correction via CFour")
                 E_DBOC = run_CFour_DBOC_correction(coords=current_coords, elems=elems, charge=charge, mult=mult,
-                                                   method=self.DBOC_method, basis=self.DBOC_basis, numcores=numcores,
+                                                   method=self.DBOC_method, basis=self.DBOC_basis, numcores=original_numcores,
                                                    openshell=openshell)
         else:
             E_DBOC = 0.0
