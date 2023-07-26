@@ -351,10 +351,6 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
 
-            if self.propoption != 'OFF':
-                print("Preserving MOLDEN_NAT file as CFOUR_MOLDEN_NAT")
-                shutil.copyfile('MOLDEN_NAT','CFOUR_MOLDEN_NAT')
-
         #Full cleanup
         self.cleanup()
 
