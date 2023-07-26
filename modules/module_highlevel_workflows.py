@@ -1196,7 +1196,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             E_FINAL = E_FCI_CBS
             E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS': E_FCI_CBS, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'T1energycorr' : T1energycorr,
                 'E_corrCCT_CBS': E_corrCCT_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_FCIcorrection': E_FCIcorrection,
-                'E_HOCC:': E_HOCC, 'E_DBOC': E_DBOC}
+                'E_HOCC': E_HOCC, 'E_DBOC': E_DBOC}
             print("FCI correction:", E_FCIcorrection, "Eh")
             print("FCI/CBS energy :", E_FCI_CBS, "Eh")
             print("")
@@ -1206,7 +1206,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
             E_FINAL = E_CC_CBS
             E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 'T1energycorr' : T1energycorr,
-                'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_HOCC:': E_HOCC, 'E_DBOC': E_DBOC}
+                'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_HOCC': E_HOCC, 'E_DBOC': E_DBOC}
 
         print("Final energy :", E_FINAL, "Eh")
         print("")
