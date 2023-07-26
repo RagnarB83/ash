@@ -358,7 +358,9 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
 
 #CFour DBOC correction on fragment. Either provide CFourTheory object or use default settings
 # Either provide fragment or provide coords and elems
-def run_CFour_DBOC_correction(coords=None, elems=None, basis='TZ', fragment=None,theory=None, numcores=1):
+def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, basis='TZ', fragment=None,theory=None, numcores=1):
+    if fragment is None:
+        fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
     print("\nNow running CFour DBOC correction")
     #CFour Theory
     cfouroptions = {
@@ -396,7 +398,9 @@ def run_CFour_DBOC_correction(coords=None, elems=None, basis='TZ', fragment=None
 #CFour HLC correction on fragment. Either provide CFourTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
 # Either use fragment or provide coordinates and elements
-def run_CFour_HLC_correction(coords=None, elems=None, fragment=None,theory=None, method='CCSDT', basis='TZ', ref='RHF',numcores=1):
+def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fragment=None,theory=None, method='CCSDT', basis='TZ', ref='RHF',numcores=1):
+    if fragment is None:
+        fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
     print("\nNow running CFour HLC correction")
     #CFour Theory
     cfouroptions = {

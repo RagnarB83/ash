@@ -166,6 +166,17 @@ class ORCA_CC_CBS_Theory:
         print("Core-Valence Scalar Relativistic correction (CVSR): ", self.CVSR)
         print("Atomic spin-orbit correction: ", self.atomicSOcorrection)
         print("Higher-order coupled cluster correction: ", self.HOCCcorrection)
+        print("Diagonal Born-Oppenheimer correction: ", self.HOCCcorrection)
+        if self.HOCCcorrection is True:
+            print("HOCC program: ", self.HOCC_program)
+            print("HOCC method: ", self.HOCC_method)
+            print("HOCC basis: ", self.HOCC_basis)
+            print("HOCC reference: ", self.HOCC_ref)
+        if self.DBOCcorrection is True:
+            print("DBOC program: ", self.DBOC_program)
+            print("DBOC method: ", self.DBOC_method)
+            print("DBOC basis: ", self.DBOC_basis)
+            print("DBOC reference: ", self.DBOC_ref)
         print("")
         print("DLPNO:", self.DLPNO)
         #DLPNO parameters
