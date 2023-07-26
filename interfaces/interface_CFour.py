@@ -98,7 +98,7 @@ class CFourTheory:
 
         if cfourdir == None:
             # Trying to find xcfour in path
-            print("cfourdir keyword argument not provided to CfourTheory object. Trying to find xcfour in PATH")
+            print("cfourdir keyword argument not provided to CFourTheory object. Trying to find xcfour in PATH")
             try:
                 self.cfourdir = os.path.dirname(shutil.which('xcfour'))
                 print("Found xcfour in path. Setting cfourdir to:", cfourdir)
@@ -384,7 +384,9 @@ def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, m
         theory = CFourTheory(cfouroptions=cfouroptions, DBOC=True,numcores=numcores)
     else:
         theory.DBOC=True
+    theory.cleanup()
     ash.Singlepoint(theory=theory, fragment=fragment)
+    theory.cleanup()
 
     dboc_correction = None
     with open(theory.filename+'.out', 'r') as outfile:
@@ -423,6 +425,7 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
     }
     if theory is None:
         #High-level calc
+        theory.cleanup()
         theory = CFourTheory(cfouroptions=cfouroptions, numcores=numcores, filename='CFour_HLC_HL')
         print("Now running CFour HLC calculation with", method, "method and", basis, "basis")
         result_HL = ash.Singlepoint(theory=theory,fragment=fragment)
@@ -433,22 +436,26 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
         print("Changing method in CFourTheory object to CCSD(T)")
         print("Now running CFour CCSD(T) calculation")
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
+        theory.cleanup()
 
         delta_corr = result_HL.energy - result_ccsd_t.energy
 
         print("High-level CFour CCSD(T)-> Highlevel correction:", delta_corr, "au")
     else:
         #Running HL calculation provided
+        theory.cleanup()
         theory.filename='CFour_HLC_HL'
         
         print("Now running CFour HLC calculation")
         result_big = ash.Singlepoint(theory=theory,fragment=fragment)
+        theory.cleanup()
         #Changing CALC level to CCSD(T)
         theory.method='CCSD(T)'
         theory.filename='CFour_HLC_ccsd_t'
         print("Changing method in CFourTheory object to CCSD(T)")
         print("Now running CFour CCSD(T) calculation on fragment")
         result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
+        theory.cleanup()
 
         delta_corr = result_big.energy - result_ccsd_t.energy
         print("High-level CFour CCSD(T) -> Highlevel correction:", delta_corr, "au")
