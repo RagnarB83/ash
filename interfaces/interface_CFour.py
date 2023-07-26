@@ -358,9 +358,12 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
 
 #CFour DBOC correction on fragment. Either provide CFourTheory object or use default settings
 # Either provide fragment or provide coords and elems
-def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, method='RHF',basis='TZ', fragment=None,theory=None, numcores=1):
+def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, method='RHF',basis='TZ', 
+                              fragment=None, theory=None, openshell=False, numcores=1):
     if fragment is None:
         fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
+    if openshell is True:
+        ref='UHF'
     print("\nNow running CFour DBOC correction")
     #CFour Theory
     cfouroptions = {
@@ -387,9 +390,7 @@ def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, m
     with open(theory.filename+'.out', 'r') as outfile:
         for line in outfile:
             if 'The total diagonal Born-Oppenheimer correction (DBOC) is:' in line:
-                print(line)
                 if 'a.u.' in line:
-                    print("here")
                     dboc_correction = float(line.split()[-2])
     print("Diagonal Born-Oppenheimer correction (DBOC):", dboc_correction, "au")
     return dboc_correction
@@ -398,9 +399,12 @@ def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, m
 #CFour HLC correction on fragment. Either provide CFourTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
 # Either use fragment or provide coordinates and elements
-def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fragment=None,theory=None, method='CCSDT', basis='TZ', ref='RHF',numcores=1):
+def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fragment=None,theory=None, method='CCSDT', 
+                             basis='TZ', ref='RHF', openshell=False, numcores=1):
     if fragment is None:
         fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
+    if openshell is True:
+        ref='UHF'
     print("\nNow running CFour HLC correction")
     #CFour Theory
     cfouroptions = {

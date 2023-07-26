@@ -213,14 +213,18 @@ def grab_gradient_mrcc(file,numatoms):
 #MRCC HLC correction on fragment. Either provide MRCCTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
 #Either use fragment or provide coords and elems
-def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None, mult=None, theory=None, method='CCSDT', basis='TZ', ref='RHF',numcores=1):
+def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None, mult=None, theory=None, method='CCSDT', basis='TZ', 
+                            ref='RHF', openshell=False, numcores=1):
     if fragment is None:
         fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
+    if openshell is True:
+        ref='UHF'
     print("\nNow running MRCC HLC correction")
     #MRCCTheory
     mrccinput_HL=f"""
     basis={MRCC_basis_dict[basis]}
     calc={method}
+    scftype={ref}
     mem=9000MB
     scftype={ref}
     ccmaxit=150
@@ -229,6 +233,7 @@ def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None,
     mrccinput_ccsd_t=f"""
     basis={MRCC_basis_dict[basis]}
     calc=CCSD(T)
+    scftype={ref}
     mem=9000MB
     scftype={ref}
     ccmaxit=150
