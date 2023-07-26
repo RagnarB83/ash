@@ -390,7 +390,7 @@ def run_CFour_DBOC_correction(fragment=None,theory=None, numcores=1):
 
 #CFour HLC correction on fragment. Either provide CFourTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
-def run_CFour_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='VTZ', ref='RHF',numcores=1):
+def run_CFour_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='PVTZ', ref='RHF',numcores=1):
     #CFour Theory
     cfouroptions = {
     'CALC': method,
