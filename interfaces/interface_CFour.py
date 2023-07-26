@@ -148,7 +148,7 @@ class CFourTheory:
 
     
     def cleanup(self):
-        print("Cleaning up old Cfour files using xwipeout")
+        print("Cleaning up old CFour files using xwipeout")
         sp.run([self.cfourdir + '/xwipeout'])
 
     def cfour_grabenergy(self):
@@ -416,7 +416,7 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
     'FROZEN_CORE':'ON',
     'MEM_UNIT':'MB',
     'MEMORY':3100,
-    'CC_PROG':'ECC',
+    'CC_PROG':'VCC',
     'SCF_CONV':10,
     'LINEQ_CONV':10,
     'CC_MAXCYC':300,
