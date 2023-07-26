@@ -41,7 +41,9 @@ class ORCA_CC_CBS_Theory:
             stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
             DLPNO=False, pnosetting='extrapolation', pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO'], FullLMP2Guess=False, MP2_PNO_correction=False,
             OOCC=False,T1=False, T1correction=False, T1corrbasis_size='Small', T1corrpnosetting='NormalPNOreduced', 
-            relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False):
+            relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False, 
+            HOCCcorrection=False, HOCC_program='CFour', HOCC_method='CCSDT', HOCC_basis='DZ', HOCC_ref='RHF', 
+            DBOCcorrection=False, DBOC_program='CFour', DBOC_method='RHF', DBOC_basis='TZ', DBOC_ref='RHF'):
 
         print_line_with_mainheader("ORCA_CC_CBS_Theory")
 
@@ -118,6 +120,19 @@ class ORCA_CC_CBS_Theory:
         self.FullLMP2Guess=FullLMP2Guess
         self.FCI=FCI
         self.atomicSOcorrection=atomicSOcorrection
+        #HOCC via CFour or MRCC
+        self.HOCCcorrection=HOCCcorrection
+        self.HOCC_program=HOCC_program
+        self.HOCC_method=HOCC_method
+        self.HOCC_basis=HOCC_basis
+        self.HOCC_ref=HOCC_ref
+        #DBOC via Cfour
+        self.DBOCcorrection=DBOCcorrection
+        self.DBOC_program=DBOC_program
+        self.DBOC_method=DBOC_method
+        self.DBOC_basis=DBOC_basis
+        self.DBOC_ref=DBOC_ref
+
         #ECP-flag may be set to True later
         self.ECPflag=False
 
@@ -149,6 +164,8 @@ class ORCA_CC_CBS_Theory:
         print("OOCC:", self.OOCC)
         print("Stability analysis:", self.stabilityanalysis)
         print("Core-Valence Scalar Relativistic correction (CVSR): ", self.CVSR)
+        print("Atomic spin-orbit correction: ", self.atomicSOcorrection)
+        print("Higher-order coupled cluster correction: ", self.HOCCcorrection)
         print("")
         print("DLPNO:", self.DLPNO)
         #DLPNO parameters
@@ -466,7 +483,6 @@ maxiter 150\nend
                 self.ccsdt_1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores)
                 self.ccsdt_2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks2, numcores=self.numcores)
 
-
     def cleanup(self):
         print("Cleanup called")
 
@@ -489,7 +505,6 @@ maxiter 150\nend
 
         #Memory
         blocks = f"%maxcore {self.memory}\n" + blocks
-
 
         #PNO setting to use for T1 correction
         if pnosetting == 'NormalPNO':
@@ -1103,6 +1118,41 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         else :
             E_SO = 0.0
         ############################################################
+        #Higher-order coupled cluster correction (HOCC)
+        #via CFour or MRCC
+        ############################################################
+        if self.HOCCcorrection is True:
+            print("\nDoing HOCC correction")
+            if self.HOCC_program == 'CFour':
+                from ash.interfaces.interface_CFour import run_CFour_HLC_correction
+                print("Doing HOCC correction via the CFour program")
+                E_HOCC = run_CFour_HLC_correction(coords=current_coords, elems=elems, theory=None, method=self.HOCC_method, basis=self.HOCC_basis, ref=self.HOCC_ref, numcores=numcores)
+
+            elif self.HOCC_program == 'MRCC':
+                print("Doing HOCC correction via the MRCC program")
+                from ash.interfaces.interface_MRCC import run_MRCC_HLC_correction
+                E_HOCC = run_MRCC_HLC_correction(fragment=None,theory=None, method=self.HOCC_method, basis=self.HOCC_basis, ref=self.HOCC_ref,numcores=numcores)
+        else:
+            E_HOCC = 0.0
+        ############################################################
+        #Diagonal Born-Oppenheimer correction (DBOC)
+        #via CFour
+        ############################################################
+        if self.DBOCcorrection is True:
+            print("Doing DBOC correction")
+            if self.DBOC_program == 'CFour':
+                from ash.interfaces.interface_CFour import run_CFour_DBOC_correction
+                print("Doing HOCC correction via CFour")
+                E_DBOC = run_CFour_DBOC_correction(coords=current_coords, elems=elems, method=self.DBOC_method, basis=self.DBOC_basis, numcores=numcores)
+        else:
+            E_DBOC = 0.0
+        ############################################################
+        #Multireference correction
+        #via PYSCF
+        #NOT READY
+        ############################################################
+
+        ############################################################
         #FINAL RESULT
         ############################################################
         print("")
@@ -1113,24 +1163,25 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
             #NOTE: We need to do separate extrapolation of corrCCSD_CBS and triples_CBS
             #CCSD(T)/CBS
-            E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR
+            E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR + E_HOCC + E_DBOC
             print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
             #FCI/CBS
             E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
             E_FCIcorrection = E_FCI_CBS-E_CC_CBS
             E_FINAL = E_FCI_CBS
             E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS': E_FCI_CBS, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'T1energycorr' : T1energycorr,
-                'E_corrCCT_CBS': E_corrCCT_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_FCIcorrection': E_FCIcorrection}
+                'E_corrCCT_CBS': E_corrCCT_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_FCIcorrection': E_FCIcorrection,
+                'E_HOCC:': E_HOCC, 'E_DBOC': E_DBOC}
             print("FCI correction:", E_FCIcorrection, "Eh")
             print("FCI/CBS energy :", E_FCI_CBS, "Eh")
             print("")
 
         else:
-            E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR
+            E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR + E_HOCC + E_DBOC
             print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
             E_FINAL = E_CC_CBS
             E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 'T1energycorr' : T1energycorr,
-                'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR}
+                'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_HOCC:': E_HOCC, 'E_DBOC': E_DBOC}
 
         print("Final energy :", E_FINAL, "Eh")
         print("")
@@ -1143,11 +1194,12 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         print("T1 energy correction : ", T1energycorr, "Eh")
         print("Spin-orbit coupling : ", E_SO, "Eh")
         print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
+        print("E_HOCC : ", E_HOCC, "Eh")
+        print("E_DBOC : ", E_DBOC, "Eh")
         
 
         #Setting energy_components as an accessible attribute
         self.energy_components=E_dict
-
 
         #Cleanup GBW file. Full cleanup ??
         # TODO: Keep output files for each step

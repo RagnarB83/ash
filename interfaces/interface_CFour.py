@@ -7,6 +7,9 @@ import numpy as np
 from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel
 import ash.settings_ash
 
+CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG-PVDZ', 'ATZ':'AUG-PVTZ', 'AQZ':'AUG-PVQZ', 
+                'A5Z':'AUG-PV5Z'}
+
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
@@ -354,11 +357,13 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             return self.energy
 
 #CFour DBOC correction on fragment. Either provide CFourTheory object or use default settings
-def run_CFour_DBOC_correction(fragment=None,theory=None, numcores=1):
+# Either provide fragment or provide coords and elems
+def run_CFour_DBOC_correction(coords=None, elems=None, basis='TZ', fragment=None,theory=None, numcores=1):
+    print("\nNow running CFour DBOC correction")
     #CFour Theory
     cfouroptions = {
     'CALC':'RHF',
-    'BASIS':'PVTZ',
+    'BASIS':CFour_basis_dict[basis],
     'REF':'RHF',
     'FROZEN_CORE':'ON',
     'MEM_UNIT':'MB',
@@ -390,11 +395,13 @@ def run_CFour_DBOC_correction(fragment=None,theory=None, numcores=1):
 
 #CFour HLC correction on fragment. Either provide CFourTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
-def run_CFour_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='PVTZ', ref='RHF',numcores=1):
+# Either use fragment or provide coordinates and elements
+def run_CFour_HLC_correction(coords=None, elems=None, fragment=None,theory=None, method='CCSDT', basis='TZ', ref='RHF',numcores=1):
+    print("\nNow running CFour HLC correction")
     #CFour Theory
     cfouroptions = {
     'CALC': method,
-    'BASIS':basis,
+    'BASIS':CFour_basis_dict[basis],
     'REF':ref,
     'FROZEN_CORE':'ON',
     'MEM_UNIT':'MB',

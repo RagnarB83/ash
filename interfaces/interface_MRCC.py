@@ -7,6 +7,9 @@ import numpy as np
 import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 
+MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z', 'ADZ':'aug-cc-pVDZ', 'ATZ':'aug-cc-pVTZ', 'AQZ':'aug-cc-pVQZ', 
+            'A5Z':'aug-cc-pV5Z'}
+
 #MRCC Theory object.
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
@@ -209,10 +212,13 @@ def grab_gradient_mrcc(file,numatoms):
 
 #MRCC HLC correction on fragment. Either provide MRCCTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
-def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc-pVTZ', ref='RHF',numcores=1):
+#Either use fragment or provide coords and elems
+def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None,theory=None, method='CCSDT', basis='TZ', ref='RHF',numcores=1):
+    print("\nNow running MRCC HLC correction")
+
     #MRCCTheory
     mrccinput_HL=f"""
-    basis={basis}
+    basis={MRCC_basis_dict[basis]}
     calc={method}
     mem=9000MB
     scftype={ref}
@@ -220,7 +226,7 @@ def run_MRCC_HLC_correction(fragment=None,theory=None, method='CCSDT', basis='cc
     core=frozen
     """
     mrccinput_ccsd_t=f"""
-    basis={basis}
+    basis={MRCC_basis_dict[basis]}
     calc=CCSD(T)
     mem=9000MB
     scftype={ref}

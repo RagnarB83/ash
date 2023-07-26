@@ -310,6 +310,14 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
         SO_parts=[d['E_SO'] for d in list_of_dicts]
         delta_SO_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=SO_parts, unit=unit, label='ΔSO')[0]
         finaldict['delta_SO_corr']=delta_SO_corr
+    if 'E_HOCC' in componentsdict:
+        HOCC_parts=[d['E_HOCC'] for d in list_of_dicts]
+        delta_HOCC_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=HOCC_parts, unit=unit, label='ΔHOCC')[0]
+        finaldict['delta_HOCC_corr']=delta_HOCC_corr
+    if 'E_DBOC' in componentsdict:
+        DBOC_parts=[d['E_DBOC'] for d in list_of_dicts]
+        delta_DBOC_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=DBOC_parts, unit=unit, label='ΔDBOC')[0]
+        finaldict['delta_DBOC_corr']=delta_DBOC_corr
     if 'E_corecorr_and_SR' in componentsdict:
         CV_SR_parts=[d['E_corecorr_and_SR'] for d in list_of_dicts]
         delta_CVSR_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=CV_SR_parts, unit=unit, label='ΔCV+SR')[0]
@@ -319,7 +327,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
         delta_T1_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=T1corr_parts, unit=unit, label='ΔΔT1corr')[0]
         finaldict['delta_T1_corr']=delta_T1_corr
     if 'E_FCIcorrection' in componentsdict:
-        fcicorr_parts=[delta_SO_corr['E_FCIcorrection'] for d in list_of_dicts]
+        fcicorr_parts=[d['E_FCIcorrection'] for d in list_of_dicts]
         delta_FCI_corr=ReactionEnergy(stoichiometry=stoichiometry, list_of_fragments=fraglist, list_of_energies=fcicorr_parts, unit=unit, label='ΔFCIcorr')[0]
         finaldict['delta_FCI_corr']=delta_FCI_corr
     print("-"*80)
