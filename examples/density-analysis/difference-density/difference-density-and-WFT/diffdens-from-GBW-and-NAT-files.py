@@ -1,6 +1,7 @@
 from ash import *
 import glob
 import os
+
 ##############################################################
 # Difference density generation script via ORCA orbitalfiles
 ##############################################################
@@ -19,6 +20,7 @@ print("Using reference orbitals from file:", reference)
 print("Now searching dir for .gbw and .nat files")
 gbwfiles=glob.glob('*.gbw')
 natfiles=glob.glob('*nat')
+moldenfiles=glob.glob('*.molden')
 print("Found gbwfiles", gbwfiles)
 print("Found natfiles:", natfiles)
 orbfiles=gbwfiles+natfiles
@@ -43,7 +45,7 @@ for gfile in orbfiles:
         cube=multiwfn_run(mfile, option='density', grid=3)
         cubefiles.append(cube)
 
-assert len(cubefiles) == len(orbfiles)
+assert len(cubefiles) == len(moldenfiles)
 print("\nNow calculating difference density w.r.t.:", reference)
 
 #Which reference to use
