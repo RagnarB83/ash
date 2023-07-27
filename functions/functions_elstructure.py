@@ -1778,7 +1778,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
     print("Creating Cube file from reference file")
     #TODO: Check if cube file already exists
     ref_orbfile_base=str(os.path.splitext(reference_orbfile)[0])
-    if os.path.isfile(f"{ref_orbfile_base}.molden_mwfn.cube") is True:
+    if os.path.isfile(f"{ref_orbfile_base}.cube") is True:
         print("Cube file created from this reference file already exists. Skipping Cube generation.")
         ref_cubefile=f"{ref_orbfile_base}.molden_mwfn.cube"
     else:
@@ -1791,7 +1791,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
     print("\nNow searching dir for .gbw, nat and Molden files")
     gbwfiles=glob.glob('*.gbw')
     natfiles=glob.glob('*nat')
-    moldenfiles=glob.glob('*molden')
+    moldenfiles=glob.glob('*molden*')
     print("Found gbwfiles", gbwfiles)
     print("Found natfiles:", natfiles)
     print("Found moldenfiles:", moldenfiles)
