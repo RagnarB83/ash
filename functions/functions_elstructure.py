@@ -1709,8 +1709,9 @@ def diffdens_of_cubefiles(ref_cubefile, cubefile):
     write_cube_diff(cube_ref, cube_other, f"{reffile_base}_{cubefile_base}_diff_density")
 
 #Takes input either ORCA-GBWfile, ORCA_natorbfile or Moldenfile
-def create_cubefile_from_orbfile(orbfile, grid=3):
+def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True):
     orcafile=False
+    moldenfile=False
     if '.gbw' in orbfile:
         print("Orbfile recognized as ORCA GBW file")
         orcafile=True
@@ -1722,6 +1723,7 @@ def create_cubefile_from_orbfile(orbfile, grid=3):
         orcafile=True
     elif '.molden' in orbfile or 'MOLDEN' in orbfile:
         print("Orbfile recognized as a Molden-file")
+        moldenfile=True
         mfile=orbfile
 
     if orcafile is True:
@@ -1730,6 +1732,11 @@ def create_cubefile_from_orbfile(orbfile, grid=3):
         mfile = make_molden_file_ORCA(orbfile)
     print("Now using Multiwfn to create cube file from Moldenfile")
     cubefile = multiwfn_run(mfile, option='density', grid=grid)
+
+    if delete_temp_molden_file is True:
+        if orcafile is True:
+            print("Removing preliminary Moldenfile created from ORCA file")
+            os.remove(mfile)
 
     return cubefile
 
@@ -1772,7 +1779,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3):
     ###################################
 
     #Find all GBW,NAT and Molden files in dir
-    print("Now searching dir for .gbw, nat and Molden files")
+    print("\nNow searching dir for .gbw, nat and Molden files")
     gbwfiles=glob.glob('*.gbw')
     natfiles=glob.glob('*nat')
     moldenfiles=glob.glob('*molden')
