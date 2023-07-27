@@ -2911,7 +2911,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             print("CC calculations using MRCC")
             print("not ready")
             #TODO: Define frozen core to be consistent with above
-            ccsdt_mrccinput="""
+            ccsdt_mrccinput=f"""
             basis={basis}
             calc=CCSD(T)
             mem=9000MB
@@ -2920,7 +2920,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             core=frozen
             """
             ccsd_t = ash.MRCCTheory(mrccinput=ccsdt_mrccinput,numcores=numcores, label='MRCC-CCSD(T)')
-            ccsdt_mrccinput="""
+            ccsdt_mrccinput=f"""
             basis={basis}
             calc=CCSDT
             mem=9000MB
