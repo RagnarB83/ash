@@ -1732,13 +1732,16 @@ def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True):
         mfile = make_molden_file_ORCA(orbfile)
     print("Now using Multiwfn to create cube file from Moldenfile")
     cubefile = multiwfn_run(mfile, option='density', grid=grid)
-    print("Cube file created:", cubefile")
+    # Rename cubefile (shortens it)
+    new_cubename=str(os.path.splitext(orbfile)[0])+".cube"
+    os.rename(cubefile, new_cubename)
+    print("Cube file created:", new_cubename")
     if delete_temp_molden_file is True:
         if orcafile is True:
             print("Removing preliminary Moldenfile created from ORCA file")
             os.remove(mfile)
 
-    return cubefile
+    return new_cubename
 
 
 def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3):
