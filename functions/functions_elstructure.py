@@ -1739,7 +1739,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3):
     print()
     print("Reference orbital file:", reference_orbfile)
     print("Directory:", dir)
-    print("Gridsetting:", grid)")
+    print("Gridsetting:", grid)
     ##############################################################
     # Difference density generation script via ORCA orbitalfiles and Moldenf    
     ##############################################################
