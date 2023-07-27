@@ -2382,12 +2382,13 @@ def make_molden_file_ORCA(GBWfile, orcadir=None):
 
     print("Inputfile:", GBWfile) 
     #GBWfile should be ORCA file. Can be SCF GBW (.gbw) or natural orbital WF file (.nat)
-
+    renamefile=False
     #Renaming file if GBW extension as orca_mkl needs it
     if '.gbw' not in GBWfile:
         newfile=GBWfile+'.gbw'
         print("Making copy of file:", newfile)
         shutil.copy(GBWfile,newfile)
+        renamefile=True
     else:
         newfile=GBWfile
 
@@ -2399,6 +2400,8 @@ def make_molden_file_ORCA(GBWfile, orcadir=None):
     sp.call([orcadir+'/orca_2mkl', GBWfile_noext, '-molden'])
     moldenfile=GBWfile_noext+'.molden.input'
     print("Created molden file:", moldenfile)
+    if renamefile is True:
+        print("Removing copy of file:", newfile)
 
     return moldenfile
 
