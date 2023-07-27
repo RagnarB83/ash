@@ -13,7 +13,7 @@ CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
-                 filename='cfourjob', specialbasis=None, ash_basisfile=None,
+                 filename='cfourjob', specialbasis=None, ash_basisfile=None, label=None,
                  parallelization='MKL', DBOC=False):
         
         self.theorynamelabel="CFour"
