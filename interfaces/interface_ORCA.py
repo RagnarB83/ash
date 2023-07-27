@@ -2402,6 +2402,7 @@ def make_molden_file_ORCA(GBWfile, orcadir=None, printlevel=2):
     print("Created molden file:", moldenfile)
     if renamefile is True:
         print("Removing copy of file:", newfile)
+        os.remove(newfile)
 
     return moldenfile
 

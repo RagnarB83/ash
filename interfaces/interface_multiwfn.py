@@ -75,7 +75,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         #Rename MRCC Molden file to mrcc.molden
         shutil.copy(moldenfile, "mrcc.molden")
         #First Multiwfn call. Create new Moldenfile based on correlated density
-        write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile)
+        write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile, printlevel=printlevel)
         print("Now calling Multiwfn to process the MRCC, Molden and CCDENSITIES files")
         with open("mwfnoptions") as input:
             sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
@@ -84,7 +84,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         option="density"
         moldenfile="mrccnew.molden"
         #Now make new mwfnoptions file for the density generation
-        write_multiwfn_input_option(option="density", grid=grid)
+        write_multiwfn_input_option(option="density", grid=grid, printlevel=printlevel)
     elif option == 'nocv':
         print("NOCV option")
         print("fragmentfiles:", fragmentfiles)
@@ -97,11 +97,11 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
             ashexit()   
         #Create dummy-input
         write_multiwfn_input_option(option="nocv", grid=grid, fragmentfiles=fragmentfiles, openshell=openshell,
-                                    fockfile=fockfile)
+                                    fockfile=fockfile, printlevel=printlevel)
     #Density and other options (may or may not work)
     else:
         #Writing input
-        write_multiwfn_input_option(option=option, grid=grid)
+        write_multiwfn_input_option(option=option, grid=grid, printlevel=printlevel)
     
     ############################
     #RUNNING MULTIWFN
@@ -147,7 +147,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
 def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densityfile=None,
-                                fragmentfiles=None,fockfile=None, file4=None, openshell=False):
+                                fragmentfiles=None,fockfile=None, file4=None, openshell=False, printlevel=2):
     #Create input formula as file
     if option == 'density':
         denstype=1
@@ -257,8 +257,8 @@ q
         ashexit()
     #Write inputformula to disk
     writestringtofile(inputformula,"mwfnoptions")
-
-    print("Wrote Multiwfn inputfile to disk: mwfnoptions")
+    if printlevel >= 2:
+        print("Wrote Multiwfn inputfile to disk: mwfnoptions")
 
 
 #Analyze CCSD(T) wavefunctions from Psi4
