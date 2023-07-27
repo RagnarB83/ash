@@ -1711,6 +1711,7 @@ def diffdens_of_cubefiles(ref_cubefile, cubefile):
     cube_other=read_cube(cubefile)
     #Taking diff
     write_cube_diff(cube_ref, cube_other, f"{reffile_base}_{cubefile_base}_diff_density")
+    print("Wrote diffdens-file :", f"{reffile_base}_{cubefile_base}_diff_density")
 
 #Takes input either ORCA-GBWfile, ORCA_natorbfile or Moldenfile
 def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True):
