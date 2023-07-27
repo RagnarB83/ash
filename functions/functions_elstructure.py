@@ -1749,7 +1749,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3):
 
     #Reference for Difference density cubes
     #Check if reference file is in dir
-    if os.isfile(reference_orbfile) is False:
+    if os.path.isfile(reference_orbfile) is False:
         print("Reference file not found in dir:", reference_orbfile)
         ashexit()
     
