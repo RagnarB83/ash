@@ -1717,7 +1717,12 @@ def diffdens_of_cubefiles(ref_cubefile, cubefile):
 #Takes input either ORCA-GBWfile, ORCA_natorbfile or Moldenfile
 def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True, printlevel=2):
     orcafile=False
-    if '.gbw' in orbfile:
+    #First checking if input is a Molden file
+    if '.molden' in orbfile or 'MOLDEN' in orbfile:
+        print("Orbfile recognized as a Molden-file")
+        moldenfile=True
+        mfile=orbfile
+    elif '.gbw' in orbfile:
         print("Orbfile recognized as ORCA GBW file")
         orcafile=True
     elif '.nat' in orbfile:
@@ -1726,10 +1731,7 @@ def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True, 
     elif 'mp2nat' in orbfile:
         print("Orbfile recognized as ORCA natural-orbital file")
         orcafile=True
-    elif '.molden' in orbfile or 'MOLDEN' in orbfile:
-        print("Orbfile recognized as a Molden-file")
-        moldenfile=True
-        mfile=orbfile
+
 
     if orcafile is True:
         print("Now using orca_2mkl to convert ORCA file to Molden file")
