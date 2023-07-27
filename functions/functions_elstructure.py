@@ -1699,6 +1699,10 @@ def get_Fock_matrix_ORCA_format(Fock):
 #Attempt to modularize this script
 
 def diffdens_of_cubefiles(ref_cubefile, cubefile):
+    print("Inside diffdens_of_cubefiles function")
+    print("ref_cubefile:", ref_cubefile)
+    print("cubefile:", cubefile)
+    print()
     #Labels
     reffile_base=str(os.path.splitext(ref_cubefile)[0])
     cubefile_base=str(os.path.splitext(ref_cubefile)[0])
@@ -1798,8 +1802,8 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3):
     for orbfile in orbfiles:
         orbfile_base=str(os.path.splitext(orbfile)[0])
         #Check if Cube-file exists already
-        if os.path.exists(orbfile_base+".molden.input_mwfn.cube"):
-            print("Cubefile exists already:", orbfile_base+".molden.input_mwfn.cube")
+        if os.path.exists(orbfile_base+".cube"):
+            print("Cubefile exists already:", orbfile_base+".cube")
             print("Skipping")
         else:
             print("Creating Cubefile from Orbfile:", orbfile)
