@@ -2549,7 +2549,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 Do_TGen_fixed_series=True, fixed_tvar=1e-11, Do_Tau3_series=True, Do_Tau7_series=True, Do_EP_series=True,
                 tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
                 separate_MP2_nat_initial_orbitals=True,
-                DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_BCCD=False, DoCC_CFour=False, DoCAS=False,
+                DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_Bruckner=False, DoCC_CFour=False, DoCAS=False,
                 active_space_for_each=None,
                 DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'], Do_OOCC=True, Do_OOMP2=True,
                 maxcorememory=10000, numcores=1, ice_ci_maxiter=30, ice_etol=1e-6,
@@ -2844,7 +2844,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             
             result_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd)
             ccsd.cleanup()
-            if DoCC_BCCD is True:
+            if DoCC_Bruckner is True:
                 result_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd)
                 bccd.cleanup()
                 results_cc['BCCD'] = result_BCCD.reaction_energy
@@ -2865,7 +2865,6 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         if DoCC_CCSDT is True:
             ccsdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSDT', save_output_with_label=True)
             ccsdt_qro = ash.ORCATheory(orcasimpleinput=f"! UHF CCSD(T) {basis} UNO tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='CCSDT_QRO', save_output_with_label=True)
-            bccdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, basis_per_element=basis_per_element,numcores=numcores, label='BCCDT', save_output_with_label=True)
             #CCSD(T) extrapolated to FCI
             if basis_per_element ==None:
                 ccsdt_fci_extrap = ORCA_CC_CBS_Theory(elements=reaction.fragments[0].elems, cardinals = [2], basisfamily="cc", numcores=1, FCI=True)
@@ -2883,9 +2882,11 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             ccsdt.cleanup()
             result_CCSDT_QRO = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_qro)
             ccsdt_qro.cleanup()
-            
-            result_BCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=bccdt)
-            bccdt.cleanup()
+            if DoCC_Bruckner is True:
+                bccdt = ash.ORCATheory(orcasimpleinput=f"! CCSD(T) {basis} tightscf", orcablocks=brucknerblocks, basis_per_element=basis_per_element,numcores=numcores, label='BCCDT', save_output_with_label=True)
+                result_BCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=bccdt)
+                bccdt.cleanup()
+                results_cc['BCCD(T)'] = result_BCCDT.reaction_energy
             #relE_CCSDT_mp2nat = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_mp2nat, unit=reaction.unit)
             #relE_CCSDT_icecinat = ash.Singlepoint_reaction(reaction=reaction, theory=ccsdt_icecinat, unit=reaction.unit)
             results_cc['CCSD(T)'] = result_CCSDT.reaction_energy
@@ -2895,7 +2896,6 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 result_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt)
                 ooccdt.cleanup()
                 results_cc['OOCCD(T)'] = result_OOCCDT.reaction_energy
-            results_cc['BCCD(T)'] = result_BCCDT.reaction_energy
             
             #CCSD(T) with multiple DFT orbitals
             if DoCC_DFTorbs is True:
