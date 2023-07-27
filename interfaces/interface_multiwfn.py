@@ -125,11 +125,13 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     originputbasename=os.path.splitext(moldenfile)[0]
 
     if option =="density":
-        print("Density option chosen")
+        if printlevel >= 2:
+            print("Density option chosen")
         outputfile="density.cub"
         finaloutputfile=originputbasename+'_mwfn.cube'
         os.rename(outputfile, finaloutputfile)
-        print("Electron density outputfile written:", finaloutputfile)
+        if printlevel >= 2:
+            print("Electron density outputfile written:", finaloutputfile)
         return finaloutputfile
     elif option =="nocv":
         print("NOCV option was chosen.")
