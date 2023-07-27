@@ -2545,7 +2545,6 @@ end
 #TODO: Finish MBE
 def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_element=None,
                 Do_ICE_CI=True, 
-                MBE_FCI=False, pymbedir=None, mbe_thres_inc=1e-5, mbe_orbs_choice='ccsd', mbe_ref_orblist=[],
                 Do_TGen_fixed_series=True, fixed_tvar=1e-11, Do_Tau3_series=True, Do_Tau7_series=True, Do_EP_series=True,
                 tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
                 separate_MP2_nat_initial_orbitals=True,
@@ -2556,6 +2555,12 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 upper_sel_threshold=1.999, lower_sel_threshold=0,
                 plot=True, y_axis_label='None', yshift=0.3, ylimits=None, padding=0.4):
     
+
+    if DoCAS is True and active_space_for_each == None:
+        print("Error: active_space_for_each must be set if DoCAS is True.")
+        ashexit()
+
+
     #Dealing with different basis sets on atoms.
     #TODO: basisfile. Common basis-file for ORCA and other codes?
     #basis: string keyword for name of basis
