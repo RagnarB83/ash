@@ -2990,54 +2990,51 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         caspt2_energies=[]
         nevpt2_energies=[]
         mrciq_energies=[]
-    
-    for i,frag in enumerate(reaction.fragments):
-        casblocks=f"""%maxcore 11000
-%casscf
-nel {active_space_for_each[i][0]}
-norb {active_space_for_each[i][1]}
-maxiter	300
-end
-"""
-        caslabel=f'CASSCF_{active_space_for_each[i][0]}_{active_space_for_each[i][1]}'
-        casscf = ash.ORCATheory(orcasimpleinput=f"! CASSCF {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
-                                numcores=numcores, label=caslabel, save_output_with_label=True,
-                                moreadfile=reaction.orbital_dictionary["MP2nat"][i])
-        caspt2 = ash.ORCATheory(orcasimpleinput=f"! CASPT2 {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
-                                numcores=numcores, label=caslabel, save_output_with_label=True)
-        nevpt2 = ash.ORCATheory(orcasimpleinput=f"! NEVPT2 {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
-                                numcores=numcores, label=caslabel, save_output_with_label=True)
-        mrci_q = ash.ORCATheory(orcasimpleinput=f"! MRCI+Q {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
-                                numcores=numcores, label=caslabel, save_output_with_label=True)
         
-        result_CASSCF = ash.Singlepoint(fragment=frag, theory=casscf)
-        casscf_energies.append(result_CASSCF.energy)
-        result_CASPT2 = ash.Singlepoint(fragment=frag, theory=caspt2)
-        caspt2_energies.append(result_CASPT2.energy)
-        result_NEVPT2 = ash.Singlepoint(fragment=frag, theory=nevpt2)
-        nevpt2_energies.append(result_NEVPT2.energy)
-        result_MRCIQ = ash.Singlepoint(fragment=frag, theory=mrci_q)
-        mrciq_energies.append(result_MRCIQ.energy)
+        for i,frag in enumerate(reaction.fragments):
+            casblocks=f"""%maxcore 11000
+    %casscf
+    nel {active_space_for_each[i][0]}
+    norb {active_space_for_each[i][1]}
+    maxiter	300
+    end
+    """
+            caslabel=f'CASSCF_{active_space_for_each[i][0]}_{active_space_for_each[i][1]}'
+            casscf = ash.ORCATheory(orcasimpleinput=f"! CASSCF {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
+                                    numcores=numcores, label=caslabel, save_output_with_label=True,
+                                    moreadfile=reaction.orbital_dictionary["MP2nat"][i])
+            caspt2 = ash.ORCATheory(orcasimpleinput=f"! CASPT2 {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
+                                    numcores=numcores, label=caslabel, save_output_with_label=True)
+            nevpt2 = ash.ORCATheory(orcasimpleinput=f"! NEVPT2 {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
+                                    numcores=numcores, label=caslabel, save_output_with_label=True)
+            mrci_q = ash.ORCATheory(orcasimpleinput=f"! MRCI+Q {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
+                                    numcores=numcores, label=caslabel, save_output_with_label=True)
+            
+            result_CASSCF = ash.Singlepoint(fragment=frag, theory=casscf)
+            casscf_energies.append(result_CASSCF.energy)
+            result_CASPT2 = ash.Singlepoint(fragment=frag, theory=caspt2)
+            caspt2_energies.append(result_CASPT2.energy)
+            result_NEVPT2 = ash.Singlepoint(fragment=frag, theory=nevpt2)
+            nevpt2_energies.append(result_NEVPT2.energy)
+            result_MRCIQ = ash.Singlepoint(fragment=frag, theory=mrci_q)
+            mrciq_energies.append(result_MRCIQ.energy)
 
 
 
-    #Reaction energies
-    reaction_energy_casscf = ash.ReactionEnergy(list_of_energies=casscf_energies, stoichiometry=reaction.stoichiometry, 
-                                                unit=reaction.unit, silent=False)[0]
-    reaction_energy_caspt2 = ash.ReactionEnergy(list_of_energies=caspt2_energies, stoichiometry=reaction.stoichiometry, 
-                                                unit=reaction.unit, silent=False)[0]
-    reaction_energy_nevpt2 = ash.ReactionEnergy(list_of_energies=nevpt2_energies, stoichiometry=reaction.stoichiometry, 
-                                                unit=reaction.unit, silent=False)[0]
-    reaction_energy_mrciq = ash.ReactionEnergy(list_of_energies=mrciq_energies, stoichiometry=reaction.stoichiometry, 
-                                                unit=reaction.unit, silent=False)[0]
+        #Reaction energies
+        reaction_energy_casscf = ash.ReactionEnergy(list_of_energies=casscf_energies, stoichiometry=reaction.stoichiometry, 
+                                                    unit=reaction.unit, silent=False)[0]
+        reaction_energy_caspt2 = ash.ReactionEnergy(list_of_energies=caspt2_energies, stoichiometry=reaction.stoichiometry, 
+                                                    unit=reaction.unit, silent=False)[0]
+        reaction_energy_nevpt2 = ash.ReactionEnergy(list_of_energies=nevpt2_energies, stoichiometry=reaction.stoichiometry, 
+                                                    unit=reaction.unit, silent=False)[0]
+        reaction_energy_mrciq = ash.ReactionEnergy(list_of_energies=mrciq_energies, stoichiometry=reaction.stoichiometry, 
+                                                    unit=reaction.unit, silent=False)[0]
 
-    results_cas['CASSCF'] = reaction_energy_casscf
-    results_cas['CASPT2'] = reaction_energy_caspt2
-    results_cas['NEVPT2'] = reaction_energy_nevpt2
-    results_cas['MRCI+Q'] = reaction_energy_mrciq
-
-
-
+        results_cas['CASSCF'] = reaction_energy_casscf
+        results_cas['CASPT2'] = reaction_energy_caspt2
+        results_cas['NEVPT2'] = reaction_energy_nevpt2
+        results_cas['MRCI+Q'] = reaction_energy_mrciq
 
     ##########################################
     #Printing final results
