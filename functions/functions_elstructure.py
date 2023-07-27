@@ -1705,7 +1705,7 @@ def diffdens_of_cubefiles(ref_cubefile, cubefile):
     print()
     #Labels
     reffile_base=str(os.path.splitext(ref_cubefile)[0])
-    cubefile_base=str(os.path.splitext(ref_cubefile)[0])
+    cubefile_base=str(os.path.splitext(cubefile)[0])
     #Read Cubefiles into memory
     cube_ref=read_cube(ref_cubefile)
     cube_other=read_cube(cubefile)
