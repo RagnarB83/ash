@@ -3082,12 +3082,13 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             SR_WF_energies.append(e)
             SR_WF_labels.append(w)
     #MR
-    for i,(w, e) in enumerate(results_cas.items()):
-        print("{:<22} {:<13.8f}".format(w,e))
-        if plot is True:
-            MR_WF_indices.append(i)
-            MR_WF_energies.append(e)
-            MR_WF_labels.append(w)
+    if DoCAS is True:
+        for i,(w, e) in enumerate(results_cas.items()):
+            print("{:<22} {:<13.8f}".format(w,e))
+            if plot is True:
+                MR_WF_indices.append(i)
+                MR_WF_energies.append(e)
+                MR_WF_labels.append(w)
     print();print()
 
     #Plotting if plot is True and if matplotlib worked
