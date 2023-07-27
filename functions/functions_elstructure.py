@@ -1754,6 +1754,9 @@ def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True, 
 def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
     print_line_with_mainheader("diffdens_tool")
     print()
+    print("Warning: ORCA natural-orbital files need to have the ending nat or they will not be found!")
+    print("Warning: Molden files need to have the ending .molden or .MOLDEN or they will not be found!")
+    print()
     print("Reference orbital file:", reference_orbfile)
     print("Directory:", dir)
     print("Gridsetting:", grid)
@@ -1793,7 +1796,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
     print("\nNow searching dir for .gbw, nat and Molden files")
     gbwfiles=glob.glob('*.gbw')
     natfiles=glob.glob('*nat')
-    moldenfiles=glob.glob('*molden*')
+    moldenfiles=glob.glob('*molden')
     print("Found gbwfiles", gbwfiles)
     print("Found natfiles:", natfiles)
     print("Found moldenfiles:", moldenfiles)
