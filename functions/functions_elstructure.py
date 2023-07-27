@@ -1732,7 +1732,7 @@ def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True):
         mfile = make_molden_file_ORCA(orbfile)
     print("Now using Multiwfn to create cube file from Moldenfile")
     cubefile = multiwfn_run(mfile, option='density', grid=grid)
-
+    print("Cube file created:", cubefile")
     if delete_temp_molden_file is True:
         if orcafile is True:
             print("Removing preliminary Moldenfile created from ORCA file")
