@@ -1740,6 +1740,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3):
     print("Reference orbital file:", reference_orbfile)
     print("Directory:", dir)
     print("Gridsetting:", grid)
+    print()
     ##############################################################
     # Difference density generation script via ORCA orbitalfiles and Moldenf    
     ##############################################################
@@ -1757,11 +1758,15 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3):
         print(f"Reference orbital file: {reference_orbfile} not found in directory: {dir}")
         ashexit()
     
-    print("Using reference orbitals from file to subtract from:", reference_orbfile)
     #Create Molden file from reference-orbital file
     print("Creating Cube file from reference file")
     #TODO: Check if cube file already exists
-    ref_cubefile = create_cubefile_from_orbfile(reference_orbfile, grid=grid)
+    ref_orbfile_base=str(os.path.splitext(reference_orbfile)[0])
+    if os.path.isfile(f"{ref_orbfile_base}.molden_mwfn.cube") is True:
+        print("Cube file created from this reference file already exists. Skipping Cube generation.")
+        ref_cubefile=f"{ref_orbfile_base}.molden_mwfn.cube"
+    else:
+        ref_cubefile = create_cubefile_from_orbfile(reference_orbfile, grid=grid)
     print("Reference cubefile that will be used:", ref_cubefile)
         
     ###################################
