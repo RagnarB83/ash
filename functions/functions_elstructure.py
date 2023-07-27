@@ -1715,7 +1715,6 @@ def diffdens_of_cubefiles(ref_cubefile, cubefile):
 #Takes input either ORCA-GBWfile, ORCA_natorbfile or Moldenfile
 def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True):
     orcafile=False
-    moldenfile=False
     if '.gbw' in orbfile:
         print("Orbfile recognized as ORCA GBW file")
         orcafile=True
@@ -1739,7 +1738,7 @@ def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True):
     # Rename cubefile (shortens it)
     new_cubename=str(os.path.splitext(orbfile)[0])+".cube"
     os.rename(cubefile, new_cubename)
-    print("Cube file created:", new_cubename)
+    print("Cube file renamed:", new_cubename)
     if delete_temp_molden_file is True:
         if orcafile is True:
             print("Removing preliminary Moldenfile created from ORCA file")
