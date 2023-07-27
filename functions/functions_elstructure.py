@@ -1715,7 +1715,7 @@ def diffdens_of_cubefiles(ref_cubefile, cubefile):
     print("Wrote diffdens-file :", diffdens_filename+".cube")
     return diffdens_filename+".cube"
 #Takes input either ORCA-GBWfile, ORCA_natorbfile or Moldenfile
-def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True):
+def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True, printlevel=2):
     orcafile=False
     if '.gbw' in orbfile:
         print("Orbfile recognized as ORCA GBW file")
@@ -1734,9 +1734,9 @@ def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True):
     if orcafile is True:
         print("Now using orca_2mkl to convert ORCA file to Molden file")
         # Create Molden file from GBW
-        mfile = make_molden_file_ORCA(orbfile)
+        mfile = make_molden_file_ORCA(orbfile, printlevel=printlevel)
     print("Now using Multiwfn to create cube file from Moldenfile")
-    cubefile = multiwfn_run(mfile, option='density', grid=grid)
+    cubefile = multiwfn_run(mfile, option='density', grid=grid, printlevel=printlevel)
     # Rename cubefile (shortens it)
     new_cubename=str(os.path.splitext(orbfile)[0])+".cube"
     os.rename(cubefile, new_cubename)
@@ -1749,7 +1749,7 @@ def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True):
     return new_cubename
 
 
-def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3):
+def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
     print_line_with_mainheader("diffdens_tool")
     print()
     print("Reference orbital file:", reference_orbfile)
@@ -1808,7 +1808,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3):
             print("Skipping")
         else:
             print("Creating Cubefile from Orbfile:", orbfile)
-            cube_f = create_cubefile_from_orbfile(orbfile, grid=grid)
+            cube_f = create_cubefile_from_orbfile(orbfile, grid=grid, printlevel=printlevel)
             print("Now calculating difference density")
             diff_file = diffdens_of_cubefiles(ref_cubefile, cube_f)
             diff_files.append(diff_file)

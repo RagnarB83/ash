@@ -2374,7 +2374,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
 
     return energy
 
-def make_molden_file_ORCA(GBWfile, orcadir=None):
+def make_molden_file_ORCA(GBWfile, orcadir=None, printlevel=2):
     print_line_with_mainheader("make_molden_file_ORCA")
 
     #Check for ORCA dir

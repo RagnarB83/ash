@@ -18,27 +18,27 @@ import ash.settings_ash
 #TODO: Support settings.ini file?
 
 def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
-                 fragmentfiles=None, fockfile=None, openshell=False):
+                 fragmentfiles=None, fockfile=None, openshell=False, printlevel=2):
     print_line_with_mainheader("multiwfn_run")
 
     multiwfn_citation_string="""\nDon't forget to to cite Multiwfn if you use it in your work:
 Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
 http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     """
-    print(multiwfn_citation_string)
-    print()
-    print("multiwfndir:", multiwfndir)
-    print("Molden file:", moldenfile) #Inputfile is typically a Molden file
-    print("Option:", option)
-    print("Gridsetting:", grid)
-    print("Numcores:", numcores)
+    if printlevel >= 2:
+        print(multiwfn_citation_string)
+        print()
+        print("multiwfndir:", multiwfndir)
+        print("Molden file:", moldenfile) #Inputfile is typically a Molden file
+        print("Option:", option)
+        print("Gridsetting:", grid)
+        print("Numcores:", numcores)
     ############################
     #PREPARING MULTIWFN INPUT
     ############################
     if multiwfndir == None:
         print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
         try:
-            print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
             multiwfndir=ash.settings_ash.settings_dict["multiwfndir"]
         except:
             print(BC.WARNING,"Found no multiwfndir variable in settings_ash module either.",BC.END)
@@ -56,7 +56,8 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     
     #Rename MOLDEN-file. Necessary for some reason. MOLDEN_NAT does not work 
     if moldenfile == "MOLDEN_NAT":
-        print("Renaming MOLDEN_NAT to MOLDEN_NAT.molden")
+        if printlevel >= 2:
+            print("Renaming MOLDEN_NAT to MOLDEN_NAT.molden")
         os.rename(moldenfile, "MOLDEN_NAT.molden")
         moldenfile="MOLDEN_NAT.molden"
 
@@ -108,11 +109,13 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     #TODO: Use logging instead
     input=open("mwfnoptions")
     output=open("multiwfn.out",'w')
-    print(f"Now calling Multiwfn (using {numcores} cores)")
+    if printlevel >= 2:
+        print(f"Now calling Multiwfn (using {numcores} cores)")
     sp.run([multiwfndir+'/Multiwfn', moldenfile,'-nt', str(numcores)], stdin=input, stdout=output)
     input.close()
     output.close()
-    print("Multiwfn is done!")
+    if printlevel >= 2:
+        print("Multiwfn is done!")
     print()
     ############################
     #POST-PROCESSING OUTPUT
