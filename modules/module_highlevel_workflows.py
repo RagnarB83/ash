@@ -2549,7 +2549,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 Do_TGen_fixed_series=True, fixed_tvar=1e-11, Do_Tau3_series=True, Do_Tau7_series=True, Do_EP_series=True,
                 tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
                 separate_MP2_nat_initial_orbitals=True,
-                DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_CFour=False, DoCAS=False,
+                DoHF=True,DoMP2=True, DoCC=True, DoCC_CCSD=True, DoCC_CCSDT=True, DoCC_MRCC=False, DoCC_BCCD=False, DoCC_CFour=False, DoCAS=False,
                 active_space_for_each=None,
                 DoCC_DFTorbs=True, KS_functionals=['BP86','BHLYP'], Do_OOCC=True, Do_OOMP2=True,
                 maxcorememory=10000, numcores=1, ice_ci_maxiter=30, ice_etol=1e-6,
@@ -2844,14 +2844,16 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             
             result_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd)
             ccsd.cleanup()
-            result_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd)
-            bccd.cleanup()
+            if DoCC_BCCD is True:
+                result_BCCD = ash.Singlepoint_reaction(reaction=reaction, theory=bccd)
+                bccd.cleanup()
+                results_cc['BCCD'] = result_BCCD.reaction_energy
             #result_pCCSD1a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_1a)
             #pccsd_1a.cleanup()
             #result_pCCSD2a = ash.Singlepoint_reaction(reaction=reaction, theory=pccsd_2a)
             #pccsd_2a.cleanup()
             results_cc['CCSD'] = result_CCSD.reaction_energy
-            results_cc['BCCD'] = result_BCCD.reaction_energy
+
             
             if Do_OOCC is True:
                 ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCD', save_output_with_label=True)
