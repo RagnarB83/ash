@@ -13,7 +13,8 @@ MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z',
 #MRCC Theory object.
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
-                mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label=None):
+                mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label=None,
+                keep_orientation=True):
 
         self.theorynamelabel="MRCC"
         self.theorytype="QM"
@@ -50,7 +51,11 @@ class MRCCTheory:
 
         #Parallelization strategy: 'OMP', 'OMP-and-MKL' or 'MPI'
         self.parallelization=parallelization
+        self.keep_orientation=keep_orientation
 
+        print("Warning: keep_orientation options is on! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
+        print("This is necessary for gradient calculations and also is you want the density for the original structure")
+        print("Do keep_orientation=False if you want MRCC to use symmetry and its own standard orientation")
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -97,13 +102,13 @@ class MRCCTheory:
         #Note: for gradient and QM/MM it is best to keep_orientation=True in write_mrcc_input
 
         if Grad==True:
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=True)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
 
         else:
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
