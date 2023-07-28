@@ -510,6 +510,10 @@ end"""
                 print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
                 ashexit()
 
+            if self.printlevel >= 1:
+                print(f"ORCA converged in {numiterations} iterations")
+
+
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
         # using this theory object
         #TODO: Possibly use different flag for this???
@@ -549,9 +553,6 @@ end"""
 
         #Save path to last GBW-file (used if ASH changes directories, e.g. goes from NumFreq)
         self.path_to_last_gbwfile_used=f"{os.getcwd()}/{self.filename}.gbw"
-
-            if self.printlevel >= 1:
-                print(f"ORCA converged in {numiterations} iterations")
 
         #Print population analysis in each run if requested
         if self.print_population_analysis is True:
