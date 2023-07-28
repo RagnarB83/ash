@@ -64,7 +64,7 @@ from ash.functions.functions_elstructure import read_cube, write_cube_diff, diff
 
 #multiwfn interface
 import ash.interfaces.interface_multiwfn
-from ash.interfaces.interface_multiwfn import multiwfn_run
+from ash.interfaces.interface_multiwfn import multiwfn_run, convert_MRCC_Molden_file
 # Spinprojection
 from ash.modules.module_spinprojection import SpinProjectionTheory
 #DualTheory

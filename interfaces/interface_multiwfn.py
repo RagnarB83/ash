@@ -278,7 +278,24 @@ def read_fchkfile(file):
 
     pass
 
-
+#Function to create a correct correlated WF Molden file from a MRCC Molden file, 
+def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, printlevel=2):
+    print("convert_MRCC_Molden_file")
+    if mrccoutputfile == None:
+        print("MRCC outputfile should also be provided")
+        ashexit()
+    core_electrons = int(pygrep("Number of core electrons:",mrccoutputfile)[-1])
+    print("Core electrons found in outputfile:", core_electrons)
+    frozen_orbs = int(core_electrons/2)
+    print("Frozen orbitals:", frozen_orbs)
+    #Rename MRCC Molden file to mrcc.molden
+    shutil.copy(moldenfile, "mrcc.molden")
+    #Write Multiwfn input. Will new Moldenfile based on correlated density
+    write_multiwfn_input_option(option="mrcc-density", grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile, printlevel=printlevel)
+    print("Now calling Multiwfn to process the MRCC, Molden and CCDENSITIES files")
+    with open("mwfnoptions") as input:
+        sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
+    print("Multiwfn is done")
 
 
 #  0 Show molecular structure and view orbitals

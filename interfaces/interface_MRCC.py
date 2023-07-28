@@ -274,3 +274,4 @@ def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None,
         print("High-level MRCC correction:", delta_corr, "au")
     print_time_rel(init_time, modulename='run_MRCC_HLC_correction', moduleindex=2)
     return delta_corr
+
