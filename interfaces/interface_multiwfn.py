@@ -281,6 +281,20 @@ def read_fchkfile(file):
 #Function to create a correct correlated WF Molden file from a MRCC Molden file, 
 def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, printlevel=2):
     print("convert_MRCC_Molden_file")
+
+    if multiwfndir == None:
+        print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
+        try:
+            multiwfndir=ash.settings_ash.settings_dict["multiwfndir"]
+        except:
+            print(BC.WARNING,"Found no multiwfndir variable in settings_ash module either.",BC.END)
+            try:
+                multiwfndir = os.path.dirname(shutil.which('Multiwfn'))
+                print(BC.OKGREEN,"Found Multiwfn in path. Setting multiwfndir to:", multiwfndir, BC.END)
+            except:
+                print("Found no Multiwfn executable in path. Exiting... ")
+                ashexit()
+
     if mrccoutputfile == None:
         print("MRCC outputfile should also be provided")
         ashexit()
@@ -296,6 +310,8 @@ def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfi
     with open("mwfnoptions") as input:
         sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
     print("Multiwfn is done")
+    print("Created new Molden file: mrccnew.molden")
+    print("This file contains the natural orbitals of the correlated density from MRCC")
 
 
 #  0 Show molecular structure and view orbitals
