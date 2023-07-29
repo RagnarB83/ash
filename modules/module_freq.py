@@ -722,8 +722,8 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
         dictionary with thermochemistry properties
     """
     blankline()
-    print("Thermochemistry via rigid-rotor harmonic oscillator approximation")
-    print("Vibrational frequencies (cm**-1):", vfreq)
+    print_line_with_mainheader("Thermochemistry via rigid-rotor harmonic oscillator approximation")
+    print("")
     if len(atoms) == 1:
         print("System is an atom.")
         moltype="atom"
@@ -753,6 +753,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     #ROTATIONAL PART
     ###################
     if moltype != "atom":
+        print("\nDoing rotatational analysis:")
         # Moments of inertia (amu A^2 ), eigenvalues
         center = get_center(elems,coords)
         rinertia = list(inertia(elems,coords,center))
@@ -797,6 +798,8 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     #VIBRATIONAL PART
     ###################
     if moltype != "atom":
+        print("\nDoing vibrational analysis:")
+        print("Vibrational frequencies (cm**-1):", vfreq)
         freqs=[]
         vibtemps=[]
         for mode in range(0, 3 * len(atoms)):
