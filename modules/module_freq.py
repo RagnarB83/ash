@@ -52,6 +52,11 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         fragment.hessian=hessian
         write_hessian(hessian,hessfile="Hessian")
 
+        #Create dummy-ORCA file with frequencies and normal modes
+        printdummyORCAfile(fragment.elems, fragment.coords, frequencies, evectors, nmodes, "orcahessfile.hess")
+        print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
+        print("Can be used for visualization")
+
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
         print_time_rel(module_init_time, modulename='AnFreq', moduleindex=1)
         
@@ -471,21 +476,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     frequencies, nmodes, evectors = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
     
-    #exit()
     #Evectors: eigenvectors of the mass-weighed Hessian
     #Normal modes: unweighted 
 
-    #Clean up the complex frequencies before using further
-    #frequencies = clean_frequencies(frequencies)
-
-    #Print out normal mode output. Like in Chemshell or ORCA
+    #TODO: Print out normal mode output. Like in Chemshell or ORCA ??
     blankline()
-    print("Normal modes:")
-    #TODO: Eigenvectors print here.
-    #TODO: or perhaps elemental normal mode composition factors
-    print("Eigenvectors to be printed here")
-    blankline()
-
 
     #Print out Freq output. Maybe print normal mode compositions here instead???
     printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
@@ -560,8 +555,8 @@ def get_partial_matrix(matrix,hessatoms):
 
 
 #Diagonalize Hessian from input Hessian, masses and element-strings
-def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum=None):
-    print("Diagonalizing Hessian")
+def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum=None, LargeImagFreqThreshold=-100):
+    print("\nDiagonalizing Hessian")
     numatoms=len(elems)
     atomlist = []
     for i, j in enumerate(elems):
@@ -571,7 +566,6 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
     if projection is True:
         print("Projection of out rotational and translational modes active!")
         vfreqs,evectors,nmodes = project_rot_and_trans(coords,masses,hessian)
-        print("1 vfreqs:", vfreqs)
 
         #Adding TRmodes zeros to vfreqs list
         for i in range(0,TRmodenum):
@@ -581,10 +575,9 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
             evectors = np.insert(evectors,0,[0.0]*evectors.shape[1],axis=0)
             nmodes = np.insert(nmodes,0,[0.0]*nmodes.shape[1],axis=0)
 
-        print("1 vfreqs:", vfreqs)
         return vfreqs,nmodes,evectors
     else:
-        print("No projection of rotational and translational modes active!")
+        print("No projection of rotational and translational modes will be done!")
         # Massweight Hessian
         mwhessian, massmatrix = massweight(hessian, masses, numatoms)
 
@@ -592,11 +585,45 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
         evalues, evectors = np.linalg.eigh(mwhessian)
         evectors = np.transpose(evectors)
 
+        # Unweight eigenvectors to get normal modes
+        nmodes = np.dot(evectors, massmatrix)
+
         # Calculate frequencies from eigenvalues
         vfreqs = calcfreq(evalues)
 
-        # Unweight eigenvectors to get normal modes
-        nmodes = np.dot(evectors, massmatrix)
+        #Clean up the complex frequencies before using further
+        vfreqs = clean_frequencies(vfreqs)
+
+        print("Calculated frequencies:", vfreqs)
+        #NOTE: Since no projection the first freqs and modes are either TRmodes or imaginary SP modes (unknown)
+        #How to deal with this properly
+        #For now: let's assume large imaginary freqs are proper modes and other small imag/pos modes are TRmodes.
+        #TRmodes are not set to zero though
+        print("Identifying TRmodes and SPmodes")
+        TRmodes=[]
+        SPmodes=[]
+        for i,f in enumerate(vfreqs):
+            if f < 0.0:
+                if f < LargeImagFreqThreshold:
+                    print("High negative freq found (< -100). Assumed to be SP-mode.")
+                    SPmodes.append(i)
+                else:
+                    TRmodes.append(i)
+            else:
+                if len(TRmodes) < TRmodenum:
+                    print("Not enough TRmodes found. Adding mode to TRmodes")
+                    TRmodes.append(i)
+        
+        print("TRmodes:", TRmodes)
+        print("SPmodes:", SPmodes)
+        #Now reordering freqs, and evectors
+        #First TRmodes, then SPmodes then rest
+        print("Reordering modes so that TRmodes come first, then SP modes, then rest")
+        neworder = TRmodes + SPmodes + listdiff(range(len(vfreqs)),TRmodes+SPmodes)
+        vfreqs = [vfreqs[i] for i in neworder]
+        evectors = evectors[neworder]
+        nmodes = nmodes[neworder]
+
         return vfreqs,nmodes,evectors
 
 
@@ -696,6 +723,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     """
     blankline()
     print("Thermochemistry via rigid-rotor harmonic oscillator approximation")
+    print("Vibrational frequencies (cm**-1):", vfreq)
     if len(atoms) == 1:
         print("System is an atom.")
         moltype="atom"
@@ -773,8 +801,8 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
         vibtemps=[]
         for mode in range(0, 3 * len(atoms)):
             if mode < TRmodenum:
+                print(f"skipping TR mode ({mode}) with freq:", clean_number(vfreq[mode]) )
                 continue
-                #print("skipping TR mode with freq:", clean_number(vfreq[mode]) )
             else:
                 vib = clean_number(vfreq[mode])
                 if np.iscomplex(vib):
@@ -1957,7 +1985,12 @@ def get_relevant_part_of_complex(numb):
         return numb.imag*-1
 
 def clean_frequencies(freqs):
-    return [get_relevant_part_of_complex(f) for f in freqs]
+    clean=[]
+    for f in freqs:
+        bla = get_relevant_part_of_complex(f)
+        clean.append(bla)
+    return clean
+    #[get_relevant_part_of_complex(f) for f in freqs]
 
 
 
