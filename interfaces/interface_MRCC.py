@@ -53,7 +53,7 @@ class MRCCTheory:
         self.parallelization=parallelization
         self.keep_orientation=keep_orientation
 
-        print("Warning: keep_orientation options is on! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
+        print("Warning: keep_orientation options is on (by default)! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
         print("This is necessary for gradient calculations and also is you want the density for the original structure")
         print("Do keep_orientation=False if you want MRCC to use symmetry and its own standard orientation")
     #Set numcores method

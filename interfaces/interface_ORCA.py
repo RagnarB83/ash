@@ -501,6 +501,11 @@ end"""
         if self.printlevel >= 1:
             print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
+        #Check if finished. Grab energy and gradient
+        outfile=self.filename+'.out'
+        engradfile=self.filename+'.engrad'
+        pcgradfile=self.filename+'.pcgrad'
+
         if self.ignore_ORCA_error is False:
             ORCAfinished,numiterations = checkORCAfinished(outfile)
             #Check if ORCA finished or not. Exiting if so
@@ -529,13 +534,6 @@ end"""
             if self.moreadfile_always == False:
                 print("Now turning moreadfile option off.")
                 self.moreadfile=None
-
-
-
-        #Check if finished. Grab energy and gradient
-        outfile=self.filename+'.out'
-        engradfile=self.filename+'.engrad'
-        pcgradfile=self.filename+'.pcgrad'
 
         #Optional save ORCA output with filename according to label
         if self.save_output_with_label is True:
@@ -1419,7 +1417,6 @@ def Hessgrab(hessfile):
                 hesstake=False
                 continue
             if hesstake==True and len(line.split()) == 1 and grabsize==True:
-                print("x1 line:", line)
                 grabsize=False
                 hessdim=int(line.split()[0])
 
@@ -1434,7 +1431,6 @@ def Hessgrab(hessfile):
                 continue
                 #Headerline
             if hesstake==True and len(line.split()) == 6:
-                print("x4 line:", line)
                 # Hessianline
                 for i in range(0, orcacoldim):
                     hessarray2d[j, i + shiftpar] = line.split()[i + 1]
@@ -1445,7 +1441,6 @@ def Hessgrab(hessfile):
                     if hessdim - shiftpar < orcacoldim:
                         lastchunk = True
             if '$hessian' in line:
-                print("hesstake set to true")
                 hesstake = True
                 grabsize = True
         return hessarray2d
@@ -2657,3 +2652,58 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
     print(*betalist, sep=' ')
 
     return alphalist, betalist
+
+
+#Parse ORCA json file
+#Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices
+#densities etc.
+def read_ORCA_json_file(file, orcadir=None, Hmatrix=False,SMatrix=False,TMatrix=False):
+    # Parsing of files
+    import json
+
+    orcadir = check_ORCA_location(orcadir)
+    orcafile_basename = file.split('.')[0]
+
+    print(f"Creating {orcafile_basename}json.conf file")
+    confstring="""{
+"MOCoefficients": true,
+"Basisset": true,
+"H": false,
+"S": false,
+"T": false,
+"Densities": ["all"],
+"JSONFormats": ["json", "bson"]
+}
+"""
+    with open(f"{orcafile_basename}.json.conf", "w") as conffile:
+        conffile.write(confstring)
+
+    print("Calling orca_2json to get JSON file:")
+    sp.call([orcadir+'/orca_2json', orcafile_basename, '-format', '-json'])
+
+    print(f"Created file: {orcafile_basename}.json")
+    print("Opening file")
+    print()
+    with open(f"{orcafile_basename}.json") as f:
+        data = json.load(f)
+    print("Looping over dictionary")
+    for i in data["Molecule"]:
+        print(i)
+
+    print("ORCA Header:", data["ORCA Header"])
+    #print("Molecule:", data["Molecule"])
+    #Molecule
+    print("Molecule-Atoms:", data["Molecule"]["Atoms"])
+    print("Molecule-BaseName:", data["Molecule"]["BaseName"])
+    print("Molecule-Charge:", data["Molecule"]["Charge"])
+    print("Molecule-Multiplicity:", data["Molecule"]["Multiplicity"])
+    print("Molecule-CoordinateUnits:", data["Molecule"]["CoordinateUnits"])
+    print("Molecule-HFTyp:", data["Molecule"]["HFTyp"])
+    print()
+    #print("Molecule-Densities:", data["Molecule"]["Densities"])
+    SCF_density = data["Molecule"]["Densities"]["scfp"]
+    #print("Molecule-H-Matrix:", data["Molecule"]["H-Matrix"])
+    #print("Molecule-S-Matrix:", data["Molecule"]["S-Matrix"])
+    #print("Molecule-T-Matrix:", data["Molecule"]["T-Matrix"])
+    #print("Molecule-MolecularOrbitals:", data["Molecule"]["MolecularOrbitals"])
+

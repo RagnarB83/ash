@@ -104,7 +104,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Hessatoms list is allatoms (if hessatoms list not provided)
     #If hessatoms provided we do a partial Hessian
     allatoms=list(range(0,numatoms))
+
     if hessatoms is None:
+        print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
         hessatoms=allatoms
         projection=True
     else:
@@ -468,12 +470,13 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Masses used:", hessmasses)
 
     frequencies, nmodes, evectors = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
-
+    
+    #exit()
     #Evectors: eigenvectors of the mass-weighed Hessian
     #Normal modes: unweighted 
 
     #Clean up the complex frequencies before using further
-    frequencies = clean_frequencies(frequencies)
+    #frequencies = clean_frequencies(frequencies)
 
     #Print out normal mode output. Like in Chemshell or ORCA
     blankline()
@@ -568,6 +571,7 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
     if projection is True:
         print("Projection of out rotational and translational modes active!")
         vfreqs,evectors,nmodes = project_rot_and_trans(coords,masses,hessian)
+        print("1 vfreqs:", vfreqs)
 
         #Adding TRmodes zeros to vfreqs list
         for i in range(0,TRmodenum):
@@ -577,6 +581,7 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
             evectors = np.insert(evectors,0,[0.0]*evectors.shape[1],axis=0)
             nmodes = np.insert(nmodes,0,[0.0]*nmodes.shape[1],axis=0)
 
+        print("1 vfreqs:", vfreqs)
         return vfreqs,nmodes,evectors
     else:
         print("No projection of rotational and translational modes active!")
@@ -1864,11 +1869,11 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
     #Checking if rinertia contains an almost zero-value
     if any([abs(i) < threshold for i in rinertia]) is True:
         #print("Small value detected: ", rinertia)
-        #print("Molecule is linear")
+        print("Molecule is linear")
         return True
     else:
         #print("nothing detected")
-        #print("Molecule must be non-linear")
+        print("Molecule is non-linear")
         return False
 
 
