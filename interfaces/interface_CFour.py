@@ -256,7 +256,7 @@ class CFourTheory:
             with open("pcharges", "w") as pfile:
                 pfile.write(f"{len(MMcharges)}\n")
                 for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
-                    pfile.write(f"{mmcoord[0]} {mmcoord[1]} {mmcoord[2]} {mmcharge}\n")
+                    pfile.write(f"{ash.constants.ang2bohr*mmcoord[0]} {ash.constants.ang2bohr*mmcoord[1]} {ash.constants.ang2bohr*mmcoord[2]} {mmcharge}\n")
 
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in CFour
