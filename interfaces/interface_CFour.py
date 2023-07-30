@@ -252,6 +252,12 @@ class CFourTheory:
             print("Warning: PC=True. FIXGEOM turned on")
             self.FIXGEOM='ON'
 
+            #Create pcharge file
+            with open("pcharge", "w") as pfile:
+                pfile.write(f"{len(MMcharges)}\n")
+                for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
+                    pfile.write(f"{mmcoord[0]} {mmcoord[1]} {mmcoord[2]} {mmcharge}\n")
+
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in CFour
         if Hessian is True:
