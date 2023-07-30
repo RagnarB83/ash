@@ -386,8 +386,10 @@ class CFourTheory:
         #ENERGY JOB
         else:
             if self.propoption != 'OFF':
-            print("Warning: density requested FIXGEOM turned on.")
-            self.FIXGEOM='ON'
+                print("Warning: density requested FIXGEOM turned on.")
+                self.FIXGEOM='ON'
+            else:
+                self.FIXGEOM='OFF'
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
