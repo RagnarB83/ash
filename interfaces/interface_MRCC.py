@@ -306,16 +306,9 @@ def grab_MRCC_pointcharge_gradient(file,charges):
     num_charges=len(charges)
     pc_grad=np.zeros((num_charges,3))
     grab=False
-    grab2=False
     pccount=0
     with open(file) as f:
         for line in f:
-            if grab2 is True:
-                pc_self_energy=float(line.split()[-1])
-                grab2=False
-            if ' Self energy of the point charges [AU]':
-                grab2=True
-
             if grab is True:
                 if len(line.split()) < 3:
                     grab=False
@@ -340,6 +333,6 @@ def grab_MRCC_PC_self_energy(file):
             if grab is True:
                 pc_self_energy=float(line.split()[-1])
                 grab=False
-            if ' Self energy of the point charges [AU]':
+            if 'Self energy of the point charges [AU]' in line:
                 grab=True
     return pc_self_energy
