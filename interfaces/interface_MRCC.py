@@ -150,10 +150,9 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
-def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PCcharges=None):
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None):
     print(PC_coords)
-    print(PCcharges)
-    exit()
+    print(PC_charges)
     with open("MINP", 'w') as inpfile:
         inpfile.write(mrccinput + '\n')
         inpfile.write(f'ccsdthreads={numcores}\n')
@@ -189,8 +188,8 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
             inpfile.write('pointcharges\n')
             #Write PC charges and coords if given
             if PC_coords != None:
-                inpfile.write(f'{len(PCcharges)}\n')
-                for charge,coord in zip(PCcharges,PC_coords):
+                inpfile.write(f'{len(PC_charges)}\n')
+                for charge,coord in zip(PC_charges,PC_coords):
                     inpfile.write(f'{coord[0]} {coord[1]} {coord[2]} {charge}\n')
             #Else write 0
             else:
