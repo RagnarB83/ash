@@ -108,7 +108,8 @@ class MRCCTheory:
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
 
-            #Pointchargegradient
+            #Pointcharge-gradient
+            self.pcgradient = grab_MRCC_pointcharge_gradient("mrcc_job.dat",MMcharges)
 
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation,
@@ -122,7 +123,10 @@ class MRCCTheory:
             print("Single-point MRCC energy:", self.energy)
             print("MRCC gradient:", self.gradient)
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
-            return self.energy, self.gradient
+            if PC is True:
+                return self.energy, self.gradient, self.pcgradient
+            else:
+                return self.energy, self.gradient
         else:
             print("Single-point MRCC energy:", self.energy)
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
@@ -151,8 +155,6 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
 def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None):
-    print(PC_coords)
-    print(PC_charges)
     with open("MINP", 'w') as inpfile:
         inpfile.write(mrccinput + '\n')
         inpfile.write(f'ccsdthreads={numcores}\n')
@@ -293,3 +295,27 @@ def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None,
     print_time_rel(init_time, modulename='run_MRCC_HLC_correction', moduleindex=2)
     return delta_corr
 
+
+#Get MRCC pointcharge gradient via the electric field on pointcharges
+def grab_MRCC_pointcharge_gradient(file,charges):
+    num_charges=len(charges)
+    pc_grad=np.zeros((num_charges,3))
+    grab=False
+    pccount=0
+    with open(file) as f:
+        for line in f:
+            if grab is True:
+                if len(line.split()) < 3:
+                    grab=False
+                if 'Magnitude of dipole mome' in line:
+                    grab=False
+                if len(line.split()) == 3:
+                    #pcgradient is  -F = -q*E
+                    charge = charges[pccount]
+                    pc_grad[pccount,0] = -1*charge*float(line.split()[0])
+                    pc_grad[pccount,1] = -1*charge*float(line.split()[1])
+                    pc_grad[pccount,2] = -1*charge*float(line.split()[2])   
+                    pccount+=1
+            if ' Electric field at MM atoms' in line:
+                grab=True
+    return pc_grad
