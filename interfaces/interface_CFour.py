@@ -385,6 +385,9 @@ class CFourTheory:
             self.S2=self.cfour_grab_spinexpect()
         #ENERGY JOB
         else:
+            if self.propoption != 'OFF':
+            print("Warning: density requested FIXGEOM turned on.")
+            self.FIXGEOM='ON'
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
