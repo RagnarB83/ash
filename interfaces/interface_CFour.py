@@ -191,6 +191,24 @@ class CFourTheory:
                 if '                            Molecular gradient' in line:
                     grab=True
         return gradient
+    def cfour_grabPCgradient(self,file,numpcs):
+        pccount=0
+        grab=False
+        pcgradient=np.zeros((numpcs,3))
+        with open(file) as f:
+            for line in f:
+                if '  Molecular gradient norm' in line:
+                    grab = False
+                if grab is True:
+                    if 'XP' in line:
+                            pcgradient[pccount,0] = float(line.split()[-3])
+                            pcgradient[pccount,1] = float(line.split()[-2])
+                            pcgradient[pccount,2] = float(line.split()[-1])
+                            pccount+=1
+                if '                            Molecular gradient' in line:
+                    grab=True
+        return pcgradient
+    
     def cfour_grabhessian(self,numatoms,hessfile="FCMFINAL"):
         hessdim=3*numatoms
         hessian=np.zeros((hessdim,hessdim))
@@ -259,7 +277,7 @@ class CFourTheory:
                     pfile.write(f"{ash.constants.ang2bohr*mmcoord[0]} {ash.constants.ang2bohr*mmcoord[1]} {ash.constants.ang2bohr*mmcoord[2]} {mmcharge}\n")
 
         #Grab energy and gradient
-        #TODO: No qm/MM yet. need to check if possible in CFour
+        #HESSIAN JOB
         if Hessian is True:
             print("CFour Hessian calculation on!")
             print("Warning: Hessian=True FIXGEOM turned on.")
@@ -288,7 +306,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.energy=self.cfour_grabenergy()
             print("Reading CFour Hessian from file")
             self.hessian = self.cfour_grabhessian(len(qm_elems),hessfile="FCMFINAL")
-
+        #ENERGY+GRADIENT JOB
         elif Grad==True:
             print("Warning: Grad=True. FIXGEOM turned on.")
             self.FIXGEOM='ON'
@@ -318,6 +336,11 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
             self.gradient=self.cfour_grabgradient(self.filename+'.out',len(qm_elems))
+            #PCgradient
+            if PC is True:
+                self.pcgradient = self.cfour_grabPCgradient(self.filename+'.out',len(MMcharges))
+
+        #DIAGONAL BORN-OPPENHEIMER JOB
         elif DBOC is True:
             if self.propoption != 'OFF':
                 print("Warning: Cfour property keyword can not be active when doing DBOC calculation. Turning off")
@@ -338,7 +361,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
-
+        #ENERGY JOB
         else:
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
@@ -365,7 +388,10 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             print("Single-point CFour energy:", self.energy)
             print("Single-point CFour gradient:", self.gradient)
             print_time_rel(module_init_time, modulename='CFour run', moduleindex=2)
-            return self.energy, self.gradient
+            if PC is True:
+                return self.energy, self.gradient, self.pcgradient
+            else:
+                return self.energy, self.gradient
         else:
             print("Single-point CFour energy:", self.energy)
             print_time_rel(module_init_time, modulename='CFour run', moduleindex=2)
