@@ -122,6 +122,12 @@ class MRCCTheory:
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
+            #PC self energy
+            if PC == True:
+                pc_self_energy = grab_MRCC_PC_self_energy("mrcc_job.dat")
+                print("PC self-energy:", pc_self_energy)
+                self.energy = self.energy - pc_self_energy
+
         #TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
         if Grad == True:
@@ -176,12 +182,15 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
 
         #If Grad true set density to first-order. Gives properties and gradient
         if Grad is True:
+            inpfile.write('dens=2\n')
             #dens=2 for RHF
             if "calc=RHF" in mrccinput:
                 inpfile.write('dens=2\n')
+            #dens=2 needed for pc grad
+            elif PC_charges != None:
+                inpfile.write('dens=2\n')
             else:
                 inpfile.write('dens=1\n')
-        #inpfile.write('dens=2\n')
         inpfile.write('geom=xyz\n')
         inpfile.write('{}\n'.format(len(elems)))
         inpfile.write('\n')
