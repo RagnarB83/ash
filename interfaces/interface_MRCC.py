@@ -108,6 +108,11 @@ class MRCCTheory:
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
 
+            #PC self energy
+            if PC == True:
+                pc_self_energy = grab_MRCC_PC_self_energy("mrcc_job.dat")
+                print("PC self-energy:", pc_self_energy)
+                self.energy = self.energy - pc_self_energy
             #Pointcharge-gradient
             self.pcgradient = grab_MRCC_pointcharge_gradient("mrcc_job.dat",MMcharges)
 
@@ -301,9 +306,16 @@ def grab_MRCC_pointcharge_gradient(file,charges):
     num_charges=len(charges)
     pc_grad=np.zeros((num_charges,3))
     grab=False
+    grab2=False
     pccount=0
     with open(file) as f:
         for line in f:
+            if grab2 is True:
+                pc_self_energy=float(line.split()[-1])
+                grab2=False
+            if ' Self energy of the point charges [AU]':
+                grab2=True
+
             if grab is True:
                 if len(line.split()) < 3:
                     grab=False
@@ -318,4 +330,16 @@ def grab_MRCC_pointcharge_gradient(file,charges):
                     pccount+=1
             if ' Electric field at MM atoms' in line:
                 grab=True
-    return pc_grad
+    return pc_self_energy, pc_grad
+
+#Get MRCC PC self energy
+def grab_MRCC_PC_self_energy(file):
+    grab=False
+    with open(file) as f:
+        for line in f:
+            if grab is True:
+                pc_self_energy=float(line.split()[-1])
+                grab=False
+            if ' Self energy of the point charges [AU]':
+                grab=True
+    return pc_self_energy
