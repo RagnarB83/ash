@@ -323,7 +323,7 @@ def grab_MRCC_pointcharge_gradient(file,charges):
                     pccount+=1
             if ' Electric field at MM atoms' in line:
                 grab=True
-    return pc_self_energy, pc_grad
+    return pc_grad
 
 #Get MRCC PC self energy
 def grab_MRCC_PC_self_energy(file):
