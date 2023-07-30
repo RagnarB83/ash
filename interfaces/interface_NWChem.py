@@ -21,6 +21,8 @@ class NWChemTheory:
                 nwcheminput=None, method='scf', tce=False, numcores=1):
 
         self.theorynamelabel="NWChem"
+        self.theorytype="QM"
+        self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         if nwcheminput is None:
@@ -47,9 +49,6 @@ class NWChemTheory:
                     ashexit()
         else:
             self.nwchemdir = nwchemdir
-        
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
 
         #Printlevel
         self.printlevel=printlevel

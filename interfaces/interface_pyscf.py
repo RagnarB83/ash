@@ -1,6 +1,6 @@
 import time
 
-from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
 import ash.modules.module_coords
 import os
 import sys
@@ -31,12 +31,15 @@ class PySCFTheory:
                   CAS=False, CASSCF=False, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
-                  AVAS=False, DMET_CAS=False, CAS_AO_labels=None, 
+                  AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None):
 
+        self.theorynamelabel="PySCF"
         self.theorytype="QM"
+        self.analytic_hessian=False
+
         print_line_with_mainheader("PySCFTheory initialization")
         #Exit early if no SCF-type
         if scf_type is None:
@@ -104,6 +107,8 @@ class PySCFTheory:
         self.casscf_maxcycle=casscf_maxcycle
 
         #Auto-CAS options
+        self.APC=APC
+        self.apc_max_size=apc_max_size
         self.AVAS=AVAS
         self.DMET_CAS=DMET_CAS
         self.CAS_AO_labels=CAS_AO_labels
@@ -178,12 +183,15 @@ class PySCFTheory:
         self.postSCF=False
         if self.CAS is True:
             self.postSCF=True
-            print("CAS is True. Active_space keyword should be defined unless AVAS or DMET_CAS is True.")
+            print("CAS is True. Active_space keyword should be defined unless AVAS, APC or DMET_CAS is True.")
             if self.AVAS is True or self.DMET_CAS is True: 
                 print("AVAS/DMET_CAS is True")
                 if self.CAS_AO_labels is None:
                     print("AVAS/DMET_CAS requires CAS_AO_labels keyword. Specify as e.g. CAS_AO_labels=['Fe 3d', 'Fe 4d', 'C 2pz']")
                     ashexit()
+            if self.APC is True:
+                print("Ranked-orbital APC method is True")
+                print("APC max size:", self.apc_max_size)
             elif self.cas_nmin != None or self.cas_nmax != None:
                 print("Keyword cas_nmin and cas_nmax provided")
                 print("Will use together with MP2 natural orbitals to choose CAS")
@@ -239,6 +247,8 @@ class PySCFTheory:
         print("CASSCF maxcycles:", self.casscf_maxcycle)
         print("AVAS:", self.AVAS)
         print("DMET_CAS:", self.DMET_CAS)
+        print("APC:", self.APC)
+        print("APC max size:", self.apc_max_size)
         print("CAS_AO_labels (for AVAS/DMET_CAS)", self.CAS_AO_labels)
         print("CAS_nmin:", self.cas_nmin)
         print("CAS_nmax:", self.cas_nmax)
@@ -712,6 +722,57 @@ class PySCFTheory:
             self.loscmf=loscmf
             self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
+    def run_CC(self,mf, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
+        print("\nInside run_CC")
+        import pyscf.cc as pyscf_cc
+        #CCSD-part as RCCSD or UCCSD
+        print()
+        print("Frozen_orbital_indices:", frozen_orbital_indices)
+        print("Total number of frozen orbitals:", len(frozen_orbital_indices))
+        print("Total number of orbitals:", len(mf.mo_occ))
+        print("Number of active orbitals:", len(mf.mo_occ)-len(frozen_orbital_indices))
+        print()
+        print("Now starting CCSD calculation")
+        if self.scf_type == "RHF":
+            cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "ROHF":
+            cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "UHF":
+            cc = pyscf_cc.UCCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients) 
+        elif self.scf_type == "RKS":
+            print("Warning: CCSD on top of RKS determinant")
+            cc = pyscf_cc.CCSD(mf.to_rhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "ROKS":
+            print("Warning: CCSD on top of ROKS determinant")
+            cc = pyscf_cc.CCSD(mf.to_rhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "UKS":
+            print("Warning: CCSD on top of UKS determinant")
+            cc = pyscf_cc.UCCSD(mf.to_uhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
+
+        #Setting CCSD maxcycles (default 200)
+        cc.max_cycle=self.cc_maxcycle
+        cc.verbose=5 #Shows CC iterations with 5
+
+        #Switch to integral-direct CC if user-requested
+        #NOTE: Faster but only possible for small/medium systems
+        cc.direct = self.CC_direct
+        
+        result = cc.run()
+        print("Reference energy:", result.e_hf)
+        #CCSD energy
+        energy = result.e_tot
+        print("CCSD energy:", energy)
+        
+        #(T) part
+        if CCmethod == 'CCSD(T)':
+            print("Calculating triples ")
+            et = cc.ccsd_t()
+            print("Triples energy:", et)
+            energy = result.e_tot + et
+            print("Final CCSD(T) energy:", energy)
+        
+        return energy
+
 
     #General run function to distinguish  possible specialrun (disabled) and mainrun
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -1136,7 +1197,6 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Total num. orbitals:", num_scf_orbitals_alpha)
                 if self.printlevel >1:
-                    print("here")
                     self.mf.canonicalize(self.mf.mo_coeff, self.mf.mo_occ)
                     self.mf.analyze()
                     #self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
@@ -1346,7 +1406,7 @@ class PySCFTheory:
                 #Default MO coefficients None (unless MP2natorbs option below)
                 mo_coefficients=None
 
-                #Optional MP2 natural orbitals
+                #Optional Frozen natural orbital approach via MP2 natural orbitals
                 if self.FNO is True:
                     print("FNO is True")
                     print("MP2 natural orbitals on!")
@@ -1364,45 +1424,10 @@ class PySCFTheory:
                         print("List of frozen virtuals:", virt_frozen)            
                         self.frozen_orbital_indices = self.frozen_orbital_indices + virt_frozen
             
-                #CCSD-part as RCCSD or UCCSD
-                print()
-                print("All frozen_orbital_indices:", self.frozen_orbital_indices)
-                print("Total number of frozen orbitals:", len(self.frozen_orbital_indices))
-                print("Total number of orbitals:", num_scf_orbitals_alpha)
-                print("Number of active orbitals:", num_scf_orbitals_alpha-len(self.frozen_orbital_indices))
-                print()
-                print("Now starting CCSD calculation")
-                if self.scf_type == "RHF":
-                    cc = pyscf_cc.CCSD(self.mf, self.frozen_orbital_indices,mo_coeff=mo_coefficients)
-                elif self.scf_type == "UHF":
-                    cc = pyscf_cc.UCCSD(self.mf,self.frozen_orbital_indices,mo_coeff=mo_coefficients)
-                    
-                elif self.scf_type == "RKS":
-                    print("Warning: CCSD on top of RKS determinant")
-                    cc = pyscf_cc.CCSD(self.mf.to_rhf(), self.frozen_orbital_indices,mo_coeff=mo_coefficients)
-                elif self.scf_type == "UKS":
-                    print("Warning: CCSD on top of UKS determinant")
-                    cc = pyscf_cc.UCCSD(self.mf.to_uhf(),self.frozen_orbital_indices,mo_coeff=mo_coefficients)
-
-                #Setting CCSD maxcycles (default 200)
-                cc.max_cycle=self.cc_maxcycle
-                cc.verbose=5 #Shows CC iterations with 5
-
-                #Switch to integral-direct CC if user-requested
-                #NOTE: Faster but only possible for small/medium systems
-                cc.direct = self.CC_direct
-                
-                result = cc.run()
-                print("Reference energy:", result.e_hf)
-                #CCSD energy
-                self.energy = result.e_tot
-                #(T) part
-                if self.CCmethod == 'CCSD(T)':
-                    print("Calculating triples ")
-                    et = cc.ccsd_t()
-                    print("Triples energy:", et)
-                    self.energy = result.e_tot + et
-                    print("Final CCSD(T) energy:", self.energy)
+                #Calling CC method
+                CC_energy = self.run_CC(self.mf,frozen_orbital_indices=self.frozen_orbital_indices, CCmethod=self.CCmethod, 
+                            CC_direct=self.CC_direct, mo_coefficients=mo_coefficients)
+                self.energy = CC_energy
             
             #####################
             #CAS-CI and CASSCF
@@ -1426,6 +1451,18 @@ class PySCFTheory:
                     print("DMET_CAS automatic CAS option chosen")
                     norb_cas, nel_cas, orbitals = dmet_cas.guess_cas(self.mf, self.mf.make_rdm1(), self.CAS_AO_labels)
                     print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
+                elif self.APC is True:
+                    from pyscf.mcscf import apc
+                    print("APC automatic CAS option chosen")
+                    #entropies = np.random.choice(np.arange(len(self.mf.mo_occ)),len(self.mf.mo_occ),replace=False)
+                    #chooser = apc.Chooser(self.mf.mo_coeff,self.mf.mo_occ,entropies,max_size=self.apc_max_size)
+                    #norb_cas, nel_cas, orbitals, active_idx = chooser.kernel()
+                    myapc = apc.APC(self.mf,max_size=self.apc_max_size)
+                    norb_cas,nel_cas,orbitals = myapc.kernel()
+                    print("norb_cas:", norb_cas)
+                    print("nel_cas:", nel_cas)
+                    print("orbitals:", orbitals)
+                    #print("active_idx:", active_idx)
                 elif self.moreadfile != None:
                     print("moreadfile option was specified")
                     print("This means that SCF-orbitals are ignored and we will read MO coefficients from chkfile:", self.moreadfile)
@@ -1620,3 +1657,49 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
         g[i] += f
     return g
 
+
+#Function to do multireference correction via pyscf-based theories: Dice or Block. 
+# Calculates difference w.r.t CCSD(T)
+def pyscf_MR_correction(fragment, theory=None):
+    print_line_with_mainheader("pyscf_MR_correction")
+    print("Multireference correction via pyscf-based theories: Dice or Block. Calculates difference w.r.t CCSD(T)")
+    #Checking that correct theory is provided
+    if theory == None:
+        print("Theory must be provided")
+        ashexit()
+    elif isinstance(theory,ash.DiceTheory):
+        print("DiceTheory object provided")
+    elif isinstance(theory,ash.BlockTheory):
+        print("BlockTheory object provided")
+    else:
+        print("Unreconigzed theory object provided. Must be DiceTheory or BlockTheory")
+        ashexit()
+        
+    #Now calling Singlepoint on the HLTheory
+    result_HL = ash.Singlepoint(fragment=fragment, theory=theory)
+
+    ###################################
+    #Active space CCSD(T) via pyscf
+    ###################################
+    #1. Use exactly the same MO-coefficients (MP2/CC natural orbitals) as used in Dice/Block calculation
+    #2. Use exactly same active space
+    ###################################
+    full_list = list(range(0,len(theory.pyscftheoryobject.mf.mo_occ))) #From 0 to last virtual orbital
+    print("Size of full orbital list:", len(full_list))
+    act_list=list(range(theory.firstMO_index,theory.lastMO_index+1)) #The range that Dice-SHCI used. Generalize this to DMRGTheory also ?
+    print("Size of active-space list:", len(act_list))
+    print(act_list)
+    frozen_orbital_indices= listdiff(full_list,act_list)
+    print("Number of frozen_orbital_indices:", len(frozen_orbital_indices))
+    print("Indices:", frozen_orbital_indices)
+    mo_coefficients=theory.mch.mo_coeffs  #The MO coefficients used by Dice/Block
+
+    #Calling CC PySCF method direct with our mf object and the orbital indices and MO coeffs we want
+    CC_energy = theory.pyscftheoryobject.run_CC(theory.pyscftheoryobject.mf,frozen_orbital_indices=frozen_orbital_indices, CCmethod='CCSD(T)',
+                                CC_direct=False, mo_coefficients=mo_coefficients)
+
+    print("\nCC_energy:", CC_energy)
+    correction = result_HL.energy - CC_energy
+    print("\nDelta (HighLevel - CCSD(T)) correction:", correction)
+
+    return correction

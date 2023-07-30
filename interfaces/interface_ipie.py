@@ -14,6 +14,8 @@ class ipieTheory:
                 frozencore=False, checkpointfilename='scf.chk', mcscf=False):
 
         self.theorynamelabel="ipie"
+        self.theorytype="QM"
+        self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
         
         try:
@@ -34,9 +36,6 @@ class ipieTheory:
             except:
                 print("Problem with mpirun")
                 ashexit()
-
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
         
         #Printlevel
         self.printlevel=printlevel

@@ -37,7 +37,7 @@ import ash.modules.module_coords
 from ash.modules.module_coords import get_molecules_from_trajectory, eldict_covrad, write_pdbfile, Fragment, read_xyzfile, \
     write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile, split_multimolxyzfile
 from ash.modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_system_CHARMM, getwaterconstraintslist,\
-    QMregionfragexpand, read_xyzfiles, Reaction, define_XH_constraints, simple_get_water_constraints
+    QMregionfragexpand, read_xyzfiles, Reaction, define_XH_constraints, simple_get_water_constraints, print_internal_coordinate_table
 
 # Singlepoint
 import ash.modules.module_singlepoint
@@ -59,12 +59,12 @@ import ash.constants
 
 # functions related to electronic structure
 import ash.functions.functions_elstructure
-from ash.functions.functions_elstructure import read_cube, write_cube_diff, \
+from ash.functions.functions_elstructure import read_cube, write_cube_diff, diffdens_tool, create_cubefile_from_orbfile, diffdens_of_cubefiles,  \
     NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb
 
 #multiwfn interface
 import ash.interfaces.interface_multiwfn
-from ash.interfaces.interface_multiwfn import multiwfn_run
+from ash.interfaces.interface_multiwfn import multiwfn_run, convert_MRCC_Molden_file
 # Spinprojection
 from ash.modules.module_spinprojection import SpinProjectionTheory
 #DualTheory
@@ -76,16 +76,17 @@ from ash.modules.module_surface import calc_surface, calc_surface_fromXYZ, read_
 
 # QMcode interfaces
 from ash.interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, MolecularOrbitalGrab, \
-        run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size, orca_frag_guess, orblocfind, ORCAfinalenergygrab
+        run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size, orca_frag_guess, orblocfind, ORCAfinalenergygrab, \
+        read_ORCA_json_file
 import ash.interfaces.interface_ORCA
 
 from ash.interfaces.interface_Psi4 import Psi4Theory
 from ash.interfaces.interface_dalton import DaltonTheory
-from ash.interfaces.interface_pyscf import PySCFTheory
+from ash.interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction
 from ash.interfaces.interface_ipie import ipieTheory
 from ash.interfaces.interface_dice import DiceTheory
 from ash.interfaces.interface_block import BlockTheory
-from ash.interfaces.interface_MRCC import MRCCTheory
+from ash.interfaces.interface_MRCC import MRCCTheory, run_MRCC_HLC_correction
 from ash.interfaces.interface_QUICK import QUICKTheory
 from ash.interfaces.interface_TeraChem import TeraChemTheory
 from ash.interfaces.interface_sparrow import SparrowTheory
@@ -94,7 +95,7 @@ from ash.interfaces.interface_CP2K import CP2KTheory
 from ash.interfaces.interface_BigDFT import BigDFTTheory
 from ash.interfaces.interface_deMon import deMon2kTheory
 
-from ash.interfaces.interface_CFour import CFourTheory
+from ash.interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction
 from ash.interfaces.interface_xtb import xTBTheory
 from ash.interfaces.interface_PyMBE import PyMBETheory
 

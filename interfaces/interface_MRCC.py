@@ -2,14 +2,23 @@ import subprocess as sp
 import os
 import shutil
 import time
+import numpy as np
 
 import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 
+MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z', 'ADZ':'aug-cc-pVDZ', 'ATZ':'aug-cc-pVTZ', 'AQZ':'aug-cc-pVQZ', 
+            'A5Z':'aug-cc-pV5Z'}
+
 #MRCC Theory object.
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
-                mrccinput=None, numcores=1):
+                mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label=None,
+                keep_orientation=True):
+
+        self.theorynamelabel="MRCC"
+        self.theorytype="QM"
+        self.analytic_hessian=False
 
         print_line_with_mainheader("MRCCTheory initialization")
 
@@ -34,20 +43,24 @@ class MRCCTheory:
             self.mrccdir = mrccdir
 
 
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
-
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
         self.mrccinput=mrccinput
         self.numcores=numcores
+
+        #Parallelization strategy: 'OMP', 'OMP-and-MKL' or 'MPI'
+        self.parallelization=parallelization
+        self.keep_orientation=keep_orientation
+
+        print("Warning: keep_orientation options is on (by default)! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
+        print("This is necessary for gradient calculations and also is you want the density for the original structure")
+        print("Do keep_orientation=False if you want MRCC to use symmetry and its own standard orientation")
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cleanup(self):
         print("MRCC cleanup not yet implemented.")
-    #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -63,13 +76,7 @@ class MRCCTheory:
             print(BC.FAIL, "Error. charge and mult has not been defined for MRCCTheory.run method", BC.END)
             ashexit()
 
-        print("Running MRCC object. Will use threads if OMP_NUM_THREADS and MKL_NUM_THREAD environment variables")
-        #TODO: Need to finish parallelization
-        #NOTE: Should be possible by adding to subprocess call, i.e. export OMP_NUM_THREADS=1 etc.
-        if 'OMP_NUM_THREADS' in os.environ:
-            print("OMP_NUM_TREADS :", os.environ['OMP_NUM_THREADS'])
-        if 'MKL_NUM_THREADS' in os.environ:
-            print("MKL_NUM_TREADS :", os.environ['MKL_NUM_THREADS'])
+        print("Running MRCC object.")
         print("Job label:", label)
         print("Creating inputfile: MINP")
         print("MRCC input:")
@@ -92,22 +99,24 @@ class MRCCTheory:
 
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in MRCC
+        #Note: for gradient and QM/MM it is best to keep_orientation=True in write_mrcc_input
+
         if Grad==True:
-            print("Grad not ready")
-            ashexit()
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
-            run_mrcc(self.mrccdir,self.filename+'.out')
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation)
+            run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
-            self.gradient = grab_gradient_mrcc()
+            self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
+
         else:
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores)
-            run_mrcc(self.mrccdir,self.filename+'.out')
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation)
+            run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
         #TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point MRCC energy:", self.energy)
+            print("MRCC gradient:", self.gradient)
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
             return self.energy, self.gradient
         else:
@@ -115,13 +124,29 @@ class MRCCTheory:
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
             return self.energy
 
-def run_mrcc(mrccdir,filename):
+def run_mrcc(mrccdir,filename,parallelization,numcores):
     with open(filename, 'w') as ofile:
-        process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        #process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
+        if parallelization == 'OMP':
+            print(f"OMP parallelization is active. Using OMP_NUM_THREADS={numcores}")
+            os.environ['OMP_NUM_THREADS'] = str(numcores)
+            os.environ['MKL_NUM_THREADS'] = str(1)
+            process = sp.run([mrccdir + '/dmrcc'], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        elif parallelization == 'OMP-and-MKL':
+            print(f"OMP-and-MKL parallelization is active. Both OMP_NUM_THREADS and MKL_NUM_THREADS set to: {numcores}")
+            os.environ['OMP_NUM_THREADS'] = str(numcores)
+            os.environ['MKL_NUM_THREADS'] = str(numcores)
+            process = sp.run([mrccdir + '/dmrcc'], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        elif parallelization == 'MPI':
+            print(f"MPI parallelization active. Will use {numcores} MPI processes. (OMP and MKL disabled)")
+            os.environ['MKL_NUM_THREADS'] = str(1)
+            os.environ['OMP_NUM_THREADS'] = str(1)
+            process = sp.run([mrccdir + '/dmrcc'], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
-def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores):
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False):
     with open("MINP", 'w') as inpfile:
         inpfile.write(mrccinput + '\n')
         inpfile.write(f'ccsdthreads={numcores}\n')
@@ -129,6 +154,20 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores):
         inpfile.write('unit=angs\n')
         inpfile.write('charge={}\n'.format(charge))
         inpfile.write('mult={}\n'.format(mult))
+
+        #Preserve orientation by this hack
+        if keep_orientation is True:
+            print("keep_orientation is True. Turning off symmetry and doing dummy QM/MM calculation to preserve orientation")
+            inpfile.write('symm=off\n')
+            inpfile.write('qmmm=Amber\n')
+
+        #If Grad true set density to first-order. Gives properties and gradient
+        if Grad is True:
+            #dens=2 for RHF
+            if "calc=RHF" in mrccinput:
+                inpfile.write('dens=2\n')
+            else:
+                inpfile.write('dens=1\n')
         #inpfile.write('dens=2\n')
         inpfile.write('geom=xyz\n')
         inpfile.write('{}\n'.format(len(elems)))
@@ -136,6 +175,12 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores):
         for el,c in zip(elems,coords):
             inpfile.write('{}   {} {} {}\n'.format(el,c[0],c[1],c[2]))
         inpfile.write('\n')
+        #Pointcharges for QM/MM
+
+        #Or dummy PC for orientation
+        if keep_orientation is True:
+            inpfile.write('pointcharges\n')
+            inpfile.write('0\n')
 
 def grab_energy_mrcc(outfile):
     #Option 1. Grabbing all lines containing energy in outputfile. Take last entry.
@@ -147,17 +192,91 @@ def grab_energy_mrcc(outfile):
     return energy
 
 
-def grab_gradient_mrcc(self):
-    pass
-   # atomcount=0
-   # with open('GRD') as grdfile:
-   #     for i,line in enumerate(grdfile):
-   #         if i==0:
-   #             numatoms=int(line.split()[0])
-   #             gradient=np.zeros((numatoms,3))
-   #         if i>numatoms:
-   #             gradient[atomcount,0] = float(line.split()[1])
-   #             gradient[atomcount,1] = float(line.split()[2])
-   #              gradient[atomcount,2] = float(line.split()[3])
-   #             atomcount+=1
-   # return gradient    
+def grab_gradient_mrcc(file,numatoms):
+    grab=False
+    grab2=False
+    atomcount=0
+    gradient=np.zeros((numatoms,3))
+    with open(file) as f:
+        for line in f:
+            if grab is True or grab2 is True:
+                if '*******' in line:
+                    grab=False
+                    grab2=False
+                if len(line.split())==5:
+                    gradient[atomcount,0] = float(line.split()[-3])
+                    gradient[atomcount,1] = float(line.split()[-2])
+                    gradient[atomcount,2] = float(line.split()[-1])
+                    atomcount+=1
+            if ' Molecular gradient [au]:' in line:
+                grab=True
+            if ' Cartesian gradient [au]:' in line:
+                grab2=True
+    return gradient
+
+
+#MRCC HLC correction on fragment. Either provide MRCCTheory object or use default settings
+# Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
+#Either use fragment or provide coords and elems
+def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None, mult=None, theory=None, method='CCSDT', basis='TZ', 
+                            ref='RHF', openshell=False, numcores=1):
+    init_time=time.time()
+    if fragment is None:
+        fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
+    if openshell is True:
+        ref='UHF'
+    print("\nNow running MRCC HLC correction")
+    #MRCCTheory
+    mrccinput_HL=f"""
+    basis={MRCC_basis_dict[basis]}
+    calc={method}
+    scftype={ref}
+    mem=9000MB
+    scftype={ref}
+    ccmaxit=150
+    core=frozen
+    """
+    mrccinput_ccsd_t=f"""
+    basis={MRCC_basis_dict[basis]}
+    calc=CCSD(T)
+    scftype={ref}
+    mem=9000MB
+    scftype={ref}
+    ccmaxit=150
+    core=frozen
+    """
+    if theory is None:
+        #HL calculation
+        theory_HL = MRCCTheory(mrccinput=mrccinput_HL, numcores=numcores, filename='MRCC_HLC_HL')
+        print("Now running MRCC HLC calculation on fragment")
+        result_HL = ash.Singlepoint(theory=theory_HL,fragment=fragment)
+
+        #CCSD(T) calculation
+        theory_ccsd_t = MRCCTheory(mrccinput=mrccinput_ccsd_t, numcores=numcores, filename='MRCC_HLC_ccsd_t')
+        print("Changing method in MRCCTheory object to CCSD(T)")
+        print("Now running MRCC CCSD(T) calculation on fragment")
+        result_ccsd_t = ash.Singlepoint(theory=theory_ccsd_t,fragment=fragment)
+
+        delta_corr = result_HL.energy - result_ccsd_t.energy
+
+        print("High-level MRCC CCSD(T)-> Highlevel correction:", delta_corr, "au")
+    else:
+        #Running HL calculation provided
+        theory.filename='MRCC_HLC_HL.out'
+        print("Now running MRCC HLC calculation on fragment")
+        result_big = ash.Singlepoint(theory=theory,fragment=fragment)
+
+        #Changing method to CCSD(T)
+        for i in theory.mrccinput.split():
+            if 'calc=' in i:
+                theory.mrccinput = theory.mrccinput.replace(i,"calc=CCSD(T)")
+        theory.filename='MRCC_HLC_ccsd_t'
+        print("Changing method in MRCCTheory object to CCSD(T)")
+        print("Now running MRCC CCSD(T) calculation on fragment")
+        result_ccsd_t = ash.Singlepoint(theory=theory,fragment=fragment)
+
+        delta_corr = result_big.energy - result_ccsd_t.energy
+        print("High-level MRCC correction:", delta_corr, "au")
+    print_time_rel(init_time, modulename='run_MRCC_HLC_correction', moduleindex=2)
+    return delta_corr
+

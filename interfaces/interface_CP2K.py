@@ -18,7 +18,9 @@ class CP2KTheory:
                 cell_length=10, functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
                 method='QUICKSTEP', numcores=1, periodic_val=None):
 
+        self.theorytype="QM"
         self.theorynamelabel="CP2K"
+        self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         #EARLY EXITS
@@ -61,8 +63,6 @@ class CP2KTheory:
         else:
             self.cp2kdir = cp2kdir
         
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
 
         #Printlevel
         self.printlevel=printlevel

@@ -21,8 +21,9 @@ class Psi4Theory:
                 pe=False, potfile='', filename='psi4_', label=None,
                 psi4memory=3000, numcores=1, printlevel=2,fchkwrite=False):
 
-        #Indicate that this is a QMtheory
+        self.theorynamelabel="Psi4"
         self.theorytype="QM"
+        self.analytic_hessian=False
         
         #outputname='psi4output.dat'
         #Printlevel

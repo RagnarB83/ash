@@ -49,6 +49,8 @@ class OpenMMTheory:
         timeA = time.time()
         #Indicate that this is a MMtheory
         self.theorytype="MM"
+        self.theorynamelabel="OpenMM"
+        self.analytic_hessian=False
 
         # OPEN MM load
         try:

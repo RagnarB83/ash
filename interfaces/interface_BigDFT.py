@@ -20,7 +20,8 @@ class BigDFTTheory:
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
-
+        self.theorynamelabel="BigDFT"
+        self.analytic_hessian=False
         #Printlevel
         self.printlevel=printlevel
         

@@ -13,6 +13,8 @@ class SparrowTheory:
                 method=None, numcores=1):
 
         self.theorynamelabel="Sparrow"
+        self.theorytype="QM"
+        self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         if method is None:
@@ -28,8 +30,6 @@ class SparrowTheory:
             print("Problem importing sparrow. Did you install correctly? See: https://github.com/qcscine/sparrow")
             print("Try: conda install scine-sparrow-python")
 
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
 
         #Printlevel
         self.printlevel=printlevel

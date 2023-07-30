@@ -27,8 +27,10 @@ class ORCATheory:
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
         print_line_with_mainheader("ORCATheory initialization")
 
-        #Indicate that this is a QMtheory
+
+        self.theorynamelabel="ORCA"
         self.theorytype="QM"
+        self.analytic_hessian=True
 
         #Making sure we have a working ORCA location
         print("Checking for ORCA location")
@@ -499,6 +501,24 @@ end"""
         if self.printlevel >= 1:
             print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
+        #Check if finished. Grab energy and gradient
+        outfile=self.filename+'.out'
+        engradfile=self.filename+'.engrad'
+        pcgradfile=self.filename+'.pcgrad'
+
+        if self.ignore_ORCA_error is False:
+            ORCAfinished,numiterations = checkORCAfinished(outfile)
+            #Check if ORCA finished or not. Exiting if so
+            if ORCAfinished is False:
+                print(BC.FAIL,"Problem with ORCA run", BC.END)
+                print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
+                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
+                ashexit()
+
+            if self.printlevel >= 1:
+                print(f"ORCA converged in {numiterations} iterations")
+
+
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
         # using this theory object
         #TODO: Possibly use different flag for this???
@@ -514,13 +534,6 @@ end"""
             if self.moreadfile_always == False:
                 print("Now turning moreadfile option off.")
                 self.moreadfile=None
-
-
-
-        #Check if finished. Grab energy and gradient
-        outfile=self.filename+'.out'
-        engradfile=self.filename+'.engrad'
-        pcgradfile=self.filename+'.pcgrad'
 
         #Optional save ORCA output with filename according to label
         if self.save_output_with_label is True:
@@ -538,18 +551,6 @@ end"""
 
         #Save path to last GBW-file (used if ASH changes directories, e.g. goes from NumFreq)
         self.path_to_last_gbwfile_used=f"{os.getcwd()}/{self.filename}.gbw"
-
-        if self.ignore_ORCA_error is False:
-            ORCAfinished,numiterations = checkORCAfinished(outfile)
-            #Check if ORCA finished or not. Exiting if so
-            if ORCAfinished is False:
-                print(BC.FAIL,"Problem with ORCA run", BC.END)
-                print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
-                print_time_rel(module_init_time, modulename='ORCA run', moduleindex=2)
-                ashexit()
-
-            if self.printlevel >= 1:
-                print(f"ORCA converged in {numiterations} iterations")
 
         #Print population analysis in each run if requested
         if self.print_population_analysis is True:
@@ -608,11 +609,16 @@ end"""
             #TODO: dispgrad not yet done
             self.grad = self.grad + dispgrad
 
-
+        #Grab Hessian if calculated
+        if Hessian is True:
+            print("Reading Hessian from file:", self.filename+".hess")
+            self.hessian = Hessgrab(self.filename+".hess")
 
         if Grad == True:
             grad =ORCAgradientgrab(engradfile)
             self.grad = self.grad + grad
+            if self.printlevel >= 3:
+                print("ORCA gradient:", self.grad)
             if PC == True:
                 #Print time to calculate ORCA QM-PC gradient
                 if "pc_gradient" in orca_timings:
@@ -1411,24 +1417,20 @@ def Hessgrab(hessfile):
                 hesstake=False
                 continue
             if hesstake==True and len(line.split()) == 1 and grabsize==True:
-                print("x1 line:", line)
                 grabsize=False
                 hessdim=int(line.split()[0])
 
                 hessarray2d=np.zeros((hessdim, hessdim))
 
             if hesstake==True and lastchunk==True:
-                print("x3 line:", line)
                 if len(line.split()) == hessdim - shiftpar +1:
                     for i in range(0,hessdim - shiftpar):
                         hessarray2d[j,i+shiftpar]=line.split()[i+1]
                     j+=1
             elif hesstake==True and len(line.split()) == 5:
-                print("x2 line:", line)
                 continue
                 #Headerline
             if hesstake==True and len(line.split()) == 6:
-                print("x4 line:", line)
                 # Hessianline
                 for i in range(0, orcacoldim):
                     hessarray2d[j, i + shiftpar] = line.split()[i + 1]
@@ -1439,7 +1441,6 @@ def Hessgrab(hessfile):
                     if hessdim - shiftpar < orcacoldim:
                         lastchunk = True
             if '$hessian' in line:
-                print("hesstake set to true")
                 hesstake = True
                 grabsize = True
         return hessarray2d
@@ -2369,7 +2370,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
 
     return energy
 
-def make_molden_file_ORCA(GBWfile, orcadir=None):
+def make_molden_file_ORCA(GBWfile, orcadir=None, printlevel=2):
     print_line_with_mainheader("make_molden_file_ORCA")
 
     #Check for ORCA dir
@@ -2377,12 +2378,13 @@ def make_molden_file_ORCA(GBWfile, orcadir=None):
 
     print("Inputfile:", GBWfile) 
     #GBWfile should be ORCA file. Can be SCF GBW (.gbw) or natural orbital WF file (.nat)
-
+    renamefile=False
     #Renaming file if GBW extension as orca_mkl needs it
     if '.gbw' not in GBWfile:
         newfile=GBWfile+'.gbw'
         print("Making copy of file:", newfile)
         shutil.copy(GBWfile,newfile)
+        renamefile=True
     else:
         newfile=GBWfile
 
@@ -2394,6 +2396,9 @@ def make_molden_file_ORCA(GBWfile, orcadir=None):
     sp.call([orcadir+'/orca_2mkl', GBWfile_noext, '-molden'])
     moldenfile=GBWfile_noext+'.molden.input'
     print("Created molden file:", moldenfile)
+    if renamefile is True:
+        print("Removing copy of file:", newfile)
+        os.remove(newfile)
 
     return moldenfile
 
@@ -2647,3 +2652,58 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
     print(*betalist, sep=' ')
 
     return alphalist, betalist
+
+
+#Parse ORCA json file
+#Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices
+#densities etc.
+def read_ORCA_json_file(file, orcadir=None, Hmatrix=False,SMatrix=False,TMatrix=False):
+    # Parsing of files
+    import json
+
+    orcadir = check_ORCA_location(orcadir)
+    orcafile_basename = file.split('.')[0]
+
+    print(f"Creating {orcafile_basename}json.conf file")
+    confstring="""{
+"MOCoefficients": true,
+"Basisset": true,
+"H": false,
+"S": false,
+"T": false,
+"Densities": ["all"],
+"JSONFormats": ["json", "bson"]
+}
+"""
+    with open(f"{orcafile_basename}.json.conf", "w") as conffile:
+        conffile.write(confstring)
+
+    print("Calling orca_2json to get JSON file:")
+    sp.call([orcadir+'/orca_2json', orcafile_basename, '-format', '-json'])
+
+    print(f"Created file: {orcafile_basename}.json")
+    print("Opening file")
+    print()
+    with open(f"{orcafile_basename}.json") as f:
+        data = json.load(f)
+    print("Looping over dictionary")
+    for i in data["Molecule"]:
+        print(i)
+
+    print("ORCA Header:", data["ORCA Header"])
+    #print("Molecule:", data["Molecule"])
+    #Molecule
+    print("Molecule-Atoms:", data["Molecule"]["Atoms"])
+    print("Molecule-BaseName:", data["Molecule"]["BaseName"])
+    print("Molecule-Charge:", data["Molecule"]["Charge"])
+    print("Molecule-Multiplicity:", data["Molecule"]["Multiplicity"])
+    print("Molecule-CoordinateUnits:", data["Molecule"]["CoordinateUnits"])
+    print("Molecule-HFTyp:", data["Molecule"]["HFTyp"])
+    print()
+    #print("Molecule-Densities:", data["Molecule"]["Densities"])
+    SCF_density = data["Molecule"]["Densities"]["scfp"]
+    #print("Molecule-H-Matrix:", data["Molecule"]["H-Matrix"])
+    #print("Molecule-S-Matrix:", data["Molecule"]["S-Matrix"])
+    #print("Molecule-T-Matrix:", data["Molecule"]["T-Matrix"])
+    #print("Molecule-MolecularOrbitals:", data["Molecule"]["MolecularOrbitals"])
+

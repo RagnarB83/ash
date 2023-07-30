@@ -264,6 +264,8 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
         #Orbital file for ORCATheory, PySCFTheory, DiceTheory or any other using moreadfile
         try:
             theory.moreadfile=reaction.orbital_dictionary[moreadfiles][i]
+            print("Found orbital dictionary in reaction object")
+            print("Using orbital file:", theory.moreadfile)
         except:
             try:
                 theory.moreadfile=moreadfiles[i]
@@ -337,6 +339,14 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
             SO_parts=[d['E_SO'] for d in list_of_componentsdicts]
             delta_SO_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=SO_parts, unit=unit, label='ΔSO')[0]
             finaldict['delta_SO_corr']=delta_SO_corr
+        if 'E_HOCC' in componentsdict:
+            HOCC_parts=[d['E_HOCC'] for d in list_of_componentsdicts]
+            delta_HOCC_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=HOCC_parts, unit=unit, label='ΔHOCC')[0]
+            finaldict['delta_HOCC_corr']=delta_HOCC_corr
+        if 'E_DBOC' in componentsdict:
+            DBOC_parts=[d['E_DBOC'] for d in list_of_componentsdicts]
+            delta_DBOC_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=DBOC_parts, unit=unit, label='ΔDBOC')[0]
+            finaldict['delta_DBOC_corr']=delta_DBOC_corr
         if 'E_corecorr_and_SR' in componentsdict:
             CV_SR_parts=[d['E_corecorr_and_SR'] for d in list_of_componentsdicts]
             delta_CVSR_corr=ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_fragments=reaction.fragments, list_of_energies=CV_SR_parts, unit=unit, label='ΔCV+SR')[0]

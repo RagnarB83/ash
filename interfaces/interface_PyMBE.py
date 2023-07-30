@@ -13,6 +13,10 @@ class PyMBETheory:
     def __init__(self, pymbedir=None, filename='pymbe_', printlevel=2,
                 pymbedict=None,pymbeinput=None, numcores=1):
 
+        self.theorynamelabel="PyMBE"
+        self.theorytype="QM"
+        self.analytic_hessian=False
+
         print_line_with_mainheader("PyMBETheory initialization")
 
         if pymbeinput is None and pymbedict is None:
@@ -55,9 +59,6 @@ class PyMBETheory:
             print("PyMBE requires installation of mpi4py Python library.")
             print("Try e.g. : conda install mpi4py")
             ashexit()
-
-        #Indicate that this is a QMtheory
-        self.theorytype="QM"
 
         #Printlevel
         self.printlevel=printlevel

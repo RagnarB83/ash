@@ -14,46 +14,54 @@ import ash.interfaces.interface_ORCA
 from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
-#Analytical frequencies function
-#Only works for ORCAtheory at the moment
+#Analytical frequencies function. For ORCAtheory and CFourTheory
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=298.15, pressure=1.0, QRRHO_omega_0=100):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
-    if theory.__class__.__name__ == "ORCATheory":
-        print("Requesting analytical Hessian calculation from ORCATheory")
+
+    #Checking for linearity. Determines how many Trans+Rot modes 
+    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+        TRmodenum=5
+    else:
+        TRmodenum=6
+    #Hessian atoms
+    hessatoms=list(range(0,fragment.numatoms))
+    
+    if theory.__class__.__name__ == "ORCATheory" or theory.__class__.__name__ == "CFourTheory":
+        print(f"Requesting analytical Hessian calculation from {theory.theorynamelabel}")
         print("")
         #Check charge/mult
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "AnFreq", theory=theory)
-        #Do single-point ORCA Anfreq job
+        #Do single-point theory run with Hessian=True
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True, numcores=numcores)
-        #Grab Hessian
-        hessian = ash.interfaces.interface_ORCA.Hessgrab(theory.filename+".hess")
-        #Add Hessian to fragment
-        fragment.hessian=hessian
         
-        #TODO: diagonalize it ourselves. Need to finish projection
-        # For now, we grab frequencies from ORCA Hessian file
-        frequencies = ash.interfaces.interface_ORCA.ORCAfrequenciesgrab(theory.filename+".hess")
-        print("Frequencies:", frequencies)
-        hessatoms=list(range(0,fragment.numatoms))
+        #Grab Hessian from theory object
+        print("Getting Hessian from theory object")
+        hessian = theory.hessian
+        #Diagonalize
+        frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
+                                                            TRmodenum=TRmodenum,projection=True)
+        #Print out Freq output. Maybe print normal mode compositions here instead???
+        printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
+        print("\n\n")
+        print("Normal mode composition factors by element")
+        printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms,TRmodenum=TRmodenum)
         thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
 
-        #Write Hessian to file
+        #Add Hessian to fragment and write to file
+        fragment.hessian=hessian
         write_hessian(hessian,hessfile="Hessian")
 
-        #freqoutputdict object. Should contain frequencies, zero-point energy, enthalpycorr, gibbscorr, etc.
-        #freqoutputdict['hessian'] = hessian
-        
-        #TODO: To add once we diagonalize 
-        #freqoutputdict['evectors'] = evectors
-        #freqoutputdict['nmodes'] = nmodes
-        #freqoutputdict['hessatoms'] = hessatoms
+        #Create dummy-ORCA file with frequencies and normal modes
+        printdummyORCAfile(fragment.elems, fragment.coords, frequencies, evectors, nmodes, "orcahessfile.hess")
+        print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
+        print("Can be used for visualization")
 
         print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES END-------------", BC.END)
         print_time_rel(module_init_time, modulename='AnFreq', moduleindex=1)
         
-        result = ASH_Results(label="Anfreq", hessian=None, frequencies=frequencies, 
-            normal_modes=None, thermochemistry=thermodict)        
+        result = ASH_Results(label="Anfreq", hessian=hessian, frequencies=frequencies,
+                             vib_eigenvectors=evectors, normal_modes=nmodes, thermochemistry=thermodict)
         return result
         
     else:
@@ -101,7 +109,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Hessatoms list is allatoms (if hessatoms list not provided)
     #If hessatoms provided we do a partial Hessian
     allatoms=list(range(0,numatoms))
+
     if hessatoms is None:
+        print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
         hessatoms=allatoms
         projection=True
     else:
@@ -465,21 +475,12 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Masses used:", hessmasses)
 
     frequencies, nmodes, evectors = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
-
+    
     #Evectors: eigenvectors of the mass-weighed Hessian
     #Normal modes: unweighted 
 
-    #Clean up the complex frequencies before using further
-    frequencies = clean_frequencies(frequencies)
-
-    #Print out normal mode output. Like in Chemshell or ORCA
+    #TODO: Print out normal mode output. Like in Chemshell or ORCA ??
     blankline()
-    print("Normal modes:")
-    #TODO: Eigenvectors print here.
-    #TODO: or perhaps elemental normal mode composition factors
-    print("Eigenvectors to be printed here")
-    blankline()
-
 
     #Print out Freq output. Maybe print normal mode compositions here instead???
     printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
@@ -531,7 +532,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         frequencies=frequencies, 
         normal_modes=nmodes, thermochemistry=thermodict)        
     return result
-    #return freqoutputdict
+
 
 
 
@@ -554,8 +555,8 @@ def get_partial_matrix(matrix,hessatoms):
 
 
 #Diagonalize Hessian from input Hessian, masses and element-strings
-def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum=None):
-    print("Diagonalizing Hessian")
+def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum=None, LargeImagFreqThreshold=-100):
+    print("\nDiagonalizing Hessian")
     numatoms=len(elems)
     atomlist = []
     for i, j in enumerate(elems):
@@ -576,7 +577,7 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
 
         return vfreqs,nmodes,evectors
     else:
-        print("No projection of rotational and translational modes active!")
+        print("No projection of rotational and translational modes will be done!")
         # Massweight Hessian
         mwhessian, massmatrix = massweight(hessian, masses, numatoms)
 
@@ -584,11 +585,45 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
         evalues, evectors = np.linalg.eigh(mwhessian)
         evectors = np.transpose(evectors)
 
+        # Unweight eigenvectors to get normal modes
+        nmodes = np.dot(evectors, massmatrix)
+
         # Calculate frequencies from eigenvalues
         vfreqs = calcfreq(evalues)
 
-        # Unweight eigenvectors to get normal modes
-        nmodes = np.dot(evectors, massmatrix)
+        #Clean up the complex frequencies before using further
+        vfreqs = clean_frequencies(vfreqs)
+
+        print("Calculated frequencies:", vfreqs)
+        #NOTE: Since no projection the first freqs and modes are either TRmodes or imaginary SP modes (unknown)
+        #How to deal with this properly
+        #For now: let's assume large imaginary freqs are proper modes and other small imag/pos modes are TRmodes.
+        #TRmodes are not set to zero though
+        print("Identifying TRmodes and SPmodes")
+        TRmodes=[]
+        SPmodes=[]
+        for i,f in enumerate(vfreqs):
+            if f < 0.0:
+                if f < LargeImagFreqThreshold:
+                    print("High negative freq found (< -100). Assumed to be SP-mode.")
+                    SPmodes.append(i)
+                else:
+                    TRmodes.append(i)
+            else:
+                if len(TRmodes) < TRmodenum:
+                    print("Not enough TRmodes found. Adding mode to TRmodes")
+                    TRmodes.append(i)
+        
+        print("TRmodes:", TRmodes)
+        print("SPmodes:", SPmodes)
+        #Now reordering freqs, and evectors
+        #First TRmodes, then SPmodes then rest
+        print("Reordering modes so that TRmodes come first, then SP modes, then rest")
+        neworder = TRmodes + SPmodes + listdiff(range(len(vfreqs)),TRmodes+SPmodes)
+        vfreqs = [vfreqs[i] for i in neworder]
+        evectors = evectors[neworder]
+        nmodes = nmodes[neworder]
+
         return vfreqs,nmodes,evectors
 
 
@@ -687,7 +722,8 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
         dictionary with thermochemistry properties
     """
     blankline()
-    print("Thermochemistry via rigid-rotor harmonic oscillator approximation")
+    print_line_with_mainheader("Thermochemistry via rigid-rotor harmonic oscillator approximation")
+    print("")
     if len(atoms) == 1:
         print("System is an atom.")
         moltype="atom"
@@ -717,6 +753,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     #ROTATIONAL PART
     ###################
     if moltype != "atom":
+        print("\nDoing rotatational analysis:")
         # Moments of inertia (amu A^2 ), eigenvalues
         center = get_center(elems,coords)
         rinertia = list(inertia(elems,coords,center))
@@ -761,12 +798,14 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     #VIBRATIONAL PART
     ###################
     if moltype != "atom":
+        print("\nDoing vibrational analysis:")
+        print("Vibrational frequencies (cm**-1):", vfreq)
         freqs=[]
         vibtemps=[]
         for mode in range(0, 3 * len(atoms)):
             if mode < TRmodenum:
+                print(f"skipping TR mode ({mode}) with freq:", clean_number(vfreq[mode]) )
                 continue
-                #print("skipping TR mode with freq:", clean_number(vfreq[mode]) )
             else:
                 vib = clean_number(vfreq[mode])
                 if np.iscomplex(vib):
@@ -1861,11 +1900,11 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
     #Checking if rinertia contains an almost zero-value
     if any([abs(i) < threshold for i in rinertia]) is True:
         #print("Small value detected: ", rinertia)
-        #print("Molecule is linear")
+        print("Molecule is linear")
         return True
     else:
         #print("nothing detected")
-        #print("Molecule must be non-linear")
+        print("Molecule is non-linear")
         return False
 
 
@@ -1949,7 +1988,12 @@ def get_relevant_part_of_complex(numb):
         return numb.imag*-1
 
 def clean_frequencies(freqs):
-    return [get_relevant_part_of_complex(f) for f in freqs]
+    clean=[]
+    for f in freqs:
+        bla = get_relevant_part_of_complex(f)
+        clean.append(bla)
+    return clean
+    #[get_relevant_part_of_complex(f) for f in freqs]
 
 
 
