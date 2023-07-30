@@ -116,7 +116,7 @@ class CFourTheory:
         #Copying basis-file from any dir to current dir 
         elif basisfile != None:
             print(f"Copying basis-file {basisfile} to current directory as GENBAS")
-            shutil.copyfile(ash_basisfile, 'GENBAS')
+            shutil.copyfile(basisfile, 'GENBAS')
         else:
             print("No ASH basis-file provided. Copying GENBAS from CFour directory.")
             try:
