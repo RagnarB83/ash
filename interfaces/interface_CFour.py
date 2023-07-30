@@ -13,7 +13,7 @@ CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
-                 filename='cfourjob', specialbasis=None, ash_basisfile=None, label=None,
+                 filename='cfourjob', specialbasis=None, ash_basisfile=None, basisfile=None, label=None,
                  parallelization='MKL', DBOC=False):
         
         self.theorynamelabel="CFour"
@@ -108,11 +108,15 @@ class CFourTheory:
         else:
             self.cfourdir = cfourdir
 
-        #Copying ASH basis file to dir if requested
+        #Copying ASH basis file from ASH-dir to current dir if requested
         if ash_basisfile != None:
             #ash_basisfile
             print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,ash.settings_ash.ashpath+'/basis-sets/cfour/'))
             shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
+        #Copying basis-file from any dir to current dir 
+        elif basisfile != None:
+            print(f"Copying basis-file {basisfile} to current directory as GENBAS")
+            shutil.copyfile(ash_basisfile, 'GENBAS')
         else:
             print("No ASH basis-file provided. Copying GENBAS from CFour directory.")
             try:
