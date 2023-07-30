@@ -271,7 +271,7 @@ class CFourTheory:
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
                 inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},,EXTERN_POT={self.extern_pot},FIXGEOM={self.FIXGEOM}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
