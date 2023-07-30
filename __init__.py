@@ -60,7 +60,7 @@ import ash.constants
 # functions related to electronic structure
 import ash.functions.functions_elstructure
 from ash.functions.functions_elstructure import read_cube, write_cube_diff, diffdens_tool, create_cubefile_from_orbfile, diffdens_of_cubefiles,  \
-    NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb
+    NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb, make_molden_file
 
 #multiwfn interface
 import ash.interfaces.interface_multiwfn

@@ -941,7 +941,6 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
 
 #From Hess-tool.py: Copied 13 May 2020
 #Print dummy ORCA outputfile using coordinates and normal modes. Used for visualization of modes in Chemcraft
-#TODO: Needs fix for TS mode
 def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile):
     orca_header = """                                 *****************
                                  * O   R   C   A *
