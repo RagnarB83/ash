@@ -1883,12 +1883,21 @@ def diagonalize_dm(D, S):
 
 #Function that creates Molden file from ASH fragment and MO coefficients, occupations and basis set
 #https://www.theochem.ru.nl/molden/molden_format.html
+#NOTE: Not ready. Need to do normalization properly
+#https://github.com/psi4/psi4/issues/504
+#https://github.com/psi4/psi4/issues/60
 def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, label="ASH_orbs", spherical_MOs=True):
     
     print_line_with_mainheader("make_molden_file")
+    from scipy.special import factorial2 as fact2
+
     print()
     print("Will make Molden file from ASH fragment, input MO coefficients and occupations")
     print("Optional input: MO energies and MO occupations")
+
+    print("WARNING: NORMALIZATION IS NOT YET CORRECT")
+    #exit()
+   
     ############
     #Geometry
     ############
@@ -1906,6 +1915,8 @@ Molden file created by ASH
     ###########
     #Basis set
     ###########
+    #TODO. Check
+    shell_to_angmom = {"s":0,"p":1,"d":2}
     gtostring="""[GTO]
 """
     #Looping over each atom
@@ -1916,10 +1927,21 @@ Molden file created by ASH
             coeffs=bf["Coefficients"]
             exponents=bf["Exponents"]
             shell=bf["Shell"]
-            bla=1.0 #TODO
+            angmom = shell_to_angmom[shell]
+            bla=1.0 #TODO: CHECK
             gtostring+=f"{shell}   {len(coeffs)} {bla}\n"
             for exp,coeff in zip(exponents,coeffs):
-                gtostring+=f"       {exp} {coeff}\n"
+                #print("angmom:", angmom)
+                #N = (2**(angmom+3/4)*exp**((angmom/2)+3/4))/(math.pi**(3/4)*(np.sqrt(fact2(2*angmom - 1))))
+                #print("N:"  , N)
+                #exit()
+                N = normalization_ORCA(angmom,exp)
+                print("N:", N)
+                print("coeff:", coeff)
+                print("exp:", exp)
+                coeff_used = coeff*N
+                print("coeff_used:", coeff_used)
+                gtostring+=f"       {exp} {coeff_used}\n"
         gtostring+="\n"
     
     #Applies to ORCA
@@ -1963,3 +1985,14 @@ Molden file created by ASH
         mfile.write(mostring)
     
     print(f"Created Molden file: {label}.molden")
+
+def normalization_ORCA(L,exp):
+    bla ={0:[3,3,1],1:[7,5,1],2:[11,7,9],3:[15,9,225],4:[19,11,11025],5:[23,13,893025]}
+    nvals=bla[L]
+    n1=nvals[0]
+    n2=nvals[1]
+    nf=nvals[2]
+    renorm_orca=math.sqrt(math.sqrt(2**n1*exp**n2/(math.pi**3*nf)))
+
+    return renorm_orca
+    #!Get norm, the norm^4 = 2^n1 * a^n2 / (pi^3 * nf)

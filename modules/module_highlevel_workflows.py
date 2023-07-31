@@ -788,13 +788,11 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             print("Assuming hydrogen atom and skipping calculation")
             E_total = -0.500000
             print("Using hardcoded value: ", E_total)
-            if self.FCI is True:
-                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 
-                        'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_FCIcorrection': 0.0, 'T1energycorr': 0.0,
-                        'E_HOCC':0.0, 'E_DBOC':0.0}
-            else:
-                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 'T1energycorr': 0.0,
-                        'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_HOCC':0.0, 'E_DBOC':0.0}
+
+            #Components
+            E_dict = {'Total_E' : E_total, 'E_CC_CBS': E_total, 'E_SCF_CBS' : E_total, 'E_corrCCSD_CBS': 0.0, 'E_corrCCT_CBS': 0.0, 'T1energycorr' : 0.0,
+            'E_corr_CBS' : 0.0, 'E_SO' : 0.0, 'E_corecorr_and_SR' : 0.0, 'E_HOCC': 0.0, 'E_DBOC': 0.0, 'E_FCIcorrection': 0.0}
+            
             self.energy_components=E_dict
             return E_total
 
@@ -1181,37 +1179,41 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         ############################################################
 
         ############################################################
+        #Full-CI correction (Goodson)
+        ############################################################
+        if self.FCI is True:
+            print("Extrapolating SCF-energy, CCSD-energy and CCSD(T) energy to Full-CI limit by Goodson formula")
+            if self.HOCCcorrection is True:
+                print("Error: FCI=True and HOCCcorrection=True is incompatible")
+                ashexit()
+            #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
+            #NOTE: We need to do separate extrapolation of corrCCSD_CBS and triples_CBS
+            E_CC_CBS = E_SCF_CBS + E_corr_CBS
+            E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
+            print("FCI/CBS energy (Goodson formula):", E_FCI_CBS, "Eh")
+            E_FCIcorrection = E_FCI_CBS-E_CC_CBS
+            #'E_FCIcorrection': E_FCIcorrection
+            print("FCI correction:", E_FCIcorrection, "Eh")
+            print("")
+        else:
+            E_FCIcorrection=0.0
+        ############################################################
         #FINAL RESULT
         ############################################################
         print("")
         print("")
+        print("="*50)
+        print("FINAL RESULTS")
+        print("="*50)
+        E_CC_CBS = E_SCF_CBS + E_corr_CBS
+        print("CCSD(T)/CBS energy (without corrections):", E_CC_CBS, "Eh")
+        E_FINAL = E_CC_CBS + E_corecorr_and_SR + E_SO + E_DBOC + E_HOCC + E_FCIcorrection
+        print("Final CBS energy (with all corrections):", E_CC_CBS, "Eh")
+        #Components
+        E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 'T1energycorr' : T1energycorr,
+            'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_HOCC': E_HOCC, 'E_DBOC': E_DBOC,
+            'E_FCIcorrection': E_FCIcorrection}
 
-        if self.FCI is True:
-            print("Extrapolating SCF-energy, CCSD-energy and CCSD(T) energy to Full-CI limit by Goodson formula")
-            #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
-            #NOTE: We need to do separate extrapolation of corrCCSD_CBS and triples_CBS
-            #CCSD(T)/CBS
-            E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR + E_HOCC + E_DBOC
-            print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
-            #FCI/CBS
-            E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
-            E_FCIcorrection = E_FCI_CBS-E_CC_CBS
-            E_FINAL = E_FCI_CBS
-            E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS': E_FCI_CBS, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'T1energycorr' : T1energycorr,
-                'E_corrCCT_CBS': E_corrCCT_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_FCIcorrection': E_FCIcorrection,
-                'E_HOCC': E_HOCC, 'E_DBOC': E_DBOC}
-            print("FCI correction:", E_FCIcorrection, "Eh")
-            print("FCI/CBS energy :", E_FCI_CBS, "Eh")
-            print("")
-
-        else:
-            E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR + E_HOCC + E_DBOC
-            print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
-            E_FINAL = E_CC_CBS
-            E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 'T1energycorr' : T1energycorr,
-                'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_HOCC': E_HOCC, 'E_DBOC': E_DBOC}
-
-        print("Final energy :", E_FINAL, "Eh")
         print("")
         print("Contributions:")
         print("--------------")
@@ -1220,12 +1222,13 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         print("E_corrCCSD_CBS : ", E_corrCCSD_CBS, "Eh")
         print("E_corrCCT_CBS : ", E_corrCCT_CBS, "Eh")
         print("T1 energy correction : ", T1energycorr, "Eh")
-        print("Spin-orbit coupling : ", E_SO, "Eh")
-        print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
-        print("E_HOCC : ", E_HOCC, "Eh")
-        print("E_DBOC : ", E_DBOC, "Eh")
+        print("Spin-orbit coupling correction : ", E_SO, "Eh")
+        print("E_corecorr_and_SR correction : ", E_corecorr_and_SR, "Eh")
+        print("E_HOCC correction : ", E_HOCC, "Eh")
+        print("E_DBOC correction : ", E_DBOC, "Eh")
+        print("E_FCI correction : ", E_FCIcorrection, "Eh")
         
-
+        print("FINAL ENERGY :", E_FINAL, "Eh")
         #Setting energy_components as an accessible attribute
         self.energy_components=E_dict
 
