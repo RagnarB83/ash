@@ -1208,7 +1208,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         E_CC_CBS = E_SCF_CBS + E_corr_CBS
         print("CCSD(T)/CBS energy (without corrections):", E_CC_CBS, "Eh")
         E_FINAL = E_CC_CBS + E_corecorr_and_SR + E_SO + E_DBOC + E_HOCC + E_FCIcorrection
-        print("Final CBS energy (with all corrections):", E_CC_CBS, "Eh")
+        print("Final CBS energy (with all corrections):", E_FINAL, "Eh")
         #Components
         E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 'T1energycorr' : T1energycorr,
             'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_HOCC': E_HOCC, 'E_DBOC': E_DBOC,

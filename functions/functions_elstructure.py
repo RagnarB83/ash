@@ -1889,7 +1889,6 @@ def diagonalize_dm(D, S):
 def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, label="ASH_orbs", spherical_MOs=True):
     
     print_line_with_mainheader("make_molden_file")
-    from scipy.special import factorial2 as fact2
 
     print()
     print("Will make Molden file from ASH fragment, input MO coefficients and occupations")
@@ -1931,10 +1930,6 @@ Molden file created by ASH
             bla=1.0 #TODO: CHECK
             gtostring+=f"{shell}   {len(coeffs)} {bla}\n"
             for exp,coeff in zip(exponents,coeffs):
-                #print("angmom:", angmom)
-                #N = (2**(angmom+3/4)*exp**((angmom/2)+3/4))/(math.pi**(3/4)*(np.sqrt(fact2(2*angmom - 1))))
-                #print("N:"  , N)
-                #exit()
                 N = normalization_ORCA(angmom,exp)
                 print("N:", N)
                 print("coeff:", coeff)
@@ -1975,7 +1970,7 @@ Molden file created by ASH
  Occup= {mo_occ}\n"""
          mostring+=moheader
          for i,mo_coeff in enumerate(mo_coeffs):
-             mostring+=f" {i+1}      {mo_coeff}\n"
+             mostring+=f" {i+1}      {mo_coeff:15.12f}\n"
 
     #Combine and write out
     with open(f"{label}.molden", "w") as mfile:
@@ -1986,13 +1981,10 @@ Molden file created by ASH
     
     print(f"Created Molden file: {label}.molden")
 
+#Function that does the ORCA BF normalization
 def normalization_ORCA(L,exp):
     bla ={0:[3,3,1],1:[7,5,1],2:[11,7,9],3:[15,9,225],4:[19,11,11025],5:[23,13,893025]}
     nvals=bla[L]
-    n1=nvals[0]
-    n2=nvals[1]
-    nf=nvals[2]
+    n1=nvals[0];n2=nvals[1];nf=nvals[2]
     renorm_orca=math.sqrt(math.sqrt(2**n1*exp**n2/(math.pi**3*nf)))
-
     return renorm_orca
-    #!Get norm, the norm^4 = 2^n1 * a^n2 / (pi^3 * nf)
