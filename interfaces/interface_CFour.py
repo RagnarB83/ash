@@ -4,7 +4,7 @@ import os
 import time
 import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel
+from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel,writestringtofile
 import ash.settings_ash
 
 CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG-PVDZ', 'ATZ':'AUG-PVTZ', 'AQZ':'AUG-PVQZ', 
@@ -386,8 +386,12 @@ HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
         #ENERGY JOB
         else:
             if self.propoption != 'OFF':
-                print("Warning: density requested FIXGEOM turned on.")
+                print("Warning: density requested FIXGEOM turned on. Also EXTERN_POT turned on to mimim dummy PC-job")
                 self.FIXGEOM='ON'
+                self.EXTERN_POT='ON'
+                #Write dummy PC file to disk
+                writestringtofile("0", "pcharges")
+
             else:
                 self.FIXGEOM='OFF'
             with open("ZMAT", 'w') as inpfile:
