@@ -2024,27 +2024,27 @@ def reorder_AOs_in_MO_ORCA_to_Molden(coeffs,exponents,order):
         elif "py" in o:
             new_coeffs[i+1] = c
             new_exponents[i+1] = e
-            new_order[i] = o
+            new_order[i+1] = o
         elif "dz2" in o:
-            new_coeffs[i+2] = c
-            new_exponents[i+2] = e
-            new_order[i+2] = o
-        elif "dxz" in o:
             new_coeffs[i] = c
             new_exponents[i] = e
             new_order[i] = o
         elif "dyz" in o:
             new_coeffs[i+1] = c
             new_exponents[i+1] = e
-            new_order[i] = o
-        elif "dx2y2" in o:
-            new_coeffs[i+1] = c
-            new_exponents[i+1] = e
-            new_order[i] = o
+            new_order[i+1] = o
+        elif "dxz" in o:
+            new_coeffs[i+2] = c
+            new_exponents[i+2] = e
+            new_order[i+2] = o
         elif "dxy" in o:
-            new_coeffs[i+1] = c
-            new_exponents[i+1] = e
-            new_order[i] = o     
+            new_coeffs[i+3] = c
+            new_exponents[i+3] = e
+            new_order[i+3] = o
+        elif "dx2y2" in o:
+            new_coeffs[i+4] = c
+            new_exponents[i+4] = e
+            new_order[i+4] = o     
         else:
             new_coeffs[i] = c
             new_exponents[i] = e
