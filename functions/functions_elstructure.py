@@ -310,7 +310,7 @@ def write_cube_diff(cubedict1,cubedict2, name="Default"):
 
     print("\nTotal Integrated volume of difference density:", num_el_val)
     print("Integrated volume of positive part of difference density:", num_el_val_pos)
-    print("Integrated volume of positive part of difference density:", num_el_val_neg)
+    print("Integrated volume of negative part of difference density:", num_el_val_neg)
 
 #Sum of 2 Cube-files
 def write_cube_sum(cubedict1,cubedict2, name="Default"):
@@ -1883,10 +1883,12 @@ def diagonalize_dm(D, S):
 
 #Function that creates Molden file from ASH fragment and MO coefficients, occupations and basis set
 #https://www.theochem.ru.nl/molden/molden_format.html
-#NOTE: Not ready. Need to do normalization properly
+#NOTE: Not ready. Need to do normalization properly and ordering properly
 #https://github.com/psi4/psi4/issues/504
 #https://github.com/psi4/psi4/issues/60
-def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, label="ASH_orbs", spherical_MOs=True):
+#https://github.com/psi4/psi4/blob/master/psi4/driver/p4util/writer.py
+#NOTE: Molden order must be fixed. Do here or outside?
+def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, AO_order_object=None, label="ASH_orbs", spherical_MOs=True):
     
     print_line_with_mainheader("make_molden_file")
 
@@ -1895,7 +1897,14 @@ def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, l
     print("Optional input: MO energies and MO occupations")
 
     print("WARNING: NORMALIZATION IS NOT YET CORRECT")
-    #exit()
+    print("WARNING: ORDER IS NOT YET CORRECT. MOS are wrong")
+    
+    if AO_order_object is None:
+        print("Warning: no AO_order_object given. Will guess??")
+        ashexit()
+    else:
+         print("AO_order_object given. Will use this to order AOs")
+         print(AO_order_object)
    
     ############
     #Geometry
@@ -1925,11 +1934,15 @@ Molden file created by ASH
         for bf in bfs:
             coeffs=bf["Coefficients"]
             exponents=bf["Exponents"]
+            #Reorder according to AO_order_object
+            coeffs_reordered = []
+            exponents_reordered = []
+
             shell=bf["Shell"]
             angmom = shell_to_angmom[shell]
-            bla=1.0 #TODO: CHECK
-            gtostring+=f"{shell}   {len(coeffs)} {bla}\n"
-            for exp,coeff in zip(exponents,coeffs):
+            extra=1.0
+            gtostring+=f"{shell}   {len(coeffs_reordered)} {extra}\n"
+            for exp,coeff in zip(exponents_reordered,coeffs_reordered):
                 N = normalization_ORCA(angmom,exp)
                 print("N:", N)
                 print("coeff:", coeff)
@@ -1988,3 +2001,54 @@ def normalization_ORCA(L,exp):
     n1=nvals[0];n2=nvals[1];nf=nvals[2]
     renorm_orca=math.sqrt(math.sqrt(2**n1*exp**n2/(math.pi**3*nf)))
     return renorm_orca
+
+#From ORCA order to Molden order
+def reorder_AOs_in_MO_ORCA_to_Molden(coeffs,exponents,order):
+    print("coeffs:",coeffs)
+    print("exponents:",exponents)
+    print("order:",order)
+    print()
+    new_coeffs=np.zeros(len(coeffs))
+    new_exponents=np.zeros(len(exponents))
+    new_order = np.chararray(len(order))
+    for i,(c,e,o) in enumerate(zip(coeffs,exponents,order)):
+        print(c,e,o)
+        if "pz" in o:
+            new_coeffs[i+2] = c
+            new_exponents[i+2] = e
+            new_order[i+2] = o
+        elif "px" in o:
+            new_coeffs[i] = c
+            new_exponents[i] = e
+            new_order[i] = o
+        elif "py" in o:
+            new_coeffs[i+1] = c
+            new_exponents[i+1] = e
+            new_order[i] = o
+        elif "dz2" in o:
+            new_coeffs[i+2] = c
+            new_exponents[i+2] = e
+            new_order[i+2] = o
+        elif "dxz" in o:
+            new_coeffs[i] = c
+            new_exponents[i] = e
+            new_order[i] = o
+        elif "dyz" in o:
+            new_coeffs[i+1] = c
+            new_exponents[i+1] = e
+            new_order[i] = o
+        elif "dx2y2" in o:
+            new_coeffs[i+1] = c
+            new_exponents[i+1] = e
+            new_order[i] = o
+        elif "dxy" in o:
+            new_coeffs[i+1] = c
+            new_exponents[i+1] = e
+            new_order[i] = o     
+        else:
+            new_coeffs[i] = c
+            new_exponents[i] = e
+
+
+
+
