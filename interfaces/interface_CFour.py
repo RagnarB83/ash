@@ -46,7 +46,7 @@ class CFourTheory:
         self.symmetry='OFF'
         self.stabilityanalysis='OFF'
         self.specialbasis=[]
-        self.extern_pot='OFF' #Pointcharge potential off by default
+        self.EXTERN_POT='OFF' #Pointcharge potential off by default
         self.DBOC=DBOC
         #Overriding default
         #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
@@ -268,7 +268,7 @@ class CFourTheory:
                 qm_elems = elems
 
         if PC is True:
-            self.extern_pot='ON'
+            self.EXTERN_POT='ON'
             #Turning symmetry off
             self.symmetry='OFF'
             print("Warning: PC=True. FIXGEOM turned on")
@@ -302,7 +302,7 @@ class CFourTheory:
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog}\n\
-SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot},FIXGEOM={self.FIXGEOM}\n\
+SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n
 HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
                 for el in qm_elems:
@@ -334,7 +334,7 @@ HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog}\n\
-SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot},FIXGEOM={self.FIXGEOM}\n\
+SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n
 HFSTABILITY={self.stabilityanalysis})\n\n""")
 #                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
@@ -372,7 +372,7 @@ HFSTABILITY={self.stabilityanalysis})\n\n""")
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog}\n\
-SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot},FIXGEOM={self.FIXGEOM}\n\
+SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
 HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
                 #for specbas in self.specialbasis.items():
@@ -386,12 +386,11 @@ HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
         #ENERGY JOB
         else:
             if self.propoption != 'OFF':
-                print("Warning: density requested FIXGEOM turned on. Also EXTERN_POT turned on to mimim dummy PC-job")
+                print("Warning: density requested FIXGEOM turned on. Also EXTERN_POT turned on to mimic dummy PC-job")
                 self.FIXGEOM='ON'
                 self.EXTERN_POT='ON'
                 #Write dummy PC file to disk
                 writestringtofile("0", "pcharges")
-
             else:
                 self.FIXGEOM='OFF'
             with open("ZMAT", 'w') as inpfile:
@@ -399,14 +398,11 @@ HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                #inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-#GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot}\n\
-#LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis})\n\n""")
                 inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog}\n\
-SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot},FIXGEOM={self.FIXGEOM}\n\
+SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
 HFSTABILITY={self.stabilityanalysis})\n\n""")
                 #for specbas in self.specialbasis.items():
