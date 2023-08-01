@@ -42,7 +42,6 @@ path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 8,
               "INSERT_CONFIG": None, "IDPP_MAX_ITER": 700,
               "IDPP_SPRINGCONST": 5.0, "IDPP_TIME_STEP": 0.01,
               "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.07, "IDPP_RMS_F": 0.009}
-
 neb_settings = {"PATH": "neb.xyz",
               "CLIMBING": True,
               "TANGENT": "IMPROVED",
@@ -76,7 +75,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=700, restart_file=None, TS_guess_file=None, mofilesdir=None, 
+        interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5, restart_file=None, TS_guess_file=None, mofilesdir=None, 
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
         hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1):
 
@@ -110,7 +109,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
-            interpolation=interpolation, idpp_maxiter=idpp_maxiter, 
+            interpolation=interpolation, idpp_maxiter=idpp_maxiter, idpp_springconst=idpp_springconst,
             restart_file=restart_file, TS_guess_file=TS_guess_file, mofilesdir=mofilesdir)
     #Saddlepoint fragment
     SP = NEB_results.saddlepoint_fragment
@@ -314,7 +313,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
         charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=700, zoom=False,
+        interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5, zoom=False,
         restart_file=None, TS_guess_file=None, mofilesdir=None):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
@@ -422,6 +421,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     #Set Knarr settings in dictionary
     path_parameters["INTERPOLATION"]=interpolation
     path_parameters["IDPP_MAX_ITER"] = idpp_maxiter
+    path_parameters["IDPP_SPRINGCONST"] = idpp_springconst
     if TS_guess != None:
         path_parameters["INSERT_CONFIG"] = "TSguess.xyz"
     neb_settings["CLIMBING"]=CI
@@ -594,6 +594,16 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
     sett = nebsettings
     type_of_method_string = path_parameters["METHOD"].upper()
+    #Print path parameters
+    print("Interpolation method:", path_parameters["METHOD"])
+    print("Interpolation type:", path_parameters["INTERPOLATION"])
+    print("Insert configuration:", path_parameters["INSERT_CONFIG"])
+    print("IDPP Max iterations:", path_parameters["IDPP_MAX_ITER"])
+    print("IDPP spring constant:", path_parameters["IDPP_SPRINGCONST"])
+    print("IDPP timestep:", path_parameters["IDPP_TIME_STEP"])
+    print("IDPP Max Move:", path_parameters["IDPP_MAX_MOVE"])
+    print("IDPP Max Force:", path_parameters["IDPP_MAX_F"])
+    print("IDPP RMS Force:", path_parameters["IDPP_RMS_F"])
     if type_of_method_string == "SINGLE":
         prod_is_needed = False
     elif type_of_method_string == "DOUBLE":
@@ -602,6 +612,7 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
         raise TypeError("Either choose single or double ended path generation")
 
     nim = path_parameters["NIMAGES"]
+
     path = InitializePathObject(nim, react)
     if prod_is_needed:
         # Check product

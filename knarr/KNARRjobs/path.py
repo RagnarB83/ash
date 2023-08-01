@@ -108,29 +108,24 @@ def DoPathInterpolation(path, parameters):
                 distmat = AllImageDistances(path.GetNDimIm(), path.GetNim(), rp,
                                             path.GetPBC(), path.GetCell())[0]
                 optimal_index.append(np.max(distmat) - np.min(distmat))
-
             ind = np.argmin(optimal_index)
             insertion_no = list_of_indices[ind]
             rp = PathLinearInterpolWithInsertion(path.GetNDimIm(), path.nim,
                                                  path.GetConfig1(), path.GetConfig2(),
                                                  path.GetInsertionConfig(), insertion_no,
                                                  path.GetPBC(), path.GetCell())
-
             s = ComputeLengthOfPath(path.GetNDimIm(), path.GetNim(), rp, pbc=path.GetPBC(), cell=path.GetCell())
             rp = MakeReparametrization(path.GetNDimIm(), path.GetNim(), s, rp,
                                        np.zeros(shape=(path.GetNim() * path.GetNDim(), 1)),
                                        type_of_interp=0)
-
             path.SetCoords(rp)
             path.MIC()
             path.setup = True
-
         if type_of_interp > 0:
             print('IDPP optimization:')
             IDPP_OPT(path, max_iter=parameters["IDPP_MAX_ITER"], spring_const=parameters["IDPP_SPRINGCONST"],
                      time_step=parameters["IDPP_TIME_STEP"], max_move=parameters["IDPP_MAX_MOVE"],
                      tol_max_f=parameters["IDPP_MAX_F"], tol_rms_f=parameters["IDPP_RMS_F"])
-
     else:
         # ===============================================
         # SINGLE ENDED
