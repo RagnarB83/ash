@@ -39,7 +39,7 @@ class CFourTheory:
         self.guessoption='MOREAD'
         self.propoption='OFF'
         self.cc_prog='ECC'
-        self.ABCDTYPE='STANDARD'
+        self.ABCDTYPE='AOBASIS'
         self.scf_conv=12
         self.lineq_conv=10
         self.cc_maxcyc=300
@@ -69,6 +69,12 @@ class CFourTheory:
         if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']
         if 'ABCDTYPE' in cfouroptions: self.ABCDTYPE=cfouroptions['ABCDTYPE']    
         
+        #Changing ABCDTYPE algorithm if not possible
+        if self.CALC == 'CCSDT' or self.CALC == 'CCSDTQ' or self.CALC == 'CCSDT(Q)':
+            if self.ABCDTYPE == 'AOBASIS':
+                print("Warning: ABCDTYPE=AOBASIS not possible for higher-order CC (CCSDT and beyond). Changing to ABCDTYPE=STANDARD")
+                self.ABCDTYPE='STANDARD'
+
         #Printing
         print("BASIS:", self.basis)
         print("CALC:", self.method)
