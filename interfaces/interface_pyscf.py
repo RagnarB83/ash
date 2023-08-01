@@ -1494,7 +1494,9 @@ class PySCFTheory:
                 if self.CASSCF is True:
                     print("Doing CASSCF (orbital optimization)")
                     if self.mcpdft is True:
-                        casscf = pyscf.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+                        from pyscf import mcpdft, mcdcft
+                        #old: casscf = pyscf.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+                        casscf = mcpdft.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
                     else:
                         #Regular CASSCF
                         casscf = pyscf.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
@@ -1519,7 +1521,13 @@ class PySCFTheory:
                             print("Exiting")
                             ashexit()
                     if self.mcpdft is True:
+                        #Do the CASSCF calculation with on-top functional
+                        print("Now running MC-PDFT with on-top functional")
                         mcpdft_result = casscf.run(orbitals, natorb=True)
+                        #mc1 = mcdcft.CASSCF (mf, 'cBLYP', 4, 4).run ()
+                        #print("Now running cBLYP on top")
+                        #mc1 = mcdcft.CASSCF (self.mf, 'cBLYP', norb_cas, nel_cas).run ()
+                        #print("mc1:", mc1)
                         print("E(CASSCF):", mcpdft_result.e_mcscf)
                         print(f"Eot({self.mcpdft_functional}):", mcpdft_result.e_ot)
                         print("E(tot, MC-PDFT):", mcpdft_result.e_tot)

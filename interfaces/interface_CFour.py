@@ -391,7 +391,8 @@ HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
         #ENERGY JOB
         else:
             if self.propoption != 'OFF':
-                print("Warning: density requested FIXGEOM turned on. Also EXTERN_POT turned on to mimic dummy PC-job")
+                print("Warning: density requested. FIXGEOM turned on to prevent orientation change")
+                print("Also EXTERN_POT turned on to mimic dummy PC-job for same reason")
                 self.FIXGEOM='ON'
                 self.EXTERN_POT='ON'
                 #Write dummy PC file to disk
