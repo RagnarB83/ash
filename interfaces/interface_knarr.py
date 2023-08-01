@@ -482,7 +482,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         print("Creating interpolated path.")
 
         if TS_guess != None:
-            print(f"A TS guess : {TS_guess} was provided")
+            print(f"A TS guess file : {TS_guess_file} was provided")
             print("Will use intermediate geometry in interpolation")
 
         # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
