@@ -1883,11 +1883,9 @@ def diagonalize_dm(D, S):
 
 #Function that creates Molden file from ASH fragment and MO coefficients, occupations and basis set
 #https://www.theochem.ru.nl/molden/molden_format.html
-#NOTE: Not ready. Need to do normalization properly and ordering properly
 #https://github.com/psi4/psi4/issues/504
 #https://github.com/psi4/psi4/issues/60
 #https://github.com/psi4/psi4/blob/master/psi4/driver/p4util/writer.py
-#NOTE: Molden order must be fixed. Do here or outside?
 def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, AO_order_object=None, label="ASH_orbs", spherical_MOs=True):
     
     print_line_with_mainheader("make_molden_file")
@@ -1897,7 +1895,7 @@ def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, A
     print("Optional input: MO energies and MO occupations")
 
     print("WARNING: NORMALIZATION may not be entirely correct")
-    print("WARNING: ORDER has only been checked for s,p,d")
+    print("WARNING: ORDER has only been checked for s,p,d and f")
     
     if AO_order_object is None:
         print("Warning: no AO_order_object given. Will guess??")
@@ -1997,26 +1995,20 @@ def normalization_ORCA(L,exp):
     bla ={0:[3,3,1],1:[7,5,1],2:[11,7,9],3:[15,9,225],4:[19,11,11025],5:[23,13,893025]}
     nvals=bla[L]
     n1=nvals[0];n2=nvals[1];nf=nvals[2]
-    #TODO: Check this sqrt(3) thing
     if L == 2:
         renorm_orca=math.sqrt(3)*math.sqrt(math.sqrt(2**n1*exp**n2/(math.pi**3*nf)))
+    elif L == 3:
+        renorm_orca=math.sqrt(15)*math.sqrt(math.sqrt(2**n1*exp**n2/(math.pi**3*nf)))
     else:
         renorm_orca=math.sqrt(math.sqrt(2**n1*exp**n2/(math.pi**3*nf)))
     return renorm_orca
 
 #From ORCA order to Molden order
 def reorder_AOs_in_MO_ORCA_to_Molden(coeffs,order):
-    print("coeffs:",coeffs)
-    print("order:",order)
-    print("len(coeffs):",len(coeffs))
-    print("len(order):",len(order))
-    print()
     new_coeffs=np.zeros(len(coeffs))
     new_order = np.empty(len(order), dtype=object)
 
     for i,(c,o) in enumerate(zip(coeffs,order)):
-        print("c,o:",c,o)
-        print("i:",i)
         if "pz" in o:
             new_coeffs[i+2] = c
             new_order[i+2] = o
@@ -2039,16 +2031,35 @@ def reorder_AOs_in_MO_ORCA_to_Molden(coeffs,order):
             new_coeffs[i] = c
             new_order[i] = o
         elif "dx2y2" in o:
-            print("here")
             new_coeffs[i] = c
-            new_order[i] = o     
+            new_order[i] = o
+        elif "f0" in o:
+            new_coeffs[i] = c
+            new_order[i] = o
+        elif "f+1" in o:
+            new_coeffs[i] = c
+            new_order[i] = o
+        elif "f-1" in o:
+            new_coeffs[i] = c
+            new_order[i] = o
+        elif "f+2" in o:
+            new_coeffs[i] = c
+            new_order[i] = o
+        elif "f-2" in o:
+            new_coeffs[i] = c
+            new_order[i] = o
+        elif "f+3" in o:
+            new_coeffs[i] = c
+            new_order[i] = o
+        elif "f-3" in o:
+            new_coeffs[i] = c
+            new_order[i] = o    
         else:
             #s and others
             new_coeffs[i] = c
             new_order[i] = o
-
-        print("new_coeffs:",new_coeffs)
-        print("new_order:",new_order)    
+        #print("new_coeffs:",new_coeffs)
+        #print("new_order:",new_order)    
     return  new_coeffs
 
 

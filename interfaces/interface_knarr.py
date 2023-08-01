@@ -76,7 +76,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=700, restart_file=None, TS_guess=None, mofilesdir=None, 
+        interpolation="IDPP", idpp_maxiter=700, restart_file=None, TS_guess_file=None, mofilesdir=None, 
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
         hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1):
 
@@ -111,7 +111,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
             interpolation=interpolation, idpp_maxiter=idpp_maxiter, 
-            restart_file=restart_file, TS_guess=TS_guess, mofilesdir=mofilesdir)
+            restart_file=restart_file, TS_guess_file=TS_guess_file, mofilesdir=mofilesdir)
     #Saddlepoint fragment
     SP = NEB_results.saddlepoint_fragment
     #Dictionary of images
@@ -315,7 +315,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
         charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, zoom=False,
-        restart_file=None, TS_guess=None, mofilesdir=None):
+        restart_file=None, TS_guess_file=None, mofilesdir=None):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
     module_init_time=time.time()
@@ -373,7 +373,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
 
         #TSguess fragment provided
-        if TS_guess != None:
+        if TS_guess_file != None:
+            TS_guess = ash.Fragment(xyzfile=TS_guess_file, charge=charge, mult=mult, printlevel=0)
             TS_actcoords, TS_actelems = TS_guess.get_coords_for_atoms(actatoms)
             new_TSguess = ash.Fragment(coords=TS_actcoords, elems=TS_actelems, printlevel=0)
             new_TSguess.write_xyzfile(xyzfilename="TSguess.xyz")
@@ -398,7 +399,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
 
     else:
-        if TS_guess != None:
+        if TS_guess_file != None:
+            TS_guess = ash.Fragment(xyzfile=TS_guess_file, charge=charge, mult=mult, printlevel=0)
             #Writing XYZ-file for TSguess
             TS_guess.write_xyzfile(xyzfilename="TSguess.xyz")
 
