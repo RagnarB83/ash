@@ -39,6 +39,7 @@ class CFourTheory:
         self.guessoption='MOREAD'
         self.propoption='OFF'
         self.cc_prog='ECC'
+        self.ABCDTYPE='STANDARD'
         self.scf_conv=12
         self.lineq_conv=10
         self.cc_maxcyc=300
