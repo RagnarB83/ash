@@ -65,7 +65,8 @@ class CFourTheory:
         if 'LINEQ_CONV' in cfouroptions: self.lineq_conv=cfouroptions['LINEQ_CONV']
         if 'CC_MAXCYC' in cfouroptions: self.cc_maxcyc=cfouroptions['CC_MAXCYC']
         if 'SYMMETRY' in cfouroptions: self.symmetry=cfouroptions['SYMMETRY']
-        if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']        
+        if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']
+        if 'ABCDTYPE' in cfouroptions: self.ABCDTYPE=cfouroptions['ABCDTYPE']    
         
         #Printing
         print("BASIS:", self.basis)
@@ -77,12 +78,14 @@ class CFourTheory:
         print("GUESS:", self.guessoption)
         print("PROP:", self.propoption)
         print("CC_PROG:", self.cc_prog)
+        print("ABCDTYPE:", self.ABCDTYPE)
         print("SCF_CONV:", self.scf_conv)
         print("SCF_MAXCYC:", self.scf_maxcyc)
         print("LINEQ_CONV:", self.lineq_conv)
         print("CC_MAXCYC:", self.cc_maxcyc)
         print("SYMMETRY:", self.symmetry)
         print("HFSTABILITY:", self.stabilityanalysis)
+        
 
         #Getting special basis dict etc
         if self.basis=='SPECIAL':
@@ -301,7 +304,7 @@ class CFourTheory:
                 inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n
 HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
@@ -333,13 +336,10 @@ HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
                 inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n
 HFSTABILITY={self.stabilityanalysis})\n\n""")
-#                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-#GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot},FIXGEOM={self.FIXGEOM}\n\
-#LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
                         inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
@@ -365,13 +365,11 @@ HFSTABILITY={self.stabilityanalysis})\n\n""")
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                #inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-#GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot}\n\
-#LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
+
                 inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
 HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
@@ -401,7 +399,7 @@ HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
                 inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
 HFSTABILITY={self.stabilityanalysis})\n\n""")
@@ -479,7 +477,7 @@ def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, m
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
 # Either use fragment or provide coordinates and elements
 def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fragment=None,theory=None, method='CCSDT', 
-                             basis='TZ', ref='RHF', openshell=False, numcores=1):
+                             basis='TZ', ref='RHF', openshell=False, numcores=1, cc_prog='VCC', abcdtype='AOBASIS'):
     init_time = time.time()
     if fragment is None:
         fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
@@ -494,7 +492,8 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
     'FROZEN_CORE':'ON',
     'MEM_UNIT':'MB',
     'MEMORY':3100,
-    'CC_PROG':'VCC',
+    'CC_PROG':cc_prog,
+    'ABCDTYPE':abcdtype,
     'SCF_CONV':10,
     'LINEQ_CONV':10,
     'CC_MAXCYC':300,
