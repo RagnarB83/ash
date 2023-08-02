@@ -1464,7 +1464,6 @@ end
 
     #TODO: Fix table for SOC-MRCI
     def print_final_table(self,IPs,dysonnorms,Finalionstates,label=None):
-        print("IPs", IPs)
         if len(IPs) != len(dysonnorms) != len(Finalionstates):
             print("IPs", IPs)
             print("dysonnorms", dysonnorms)
@@ -1787,10 +1786,12 @@ end
                 self.TDDFT_dets_prep()
                 #Dyson
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
-                print(f"IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
-                print(f"Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
+                print("IPs calculated for this geometry:",frag_IPs)
+                rint("Dyosn norms calculated for this geometry:",frag_dysonnorms)
+                print(f"All IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
+                print(f"All Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
                 #Printing final table for this geometry
-                print("frag_IPs:",frag_IPs)
+
                 self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
                 #TODO: Append to file on disk to keep track of tables for all geometries???
 
