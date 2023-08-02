@@ -953,7 +953,7 @@ end
         print(BC.OKBLUE,"TDDFT-calculated ion states:", self.numionstates-1, BC.ENDC)
 
         #Run Initial-State SCF
-        self.run_SCF_InitState(fragment,theory)
+        self.run_SCF_InitState(fragment,self.theory)
 
         #Creating new theory object
         theory = copy.copy(self.theory)
