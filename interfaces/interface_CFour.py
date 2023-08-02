@@ -554,7 +554,7 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
 def convert_CFour_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
     print("convert_CFour_Molden_file")
 
-    moldenfile_basename=os.path.basename(moldenfile_basename).split('.')[0]
+    moldenfile_basename=os.path.basename(moldenfile).split('.')[0]
 
     #Finding molden2aim in PATH. Present in ASH (May require compilation)
     ashpath=os.path.dirname(ash.__file__)
