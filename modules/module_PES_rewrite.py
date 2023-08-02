@@ -1464,6 +1464,7 @@ end
 
     #TODO: Fix table for SOC-MRCI
     def print_final_table(self,IPs,dysonnorms,Finalionstates,label=None):
+        print("IPs", IPs)
         if len(IPs) != len(dysonnorms) != len(Finalionstates):
             print("IPs", IPs)
             print("dysonnorms", dysonnorms)
@@ -1537,27 +1538,7 @@ end
             
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
             fstate=self.Finalstates[0]
-            print(Finalionstates)
-            print(IPs)
-            print(dysonnorms)
-            print(statelabels)
-            print(tdtransitions)
-            print(spinmults)
             for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(Finalionstates,IPs,dysonnorms,statelabels,tdtransitions,spinmults)):
-                print("i",i)
-                print("E",E)
-                print("IE",IE)
-                print("dys",dys)
-                print("statelabel",statelabel)
-                print("TDtransenergy",TDtransenergy)
-                print("spinmult",spinmult)
-                print(f"{i:>6d}")
-                print(f"{i:>6d} {spinmult:>7d}")
-                print(f"{i:>6d} {spinmult:>7d} {E:20.11f}")
-                print(f"{spinmult:>7d}")
-                print(f"{i:>6d} {spinmult:>7d} {E:20.11f} {IE:>10.3f}")
-                print(f"{statelabel:>10} {TDtransenergy:>17.3f}")
-                print(f"{i:>6d} {spinmult:>7d} {E:20.11f} {IE:>10.3f} {dys:>10.5f}")
                 print(f"{i:>6d} {spinmult:>7d} {E:20.11f} {IE:>10.3f} {dys:>10.5f} {statelabel:>10} {TDtransenergy:>17.3f}")
         elif self.method == 'SF-TDDFT':
             #Creating lists of all state labels and transition energies
@@ -1809,6 +1790,7 @@ end
                 print(f"IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
                 print(f"Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
                 #Printing final table for this geometry
+                print("frag_IPs:",frag_IPs)
                 self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
                 #TODO: Append to file on disk to keep track of tables for all geometries???
 
