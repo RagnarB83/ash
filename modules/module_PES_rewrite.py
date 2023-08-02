@@ -1787,7 +1787,7 @@ end
                 #Dyson
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
                 print("IPs calculated for this geometry:",frag_IPs)
-                rint("Dyosn norms calculated for this geometry:",frag_dysonnorms)
+                print("Dyson norms calculated for this geometry:",frag_dysonnorms)
                 print(f"All IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
                 print(f"All Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
                 #Printing final table for this geometry
