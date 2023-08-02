@@ -1546,11 +1546,15 @@ end
             for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(Finalionstates,IPs,dysonnorms,statelabels,tdtransitions,spinmults)):
                 print("i",i)
                 print("E",E)
+                print("IE",IE)
                 print("dys",dys)
                 print("statelabel",statelabel)
                 print("TDtransenergy",TDtransenergy)
                 print("spinmult",spinmult)
-                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,statelabel, TDtransenergy))
+                print(f"{i:>6d} {spinmult:>7d} {E:20.11f} {IE:>10.3f}")
+                print(f"{statelabel:>10} {TDtransenergy:>17.3f}")
+                print(f"{i:>6d} {spinmult:>7d} {E:20.11f} {IE:>10.3f} {dys:>10.5f}")
+                print(f"{i:>6d} {spinmult:>7d} {E:20.11f} {IE:>10.3f} {dys:>10.5f} {statelabel:>10} {TDtransenergy:>17.3f}")
         elif self.method == 'SF-TDDFT':
             #Creating lists of all state labels and transition energies
             if self.tda is True: 
