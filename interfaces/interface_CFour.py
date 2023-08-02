@@ -630,7 +630,7 @@ def convert_CFour_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
 
         
     #Write Molden2aim input file
-    mol2aiminput=[moldenfile, '', '']
+    mol2aiminput=['', moldenfile, '', '']
     m2aimfile = open("mol2aim.inp", "w")
     for mline in mol2aiminput:
         m2aimfile.write(mline+'\n')
