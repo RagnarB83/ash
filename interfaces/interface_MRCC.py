@@ -6,6 +6,7 @@ import numpy as np
 
 import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.interfaces.interface_multiwfn import write_multiwfn_input_option
 
 MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z', 'ADZ':'aug-cc-pVDZ', 'ATZ':'aug-cc-pVTZ', 'AQZ':'aug-cc-pVQZ', 
             'A5Z':'aug-cc-pV5Z'}
@@ -345,3 +346,40 @@ def grab_MRCC_PC_self_energy(file):
             if 'Self energy of the point charges [AU]' in line:
                 grab=True
     return pc_self_energy
+
+
+#Function to create a correct correlated WF Molden file from a MRCC Molden file, 
+def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfile=None, multiwfndir=None, printlevel=2):
+    print("convert_MRCC_Molden_file")
+
+    if multiwfndir == None:
+        print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
+        try:
+            multiwfndir=ash.settings_ash.settings_dict["multiwfndir"]
+        except:
+            print(BC.WARNING,"Found no multiwfndir variable in settings_ash module either.",BC.END)
+            try:
+                multiwfndir = os.path.dirname(shutil.which('Multiwfn'))
+                print(BC.OKGREEN,"Found Multiwfn in path. Setting multiwfndir to:", multiwfndir, BC.END)
+            except:
+                print("Found no Multiwfn executable in path. Exiting... ")
+                ashexit()
+
+    if mrccoutputfile == None:
+        print("MRCC outputfile should also be provided")
+        ashexit()
+    core_electrons = int(pygrep("Number of core electrons:",mrccoutputfile)[-1])
+    print("Core electrons found in outputfile:", core_electrons)
+    frozen_orbs = int(core_electrons/2)
+    print("Frozen orbitals:", frozen_orbs)
+    #Rename MRCC Molden file to mrcc.molden
+    shutil.copy(moldenfile, "mrcc.molden")
+    #Write Multiwfn input. Will new Moldenfile based on correlated density
+    write_multiwfn_input_option(option="mrcc-density", frozenorbitals=frozen_orbs, densityfile=mrccdensityfile, printlevel=printlevel)
+    print("Now calling Multiwfn to process the MRCC, Molden and CCDENSITIES files")
+    with open("mwfnoptions") as input:
+        sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
+    print("Multiwfn is done")
+    print("Created new Molden file: mrccnew.molden")
+    print("This file contains the natural orbitals of the correlated density from MRCC")
+

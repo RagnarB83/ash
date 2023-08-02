@@ -545,3 +545,42 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
         print("High-level CFour CCSD(T) -> Highlevel correction:", delta_corr, "au")
     print_time_rel(init_time, modulename='run_CFour_HLC_correction', moduleindex=2)
     return delta_corr
+
+#Function to create a correct Molden file from CFour
+#CFour creates both MOLDEN (SCF) and MOLDEN_NAT (corr WF)
+#Issue: CFour Molden format is non-standard (skips beta orbitals, normalization and prints Cartesian d-functions etc)
+#This ugly function uses molden2aim to do the converstion
+#TODO: Do this in ASH directly instead of using molden2aim at some point
+def convert_CFour_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
+    print("convert_CFour_Molden_file")
+
+    moldenfile_basename=os.path.basename(moldenfile_basename).split('.')[0]
+
+    #Finding molden2aim in PATH. Present in ASH (May require compilation)
+    ashpath=os.path.dirname(ash.__file__)
+    molden2aim=ashpath+"/external/Molden2AIM/src/"+"molden2aim.exe"
+    if os.path.isfile(molden2aim) is False:
+        print("Did not find {}. Did you compile it ? ".format(molden2aim))
+        print("Go into dir:", ashpath+"/external/Molden2AIM/src")
+        print("Compile using gfortran or ifort:")
+        print("gfortran -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
+        print("ifort -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
+        ashexit()
+    else:
+        print("Found molden2aim.exe: ", molden2aim)
+        
+        
+    #Write Molden2aim input file
+    mol2aiminput=[moldenfile, 'No', '3', '', 'Yes', 'No', 'No', 'No', 'No']
+    m2aimfile = open("mol2aim.inp", "w")
+    for mline in mol2aiminput:
+        m2aimfile.write(mline+'\n')
+    m2aimfile.close()
+
+    #Run molden2aim
+    m2aimfile = open('mol2aim.inp')
+    p = sp.Popen(molden2aim, stdin=m2aimfile, stderr=sp.STDOUT)
+    p.wait()
+
+    print(f"Created new Molden file (via molden2aim): {moldenfile_basename}_new.molden")
+    print("This file can be correctly read by Multiwfn")
