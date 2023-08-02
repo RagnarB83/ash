@@ -31,7 +31,7 @@ class CFourTheory:
         
         #Default Cfour settings
         self.basis='SPECIAL' #this is default and preferred
-        self.method='CCSD(T)'
+        self.CALC='CCSD(T)'
         self.memory=4
         self.memory_unit='GB'
         self.reference='RHF'
@@ -52,7 +52,7 @@ class CFourTheory:
         #Overriding default
         #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
         if 'BASIS' in cfouroptions: self.basis=cfouroptions['BASIS']
-        if 'CALC' in cfouroptions: self.method=cfouroptions['CALC']
+        if 'CALC' in cfouroptions: self.CALC=cfouroptions['CALC']
         if 'MEMORY' in cfouroptions: self.memory=cfouroptions['MEMORY']
         if 'MEM_UNIT' in cfouroptions: self.memory_unit=cfouroptions['MEM_UNIT']
         if 'REF' in cfouroptions: self.reference=cfouroptions['REF']
@@ -77,7 +77,7 @@ class CFourTheory:
 
         #Printing
         print("BASIS:", self.basis)
-        print("CALC:", self.method)
+        print("CALC:", self.CALC)
         print("MEMORY:", self.memory)
         print("MEM_UNIT:", self.memory_unit)
         print("REFERENCE:", self.reference)
@@ -308,7 +308,7 @@ class CFourTheory:
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
+                inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
@@ -340,7 +340,7 @@ HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
+                inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
@@ -373,7 +373,7 @@ HFSTABILITY={self.stabilityanalysis})\n\n""")
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
 
-                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
+                inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
@@ -404,7 +404,7 @@ HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
+                inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
 REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
