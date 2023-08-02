@@ -1079,7 +1079,7 @@ end
             print(BC.OKBLUE, "Ion-state energies (au):\n", BC.ENDC, fstate.ionstates)
             print("")
             #IPs calculated in this run only
-            IPs_all.append(fstate.IPs)
+            IPs_all += fstate.IPs
             Ionstates_energies_all += fstate.ionstates
 
             #All IPs (including other geometries)
