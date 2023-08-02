@@ -579,8 +579,8 @@ def convert_CFour_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
     molden= 1           ! Generating a standard Molden file in Cart. function
     wfn= -1              ! Generating a WFN file
     wfncheck= -1         ! Checking normalization for WFN
-    wfx= 1              ! Generating a WFX file (not implemented)
-    wfxcheck= 1         ! Checking normalization for WFX (not implemented)
+    wfx= -1              ! Generating a WFX file (not implemented)
+    wfxcheck= -1         ! Checking normalization for WFX (not implemented)
     nbo= -1              ! Generating a NBO .47 file
     nbocheck= -1         ! Checking normalization for NBO's .47
     wbo= -1              ! GWBO after the .47 file being generated
