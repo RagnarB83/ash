@@ -549,7 +549,7 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
 #Function to create a correct Molden file from CFour
 #CFour creates both MOLDEN (SCF) and MOLDEN_NAT (corr WF)
 #Issue: CFour Molden format is non-standard (skips beta orbitals, normalization and prints Cartesian d-functions etc)
-#This ugly function uses molden2aim to do the converstion
+#This ugly function uses molden2aim to do the conversion
 #TODO: Do this in ASH directly instead of using molden2aim at some point
 def convert_CFour_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
     print("convert_CFour_Molden_file")
