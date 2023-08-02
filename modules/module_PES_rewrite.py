@@ -1537,7 +1537,19 @@ end
             
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
             fstate=self.Finalstates[0]
+            print(Finalionstates)
+            print(IPs)
+            print(dysonnorms)
+            print(statelabels)
+            print(tdtransitions)
+            print(spinmults)
             for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(Finalionstates,IPs,dysonnorms,statelabels,tdtransitions,spinmults)):
+                print("i",i)
+                print("E",E)
+                print("dys",dys)
+                print("statelabel",statelabel)
+                print("TDtransenergy",TDtransenergy)
+                print("spinmult",spinmult)
                 print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,statelabel, TDtransenergy))
         elif self.method == 'SF-TDDFT':
             #Creating lists of all state labels and transition energies
