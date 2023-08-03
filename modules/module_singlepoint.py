@@ -223,7 +223,7 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
     for t,elist in zip(theories,all_energies):
         print("\nTheory:", t.__class__.__name__)
         print("Label:", t.label)
-        print_fragments_table(fragments,energies,tabletitle="")
+        print_fragments_table(fragments,elist,tabletitle="")
         #Reaction energy if stoichiometry provided
         if stoichiometry != None:
             print("Stoichiometry provided:", stoichiometry)
@@ -231,7 +231,7 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
 
                 
             print("_"*60)
-    print("\nFinal list of list of total energies:", all_energies)
+    print("\nFinal list of lists of total energies:", all_energies)
 
     result = ASH_Results(label="Singlepoint_fragments_and_theories", energies=all_energies)
     if stoichiometry != None:
