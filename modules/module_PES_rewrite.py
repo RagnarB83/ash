@@ -2472,7 +2472,7 @@ def format_ci_vectors(ci_vectors):
     return string,ndets
 
 #Run wfoverlap program
-def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory,numcores):
+def run_wfoverlap_old(wfoverlapinput,path_wfoverlap,memory,numcores):
     wfoverlapfilefile = open('wfovl.inp', 'w')
     for l in wfoverlapinput:
         wfoverlapfilefile.write(l)
@@ -2497,6 +2497,24 @@ def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory,numcores):
         print("Problem calling wfoverlap program.")
     print("Wfoverlap done! See outputfile: wfovl.out")
     return
+
+#Run wfoverlap program
+def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory,numcores):
+    wfoverlapfilefile = open('wfovl.inp', 'w')
+    for l in wfoverlapinput:
+        wfoverlapfilefile.write(l)
+    wfoverlapfilefile.close()
+    print("Running wfoverlap program:")
+    os.system('ldd {}'.format(path_wfoverlap))
+    print("may take a while...")
+    print(wfcommand)
+    print("Using memory: {} MB".format(memory))
+    print(f"OMP parallelization of wfoverlap is active. Using OMP_NUM_THREADS={numcores}")
+    os.environ['OMP_NUM_THREADS'] = str(numcores)
+    os.environ['MKL_NUM_THREADS'] = str(1)
+    with open("wfovl.out", 'w') as f:
+        process = sp.run([path_wfoverlap, '-m', str(memory), '-f', 'wfovl.inp'], env=os.environ, check=True, stdout=f, stderr=f, universal_newlines=True)
+
 
 #Get Dysonnorms from output of wfoverlap
 def grabDysonnorms():
