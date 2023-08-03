@@ -210,8 +210,8 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
 
     #Looping over theories and getting energies for list of fragments
     for theory in theories:
-        energies=Singlepoint_fragments(theory=theory, fragments=fragments, stoichiometry=stoichiometry )
-        all_energies.append(energies)
+        result=Singlepoint_fragments(theory=theory, fragments=fragments, stoichiometry=stoichiometry )
+        all_energies.append(result.energies)
 
     print("\n")
     print("SINGLEPOINT_FRAGMENTS_AND_THEORIES ALL DONE")

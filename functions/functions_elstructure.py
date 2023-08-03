@@ -312,6 +312,9 @@ def write_cube_diff(cubedict1,cubedict2, name="Default"):
     print("Integrated volume of positive part of difference density:", num_el_val_pos)
     print("Integrated volume of negative part of difference density:", num_el_val_neg)
 
+    print("Negative diff. density means increase from Cube 1 to Cube 2")
+    print("Positive diff. density means decrease from Cube 1 to Cube 2")
+
 #Sum of 2 Cube-files
 def write_cube_sum(cubedict1,cubedict2, name="Default"):
     #Note: For now ignoring DSET_IDS_1 lines that may have been grabbed and present in dicts

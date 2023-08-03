@@ -360,6 +360,9 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     #Zero-valued constraints list. We probably won't use constraints for now
     constr = np.zeros(shape=(numatoms * 3, 1))
 
+    #Setting TS_guess to None (possibly assigned below)
+    TS_guess=None
+
     #ActiveRegion feature
     if ActiveRegion==True:
         print("Active Region option Active. Passing only active-region coordinates to Knarr.")
@@ -373,10 +376,10 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
         #TSguess fragment provided
         if TS_guess_file != None:
-            TS_guess = ash.Fragment(xyzfile=TS_guess_file, charge=charge, mult=mult, printlevel=0)
+            full_TS_guess = ash.Fragment(xyzfile=TS_guess_file, charge=charge, mult=mult, printlevel=0)
             TS_actcoords, TS_actelems = TS_guess.get_coords_for_atoms(actatoms)
-            new_TSguess = ash.Fragment(coords=TS_actcoords, elems=TS_actelems, printlevel=0)
-            new_TSguess.write_xyzfile(xyzfilename="TSguess.xyz")
+            TSguess = ash.Fragment(coords=TS_actcoords, elems=TS_actelems, printlevel=0)
+            TSguess.write_xyzfile(xyzfilename="TSguess.xyz")
         #Create Knarr calculator from ASH theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
