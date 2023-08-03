@@ -2507,7 +2507,6 @@ def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory,numcores):
     print("Running wfoverlap program:")
     os.system('ldd {}'.format(path_wfoverlap))
     print("may take a while...")
-    print(wfcommand)
     print("Using memory: {} MB".format(memory))
     print(f"OMP parallelization of wfoverlap is active. Using OMP_NUM_THREADS={numcores}")
     os.environ['OMP_NUM_THREADS'] = str(numcores)
