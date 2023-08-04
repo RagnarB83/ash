@@ -1873,7 +1873,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
     print("\n All done. Difference density files created:")
     print(diff_files)
 
-    return  diff_files, num_el_vals, num_el_vals_pos, num_el_vals_neg
+    return diff_files, num_el_vals, num_el_vals_pos, num_el_vals_neg
 
 
 #Density matrix
