@@ -315,6 +315,8 @@ def write_cube_diff(cubedict1,cubedict2, name="Default"):
     print("Negative diff. density means increase from Cube 1 to Cube 2")
     print("Positive diff. density means decrease from Cube 1 to Cube 2")
 
+    return num_el_val,num_el_val_pos,num_el_val_neg
+
 #Sum of 2 Cube-files
 def write_cube_sum(cubedict1,cubedict2, name="Default"):
     #Note: For now ignoring DSET_IDS_1 lines that may have been grabbed and present in dicts
@@ -1751,9 +1753,11 @@ def diffdens_of_cubefiles(ref_cubefile, cubefile):
     cube_other=read_cube(cubefile)
     #Taking diff
     diffdens_filename=f"{reffile_base}_{cubefile_base}_diff_density"
-    write_cube_diff(cube_ref, cube_other, diffdens_filename)
+    num_el_val,num_el_val_pos,num_el_val_neg = write_cube_diff(cube_ref, cube_other, diffdens_filename)
     print("Wrote diffdens-file :", diffdens_filename+".cube")
-    return diffdens_filename+".cube"
+    return diffdens_filename+".cube",num_el_val,num_el_val_pos,num_el_val_neg
+
+
 #Takes input either ORCA-GBWfile, ORCA_natorbfile or Moldenfile
 def create_cubefile_from_orbfile(orbfile, grid=3, delete_temp_molden_file=True, printlevel=2):
     orcafile=False
@@ -1846,6 +1850,9 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
     print("Total orbfiles:", orbfiles)
     print("\nNow looping over orbfiles, creating Cubefiles and taking difference with respect to reference")
     diff_files=[]
+    num_el_vals=[]
+    num_el_vals_pos=[]
+    num_el_vals_neg=[]
     #Looping over orbital-files (GBW or NAT)
     for orbfile in orbfiles:
         orbfile_base=str(os.path.splitext(orbfile)[0])
@@ -1857,11 +1864,16 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
             print("Creating Cubefile from Orbfile:", orbfile)
             cube_f = create_cubefile_from_orbfile(orbfile, grid=grid, printlevel=printlevel)
             print("Now calculating difference density")
-            diff_file = diffdens_of_cubefiles(ref_cubefile, cube_f)
-            diff_files.append(diff_file)
+            diff_file,num_el_val,num_el_val_pos,num_el_val_neg = diffdens_of_cubefiles(ref_cubefile, cube_f)
+            num_el_vals.append(num_el_val)
+            num_el_vals_pos.append(num_el_val_pos)
+            num_el_vals_neg.append(num_el_val_neg)
+
     
     print("\n All done. Difference density files created:")
     print(diff_files)
+
+    return  diff_files, num_el_vals, num_el_vals_pos, num_el_vals_neg
 
 
 #Density matrix
