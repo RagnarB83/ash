@@ -10,7 +10,7 @@ import subprocess as sp
 import ash.constants
 import ash.modules.module_coords
 import ash.dictionaries_lists
-from ash.functions.functions_general import ashexit, isodd, print_line_with_mainheader,pygrep
+from ash.functions.functions_general import ashexit, isodd, print_line_with_mainheader,pygrep,print_pretty_table
 from ash.interfaces.interface_ORCA import ORCATheory, run_orca_plot, make_molden_file_ORCA
 from ash.modules.module_coords import nucchargelist,elematomnumbers
 from ash.dictionaries_lists import eldict
@@ -1873,6 +1873,8 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
     
     print("\n All done. Difference density files created:")
     print(diff_files)
+    print_pretty_table(list_of_objects=[diff_files,num_el_vals,num_el_vals_pos,num_el_vals_neg], 
+                       list_of_labels=["File","Sum all","Sum of pos. val.","Sum of neg. val."], title=None,  spacing=15,divider_line_length=70)
 
     return diff_files, num_el_vals, num_el_vals_pos, num_el_vals_neg
 

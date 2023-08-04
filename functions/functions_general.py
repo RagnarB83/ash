@@ -713,6 +713,29 @@ class Timings:
         print("{:35}{:>20.2f}{:>10}".format("Total walltime", totalwalltime, 100.0))
 
 
+#General pretty table of thing
+def print_pretty_table(list_of_objects=None, list_of_labels=None, title=None,  spacing=15,divider_line_length=70):
+
+    format_spec=f"{spacing}"
+    #Header
+    print("="*divider_line_length)
+    print(f"{title}")
+    print("="*divider_line_length)
+    headerstring=f""
+    for label in list_of_labels:
+        headerstring+= f"{label:>{format_spec}}"
+    print(headerstring)
+    print("-"*divider_line_length)
+    tablestring=f""
+    for i in range(len(list_of_objects[0])):
+        for j in range(len(list_of_objects)):
+            bla = list_of_objects[j][i]
+            tablestring+=f"{bla:>{format_spec}}"
+        tablestring+=f"\n"
+    print(tablestring)
+    print("-"*divider_line_length)
+    print()
+
 
 # Creating object
 timingsobject = Timings()
