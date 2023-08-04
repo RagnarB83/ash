@@ -220,8 +220,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #Disabling (huge printout for e.g. QM/MM protein system)
         #ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel, printlevel=printlevel)
 
-        #Creating ASH fragments with label
-        frag=ash.Fragment(coords=dispgeo, elems=elems,label=str(disp), printlevel=printlevel, charge=charge, mult=mult)
+        #Creating ASH fragments with label, converting to string (due to problems with parallelization)
+        stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
+        frag=ash.Fragment(coords=dispgeo, elems=elems,label=stringlabel, printlevel=printlevel, charge=charge, mult=mult)
         all_disp_fragments.append(frag)
 
     #RUNNING displacements
@@ -268,12 +269,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
         print(f"Starting Numfreq calculations in parallel mode (numcores={numcores}) using Singlepoint_parallel")
         print(f"There are {len(all_disp_fragments)} displacements")
-        print("all_disp_fragments:",all_disp_fragments)
-        for f in all_disp_fragments:
-            print("f:", f)
-            print(f.__dict__)
-            f.label=str(f.label)
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
+        print("Looping over fragments")
+        for fragdisp in all_disp_fragments:
+            print(fragdisp.__dict__)
         result = ash.Job_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel, copytheory=True)
         #result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
@@ -443,10 +442,13 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         for atomindex in hessatoms:
             #Iterate over x,y,z components
             for crd in [0,1,2]:
-                #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '+' 
-                grad_pos=displacement_grad_dictionary[(atomindex,crd,'+')]
+                #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '+'
+                lookup_string_pos=f"{atomindex}_{crd}_+"
+                lookup_string_neg=f"{atomindex}_{crd}_-"
+                #grad_pos=displacement_grad_dictionary[(atomindex,crd,'+')]
+                grad_pos=displacement_grad_dictionary[lookup_string_pos]
                 #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '-' 
-                grad_neg=displacement_grad_dictionary[(atomindex,crd,'-')]
+                grad_neg=displacement_grad_dictionary[lookup_string_neg]
                  #Getting grad as numpy matrix and converting to 1d
                 # If partial Hessian remove non-hessatoms part of gradient:
                 #grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
