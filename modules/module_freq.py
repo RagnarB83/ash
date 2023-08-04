@@ -283,6 +283,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #Gradient_dict is already correctly formatted
         displacement_grad_dictionary = gradient_dict
 
+        print("displacement_grad_dictionary:", displacement_grad_dictionary)
+        
+
     #OLD code below. To be deleted probably. Attempts to avoid pickling problem
     elif runmode == 'parallel2':
 
