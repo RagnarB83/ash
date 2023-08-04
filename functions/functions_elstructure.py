@@ -1874,7 +1874,8 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
     print("\n All done. Difference density files created:")
     print(diff_files)
     print_pretty_table(list_of_objects=[diff_files,num_el_vals,num_el_vals_pos,num_el_vals_neg], 
-                       list_of_labels=["File","Sum all","Sum of pos. val.","Sum of neg. val."], title=None,  spacing=15,divider_line_length=70)
+                       list_of_labels=["File","Sum all","Sum of pos. val.","Sum of neg. val."], 
+                       title="",  spacing=30, divider_line_length=100)
 
     return diff_files, num_el_vals, num_el_vals_pos, num_el_vals_neg
 
