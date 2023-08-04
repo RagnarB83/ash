@@ -1895,6 +1895,7 @@ def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, A
 
     print()
     print("Will make Molden file from ASH fragment, input MO coefficients and occupations")
+    print("ORCA-formatting of Molden file will be used")
     print("Optional input: MO energies and MO occupations")
 
     print("WARNING: NORMALIZATION may not be entirely correct")
@@ -1912,7 +1913,7 @@ def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, A
     ############
     header="""[Molden Format]
 [Title]
-Molden file created by ASH
+Molden file created by ASH (using orca format)
 
 [Atoms] Angs
 """
@@ -1992,6 +1993,7 @@ Molden file created by ASH
         mfile.write(mostring)
     
     print(f"Created Molden file: {label}.molden")
+    return f"{label}.molden"
 
 #Function that does the ORCA BF normalization
 def normalization_ORCA(L,exp):
