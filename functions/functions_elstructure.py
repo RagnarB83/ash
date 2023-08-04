@@ -1878,8 +1878,10 @@ def diagonalize_dm(D, S):
     print("w:", w)
     print("v:", v)
     # Flip NOONs (and NOs) since they're in increasing order
-    natocc = np.flip(w)
-    natorb = np.flip(v, axis=1)
+    #natocc = np.flip(w)
+    #natorb = np.flip(v, axis=1)
+    natocc = w
+    natorb = v
     print("Natural orbital coefficients:", natorb)
     print("Natural occupations:", natocc)
     return natorb, natocc
