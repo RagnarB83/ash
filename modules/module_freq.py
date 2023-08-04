@@ -221,7 +221,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel, printlevel=printlevel)
 
         #Creating ASH fragments with label
-        frag=ash.Fragment(coords=dispgeo, elems=elems,label=disp, printlevel=printlevel, charge=charge, mult=mult)
+        frag=ash.Fragment(coords=dispgeo, elems=elems,label=str(disp), printlevel=printlevel, charge=charge, mult=mult)
         all_disp_fragments.append(frag)
 
     #RUNNING displacements
@@ -274,16 +274,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             print(f.__dict__)
             f.label=str(f.label)
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
-        for f in all_disp_fragments:
-            print("XX:", f)
-            print(f.__dict__)
-        #DEBUGGING
-        #numfrags=20
-        #frags=[]
-        #for i in range(numfrags):
-        #    frag=ash.Fragment(databasefile="h2o.xyz",label=f"h2o{i}")
-        #    frags.append(frag)
-        #all_disp_fragments
         result = ash.Job_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel, copytheory=True)
         #result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
