@@ -269,8 +269,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         print(f"Starting Numfreq calculations in parallel mode (numcores={numcores}) using Singlepoint_parallel")
 
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
-        result = ash.Singlepoint_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
+        result = ash.Job_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel)
+        #result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
+        #    allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
         en_dict = result.energies_dict
         gradient_dict = result.gradients_dict
         #Gradient_dict is already correctly formatted

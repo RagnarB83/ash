@@ -959,7 +959,7 @@ class KnarrCalculator:
             #   Maybe launch Singlepoint_parallel with a simple ScriptTheory that only executes a runscript.py and grabs E+G from
             # files that are created
             #else:
-            result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
+            result_par = ash.Job_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
             en_dict = result_par.energies_dict
             #Now looping over gradients present (done to avoid overwriting frozen-image gradients)
