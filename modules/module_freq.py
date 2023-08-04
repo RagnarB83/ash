@@ -268,16 +268,20 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
         print(f"Starting Numfreq calculations in parallel mode (numcores={numcores}) using Singlepoint_parallel")
         print(f"There are {len(all_disp_fragments)} displacements")
+        print("all_disp_fragments:",all_disp_fragments)
+        for f in all_disp_fragments:
+            print("f:", f)
+            print(f.__dict__)
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
 
         #DEBUGGING
-        numfrags=20
-        frags=[]
-        for i in range(numfrags):
-            frag=ash.Fragment(databasefile="h2o.xyz",label=f"h2o{i}")
-            frags.append(frag)
+        #numfrags=20
+        #frags=[]
+        #for i in range(numfrags):
+        #    frag=ash.Fragment(databasefile="h2o.xyz",label=f"h2o{i}")
+        #    frags.append(frag)
         #all_disp_fragments
-        result = ash.Job_parallel(fragments=frags, theories=[theory], numcores=numcores, 
+        result = ash.Job_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel, copytheory=True)
         #result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
         #    allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
