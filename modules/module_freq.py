@@ -267,7 +267,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             print("Numfreq in runmode='parallel' with QM/MM is quite experimental")
 
         print(f"Starting Numfreq calculations in parallel mode (numcores={numcores}) using Singlepoint_parallel")
-
+        print(f"There are {} displacements".format(len(all_disp_fragments)))
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
         result = ash.Job_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel, copytheory=True)
