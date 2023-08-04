@@ -714,23 +714,28 @@ class Timings:
 
 
 #General pretty table of thing
-def print_pretty_table(list_of_objects=None, list_of_labels=None, title=None,  spacing=15,divider_line_length=70):
+def print_pretty_table(list_of_objects=None, list_of_labels=None, title=None,  spacing=15, float_decimals=4,
+                       divider_line_length=70):
 
-    format_spec=f"{spacing}"
+    format_spec_string=f"{spacing}"
+    format_spec_float=f"{spacing}.{float_decimals}f"
     #Header
     print("="*divider_line_length)
     print(f"{title}")
     print("="*divider_line_length)
     headerstring=f""
     for label in list_of_labels:
-        headerstring+= f"{label:>{format_spec}}"
+        headerstring+= f"{label:>{format_spec_string}}"
     print(headerstring)
     print("-"*divider_line_length)
     tablestring=f""
     for i in range(len(list_of_objects[0])):
         for j in range(len(list_of_objects)):
-            bla = list_of_objects[j][i]
-            tablestring+=f"{bla:>{format_spec}}"
+            val = list_of_objects[j][i]
+            if type(val) == float:
+                tablestring+=f"{val:>{format_spec_float}}"
+            else:
+                tablestring+=f"{val:>{format_spec_string}}"
         tablestring+=f"\n"
     print(tablestring)
     print("-"*divider_line_length)
