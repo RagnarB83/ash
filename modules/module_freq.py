@@ -421,8 +421,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         for atomindex in hessatoms:
             #Iterate over x,y,z components
             for crd in [0,1,2]:
-                #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '+' 
-                grad_pos=displacement_grad_dictionary[(atomindex,crd,'+')]
+                #Looking up each gradient for atomindex, crd-component(x=0,y=1 or z=2) and '+'
+                lookup_string_pos=f"{atomindex}_{crd}_+"
+                grad_pos=displacement_grad_dictionary[lookup_string_pos]
                  #Getting grad as numpy matrix and converting to 1d
                 # If partial Hessian remove non-hessatoms part of gradient:
                 #grad_pos = get_partial_matrix(allatoms, hessatoms, grad_pos)
