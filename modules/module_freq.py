@@ -244,24 +244,12 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 print("Running displacement: {} / {}".format(numdisp+1,len(list_of_labels)))
                 print(calclabel)
                 #print("Displacing Atom:{} Coord:{} Direction:{}".format(disp[0],disp[1],disp[2]))
+            #Now using string label
+            stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
+
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
-            #Keep QM outputfile for each displacement
-            #if theory.theorytype == "QM":
-            #    try:
-            #        shutil.copy(theory.filename+'.out', theory.filename+'disp_'+str(numdisp)+'.out')
-            #    except:
-            #        pass
-            #elif theory.theorytype == "QM/MM":
-            #    try:
-            #        shutil.copy(theory.qm_theory.filename+'.out', theory.qm_theory.filename+'disp_'+str(numdisp)+'.out')
-            #    except:
-            #        pass
-            #else:
-            #    print("Warning. Unknown theorytype")
-
-            #Adding gradient to dictionary for AtomNCoordPDirectionm
-            displacement_grad_dictionary[disp] = gradient
+            displacement_grad_dictionary[stringlabel] = gradient
     elif runmode == 'parallel':
 
         if isinstance(theory,ash.QMMMTheory):

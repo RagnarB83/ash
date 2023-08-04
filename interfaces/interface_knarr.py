@@ -74,7 +74,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 #Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
-        tol_turn_on_ci=1.0,  runmode='serial', runmode_numfreq='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
+        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, restart_file=None, TS_guess_file=None, mofilesdir=None, 
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
         hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1):
@@ -128,7 +128,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     ##############################
     #Hessianfile should be a simple text file with 1 row per line, values space-separated and no header.
     #Default: 
-    print("WARNING: runmode for Numfreq currently defaults to serial (problems with parallel version). Will be fixed in future.")
+
+    runmode_numfreq=runmode
     if hessian_for_TS == None:
         print("Using default hessian_for_TS option")
         #If dualtheory we just do a Numfreq in regular mode
