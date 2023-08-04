@@ -1865,6 +1865,7 @@ def diffdens_tool(reference_orbfile="HF.gbw", dir='.', grid=3, printlevel=2):
             cube_f = create_cubefile_from_orbfile(orbfile, grid=grid, printlevel=printlevel)
             print("Now calculating difference density")
             diff_file,num_el_val,num_el_val_pos,num_el_val_neg = diffdens_of_cubefiles(ref_cubefile, cube_f)
+            diff_files.append(diff_file)
             num_el_vals.append(num_el_val)
             num_el_vals_pos.append(num_el_val_pos)
             num_el_vals_neg.append(num_el_val_neg)
