@@ -270,7 +270,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
         result = ash.Job_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
-            allow_theory_parallelization=True, Grad=True, printlevel=printlevel)
+            allow_theory_parallelization=True, Grad=True, printlevel=printlevel, copytheory=True)
         #result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
         #    allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
         en_dict = result.energies_dict
