@@ -272,8 +272,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         for f in all_disp_fragments:
             print("f:", f)
             print(f.__dict__)
+            f.label=str(f.label)
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
-
+        for f in all_disp_fragments:
+            print("XX:", f)
+            print(f.__dict__)
         #DEBUGGING
         #numfrags=20
         #frags=[]
