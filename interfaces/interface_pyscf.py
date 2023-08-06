@@ -1611,6 +1611,7 @@ class PySCFTheory:
                         #Regular CASSCF
                         print("Running CASSCF object")
                         print(casscf.__dict__)
+                        print("CASSCF FCI solver:", casscf.fcisolver.__dict__)
                         casscf_result = casscf.run(orbitals, natorb=True)
                         print("casscf_result:", casscf_result)
                         e_tot = casscf_result.e_tot
