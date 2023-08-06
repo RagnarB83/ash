@@ -1542,15 +1542,21 @@ class PySCFTheory:
                         if self.CASSCF_mults != None:
                             print("CASSCF_mults keyword was specified")
                             print("Using this to set multiplicity for each state")
+                            if type(self.CASSCF_numstates) == int:
+                                print("For a state-averaged CASSCF with different spin multiplicities, CASSCF_numstates must be a list")
+                                print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
+                                ashexit()
                             solvers=[]
                             print("Creating multiple FCI solvers")
                             if self.CASSCF_wfnsyms == None:
                                 print("No CASSCF_wfnsyms set. Assuming no symmetry and setting all to A")
                                 self.CASSCF_wfnsyms=['A' for i in self.CASSCF_mults ]
-                            for mult,wfnsym in zip(self.CASSCF_mults,self.CASSCF_wfnsyms):
+                            for mult,wfnsym,nstates_per_mult in zip(self.CASSCF_mults,self.CASSCF_wfnsyms,self.CASSCF_numstates):
                                 #Creating new solver
+                                print(f"Creating new solver for mult={mult} with WFNsym={wnfsym} and {nstates_per_mult} states")
                                 solver = pyscf.fci.direct_spin1_symm.FCI(self.mol)
                                 solver.wfnsym= None
+                                solver.nroots = nstates_per_mult
                                 solver.spin = mult-1
                                 solvers.append(solver)
                             print("Solvers:", solvers)
