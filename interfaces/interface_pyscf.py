@@ -68,7 +68,6 @@ class PySCFTheory:
             #Checking if multi-state CASSCF or not
             if type(self.CASSCF_numstates) is int:
                 print("CASSCF_numstates given as integer")
-                if self.CASSCF_numstates > 1:
                 self.CASSCF_totnumstates=self.CASSCF_numstates
             elif type(self.CASSCF_numstates) is list:
                 print("CASSCF_numstates given as list")
