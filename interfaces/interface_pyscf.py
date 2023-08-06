@@ -1542,7 +1542,7 @@ class PySCFTheory:
                             print("Creating multiple FCI solvers")
                             for mult in self.CASSCF_mults:
                                 #Creating new solver
-                                solver = fci.direct_spin1_symm.FCI(self.mol)
+                                solver = pyscf.fci.direct_spin1_symm.FCI(self.mol)
                                 #solver1.wfnsym= 'A1'
                                 solver.spin = mult-1
                                 solvers.append(solver)
