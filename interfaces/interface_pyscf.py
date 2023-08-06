@@ -1532,7 +1532,7 @@ class PySCFTheory:
                             print("No CASSCF weights chosen (CASSCF_weights keyword)")
                             print("Settings equal weights for all states")
                             weights = [1/self.CASSCF_numstates for i in range(self.CASSCF_numstates)]
-                        casscf = mcscf.state_average_(casscf, weights)
+                        casscf = pyscf.mcscf.state_average_(casscf, weights)
 
 
                     #RUN MC-PDFT or regular CASSCF
