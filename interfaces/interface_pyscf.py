@@ -221,7 +221,7 @@ class PySCFTheory:
             elif type(self.CASSCF_numstates) is list:
                 print("CASSCF_numstates given as list")
                 self.CASSCF_totnumstates=sum(self.CASSCF_numstates)
-            print("Total number of CASSCFstates: ", self.CASSCF_totnumstates)
+            print("Total number of CASSCF states: ", self.CASSCF_totnumstates)
 
 
 
@@ -871,7 +871,9 @@ class PySCFTheory:
         coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
         self.mol.atom = coords_string
         self.mol.symmetry = self.symmetry
-        self.mol.charge = charge; self.mol.spin = mult-1
+        self.mol.charge = charge
+        self.mol.spin = mult-1
+        print("Setting mol.spin to:", mult-1)
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         self.mol.basis=self.basis
@@ -1551,7 +1553,6 @@ class PySCFTheory:
                             print("Exiting")
                             ashexit()
                     
-
                     #MULTIPLE STATES or not
                     if self.CASSCF_totnumstates > 1:
                         print(f"\nMultiple CASSCF states option chosen")
@@ -1608,6 +1609,8 @@ class PySCFTheory:
                         self.energy=mcpdft_result.e_tot
                     else:
                         #Regular CASSCF
+                        print("Running CASSCF object")
+                        print(casscf.__dict__)
                         casscf_result = casscf.run(orbitals, natorb=True)
                         print("casscf_result:", casscf_result)
                         e_tot = casscf_result.e_tot
