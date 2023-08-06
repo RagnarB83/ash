@@ -28,7 +28,7 @@ class PySCFTheory:
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
-                  CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
+                  CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
@@ -107,6 +107,7 @@ class PySCFTheory:
         self.casscf_maxcycle=casscf_maxcycle
         self.CASSCF_numstates=CASSCF_numstates
         self.CASSCF_weights=CASSCF_weights
+        self.CASSCF_mults=CASSCF_mults
 
         #Auto-CAS options
         self.APC=APC
@@ -1532,8 +1533,25 @@ class PySCFTheory:
                             print("No CASSCF weights chosen (CASSCF_weights keyword)")
                             print("Settings equal weights for all states")
                             weights = [1/self.CASSCF_numstates for i in range(self.CASSCF_numstates)]
-                        casscf = pyscf.mcscf.state_average_(casscf, weights)
-
+                            print("Weights:", weights)
+                        #Different spin multiplicities for each state
+                        if self.CASSCF_mults != None:
+                            print("CASSCF_mults keyword was specified")
+                            print("Using this to set multiplicity for each state")
+                            solvers=[]
+                            print("Creating multiple FCI solvers")
+                            for mult in self.CASSCF_mults:
+                                #Creating new solver
+                                solver = fci.direct_spin1_symm.FCI(self.mol)
+                                #solver1.wfnsym= 'A1'
+                                solver.spin = mult-1
+                                solvers.append(solver)
+                            print("Solvers:", solvers)
+                            casscf = pyscf.mcscf.state_average_mix_(casscf, solvers, weights)
+                        #Or not:
+                        else:
+                            casscf = pyscf.mcscf.state_average_(casscf, weights)
+                        #TODO: Check whether input orbitals can be used with this
 
                     #RUN MC-PDFT or regular CASSCF
                     if self.mcpdft is True:
