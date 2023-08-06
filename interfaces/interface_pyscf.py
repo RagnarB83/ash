@@ -1540,7 +1540,8 @@ class PySCFTheory:
                             print("Using this to set multiplicity for each state")
                             solvers=[]
                             print("Creating multiple FCI solvers")
-                            if CASSCF_wfnsyms != None:
+                            if self.CASSCF_wfnsyms != None:
+                                print("No CASSCF_wfnsyms set. Setting all to A1")
                                 self.CASSCF_wfnsyms=['A1' for i in self.CASSCF_mults ]
                             for mult,wfnsym in zip(self.CASSCF_mults,self.CASSCF_wfnsyms):
                                 #Creating new solver
