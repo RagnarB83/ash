@@ -1572,8 +1572,9 @@ class PySCFTheory:
                             for mult,wfnsym,nstates_per_mult in zip(self.CASSCF_mults,self.CASSCF_wfnsyms,self.CASSCF_numstates):
                                 #Creating new solver
                                 print(f"Creating new solver for mult={mult} with WFNsym={wfnsym} and {nstates_per_mult} states")
-                                solver = pyscf.fci.direct_spin1_symm.FCI(self.mol)
-                                solver.wfnsym= wfnsym
+                                solver = pyscf.fci.FCI(self.mol)
+                                #solver.wfnsym= wfnsym
+                                #solver.orbsym= None
                                 solver.nroots = nstates_per_mult
                                 solver.spin = mult-1
                                 solvers.append(solver)
