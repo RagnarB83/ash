@@ -1528,7 +1528,7 @@ class PySCFTheory:
                     if self.CASSCF_numstates > 1:
                         print("Multiple CASSCF states option chosen (CASSCF_numstates >1)")
                         print("Creating state-average CASSCF object")
-                        if self.casscf_weights == None:
+                        if self.CASSCF_weights == None:
                             print("No CASSCF weights chosen (CASSCF_weights keyword)")
                             print("Settings equal weights for all states")
                             weights = [1/self.CASSCF_numstates for i in range(self.CASSCF_numstates)]
