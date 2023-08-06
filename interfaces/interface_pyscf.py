@@ -1573,7 +1573,7 @@ class PySCFTheory:
                             #if self.CASSCF_wfnsyms == None:
                             #    print("No CASSCF_wfnsyms set. Assuming no symmetry and setting all to A")
                             #    self.CASSCF_wfnsyms=['A' for i in self.CASSCF_mults ]
-                            for mult,nstates_per_mult in zip(self.CASSCF_mults,self.CASSCF_wfnsyms,self.CASSCF_numstates):
+                            for mult,nstates_per_mult in zip(self.CASSCF_mults,self.CASSCF_numstates):
                                 #Creating new solver
                                 print(f"Creating new solver for mult={mult} with {nstates_per_mult} states")
                                 solver = pyscf.fci.FCI(self.mol)
@@ -1588,7 +1588,8 @@ class PySCFTheory:
                         else:
                             casscf = pyscf.mcscf.state_average_(casscf, weights)
                         #TODO: Check whether input orbitals can be used with this
-
+                    else:
+                        print("Single-state CASSCF calculation")
                     #RUN MC-PDFT or regular CASSCF
                     if self.mcpdft is True:
                         #Do the CASSCF calculation with on-top functional
