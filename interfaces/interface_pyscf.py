@@ -350,9 +350,10 @@ class PySCFTheory:
         #Determine frozen core from element list
         self.determine_frozen_core(elems)
         self.frozen_orbital_indices=self.frozen_core_orbital_indices
-        print("self.frozen_core_orbital_indices:",self.frozen_core_orbital_indices)
         print("self.frozen_orbital_indices:", self.frozen_orbital_indices)
-
+        #Necessary for MP2 at least
+        if self.frozen_orbital_indices == []:
+            self.frozen_orbital_indices=None
         if self.scf_type == "RKS" or self.scf_type == "UKS":
             print("Warning: SCF-type of PySCF object appears to be a Kohn-Sham determinant")
             print("Kohn-Sham functional:", self.functional)
