@@ -1542,8 +1542,8 @@ class PySCFTheory:
                             solvers=[]
                             print("Creating multiple FCI solvers")
                             if self.CASSCF_wfnsyms == None:
-                                print("No CASSCF_wfnsyms set. Setting all to A1")
-                                self.CASSCF_wfnsyms=['A1' for i in self.CASSCF_mults ]
+                                print("No CASSCF_wfnsyms set. Setting all to E")
+                                self.CASSCF_wfnsyms=['E' for i in self.CASSCF_mults ]
                             for mult,wfnsym in zip(self.CASSCF_mults,self.CASSCF_wfnsyms):
                                 #Creating new solver
                                 solver = pyscf.fci.direct_spin1_symm.FCI(self.mol)
