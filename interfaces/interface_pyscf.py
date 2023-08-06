@@ -1503,7 +1503,9 @@ class PySCFTheory:
                     print("Neither AVAS, DMET_CAS or moreadfile options chosen.")
                     print("Will now calculate MP2 natural orbitals to use as input in CAS job")
                     natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
-                    print("Checking if cas_nmin/cas_nmax keyword were specified")
+                    print("Initial orbitals setup done")
+                    print()
+                    print("Now checking if cas_nmin/cas_nmax keyword were specified")
                     if self.cas_nmin != None and self.cas_nmax != None:
                         print(f"Active space will be determined from MP2 natorbs. NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
                         print("Note: Use active_space keyword if you want to select active space manually instead")
@@ -1552,11 +1554,11 @@ class PySCFTheory:
 
                     #MULTIPLE STATES or not
                     if self.CASSCF_totnumstates > 1:
-                        print(f"Multiple CASSCF states option chosen")
+                        print(f"\nMultiple CASSCF states option chosen")
                         print("Creating state-average CASSCF object")
                         if self.CASSCF_weights == None:
                             print("No CASSCF weights chosen (CASSCF_weights keyword)")
-                            print("Settings equal weights for all states")
+                            print("Settings equal weights for states")
                             weights = [1/self.CASSCF_totnumstates for i in range(self.CASSCF_totnumstates)]
                             print("Weights:", weights)
                         #Different spin multiplicities for each state
@@ -1566,12 +1568,13 @@ class PySCFTheory:
                             print("Total number of states:", self.CASSCF_totnumstates)
                             solvers=[]
                             print("Creating multiple FCI solvers")
-                            if self.CASSCF_wfnsyms == None:
-                                print("No CASSCF_wfnsyms set. Assuming no symmetry and setting all to A")
-                                self.CASSCF_wfnsyms=['A' for i in self.CASSCF_mults ]
-                            for mult,wfnsym,nstates_per_mult in zip(self.CASSCF_mults,self.CASSCF_wfnsyms,self.CASSCF_numstates):
+                            #Disabling for now
+                            #if self.CASSCF_wfnsyms == None:
+                            #    print("No CASSCF_wfnsyms set. Assuming no symmetry and setting all to A")
+                            #    self.CASSCF_wfnsyms=['A' for i in self.CASSCF_mults ]
+                            for mult,nstates_per_mult in zip(self.CASSCF_mults,self.CASSCF_wfnsyms,self.CASSCF_numstates):
                                 #Creating new solver
-                                print(f"Creating new solver for mult={mult} with WFNsym={wfnsym} and {nstates_per_mult} states")
+                                print(f"Creating new solver for mult={mult} with {nstates_per_mult} states")
                                 solver = pyscf.fci.FCI(self.mol)
                                 #solver.wfnsym= wfnsym
                                 #solver.orbsym= None
