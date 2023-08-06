@@ -65,18 +65,9 @@ class PySCFTheory:
             ashexit()
         if CASSCF is True and CAS is False:
             CAS=True
-        if CAS is True:
-            #Checking if multi-state CASSCF or not
-            if type(self.CASSCF_numstates) is int:
-                print("CASSCF_numstates given as integer")
-                self.CASSCF_totnumstates=self.CASSCF_numstates
-            elif type(self.CASSCF_numstates) is list:
-                print("CASSCF_numstates given as list")
-                self.CASSCF_totnumstates=sum(self.CASSCF_numstates)
-            print("Total number of CASSCFstates: ", self.CASSCF_totnumstates)
             #Check
             if CASSCF_mults != None:
-                if type(self.CASSCF_numstates) == int:
+                if type(CASSCF_numstates) == int:
                     print("For a state-averaged CASSCF with different spin multiplicities, CASSCF_numstates must be a list")
                     print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
                     ashexit()
@@ -204,6 +195,7 @@ class PySCFTheory:
         if self.CAS is True:
             self.postSCF=True
             print("CAS is True. Active_space keyword should be defined unless AVAS, APC or DMET_CAS is True.")
+
             if self.AVAS is True or self.DMET_CAS is True: 
                 print("AVAS/DMET_CAS is True")
                 if self.CAS_AO_labels is None:
@@ -220,6 +212,19 @@ class PySCFTheory:
                 print("If neither AVAS,DMET_CAS or cas_nmin/cas_nmax options are chosen then")
                 print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
                 ashexit()
+
+        if CAS is True:
+            #Checking if multi-state CASSCF or not
+            if type(self.CASSCF_numstates) is int:
+                print("CASSCF_numstates given as integer")
+                self.CASSCF_totnumstates=self.CASSCF_numstates
+            elif type(self.CASSCF_numstates) is list:
+                print("CASSCF_numstates given as list")
+                self.CASSCF_totnumstates=sum(self.CASSCF_numstates)
+            print("Total number of CASSCFstates: ", self.CASSCF_totnumstates)
+
+
+
         if self.CC is True:
             self.postSCF=True
         if self.TDDFT is True:
