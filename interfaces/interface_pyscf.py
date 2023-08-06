@@ -108,6 +108,7 @@ class PySCFTheory:
         self.CASSCF_numstates=CASSCF_numstates
         self.CASSCF_weights=CASSCF_weights
         self.CASSCF_mults=CASSCF_mults
+        self.CASSCF_wfnsyms=CASSCF_wfnsyms
 
         #Auto-CAS options
         self.APC=APC
