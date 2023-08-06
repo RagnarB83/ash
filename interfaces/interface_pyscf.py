@@ -28,7 +28,7 @@ class PySCFTheory:
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
-                  CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
+                  CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
@@ -1540,10 +1540,12 @@ class PySCFTheory:
                             print("Using this to set multiplicity for each state")
                             solvers=[]
                             print("Creating multiple FCI solvers")
-                            for mult in self.CASSCF_mults:
+                            if CASSCF_wfnsyms != None:
+                                self.CASSCF_wfnsyms=['A1' for i in self.CASSCF_mults ]
+                            for mult,wfnsym in zip(self.CASSCF_mults,self.CASSCF_wfnsyms):
                                 #Creating new solver
                                 solver = pyscf.fci.direct_spin1_symm.FCI(self.mol)
-                                #solver1.wfnsym= 'A1'
+                                solver.wfnsym= wfnsym
                                 solver.spin = mult-1
                                 solvers.append(solver)
                             print("Solvers:", solvers)
