@@ -1547,7 +1547,7 @@ class PySCFTheory:
                             for mult,wfnsym in zip(self.CASSCF_mults,self.CASSCF_wfnsyms):
                                 #Creating new solver
                                 solver = pyscf.fci.direct_spin1_symm.FCI(self.mol)
-                                solver.wfnsym= wfnsym
+                                solver.wfnsym= None
                                 solver.spin = mult-1
                                 solvers.append(solver)
                             print("Solvers:", solvers)
