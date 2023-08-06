@@ -65,6 +65,22 @@ class PySCFTheory:
             ashexit()
         if CASSCF is True and CAS is False:
             CAS=True
+            #Checking if multi-state CASSCF or not
+            if type(self.CASSCF_numstates) is int:
+                print("CASSCF_numstates given as integer")
+                if self.CASSCF_numstates > 1:
+                self.CASSCF_totnumstates=self.CASSCF_numstates
+            elif type(self.CASSCF_numstates) is list:
+                print("CASSCF_numstates given as list")
+                self.CASSCF_totnumstates=sum(self.CASSCF_numstates)
+            print("Total number of CASSCFstates: ", self.CASSCF_totnumstates)
+            #Check
+            if CASSCF_mults != None:
+                if type(self.CASSCF_numstates) == int:
+                    print("For a state-averaged CASSCF with different spin multiplicities, CASSCF_numstates must be a list")
+                    print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
+                    ashexit()
+            
         #Printlevel
         self.printlevel=printlevel
         self.label=label
@@ -1530,22 +1546,19 @@ class PySCFTheory:
                     
 
                     #MULTIPLE STATES or not
-                    if self.CASSCF_numstates > 1:
-                        print(f"Multiple CASSCF states option chosen (CASSCF_numstates = {self.CASSCF_numstates} >1)")
+                    if self.CASSCF_totnumstates > 1:
+                        print(f"Multiple CASSCF states option chosen")
                         print("Creating state-average CASSCF object")
                         if self.CASSCF_weights == None:
                             print("No CASSCF weights chosen (CASSCF_weights keyword)")
                             print("Settings equal weights for all states")
-                            weights = [1/self.CASSCF_numstates for i in range(self.CASSCF_numstates)]
+                            weights = [1/self.CASSCF_totnumstates for i in range(self.CASSCF_totnumstates)]
                             print("Weights:", weights)
                         #Different spin multiplicities for each state
                         if self.CASSCF_mults != None:
                             print("CASSCF_mults keyword was specified")
                             print("Using this to set multiplicity for each state")
-                            if type(self.CASSCF_numstates) == int:
-                                print("For a state-averaged CASSCF with different spin multiplicities, CASSCF_numstates must be a list")
-                                print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
-                                ashexit()
+                            print("Total number of states:", self.CASSCF_totnumstates)
                             solvers=[]
                             print("Creating multiple FCI solvers")
                             if self.CASSCF_wfnsyms == None:
@@ -1555,7 +1568,7 @@ class PySCFTheory:
                                 #Creating new solver
                                 print(f"Creating new solver for mult={mult} with WFNsym={wnfsym} and {nstates_per_mult} states")
                                 solver = pyscf.fci.direct_spin1_symm.FCI(self.mol)
-                                solver.wfnsym= None
+                                solver.wfnsym= wfnsym
                                 solver.nroots = nstates_per_mult
                                 solver.spin = mult-1
                                 solvers.append(solver)
