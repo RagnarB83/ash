@@ -65,6 +65,7 @@ class PySCFTheory:
             ashexit()
         if CASSCF is True and CAS is False:
             CAS=True
+        if CAS is True:
             #Checking if multi-state CASSCF or not
             if type(self.CASSCF_numstates) is int:
                 print("CASSCF_numstates given as integer")
