@@ -1531,7 +1531,7 @@ class PySCFTheory:
 
                     #MULTIPLE STATES or not
                     if self.CASSCF_numstates > 1:
-                        print("Multiple CASSCF states option chosen (CASSCF_numstates >1)")
+                        print(f"Multiple CASSCF states option chosen (CASSCF_numstates = {self.CASSCF_numstates} >1)")
                         print("Creating state-average CASSCF object")
                         if self.CASSCF_weights == None:
                             print("No CASSCF weights chosen (CASSCF_weights keyword)")
