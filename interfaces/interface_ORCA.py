@@ -1991,22 +1991,6 @@ def check_stability_in_output(file):
     return True
 
 
-def MP2_natocc_grab(filename):
-    natoccgrab=False
-    natoccupations=[]
-    with open(filename) as f:
-        for line in f:
-            if natoccgrab==True:
-                if 'N' in line:
-                    natoccupations.append(float(line.split()[-1]))
-                if '***' in line:
-                    natoccgrab=False
-            if 'Natural Orbital Occupation Num' in line:
-                natoccgrab=True
-    return natoccupations
-
-
-
 
 def SCF_FODocc_grab(filename):
     occgrab=False
@@ -2023,6 +2007,35 @@ def SCF_FODocc_grab(filename):
             if 'SPIN UP ORBITALS' in line:
                 occgrab=True
     return occupations
+
+def MP2_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if 'N' in line:
+                    natoccupations.append(float(line.split()[-1]))
+                if '***' in line:
+                    natoccgrab=False
+            if 'Natural Orbital Occupation Num' in line:
+                natoccgrab=True
+    return natoccupations
+
+def CCSD_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if 'N' in line:
+                    natoccupations.append(float(line.split()[-1]))
+                if ' .... done' in line:
+                    natoccgrab=False
+            if 'Natural Orbital Occupation Numbers:' in line:
+                natoccgrab=True
+    return natoccupations
+
 
 def CASSCF_natocc_grab(filename):
     natoccgrab=False

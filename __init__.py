@@ -145,7 +145,7 @@ from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT
 # Workflows, benchmarking etc
 import ash.modules.module_workflows
 import ash.modules.module_highlevel_workflows
-from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory, Reaction_FCI_Analysis, make_ICE_theory
+from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory, Reaction_FCI_Analysis, make_ICE_theory, Auto_ICE_CAS
 
 CC_CBS_Theory = ORCA_CC_CBS_Theory #TODO: Temporary alias
 
