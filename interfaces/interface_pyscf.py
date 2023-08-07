@@ -28,7 +28,7 @@ class PySCFTheory:
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
-                  CAS=False, CASSCF=False, active_space=None, stability_analysis=False, casscf_maxcycle=200,
+                  CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
@@ -65,6 +65,13 @@ class PySCFTheory:
             ashexit()
         if CASSCF is True and CAS is False:
             CAS=True
+            #Check
+            if CASSCF_mults != None:
+                if type(CASSCF_numstates) == int:
+                    print("For a state-averaged CASSCF with different spin multiplicities, CASSCF_numstates must be a list")
+                    print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
+                    ashexit()
+            
         #Printlevel
         self.printlevel=printlevel
         self.label=label
@@ -105,6 +112,10 @@ class PySCFTheory:
         self.CASSCF=CASSCF
         self.active_space=active_space
         self.casscf_maxcycle=casscf_maxcycle
+        self.CASSCF_numstates=CASSCF_numstates
+        self.CASSCF_weights=CASSCF_weights
+        self.CASSCF_mults=CASSCF_mults
+        self.CASSCF_wfnsyms=CASSCF_wfnsyms
 
         #Auto-CAS options
         self.APC=APC
@@ -184,6 +195,7 @@ class PySCFTheory:
         if self.CAS is True:
             self.postSCF=True
             print("CAS is True. Active_space keyword should be defined unless AVAS, APC or DMET_CAS is True.")
+
             if self.AVAS is True or self.DMET_CAS is True: 
                 print("AVAS/DMET_CAS is True")
                 if self.CAS_AO_labels is None:
@@ -200,6 +212,19 @@ class PySCFTheory:
                 print("If neither AVAS,DMET_CAS or cas_nmin/cas_nmax options are chosen then")
                 print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
                 ashexit()
+
+        if CAS is True:
+            #Checking if multi-state CASSCF or not
+            if type(self.CASSCF_numstates) is int:
+                print("CASSCF_numstates given as integer")
+                self.CASSCF_totnumstates=self.CASSCF_numstates
+            elif type(self.CASSCF_numstates) is list:
+                print("CASSCF_numstates given as list")
+                self.CASSCF_totnumstates=sum(self.CASSCF_numstates)
+            print("Total number of CASSCF states: ", self.CASSCF_totnumstates)
+
+
+
         if self.CC is True:
             self.postSCF=True
         if self.TDDFT is True:
@@ -346,7 +371,10 @@ class PySCFTheory:
         #Determine frozen core from element list
         self.determine_frozen_core(elems)
         self.frozen_orbital_indices=self.frozen_core_orbital_indices
-
+        print("self.frozen_orbital_indices:", self.frozen_orbital_indices)
+        #Necessary for MP2 at least
+        if self.frozen_orbital_indices == []:
+            self.frozen_orbital_indices=None
         if self.scf_type == "RKS" or self.scf_type == "UKS":
             print("Warning: SCF-type of PySCF object appears to be a Kohn-Sham determinant")
             print("Kohn-Sham functional:", self.functional)
@@ -843,7 +871,9 @@ class PySCFTheory:
         coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
         self.mol.atom = coords_string
         self.mol.symmetry = self.symmetry
-        self.mol.charge = charge; self.mol.spin = mult-1
+        self.mol.charge = charge
+        self.mol.spin = mult-1
+        print("Setting mol.spin to:", mult-1)
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         self.mol.basis=self.basis
@@ -1475,7 +1505,9 @@ class PySCFTheory:
                     print("Neither AVAS, DMET_CAS or moreadfile options chosen.")
                     print("Will now calculate MP2 natural orbitals to use as input in CAS job")
                     natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
-                    print("Checking if cas_nmin/cas_nmax keyword were specified")
+                    print("Initial orbitals setup done")
+                    print()
+                    print("Now checking if cas_nmin/cas_nmax keyword were specified")
                     if self.cas_nmin != None and self.cas_nmax != None:
                         print(f"Active space will be determined from MP2 natorbs. NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
                         print("Note: Use active_space keyword if you want to select active space manually instead")
@@ -1494,7 +1526,9 @@ class PySCFTheory:
                 if self.CASSCF is True:
                     print("Doing CASSCF (orbital optimization)")
                     if self.mcpdft is True:
-                        casscf = pyscf.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+                        from pyscf import mcpdft, mcdcft
+                        #old: casscf = pyscf.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+                        casscf = mcpdft.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
                     else:
                         #Regular CASSCF
                         casscf = pyscf.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
@@ -1518,8 +1552,53 @@ class PySCFTheory:
                             print("Something wrong with orbitals:", orbitals)
                             print("Exiting")
                             ashexit()
+                    
+                    #MULTIPLE STATES or not
+                    if self.CASSCF_totnumstates > 1:
+                        print(f"\nMultiple CASSCF states option chosen")
+                        print("Creating state-average CASSCF object")
+                        if self.CASSCF_weights == None:
+                            print("No CASSCF weights chosen (CASSCF_weights keyword)")
+                            print("Settings equal weights for states")
+                            weights = [1/self.CASSCF_totnumstates for i in range(self.CASSCF_totnumstates)]
+                            print("Weights:", weights)
+                        #Different spin multiplicities for each state
+                        if self.CASSCF_mults != None:
+                            print("CASSCF_mults keyword was specified")
+                            print("Using this to set multiplicity for each state")
+                            print("Total number of states:", self.CASSCF_totnumstates)
+                            solvers=[]
+                            print("Creating multiple FCI solvers")
+                            #Disabling for now
+                            #if self.CASSCF_wfnsyms == None:
+                            #    print("No CASSCF_wfnsyms set. Assuming no symmetry and setting all to A")
+                            #    self.CASSCF_wfnsyms=['A' for i in self.CASSCF_mults ]
+                            for mult,nstates_per_mult in zip(self.CASSCF_mults,self.CASSCF_numstates):
+                                #Creating new solver
+                                print(f"Creating new solver for mult={mult} with {nstates_per_mult} states")
+                                solver = pyscf.fci.FCI(self.mol)
+                                #solver.wfnsym= wfnsym
+                                #solver.orbsym= None
+                                solver.nroots = nstates_per_mult
+                                solver.spin = mult-1
+                                solvers.append(solver)
+                            print("Solvers:", solvers)
+                            casscf = pyscf.mcscf.state_average_mix_(casscf, solvers, weights)
+                        #Or not:
+                        else:
+                            casscf = pyscf.mcscf.state_average_(casscf, weights)
+                        #TODO: Check whether input orbitals can be used with this
+                    else:
+                        print("Single-state CASSCF calculation")
+                    #RUN MC-PDFT or regular CASSCF
                     if self.mcpdft is True:
+                        #Do the CASSCF calculation with on-top functional
+                        print("Now running MC-PDFT with on-top functional")
                         mcpdft_result = casscf.run(orbitals, natorb=True)
+                        #mc1 = mcdcft.CASSCF (mf, 'cBLYP', 4, 4).run ()
+                        #print("Now running cBLYP on top")
+                        #mc1 = mcdcft.CASSCF (self.mf, 'cBLYP', norb_cas, nel_cas).run ()
+                        #print("mc1:", mc1)
                         print("E(CASSCF):", mcpdft_result.e_mcscf)
                         print(f"Eot({self.mcpdft_functional}):", mcpdft_result.e_ot)
                         print("E(tot, MC-PDFT):", mcpdft_result.e_tot)
@@ -1531,6 +1610,9 @@ class PySCFTheory:
                         self.energy=mcpdft_result.e_tot
                     else:
                         #Regular CASSCF
+                        print("Running CASSCF object")
+                        print(casscf.__dict__)
+                        print("CASSCF FCI solver:", casscf.fcisolver.__dict__)
                         casscf_result = casscf.run(orbitals, natorb=True)
                         print("casscf_result:", casscf_result)
                         e_tot = casscf_result.e_tot

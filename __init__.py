@@ -35,7 +35,7 @@ from ash.modules.module_results import ASH_Results
 # Fragment class and coordinate functions
 import ash.modules.module_coords
 from ash.modules.module_coords import get_molecules_from_trajectory, eldict_covrad, write_pdbfile, Fragment, read_xyzfile, \
-    write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile, split_multimolxyzfile
+    write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile, split_multimolxyzfile,distance_between_atoms
 from ash.modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_system_CHARMM, getwaterconstraintslist,\
     QMregionfragexpand, read_xyzfiles, Reaction, define_XH_constraints, simple_get_water_constraints, print_internal_coordinate_table
 
@@ -60,11 +60,11 @@ import ash.constants
 # functions related to electronic structure
 import ash.functions.functions_elstructure
 from ash.functions.functions_elstructure import read_cube, write_cube_diff, diffdens_tool, create_cubefile_from_orbfile, diffdens_of_cubefiles,  \
-    NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb
+    NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb, make_molden_file
 
 #multiwfn interface
 import ash.interfaces.interface_multiwfn
-from ash.interfaces.interface_multiwfn import multiwfn_run, convert_MRCC_Molden_file
+from ash.interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from ash.modules.module_spinprojection import SpinProjectionTheory
 #DualTheory
@@ -86,7 +86,7 @@ from ash.interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction
 from ash.interfaces.interface_ipie import ipieTheory
 from ash.interfaces.interface_dice import DiceTheory
 from ash.interfaces.interface_block import BlockTheory
-from ash.interfaces.interface_MRCC import MRCCTheory, run_MRCC_HLC_correction
+from ash.interfaces.interface_MRCC import MRCCTheory, run_MRCC_HLC_correction, convert_MRCC_Molden_file
 from ash.interfaces.interface_QUICK import QUICKTheory
 from ash.interfaces.interface_TeraChem import TeraChemTheory
 from ash.interfaces.interface_sparrow import SparrowTheory
@@ -95,7 +95,7 @@ from ash.interfaces.interface_CP2K import CP2KTheory
 from ash.interfaces.interface_BigDFT import BigDFTTheory
 from ash.interfaces.interface_deMon import deMon2kTheory
 
-from ash.interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction
+from ash.interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
 from ash.interfaces.interface_xtb import xTBTheory
 from ash.interfaces.interface_PyMBE import PyMBETheory
 
@@ -145,7 +145,7 @@ from ash.modules.module_PES_rewrite import PhotoElectron, potential_adjustor_DFT
 # Workflows, benchmarking etc
 import ash.modules.module_workflows
 import ash.modules.module_highlevel_workflows
-from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory, Reaction_FCI_Analysis, make_ICE_theory
+from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory, Reaction_FCI_Analysis, make_ICE_theory, Auto_ICE_CAS
 
 CC_CBS_Theory = ORCA_CC_CBS_Theory #TODO: Temporary alias
 

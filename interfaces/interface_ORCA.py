@@ -1991,22 +1991,6 @@ def check_stability_in_output(file):
     return True
 
 
-def MP2_natocc_grab(filename):
-    natoccgrab=False
-    natoccupations=[]
-    with open(filename) as f:
-        for line in f:
-            if natoccgrab==True:
-                if 'N' in line:
-                    natoccupations.append(float(line.split()[-1]))
-                if '***' in line:
-                    natoccgrab=False
-            if 'Natural Orbital Occupation Num' in line:
-                natoccgrab=True
-    return natoccupations
-
-
-
 
 def SCF_FODocc_grab(filename):
     occgrab=False
@@ -2023,6 +2007,35 @@ def SCF_FODocc_grab(filename):
             if 'SPIN UP ORBITALS' in line:
                 occgrab=True
     return occupations
+
+def MP2_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if 'N' in line:
+                    natoccupations.append(float(line.split()[-1]))
+                if '***' in line:
+                    natoccgrab=False
+            if 'Natural Orbital Occupation Num' in line:
+                natoccgrab=True
+    return natoccupations
+
+def CCSD_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if 'N' in line:
+                    natoccupations.append(float(line.split()[-1]))
+                if ' .... done' in line:
+                    natoccgrab=False
+            if 'Natural Orbital Occupation Numbers:' in line:
+                natoccgrab=True
+    return natoccupations
+
 
 def CASSCF_natocc_grab(filename):
     natoccgrab=False
@@ -2655,9 +2668,8 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
 
 
 #Parse ORCA json file
-#Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices
-#densities etc.
-def read_ORCA_json_file(file, orcadir=None, Hmatrix=False,SMatrix=False,TMatrix=False):
+#Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
+def read_ORCA_json_file(file, orcadir=None):
     # Parsing of files
     import json
 
@@ -2668,9 +2680,9 @@ def read_ORCA_json_file(file, orcadir=None, Hmatrix=False,SMatrix=False,TMatrix=
     confstring="""{
 "MOCoefficients": true,
 "Basisset": true,
-"H": false,
-"S": false,
-"T": false,
+"H": true,
+"S": true,
+"T": true,
 "Densities": ["all"],
 "JSONFormats": ["json", "bson"]
 }
@@ -2700,10 +2712,30 @@ def read_ORCA_json_file(file, orcadir=None, Hmatrix=False,SMatrix=False,TMatrix=
     print("Molecule-CoordinateUnits:", data["Molecule"]["CoordinateUnits"])
     print("Molecule-HFTyp:", data["Molecule"]["HFTyp"])
     print()
-    #print("Molecule-Densities:", data["Molecule"]["Densities"])
-    SCF_density = data["Molecule"]["Densities"]["scfp"]
+    print("Densities found:")
+    for d in data["Molecule"]["Densities"]:
+        print(d)
+    print("Dictionary keys of data", data["Molecule"].keys())
+    return data["Molecule"]
+
+def get_densities_from_ORCA_json(data):
+    DMs={}
+    for d in data["Densities"]:
+        print(d)
+        DMs[d] = np.array(data["Densities"][d])
+    #try:
+    #    SCF_density = data["Molecule"]["Densities"]["scfp"]
+    #    DMs["scfp"] = np.array(SCF_density)
+    #except:
+    #    pass
+    #try:
+    #    MP2_UR_density = data["Molecule"]["Densities"]["pmp2ur"]
+    #    DMs["pmp2ur"] = np.array(MP2_UR_density)
+    #except:
+    #    pass
+    print("Found the following densities: ", DMs.keys())
+    return DMs
     #print("Molecule-H-Matrix:", data["Molecule"]["H-Matrix"])
     #print("Molecule-S-Matrix:", data["Molecule"]["S-Matrix"])
     #print("Molecule-T-Matrix:", data["Molecule"]["T-Matrix"])
     #print("Molecule-MolecularOrbitals:", data["Molecule"]["MolecularOrbitals"])
-

@@ -71,8 +71,10 @@ class xTBTheory:
             print("Importing xtb-python library")
             try:
                 from xtb.interface import Calculator, Param
-            except:
+            except Exception as e:
                 print("Problem importing xTB library. Have you installed : conda install -c conda-forge xtb-python  ?")
+                print("pip install typing-extensions  may also be required")
+                print("Full error message:", e)
                 ashexit(code=9)
 
             # Creating variable and setting to None. Replaced by run

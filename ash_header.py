@@ -51,6 +51,8 @@ def print_header():
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
     if ash.settings_ash.settings_dict["print_logo"] is True:
         print_logo()
+    else:
+        print("ASH".center(90))
     print(f"{BC.WARNING}A MULTISCALE MODELLING PROGRAM{BC.END}".center(90))
     print(f"{BC.WARNING}{BC.BOLD}Version: {programversion}{BC.END}".center(95))
     print(f"{BC.WARNING}Git commit version: {git_commit_number}{BC.END}".center(90))

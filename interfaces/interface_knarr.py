@@ -42,7 +42,6 @@ path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 8,
               "INSERT_CONFIG": None, "IDPP_MAX_ITER": 700,
               "IDPP_SPRINGCONST": 5.0, "IDPP_TIME_STEP": 0.01,
               "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.07, "IDPP_RMS_F": 0.009}
-
 neb_settings = {"PATH": "neb.xyz",
               "CLIMBING": True,
               "TANGENT": "IMPROVED",
@@ -76,7 +75,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=700, restart_file=None, TS_guess=None, mofilesdir=None, 
+        interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, restart_file=None, TS_guess_file=None, mofilesdir=None, 
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
         hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1):
 
@@ -110,8 +109,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
-            interpolation=interpolation, idpp_maxiter=idpp_maxiter, 
-            restart_file=restart_file, TS_guess=TS_guess, mofilesdir=mofilesdir)
+            interpolation=interpolation, idpp_maxiter=idpp_maxiter, idpp_springconst=idpp_springconst,
+            restart_file=restart_file, TS_guess_file=TS_guess_file, mofilesdir=mofilesdir)
     #Saddlepoint fragment
     SP = NEB_results.saddlepoint_fragment
     #Dictionary of images
@@ -129,13 +128,15 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     ##############################
     #Hessianfile should be a simple text file with 1 row per line, values space-separated and no header.
     #Default: 
+
+    runmode_numfreq=runmode
     if hessian_for_TS == None:
         print("Using default hessian_for_TS option")
         #If dualtheory we just do a Numfreq in regular mode
         if isinstance(theory,ash.DualTheory):
             print("Dualtheory active. Doing Numfreq using regular mode.")
             #NOTE: Regular will probably involve a theory 2 correction. We could switch to theory1 solely instead here
-            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode_numfreq, numcores=numcores)
             hessianfile="Hessian_from_dualtheory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
@@ -143,7 +144,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             #NOTE: More sensible default than below
             #NOTE: This is different from partial approach below. Need to change
             print("QM/MM Theory is recognized. Doing by default partial Hessian using whole QM-region")
-            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, 
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode_numfreq, 
                                     numcores=numcores, hessatoms=theory.qmatoms)
 
             #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
@@ -156,7 +157,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             hessianoption='file:'+str(hessianfile)            
         else:
             print("Doing Numfreq")
-            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode_numfreq, numcores=numcores)
             hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
@@ -165,13 +166,13 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     # Tell geomeTRIC to calculate exact Hessian in the beginning
     elif hessian_for_TS == '2point':
             print("Doing Numfreq 2-point approximation")
-            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, runmode=runmode_numfreq, numcores=numcores)
             hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
     elif hessian_for_TS == '1point':
             print("Doing Numfreq 1-point approximation")
-            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode_numfreq, numcores=numcores)
             hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
@@ -314,8 +315,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
         charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=700, zoom=False,
-        restart_file=None, TS_guess=None, mofilesdir=None):
+        interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, zoom=False,
+        restart_file=None, TS_guess_file=None, mofilesdir=None):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
     module_init_time=time.time()
@@ -361,6 +362,9 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     #Zero-valued constraints list. We probably won't use constraints for now
     constr = np.zeros(shape=(numatoms * 3, 1))
 
+    #Setting TS_guess to None (possibly assigned below)
+    TS_guess=None
+
     #ActiveRegion feature
     if ActiveRegion==True:
         print("Active Region option Active. Passing only active-region coordinates to Knarr.")
@@ -373,10 +377,11 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         new_product = ash.Fragment(coords=P_actcoords, elems=P_actelems)
 
         #TSguess fragment provided
-        if TS_guess != None:
+        if TS_guess_file != None:
+            full_TS_guess = ash.Fragment(xyzfile=TS_guess_file, charge=charge, mult=mult, printlevel=0)
             TS_actcoords, TS_actelems = TS_guess.get_coords_for_atoms(actatoms)
-            new_TSguess = ash.Fragment(coords=TS_actcoords, elems=TS_actelems, printlevel=0)
-            new_TSguess.write_xyzfile(xyzfilename="TSguess.xyz")
+            TSguess = ash.Fragment(coords=TS_actcoords, elems=TS_actelems, printlevel=0)
+            TSguess.write_xyzfile(xyzfilename="TSguess.xyz")
         #Create Knarr calculator from ASH theory.
         calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, runmode=runmode, numcores=numcores,
                                      ActiveRegion=True, actatoms=actatoms, full_fragment_reactant=reactant,
@@ -398,7 +403,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
 
     else:
-        if TS_guess != None:
+        if TS_guess_file != None:
+            TS_guess = ash.Fragment(xyzfile=TS_guess_file, charge=charge, mult=mult, printlevel=0)
             #Writing XYZ-file for TSguess
             TS_guess.write_xyzfile(xyzfilename="TSguess.xyz")
 
@@ -420,6 +426,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     #Set Knarr settings in dictionary
     path_parameters["INTERPOLATION"]=interpolation
     path_parameters["IDPP_MAX_ITER"] = idpp_maxiter
+    path_parameters["IDPP_SPRINGCONST"] = idpp_springconst
     if TS_guess != None:
         path_parameters["INSERT_CONFIG"] = "TSguess.xyz"
     neb_settings["CLIMBING"]=CI
@@ -480,7 +487,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         print("Creating interpolated path.")
 
         if TS_guess != None:
-            print(f"A TS guess : {TS_guess} was provided")
+            print(f"A TS guess file : {TS_guess_file} was provided")
             print("Will use intermediate geometry in interpolation")
 
         # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
@@ -592,6 +599,16 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
     sett = nebsettings
     type_of_method_string = path_parameters["METHOD"].upper()
+    #Print path parameters
+    print("Interpolation method:", path_parameters["METHOD"])
+    print("Interpolation type:", path_parameters["INTERPOLATION"])
+    print("Insert configuration:", path_parameters["INSERT_CONFIG"])
+    print("IDPP Max iterations:", path_parameters["IDPP_MAX_ITER"])
+    print("IDPP spring constant:", path_parameters["IDPP_SPRINGCONST"])
+    print("IDPP timestep:", path_parameters["IDPP_TIME_STEP"])
+    print("IDPP Max Move:", path_parameters["IDPP_MAX_MOVE"])
+    print("IDPP Max Force:", path_parameters["IDPP_MAX_F"])
+    print("IDPP RMS Force:", path_parameters["IDPP_RMS_F"])
     if type_of_method_string == "SINGLE":
         prod_is_needed = False
     elif type_of_method_string == "DOUBLE":
@@ -600,6 +617,7 @@ def Knarr_pathgenerator(nebsettings,path_parameters,react,prod,ActiveRegion):
         raise TypeError("Either choose single or double ended path generation")
 
     nim = path_parameters["NIMAGES"]
+
     path = InitializePathObject(nim, react)
     if prod_is_needed:
         # Check product
@@ -943,7 +961,7 @@ class KnarrCalculator:
             #   Maybe launch Singlepoint_parallel with a simple ScriptTheory that only executes a runscript.py and grabs E+G from
             # files that are created
             #else:
-            result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
+            result_par = ash.Job_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
                 allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
             en_dict = result_par.energies_dict
             #Now looping over gradients present (done to avoid overwriting frozen-image gradients)

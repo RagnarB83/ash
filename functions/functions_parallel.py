@@ -91,6 +91,9 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     print()
     print_line_with_subheader1("Job_parallel function")
 
+    print("copytheory:", copytheory)
+    print("printlevel:", printlevel)
+
     #OPT
     if Opt is True:
         print("Job_parallel: Opt is True. This is an Opt_parallel job")

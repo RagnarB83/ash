@@ -6,6 +6,7 @@ import numpy as np
 
 import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.interfaces.interface_multiwfn import write_multiwfn_input_option
 
 MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z', 'ADZ':'aug-cc-pVDZ', 'ATZ':'aug-cc-pVTZ', 'AQZ':'aug-cc-pVQZ', 
             'A5Z':'aug-cc-pV5Z'}
@@ -102,15 +103,31 @@ class MRCCTheory:
         #Note: for gradient and QM/MM it is best to keep_orientation=True in write_mrcc_input
 
         if Grad==True:
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation,
+                             PC_coords=current_MM_coords, PC_charges=MMcharges)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
 
+            #PC self energy
+            if PC == True:
+                pc_self_energy = grab_MRCC_PC_self_energy("mrcc_job.dat")
+                print("PC self-energy:", pc_self_energy)
+                self.energy = self.energy - pc_self_energy
+            #Pointcharge-gradient
+            self.pcgradient = grab_MRCC_pointcharge_gradient("mrcc_job.dat",MMcharges)
+
         else:
-            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation)
+            write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation,
+                             PC_coords=current_MM_coords, PC_charges=MMcharges)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
+
+            #PC self energy
+            if PC == True:
+                pc_self_energy = grab_MRCC_PC_self_energy("mrcc_job.dat")
+                print("PC self-energy:", pc_self_energy)
+                self.energy = self.energy - pc_self_energy
 
         #TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
@@ -118,7 +135,10 @@ class MRCCTheory:
             print("Single-point MRCC energy:", self.energy)
             print("MRCC gradient:", self.gradient)
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
-            return self.energy, self.gradient
+            if PC is True:
+                return self.energy, self.gradient, self.pcgradient
+            else:
+                return self.energy, self.gradient
         else:
             print("Single-point MRCC energy:", self.energy)
             print_time_rel(module_init_time, modulename='MRCC run', moduleindex=2)
@@ -146,7 +166,7 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
-def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False):
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None):
     with open("MINP", 'w') as inpfile:
         inpfile.write(mrccinput + '\n')
         inpfile.write(f'ccsdthreads={numcores}\n')
@@ -163,12 +183,15 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
 
         #If Grad true set density to first-order. Gives properties and gradient
         if Grad is True:
+            inpfile.write('dens=2\n')
             #dens=2 for RHF
             if "calc=RHF" in mrccinput:
                 inpfile.write('dens=2\n')
+            #dens=2 needed for pc grad
+            elif PC_charges != None:
+                inpfile.write('dens=2\n')
             else:
                 inpfile.write('dens=1\n')
-        #inpfile.write('dens=2\n')
         inpfile.write('geom=xyz\n')
         inpfile.write('{}\n'.format(len(elems)))
         inpfile.write('\n')
@@ -180,7 +203,14 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
         #Or dummy PC for orientation
         if keep_orientation is True:
             inpfile.write('pointcharges\n')
-            inpfile.write('0\n')
+            #Write PC charges and coords if given
+            if PC_coords != None:
+                inpfile.write(f'{len(PC_charges)}\n')
+                for charge,coord in zip(PC_charges,PC_coords):
+                    inpfile.write(f'{coord[0]} {coord[1]} {coord[2]} {charge}\n')
+            #Else write 0
+            else:
+                inpfile.write('0\n')
 
 def grab_energy_mrcc(outfile):
     #Option 1. Grabbing all lines containing energy in outputfile. Take last entry.
@@ -279,4 +309,77 @@ def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None,
         print("High-level MRCC correction:", delta_corr, "au")
     print_time_rel(init_time, modulename='run_MRCC_HLC_correction', moduleindex=2)
     return delta_corr
+
+
+#Get MRCC pointcharge gradient via the electric field on pointcharges
+def grab_MRCC_pointcharge_gradient(file,charges):
+    num_charges=len(charges)
+    pc_grad=np.zeros((num_charges,3))
+    grab=False
+    pccount=0
+    with open(file) as f:
+        for line in f:
+            if grab is True:
+                if len(line.split()) < 3:
+                    grab=False
+                if 'Magnitude of dipole mome' in line:
+                    grab=False
+                if len(line.split()) == 3:
+                    #pcgradient is  -F = -q*E
+                    charge = charges[pccount]
+                    pc_grad[pccount,0] = -1*charge*float(line.split()[0])
+                    pc_grad[pccount,1] = -1*charge*float(line.split()[1])
+                    pc_grad[pccount,2] = -1*charge*float(line.split()[2])   
+                    pccount+=1
+            if ' Electric field at MM atoms' in line:
+                grab=True
+    return pc_grad
+
+#Get MRCC PC self energy
+def grab_MRCC_PC_self_energy(file):
+    grab=False
+    with open(file) as f:
+        for line in f:
+            if grab is True:
+                pc_self_energy=float(line.split()[-1])
+                grab=False
+            if 'Self energy of the point charges [AU]' in line:
+                grab=True
+    return pc_self_energy
+
+
+#Function to create a correct correlated WF Molden file from a MRCC Molden file, 
+def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfile=None, multiwfndir=None, printlevel=2):
+    print("convert_MRCC_Molden_file")
+
+    if multiwfndir == None:
+        print(BC.WARNING, "No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash", BC.END)
+        try:
+            multiwfndir=ash.settings_ash.settings_dict["multiwfndir"]
+        except:
+            print(BC.WARNING,"Found no multiwfndir variable in settings_ash module either.",BC.END)
+            try:
+                multiwfndir = os.path.dirname(shutil.which('Multiwfn'))
+                print(BC.OKGREEN,"Found Multiwfn in path. Setting multiwfndir to:", multiwfndir, BC.END)
+            except:
+                print("Found no Multiwfn executable in path. Exiting... ")
+                ashexit()
+
+    if mrccoutputfile == None:
+        print("MRCC outputfile should also be provided")
+        ashexit()
+    core_electrons = int(pygrep("Number of core electrons:",mrccoutputfile)[-1])
+    print("Core electrons found in outputfile:", core_electrons)
+    frozen_orbs = int(core_electrons/2)
+    print("Frozen orbitals:", frozen_orbs)
+    #Rename MRCC Molden file to mrcc.molden
+    shutil.copy(moldenfile, "mrcc.molden")
+    #Write Multiwfn input. Will new Moldenfile based on correlated density
+    write_multiwfn_input_option(option="mrcc-density", frozenorbitals=frozen_orbs, densityfile=mrccdensityfile, printlevel=printlevel)
+    print("Now calling Multiwfn to process the MRCC, Molden and CCDENSITIES files")
+    with open("mwfnoptions") as input:
+        sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
+    print("Multiwfn is done")
+    print("Created new Molden file: mrccnew.molden")
+    print("This file contains the natural orbitals of the correlated density from MRCC")
 

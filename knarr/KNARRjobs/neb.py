@@ -619,8 +619,9 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         WritePath(basename + "_MEP.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
                   path.GetSymbols(), path.GetEnergy())
 
-        if os.path.isfile(basename + "_current.xyz"):
-            os.remove(basename + "_current.xyz")
+        #RB: keep current.xyz file
+        #if os.path.isfile(basename + "_current.xyz"):
+        #    os.remove(basename + "_current.xyz")
 
         E_barrier=(path.GetEnergy()[CI][0] - path.GetEnergy()[0][0])*23.060541945329334
         print(f"\nBarrier energy: {E_barrier} kcal/mol")
@@ -672,8 +673,10 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         PrintMaxIter(maxiter)
         WritePath(basename + "_last_iter.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
                   path.GetSymbols(), path.GetEnergy())
-        if os.path.isfile(basename + "_current.xyz"):
-            os.remove(basename + "_current.xyz")
+        
+        #RB: keep current.xyz file
+        #if os.path.isfile(basename + "_current.xyz"):
+        #    os.remove(basename + "_current.xyz")
 
     # Done.
     PrintJobDone('NEB job', time.time() - start_t)

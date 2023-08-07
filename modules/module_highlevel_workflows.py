@@ -11,10 +11,10 @@ from collections import defaultdict
 import ash.constants
 import ash.dictionaries_lists
 import ash.interfaces.interface_ORCA
-from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size
+from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size, CCSD_natocc_grab, MP2_natocc_grab, CASSCF_natocc_grab
 from ash.functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
 from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader, pygrep2, pygrep,print_time_rel
-from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers
+from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers,check_charge_mult
 from ash.modules.module_plotting import ASH_plot
 from ash.modules.module_singlepoint import print_fragments_table
 
@@ -788,13 +788,11 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             print("Assuming hydrogen atom and skipping calculation")
             E_total = -0.500000
             print("Using hardcoded value: ", E_total)
-            if self.FCI is True:
-                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 
-                        'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_FCIcorrection': 0.0, 'T1energycorr': 0.0,
-                        'E_HOCC':0.0, 'E_DBOC':0.0}
-            else:
-                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 'T1energycorr': 0.0,
-                        'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_HOCC':0.0, 'E_DBOC':0.0}
+
+            #Components
+            E_dict = {'Total_E' : E_total, 'E_CC_CBS': E_total, 'E_SCF_CBS' : E_total, 'E_corrCCSD_CBS': 0.0, 'E_corrCCT_CBS': 0.0, 'T1energycorr' : 0.0,
+            'E_corr_CBS' : 0.0, 'E_SO' : 0.0, 'E_corecorr_and_SR' : 0.0, 'E_HOCC': 0.0, 'E_DBOC': 0.0, 'E_FCIcorrection': 0.0}
+            
             self.energy_components=E_dict
             return E_total
 
@@ -1181,37 +1179,41 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         ############################################################
 
         ############################################################
+        #Full-CI correction (Goodson)
+        ############################################################
+        if self.FCI is True:
+            print("Extrapolating SCF-energy, CCSD-energy and CCSD(T) energy to Full-CI limit by Goodson formula")
+            if self.HOCCcorrection is True:
+                print("Error: FCI=True and HOCCcorrection=True is incompatible")
+                ashexit()
+            #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
+            #NOTE: We need to do separate extrapolation of corrCCSD_CBS and triples_CBS
+            E_CC_CBS = E_SCF_CBS + E_corr_CBS
+            E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
+            print("FCI/CBS energy (Goodson formula):", E_FCI_CBS, "Eh")
+            E_FCIcorrection = E_FCI_CBS-E_CC_CBS
+            #'E_FCIcorrection': E_FCIcorrection
+            print("FCI correction:", E_FCIcorrection, "Eh")
+            print("")
+        else:
+            E_FCIcorrection=0.0
+        ############################################################
         #FINAL RESULT
         ############################################################
         print("")
         print("")
+        print("="*50)
+        print("FINAL RESULTS")
+        print("="*50)
+        E_CC_CBS = E_SCF_CBS + E_corr_CBS
+        print("CCSD(T)/CBS energy (without corrections):", E_CC_CBS, "Eh")
+        E_FINAL = E_CC_CBS + E_corecorr_and_SR + E_SO + E_DBOC + E_HOCC + E_FCIcorrection
+        print("Final CBS energy (with all corrections):", E_FINAL, "Eh")
+        #Components
+        E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 'T1energycorr' : T1energycorr,
+            'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_HOCC': E_HOCC, 'E_DBOC': E_DBOC,
+            'E_FCIcorrection': E_FCIcorrection}
 
-        if self.FCI is True:
-            print("Extrapolating SCF-energy, CCSD-energy and CCSD(T) energy to Full-CI limit by Goodson formula")
-            #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
-            #NOTE: We need to do separate extrapolation of corrCCSD_CBS and triples_CBS
-            #CCSD(T)/CBS
-            E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR + E_HOCC + E_DBOC
-            print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
-            #FCI/CBS
-            E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
-            E_FCIcorrection = E_FCI_CBS-E_CC_CBS
-            E_FINAL = E_FCI_CBS
-            E_dict = {'Total_E' : E_FINAL, 'E_FCI_CBS': E_FCI_CBS, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'T1energycorr' : T1energycorr,
-                'E_corrCCT_CBS': E_corrCCT_CBS, 'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_FCIcorrection': E_FCIcorrection,
-                'E_HOCC': E_HOCC, 'E_DBOC': E_DBOC}
-            print("FCI correction:", E_FCIcorrection, "Eh")
-            print("FCI/CBS energy :", E_FCI_CBS, "Eh")
-            print("")
-
-        else:
-            E_CC_CBS = E_SCF_CBS + E_corr_CBS + E_SO + E_corecorr_and_SR + E_HOCC + E_DBOC
-            print("CCSD(T)/CBS energy :", E_CC_CBS, "Eh")
-            E_FINAL = E_CC_CBS
-            E_dict = {'Total_E' : E_FINAL, 'E_CC_CBS': E_CC_CBS, 'E_SCF_CBS' : E_SCF_CBS, 'E_corrCCSD_CBS': E_corrCCSD_CBS, 'E_corrCCT_CBS': E_corrCCT_CBS, 'T1energycorr' : T1energycorr,
-                'E_corr_CBS' : E_corr_CBS, 'E_SO' : E_SO, 'E_corecorr_and_SR' : E_corecorr_and_SR, 'E_HOCC': E_HOCC, 'E_DBOC': E_DBOC}
-
-        print("Final energy :", E_FINAL, "Eh")
         print("")
         print("Contributions:")
         print("--------------")
@@ -1220,12 +1222,13 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         print("E_corrCCSD_CBS : ", E_corrCCSD_CBS, "Eh")
         print("E_corrCCT_CBS : ", E_corrCCT_CBS, "Eh")
         print("T1 energy correction : ", T1energycorr, "Eh")
-        print("Spin-orbit coupling : ", E_SO, "Eh")
-        print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
-        print("E_HOCC : ", E_HOCC, "Eh")
-        print("E_DBOC : ", E_DBOC, "Eh")
+        print("Spin-orbit coupling correction : ", E_SO, "Eh")
+        print("E_corecorr_and_SR correction : ", E_corecorr_and_SR, "Eh")
+        print("E_HOCC correction : ", E_HOCC, "Eh")
+        print("E_DBOC correction : ", E_DBOC, "Eh")
+        print("E_FCI correction : ", E_FCIcorrection, "Eh")
         
-
+        print("FINAL ENERGY :", E_FINAL, "Eh")
         #Setting energy_components as an accessible attribute
         self.energy_components=E_dict
 
@@ -2536,6 +2539,128 @@ end
 """
     icetheory = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, basis_per_element=basis_per_element, label=f'{label}ICE_tgen{tgen}_tvar_{tvar}', save_output_with_label=True)
     return icetheory
+
+#Workflow to do active-space selection with MP2 or CCSD and then ICE-CI
+def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, 
+                 initial_orbitals="MP2", moreadfile=None,
+                 numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000):
+
+    if fragment is None:
+        print("Error: No fragment provided to Auto_ICE_CAS.")
+        ashexit()
+
+    if CASCI is True:
+        noiterkeyword="noiter"
+        label=f"ICE-CASCI"
+    else:
+        #Regular CASSCF
+        noiterkeyword=""
+        label=f"ICE-CASSCF"
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "bla", theory=None)
+
+
+
+    #Make MP2 natural orbitals
+    mp2blocks=f"""
+    %maxcore {memory}
+    %mp2
+    natorbs true
+    density unrelaxed
+    end
+    """
+    #Make CCSD natural orbitals
+    ccsdblocks=f"""
+    %maxcore {memory}
+    %mdci
+    natorbs true
+    density unrelaxed
+    end
+    """
+    print("initial_orbitals:", initial_orbitals)
+
+    #Starting from scratch unless moreadfile is provided
+    if moreadfile == None:
+        autostart_option=False
+
+    if initial_orbitals =="MP2":
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+                                 label='MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mp2nat"
+        natoccgrab=MP2_natocc_grab
+    elif initial_orbitals =="CCSD":
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores, 
+                                 label='CCSD', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mdci.nat"
+        natoccgrab=CCSD_natocc_grab
+    else:
+        print("Error: initial_orbitals must be MP2 or CCSD")
+        ashexit()
+    
+    #Run MP2/CCSD natorb calculation
+    ash.Singlepoint(theory=natorbs, fragment=fragment, charge=charge, mult=mult)
+
+    #Determine CAS space based on thresholds
+    nat_occupations=natoccgrab(natorbs.filename+'.out')
+    #print(f"{initial_orbitals} Natorb. ccupations:", nat_occupations)
+    print("\nTable of natural occupation numbers")
+    print("")
+    print("{:<9} {:6} ".format("Orbital", f"{initial_orbitals}-nat-occ"))
+    print("----------------------------------------")
+    init_flag=False
+    final_flag=False
+    for index,(nocc) in enumerate(nat_occupations):
+        if init_flag is False and nocc<nmin:
+            print("-"*40)
+            init_flag=True
+        if final_flag is False and nocc<nmax:
+            print("-"*40)
+            final_flag=True
+        print(f"{index:<9} {nocc:9.4f}")
+    nel,norb=ash.functions.functions_elstructure.select_space_from_occupations(nat_occupations, selection_thresholds=[nmin,nmax])
+    print(f"Selecting CAS({nel},{norb}) based on thresholds: upper_sel_threshold={nmin} and lower_sel_threshold={nmax}")
+
+    #ICE-theory: Fixed active space
+    casblocks=f"""
+    %maxcore {memory}
+    %casscf
+    nel {nel}
+    norb {norb}
+    cistep ice
+    ci
+    tgen {tgen}
+    end
+    end
+    """
+    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {noiterkeyword} {basis} tightscf", orcablocks=casblocks, moreadfile=mofile, label=f"{label}")
+
+    result_ICE = ash.Singlepoint(fragment=fragment, theory=ice_cas_CI, charge=charge,mult=mult)
+
+    ICEnatoccupations=CASSCF_natocc_grab(f"{ice_cas_CI.filename}.out")
+
+    print("Table of natural occupation numbers")
+    print("")
+    print("{:<9} {:6} {:6}".format("Orbital", f"{initial_orbitals}", "ICE-nat-occ"))
+    print("----------------------------------------")
+    init_flag=False
+    final_flag=False
+    for index,(initocc,iceocc) in enumerate(zip(nat_occupations,ICEnatoccupations)):
+        if init_flag is False and initocc<nmin:
+            print("-"*40)
+            init_flag=True
+        if final_flag is False and initocc<nmax:
+            print("-"*40)
+            final_flag=True
+        print("{:<9} {:9.4f} {:9.4f}".format(index,initocc,iceocc))
+
+    return result_ICE
+
+
+
+
+
+
+
 
 #Function to do ICE-CI FCI with multiple thresholds and simpler WF method comparison and plotting
 #TODO: add second y-axis to ICE-CI plot (plot CFGs). Or maybe add info as point-label?

@@ -4,7 +4,7 @@ import os
 import time
 import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel
+from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel,writestringtofile
 import ash.settings_ash
 
 CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG-PVDZ', 'ATZ':'AUG-PVTZ', 'AQZ':'AUG-PVQZ', 
@@ -13,7 +13,7 @@ CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
-                 filename='cfourjob', specialbasis=None, ash_basisfile=None, label=None,
+                 filename='cfourjob', specialbasis=None, ash_basisfile=None, basisfile=None, label=None,
                  parallelization='MKL', DBOC=False):
         
         self.theorynamelabel="CFour"
@@ -31,7 +31,7 @@ class CFourTheory:
         
         #Default Cfour settings
         self.basis='SPECIAL' #this is default and preferred
-        self.method='CCSD(T)'
+        self.CALC='CCSD(T)'
         self.memory=4
         self.memory_unit='GB'
         self.reference='RHF'
@@ -39,6 +39,7 @@ class CFourTheory:
         self.guessoption='MOREAD'
         self.propoption='OFF'
         self.cc_prog='ECC'
+        self.ABCDTYPE='AOBASIS'
         self.scf_conv=12
         self.lineq_conv=10
         self.cc_maxcyc=300
@@ -46,12 +47,12 @@ class CFourTheory:
         self.symmetry='OFF'
         self.stabilityanalysis='OFF'
         self.specialbasis=[]
-        self.extern_pot='OFF' #Pointcharge potential off by default
+        self.EXTERN_POT='OFF' #Pointcharge potential off by default
         self.DBOC=DBOC
         #Overriding default
         #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
         if 'BASIS' in cfouroptions: self.basis=cfouroptions['BASIS']
-        if 'CALC' in cfouroptions: self.method=cfouroptions['CALC']
+        if 'CALC' in cfouroptions: self.CALC=cfouroptions['CALC']
         if 'MEMORY' in cfouroptions: self.memory=cfouroptions['MEMORY']
         if 'MEM_UNIT' in cfouroptions: self.memory_unit=cfouroptions['MEM_UNIT']
         if 'REF' in cfouroptions: self.reference=cfouroptions['REF']
@@ -65,11 +66,18 @@ class CFourTheory:
         if 'LINEQ_CONV' in cfouroptions: self.lineq_conv=cfouroptions['LINEQ_CONV']
         if 'CC_MAXCYC' in cfouroptions: self.cc_maxcyc=cfouroptions['CC_MAXCYC']
         if 'SYMMETRY' in cfouroptions: self.symmetry=cfouroptions['SYMMETRY']
-        if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']        
+        if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']
+        if 'ABCDTYPE' in cfouroptions: self.ABCDTYPE=cfouroptions['ABCDTYPE']    
         
+        #Changing ABCDTYPE algorithm if not possible
+        if self.CALC == 'CCSDT' or self.CALC == 'CCSDTQ' or self.CALC == 'CCSDT(Q)':
+            if self.ABCDTYPE == 'AOBASIS':
+                print("Warning: ABCDTYPE=AOBASIS not possible for higher-order CC (CCSDT and beyond). Changing to ABCDTYPE=STANDARD")
+                self.ABCDTYPE='STANDARD'
+
         #Printing
         print("BASIS:", self.basis)
-        print("CALC:", self.method)
+        print("CALC:", self.CALC)
         print("MEMORY:", self.memory)
         print("MEM_UNIT:", self.memory_unit)
         print("REFERENCE:", self.reference)
@@ -77,12 +85,14 @@ class CFourTheory:
         print("GUESS:", self.guessoption)
         print("PROP:", self.propoption)
         print("CC_PROG:", self.cc_prog)
+        print("ABCDTYPE:", self.ABCDTYPE)
         print("SCF_CONV:", self.scf_conv)
         print("SCF_MAXCYC:", self.scf_maxcyc)
         print("LINEQ_CONV:", self.lineq_conv)
         print("CC_MAXCYC:", self.cc_maxcyc)
         print("SYMMETRY:", self.symmetry)
         print("HFSTABILITY:", self.stabilityanalysis)
+        
 
         #Getting special basis dict etc
         if self.basis=='SPECIAL':
@@ -101,18 +111,22 @@ class CFourTheory:
             print("cfourdir keyword argument not provided to CFourTheory object. Trying to find xcfour in PATH")
             try:
                 self.cfourdir = os.path.dirname(shutil.which('xcfour'))
-                print("Found xcfour in path. Setting cfourdir to:", cfourdir)
+                print("Found xcfour in path. Setting cfourdir to:", self.cfourdir)
             except:
                 print("Found no xcfour executable in path. Exiting... ")
                 ashexit()
         else:
             self.cfourdir = cfourdir
 
-        #Copying ASH basis file to dir if requested
+        #Copying ASH basis file from ASH-dir to current dir if requested
         if ash_basisfile != None:
             #ash_basisfile
             print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,ash.settings_ash.ashpath+'/basis-sets/cfour/'))
             shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
+        #Copying basis-file from any dir to current dir 
+        elif basisfile != None:
+            print(f"Copying basis-file {basisfile} to current directory as GENBAS")
+            shutil.copyfile(basisfile, 'GENBAS')
         else:
             print("No ASH basis-file provided. Copying GENBAS from CFour directory.")
             try:
@@ -191,6 +205,24 @@ class CFourTheory:
                 if '                            Molecular gradient' in line:
                     grab=True
         return gradient
+    def cfour_grabPCgradient(self,file,numpcs):
+        pccount=0
+        grab=False
+        pcgradient=np.zeros((numpcs,3))
+        with open(file) as f:
+            for line in f:
+                if '  Molecular gradient norm' in line:
+                    grab = False
+                if grab is True:
+                    if 'XP' in line:
+                            pcgradient[pccount,0] = float(line.split()[-3])
+                            pcgradient[pccount,1] = float(line.split()[-2])
+                            pcgradient[pccount,2] = float(line.split()[-1])
+                            pccount+=1
+                if '                            Molecular gradient' in line:
+                    grab=True
+        return pcgradient
+    
     def cfour_grabhessian(self,numatoms,hessfile="FCMFINAL"):
         hessdim=3*numatoms
         hessian=np.zeros((hessdim,hessdim))
@@ -246,14 +278,20 @@ class CFourTheory:
                 qm_elems = elems
 
         if PC is True:
-            self.extern_pot='ON'
+            self.EXTERN_POT='ON'
             #Turning symmetry off
             self.symmetry='OFF'
             print("Warning: PC=True. FIXGEOM turned on")
             self.FIXGEOM='ON'
 
+            #Create pcharge file
+            with open("pcharges", "w") as pfile:
+                pfile.write(f"{len(MMcharges)}\n")
+                for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
+                    pfile.write(f"{ash.constants.ang2bohr*mmcoord[0]} {ash.constants.ang2bohr*mmcoord[1]} {ash.constants.ang2bohr*mmcoord[2]} {mmcharge}\n")
+
         #Grab energy and gradient
-        #TODO: No qm/MM yet. need to check if possible in CFour
+        #HESSIAN JOB
         if Hessian is True:
             print("CFour Hessian calculation on!")
             print("Warning: Hessian=True FIXGEOM turned on.")
@@ -270,9 +308,13 @@ class CFourTheory:
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},FIXGEOM={self.FIXGEOM}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
+                inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
+REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
+MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
+SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n
+HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
                         inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
@@ -282,7 +324,7 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.energy=self.cfour_grabenergy()
             print("Reading CFour Hessian from file")
             self.hessian = self.cfour_grabhessian(len(qm_elems),hessfile="FCMFINAL")
-
+        #ENERGY+GRADIENT JOB
         elif Grad==True:
             print("Warning: Grad=True. FIXGEOM turned on.")
             self.FIXGEOM='ON'
@@ -298,9 +340,13 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},FIXGEOM={self.FIXGEOM}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
+                inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
+REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
+MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
+SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
+HFSTABILITY={self.stabilityanalysis})\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
                         inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
@@ -312,6 +358,11 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
             self.gradient=self.cfour_grabgradient(self.filename+'.out',len(qm_elems))
+            #PCgradient
+            if PC is True:
+                self.pcgradient = self.cfour_grabPCgradient(self.filename+'.out',len(MMcharges))
+
+        #DIAGONAL BORN-OPPENHEIMER JOB
         elif DBOC is True:
             if self.propoption != 'OFF':
                 print("Warning: Cfour property keyword can not be active when doing DBOC calculation. Turning off")
@@ -321,9 +372,14 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
+
+                inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
+REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
+MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
+SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
+HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
                 #for specbas in self.specialbasis.items():
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
@@ -332,16 +388,29 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             self.cfour_call()
             self.energy=self.cfour_grabenergy()
             self.S2=self.cfour_grab_spinexpect()
-
+        #ENERGY JOB
         else:
+            if self.propoption != 'OFF':
+                print("Warning: density requested. FIXGEOM turned on to prevent orientation change")
+                print("Also EXTERN_POT turned on to mimic dummy PC-job for same reason")
+                self.FIXGEOM='ON'
+                self.EXTERN_POT='ON'
+                #Write dummy PC file to disk
+                writestringtofile("0", "pcharges")
+            else:
+                self.FIXGEOM='OFF'
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
-                inpfile.write(f"""*CFOUR(CALC={self.method},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM,REF={self.reference},CHARGE={charge}\nMULT={mult},FROZEN_CORE={self.frozen_core},MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
-GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},SCF_CONV={self.scf_conv},EXTERN_POT={self.extern_pot}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry},HFSTABILITY={self.stabilityanalysis})\n\n""")
+                inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
+REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
+MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
+GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
+SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
+HFSTABILITY={self.stabilityanalysis})\n\n""")
                 #for specbas in self.specialbasis.items():
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
@@ -359,7 +428,10 @@ LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}
             print("Single-point CFour energy:", self.energy)
             print("Single-point CFour gradient:", self.gradient)
             print_time_rel(module_init_time, modulename='CFour run', moduleindex=2)
-            return self.energy, self.gradient
+            if PC is True:
+                return self.energy, self.gradient, self.pcgradient
+            else:
+                return self.energy, self.gradient
         else:
             print("Single-point CFour energy:", self.energy)
             print_time_rel(module_init_time, modulename='CFour run', moduleindex=2)
@@ -413,7 +485,7 @@ def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, m
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
 # Either use fragment or provide coordinates and elements
 def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fragment=None,theory=None, method='CCSDT', 
-                             basis='TZ', ref='RHF', openshell=False, numcores=1):
+                             basis='TZ', ref='RHF', openshell=False, numcores=1, cc_prog='VCC', abcdtype='AOBASIS'):
     init_time = time.time()
     if fragment is None:
         fragment = ash.Fragment(coords=coords, elems=elems, charge=charge,mult=mult)
@@ -428,7 +500,8 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
     'FROZEN_CORE':'ON',
     'MEM_UNIT':'MB',
     'MEMORY':3100,
-    'CC_PROG':'VCC',
+    'CC_PROG':cc_prog,
+    'ABCDTYPE':abcdtype,
     'SCF_CONV':10,
     'LINEQ_CONV':10,
     'CC_MAXCYC':300,
@@ -472,3 +545,101 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
         print("High-level CFour CCSD(T) -> Highlevel correction:", delta_corr, "au")
     print_time_rel(init_time, modulename='run_CFour_HLC_correction', moduleindex=2)
     return delta_corr
+
+#Function to create a correct Molden file from CFour
+#CFour creates both MOLDEN (SCF) and MOLDEN_NAT (corr WF)
+#Issue: CFour Molden format is non-standard (skips beta orbitals, normalization and prints Cartesian d-functions etc)
+#This ugly function uses molden2aim to do the conversion
+#TODO: Do this in ASH directly instead of using molden2aim at some point
+def convert_CFour_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
+    print("convert_CFour_Molden_file")
+
+    moldenfile_basename=os.path.basename(moldenfile).split('.')[0]
+
+    #Finding molden2aim in PATH. Present in ASH (May require compilation)
+    ashpath=os.path.dirname(ash.__file__)
+    molden2aim=ashpath+"/external/Molden2AIM/src/"+"molden2aim.exe"
+    if os.path.isfile(molden2aim) is False:
+        print("Did not find {}. Did you compile it ? ".format(molden2aim))
+        print("Go into dir:", ashpath+"/external/Molden2AIM/src")
+        print("Compile using gfortran or ifort:")
+        print("gfortran -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
+        print("ifort -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
+        ashexit()
+    else:
+        print("Found molden2aim.exe: ", molden2aim)
+
+    #Write configuration file for molden2aim
+    with open("m2a.ini", 'w') as m2afile:
+        string = """########################################################################
+    #  In the following 8 parameters,
+    #     >0:  always performs the operation without asking the user
+    #     =0:  asks the user whether to perform the operation
+    #     <0:  always neglect the operation without asking the user
+    molden= 1           ! Generating a standard Molden file in Cart. function
+    wfn= -1              ! Generating a WFN file
+    wfncheck= -1         ! Checking normalization for WFN
+    wfx= -1              ! Generating a WFX file (not implemented)
+    wfxcheck= -1         ! Checking normalization for WFX (not implemented)
+    nbo= -1              ! Generating a NBO .47 file
+    nbocheck= -1         ! Checking normalization for NBO's .47
+    wbo= -1              ! GWBO after the .47 file being generated
+
+    ########################################################################
+    #  Which quantum chemistry program is used to generate the MOLDEN file?
+    #  1: ORCA, 2: CFOUR, 3: TURBOMOLE, 4: JAGUAR (not supported),
+    #  5: ACES2, 6: MOLCAS, 7: PSI4, 8: MRCC, 9: NBO 6 (> ver. 2014),
+    #  0: other programs, or read [Program] xxx from MOLDEN.
+    #
+    #  If non-zero value is given, [Program] xxx in MOLDEN will be ignored.
+    #
+    program=2
+
+    ########################################################################
+    #  For ECP: read core information from Molden file
+    #<=0: if the total_occupation_number is smaller than the total_Za, ask
+    #     the user whether to read core information
+    # >0: always search and read core information
+    rdcore=0
+
+    ########################################################################
+    #  Which orbirals will be printed in the WFN/WFX file?
+    # =0: print only the orbitals with occ. number > 5.0d-8
+    # <0: print only the orbitals with occ. number > 0.1 (debug only)
+    # >0: print all the orbitals
+    iallmo=0
+
+    ########################################################################
+    #  Used for WFX only
+    # =0: print "UNKNOWN" for Energy and Virial Ratio
+    # .ne. 0: print 0.0 for Energy and 2.0 for Virial Ratio
+    unknown=1
+
+    ########################################################################
+    #  Print supporting information or not
+    # =0: print; .ne. 0: do not print
+    nosupp=0
+
+    ########################################################################
+    #  The following parameters are used only for debugging.
+    clear=1            ! delete temporary files (1) or not (0)
+
+    ########################################################################
+    """
+        m2afile.write(string)
+
+        
+    #Write Molden2aim input file
+    mol2aiminput=['', moldenfile, '', '']
+    m2aimfile = open("mol2aim.inp", "w")
+    for mline in mol2aiminput:
+        m2aimfile.write(mline+'\n')
+    m2aimfile.close()
+
+    #Run molden2aim
+    m2aimfile = open('mol2aim.inp')
+    p = sp.Popen(molden2aim, stdin=m2aimfile, stderr=sp.STDOUT)
+    p.wait()
+
+    print(f"Created new Molden file (via molden2aim): {moldenfile_basename}_new.molden")
+    print("This file can be correctly read by Multiwfn")

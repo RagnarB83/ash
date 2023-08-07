@@ -100,10 +100,13 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary :", surfacedictionary)
     
-    #
+    #Turn off outputfiles for special theories like: ZeroTheory and ORCA_CC_CBS_Theory
     if theory.__class__.__name__ == "ZeroTheory":
         keepoutputfiles=False
-        keepomofile=False
+        keepmofiles=False
+    elif theory.__class__.__name__ == "ORCA_CC_CBS_Theory":
+        keepoutputfiles=False
+        keepmofiles=False
     print("keepoutputfiles: ", keepoutputfiles)
     print("keepmofiles: ", keepmofiles)
 
@@ -548,6 +551,17 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
         print("Exiting.")
         result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
         return result   
+
+    #Turn off outputfiles for special theories like: ZeroTheory and ORCA_CC_CBS_Theory
+    if theory.__class__.__name__ == "ZeroTheory":
+        keepoutputfiles=False
+        keepomofiles=False
+    elif theory.__class__.__name__ == "ORCA_CC_CBS_Theory":
+        keepoutputfiles=False
+        keepomofiles=False
+    print("keepoutputfiles: ", keepoutputfiles)
+    print("keepmofiles: ", keepmofiles)
+
 
 
     #Case Relaxed Scan: 

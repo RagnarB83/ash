@@ -3118,6 +3118,7 @@ def check_multiplicity(elems,charge,mult, exit=True):
 #Check if charge/mult variables are not None. If None check fragment
 #Only done for QM theories not MM. Passing theorytype string (e.g. from theory.theorytype if available)
 def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, printlevel=2):
+
     #Check if QM or QM/MM theory
     if theorytype == "QM":
         if charge == None or mult == None:

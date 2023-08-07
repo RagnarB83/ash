@@ -953,7 +953,7 @@ end
         print(BC.OKBLUE,"TDDFT-calculated ion states:", self.numionstates-1, BC.ENDC)
 
         #Run Initial-State SCF
-        self.run_SCF_InitState(fragment,theory)
+        self.run_SCF_InitState(fragment,self.theory)
 
         #Creating new theory object
         theory = copy.copy(self.theory)
@@ -1079,7 +1079,7 @@ end
             print(BC.OKBLUE, "Ion-state energies (au):\n", BC.ENDC, fstate.ionstates)
             print("")
             #IPs calculated in this run only
-            IPs_all.append(fstate.IPs)
+            IPs_all += fstate.IPs
             Ionstates_energies_all += fstate.ionstates
 
             #All IPs (including other geometries)
@@ -1538,7 +1538,7 @@ end
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
             fstate=self.Finalstates[0]
             for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(Finalionstates,IPs,dysonnorms,statelabels,tdtransitions,spinmults)):
-                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,statelabel, TDtransenergy))
+                print(f"{i:>6d} {spinmult:>7d} {E:20.11f} {IE:>10.3f} {dys:>10.5f} {statelabel:>10} {TDtransenergy:>17.3f}")
         elif self.method == 'SF-TDDFT':
             #Creating lists of all state labels and transition energies
             if self.tda is True: 
@@ -1786,9 +1786,12 @@ end
                 self.TDDFT_dets_prep()
                 #Dyson
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
-                print(f"IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
-                print(f"Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
+                print("IPs calculated for this geometry:",frag_IPs)
+                print("Dyson norms calculated for this geometry:",frag_dysonnorms)
+                print(f"All IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
+                print(f"All Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
                 #Printing final table for this geometry
+
                 self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
                 #TODO: Append to file on disk to keep track of tables for all geometries???
 
@@ -2469,7 +2472,7 @@ def format_ci_vectors(ci_vectors):
     return string,ndets
 
 #Run wfoverlap program
-def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory,numcores):
+def run_wfoverlap_old(wfoverlapinput,path_wfoverlap,memory,numcores):
     wfoverlapfilefile = open('wfovl.inp', 'w')
     for l in wfoverlapinput:
         wfoverlapfilefile.write(l)
@@ -2494,6 +2497,23 @@ def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory,numcores):
         print("Problem calling wfoverlap program.")
     print("Wfoverlap done! See outputfile: wfovl.out")
     return
+
+#Run wfoverlap program
+def run_wfoverlap(wfoverlapinput,path_wfoverlap,memory,numcores):
+    wfoverlapfilefile = open('wfovl.inp', 'w')
+    for l in wfoverlapinput:
+        wfoverlapfilefile.write(l)
+    wfoverlapfilefile.close()
+    print("Running wfoverlap program:")
+    os.system('ldd {}'.format(path_wfoverlap))
+    print("may take a while...")
+    print("Using memory: {} MB".format(memory))
+    print(f"OMP parallelization of wfoverlap is active. Using OMP_NUM_THREADS={numcores}")
+    os.environ['OMP_NUM_THREADS'] = str(numcores)
+    os.environ['MKL_NUM_THREADS'] = str(1)
+    with open("wfovl.out", 'w') as f:
+        process = sp.run([path_wfoverlap, '-m', str(memory), '-f', 'wfovl.inp'], env=os.environ, check=True, stdout=f, stderr=f, universal_newlines=True)
+
 
 #Get Dysonnorms from output of wfoverlap
 def grabDysonnorms():
