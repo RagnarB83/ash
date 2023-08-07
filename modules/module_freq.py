@@ -212,16 +212,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
 
     #Create ASH fragment and Write all geometries to disk as XYZ-files
-    list_of_filelabels=[]
     all_disp_fragments=[]
     for label, dispgeo,disp in zip(list_of_labels,list_of_displaced_geos,list_of_displacements):
-        filelabel=label.replace(' ','').replace(':','')
-        list_of_filelabels.append(filelabel)
-        #Disabling (huge printout for e.g. QM/MM protein system)
-        #ash.modules.module_coords.write_xyzfile(elems=elems, coords=dispgeo,name=filelabel, printlevel=printlevel)
-
-        #Creating ASH fragments with label, converting to string (due to problems with parallelization)
-        stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
+        if disp == 'Originalgeo':
+            print("here")
+            print("label:",label)
+            print("disp:",disp)
+            stringlabel = 'Originalgeo'
+        else:
+        #    #Creating ASH fragments with label, converting to string (due to problems with parallelization)
+            stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
         frag=ash.Fragment(coords=dispgeo, elems=elems,label=stringlabel, printlevel=printlevel, charge=charge, mult=mult)
         all_disp_fragments.append(frag)
 
@@ -259,8 +259,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         print(f"There are {len(all_disp_fragments)} displacements")
         #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
         print("Looping over fragments")
-        for fragdisp in all_disp_fragments:
-            print(fragdisp.__dict__)
         result = ash.Job_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores, 
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel, copytheory=True)
         #result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
@@ -270,112 +268,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #Gradient_dict is already correctly formatted
         displacement_grad_dictionary = gradient_dict
 
-        print("displacement_grad_dictionary:", displacement_grad_dictionary)
-        
-
-    #OLD code below. To be deleted probably. Attempts to avoid pickling problem
-    elif runmode == 'parallel2':
-
-        print("runmode not active")
-        ashexit()
-        import multiprocessing as mp
-        #import pickle4reducer
-        #ctx = mp.get_context()
-        #ctx.reducer = pickle4reducer.Pickle4Reducer()
-
-        pool = mp.Pool(numcores)
-        blankline()
-        print("Running snapshots in parallel using multiprocessing.Pool")
-        print("Number of CPU cores: ", numcores)
-        print("Number of displacements:", len(list_of_displaced_geos))
-
-        #NumcoresQM can be larger value (e.g. ORCA-parallelization). ORCA seems to run fine with OpenMPI without complaints.
-        #However, this only makes sense to use if way more CPUs available than displacements.
-        #Unlikely situation, so hardcoding to 1 for now.
-        numcoresQM=1
-        print("Setting numcores for theory object to: ", numcoresQM)
-        #results = pool.map(displacement_run, [[geo, elems, numcoresQM, theory, label] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
-        #results = pool.map(displacement_run2, [[filelabel, numcoresQM, theory, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
-
-        #Reducing size of theory object
-        #print("size of theory:", get_size(theory))
-        #print("size of theory.coords:", get_size(theory.coords))
-        #print("size of coords:", get_size(coords))
-        theory.coords=[]
-        theory.elems=[]
-        theory.connectivity=[]
-        print(theory)
-        #print(theory.__dict__)
-        #print("size of theory after del:", get_size(theory))
-
-        #QMMM_xtb = QMMMTheory(fragment=Saddlepoint, qm_theory=xtbcalc, mm_theory=MMpart, actatoms=Centralmainfrag,
-        #                      qmatoms=Centralmainfrag, embedding='Elstat', numcores=numcores)
-
-        #results = pool.map(displacement_run2, [[filelabel, numcoresQM, label] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
-
-        #Because passing QMMMTheory is too big for pickle inside mp.Pool we create a new QMMMTheory object inside displacement funciont.
-        #This means we need the components of theory object. Here distinguishing between QMMMTheory and other theory (QM theory)
-        #Still seems to be too messy
-
-        #https://towardsdatascience.com/10x-faster-parallel-python-without-python-multiprocessing-e5017c93cce1
-        if theory.__class__.__name__ == "QMMMTheory":
-            print("Numfreq with QMMMTheory")
-            ray_library=True
-            
-            if ray_library == True:
-                print("Ray parallelization is active")
-                try:
-                    import ray
-                    ray.init(num_cpus = numcores)
-                except:
-                    print("Parallel QM/MM Numerical Frequencies require the ray library.")
-                    print("Please install ray : pip install ray")
-                    ashexit()
-                
-                if theory.mm_theory == "NonBondedTheory":
-                    #Do pairpotentials before we begin if NonBondedTheoyr
-                    theory.mm_theory.calculate_LJ_pairpotentials(qmatoms=theory.qmatoms, actatoms=theory.actatoms)
-                    print("theory.mm_theory sigmaij", theory.mm_theory.sigmaij)
-                #going to make QMMMTheory object a shared object that all workers can access
-                theory_shared = ray.put(theory)
-                @ray.remote
-                def dispfunction_ray(label, filelabel, numcoresQM, theory_shared):
-                    print("inside dispfunction")
-                    print("label:", label)
-                    print("filelabel:", filelabel)
-                    print("theory_shared:", theory_shared)
-                    # Numcores can be used. We can launch ORCA-OpenMPI in parallel it seems.
-                    # Only makes sense if we have may more cores available than displacements
-                    elems, coords = ash.modules.module_coords.read_xyzfile(filelabel + '.xyz')
-                    dispdir = label.replace(' ', '')
-                    os.mkdir(dispdir)
-                    os.chdir(dispdir)
-                    # Todo: Copy previous GBW file in here if ORCA, xtbrestart if xtb, etc.
-                    print("Running displacement: {}".format(label))
-                    energy, gradient = theory_shared.run(current_coords=coords, elems=elems, Grad=True, numcores=numcoresQM, charge=charge, mult=mult)
-                    os.chdir('..')
-                    # Delete dir?
-                    # os.remove(dispdir)
-                    return [label, energy, gradient]
-                result_ids = [dispfunction_ray.remote(label,filelabel,numcoresQM,theory_shared) for label,filelabel in
-                            zip(list_of_labels,list_of_filelabels)]
-                results = ray.get(result_ids)
-            else:
-                results = pool.map(ash.functions.functions_parallel.displacement_QMMMrun, [[filelabel, numcoresQM, label, theory.fragment, theory.qm_theory, theory.mm_theory,
-                                                        theory.actatoms, theory.qmatoms, theory.embedding, theory.charges, theory.printlevel,
-                                                        theory.frozenatoms] for label,filelabel in zip(list_of_labels,list_of_filelabels)])
-        #Passing QM theory directly
-        else:
-            results = pool.map(ash.functions.functions_parallel.displacement_QMrun, [[geo, elems, numcoresQM, theory, label, charge, mult] for geo,label in zip(list_of_displaced_geos,list_of_labels)])
-        pool.close()
-
-        #Gathering results in dictionary
-        for result in results:
-            print("result:", result)
-            calclabel=result[0]
-            energy=result[1]
-            gradient=result[2]
-            displacement_grad_dictionary[calclabel] = gradient
+        #print("displacement_grad_dictionary:", displacement_grad_dictionary)
     else:
         print("Unknown runmode.")
         ashexit()

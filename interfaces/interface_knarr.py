@@ -136,7 +136,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         if isinstance(theory,ash.DualTheory):
             print("Dualtheory active. Doing Numfreq using regular mode.")
             #NOTE: Regular will probably involve a theory 2 correction. We could switch to theory1 solely instead here
-            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, runmode=runmode_numfreq, numcores=numcores)
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode_numfreq, numcores=numcores)
             hessianfile="Hessian_from_dualtheory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
             hessianoption='file:'+str(hessianfile)
