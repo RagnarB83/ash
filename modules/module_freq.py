@@ -195,12 +195,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     list_of_labels=[]
     all_disp_fragments=[]
     for dispgeo,disp in zip(list_of_displaced_geos,list_of_displacements):
-        print("disp:", disp)
         #Original geo
         if disp == 'Originalgeo':
-            print("here")
             calclabel = 'Originalgeo'
-            stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
+            stringlabel=f"Originalgeo"
+        #Displacements
         else:
             atom_disp = disp[0]
             if disp[1] == 0:
