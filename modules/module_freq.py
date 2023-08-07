@@ -209,9 +209,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             elif disp[1] == 2:
                 crd = 'z'
             drection = disp[2]
-            # displacement_jobname='Numfreq-Disp-'+'Atom'+str(atom_disp)+crd+drection
-            #print("Displacing Atom: {} Coordinate: {} Direction: {}".format(atom_disp, crd, drection))
-            #calclabel2 = 'Atom: {} Coord: {} Direction: {}'.format(atom_disp, crd, drection)
             calclabel="Atom: {} Coord: {} Direction: {}".format(str(atom_disp),str(crd),str(drection))
             stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
         #Create fragment
@@ -220,15 +217,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         list_of_labels.append(calclabel)
         
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
-
-    #for label, dispgeo,disp in zip(list_of_labels,list_of_displaced_geos,list_of_displacements):
-        #if disp == 'Originalgeo':
-        #    stringlabel = 'Originalgeo'
-        #else:
-        #    #Creating ASH fragments with label, converting to string (due to problems with parallelization)
-        #    stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
-        #frag=ash.Fragment(coords=dispgeo, elems=elems,label=stringlabel, printlevel=printlevel, charge=charge, mult=mult)
-        #all_disp_fragments.append(frag)
 
     #RUNNING displacements
     displacement_grad_dictionary = {}
