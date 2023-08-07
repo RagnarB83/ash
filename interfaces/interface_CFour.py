@@ -345,7 +345,7 @@ REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
 HFSTABILITY={self.stabilityanalysis})\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
