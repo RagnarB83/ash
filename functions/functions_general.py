@@ -692,14 +692,6 @@ class Timings:
                 time_per = 100 * (mmtime / totalwalltime)
                 print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
             print("")
-        # if len(dictitems_index3) !=0 :
-        # print("Various modules")
-        # print("-"*30)
-        # for dictitem in dictitems_index3:
-        #    mmtime=self.simple_dict[dictitem]
-        #    time_per= 100*(mmtime/totalwalltime)
-        #    print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
-        # print("")
         if len(dictitems_index4) != 0:
             print("Other modules")
             print("-" * 30)
@@ -713,7 +705,7 @@ class Timings:
         print("{:35}{:>20.2f}{:>10}".format("Total walltime", totalwalltime, 100.0))
 
 
-#General pretty table of thing
+#General pretty table of things
 def print_pretty_table(list_of_objects=None, list_of_labels=None, title=None,  spacing=15, float_decimals=4,
                        divider_line_length=70):
 
