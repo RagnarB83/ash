@@ -2086,5 +2086,31 @@ def reorder_AOs_in_MO_ORCA_to_Molden(coeffs,order):
         #print("new_order:",new_order)    
     return  new_coeffs
 
+#Basic reading of molden_file
+#Currently only reads atoms and coordinates
+def read_molden_file(moldenfile):
+    molden_properties_dict={}
+    grab_atoms=False
+    elems=[]
+    coords=[]
+    with open(moldenfile) as f:
+        for line in f:
+            if grab_atoms:
+                if len(line.split()) == 6:
+                    el = line.split()[0]
+                    coord_x = float(line.split()[3])*coord_scaling
+                    coord_y = float(line.split()[4])*coord_scaling
+                    coord_z = float(line.split()[5])*coord_scaling
+                    elems.append(el)
+                    coords.append([coord_x,coord_y,coord_z])
 
+            if '[Atoms]' in line:
+                if 'AU' in line:
+                    coord_scaling=0.529177
+                else:
+                    coord_scaling=1.0
+                grab_atoms=True
+    molden_properties_dict["elems"]=elems
+    molden_properties_dict["coords"]=np.array(coords)
 
+    return molden_properties_dict 

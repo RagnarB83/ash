@@ -3,6 +3,7 @@ import os
 import shutil
 
 from ash.functions.functions_general import BC,ashexit, writestringtofile, pygrep, print_line_with_mainheader
+from ash.dictionaries_lists import atom_core_electrons
 import ash.settings_ash
 """
     Interface to the Multiwfn program
@@ -17,7 +18,7 @@ import ash.settings_ash
 
 #TODO: Support settings.ini file?
 
-def multiwfn_run(moldenfile, fchkfile=None, option='density', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
+def multiwfn_run(moldenfile, fchkfile=None, option='density', num_frozen_orbs=None, mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
                  fragmentfiles=None, fockfile=None, openshell=False, printlevel=2):
     print_line_with_mainheader("multiwfn_run")
 
@@ -48,12 +49,40 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
             except:
                 print("Found no Multiwfn executable in path. Exiting... ")
                 ashexit()
-    
+
+    #Basic reading of MOlden file
+    if moldenfile != None:
+        print("\nReading Molden file by ASH:", moldenfile)
+        molden_dict = ash.functions.functions_elstructure.read_molden_file(moldenfile)
+        numatoms = len(molden_dict["elems"])
+        print(f"The file contains {numatoms} atoms and coordinates:")
+        elems = molden_dict["elems"]
+        coords = molden_dict["coords"]
+        for el,c in zip(elems,coords):
+            print(f"{el} {c[0]:10.5f} {c[1]:10.5f} {c[2]:10.5f}")
+
     #TODO: Update, once fchk files are supported 
     if os.path.isfile(moldenfile) is False:
         print(f"The selected Moldenfile: {moldenfile} does not exist. Exiting")
         ashexit()
     
+    #Valence density requires num_frozen_orbs
+    if option == 'valence-density':
+        print("Valence density option chosen")
+        if num_frozen_orbs == None:
+            print("Option valence-density requires num_frozen_orbs")
+            print("Specify how many orbitals are frozen")
+            ashexit()
+        elif num_frozen_orbs == 'Auto':
+            print("Determining number of frozen orbitals automatically (used to define valence density)")
+            print("Using atom_core_electrons dictionary:", atom_core_electrons)
+            tot_num_frozen_orbs = 0
+            for el in elems:
+                core_els = atom_core_electrons[el]
+                tot_num_frozen_orbs += int(core_els/2)
+            print("tot_num_frozen_orbs:", tot_num_frozen_orbs)
+            num_frozen_orbs = tot_num_frozen_orbs
+            print("Number of frozen orbitals determined to be:", num_frozen_orbs)
     #Rename MOLDEN-file. Necessary for some reason. MOLDEN_NAT does not work 
     if moldenfile == "MOLDEN_NAT":
         if printlevel >= 2:
@@ -98,6 +127,8 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         #Create dummy-input
         write_multiwfn_input_option(option="nocv", grid=grid, fragmentfiles=fragmentfiles, openshell=openshell,
                                     fockfile=fockfile, printlevel=printlevel)
+    elif option == 'valence-density':
+        write_multiwfn_input_option(option=option, grid=grid, printlevel=printlevel,frozenorbitals=num_frozen_orbs)
     #Density and other options (may or may not work)
     else:
         #Writing input
@@ -117,6 +148,8 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     if printlevel >= 2:
         print("Multiwfn is done!")
     print()
+
+    print("option:",option)
     ############################
     #POST-PROCESSING OUTPUT
     ############################
@@ -129,6 +162,15 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
             print("Density option chosen")
         outputfile="density.cub"
         finaloutputfile=originputbasename+'_mwfn.cube'
+        os.rename(outputfile, finaloutputfile)
+        if printlevel >= 2:
+            print("Electron density outputfile written:", finaloutputfile)
+        return finaloutputfile
+    elif option =="valence-density":
+        if printlevel >= 2:
+            print("Valence density option chosen")
+        outputfile="density.cub"
+        finaloutputfile=originputbasename+'_mwfn_valdens.cube'
         os.rename(outputfile, finaloutputfile)
         if printlevel >= 2:
             print("Electron density outputfile written:", finaloutputfile)
@@ -157,6 +199,26 @@ def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densit
         # 1 Electron density                 2 Gradient norm of electron density
         
         inputformula=f"""5 
+{denstype}
+{grid}
+{writeoutput}
+0
+q
+        """
+    elif option == 'valence-density':
+        denstype=1
+        #grid=3 #high-quality grid
+        writeoutput=2 #Write Cubefile to current dir
+        # 5 Output and plot specific property within a spatial region (calc. grid data)
+        # 1 Electron density                 2 Gradient norm of electron density
+        
+        inputformula=f"""6
+26
+1-{frozenorbitals}
+0
+q
+-1
+5 
 {denstype}
 {grid}
 {writeoutput}
