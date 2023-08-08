@@ -49,6 +49,7 @@ class CFourTheory:
         self.specialbasis=[]
         self.EXTERN_POT='OFF' #Pointcharge potential off by default
         self.DBOC=DBOC
+        self.FIXGEOM='OFF' #Off by default. May be turned on by run-method
         #Overriding default
         #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
         if 'BASIS' in cfouroptions: self.basis=cfouroptions['BASIS']
