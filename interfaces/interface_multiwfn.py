@@ -65,10 +65,20 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     if os.path.isfile(moldenfile) is False:
         print(f"The selected Moldenfile: {moldenfile} does not exist. Exiting")
         ashexit()
-    
+
+    #Rename MOLDEN-file.
+    if moldenfile == "MOLDEN_NAT":
+        if printlevel >= 2:
+            print("Renaming MOLDEN_NAT to MOLDEN_NAT.molden")
+        os.rename(moldenfile, "MOLDEN_NAT.molden")
+        moldenfile="MOLDEN_NAT.molden"    
+
     #Valence density requires num_frozen_orbs
     if option == 'valence-density':
         print("Valence density option chosen")
+        print("Warning: Valence density option requires a number of frozen orbitals (orbitals to ignore)")
+        print("Options: 'Auto' or integer (number of frozen orbitals)")
+        print("num_frozen_orbs option:", num_frozen_orbs)
         if num_frozen_orbs == None:
             print("Option valence-density requires num_frozen_orbs")
             print("Specify how many orbitals are frozen")
@@ -83,38 +93,36 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
             print("tot_num_frozen_orbs:", tot_num_frozen_orbs)
             num_frozen_orbs = tot_num_frozen_orbs
             print("Number of frozen orbitals determined to be:", num_frozen_orbs)
-    #Rename MOLDEN-file. Necessary for some reason. MOLDEN_NAT does not work 
-    if moldenfile == "MOLDEN_NAT":
-        if printlevel >= 2:
-            print("Renaming MOLDEN_NAT to MOLDEN_NAT.molden")
-        os.rename(moldenfile, "MOLDEN_NAT.molden")
-        moldenfile="MOLDEN_NAT.molden"
 
 
     #MRCC density special case
-    if option=="mrcc-density":
-        print("Option mrcc-density chosen")
-        if mrccoutputfile == None:
-            print("MRCC outputfile should also be provided")
-            ashexit()
-        core_electrons = int(pygrep("Number of core electrons:",mrccoutputfile)[-1])
-        print("Core electrons found in outputfile:", core_electrons)
-        frozen_orbs = int(core_electrons/2)
-        print("Frozen orbitals:", frozen_orbs)
-        #Rename MRCC Molden file to mrcc.molden
-        shutil.copy(moldenfile, "mrcc.molden")
-        #First Multiwfn call. Create new Moldenfile based on correlated density
-        write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile, printlevel=printlevel)
-        print("Now calling Multiwfn to process the MRCC, Molden and CCDENSITIES files")
-        with open("mwfnoptions") as input:
-            sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
-        print("Multiwfn is done with this part")
-        #Writes: mrccnew.molden a proper Molden WF file for MRCC WF. Now we can proceed
-        option="density"
-        moldenfile="mrccnew.molden"
-        #Now make new mwfnoptions file for the density generation
-        write_multiwfn_input_option(option="density", grid=grid, printlevel=printlevel)
-    elif option == 'nocv':
+    #if option=="mrcc-density":
+    #    print("Option mrcc-density chosen")
+    #    if mrccoutputfile == None:
+    #        print("MRCC outputfile should also be provided")
+    #        ashexit()
+    #    core_electrons = int(pygrep("Number of core electrons:",mrccoutputfile)[-1])
+    #    print("Core electrons found in outputfile:", core_electrons)
+    #    frozen_orbs = int(core_electrons/2)
+    #    print("Frozen orbitals:", frozen_orbs)
+    #    #Rename MRCC Molden file to mrcc.molden
+    #    shutil.copy(moldenfile, "mrcc.molden")
+    #    #First Multiwfn call. Create new Moldenfile based on correlated density
+    #    write_multiwfn_input_option(option=option, grid=grid, frozenorbitals=frozen_orbs, densityfile=mrccdensityfile, printlevel=printlevel)
+    #    print("Now calling Multiwfn to process the MRCC, Molden and CCDENSITIES files")
+    #    with open("mwfnoptions") as input:
+    #        sp.run([multiwfndir+'/Multiwfn', "mrcc.molden"], stdin=input)
+    #    print("Multiwfn is done with this part")
+    #    #Writes: mrccnew.molden a proper Molden WF file for MRCC WF. Now we can proceed
+    #    option="density"
+    #    moldenfile="mrccnew.molden"
+    #    #Now make new mwfnoptions file for the density generation
+    #    write_multiwfn_input_option(option="density", grid=grid, printlevel=printlevel)
+    
+    ###########################
+    #WRITING MULTIWFN INPUT
+    ###########################
+    if option == 'nocv':
         print("NOCV option")
         print("fragmentfiles:", fragmentfiles)
         print("Fockfile:", fockfile)
@@ -287,7 +295,7 @@ y
 0
 q
         """
-
+    #Special option for creating MRCC correlated WF moldenfile
     elif option =="mrcc-density":
         if frozenorbitals == None:
             print("mrccdensity requires frozenorbitals")
@@ -310,10 +318,27 @@ mrccnew.molden
 q
 
         """
-    elif option =="mayerbondorder":
-        pass
-    elif option =="fuzzy_bondorder":
-        pass
+    elif option =="laplacianbondorder" or option =="LBO":
+        inputformula=f"""9
+8
+y
+0
+q
+        """
+    elif option =="mayerbondorder" or option =="MBO":
+        inputformula=f"""9
+1
+y
+0
+q
+        """
+    elif option =="fuzzy_bondorder" or option =="FBO":
+        inputformula=f"""9
+7
+y
+0
+q
+        """
     else:
         print("write_multiwfn_input_option: unknown option")
         ashexit()
