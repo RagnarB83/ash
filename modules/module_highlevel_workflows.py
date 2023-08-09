@@ -1167,7 +1167,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             print("Doing DBOC correction")
             if self.DBOC_program == 'CFour':
                 from ash.interfaces.interface_CFour import run_CFour_DBOC_correction
-                print("Doing HOCC correction via CFour")
+                print("Doing DBOC correction via CFour")
                 E_DBOC = run_CFour_DBOC_correction(coords=current_coords, elems=elems, charge=charge, mult=mult,
                                                    method=self.DBOC_method, basis=self.DBOC_basis, numcores=original_numcores,
                                                    openshell=openshell)
