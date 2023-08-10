@@ -1885,7 +1885,9 @@ def diffdens_tool(option='density', reference_orbfile="HF.gbw", dir='.', grid=3,
 
 def DM_AO_to_MO(DM_AO, C,S):
     from functools import reduce
+    print("-"*30)
     print("Converting DM from AO to MO basis")
+    print("-"*30)
     print("DM_AO:", DM_AO)
     print("C:", C)
     print("S:", S)
@@ -1895,15 +1897,17 @@ def DM_AO_to_MO(DM_AO, C,S):
     else:
         print("Error: Input DM_AO is not symmetric.")
     #Print trace
-    print("Trace of DM_AO:", np.trace(DM_AO))
-    print("Trace of DM_AO*S:", np.trace(np.dot(DM_AO,S)))
+    print("Trace of input DM_AO:", np.trace(DM_AO))
+    print("Trace of input DM_AO*S:", np.trace(np.dot(DM_AO,S)))
     DM_MO = reduce(np.dot, (C.T, S, DM_AO, S, C))
     if np.allclose(DM_MO,np.dot(DM_MO,DM_MO)):
         print("idempotent")
-    print("DM_MO:", DM_MO)
+    else:
+        print("not idempotent")
+    print("Trace of output DM_MO:", np.trace(DM_MO))
     DM_DM = np.dot(DM_MO,DM_MO)
     print("DM_DM:", DM_DM)
-    #exit()
+    print("-"*30)
     return DM_MO
 
 def DM_MO_to_AO(DM_MO, C):
@@ -1915,8 +1919,9 @@ def DM_MO_to_AO(DM_MO, C):
     else:
         print("Error: Input DM_MO is not symmetric.")
     #Print trace
-    print("Trace of DM_MO:", np.trace(DM_MO))
+    print("Trace of input DM_MO:", np.trace(DM_MO))
     DM_AO = reduce(np.dot, (C, DM_MO, DM_MO.T ))
+
     return DM_AO
 
 #Density matrix
