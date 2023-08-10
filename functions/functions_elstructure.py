@@ -1903,7 +1903,7 @@ def DM_AO_to_MO(DM_AO, C,S):
     print("DM_MO:", DM_MO)
     DM_DM = np.dot(DM_MO,DM_MO)
     print("DM_DM:", DM_DM)
-    exit()
+    #exit()
     return DM_MO
 
 def DM_MO_to_AO(DM_MO, C):
