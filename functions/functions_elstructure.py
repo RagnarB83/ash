@@ -1885,12 +1885,9 @@ def diffdens_tool(option='density', reference_orbfile="HF.gbw", dir='.', grid=3,
 
 def DM_AO_to_MO(DM_AO, C,S):
     from functools import reduce
-    print("-"*30)
+    print("-"*50)
     print("Converting DM from AO to MO basis")
-    print("-"*30)
-    print("DM_AO:", DM_AO)
-    print("C:", C)
-    print("S:", S)
+    print("-"*50)
     #Checking if DM_AO is symmetric
     if np.allclose(DM_AO,np.transpose(DM_AO)) is True:
             print("DM_AO is symmetric.")
@@ -1905,12 +1902,13 @@ def DM_AO_to_MO(DM_AO, C,S):
     else:
         print("not idempotent")
     print("Trace of output DM_MO:", np.trace(DM_MO))
-    DM_DM = np.dot(DM_MO,DM_MO)
-    print("DM_DM:", DM_DM)
     print("-"*30)
     return DM_MO
 
 def DM_MO_to_AO(DM_MO, C):
+    print("-"*50)
+    print("Converting DM from MO to AO basis")
+    print("-"*50)
     from functools import reduce
     print("Converting DM from MO to AO basis")
     #Checking if DM_MO is symmetric
@@ -1921,7 +1919,7 @@ def DM_MO_to_AO(DM_MO, C):
     #Print trace
     print("Trace of input DM_MO:", np.trace(DM_MO))
     DM_AO = reduce(np.dot, (C, DM_MO, DM_MO.T ))
-
+    print("-"*50)
     return DM_AO
 
 #Density matrix
