@@ -2666,12 +2666,8 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
 
     return alphalist, betalist
 
-
-#Parse ORCA json file
-#Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
-def read_ORCA_json_file(file, orcadir=None):
-    # Parsing of files
-    import json
+#Using orca_2json to create JSON file from ORCA GBW file
+def create_ORCA_json_file(file, orcadir=None):
 
     orcadir = check_ORCA_location(orcadir)
     orcafile_basename = file.split('.')[0]
@@ -2694,6 +2690,16 @@ def read_ORCA_json_file(file, orcadir=None):
     sp.call([orcadir+'/orca_2json', orcafile_basename, '-format', '-json'])
 
     print(f"Created file: {orcafile_basename}.json")
+
+    return f"{orcafile_basename}.json"
+
+#Parse ORCA json file
+#Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
+def read_ORCA_json_file(file):
+    # Parsing of files
+    import json
+
+    orcafile_basename = file.split('.')[0]
     print("Opening file")
     print()
     with open(f"{orcafile_basename}.json") as f:
