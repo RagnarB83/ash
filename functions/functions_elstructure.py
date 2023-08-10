@@ -1918,7 +1918,7 @@ def DM_MO_to_AO(DM_MO, C):
         print("Error: Input DM_MO is not symmetric.")
     #Print trace
     print("Trace of input DM_MO:", np.trace(DM_MO))
-    DM_AO = reduce(np.dot, (C, DM_MO, DM_MO.T ))
+    DM_AO = reduce(np.dot, (C, DM_MO, C.T ))
     print("-"*50)
     return DM_AO
 
