@@ -1922,24 +1922,30 @@ def DM_MO_to_AO(DM_MO, C):
     print("-"*50)
     return DM_AO
 
-#Density matrix
-def diagonalize_dm(D, S):
+#Diagonalize density matrix in AO basis
+def diagonalize_DM_AO(D, S):
     print("Diagonalizing density matrix")
     import scipy
     from functools import reduce
-    print("D:", D)
-    print("S:", S)
     # Diagonalize the DM in AO basis
     A = reduce(np.dot, (S, D, S))
     w, v = scipy.linalg.eigh(A, b=S)
-
-    print("w:", w)
-    print("v:", v)
     # Flip NOONs (and NOs) since they're in increasing order
     natocc = np.flip(w)
     natorb = np.flip(v, axis=1)
-    #natocc = w
-    #natorb = v
+    print("Natural orbital coefficients:", natorb)
+    print("Natural occupations:", natocc)
+    return natorb, natocc
+
+#Diagonalize density matrix in MO basis
+def diagonalize_DM(D):
+    print("Diagonalizing density matrix directly")
+    import scipy
+    #Diagonalize
+    w, v = scipy.linalg.eigh(D)
+    # Flip NOONs (and NOs) since they're in increasing order
+    natocc = np.flip(w)
+    natorb = np.flip(v, axis=1)
     print("Natural orbital coefficients:", natorb)
     print("Natural occupations:", natocc)
     return natorb, natocc
