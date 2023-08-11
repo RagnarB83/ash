@@ -50,6 +50,9 @@ def ashexit(errormessage=None, code=1):
     #raise SystemExit(code)
     sys.exit(1)
 
+def basename(filename):
+    return os.path.splitext(filename)[0]
+
 #Attempt to generally find a 3rd-party program based on path, exename etc.
 #Either programdir variable is already set, else we try to find based on programdirname or exename
 def find_program(programdir,programdirname,exename,theorynamelabel):

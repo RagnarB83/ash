@@ -138,6 +138,9 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     elif option == 'valence-density':
         write_multiwfn_input_option(option=option, grid=grid, printlevel=printlevel,frozenorbitals=num_frozen_orbs)
     #Density and other options (may or may not work)
+    elif option == "elf":
+        print("ELF analysis is chosen")
+        write_multiwfn_input_option(option=option, grid=grid, printlevel=printlevel)
     else:
         #Writing input
         write_multiwfn_input_option(option=option, grid=grid, printlevel=printlevel)
@@ -233,6 +236,25 @@ q
 0
 q
         """
+    elif option == "elf":
+        inputformula=f"""5
+9
+3
+2
+-1
+0
+17
+1
+2
+2
+1
+-4
+1
+-4
+3
+-10
+q
+        """        
     elif option == 'nocv':
         print("Writing Multiwfn inputfile for NOCV analysis")
         denstype=1
