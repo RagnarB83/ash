@@ -190,6 +190,8 @@ class ORCATheory:
     def cleanup(self):
         print("Cleaning up old ORCA files")
         list_files=[]
+        #Keeping outputfiles
+        #list_files.append(self.filename + '.out')
         list_files.append(self.filename + '.gbw')
         list_files.append(self.filename + '.densities')
         list_files.append(self.filename + '.ges')
@@ -197,7 +199,6 @@ class ORCATheory:
         list_files.append(self.filename + '.uco')
         list_files.append(self.filename + '_property.txt')
         list_files.append(self.filename + '.inp')
-        list_files.append(self.filename + '.out')
         list_files.append(self.filename + '.engrad')
         list_files.append(self.filename + '.cis')
         list_files.append(self.filename + '_last.out')
@@ -2729,19 +2730,55 @@ def get_densities_from_ORCA_json(data):
     for d in data["Densities"]:
         print(d)
         DMs[d] = np.array(data["Densities"][d])
-    #try:
-    #    SCF_density = data["Molecule"]["Densities"]["scfp"]
-    #    DMs["scfp"] = np.array(SCF_density)
-    #except:
-    #    pass
-    #try:
-    #    MP2_UR_density = data["Molecule"]["Densities"]["pmp2ur"]
-    #    DMs["pmp2ur"] = np.array(MP2_UR_density)
-    #except:
-    #    pass
     print("Found the following densities: ", DMs.keys())
     return DMs
-    #print("Molecule-H-Matrix:", data["Molecule"]["H-Matrix"])
-    #print("Molecule-S-Matrix:", data["Molecule"]["S-Matrix"])
-    #print("Molecule-T-Matrix:", data["Molecule"]["T-Matrix"])
-    #print("Molecule-MolecularOrbitals:", data["Molecule"]["MolecularOrbitals"])
+
+#Grab ORCA wfn from jsonfile or data-dictionary
+def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
+    print_line_with_mainheader("grab_ORCA_wfn")
+
+    #If neither data object or dictionary was provided
+    if data == None and jsonfile == None:
+        print("grab_ORCA_wfn requires either data dictionary or jsonfile as input")
+        ashexit()
+    elif data != None and jsonfile != None:
+        print("grab_ORCA_wfn requires either data dictionary or jsonfile as input")
+        ashexit()
+    elif data != None:
+        print("Data dictionary provided")
+        pass
+    elif jsonfile != None:
+        print("JSON file provided. Reading")
+        data = read_ORCA_json_file(jsonfile)
+
+    if density == None:
+        print("Error: You must pick a density option")
+        print("Available densities in data object:")
+        for d in data["Densities"]:
+            print(d)
+        ashexit()
+    #Grab chosen density
+    DM_AO = np.array(data["Densities"][density])
+    print("DM_AO:", DM_AO)
+
+    #Get the AO-basis
+    AO_basis = data["Atoms"]
+    AO_order = data["MolecularOrbitals"]["OrbitalLabels"]
+
+    #Get the overlap
+    S = np.array(data["S-Matrix"])
+
+    #Grabbing C (MO coefficients)
+    mos = data["MolecularOrbitals"]["MOs"]
+    C = np.array([m["MOCoefficients"] for m in mos])
+    C = np.transpose(C)
+
+    #MO energies and occupations
+    MO_energies = np.array([m["OrbitalEnergy"] for m in mos])
+    MO_occs = np.array([m["Occupancy"] for m in mos])
+
+    print("MO_energies:", MO_energies)
+    print("MO_occs:", MO_occs)
+    print("MO coeffs:", C)
+
+    return DM_AO,C,S, AO_basis, AO_order

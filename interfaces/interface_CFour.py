@@ -10,6 +10,8 @@ import ash.settings_ash
 CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG-PVDZ', 'ATZ':'AUG-PVTZ', 'AQZ':'AUG-PVQZ', 
                 'A5Z':'AUG-PV5Z'}
 
+#TODO: Add automatic frozen core option with better frozen core settings for elements
+
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,

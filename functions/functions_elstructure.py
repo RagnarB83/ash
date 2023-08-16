@@ -1980,12 +1980,17 @@ def diagonalize_DM(D):
     print("Natural occupations:", natocc)
     return natorb, natocc
 
+#Change nat orbitals from MO basis to AO basis by multiplying with MO coeffs
+def convert_NOs_from_MO_to_AO(NOs,C):
+    return np.dot(C,NOs)
+
+
 #Function that creates Molden file from ASH fragment and MO coefficients, occupations and basis set
 #https://www.theochem.ru.nl/molden/molden_format.html
 #https://github.com/psi4/psi4/issues/504
 #https://github.com/psi4/psi4/issues/60
 #https://github.com/psi4/psi4/blob/master/psi4/driver/p4util/writer.py
-def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, AO_order_object=None, label="ASH_orbs", spherical_MOs=True):
+def make_molden_file(fragment, AO_basis, MO_coeffs, MO_energies=None, MO_occs=None, AO_order=None, label="ASH_orbs", spherical_MOs=True):
     
     print_line_with_mainheader("make_molden_file")
 
@@ -1997,12 +2002,12 @@ def make_molden_file(fragment, aos, MO_coeffs, MO_energies=None, MO_occs=None, A
     print("WARNING: NORMALIZATION may not be entirely correct")
     print("WARNING: ORDER has only been checked for s,p,d and f")
     
-    if AO_order_object is None:
-        print("Warning: no AO_order_object given. Will guess??")
+    if AO_order is None:
+        print("Warning: no AO_order given. Will guess??")
         ashexit()
     else:
          print("AO_order_object given. Will use this to order AOs")
-         print(AO_order_object)
+         print(AO_order)
    
     ############
     #Geometry
@@ -2025,8 +2030,8 @@ Molden file created by ASH (using orca format)
     shell_to_angmom = {"s":0,"p":1,"d":2,"f":3}
     gtostring="""[GTO]
 """
-    #Looping over each atom
-    for i,atom in enumerate(aos):
+    #Looping over each atom in AO_basis object
+    for i,atom in enumerate(AO_basis):
         gtostring+=f"  {i+1} 0\n"
         bfs = atom["BasisFunctions"]
         for bf in bfs:
@@ -2038,11 +2043,7 @@ Molden file created by ASH (using orca format)
             gtostring+=f"{shell}   {len(coeffs)} {extra}\n"
             for exp,coeff in zip(exponents,coeffs):
                 N = normalization_ORCA(angmom,exp)
-                print("N:", N)
-                print("coeff:", coeff)
-                print("exp:", exp)
                 coeff_used = coeff*N
-                print("coeff_used:", coeff_used)
                 gtostring+=f"       {exp} {coeff_used}\n"
         gtostring+="\n"
     
@@ -2077,7 +2078,7 @@ Molden file created by ASH (using orca format)
  Occup= {mo_occ}\n"""
         mostring+=moheader
         #Reorder according to AO_order_object
-        mo_coeffs_reordered =  reorder_AOs_in_MO_ORCA_to_Molden(mo_coeffs,AO_order_object)
+        mo_coeffs_reordered =  reorder_AOs_in_MO_ORCA_to_Molden(mo_coeffs,AO_order)
         for i,mo_coeff in enumerate(mo_coeffs_reordered):
             mostring+=f" {i+1}      {mo_coeff:15.12f}\n"
 

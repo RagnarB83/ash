@@ -24,7 +24,7 @@ class PySCFTheory:
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
-                  TDDFT=False, tddft_numstates=10, mom=False, mom_virtindex=1, mom_spinmanifold=0,
+                  TDDFT=False, tddft_numstates=10, mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
@@ -158,6 +158,7 @@ class PySCFTheory:
         #MOM
         self.mom=mom
         self.mom_virtindex=mom_virtindex # The relative virtual orbital index to excite into. Default 1 (LUMO). Choose 2 for LUMO+1 etc.
+        self.mom_occindex=mom_occindex #The relative occupied orbital index to excite from. Default 0 (HOMO). Choose -1 for HOMO-1 etc.
         self.mom_spinmanifold=mom_spinmanifold #The spin-manifold (0: alpha or 1: beta) to excited electron in. Default: 0 (alpha)
         #SCF max iterations
         self.scf_maxiter=scf_maxiter
@@ -1306,16 +1307,27 @@ class PySCFTheory:
                     print("Previous SCF MO occupations are:")
                     print("Alpha:", occ[0].tolist())
                     print("Beta:", occ[1].tolist())
+
+                    #The chosen spin manifold
                     spinmanifold = self.mom_spinmanifold
+
+                    #Finding HOMO index
                     HOMOnum = list(occ[spinmanifold]).index(0.0)-1
+
+                    #Defining the occupied orbital index to excite from (default HOMO). if mom_occindex is -1 and HOMO is 54 then used_occ_index = 54 + (-1) = 53
+                    used_occ_index = HOMOnum + self.mom_occindex
+
+                    #Finding LUMO index
                     LUMOnum = HOMOnum + self.mom_virtindex
 
+
                     print(f"HOMO (spinmanifold:{spinmanifold}) index:", HOMOnum)
+                    print(f"OCC MO index (spinmanifold:{spinmanifold}) to excite from:", used_occ_index)
                     print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
                     print("Spin manifold:", self.mom_spinmanifold)
                     print("Modifying guess")
                     # Assign initial occupation pattern
-                    occ[spinmanifold][HOMOnum]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    occ[spinmanifold][used_occ_index]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
                     occ[spinmanifold][LUMOnum]=1	 # it is still a singlet state
 
                     # New SCF caculation
@@ -1354,11 +1366,18 @@ class PySCFTheory:
 
                 elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS' or self.scf_type == 'RHF' or self.scf_type == 'RKS':
                     print("ROHF/ROKS MOM calculation")
+
+                    #Defining the index of the HOMO    
                     HOMOnum = list(occ).index(0.0)-1
+                    #Defining the occupied orbital index to excite from (default HOMO). if mom_occindex is -1 and HOMO is 54 then used_occ_index = 54 + (-1) = 53
+                    used_occ_index = HOMOnum + self.mom_occindex
+                    
+                    #Defining the virtual orbital index to excite into(default LUMO)
                     LUMOnum = HOMOnum + self.mom_virtindex
                     spinmanifold = self.mom_spinmanifold
                     print("Previous SCF MO occupations are:", occ.tolist())
                     print("HOMO index:", HOMOnum)
+                    print("Occupied MO index to excite from", used_occ_index)
                     print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
                     print("Spin manifold:", self.mom_spinmanifold)
                     print("Modifying guess")
@@ -1366,10 +1385,11 @@ class PySCFTheory:
                     setocc[:, occ==2] = 1
 
                     # Assigned initial occupation pattern
-                    setocc[0][HOMOnum] = 0    # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    setocc[0][used_occ_index] = 0    # this excited state is originated from OCCMO(alpha) -> LUMO(alpha)
                     setocc[0][LUMOnum] = 1    # it is still a singlet state
                     ro_occ = setocc[0][:] + setocc[1][:]    # excited occupation pattern within RO style
-
+                    print("setocc:",setocc)
+                    print("ro_occ:",ro_occ)
                     # New ROKS/ROHF SCF calculation
                     if self.scf_type == 'ROHF' or self.scf_type == 'RHF':
                         MOMSCF = pyscf.scf.ROHF(self.mol)
