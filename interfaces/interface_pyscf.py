@@ -72,6 +72,9 @@ class PySCFTheory:
                     print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
                     ashexit()
             
+        #Store optional properties of ORCA run job in a dict
+        self.properties ={}
+
         #Printlevel
         self.printlevel=printlevel
         self.label=label
@@ -1422,6 +1425,10 @@ class PySCFTheory:
                 else:
                     print("Unknown scf-type for MOM")
                     ashexit()
+                
+                #delta-SCF results
+                self.properties["Transition_energy"] = trans_energy
+
                 #Overlap
                 #print("self.mf.get_ovlp():", self.mf.get_ovlp())
                 #overlap = pyscf.scf.uhf.det_ovlp(self.mf.mo_coeff,MOMSCF.mo_coeff,self.mf.mo_occ,MOMSCF.mo_occ,self.mf.get_ovlp())
@@ -1446,7 +1453,7 @@ class PySCFTheory:
                 mytd.analyze()
                 #print("TDDFT transition energies (Eh):", mytd.e)
                 print("TDDFT transition energies (eV):", mytd.e*27.211399)
-
+                self.properties["TDDFT_transition_energies"] = mytd
             #####################
             #COUPLED CLUSTER
             #####################
