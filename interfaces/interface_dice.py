@@ -513,7 +513,7 @@ noio
         print("SHCI_macroiter:", self.SHCI_macroiter)
 
         #Turn RDM creation on or off
-        if rdmoption is False:
+        if rdmoption is None:
             #Pick user-selected (default: False)
             dordm=self.SHCI_DoRDM
         else:
