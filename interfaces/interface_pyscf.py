@@ -34,7 +34,7 @@ class PySCFTheory:
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
-                  loscpath=None, LOSC_window=None,
+                  loscpath=None, LOSC_window=None, write_molden_file=True,
                   mcpdft=False, mcpdft_functional=None):
 
         self.theorynamelabel="PySCF"
@@ -559,6 +559,11 @@ class PySCFTheory:
             mo_coefficients=natorb              
         else:
             mo_coefficients=[natorb,natorb]
+        
+        #Writing natural orbitals to disk as Molden file
+        print("Writing natural orbitals to disk as Molden file")
+        self.write_orbitals_to_Moldenfile(self.mol, mo_coefficients, natocc,  label="pySCF_natorbs")
+
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
         return natocc, mo_coefficients
     
@@ -1864,3 +1869,97 @@ def pyscf_MR_correction(fragment, theory=None):
     print("\nDelta (HighLevel - CCSD(T)) correction:", correction)
 
     return correction
+
+#Converting
+def convert_PySCF_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
+    print("convert_PySCF_Molden_file")
+
+    moldenfile_basename=os.path.basename(moldenfile).split('.')[0]
+
+    #Finding molden2aim in PATH. Present in ASH (May require compilation)
+    ashpath=os.path.dirname(ash.__file__)
+    molden2aim=ashpath+"/external/Molden2AIM/src/"+"molden2aim.exe"
+    if os.path.isfile(molden2aim) is False:
+        print("Did not find {}. Did you compile it ? ".format(molden2aim))
+        print("Go into dir:", ashpath+"/external/Molden2AIM/src")
+        print("Compile using gfortran or ifort:")
+        print("gfortran -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
+        print("ifort -O3 edflib.f90 edflib-pbe0.f90 molden2aim.f90 -o molden2aim.exe")
+        ashexit()
+    else:
+        print("Found molden2aim.exe: ", molden2aim)
+
+    #Write configuration file for molden2aim
+    with open("m2a.ini", 'w') as m2afile:
+        string = """########################################################################
+    #  In the following 8 parameters,
+    #     >0:  always performs the operation without asking the user
+    #     =0:  asks the user whether to perform the operation
+    #     <0:  always neglect the operation without asking the user
+    molden= 1           ! Generating a standard Molden file in Cart. function
+    wfn= -1              ! Generating a WFN file
+    wfncheck= -1         ! Checking normalization for WFN
+    wfx= -1              ! Generating a WFX file (not implemented)
+    wfxcheck= -1         ! Checking normalization for WFX (not implemented)
+    nbo= -1              ! Generating a NBO .47 file
+    nbocheck= -1         ! Checking normalization for NBO's .47
+    wbo= -1              ! GWBO after the .47 file being generated
+
+    ########################################################################
+    #  Which quantum chemistry program is used to generate the MOLDEN file?
+    #  1: ORCA, 2: CFOUR, 3: TURBOMOLE, 4: JAGUAR (not supported),
+    #  5: ACES2, 6: MOLCAS, 7: PSI4, 8: MRCC, 9: NBO 6 (> ver. 2014),
+    #  0: other programs, or read [Program] xxx from MOLDEN.
+    #
+    #  If non-zero value is given, [Program] xxx in MOLDEN will be ignored.
+    #
+    program=0
+
+    ########################################################################
+    #  For ECP: read core information from Molden file
+    #<=0: if the total_occupation_number is smaller than the total_Za, ask
+    #     the user whether to read core information
+    # >0: always search and read core information
+    rdcore=0
+
+    ########################################################################
+    #  Which orbirals will be printed in the WFN/WFX file?
+    # =0: print only the orbitals with occ. number > 5.0d-8
+    # <0: print only the orbitals with occ. number > 0.1 (debug only)
+    # >0: print all the orbitals
+    iallmo=0
+
+    ########################################################################
+    #  Used for WFX only
+    # =0: print "UNKNOWN" for Energy and Virial Ratio
+    # .ne. 0: print 0.0 for Energy and 2.0 for Virial Ratio
+    unknown=1
+
+    ########################################################################
+    #  Print supporting information or not
+    # =0: print; .ne. 0: do not print
+    nosupp=0
+
+    ########################################################################
+    #  The following parameters are used only for debugging.
+    clear=1            ! delete temporary files (1) or not (0)
+
+    ########################################################################
+    """
+        m2afile.write(string)
+
+        
+    #Write Molden2aim input file
+    mol2aiminput=['', moldenfile, '', '']
+    m2aimfile = open("mol2aim.inp", "w")
+    for mline in mol2aiminput:
+        m2aimfile.write(mline+'\n')
+    m2aimfile.close()
+
+    #Run molden2aim
+    m2aimfile = open('mol2aim.inp')
+    p = sp.Popen(molden2aim, stdin=m2aimfile, stderr=sp.STDOUT)
+    p.wait()
+
+    print(f"Created new Molden file (via molden2aim): {moldenfile_basename}_new.molden")
+    print("This file can be correctly read by Multiwfn")
