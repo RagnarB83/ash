@@ -1872,6 +1872,7 @@ def pyscf_MR_correction(fragment, theory=None):
 
 #Converting
 def convert_PySCF_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
+    import subprocess as sp
     print("convert_PySCF_Molden_file")
 
     moldenfile_basename=os.path.basename(moldenfile).split('.')[0]
