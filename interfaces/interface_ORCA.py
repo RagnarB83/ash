@@ -2009,6 +2009,27 @@ def SCF_FODocc_grab(filename):
                 occgrab=True
     return occupations
 
+def UHF_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            print(line)
+            if natoccgrab==True:
+                if 'LOEWDIN' in line:
+                    natoccgrab=False
+                if 'N' in line:
+                    for s in line.split(' '):
+                        try:
+                            occ = float(s)
+                            natoccupations.append(occ)
+                        except:
+                            pass
+            if 'UHF NATURAL ORBITALS' in line:
+                natoccgrab=True
+    return natoccupations
+
+
 def MP2_natocc_grab(filename):
     natoccgrab=False
     natoccupations=[]
@@ -2050,6 +2071,21 @@ def CASSCF_natocc_grab(filename):
                     natoccgrab=False
                     return natoccupations
             if 'NO   OCC          E(Eh)            E(eV)' in line:
+                natoccgrab=True
+    return natoccupations
+
+def MRCI_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if 'N[' in line:
+                    natoccupations.append(float(line.split()[-1]))
+                if '  -> stored natural orbitals' in line:
+                    natoccgrab=False
+                    return natoccupations
+            if 'NATURAL ORBITAL GENERATION' in line:
                 natoccgrab=True
     return natoccupations
 

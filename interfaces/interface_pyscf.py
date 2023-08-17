@@ -24,7 +24,8 @@ class PySCFTheory:
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
-                  TDDFT=False, tddft_numstates=10, mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
+                  TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
+                  mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
@@ -158,6 +159,9 @@ class PySCFTheory:
         #TDDFT
         self.TDDFT=TDDFT
         self.tddft_numstates=tddft_numstates
+        #NTO
+        self.NTO=NTO
+        self.NTO_states=NTO_states  #List of states to calculate NTOs for
         #MOM
         self.mom=mom
         self.mom_virtindex=mom_virtindex # The relative virtual orbital index to excite into. Default 1 (LUMO). Choose 2 for LUMO+1 etc.
@@ -1430,11 +1434,26 @@ class PySCFTheory:
                 self.properties["Transition_energy"] = trans_energy
 
                 #Overlap
-                #print("self.mf.get_ovlp():", self.mf.get_ovlp())
-                #overlap = pyscf.scf.uhf.det_ovlp(self.mf.mo_coeff,MOMSCF.mo_coeff,self.mf.mo_occ,MOMSCF.mo_occ,self.mf.get_ovlp())
-                #print("overlap:", overlap)
+                # Calculate overlap between two determiant <I|F>
+                #S,X = pyscf.scf.uhf.det_ovlp(self.mf.mo_coeff,MOMSCF.mo_coeff,self.mf.mo_occ,MOMSCF.mo_occ,self.mf.get_ovlp())
+                #print("overlap:", S)
+                #print("X:", X)
+
                 #Transition density matrix
-                #D_12 = MOMSCF.mo_coeff* adjugate(overlap)*self.mf.mo_occ * self.mf.mo_coeff
+                #D_21 = MOMSCF.mo_coeff* adjugate(s)*self.mf.mo_occ * self.mf.mo_coeff
+                #D_21 = reduce(np.dot, (MOMSCF.mo_coeff, np.transpose(S),np.transpose(self.mf.mo_coeff)))
+                #D_21 = MOMSCF.mo_coeff* np.transpose(S)*self.mf.mo_coeff
+                #print("D_21:",D_21)
+
+                #charges = self.mol.atom_charges()
+                #coords = self.mol.atom_coords()
+                #nuc_charge_center = np.einsum('z,zx->x', charges, coords) / charges.sum()
+                #print("nuc_charge_center:",nuc_charge_center)
+                #self.mol.set_common_orig_(nuc_charge_center)
+                #dip_ints = self.mol.intor('cint1e_r_sph', comp=3)
+                #print("dip_ints:",dip_ints)
+                #transition_dipoles = np.einsum('xij,ji->x', dip_ints, D_21)
+                #print("transition_dipoles:",transition_dipoles)
                 #https://github.com/pyscf/pyscf/blob/master/examples/scf/51-elecoup_mom.py
             #####################
             #TDDFT
@@ -1451,9 +1470,39 @@ class PySCFTheory:
                 mytd.nstates = self.tddft_numstates
                 mytd.kernel()
                 mytd.analyze()
+
+                #NTO Analysis for state 1
+                print("NTO analysis for state 1")
+                if self.NTO is True:
+                    if type(self.NTO_states) != list:
+                        print("NTO_states must be a list")
+                        ashexit()
+                    print("Now doing NTO analysis for states:", self.NTO_states)
+                    for ntostate in self.NTO_states:
+                        print("NTO state:", ntostate)
+                        weights_1, nto_1 = mytd.get_nto(state=ntostate, verbose=4)
+
+                print("-"*40)
+                print("TDDFT RESULTS")
+                print("-"*40)
                 #print("TDDFT transition energies (Eh):", mytd.e)
                 print("TDDFT transition energies (eV):", mytd.e*27.211399)
-                self.properties["TDDFT_transition_energies"] = mytd
+
+                # Transition dipoles
+                t_dip = mytd.transition_dipole()
+                print("Transition dipoles:", t_dip)
+
+                # Oscillator strengths
+                osc_strengths_length = mytd.oscillator_strength(gauge='length')
+                osc_strengths_vel = mytd.oscillator_strength(gauge='velocity')
+                print("Oscillator strengths (length):", osc_strengths_length)
+                print("Oscillator strengths (velocity):", osc_strengths_vel)
+
+                #Storing in properties object
+                self.properties["TDDFT_transition_energies"] = mytd.e*27.211399
+                self.properties["TDDFT_transition_dipoles"] = t_dip
+                self.properties["TDDFT_oscillator strengths"] = osc_strengths_length
+
             #####################
             #COUPLED CLUSTER
             #####################

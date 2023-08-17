@@ -2192,3 +2192,29 @@ def read_molden_file(moldenfile):
     molden_properties_dict["coords"]=np.array(coords)
 
     return molden_properties_dict 
+
+
+#Polyradical character metrics head-Gordon
+#HG-1
+def poly_rad_index_nu(occupations):
+    n_u=0.0
+    for on in occupations:
+        n_u+=min(on,2-on)
+    print(f"HG-1 Number of effective unpaired electrons {n_u}")
+    return n_u
+#HG-2
+def poly_rad_index_nu_nl(occupations):
+    n_u_nl=0.0
+    for on in occupations:
+        n_u_nl+=on**2*((2-on)**2)
+    print(f"HG-2 Number of effective unpaired electrons {n_u_nl}")
+    return n_u_nl
+
+#Original by Takatsuka and Staroverov and Davidson
+#Can overestimate number of unpaired electrons
+def poly_rad_index_n_d(occupations):
+    n=0.0
+    for on in occupations:
+        n+=on*(2-on)
+    print(f"Takatsuka Number of effective unpaired electrons {n}")
+    return n
