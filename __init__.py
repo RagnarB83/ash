@@ -117,6 +117,9 @@ from ash.modules.module_polembed import PolEmbedTheory
 # Knarr
 from ash.interfaces.interface_knarr import NEB, NEBTS
 
+#VMD
+from ash.interfaces.interface_VMD import write_VMD_script_cube
+
 # ASE-Dynamics
 from ash.interfaces.interface_ASE import Dynamics_ASE
 

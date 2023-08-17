@@ -767,6 +767,13 @@ noio
                 self.SHCI_object_run() #Runs the self.mch object
                 print("Final Dice SHCI energy:", self.energy)
 
+                #Natural orbitals
+                if self.SHCI_DoRDM is True:
+                    print("SHCI DoRDM is True. Creating SHCI natural orbitals")
+                    occupations, mo_coefficients = self.pyscf.mcscf.addons.make_natural_orbitals(self.mch)
+                    print("Writing natural orbitals to Moldenfile")
+                    write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, mo_coefficients, occupations, self.mf.mo_energy, label="CAN-orbs")
+
         print("Dice is finished")
         #Cleanup Dice scratch stuff (big files)
         self.cleanup()

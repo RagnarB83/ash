@@ -337,10 +337,13 @@ class PySCFTheory:
                 os.remove(f)
             except:
                 print("Error removing file", f)
-    def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies, label="orbs"):
+    def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies=None, label="orbs"):
         import pyscf
         from pyscf.tools import molden
         print("Writing orbitals to disk as Molden file")
+        if mo_energies == None:
+            print("No MO energies. Setting to 0.0")
+            [0.0 for i in occupations]
         #pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
         with open(f'pyscf_{label}.molden', 'w') as f1:
             molden.header(mol, f1)
