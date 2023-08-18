@@ -521,6 +521,13 @@ noio
             dordm=rdmoption
             print("RDM option:", dordm)
 
+        if dordm is True:
+            print("RDM is True")
+            print("Warning: Switching from stochastic PT (no RDM available) to deterministic PT")
+            print("This will be a more expensive energy calculation ")
+            self.self.SHCI_stochastic=False
+
+
         if self.SHCI_macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and SHCI")
 
@@ -774,7 +781,7 @@ noio
                     print("SHCI DoRDM is True. Creating SHCI natural orbitals")
                     occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
                     print("Writing natural orbitals to Moldenfile")
-                    self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, mo_coefficients, occupations, label="SHCI_nat_orbs")
+                    self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
 
         print("Dice is finished")
         #Cleanup Dice scratch stuff (big files)

@@ -2014,7 +2014,6 @@ def UHF_natocc_grab(filename):
     natoccupations=[]
     with open(filename) as f:
         for line in f:
-            print(line)
             if natoccgrab==True:
                 if 'LOEWDIN' in line:
                     natoccgrab=False

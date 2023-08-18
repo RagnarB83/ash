@@ -34,7 +34,7 @@ class PySCFTheory:
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
-                  loscpath=None, LOSC_window=None, write_molden_file=True,
+                  loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None):
 
         self.theorynamelabel="PySCF"
@@ -341,7 +341,7 @@ class PySCFTheory:
         import pyscf
         from pyscf.tools import molden
         print("Writing orbitals to disk as Molden file")
-        if mo_energies == None:
+        if mo_energies is None:
             print("No MO energies. Setting to 0.0")
             [0.0 for i in occupations]
         #pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
@@ -1871,6 +1871,7 @@ def pyscf_MR_correction(fragment, theory=None):
     return correction
 
 #Converting
+#NOTE: NOT READY
 def convert_PySCF_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
     import subprocess as sp
     print("convert_PySCF_Molden_file")
@@ -1928,7 +1929,7 @@ def convert_PySCF_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
     # =0: print only the orbitals with occ. number > 5.0d-8
     # <0: print only the orbitals with occ. number > 0.1 (debug only)
     # >0: print all the orbitals
-    iallmo=0
+    iallmo=1
 
     ########################################################################
     #  Used for WFX only
@@ -1964,3 +1965,44 @@ def convert_PySCF_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
 
     print(f"Created new Molden file (via molden2aim): {moldenfile_basename}_new.molden")
     print("This file can be correctly read by Multiwfn")
+
+
+#Moldenfile from PySCF checkpointfile
+#Also requires geometry (not in chkfile)
+def make_molden_file_PySCF_from_chkfile(fragment=None, basis=None, chkfile=None,label=""):
+    import pyscf
+    from pyscf.tools import molden
+    print(f"Attempting to read chkfile: {chkfile}")
+    if chkfile != None:
+        print("Reading orbitals from checkpointfile:", chkfile)
+        if os.path.isfile(chkfile) is False:
+            print("File does not exist. Continuing!")
+            return False
+        try:
+            chkfileobject = pyscf.scf.chkfile.load(chkfile, 'scf')
+        except TypeError:
+            print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
+            print("Ignoring and continuing")
+            ashexit()
+    print("chkfileobject", chkfileobject)
+    mo_energy = chkfileobject["mo_energy"]
+    mo_occ = chkfileobject["mo_occ"]
+    mo_coeff = chkfileobject["mo_coeff"]
+
+    #Creating mol
+    mol = pyscf.gto.Mole()
+    #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
+    mol.verbose = 3
+    coords_string=ash.modules.module_coords.create_coords_string(fragment.elems,fragment.coords)
+    mol.atom = coords_string
+    mol.symmetry = None
+    mol.charge = fragment.charge
+    mol.spin = fragment.mult-1
+    mol.basis=basis
+    mol.build()
+
+    print("Writing orbitals to disk as Molden file")
+    molden.from_mo(mol, f'pyscf_{label}.molden', mo_coeff, occ=mo_occ)
+    with open(f'pyscf_{label}.molden', 'w') as f1:
+        molden.header(mol, f1)
+        molden.orbital_coeff(mol, f1, mo_coeff, ene=mo_energy, occ=mo_occ)
