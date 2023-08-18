@@ -525,7 +525,7 @@ noio
             print("RDM is True")
             print("Warning: Switching from stochastic PT (no RDM available) to deterministic PT")
             print("This will be a more expensive energy calculation ")
-            self.self.SHCI_stochastic=False
+            self.SHCI_stochastic=False
 
 
         if self.SHCI_macroiter == 0:
