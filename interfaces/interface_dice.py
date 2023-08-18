@@ -524,7 +524,7 @@ noio
         if dordm is True:
             print("RDM is True")
             print("Warning: Switching from stochastic PT (no RDM available) to deterministic PT")
-            print("This will be a more expensive energy calculation ")
+            print("This will be a more expensive calculation ")
             self.SHCI_stochastic=False
 
 

@@ -561,8 +561,8 @@ class PySCFTheory:
             mo_coefficients=[natorb,natorb]
         
         #Writing natural orbitals to disk as Molden file
-        print("Writing natural orbitals to disk as Molden file")
-        self.write_orbitals_to_Moldenfile(self.mol, mo_coefficients, natocc,  label="pySCF_natorbs")
+        #print("Writing natural orbitals to disk as Molden file")
+        #self.write_orbitals_to_Moldenfile(self.mol, mo_coefficients, natocc,  label="pySCF_natorbs")
 
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
         return natocc, mo_coefficients
