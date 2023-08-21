@@ -2542,7 +2542,7 @@ end
     return icetheory
 
 #Workflow to do active-space selection with MP2 or CCSD and then ICE-CI
-def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, 
+def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainput="",
                  initial_orbitals="RI-MP2", moreadfile=None, gtol=2.50e-04,
                  numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000):
 
@@ -2585,7 +2585,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02,
         autostart_option=False
 
     if initial_orbitals =="MP2" :
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
                                  label='MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
