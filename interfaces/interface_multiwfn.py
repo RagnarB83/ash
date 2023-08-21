@@ -186,6 +186,15 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         if printlevel >= 2:
             print("Electron density outputfile written:", finaloutputfile)
         return finaloutputfile
+    elif option == "elf":
+        if printlevel >= 2:
+            print("ELF option chosen")
+        outputfile="ELF.cub"
+        finaloutputfile=originputbasename+'_mwfn_valdens.cube'
+        os.rename(outputfile, finaloutputfile)
+        if printlevel >= 2:
+            print("ELF Cube-file written:", finaloutputfile)
+        return finaloutputfile   
     elif option =="nocv":
         print("NOCV option was chosen.")
         print("Relevant Cube-files were created and NOCV output can be found in: NOCV.txt")

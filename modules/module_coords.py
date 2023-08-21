@@ -658,6 +658,7 @@ class Fragment:
                 ofile.write(line + '\n')
         if self.printlevel >= 2:
             print("Wrote XYZ file: ", xyzfilename)
+        return xyzfilename
     def write_XYZ_for_atoms(self,xyzfilename="Fragment-subset.xyz", atoms=None):
         subset_elems = [self.elems[i] for i in atoms]
         subset_coords = np.take(self.coords, atoms, axis=0)
