@@ -190,7 +190,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         if printlevel >= 2:
             print("ELF option chosen")
         outputfile="ELF.cub"
-        finaloutputfile=originputbasename+'_mwfn_valdens.cube'
+        finaloutputfile=originputbasename+'_ELF.cube'
         os.rename(outputfile, finaloutputfile)
         if printlevel >= 2:
             print("ELF Cube-file written:", finaloutputfile)
