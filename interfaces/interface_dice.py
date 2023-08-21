@@ -526,7 +526,11 @@ noio
             print("Warning: Switching from stochastic PT (no RDM available) to deterministic PT")
             print("This will be a more expensive calculation ")
             self.SHCI_stochastic=False
-
+        
+        #If PT is not requested
+        if self.SHCI_PTiter == 0:
+            print("SHCI_PTiter is 0. PT turned off and will be skipped")
+            self.SHCI_stochastic=True  #NOTE: Has to be set to stochastic, otherwise deterministic PT happens (bug probably)
 
         if self.SHCI_macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and SHCI")
