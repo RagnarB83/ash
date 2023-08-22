@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 import ash.settings_ash
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep
 from ash.interfaces.interface_multiwfn import write_multiwfn_input_option
 
 MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z', 'ADZ':'aug-cc-pVDZ', 'ATZ':'aug-cc-pVTZ', 'AQZ':'aug-cc-pVQZ', 
