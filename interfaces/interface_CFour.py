@@ -10,13 +10,11 @@ import ash.settings_ash
 CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG-PVDZ', 'ATZ':'AUG-PVTZ', 'AQZ':'AUG-PVQZ', 
                 'A5Z':'AUG-PV5Z'}
 
-#TODO: Add automatic frozen core option with better frozen core settings for elements
-
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
                  filename='cfourjob', specialbasis=None, ash_basisfile=None, basisfile=None, label=None,
-                 parallelization='MKL', DBOC=False):
+                 parallelization='MKL', frozen_core_settings='Auto', DBOC=False):
         
         self.theorynamelabel="CFour"
         self.analytic_hessian=True
@@ -38,6 +36,7 @@ class CFourTheory:
         self.memory_unit='GB'
         self.reference='RHF'
         self.frozen_core='ON'
+        self.frozen_core_settings=frozen_core_settings #ASH default is 'Auto'
         self.guessoption='MOREAD'
         self.propoption='OFF'
         self.cc_prog='ECC'
@@ -249,6 +248,42 @@ class CFourTheory:
             S2=None
         return S2
 
+    #Determines Frozen core seetings to apply
+    def determine_frozen_core(self,elems):
+        print("Determining frozen core")
+        print("frozen_core_settings options are: Auto, None or CFour")
+        print("Auto uses ASH frozen core settings (mimics ORCA settings)")
+        print("CFour uses default CFour frozen core settings (not good for 3d metals)")
+        #Frozen core settings
+        FC_elems={'H':0,'He':0,'Li':0,'Be':0,'B':2,'C':2,'N':2,'O':2,'F':2,'Ne':2,
+        'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
+        'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,'Co':10,'Ni':10,'Cu':10,'Zn':10,
+        'Ga':18,'Ge':18,'As':18,'Se':18, 'Br':18, 'Kr':18}
+
+        if self.frozen_core == 'OFF' or self.frozen_core == None or self.frozen_core_settings == None:
+            print("Frozen core requested OFF. CFour will run all-electron calculations")
+            self.frozencore_string=f"FROZEN_CORE=OFF"
+        else:
+            print("Frozen core is ON!")
+            if self.frozen_core_settings == 'Auto':
+                print("Auto frozen-core settings requested")
+                num_el=0
+                for el in elems:
+                    num_el+=FC_elems[el]
+                frozen_core_el=num_el
+                frozen_core_orbs=int(num_el/2)
+                print("Total frozen electrons in system:", frozen_core_el)
+                print("Total frozen orbitals in system:", frozen_core_orbs)
+                self.frozencore_string=f"DROPMO=1>{frozen_core_orbs}"
+            elif self.frozen_core_settings == 'CFour':
+                print("CFour settings requested")
+                self.frozencore_string=f"FROZEN_CORE=ON"
+            else:
+                print("Unknown option for frozen_core_settings")
+                ashexit()
+
+                
+
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, Hessian=False, DBOC=False,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, charge=None, mult=None):
@@ -272,6 +307,7 @@ class CFourTheory:
         if self.DBOC is True:
             DBOC=True
 
+
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
@@ -293,6 +329,9 @@ class CFourTheory:
                 for mmcharge,mmcoord in zip(MMcharges,current_MM_coords):
                     pfile.write(f"{ash.constants.ang2bohr*mmcoord[0]} {ash.constants.ang2bohr*mmcoord[1]} {ash.constants.ang2bohr*mmcoord[2]} {mmcharge}\n")
 
+        #FROZEN CORE SETTINGS
+        self.determine_frozen_core(qm_elems)
+
         #Grab energy and gradient
         #HESSIAN JOB
         if Hessian is True:
@@ -312,7 +351,7 @@ class CFourTheory:
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
                 inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
-REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
+REF={self.reference},CHARGE={charge},MULT={mult},{self.frozencore_string}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
@@ -344,7 +383,7 @@ HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
                 inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
-REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
+REF={self.reference},CHARGE={charge},MULT={mult},{self.frozencore_string}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
@@ -377,7 +416,7 @@ HFSTABILITY={self.stabilityanalysis})\n\n""")
                 inpfile.write('\n')
 
                 inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
-REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
+REF={self.reference},CHARGE={charge},MULT={mult},{self.frozencore_string}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
@@ -408,7 +447,7 @@ HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
                     inpfile.write('{} {} {} {}\n'.format(el,c[0],c[1],c[2]))
                 inpfile.write('\n')
                 inpfile.write(f"""*CFOUR(CALC={self.CALC},BASIS={self.basis},COORD=CARTESIAN,UNITS=ANGSTROM\n\
-REF={self.reference},CHARGE={charge},MULT={mult},FROZEN_CORE={self.frozen_core}\n\
+REF={self.reference},CHARGE={charge},MULT={mult},{self.frozencore_string}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
