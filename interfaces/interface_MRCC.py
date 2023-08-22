@@ -77,7 +77,7 @@ class MRCCTheory:
 
         if self.frozen_core_settings == None:
             print("Frozen core requested OFF. MRCC will run all-electron calculations")
-            self.frozencore_string=f"core=0"
+            self.frozencore_string=f"0"
         else:
             print("Frozen core is ON!")
             if self.frozen_core_settings == 'Auto':
@@ -89,10 +89,10 @@ class MRCCTheory:
                 frozen_core_orbs=int(num_el/2)
                 print("Total frozen electrons in system:", frozen_core_el)
                 print("Total frozen orbitals in system:", frozen_core_orbs)
-                self.frozencore_string=f"core={frozen_core_orbs}"
+                self.frozencore_string=f"{frozen_core_orbs}"
             elif self.frozen_core_settings == 'MRCC':
                 print("MRCC settings requested")
-                self.frozencore_string=f"core=frozen"
+                self.frozencore_string=f"frozen"
             else:
                 print("Unknown option for frozen_core_settings")
                 ashexit()
@@ -141,7 +141,7 @@ class MRCCTheory:
 
         if Grad==True:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
@@ -156,7 +156,7 @@ class MRCCTheory:
 
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
@@ -203,9 +203,17 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
-def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None):
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None,
+                     frozen_core_option=None):
     with open("MINP", 'w') as inpfile:
-        inpfile.write(mrccinput + '\n')
+        for m in mrccinput:
+            if 'core' in m:
+                print("Warning: ignoring user-defined core option. Using frozen_core_option instead")
+            else:
+                inpfile.write(m )
+        #inpfile.write(mrccinput + '\n')
+        #Frozen core
+        inpfile.write(f'core={frozen_core_option}\n')
         inpfile.write(f'ccsdthreads={numcores}\n')
         inpfile.write(f'ptthreads={numcores}\n')
         inpfile.write('unit=angs\n')
