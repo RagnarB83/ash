@@ -775,6 +775,8 @@ class PySCFTheory:
 
     def run_CC(self,mf, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
         print("\nInside run_CC")
+        import pyscf.scf
+        import pyscf.dft
         import pyscf.cc as pyscf_cc
         #CCSD-part as RCCSD or UCCSD
         print()
@@ -783,15 +785,22 @@ class PySCFTheory:
         print("Total number of orbitals:", len(mf.mo_occ))
         print("Number of active orbitals:", len(mf.mo_occ)-len(frozen_orbital_indices))
         print()
-        #OPEN-SHELL case. Check mo_coefficients
-        if self.scf_type == "UHF" or self.scf_type == "UKS":
-            print("mo_coefficients type:", type(mo_coefficients))
-            print("mo_coefficients ndim:", mo_coefficients.ndim)
-            print("mo_coefficients:", mo_coefficients)
-            if mo_coefficients.ndim == 1:
-                print("Warning: single set of MO coefficients found but UHF/UKS determinant used. Duplicating MO coefficients")
-                mo_coefficients=[mo_coefficients,mo_coefficients]
-
+        #Check mo_coefficients in case we have to do unrestricted CC (list of 2 MOCoeff ndarrays required)
+        if mo_coefficients is not None:
+            print("Input orbitals found for run_CC")
+            if type(mo_coefficients) is np.ndarray:
+                print("MO coefficients are ndarray")
+                if mo_coefficients.ndim == 2:
+                    print("ndims is 2")
+                    if isinstance(mf, pyscf.scf.rohf.ROHF): #Works for ROKS too
+                        print("Warning: Meanfield object is ROHF, but not supported by RCCSD. PySCF will convert to UHF and use UCCSD")
+                        print("Warning: Duplicating MO coefficients for UCCSD")
+                        mo_coefficients=[mo_coefficients,mo_coefficients]
+                    elif isinstance(mf, pyscf.scf.uhf.UHF) or isinstance(mf, pyscf.dft.uks.UKS):
+                        print("Warning: single set of MO coefficients found but UHF/UKS determinant used. Duplicating MO coefficients")
+                        mo_coefficients=[mo_coefficients,mo_coefficients]
+        else:
+            print("No input orbitals used. Using SCF orbitals from mf object")
         print("Now starting CCSD calculation")
         if self.scf_type == "RHF":
             cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
