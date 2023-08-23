@@ -783,10 +783,14 @@ class PySCFTheory:
         print("Total number of orbitals:", len(mf.mo_occ))
         print("Number of active orbitals:", len(mf.mo_occ)-len(frozen_orbital_indices))
         print()
-        #OPEN-SHELL
-        print("mo_coefficients type:", type(mo_coefficients))
-        print("mo_coefficients:", mo_coefficients)
-
+        #OPEN-SHELL case. Check mo_coefficients
+        if self.scf_type == "UHF" or self.scf_type == "UKS":
+            print("mo_coefficients type:", type(mo_coefficients))
+            print("mo_coefficients ndim:", mo_coefficients.ndim)
+            print("mo_coefficients:", mo_coefficients)
+            if mo_coefficients.ndim == 1:
+                print("Warning: single set of MO coefficients found but UHF/UKS determinant used. Duplicating MO coefficients")
+                mo_coefficients=[mo_coefficients,mo_coefficients]
 
         print("Now starting CCSD calculation")
         if self.scf_type == "RHF":
