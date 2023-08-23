@@ -341,9 +341,13 @@ class PySCFTheory:
         import pyscf
         from pyscf.tools import molden
         print("Writing orbitals to disk as Molden file")
+        print("mo_coeffs:", type(mo_coeffs))
+        print("mo_coeffs:", mo_coeffs)
+        print("occupations:", type(occupations))
+        print("occupations:", occupations)
         if mo_energies is None:
             print("No MO energies. Setting to 0.0")
-            [0.0 for i in occupations]
+            mo_energies = np.array([0.0 for i in occupations])
         #pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
         with open(f'pyscf_{label}.molden', 'w') as f1:
             molden.header(mol, f1)
