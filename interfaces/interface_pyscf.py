@@ -341,7 +341,7 @@ class PySCFTheory:
         import pyscf
         from pyscf.tools import molden
         print("Writing orbitals to disk as Molden file")
-        mo_coeffs = np.array(mo_coeffs)[1]
+        #mo_coeffs = np.array(mo_coeffs)[1]
         print("mo_coeffs:", type(mo_coeffs))
         print("mo_coeffs:", mo_coeffs)
         print("occupations:", type(occupations))
@@ -559,11 +559,13 @@ class PySCFTheory:
             natorb = np.flip(v, axis=1)
         with np.printoptions(precision=5, suppress=True):
             print(f"{method} natural orbital occupations:", natocc)
-        #Choosing MO-coeffients to be
-        if self.scf_type == 'RHF' or self.scf_type == 'RKS':
-            mo_coefficients=natorb              
-        else:
-            mo_coefficients=[natorb,natorb]
+        #Choosing MO-coeffients to be 1 set or 2sets
+        #Disabling, makes no sense here
+        mo_coefficients=natorb
+        #if self.scf_type == 'RHF' or self.scf_type == 'RKS':
+        #    mo_coefficients=natorb              
+        #else:
+        #    mo_coefficients=[natorb,natorb]
         
         #Writing natural orbitals to disk as Molden file
         #print("Writing natural orbitals to disk as Molden file")
