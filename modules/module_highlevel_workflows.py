@@ -2639,7 +2639,8 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     end
     end
     """
-    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {noiterkeyword} {basis} tightscf", orcablocks=casblocks, moreadfile=mofile, label=f"{label}")
+    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {noiterkeyword} {basis} tightscf", 
+                                orcablocks=casblocks, moreadfile=mofile, label=f"{label}", numcores=numcores)
 
     result_ICE = ash.Singlepoint(fragment=fragment, theory=ice_cas_CI, charge=charge,mult=mult)
 
