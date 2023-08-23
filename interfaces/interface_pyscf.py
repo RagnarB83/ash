@@ -783,6 +783,11 @@ class PySCFTheory:
         print("Total number of orbitals:", len(mf.mo_occ))
         print("Number of active orbitals:", len(mf.mo_occ)-len(frozen_orbital_indices))
         print()
+        #OPEN-SHELL
+        print("mo_coefficients type:", type(mo_coefficients))
+        print("mo_coefficients:", mo_coefficients)
+
+
         print("Now starting CCSD calculation")
         if self.scf_type == "RHF":
             cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
