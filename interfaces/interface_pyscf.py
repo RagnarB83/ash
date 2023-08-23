@@ -341,7 +341,7 @@ class PySCFTheory:
         import pyscf
         from pyscf.tools import molden
         print("Writing orbitals to disk as Molden file")
-        mo_coeffs = np.array(mo_coeffs)
+        mo_coeffs = np.array(mo_coeffs)[1]
         print("mo_coeffs:", type(mo_coeffs))
         print("mo_coeffs:", mo_coeffs)
         print("occupations:", type(occupations))
