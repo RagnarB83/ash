@@ -29,6 +29,7 @@ class PySCFTheory:
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
+                  CC_density=False,
                   CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
@@ -97,6 +98,7 @@ class PySCFTheory:
         self.x2c=x2c
         self.CC=CC
         self.CCmethod=CCmethod
+        self.CC_density=CC_density #CC density True or False
         self.CC_direct=CC_direct
         self.cc_maxcycle=cc_maxcycle
         self.FNO=FNO
@@ -267,6 +269,7 @@ class PySCFTheory:
         print("Coupled cluster:", self.CC)
         print("CC method:", self.CCmethod)
         print("CC direct:", self.CC_direct)
+        print("CC density:", self.CC_density)
         print("CC maxcycles:", self.cc_maxcycle)
         print("FNO-CC:", self.FNO)
         print("FNO_thresh:", self.FNO_thresh)
@@ -338,14 +341,12 @@ class PySCFTheory:
             except:
                 print("Error removing file", f)
     def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies=None, label="orbs"):
-        import pyscf
         from pyscf.tools import molden
         print("Writing orbitals to disk as Molden file")
         if mo_energies is None:
             print("No MO energies. Setting to 0.0")
             mo_energies = np.array([0.0 for i in occupations])
-        #pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
-        with open(f'pyscf_{label}.molden', 'w') as f1:
+        with open(f'{label}.molden', 'w') as f1:
             molden.header(mol, f1)
             molden.orbital_coeff(mol, f1, mo_coeffs, ene=mo_energies, occ=occupations)
     
@@ -364,6 +365,7 @@ class PySCFTheory:
         import pyscf.tools
         pyscf.tools.cubegen.mep(mol, name, dm, nx=nx, ny=ny, nz=nz)
         print("cubegen_mep: Wrote file:", name)
+
     #Natural orbital at the RHF/UHF MP2, CCSD, CCSD(T), AVAS-CASSCF, DMET-CASSCF levels
     #Also possible to do  KS-CC or KS-MP2
     #TODO: Calling make_natural_orbitals calculated RDM1 for MP2 and CCSD but does not store it.
@@ -376,6 +378,7 @@ class PySCFTheory:
         print("Inside calculate_natural_orbitals")
         #Necessary to reimport
         import pyscf
+        import pyscf.cc as pyscf_cc
         import pyscf.mcscf
         print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
 
@@ -488,7 +491,6 @@ class PySCFTheory:
             print("CASSCF occupations", cas_result.mo_occ)
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'CCSD':
-            import pyscf.cc as pyscf_cc
             print("Running CCSD natural orbital calculation")
             ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
             ccsd.max_cycle=200
@@ -496,79 +498,76 @@ class PySCFTheory:
             ccsd.run()
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccsd)
         elif method == 'CCSD(T)':
-            import scipy
-            import pyscf.cc as pyscf_cc
-            from pyscf.cc import ccsd_t_lambda_slow as ccsd_t_lambda
-            from pyscf.cc import uccsd_t_lambda
-            from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
-            from pyscf.cc import uccsd_t_rdm
-
             print("Running CCSD(T) natural orbital calculation")
             #No CCSD(T) object in pyscf. So manual approach. Slower algorithms
             ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
             ccsd.max_cycle=200
             ccsd.verbose=5
             ccsd.run()
-            eris = ccsd.ao2mo()
-            #Make RDMs for ccsd(t) RHF and UHF
-            #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF
-            # and hence UCCSD
-            if type(ccsd) == pyscf.cc.uccsd.UCCSD:
-                print("CCSD(T) lambda UHF")
-                #NOTE: No threading parallelization seen here, not sure why
-                conv, l1, l2 = uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
-                rdm1 = uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
-                print("Mulliken analysis for UHF-CCSD(T) density matrix")
-                self.run_population_analysis(mf, unrestricted=True, dm=rdm1, type='Mulliken', label='CCSD(T)')
-            else:
-                print("CCSD(T) lambda RHF")
-                conv, l1, l2 = ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
-                rdm1 = ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
-                print("Mulliken analysis for RHF-CCSD(T) density matrix")
-                self.run_population_analysis(mf, unrestricted=False, dm=rdm1, type='Mulliken', label='CCSD(T)')
+            natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccsd=ccsd, mf=mf)
 
-            S = mf.get_ovlp()
-            # Slight difference for restricted vs. unrestriced case
-            if isinstance(rdm1, tuple):
-                Dm = rdm1[0]+rdm1[1]
-            elif isinstance(rdm1, np.ndarray):
-                if np.ndim(rdm1) == 3:
-                    Dm = rdm1[0]+rdm1[1]
-                elif np.ndim(rdm1) == 2:
-                    Dm = rdm1
-                else:
-                    raise ValueError(
-                        "rdm1 passed to is a numpy array," +
-                        "but it has the wrong number of dimensions: {}".format(np.ndim(rdm1)))
-            else:
-                raise ValueError(
-                    "\n\tThe rdm1 generated by method_obj.make_rdm1() was a {}."
-                    "\n\tThis type is not supported, please select a different method and/or "
-                    "open an issue at https://github.com/pyscf/pyscf/issues".format(type(rdm1))
-                )
-            # Diagonalize the DM in AO (using Eqn. (1) referenced above)
-            A = reduce(np.dot, (S, Dm, S))
-            w, v = scipy.linalg.eigh(A, b=S)
-            # Flip NOONs (and NOs) since they're in increasing order
-            natocc = np.flip(w)
-            natorb = np.flip(v, axis=1)
         with np.printoptions(precision=5, suppress=True):
             print(f"{method} natural orbital occupations:", natocc)
-        #Choosing MO-coeffients to be 1 set or 2sets
-        #Disabling, makes no sense here
-        mo_coefficients=natorb
-        #if self.scf_type == 'RHF' or self.scf_type == 'RKS':
-        #    mo_coefficients=natorb              
-        #else:
-        #    mo_coefficients=[natorb,natorb]
-        
-        #Writing natural orbitals to disk as Molden file
-        #print("Writing natural orbitals to disk as Molden file")
-        #self.write_orbitals_to_Moldenfile(self.mol, mo_coefficients, natocc,  label="pySCF_natorbs")
-
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
-        return natocc, mo_coefficients
-    
+        return natocc, natorb
+
+    #Manual verbose protocol for calculating CCSD(T) natural orbitals
+    def calculate_CCSD_T_natorbs(self,ccsd=None, mf=None):
+        print("Running CCSD(T) natural orbital calculation")
+        import pyscf
+        import pyscf.mcscf
+        import scipy
+        import pyscf.cc as pyscf_cc
+        from pyscf.cc import ccsd_t_lambda_slow as ccsd_t_lambda
+        from pyscf.cc import uccsd_t_lambda
+        from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
+        from pyscf.cc import uccsd_t_rdm
+
+        eris = ccsd.ao2mo()
+        #Make RDMs for ccsd(t) RHF and UHF
+        #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF and hence UCCSD
+        if type(ccsd) == pyscf.cc.uccsd.UCCSD:
+            print("CCSD(T) lambda UHF")
+            #NOTE: No threading parallelization seen here, not sure why
+            conv, l1, l2 = uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+            rdm1 = uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
+        else:
+            print("CCSD(T) lambda RHF")
+            conv, l1, l2 = ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+            rdm1 = ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
+        
+        S = mf.get_ovlp()
+        # Slight difference for restricted vs. unrestriced case
+        if isinstance(rdm1, tuple):
+            Dm = rdm1[0]+rdm1[1]
+        elif isinstance(rdm1, np.ndarray):
+            if np.ndim(rdm1) == 3:
+                Dm = rdm1[0]+rdm1[1]
+            elif np.ndim(rdm1) == 2:
+                Dm = rdm1
+            else:
+                raise ValueError(
+                    "rdm1 passed to is a numpy array," +
+                    "but it has the wrong number of dimensions: {}".format(np.ndim(rdm1)))
+        else:
+            raise ValueError(
+                "\n\tThe rdm1 generated by method_obj.make_rdm1() was a {}."
+                "\n\tThis type is not supported, please select a different method and/or "
+                "open an issue at https://github.com/pyscf/pyscf/issues".format(type(rdm1))
+            )
+        # Diagonalize the DM in AO (using Eqn. (1) referenced above)
+        A = reduce(np.dot, (S, Dm, S))
+        w, v = scipy.linalg.eigh(A, b=S)
+        # Flip NOONs (and NOs) since they're in increasing order
+        natocc = np.flip(w)
+        natorb = np.flip(v, axis=1)
+
+        return natocc,natorb,rdm1
+
+
+
+
+
     #Population analysis, requiring mf and dm objects
     #Currently only Mulliken
     def run_population_analysis(self, mf, unrestricted=True, dm=None, type='Mulliken', label=None, verbose=3):
@@ -773,6 +772,8 @@ class PySCFTheory:
         import pyscf.scf
         import pyscf.dft
         import pyscf.cc as pyscf_cc
+        import pyscf.mcscf
+
         #CCSD-part as RCCSD or UCCSD
         print()
         print("Frozen_orbital_indices:", frozen_orbital_indices)
@@ -813,6 +814,12 @@ class PySCFTheory:
             print("Warning: CCSD on top of UKS determinant")
             cc = pyscf_cc.UCCSD(mf.to_uhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
 
+        #Checking whether CC object created is unrestricted or not
+        if type(cc) == pyscf.cc.uccsd.UCCSD:
+            unrestricted=True
+        else:
+            unrestricted=False
+
         #Setting CCSD maxcycles (default 200)
         cc.max_cycle=self.cc_maxcycle
         cc.verbose=5 #Shows CC iterations with 5
@@ -835,6 +842,22 @@ class PySCFTheory:
             energy = result.e_tot + et
             print("Final CCSD(T) energy:", energy)
         
+        #Density and natural orbitals
+        if self.CC_density is True:
+            print("\nCC density option is active")
+            print(f"Now calculating {CCmethod} density matrix and natural orbitals")
+            if CCmethod == 'CCSD':
+                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(cc)
+
+            elif CCmethod == 'CCSD(T)':
+                natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(cc,mf)
+                print("Mulliken analysis for CCSD(T) density matrix")
+                self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
+
+            molden_name=f"pySCF_{CCmethod}_natorbs"
+            print(f"Writing {CCmethod} natural orbitals to Moldenfile: {molden_name}.molden")
+            self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
+
         return energy
 
 
