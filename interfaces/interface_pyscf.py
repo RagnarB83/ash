@@ -511,7 +511,7 @@ class PySCFTheory:
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
         return natocc, natorb
 
-    #Manual verbose protocol for calculating CCSD(T) natural orbitals
+    #Manual verbose protocol for calculating CCSD(T) natural orbitals using ccsd and mf objects
     def calculate_CCSD_T_natorbs(self,ccsd=None, mf=None):
         print("Running CCSD(T) natural orbital calculation")
         import pyscf
@@ -523,7 +523,7 @@ class PySCFTheory:
         from pyscf.cc import uccsd_t_rdm
 
         eris = ccsd.ao2mo()
-        S = mf.get_ovlp()
+
         #Make RDMs for ccsd(t) RHF and UHF
         #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF and hence UCCSD
         if type(ccsd) == pyscf.cc.uccsd.UCCSD:
@@ -541,6 +541,7 @@ class PySCFTheory:
             elif np.ndim(rdm1) == 2:
                 Dm = rdm1        
         # Diagonalize the DM in AO basis
+        S = mf.get_ovlp()
         A = reduce(np.dot, (S, Dm, S))
         w, v = scipy.linalg.eigh(A, b=S)
         # Flip NOONs (and NOs) since they're in increasing order
@@ -829,12 +830,19 @@ class PySCFTheory:
             print(f"Now calculating {CCmethod} density matrix and natural orbitals")
             if CCmethod == 'CCSD':
                 natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(cc)
-
             elif CCmethod == 'CCSD(T)':
                 natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(cc,mf)
                 print("Mulliken analysis for CCSD(T) density matrix")
                 self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
-
+            #Printing occupaations
+            print(f"\n{CCmethod} natural orbital occupations:")
+            print(natocc)
+            print()
+            print("NO-based polyradical metrics:")
+            ash.functions.functions_elstructure.poly_rad_index_nu(natocc)
+            ash.functions.functions_elstructure.poly_rad_index_nu_nl(natocc)
+            ash.functions.functions_elstructure.poly_rad_index_n_d(natocc)
+            print()
             molden_name=f"pySCF_{CCmethod}_natorbs"
             print(f"Writing {CCmethod} natural orbitals to Moldenfile: {molden_name}.molden")
             self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)

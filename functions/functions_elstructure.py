@@ -2200,14 +2200,14 @@ def poly_rad_index_nu(occupations):
     n_u=0.0
     for on in occupations:
         n_u+=min(on,2-on)
-    print(f"HG-1 Number of effective unpaired electrons {n_u}")
+    print(f"HG-1 Number of effective unpaired electrons: {n_u:7.4f}")
     return n_u
 #HG-2
 def poly_rad_index_nu_nl(occupations):
     n_u_nl=0.0
     for on in occupations:
         n_u_nl+=on**2*((2-on)**2)
-    print(f"HG-2 Number of effective unpaired electrons {n_u_nl}")
+    print(f"HG-2 Number of effective unpaired electrons: {n_u_nl:7.4f}")
     return n_u_nl
 
 #Original by Takatsuka and Staroverov and Davidson
@@ -2216,5 +2216,5 @@ def poly_rad_index_n_d(occupations):
     n=0.0
     for on in occupations:
         n+=on*(2-on)
-    print(f"Takatsuka Number of effective unpaired electrons {n}")
+    print(f"Takatsuka Number of effective unpaired electrons: {n:7.4f}")
     return n
