@@ -18,7 +18,7 @@ import ash.settings_ash
 
 #TODO: Support settings.ini file?
 
-def multiwfn_run(moldenfile, fchkfile=None, option='density', num_frozen_orbs=None, mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
+def multiwfn_run(moldenfile, fchkfile=None, option='density', num_frozen_orbs='Auto', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
                  fragmentfiles=None, fockfile=None, openshell=False, printlevel=2):
     print_line_with_mainheader("multiwfn_run")
 

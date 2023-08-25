@@ -526,6 +526,8 @@ class PySCFTheory:
 
         #Make RDMs for ccsd(t) RHF and UHF
         #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF and hence UCCSD
+        print("Solving lambda equations")
+        print("Warning: this step is slow and not parallelized")
         if type(ccsd) == pyscf.cc.uccsd.UCCSD:
             print("CCSD(T) lambda UHF")
             #NOTE: No threading parallelization seen here, not sure why

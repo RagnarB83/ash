@@ -504,8 +504,8 @@ def write_datafile(x, y, filename="new.dat", separator="     "):
 
 
 # Write a string to file simply
-def writestringtofile(string, file):
-    with open(file, 'w') as f:
+def writestringtofile(string, file,writemode='w'):
+    with open(file, writemode) as f:
         f.write(string)
 
 
