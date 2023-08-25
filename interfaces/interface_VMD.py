@@ -5,7 +5,16 @@ from ash.functions.functions_general import writestringtofile, ashexit
 #Basic VMD interface
 
 
-def write_VMD_script_cube(cubefiles=None,VMDfilename="VMD_script.vmd", isovalue=0.7):
+def write_VMD_script_cube(cubefiles=None,VMDfilename="VMD_script.vmd", 
+                          isovalue=0.7, isosurfacecolor_pos="blue", isosurfacecolor_neg="red"):
+    
+    #Color settings
+    vmd_colors_ids = {'blue':0, 'red':1, 'gray':2, 'orange':3, 'yellow':4, 'tan':5,
+                      'silver':6, 'green':7, 'white':8, 'pink':9, 'cyan':10, 'purple':11,
+                      'lime':12, 'mauve':13, 'ochre':14, 'iceblue':15, 'black':16,  }
+    color_pos_id = vmd_colors_ids[isosurfacecolor_pos]
+    color_neg_id = vmd_colors_ids[isosurfacecolor_neg]
+
     try:
         vmd_path = os.path.dirname(shutil.which('vmd'))
         vmd_path = vmd_path + "/vmd"
@@ -58,7 +67,18 @@ mol scaleminmax top 0 0.000000 0.000000
 mol smoothrep top 0 0
 mol drawframes top 0 {{now}}
 mol representation Isosurface {isovalue} 0 0 0 1 1
-mol color ColorID 0
+mol color ColorID {color_pos_id}
+mol selection {{all}}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {{now}}
+mol rename top {cubefile}
+mol representation Isosurface {-1*isovalue} 0 0 0 1 1
+mol color ColorID {color_neg_id}
 mol selection {{all}}
 mol material Transparent
 mol addrep top
