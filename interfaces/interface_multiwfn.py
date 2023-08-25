@@ -34,6 +34,9 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         print("Option:", option)
         print("Gridsetting:", grid)
         print("Numcores:", numcores)
+    
+    print("Copying ASH Multiwfn settings.ini file to current directory")
+    shutil.copy(f"{ash.ashpath}/external/Multiwfn/settings.ini", "settings.ini")
     ############################
     #PREPARING MULTIWFN INPUT
     ############################
