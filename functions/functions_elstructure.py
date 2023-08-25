@@ -1782,7 +1782,7 @@ def diffdens_of_cubefiles(ref_cubefile, cubefile):
     cube_ref=read_cube(ref_cubefile)
     cube_other=read_cube(cubefile)
     #Taking diff
-    diffdens_filename=f"{reffile_base}_{cubefile_base}_diff_density"
+    diffdens_filename=f"{cubefile_base}_{reffile_base}_diff_density"
     num_el_val,num_el_val_pos,num_el_val_neg = write_cube_diff(cube_ref, cube_other, diffdens_filename)
     print("Wrote diffdens-file :", diffdens_filename+".cube")
     return diffdens_filename+".cube",num_el_val,num_el_val_pos,num_el_val_neg
