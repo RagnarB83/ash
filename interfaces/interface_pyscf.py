@@ -881,12 +881,29 @@ class PySCFTheory:
             print(BC.OKBLUE,BC.BOLD, "------------RUNNING PYSCF INTERFACE-------------", BC.END)
             print("Object-label:", self.label)
             print("Run-label:", label)
+
         #Load pyscf
         import pyscf
         print("PySCF version:", pyscf.__version__)
         #Set PySCF threads to numcores
         pyscf.lib.num_threads(self.numcores)
         print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
+        #Checking environment variables
+        try:
+            print("os.environ['OMP_NUM_THREADS']:", os.environ['OMP_NUM_THREADS'])
+            if os.environ['OMP_NUM_THREADS'] != '1' or :
+                print("Warning: Environment variable OMP_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
+        except:
+            pass
+        try:
+            print("os.environ['MKL_NUM_THREADS']:", os.environ['MKL_NUM_THREADS'])
+            if os.environ['MKL_NUM_THREADS'] != '1' or :
+                print("Warning: Environment variable MKL_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
+        except:
+            pass
+
+        
+
         #Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for PYSCFTheory.run method", BC.END)
