@@ -161,6 +161,9 @@ class ccpyTheory:
                     pspace_analysis=False,
                 )
             adaptdriver.run()
+
+            print("adaptdriver :", adaptdriver)
+            print("adaptdriver dict:", adaptdriver.__dict__)
         else:
             print("Non-adaptive CC not ready")
             ashexit()
