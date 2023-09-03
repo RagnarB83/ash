@@ -52,10 +52,6 @@ class ccpyTheory:
 
         self.pyscftheoryobject=pyscftheoryobject
 
-        #Check symmetry in pyscf mol object
-        if self.pyscftheoryobject.mol.symmetry is None:
-            self.pyscftheoryobject.mol.symmetry='C1'
-
         self.moreadfile=moreadfile
         self.tol=tol
         self.frozencore=frozencore
@@ -133,6 +129,10 @@ class ccpyTheory:
 
         #Cleanup before run.
         self.cleanup()
+
+        #Check symmetry in pyscf mol object
+        if self.pyscftheoryobject.mol.symmetry is None:
+            self.pyscftheoryobject.mol.symmetry='C1'
 
         #Run PySCF to get integrals and MOs. This would probably only be an SCF
         self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
