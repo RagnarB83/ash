@@ -162,11 +162,9 @@ class ccpyTheory:
                 )
             adaptdriver.run()
 
-            print("adaptdriver :", adaptdriver)
-            print("adaptdriver dict:", adaptdriver.__dict__)
-
             print("CC(P) Energy:", adaptdriver.ccp_energy)
             print("CC(P;Q) Energy:", adaptdriver.ccpq_energy)
+            self.energy = adaptdriver.ccpq_energy
 
         else:
             print("Non-adaptive CC not ready")
