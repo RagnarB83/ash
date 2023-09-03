@@ -51,11 +51,22 @@ class ccpyTheory:
         self.percentages=percentages #What triples percentages to loop through
 
         self.pyscftheoryobject=pyscftheoryobject
+
+        #Check symmetry in pyscf mol object
+        if self.pyscftheoryobject.mol.symmetry is None:
+            self.pyscftheoryobject.mol.symmetry='C1'
+
         self.moreadfile=moreadfile
         self.tol=tol
         self.frozencore=frozencore
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
+
+        #CCpy adaptive
+        if adaptive is True and self.percentages is None:
+            print("Error. Adaptive is True but no percentages provided")
+            print("Setting percentages list to: [1.0]")
+            self.percentages=[1.0]            
 
         #Print stuff
         print("Printlevel:", self.printlevel)

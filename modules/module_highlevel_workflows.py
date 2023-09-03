@@ -504,8 +504,8 @@ maxiter 150\nend
         print("\nNow doing MP2 CPS correction. Getting CPS correction via DLPNO-MP2 and RI-MP2 difference")
 
         #Using basic theory line but changing DLPNO-CCSD(T) to DLPNO-MP2 and MP2
-        dlpno_mp2_line=self.ccsdt_line.replace('DLPNO-CCSD(T)','DLPNO-MP2 noiter ')
-        can_mp2_line=self.ccsdt_line.replace('DLPNO-CCSD(T)','RI-MP2 noiter')
+        dlpno_mp2_line=self.ccsdt_line.replace('DLPNO-CCSD(T)','DLPNO-MP2  ')
+        can_mp2_line=self.ccsdt_line.replace('DLPNO-CCSD(T)','RI-MP2 ')
         #Using Large basis by default
         if basis == 1:
             blocks = self.basis1_block
@@ -516,9 +516,15 @@ maxiter 150\nend
             ashexit()
 
         #Memory
-        blocks = f"%maxcore {self.memory}\n" + blocks
+        blocks = f"""%maxcore {self.memory}
+%scf
+TolRMSP 99999999
+ConvCheckMode 1
+DampFac 1.
+end
+""" + blocks
 
-        #PNO setting to use for T1 correction
+        #PNO setting to use for MP2 correction
         if pnosetting == 'NormalPNO':
             thresholdsetting=NormalPNO_thresholds
         elif pnosetting =='NormalPNOreduced':
