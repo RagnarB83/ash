@@ -130,12 +130,12 @@ class ccpyTheory:
         #Cleanup before run.
         self.cleanup()
 
+        #Run PySCF to get integrals and MOs. This would probably only be an SCF
+        self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
+
         #Check symmetry in pyscf mol object
         if self.pyscftheoryobject.mol.symmetry is None:
             self.pyscftheoryobject.mol.symmetry='C1'
-
-        #Run PySCF to get integrals and MOs. This would probably only be an SCF
-        self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
         #Get frozen-core
         if self.frozencore is True:
