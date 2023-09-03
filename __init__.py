@@ -95,6 +95,7 @@ from ash.interfaces.interface_NWChem import NWChemTheory
 from ash.interfaces.interface_CP2K import CP2KTheory
 from ash.interfaces.interface_BigDFT import BigDFTTheory
 from ash.interfaces.interface_deMon import deMon2kTheory
+from ash.interfaces.interface_ccpy import ccpyTheory
 
 from ash.interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
 from ash.interfaces.interface_xtb import xTBTheory
