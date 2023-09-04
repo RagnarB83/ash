@@ -891,13 +891,13 @@ class PySCFTheory:
         #Checking environment variables
         try:
             print("os.environ['OMP_NUM_THREADS']:", os.environ['OMP_NUM_THREADS'])
-            if os.environ['OMP_NUM_THREADS'] != '1' or :
+            if os.environ['OMP_NUM_THREADS'] != '1':
                 print("Warning: Environment variable OMP_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
         except:
             pass
         try:
             print("os.environ['MKL_NUM_THREADS']:", os.environ['MKL_NUM_THREADS'])
-            if os.environ['MKL_NUM_THREADS'] != '1' or :
+            if os.environ['MKL_NUM_THREADS'] != '1':
                 print("Warning: Environment variable MKL_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
         except:
             pass
