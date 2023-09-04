@@ -46,7 +46,7 @@ class ccpyTheory:
         self.filename=filename
         self.numcores=numcores
         #
-        self.method=method #
+        self.method=method # Options: 'CCSD', 'CCSDT', CCPQ
         self.adaptive=adaptive #Adaptive CC(P;Q) or not 
         self.percentages=percentages #What triples percentages to loop through
 
@@ -151,7 +151,7 @@ class ccpyTheory:
         print("driver:",driver)
         driver.system.print_info()
         if self.adaptive is True:
-            print("adaptive True")
+            print("adaptive CC(P;Q) calculation.")
             print("self.percentages:",self.percentages)
             adaptdriver = AdaptDriver(
                     driver,
@@ -167,8 +167,13 @@ class ccpyTheory:
             self.energy = float(adaptdriver.ccpq_energy[-1])
 
         else:
-            print("Non-adaptive CC not ready")
-            ashexit()
+            print("Non-adaptive CC calculation.")
+            #driver.options["maximum_iterations"] = 1000 # 4 Sigma state requires ~661 iterations in left-CCSD
+            #driver.options["davidson_max_subspace_size"] = 50
+            driver.run_cc(method=self.method)
+            #driver.run_hbar(method="ccsd")
+            #driver.run_guess(method="cis", multiplicity=1, nroot=10)
+            #driver.run_eomcc(method="eomccsd", state_index=selected_states[1:])
 
 
 
