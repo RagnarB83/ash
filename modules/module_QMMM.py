@@ -572,6 +572,14 @@ class QMMMTheory:
         print(f"Setting new numcores {numcores}for QMtheory and MMtheory")
         self.qm_theory.set_numcores(numcores)
         self.mm_theory.set_numcores(numcores)
+    #Method to grab dipole moment from outputfile (assumes run has been executed)
+    def get_dipole_moment(self):
+        try:
+            print("Grabbing dipole moment from QM-part of QM/MM theory.")
+            dipole = self.qm_theory.get_dipole_moment()
+        except:
+            print("Error: Could not grab dipole moment from QM-part of QM/MM theory.")
+        return dipole
     #General run
     def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
 

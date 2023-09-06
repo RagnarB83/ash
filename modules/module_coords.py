@@ -448,12 +448,6 @@ class Fragment:
 
         self.elems, self.coords = read_pdbfile(filename, use_atomnames_as_elements=use_atomnames_as_elements)
 
-        #self.update_attributes()
-        #if conncalc is True:
-        #    self.calc_connectivity(scale=scale, tol=tol)
-
-    # Read XYZ file
-    # TODO:
     def read_xyzfile(self, filename, scale=None, tol=None, readchargemult=False, conncalc=True):
         if self.printlevel >= 2:
             print("Reading coordinates from XYZ file '{}' into fragment.".format(filename))

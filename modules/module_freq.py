@@ -15,7 +15,8 @@ from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
 #Analytical frequencies function. For ORCAtheory and CFourTheory
-def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=298.15, pressure=1.0, QRRHO_omega_0=100):
+def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=298.15, 
+           pressure=1.0, QRRHO_omega_0=100):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
 
@@ -71,63 +72,77 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
 
 #Numerical frequencies function
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
+#TODO: IR-intensity feature needs cleanup w.r.t. theories
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', 
         temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO_omega_0=100):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
-
-    #Basic check
+    ################
+    #Basic checks
+    ################
     if fragment is None or theory is None:
         print("NumFreq requires a fragment and a theory object")
         ashexit()
-
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "NumFreq", theory=theory)
+    ################
+    #SETUP
+    ################
+    #Setting variables
+    coords=fragment.coords
+    elems=copy.deepcopy(fragment.elems)
+    numatoms=len(elems)
+    allatoms=list(range(0,numatoms))
 
-    #Creating directory
-    shutil.rmtree('Numfreq_dir', ignore_errors=True)
-    os.mkdir('Numfreq_dir')
-    os.chdir('Numfreq_dir')
-    print("Creating separate directory for displacement calculations: Numfreq_dir ")
-    
-    #ORCA-specific: Copy old GBW file from .. dir
+    #Hessatoms list is allatoms (if hessatoms list not provided). If hessatoms provided we do a partial Hessian
+    if hessatoms is None:
+        print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
+        hessatoms=allatoms
+        projection=True
+    else:
+        print("Hessatoms list provided. This is assumed to be a partial Hessian. Turning off rot+trans projection")
+        projection=False
+    #Making sure hessatoms list is sorted
+    hessatoms.sort()
+    #If hessatoms_masses list was provided
+    if hessatoms_masses != None:
+        if len(hessatoms_masses) != len(hessatoms):
+            print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
+            print("Check input masses!",BC.END)
+            ashexit()
+    #Checking for linearity. Determines how many Trans+Rot modes 
+    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+        TRmodenum=5
+    else:
+        TRmodenum=6
+    #####################
+    #Molecular orbitals
+    #####################
+    # ORCA-specific: Copy old GBW file from .. dir
     #NOTE: Pretty ugly. Not sure if there is a good alternative at the moment. Moreadfile option would override this anyway
     try:
         if theory.theorytype == "QM":
             if isinstance(theory,ash.interfaces.interface_ORCA.ORCATheory):
                 print("Copying GBW file into Numfreq_dir")
                 shutil.copy("../"+theory.filename+'.gbw', './'+theory.filename+'.gbw')
+
         elif theory.theorytype == "QM/MM":
             if isinstance(theory.qm_theory,ash.interfaces.interface_ORCA.ORCATheory):
                 print("Copying GBW file into Numfreq_dir")
                 shutil.copy('../'+theory.qm_theory.filename+'.gbw', './'+theory.qm_theory.filename+'.gbw')
     except:
         pass
-    coords=fragment.coords
-    elems=copy.deepcopy(fragment.elems)
-    numatoms=len(elems)
-    #Hessatoms list is allatoms (if hessatoms list not provided)
-    #If hessatoms provided we do a partial Hessian
-    allatoms=list(range(0,numatoms))
 
-    if hessatoms is None:
-        print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
-        hessatoms=allatoms
-        projection=True
-    else:
-        print("Hessatoms provided. This is partial Hessian. Turning off rot+trans projection")
-        projection=False
-    #Making sure hessatoms list is sorted
-    hessatoms.sort()
-    #Optional hessatoms_masses list
-    if hessatoms_masses != None:
-        if len(hessatoms_masses) != len(hessatoms):
-            print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
-            print("Check input masses!",BC.END)
-            ashexit()
-    
+    ##########################
+    # Calculation preparation
+    ##########################
+    #Creating directory
+    shutil.rmtree('Numfreq_dir', ignore_errors=True)
+    os.mkdir('Numfreq_dir')
+    os.chdir('Numfreq_dir')
+    print("Creating separate directory for displacement calculations: Numfreq_dir ")
+
     displacement_bohr = displacement * ash.constants.ang2bohr
-
     print("Starting Numerical Frequencies job for fragment")
     print("System size:", numatoms)
     print("Hessian atoms:", hessatoms)
@@ -151,8 +166,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Displacement: {:5.4f} Å ({:5.4f} Bohr)".format(displacement,displacement_bohr))
     blankline()
     print("Starting geometry:")
-    #Converting to numpy array
-    #TODO: get rid list->np-array conversion
+    #Converting to numpy array just in case
     current_coords_array=np.array(coords)
 
     print("Printing hessatoms geometry...")
@@ -218,8 +232,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         
     assert len(list_of_labels) == len(list_of_displaced_geos), "something is wrong"
 
+    ########################
     #RUNNING displacements
+    ########################
     displacement_grad_dictionary = {}
+    displacement_dipole_dictionary = {}
     #TODO: Have serial use all_disp_fragments instead to be consistent with parallel
     if runmode == 'serial':
         print("Runmode: serial")
@@ -230,6 +247,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             if label == 'Originalgeo':
                 calclabel = 'Originalgeo'
                 print("Doing original geometry calc.")
+                stringlabel=calclabel
             else:
                 calclabel=label
                 #for index,(el,coord) in enumerate(zip(elems,coords))
@@ -237,12 +255,18 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 print("Running displacement: {} / {}".format(numdisp+1,len(list_of_labels)))
                 print(calclabel)
                 #print("Displacing Atom:{} Coord:{} Direction:{}".format(disp[0],disp[1],disp[2]))
-            #Now using string label
-            stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
+                #Now using string label
+                stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
 
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
+            #Grabbing dipole moment for those theories
+            try:
+                displacement_dipole_dictionary[stringlabel] = theory.get_dipole_moment()
+            except:
+                pass
             displacement_grad_dictionary[stringlabel] = gradient
+    #TODO: Dipole moment grab for parallel mode
     elif runmode == 'parallel':
 
         if isinstance(theory,ash.QMMMTheory):
@@ -277,8 +301,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     hesslength=3*len(hessatoms)
     hessian=np.zeros((hesslength,hesslength))
 
-
-
+    #Initializing dipole derivatives
+    dipole_derivs = np.zeros((hesslength,3))
+    
     #Onepoint-formula Hessian
     if npoint == 1:
         print("Assembling the one-point Hessian")
@@ -288,6 +313,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         original_grad=get_partial_matrix(displacement_grad_dictionary['Originalgeo'],hessatoms)
         #original_grad=get_partial_matrix(allatoms, hessatoms, displacement_grad_dictionary['Originalgeo'])
         original_grad_1d = np.ravel(original_grad)
+        #IR intensities if dipoles available
+        if len(displacement_dipole_dictionary) > 0:
+            original_dipole = np.array(displacement_dipole_dictionary['Originalgeo'])
+            print("original_dipole:",original_dipole)
+
         #Starting index for Hessian array
         hessindex=0
         #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
@@ -306,11 +336,17 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 Hessrow=(grad_pos_1d - original_grad_1d)/displacement_bohr
                 hessian[hessindex,:]=Hessrow
                 grad_pos_1d=0
+                #IR
+                #IR intensities if dipoles available
+                if len(displacement_dipole_dictionary) > 0:
+                    disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
+                    dd_deriv = (disp_dipole - original_dipole)/displacement_bohr
+                    dipole_derivs[hessindex,:] = dd_deriv
                 hessindex+=1
+
     #Twopoint-formula Hessian. pos and negative directions come in order
     elif npoint == 2:
         print("Assembling the two-point Hessian")
-
         hessindex=0
         #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
         #for atomindex in range(0,len(hessatoms)):
@@ -336,18 +372,18 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 hessian[hessindex,:]=Hessrow
                 grad_pos_1d=0
                 grad_neg_1d=0
+                #IR intensities if dipoles available
+                if len(displacement_dipole_dictionary) > 0:
+                    disp_dipole_pos = np.array(displacement_dipole_dictionary[lookup_string_pos])
+                    disp_dipole_neg = np.array(displacement_dipole_dictionary[lookup_string_neg])
+                    dd_deriv = (disp_dipole_pos - disp_dipole_neg)/(2*displacement_bohr)
+                    dipole_derivs[hessindex,:] = dd_deriv
                 hessindex+=1
     print()
-
+    
     #Symmetrize Hessian by taking average of matrix and transpose
     symm_hessian=(hessian+hessian.transpose())/2
     hessian=symm_hessian
-
-    #Checking for linearity. Determines how many Trans+Rot modes 
-    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
-        TRmodenum=5
-    else:
-        TRmodenum=6
     
     #Diagonalize mass-weighted Hessian
     # Get partial matrix by deleting atoms not present in list.
@@ -362,15 +398,19 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Masses used:", hessmasses)
 
     frequencies, nmodes, evectors = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
-    
-    #Evectors: eigenvectors of the mass-weighed Hessian
-    #Normal modes: unweighted 
 
-    #TODO: Print out normal mode output. Like in Chemshell or ORCA ??
+    #Evectors: eigenvectors of the mass-weighed Hessian
+    #Normal modes: unweighted
+
+    #IR intensities if dipoles available
+    if len(displacement_dipole_dictionary) > 0:
+        IR_intens_values = calc_IR_Intensities(hessmasses,evectors,dipole_derivs)
+    else:
+        IR_intens_values=None
     blankline()
 
     #Print out Freq output. Maybe print normal mode compositions here instead???
-    printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
+    printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum, intensities=IR_intens_values)
 
     print("\n\n")
     print("Normal mode composition factors by element")
@@ -467,7 +507,6 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
         print("No projection of rotational and translational modes will be done!")
         # Massweight Hessian
         mwhessian, massmatrix = massweight(hessian, masses, numatoms)
-
         # Diagonalize mass-weighted Hessian
         evalues, evectors = np.linalg.eigh(mwhessian)
         evectors = np.transpose(evectors)
@@ -513,6 +552,15 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
 
         return vfreqs,nmodes,evectors
 
+#Calculate IR intensities from masses, (mass-weighted) eigenvectors and dipole derivative matrix
+def calc_IR_Intensities(hessmasses,evectors,dipole_derivs):
+    intens_factor=974.88011184
+    mass_matrix = np.repeat(hessmasses, 3)
+    inv_sqrt_mass_matrix = np.diag(1 / (mass_matrix**0.5))
+    displacements = inv_sqrt_mass_matrix.dot(np.transpose(evectors))
+    de_q = displacements.T @ dipole_derivs
+    IR_intens_values = intens_factor * np.einsum("qt, qt -> q", de_q, de_q)
+    return IR_intens_values
 
 # Massweight Hessian
 def massweight(matrix,masses,numatoms):
@@ -536,13 +584,19 @@ def calcfreq(evalues):
     return vfreq
 
 
-def printfreqs(vfreq,numatoms,TRmodenum=6):
+def printfreqs(vfreq,numatoms,TRmodenum=6, intensities=None):
+    if intensities is None:
+        print("No IR intensities were calculated (dipoles not available in interface). Setting values to 0.0")
     print("Note: imaginary modes shown as negative")
     print("Warning: Currently not distinguishing correctly between TR modes and other imaginary modes")
-    print("{:>6}{:>16}".format("Mode", "Freq(cm**-1)"))
+    print("{:>6}{:>16}  {:>16}".format("Mode", "Freq(cm**-1)", "IR Int.(km/mol)"))
     for mode in range(0,3*numatoms):
         vib=vfreq[mode]
-        line = "  {:<4d}{:>14.4f}".format(mode, vib)
+        if intensities is None:
+            intensity=0.0
+        else:
+            intensity=intensities[mode]
+        line = f"  {mode:<6d}{vib:>14.4f}{intensity:>14.4f}"
         if mode < TRmodenum:
             line=line+"   (TR mode)"
         print(line)
@@ -897,8 +951,6 @@ These modes are the cartesian displacements weighted by the diagonal matrix
 M(i,i)=1/sqrt(m[i]) where m[i] is the mass of the displaced atom
 Thus, these vectors are normalized but *not* orthogonal"""
 
-#TODO: Finish write normal mode output in ORCA format from nmodes so that Chemcraft can read it
-
     outfile.write('\n')
     outfile.write('\n')
     outfile.write(normalmodeheader)
@@ -914,34 +966,15 @@ Thus, these vectors are normalized but *not* orthogonal"""
 
     chunks = hessdim // orcahesscoldim
     left = hessdim % orcahesscoldim
-    #print("Chunks:", chunks)
-    #print("left:", left)
+
     if left > 0:
         chunks = chunks + 1
-    #print("Chunks:", chunks)
 
-    #print("evectors", evectors)
-    #print("")
-    #print("nmodes", nmodes)
-    #print("len(nmodes)", len(nmodes))
-    #TODO: Should we be using the eigenvectors instead, i.e. the mass-weighted normalmodes.
-    #Seems to be what ORCA is using?
-
-    #Transpose of nmodes for convenience
-    #nmodes_tp=np.transpose(nmodes)
-    #print(nmodes_tp)
-    #print("")
-
-    #print("Beginning for loop")
     for chunk in range(chunks):
-        #print("chunk is", chunk)
         if chunk == chunks - 1:
-            #print("a last chunk is", chunk)
             # If last chunk and cleft is exactly 0 then all 5 columns should be done
             if left == 0:
                 left = 6
-            # print("index is", index)
-            # print("left is", left)
             for temp in range(index, index + left):
                 chunkheader = chunkheader + "          " + str(temp)
             #print(chunkheader)

@@ -297,7 +297,9 @@ class ORCATheory:
         ash.modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='ORCA Opt-run', moduleindex=2)
         return 
-
+    #Method to grab dipole moment from an ORCA outputfile (assumes run has been executed)
+    def get_dipole_moment(self):
+        return grab_dipole_moment(self.filename+'.out')
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
@@ -502,11 +504,11 @@ end"""
         if self.printlevel >= 1:
             print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
-        #Check if finished. Grab energy and gradient
         outfile=self.filename+'.out'
         engradfile=self.filename+'.engrad'
         pcgradfile=self.filename+'.pcgrad'
-
+        
+        #Checking if finished. 
         if self.ignore_ORCA_error is False:
             ORCAfinished,numiterations = checkORCAfinished(outfile)
             #Check if ORCA finished or not. Exiting if so
@@ -598,6 +600,7 @@ end"""
 
         #Initializing zero gradient array
         self.grad = np.zeros((len(qm_elems), 3))
+        self.dipole_moment = None
 
         #XDM option: WFX file should have been created.
         if self.xdm == True:
@@ -620,6 +623,7 @@ end"""
             self.grad = self.grad + grad
             if self.printlevel >= 3:
                 print("ORCA gradient:", self.grad)
+
             if PC == True:
                 #Print time to calculate ORCA QM-PC gradient
                 if "pc_gradient" in orca_timings:
@@ -943,6 +947,16 @@ def ORCApcgradientgrab(pcgradfile):
                 val_z = float(line.split()[2])
                 gradient[count-1] = [val_x,val_y,val_z]
     return gradient
+
+def grab_dipole_moment(outfile):
+    dipole_moment = []
+    with open(outfile) as f:
+        for line in f:
+            if 'Total Dipole Moment    :' in line:
+                dipole_moment.append(float(line.split()[-3]))
+                dipole_moment.append(float(line.split()[-2]))
+                dipole_moment.append(float(line.split()[-1]))
+    return dipole_moment
 
 
 #Grab multiple Final single point energies in output. e.g. new_job calculation
