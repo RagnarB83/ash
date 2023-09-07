@@ -33,14 +33,12 @@ class ccpyTheory:
             ashexit()
 
         #MAKING SURE WE HAVE ccpy
+        try:
+            import ccpy
+        except ModuleNotFoundError
+            print("Error: ccpy module is not installed. Please install ccpy")
+            ashexit()
 
-        if numcores > 1:
-            try:
-                print(f"MPI-parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version is available in your environment")
-                check_OpenMPI()
-            except:
-                print("Problem with mpirun")
-                ashexit()
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
@@ -174,6 +172,11 @@ class ccpyTheory:
             #driver.run_hbar(method="ccsd")
             #driver.run_guess(method="cis", multiplicity=1, nroot=10)
             #driver.run_eomcc(method="eomccsd", state_index=selected_states[1:])
+            self.energy = driver.system.reference_energy + driver.correlation_energy
+            print("driver dict:", driver.__dict__)
+            print(f"Reference energy {driver.system.reference_energy} Eh")
+            print(f"{self.method} correlation energy {driver.correlation_energy} Eh")
+            print(f"Total energy {self.energy} Eh")
 
 
 

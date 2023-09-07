@@ -300,6 +300,9 @@ class ORCATheory:
     #Method to grab dipole moment from an ORCA outputfile (assumes run has been executed)
     def get_dipole_moment(self):
         return grab_dipole_moment(self.filename+'.out')
+    def get_polarizability_tensor(self):
+        pz,diag_pz = grab_polarizability_tensor(self.filename+'.out')
+        return pz
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
@@ -958,6 +961,32 @@ def grab_dipole_moment(outfile):
                 dipole_moment.append(float(line.split()[-1]))
     return dipole_moment
 
+def grab_polarizability_tensor(outfile):
+    pz_tensor = np.zeros((3,3))
+    diag_pz_tensor=[]
+    count=0
+    grab=False;grab2=False
+    with open(outfile) as f:
+        for line in f:
+            if grab2 is True:
+                if len(line.split()) == 0:
+                    grab2=False
+                else:
+                    diag_pz_tensor.append(float(line.split()[0]))
+                    diag_pz_tensor.append(float(line.split()[1]))
+                    diag_pz_tensor.append(float(line.split()[2]))
+            if grab is True:
+                if 'diagonalized tensor:' in line:
+                    grab=False
+                    grab2=True
+                if len(line.split()) == 3:
+                    pz_tensor[count,0]=float(line.split()[0])
+                    pz_tensor[count,1]=float(line.split()[1])
+                    pz_tensor[count,2]=float(line.split()[2])
+                    count+=1
+            if 'THE POLARIZABILITY TENSOR' in line:
+                grab=True
+    return pz_tensor, diag_pz_tensor
 
 #Grab multiple Final single point energies in output. e.g. new_job calculation
 def finalenergiesgrab(file):

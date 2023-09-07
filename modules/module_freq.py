@@ -72,9 +72,8 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
 
 #Numerical frequencies function
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
-#TODO: IR-intensity feature needs cleanup w.r.t. theories
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', 
-        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO_omega_0=100):
+        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO_omega_0=100, Raman=False):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     ################
@@ -237,6 +236,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     ########################
     displacement_grad_dictionary = {}
     displacement_dipole_dictionary = {}
+    displacement_polarizability_dictionary = {}
     #TODO: Have serial use all_disp_fragments instead to be consistent with parallel
     if runmode == 'serial':
         print("Runmode: serial")
@@ -260,12 +260,19 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
+            displacement_grad_dictionary[stringlabel] = gradient
             #Grabbing dipole moment for those theories
             try:
                 displacement_dipole_dictionary[stringlabel] = theory.get_dipole_moment()
             except:
                 pass
-            displacement_grad_dictionary[stringlabel] = gradient
+            #Grabbing polarizability tensor if requested
+            if Raman is True:
+                try:
+                    displacement_polarizability_dictionary[stringlabel] = theory.get_polarizability_tensor()
+                except:
+                    pass
+            
     #TODO: Dipole moment grab for parallel mode
     elif runmode == 'parallel':
 
@@ -303,7 +310,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Initializing dipole derivatives
     dipole_derivs = np.zeros((hesslength,3))
+    polarizability_derivs = []  #array of 3x3 tensors
     
+    print("displacement_polarizability_dictionary:", displacement_polarizability_dictionary)
     #Onepoint-formula Hessian
     if npoint == 1:
         print("Assembling the one-point Hessian")
@@ -317,7 +326,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         if len(displacement_dipole_dictionary) > 0:
             original_dipole = np.array(displacement_dipole_dictionary['Originalgeo'])
             print("original_dipole:",original_dipole)
-
+        #Raman if requested
+        if Raman is True:
+            if len(displacement_polarizability_dictionary) > 0:
+                original_polarizability = np.array(displacement_polarizability_dictionary['Originalgeo'])
+                print("original_polarizability:",original_polarizability)
         #Starting index for Hessian array
         hessindex=0
         #Loop over Hessian atoms and grab each gradient component. Calculate Hessian component and add to matrix
@@ -342,6 +355,13 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                     disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
                     dd_deriv = (disp_dipole - original_dipole)/displacement_bohr
                     dipole_derivs[hessindex,:] = dd_deriv
+                #Raman if requested
+                if Raman is True:
+                    if len(displacement_polarizability_dictionary) > 0:
+                        disp_polarizability = np.array(displacement_polarizability_dictionary[lookup_string_pos])
+                        pz_deriv = (disp_polarizability - original_polarizability)/displacement_bohr
+                        #polarizability_derivs[hessindex,:] = pz_deriv
+                        polarizability_derivs.append(pz_deriv)
                 hessindex+=1
 
     #Twopoint-formula Hessian. pos and negative directions come in order
@@ -378,9 +398,18 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                     disp_dipole_neg = np.array(displacement_dipole_dictionary[lookup_string_neg])
                     dd_deriv = (disp_dipole_pos - disp_dipole_neg)/(2*displacement_bohr)
                     dipole_derivs[hessindex,:] = dd_deriv
+                #Raman if requested
+                if Raman is True:
+                    if len(displacement_polarizability_dictionary) > 0:
+                        disp_polarizability_pos = np.array(displacement_polarizability_dictionary[lookup_string_pos])
+                        disp_polarizability_neg = np.array(displacement_polarizability_dictionary[lookup_string_neg])
+                        pz_deriv = (disp_polarizability_pos - disp_polarizability_neg)/(2*displacement_bohr)
+                        #polarizability_derivs[hessindex,:] = pz_deriv
+                        polarizability_derivs.append(pz_deriv)
                 hessindex+=1
     print()
     
+
     #Symmetrize Hessian by taking average of matrix and transpose
     symm_hessian=(hessian+hessian.transpose())/2
     hessian=symm_hessian
@@ -407,6 +436,17 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         IR_intens_values = calc_IR_Intensities(hessmasses,evectors,dipole_derivs)
     else:
         IR_intens_values=None
+    #Raman activities if polarizabilities available
+    if Raman is True:
+        print("Raman calculation active")
+        print("polarizability_derivs:", polarizability_derivs)
+        if len(displacement_polarizability_dictionary) > 0:
+            print("here")
+            Raman_activities = calc_Raman_activities(hessmasses,evectors,polarizability_derivs)
+        else:
+            Raman_activities=None
+    else:
+        Raman_activities=None
     blankline()
 
     #Print out Freq output. Maybe print normal mode compositions here instead???
@@ -561,6 +601,7 @@ def calc_IR_Intensities(hessmasses,evectors,dipole_derivs):
     de_q = displacements.T @ dipole_derivs
     IR_intens_values = intens_factor * np.einsum("qt, qt -> q", de_q, de_q)
     return IR_intens_values
+
 
 # Massweight Hessian
 def massweight(matrix,masses,numatoms):
