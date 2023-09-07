@@ -163,6 +163,7 @@ class ccpyTheory:
 
             print("CC(P) Energies:", adaptdriver.ccp_energy)
             print("CC(P;Q) Energies:", adaptdriver.ccpq_energy)
+            self.CC_PQ_energies=adaptdriver.ccpq_energy
             self.energy = float(adaptdriver.ccpq_energy[-1])
 
         else:
