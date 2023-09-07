@@ -189,7 +189,7 @@ class ccpyTheory:
                 driver.run_ccp3(method="ccsd(t)")
                 HOC_energy = driver.deltapq[0]["A"]
                 total_corr_energy = CCSD_corr_energy + HOC_energy
-            elif self.method == "cct3":
+            elif self.method.lower() == "cct3":
                 driver.run_cc(method="ccsdt1")
                 driver.run_hbar(method="ccsd")
                 driver.run_leftcc(method="left_ccsd")
