@@ -19,7 +19,7 @@ import ash.settings_ash
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, filename='input.dat', printlevel=2,
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, tol=1e-10, numcores=1, 
-                method="CCPQ", adaptive=True, percentages=None):
+                method="CCPQ", adaptive=False, percentages=None):
 
         self.theorynamelabel="ccpy"
         self.theorytype="QM"
@@ -177,10 +177,13 @@ class ccpyTheory:
                 driver.run_cc(method=self.method)
                 CCSD_corr_energy=driver.correlation_energy
                 total_corr_energy=driver.correlation_energy
-            elif self.method.lower() == "ccsdt1" or self.method.lower() == "ccsdt":
+            elif self.method.lower() == "ccsdt1" 
+                driver.run_cc(method=self.method)
+                total_corr_energy=driver.correlation_energy            
+            elif self.method.lower() == "ccsdt":
                 driver.run_cc(method=self.method)
                 total_corr_energy=driver.correlation_energy
-            elif self.method.lower() == "ccsd(t)"
+            elif self.method.lower() == "ccsd(t)":
                 driver.run_cc(method="ccsd")
                 CCSD_corr_energy=driver.correlation_energy
                 driver.run_ccp3(method="ccsd(t)")
@@ -220,8 +223,9 @@ class ccpyTheory:
             #driver.run_eomcc(method="eomccsd", state_index=selected_states[1:])
             self.energy =  reference_energy + total_corr_energy
             print("driver dict:", driver.__dict__)
+            print()
             print(f"Reference energy {reference_energy} Eh")
-            print(f"Total correlation energy {total_corr_energy} Eh")
+            print(f"Total correlation energy ({self.method}) {total_corr_energy} Eh")
             if CCSD_corr_energy != 0.0:
                 print(f"   CCSD correlation energy {CCSD_corr_energy} Eh")
             if CCSDt_corr_energy != 0.0:
