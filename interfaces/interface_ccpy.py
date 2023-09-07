@@ -148,6 +148,7 @@ class ccpyTheory:
         driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
         print("driver:",driver)
         driver.system.print_info()
+
         if self.adaptive is True:
             print("adaptive CC(P;Q) calculation.")
             print("self.percentages:",self.percentages)
@@ -166,6 +167,7 @@ class ccpyTheory:
 
         else:
             print("Non-adaptive CC calculation.")
+            HOC_energy=0.0
             #driver.options["maximum_iterations"] = 1000 # 4 Sigma state requires ~661 iterations in left-CCSD
             #driver.options["davidson_max_subspace_size"] = 50
             if self.method.lower() == "ccsd" or self.method.lower() == "ccsdt1" or self.method.lower() == "ccsdt":
@@ -173,21 +175,28 @@ class ccpyTheory:
             elif self.method.lower() == "ccsd(t)" or self.method == "cct3":
                 driver.run_cc(method="ccsd")
                 driver.run_ccp3(method="ccsd(t)")
+                HOC_energy = driver.deltapq[0]["A"]
             elif self.method.lower() == "crcc23":
                 driver.run_cc(method="ccsd")
                 driver.run_hbar(method="ccsd")
                 driver.run_leftcc(method="left_ccsd")
                 driver.run_ccp3(method="crcc23")
 
+                print("driver.deltapq:", driver.deltapq)
+                print("driver.deltapq:[0]", driver.deltapq[0])
+                print("driver.deltapq[0] D", driver.deltapq[0]["D"])
+                HOC_energy=driver.deltapq[0]["D"]
+
             elif 'eom' in self.method.lower():
                 driver.run_eomcc(method=self.method.lower(), state_index=1)
             #driver.run_hbar(method="ccsd")
             #driver.run_guess(method="cis", multiplicity=1, nroot=10)
             #driver.run_eomcc(method="eomccsd", state_index=selected_states[1:])
-            self.energy = driver.system.reference_energy + driver.correlation_energy
+            self.energy = driver.system.reference_energy + driver.correlation_energy + HOC_energy
             print("driver dict:", driver.__dict__)
             print(f"Reference energy {driver.system.reference_energy} Eh")
-            print(f"{self.method} correlation energy {driver.correlation_energy} Eh")
+            print(f"CCSD correlation energy {driver.correlation_energy} Eh")
+            print(f"HOC correlation energy {HOC_energy} Eh")
             print(f"Total energy {self.energy} Eh")
 
 
