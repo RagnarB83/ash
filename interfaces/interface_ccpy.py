@@ -35,7 +35,7 @@ class ccpyTheory:
         #MAKING SURE WE HAVE ccpy
         try:
             import ccpy
-        except ModuleNotFoundError
+        except ModuleNotFoundError:
             print("Error: ccpy module is not installed. Please install ccpy")
             ashexit()
 
