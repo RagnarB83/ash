@@ -177,7 +177,7 @@ class ccpyTheory:
                 driver.run_cc(method=self.method)
                 CCSD_corr_energy=driver.correlation_energy
                 total_corr_energy=driver.correlation_energy
-            elif self.method.lower() == "ccsdt1" 
+            elif self.method.lower() == "ccsdt1":
                 driver.run_cc(method=self.method)
                 total_corr_energy=driver.correlation_energy            
             elif self.method.lower() == "ccsdt":
