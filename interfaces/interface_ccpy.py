@@ -168,6 +168,7 @@ class ccpyTheory:
         else:
             print("Non-adaptive CC calculation.")
             CCSD_corr_energy=0.0
+            CCSDt_corr_energy=0.0
             HOC_energy=0.0
             total_corr_energy=0.0
             #driver.options["maximum_iterations"] = 1000 # 4 Sigma state requires ~661 iterations in left-CCSD
@@ -176,15 +177,27 @@ class ccpyTheory:
                 driver.run_cc(method=self.method)
                 CCSD_corr_energy=driver.correlation_energy
                 total_corr_energy=driver.correlation_energy
-            if self.method.lower() == "ccsdt1" or self.method.lower() == "ccsdt":
+            elif self.method.lower() == "ccsdt1" or self.method.lower() == "ccsdt":
                 driver.run_cc(method=self.method)
                 total_corr_energy=driver.correlation_energy
-            elif self.method.lower() == "ccsd(t)" or self.method == "cct3":
+            elif self.method.lower() == "ccsd(t)"
                 driver.run_cc(method="ccsd")
                 CCSD_corr_energy=driver.correlation_energy
                 driver.run_ccp3(method="ccsd(t)")
                 HOC_energy = driver.deltapq[0]["A"]
                 total_corr_energy = CCSD_corr_energy + HOC_energy
+            elif self.method == "cct3":
+                driver.run_cc(method="ccsdt1")
+                driver.run_hbar(method="ccsd")
+                driver.run_leftcc(method="left_ccsd")
+                driver.run_ccp3(method="cct3")
+                #CC(t;3)_A
+                print("CC(t;3)_A:", driver.deltapq[0]["A"])
+                #CC(t;3)_D
+                print("CC(t;3)_A:", driver.deltapq[0]["D"])
+                HOC_energy = driver.deltapq[0]["D"]
+                CCSDt_corr_energy=driver.correlation_energy
+                total_corr_energy = CCSDt_corr_energy + HOC_energy
             elif self.method.lower() == "crcc23":
                 driver.run_cc(method="ccsd")
                 CCSD_corr_energy=driver.correlation_energy
@@ -211,6 +224,8 @@ class ccpyTheory:
             print(f"Total correlation energy {total_corr_energy} Eh")
             if CCSD_corr_energy != 0.0:
                 print(f"   CCSD correlation energy {CCSD_corr_energy} Eh")
+            if CCSDt_corr_energy != 0.0:
+                print(f"   CCSDt correlation energy {CCSDt_corr_energy} Eh")
             if HOC_energy != 0.0:
                 print(f"   HOC correlation energy {HOC_energy} Eh")
             print(f"Total energy {self.energy} Eh")
