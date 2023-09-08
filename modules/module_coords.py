@@ -216,6 +216,25 @@ class Fragment:
         #Populated by calc_surface relaxed para
         self.constraints = None
 
+    def __repr__(self):
+        print("ASH Fragment object")
+        print(f"Number of Atoms in fragment: {self.numatoms}")
+        print(f"Formula: {self.prettyformula}")
+        print(f"Label: {self.label}")
+        print(f"Charge: {self.charge} Mult: {self.mult}")
+        print("Do fragment.info() for more info on fragment")
+        return "ASH fragment"
+    def __str__(self):
+        print("ASH Fragment object")
+        print(f"Number of Atoms in fragment: {self.numatoms}")
+        print(f"Formula: {self.prettyformula}")
+        print(f"Label: {self.label}")
+        print(f"Charge: {self.charge} Mult: {self.mult}")
+        print("Do fragment.info() for more info on fragment")
+        return "ASH fragment"
+    def info(self):
+        print("ASH Fragment object")
+        print(self.__dict__)
     def update_attributes(self):
         if self.printlevel >= 2:
             print("Creating/Updating fragment attributes...")

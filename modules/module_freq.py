@@ -312,7 +312,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     dipole_derivs = np.zeros((hesslength,3))
     polarizability_derivs = []  #array of 3x3 tensors
     
-    print("displacement_polarizability_dictionary:", displacement_polarizability_dictionary)
     #Onepoint-formula Hessian
     if npoint == 1:
         print("Assembling the one-point Hessian")
@@ -436,21 +435,22 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         IR_intens_values = calc_IR_Intensities(hessmasses,evectors,dipole_derivs)
     else:
         IR_intens_values=None
+
     #Raman activities if polarizabilities available
     if Raman is True:
         print("Raman calculation active")
-        print("polarizability_derivs:", polarizability_derivs)
         if len(displacement_polarizability_dictionary) > 0:
-            print("here")
-            Raman_activities = calc_Raman_activities(hessmasses,evectors,polarizability_derivs)
+            print("Polarizability derivatives are available.")
+            Raman_activities, depolarization_ratios = calc_Raman_activities(hessmasses,evectors,polarizability_derivs,frequencies)
         else:
-            Raman_activities=None
+            Raman_activities=None; depolarization_ratios=None
     else:
-        Raman_activities=None
+        Raman_activities=None; depolarization_ratios=None
     blankline()
 
     #Print out Freq output. Maybe print normal mode compositions here instead???
-    printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum, intensities=IR_intens_values)
+    printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum, intensities=IR_intens_values, 
+               Raman_activities=Raman_activities)
 
     print("\n\n")
     print("Normal mode composition factors by element")
@@ -625,21 +625,30 @@ def calcfreq(evalues):
     return vfreq
 
 
-def printfreqs(vfreq,numatoms,TRmodenum=6, intensities=None):
+def printfreqs(vfreq,numatoms,TRmodenum=6, intensities=None, Raman_activities=None):
+    print("-"*40)
+    print("VIBRATIONAL FREQUENCY SUMMARY")
+    print("-"*40)
     if intensities is None:
-        print("No IR intensities were calculated (dipoles not available in interface). Setting values to 0.0")
+        print("No IR intensities were calculated (dipoles not available in QM-program interface). Setting values to 0.0.")
+    if Raman_activities is None:
+        print("No Raman activities were calculated (polarizabilities not available in QM-program interface). Setting values to 0.0.")
     print("Note: imaginary modes shown as negative")
-    print("Warning: Currently not distinguishing correctly between TR modes and other imaginary modes")
-    print("{:>6}{:>16}  {:>16}".format("Mode", "Freq(cm**-1)", "IR Int.(km/mol)"))
+    #print("Warning: Currently not distinguishing correctly between TR modes and other imaginary modes")
+    print("{:>6}{:>16}  {:>16} {:>20}".format("Mode", "Freq(cm**-1)", "IR Int.(km/mol)", "Raman Act.(Å^4/amu)"))
     for mode in range(0,3*numatoms):
         vib=vfreq[mode]
         if intensities is None:
             intensity=0.0
         else:
             intensity=intensities[mode]
-        line = f"  {mode:<6d}{vib:>14.4f}{intensity:>14.4f}"
+        if Raman_activities is None:
+            raman_act=0.0
+        else:
+            raman_act=Raman_activities[mode]
+        line = f"  {mode:<6d}{vib:>14.4f}{intensity:>14.4f}{raman_act:>16.4f}"
         if mode < TRmodenum:
-            line=line+"   (TR mode)"
+            line=line+"            (TR mode)"
         print(line)
 
 
@@ -2060,3 +2069,58 @@ def project_rot_and_trans(coords,mass,Hessian):
 
     return freqs_wavenumber,normal_modes,normal_modes_cart
 
+
+#Calculate Raman activiities from masses, (mass-weighted) eigenvectors and polarizability derivative matrix
+def calc_Raman_activities(hessmasses,evectors,polarizability_derivs,frequencies):
+    print("Calculating Raman activities")
+    
+    #Length of Hessian (and normal modes)
+    hesslength=3*len(hessmasses)
+    
+    #Getting displacement vectors
+    mass_matrix = np.repeat(hessmasses, 3)
+    inv_sqrt_mass_matrix = np.diag(1 / (mass_matrix**0.5))
+    displacements = inv_sqrt_mass_matrix.dot(np.transpose(evectors))
+    
+    #Finalizing polarizability derivative
+    A_der = np.zeros( (hesslength,9) )
+    for i in range(hesslength):
+        A_der[i,:] = polarizability_derivs[i].reshape(1,9)
+    
+    # Transform polarizability derivatives to normal coordinates
+    # A_der : 3*Natom x 9
+    # Lx : 3*Natom x 3*Natom
+    # A_der_q : 9 x 3*Natom
+    A_der_q_tmp = np.dot(A_der.T, displacements)
+    # Reorganize list of 3x3 polarizability derivatives for each Cartesian coordinate
+    A_der_q = []
+    for i in range(hesslength):
+        one_alpha_der = np.zeros( (3,3) )
+        jk = 0
+        for j in range(3):
+            for k in range(3):
+                one_alpha_der[j,k] = A_der_q_tmp[jk,i]
+                jk += 1
+        A_der_q.append(one_alpha_der)
+
+    #Now calculating alphas, betas (see Neugebauer J Comput Chem 2002)
+    #and Raman activity and depolarization ratio
+    alpha = np.zeros(hesslength)
+    beta2 = np.zeros(hesslength)
+    depol_ratio = np.zeros(hesslength)
+    raman_act = np.zeros(hesslength)
+    for i in range(hesslength):
+        axx = A_der_q[i][0,0];ayy = A_der_q[i][1,1];azz = A_der_q[i][2,2]
+        axy = A_der_q[i][0,1];axz = A_der_q[i][0,2];ayz = A_der_q[i][1,2]
+        alpha[i] = 1/3*(axx+ayy+azz)
+        beta2[i] = 0.5*((axx-ayy)**2+(axx-azz)**2+(ayy-azz)**2 + 6*(axy**2+axz**2+ayz**2))
+        depol_ratio[i] = 3*beta2[i]/((45*alpha[i]*alpha[i])+4*beta2[i])
+        raman_act[i] = 45*alpha[i]*alpha[i]+7*beta2[i]
+
+    #Converting to Angstrom^4/amu
+    raman_unit=1/ash.constants.bohr2ang**4
+    raman_act = raman_act/raman_unit
+
+    print("Calculated Raman activities for each normal mode:", raman_act)
+    print("Calculated Raman depolarization ratios for each normal mode:", depol_ratio)
+    return raman_act, depol_ratio
