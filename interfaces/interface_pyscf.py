@@ -15,7 +15,6 @@ import copy
 #TODO: PE: Polarizable embedding (CPPE). Revisit
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Dirac HF/KS
-#TODO: Look into pointcharge gradient
 #TODO: Gradient for post-SCF methods and TDDFT
 
 class PySCFTheory:
@@ -850,8 +849,29 @@ class PySCFTheory:
             self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
 
         return energy
+    #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
+    def get_dipole_moment(self, dm=None):
+        if self.postSCF is True:
+            print("pyscf postSCF dipole moment requeste")
+            if dm is None:
+                print("A pyscf density matrix (dm= ) is required as input")
+            dipole_debye = self.mf.dip_moment(dm=dm_re,unit='A.U.')
+        else:
+            #MF dipole moment
+            dipole_debye = self.mf.dip_moment(unit='A.U.')
 
-
+        return dipole_debye
+    def get_polarizability_tensor(self):
+        try:
+            from pyscf.prop import polarizability
+        except ModuleNotFoundError:
+            print("pyscf polarizability requires installation of pyscf.prop module")
+            print("See: https://github.com/pyscf/properties")
+            print("You can install with: pip install git+https://github.com/pyscf/properties")
+            ashexit()
+        polarizability = self.mf.Polarizability().polarizability()
+        return polarizability
+    # polarizability property now part of separate pyscf properties module
     #General run function to distinguish  possible specialrun (disabled) and mainrun
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,

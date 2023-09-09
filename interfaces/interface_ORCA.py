@@ -301,8 +301,8 @@ class ORCATheory:
     def get_dipole_moment(self):
         return grab_dipole_moment(self.filename+'.out')
     def get_polarizability_tensor(self):
-        pz,diag_pz = grab_polarizability_tensor(self.filename+'.out')
-        return pz
+        polarizability,diag_pz = grab_polarizability_tensor(self.filename+'.out')
+        return polarizability
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):

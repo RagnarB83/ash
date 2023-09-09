@@ -269,10 +269,12 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             #Grabbing polarizability tensor if requested
             if Raman is True:
                 try:
+                    print("Getting polarizability tensor")
                     displacement_polarizability_dictionary[stringlabel] = theory.get_polarizability_tensor()
                 except:
+                    print("Warning: Problem getting polarizability tensor from theory interface. Skipping")
                     pass
-            
+
     #TODO: Dipole moment grab for parallel mode
     elif runmode == 'parallel':
 
@@ -441,7 +443,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         print("Raman calculation active")
         if len(displacement_polarizability_dictionary) > 0:
             print("Polarizability derivatives are available.")
-            Raman_activities, depolarization_ratios = calc_Raman_activities(hessmasses,evectors,polarizability_derivs,frequencies)
+            Raman_activities, depolarization_ratios = calc_Raman_activities(hessmasses,evectors,polarizability_derivs)
         else:
             Raman_activities=None; depolarization_ratios=None
     else:
@@ -2071,7 +2073,7 @@ def project_rot_and_trans(coords,mass,Hessian):
 
 
 #Calculate Raman activiities from masses, (mass-weighted) eigenvectors and polarizability derivative matrix
-def calc_Raman_activities(hessmasses,evectors,polarizability_derivs,frequencies):
+def calc_Raman_activities(hessmasses,evectors,polarizability_derivs):
     print("Calculating Raman activities")
     
     #Length of Hessian (and normal modes)
