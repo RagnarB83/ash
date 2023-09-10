@@ -282,8 +282,12 @@ class CFourTheory:
                 print("Unknown option for frozen_core_settings")
                 ashexit()
 
-                
-
+    #Method to grab dipole moment from a CFour outputfile (assumes run has been executed)
+    def get_dipole_moment(self):
+        return grab_dipole_moment(self.filename+'.out')                
+    #Method to grab polarizability tensor from a CFour outputfile (assumes run has been executed)
+    def get_polarizability_tensor(self):
+        return grab_polarizability_tensor(self.filename+'.out')
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, Hessian=False, DBOC=False,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, charge=None, mult=None):
@@ -388,7 +392,7 @@ MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
-HFSTABILITY={self.stabilityanalysis})\n\n""")
+HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
                         inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
@@ -685,3 +689,65 @@ def convert_CFour_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
 
     print(f"Created new Molden file (via molden2aim): {moldenfile_basename}_new.molden")
     print("This file can be correctly read by Multiwfn")
+
+
+
+#CFour dipole moment output when density requested but not gradient
+def grab_dipole_moment_density_job(outfile):
+    dipole_moment = []
+    grab=False
+    with open(outfile) as f:
+        for line in f:
+            if grab is True:
+                if 'Components of second moment' in line:
+                    grab=False
+                if '        X =' in line:
+                    dipole_moment.append(float(line.split()[2]))
+                    dipole_moment.append(float(line.split()[5]))
+                    dipole_moment.append(float(line.split()[8]))
+            if 'Properties computed from the correlated density matrix' in line:
+                grab=True
+    return dipole_moment
+
+
+# For CFour engrad job
+def grab_dipole_moment(outfile):
+    dipole_moment = []
+    grab=False
+    with open(outfile) as f:
+        for line in f:
+            if grab is True:
+                if '  Conversion factor used:' in line:
+                    grab=False
+                if ' x ' in line:
+                    dipole_moment.append(float(line.split()[1]))
+                if ' y ' in line:
+                    dipole_moment.append(float(line.split()[1]))
+                if ' z ' in line:
+                    dipole_moment.append(float(line.split()[1]))
+            if ' Total dipole moment' in line:
+                grab=True
+    return dipole_moment
+
+# For CFour engrad job with PROP=2
+#HF, CCSD, CCSD(T) polarizability
+#NOTE: Not well tested. might requires ECC (VCC and NCC fail)
+def grab_polarizability_tensor(outfile):
+    pz_tensor = np.zeros((3,3))
+    grab=False
+    count=0
+    with open(outfile) as f:
+        for line in f:
+            if grab is True:
+                if ' HF-SCF Polarizability' in line:
+                    return pz_tensor
+                if len(line.split()) == 4:
+                    pz_tensor[count,0]=float(line.split()[1])
+                    pz_tensor[count,1]=float(line.split()[2])
+                    pz_tensor[count,2]=float(line.split()[3])
+                    count+=1
+            #CC polarizability output
+            if 'Polarizability Tensor' in line:
+                if 'CCSD' in line:
+                    grab=True
+    return pz_tensor

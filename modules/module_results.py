@@ -35,6 +35,9 @@ class ASH_Results:
     hessian: np.array = None
     frequencies: list = None
     normal_modes: np.array = None
+    Raman_activities: np.array = None
+    IR_intensities: np.array = None
+    depolarization_ratios: np.array = None
     vib_eigenvectors: np.array = None
     thermochemistry: dict = None
     #Surface-scan job

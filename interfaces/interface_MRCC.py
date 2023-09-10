@@ -96,7 +96,10 @@ class MRCCTheory:
             else:
                 print("Unknown option for frozen_core_settings")
                 ashexit()
-
+    #Method to grab dipole moment from a MRCC outputfile (assumes run has been executed)
+    def get_dipole_moment(self):
+        return grab_dipole_moment(self.filename+'.out')
+    #NOTE: Polarizability not available in MRCC
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
@@ -428,3 +431,19 @@ def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfi
     print("Created new Molden file: mrccnew.molden")
     print("This file contains the natural orbitals of the correlated density from MRCC")
 
+
+def grab_dipole_moment(outfile):
+    dipole_moment = np.zeros(3)
+    grab=False
+    with open(outfile) as f:
+        for line in f:
+            if grab is True:
+                if ' Dipole moment [Debye]:' in line:
+                    grab=False
+                if 'x=' in line:
+                    dipole_moment[0] = float(line.split()[1])
+                    dipole_moment[1] = float(line.split()[3])
+                    dipole_moment[2] = float(line.split()[5])
+            if ' Dipole moment [au]:' in line:
+                grab=True
+    return dipole_moment

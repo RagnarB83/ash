@@ -498,7 +498,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
 
     result = ASH_Results(label="Numfreq", hessian=hessian, vib_eigenvectors=evectors,
-        frequencies=frequencies, 
+        frequencies=frequencies, Raman_activities=Raman_activities, depolarization_ratios=depolarization_ratios,
+        IR_intensities=IR_intens_values,
         normal_modes=nmodes, thermochemistry=thermodict)        
     return result
 

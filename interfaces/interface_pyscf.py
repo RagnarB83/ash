@@ -869,6 +869,7 @@ class PySCFTheory:
             print("See: https://github.com/pyscf/properties")
             print("You can install with: pip install git+https://github.com/pyscf/properties")
             ashexit()
+        print("Note: pySCF will now calculate the polarizability (SCF-level)")
         polarizability = self.mf.Polarizability().polarizability()
         return polarizability
     # polarizability property now part of separate pyscf properties module

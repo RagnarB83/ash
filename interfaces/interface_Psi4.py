@@ -84,6 +84,10 @@ class Psi4Theory:
             os.remove(self.filename+'.out')
         except:
             pass
+
+    def get_dipole_moment(self):
+        return self.dipole
+
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, label=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile='', restart=False, charge=None, mult=None ):
@@ -242,14 +246,14 @@ class Psi4Theory:
                 psi4.fchk(wfn, f'sfds.fchk')
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
+                self.dipole = psi4.core.variables()['CURRENT DIPOLE']
+
             else:
                 print("Running energy with Psi4 method:", self.psi4method)
                 #exit()
                 self.energy = psi4.energy(self.psi4method)
+                self.dipole = psi4.core.variables()['CURRENT DIPOLE']
 
-                #bla = psi4.properties(self.psi4method, properties=['dipole'])
-                #print("bla:",bla)
-                #psi4.molden(wfn, f'psi4_{label}.molden', density_a=wfn.Da())
             #Keep restart file 180 as lastrestart.180
             PID = str(os.getpid())
             try:

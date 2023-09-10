@@ -2785,6 +2785,9 @@ class OpenMM_MDclass:
         #Printlevel
         self.printlevel=printlevel
 
+        #Determine centroid of original fragment coordinates
+        self.centroid_system = get_centroid(fragment.coords)
+
         #Case: OpenMMTheory
         if isinstance(theory, OpenMMTheory):
             self.openmmobject = theory
@@ -3265,12 +3268,14 @@ class OpenMM_MDclass:
                 if self.openmmobject.Periodic is True:
                     print("Periodic QM/MM is on")
                     if self.enforcePeriodicBox is True:
+                        #NOTE: All is fine also if we have frozen a large part of the system
                         print("enforcePeriodicBox is True. Wrapping handling by OpenMM")
                     elif self.enforcePeriodicBox is False:
                         print("enforcePeriodicBox is False. Wrapping handled by ASH")
                         print("Note: only cubic PBC boxes supported")
                         checkpoint = time.time()
-                        current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity)
+                        #Using original center of box
+                        current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
                         print_time_rel(checkpoint, modulename="wrapping")
 
                 #TODO: Translate box coordinates so that they are centered on solute
@@ -4473,37 +4478,74 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
 #    interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
 #    contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
 
-#Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity):
-    #checkpoint = time.time()
+# Get atom indices outside box according to centroid of box and boxlength
+def get_atoms_outside_box_old(allcoords,centroid,boxlength):
+    #Box length
     boxlength_half=boxlength/2
-    #Get atom indices for atoms that have a x,y or z coordinate outside box
-    mask = np.any(np.abs(allcoords) > boxlength_half, axis=1)
-    indices = np.where(mask)[0]
-    #20488
-    #Get indices of all whole molecules
+    print("centroid:", centroid)
+    #box_boundary = [c+boxlength_half for c in centroid]
+    box_boundary_x = [centroid[0]-boxlength_half, centroid[0]+boxlength_half]
+    box_boundary_y = [centroid[1]-boxlength_half, centroid[1]+boxlength_half]
+    box_boundary_z = [centroid[2]-boxlength_half, centroid[2]+boxlength_half]
+    #print("box_boundary_x:", box_boundary_x)
+    #print("box_boundary_y:", box_boundary_y)
+    #print("box_boundary_z:", box_boundary_z)
+    indices=[]
+    for i,c in enumerate(allcoords):
+        if c[0] < box_boundary_x[0] or c[0] > box_boundary_x[1]:
+            indices.append(i)
+        elif c[1] < box_boundary_y[0] or c[1] > box_boundary_y[1]:
+            indices.append(i)
+        elif c[2] < box_boundary_z[0] or c[2] > box_boundary_z[1]:
+            indices.append(i)
+    return indices
+
+def get_atoms_outside_box(allcoords, centroid, boxlength):
+    # Convert the input data to NumPy arrays for efficient computation
+    allcoords = np.array(allcoords)
+    centroid = np.array(centroid)
+
+    # Calculate the box boundaries using NumPy vectorized operations
+    boxlength_half = boxlength / 2
+    box_min = centroid - boxlength_half
+    box_max = centroid + boxlength_half
+
+    # Determine which coordinates are outside the box using boolean indexing
+    outside_indices = np.any((allcoords < box_min) | (allcoords > box_max), axis=1)
+
+    # Get the indices of atoms outside the box
+    indices = np.where(outside_indices)[0]
+
+    return indices.tolist()
+
+
+#Function to wrap coordinates of whole molecules outside box
+def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity,centroid):
+
+    #Get all indices of atoms outside box
+    indices = get_atoms_outside_box(allcoords,centroid,boxlength)
+    boxlength_half=boxlength/2
+
+    
+    print("indices:", indices)
+
+    #Get indices of all whole molecules that have an atom outisde box
     all_mol_indices = [connectivity[connectivity_dict.get(i)] for i in indices]
-    #print(all_mol_indices)
-    #print(all_mol_indices[3399])
+    print("all_mol_indices:",all_mol_indices)
     #Removing duplicates
     trimmed_all_mol_indices = trim_list_of_lists(all_mol_indices)
-    #print(trimmed_all_mol_indices)
-    #Get all coordinates
+    print("trimmed_all_mol_indices:",trimmed_all_mol_indices)
+    #Get all molecule coordinates (that have an atom outside box)
     allmol_coords = np.take(allcoords, trimmed_all_mol_indices, axis=0)
-    #print(allmol_coords)
-    #Check if all members are outside
-    allmol_outside_bools = [np.any(np.abs(m) > boxlength_half, axis=1) for m in allmol_coords]
-    #print(allmol_outside_bools)
-    #print(allmol_outside_bools)
-    #allmol_outside_bools_single = [np.all(j) for j in allmol_outside_bools]
-    allmol_outside_bools_single = [np.all(j) for j in allmol_outside_bools]
-    #print(allmol_outside_bools_single)
-    #print(allmol_outside_bools_single)
-    #exit()
+    print("allmol_coords:",allmol_coords)
+    #Check if all molecule members are outside
+    #Get Boolean array of whole molecules outside (True) or inside (False) of box     
+    allmol_outside_bools_single = [len(get_atoms_outside_box(m, centroid, boxlength)) == len(m) for m in allmol_coords]
+    print("allmol_outside_bools_single:",allmol_outside_bools_single)
 
-    #allmol_outside_cols = [np.any(np.abs(m) > boxlength_half, axis=1) for m in allmol_coords]
     #Looping over indices
     #print(f"6Time:{time.time()-checkpoint}")
+    #TODO: not general
     for members,member_coords,mol_outside_bool in zip(trimmed_all_mol_indices,allmol_coords,allmol_outside_bools_single):
         #Only wrap if all outside
         #NOTE: if water molecule has gone even further (to next box) then currently this code doesn't wrap it completely
@@ -4580,4 +4622,7 @@ def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
 
 def trim_list_of_lists(k):
     k = sorted(k)
-    return np.array(list((k for k, _ in itertools.groupby(k))))
+    #return list((k for k, _ in itertools.groupby(k)))
+    newk = list((k for k, _ in itertools.groupby(k)))
+    return newk
+    #return np.array(newk)
