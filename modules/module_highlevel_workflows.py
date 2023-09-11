@@ -12,7 +12,7 @@ from collections import defaultdict
 import ash.constants
 import ash.dictionaries_lists
 import ash.interfaces.interface_ORCA
-from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size, CCSD_natocc_grab, MP2_natocc_grab, CASSCF_natocc_grab
+from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size, CCSD_natocc_grab, MP2_natocc_grab, CASSCF_natocc_grab,create_orca_pcfile
 from ash.functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
 from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader, pygrep2, pygrep,print_time_rel
 from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers,check_charge_mult
@@ -34,6 +34,7 @@ TightPNO_thresholds={'TCutPNO': 1e-7, 'TCutPairs': 1e-5, 'TCutDO': 5e-3, 'TCutMK
 #Flexible ORCA CCSD(T)/CBS protocol class.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO']   pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO']    
+
 
 #TODO: CV correction. More general basis set for 3d TM and ligand systems. cc-pwCVTZ-DK (M) ? 
 class ORCA_CC_CBS_Theory:
@@ -380,7 +381,7 @@ maxiter 150\nend
             self.blocks1= self.blocks +self.basis1_block
 
 
-        #Auxiliary basis to self.blcoks. Used by CVSR only:
+        #Auxiliary basis to self.blocks. Used by CVSR only:
         self.blocks=self.blocks+"%basis {} end".format(finalauxbasis)
 
 
@@ -500,7 +501,7 @@ maxiter 150\nend
 
 
     #MP2 CPS correction step (A. Kubas and coworkers JCTC 2023)
-    def MP2correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis=None, pnosetting='NormalPNO'):
+    def MP2correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis=None, pnosetting='NormalPNO', PC=None, current_MM_coords=None, MMcharges=None):
         print("\nNow doing MP2 CPS correction. Getting CPS correction via DLPNO-MP2 and RI-MP2 difference")
 
         #Using basic theory line but changing DLPNO-CCSD(T) to DLPNO-MP2 and MP2
@@ -543,14 +544,14 @@ end
 
         #Defining and running canonical MP2 theory
         can_mp2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=can_mp2_line, orcablocks=blocks, numcores=self.numcores)
-        mp2_energy = can_mp2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        mp2_energy = can_mp2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         mp2_corr_energy = float(pygrep('RI-MP2 CORRELATION ENERGY:', can_mp2.filename+'.out')[-2].split()[-1])
         shutil.copyfile(can_mp2.filename+'.out', './' + calc_label + 'MP2' + '.out')
         shutil.copyfile(can_mp2.filename+'.gbw', './' + calc_label + 'MP2' + '.gbw')
 
         #Defining and running DLPNO-MP2 theory
         dlpno_mp2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=dlpno_mp2_line, orcablocks=blocks + '\n' + mp2block, numcores=self.numcores)
-        dlpno_mp2_energy = dlpno_mp2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        dlpno_mp2_energy = dlpno_mp2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         dlpnomp2_corr_energy = float(pygrep('DLPNO-MP2 CORRELATION ENERGY:', can_mp2.filename+'.out')[-2].split()[-1])
         shutil.copyfile(dlpno_mp2.filename+'.out', './' + calc_label + 'DLPNO-MP2' + '.out')
         shutil.copyfile(dlpno_mp2.filename+'.gbw', './' + calc_label + 'DLPNO-MP2' + '.gbw')
@@ -564,7 +565,7 @@ end
 
 
     #T1 correction 
-    def T1correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis='Large', pnosetting='NormalPNO'):
+    def T1correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis='Large', pnosetting='NormalPNO', PC=None, current_MM_coords=None, MMcharges=None):
         print("\nNow doing T1 correction. Getting T0 and T1 triples from a single calculation")
 
         #Using basic theory line but changing from T0 to T1
@@ -601,7 +602,7 @@ end
         ccsdt_T1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_T1_line, orcablocks=blocks, numcores=self.numcores)
 
         #Run T1
-        unused = ccsdt_T1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        unused = ccsdt_T1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         print("ccsdt_T1.filename:", ccsdt_T1.filename)
         print("calc_label:", calc_label)
         shutil.copyfile(ccsdt_T1.filename+'.out', './' + calc_label + 'CCSDT_T1' + '.out')
@@ -631,7 +632,7 @@ end
     #Core-Valence ScalarRelativistic Step
     #NOTE: Now no longer including relativity here. Best to include relativity from the beginning in all calculations and only do the CV as correction.
     #NOTE: Too messy to manage otherwise
-    def CVSR_Step(self, current_coords, elems, reloption,calc_label, numcores, charge=None, mult=None):
+    def CVSR_Step(self, current_coords, elems, reloption,calc_label, numcores, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None):
         init_time=time.time()
         print("\nCVSR_Step")
 
@@ -642,11 +643,11 @@ end
         ccsdt_mtsmall_FC = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=self.blocks, numcores=self.numcores)
 
         #Run
-        energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.out')
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.gbw')
         
-        energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC' + '.out')
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_FC' + '.gbw')
 
@@ -658,7 +659,7 @@ end
 
 
     # Do 2 calculations with different DLPNO TCutPNO thresholds and extrapolate to PNO limit. Other threshold follow cutoff_setting
-    def PNOExtrapolationStep(self,elems=None, current_coords=None, theory=None, calc_label=None, numcores=None, charge=None, mult=None, triples=True):
+    def PNOExtrapolationStep(self,elems=None, current_coords=None, theory=None, calc_label=None, numcores=None, charge=None, mult=None, triples=True, PC=None, current_MM_coords=None, MMcharges=None):
         print("Inside PNOExtrapolationStep")
         
         cutoff_setting=self.pnoextrapolation[3]
@@ -709,14 +710,14 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 
         theory.orcablocks = PNOXblocks
         
-        theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         PNOcalcX_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOX' + '.out')
         shutil.copyfile(theory.filename+'.gbw', './' + calc_label + '_PNOX' + '.gbw')
 
         theory.orcablocks = PNOYblocks
         #ash.Singlepoint(fragment=fragment, theory=theory)
-        theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         PNOcalcY_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOY' + '.out')
         shutil.copyfile(theory.filename+'.gbw', './' + calc_label + '_PNOY' + '.gbw')
@@ -751,12 +752,13 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         return E_SCF, E_corrCCSD_final, E_corrCCT_final, E_corrCC_final
 
 
+#TODO: CV correction. More general basis set for 3d TM and ligand systems. cc-pwCVTZ-DK (M) ? 
 
-    #NOTE: TODO: PC info ??
-    #TODO: coords and elems vs. fragment issue
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, charge=None, mult=None):
+    def run(self, current_coords=None, qm_elems=None, 
+            elems=None, Grad=False, numcores=None, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA_CC_CBS_Theory-------------", BC.END)
+
 
         #Checking if charge and mult has been provided
         if charge == None or mult == None:
@@ -770,6 +772,11 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         else:
             openshell = False
 
+        if PC is True:
+            print("Pointcharge embedding in ORCA_CC_CBS_Theory is active")
+            elems=qm_elems
+            #Creating PC file. Unnecessary
+            #create_orca_pcfile("orca.pc", current_MM_coords, MMcharges)
 
         if Grad == True:
             print(BC.FAIL,"No gradient available for ORCA_CC_CBS_Theory yet! Exiting", BC.END)
@@ -835,7 +842,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                 print("="*70)
                 #Note: naming as CBS despite single-basis
                 E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corr_CBS = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', 
-                    numcores=numcores, charge=charge, mult=mult)
+                    numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
 
             #EXTRAPOLATION WITH 2 BASIS SETS
             else:
@@ -846,7 +853,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     print("Now doing Basis-2 CCSD job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[2]))
                     print("="*70)
                     E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsd_2, calc_label=calc_label+'cardinal2',
-                        numcores=numcores, charge=charge, mult=mult, triples=False) #No triples
+                        numcores=numcores, charge=charge, mult=mult, triples=False, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges) #No triples
 
                     #Medium-basis CCSDT(T) job
                     print("Next running CCSD(T) calculations to get separate triples contribution:")
@@ -856,14 +863,14 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     print("="*70)
 
                     E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', 
-                        numcores=numcores, charge=charge, mult=mult, triples=True)
+                        numcores=numcores, charge=charge, mult=mult, triples=True, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
 
                     print("="*70)
                     print("Now doing Basis-0 CCSD(T) job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[0]))
                     print("="*70)
 
                     E_SCF_0, E_corrCCSD_0, E_corrCCT_0,E_corrCC_0 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_0, calc_label=calc_label+'cardinal0', 
-                        numcores=numcores, charge=charge, mult=mult, triples=True)
+                        numcores=numcores, charge=charge, mult=mult, triples=True, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
 
                     #Taking SCF and CCSD energies from largest CCSD job (cardinal no. 2) and largest CCSD(T) job (cardinal no. 1)
                     # CCSD energies from CCSD jobs (last 2 cardinals)
@@ -898,12 +905,12 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     print("Now doing Basis-1 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[0]))
                     print("="*70)
                     E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', 
-                        numcores=numcores, charge=charge, mult=mult)
+                        numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     print("="*70)
                     print("Basis-1 job done. Now doing Basis-2 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[1]))
                     print("="*70)
                     E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2',
-                        numcores=numcores, charge=charge, mult=mult)
+                        numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                 
                     #Lists of energies
                     scf_energies = [E_SCF_1, E_SCF_2]
@@ -933,7 +940,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         else:
             #SINGLE BASIS CORRELATION JOB
             if self.singlebasis is True:
-                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                 CCSDT_1_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO, F12=self.F12)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                 shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
@@ -941,7 +948,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 
                 if self.MP2_PNO_correction is True:
                     CCSDT_1_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores, 
-                                                            charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting)
+                                                            charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                 else:
                     CCSDT_1_MP2_CPS_corr=0.0
 
@@ -964,7 +971,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     #print("CCSD_1_dict:", CCSD_1_dict)
 
                     #Doing the most expensive CCSD job
-                    self.ccsd_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+                    self.ccsd_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     CCSD_2_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsd_2.filename+'.out', DLPNO=self.DLPNO)
                     shutil.copyfile(self.ccsd_2.filename+'.out', './' + calc_label + 'CCSD_2' + '.out')
                     shutil.copyfile(self.ccsd_2.filename+'.gbw', './' + calc_label + 'CCSD_2' + '.gbw')
@@ -972,20 +979,20 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 
                     if self.MP2_PNO_correction is True:
                         CCSDT_2_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_2step", numcores, 
-                                                                charge=charge, mult=mult, basis=2, pnosetting=self.pnosetting)
+                                                                charge=charge, mult=mult, basis=2, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     else:
                         CCSDT_2_MP2_CPS_corr=0.0
 
                     print("Next running CCSD(T) calculations to get separate triples contribution:")
                     print(f"Running CCSD(T) calculations with cardinals: {self.cardinals[0]} and {self.cardinals[1]}")
                     #Doing the (T) calculations with the smaller basis
-                    self.ccsdt_0.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+                    self.ccsdt_0.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     CCSDT_0_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_0.filename+'.out', DLPNO=self.DLPNO)
                     shutil.copyfile(self.ccsdt_0.filename+'.out', './' + calc_label + 'CCSDT_0' + '.out')
                     shutil.copyfile(self.ccsdt_0.filename+'.gbw', './' + calc_label + 'CCSDT_0' + '.gbw')
                     print("CCSDT_0_dict:", CCSDT_0_dict)
 
-                    self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+                    self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
 
                     CCSDT_1_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
                     shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
@@ -994,7 +1001,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 
                     if self.MP2_PNO_correction is True:
                         CCSDT_1_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores, 
-                                                                charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting)
+                                                                charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     else:
                         CCSDT_1_MP2_CPS_corr=0.0
 
@@ -1027,7 +1034,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 
                 #REGULAR DIRECT CCSD(T) EXTRAPOLATION
                 else:
-                    self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+                    self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     CCSDT_1_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
                     shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                     shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
@@ -1035,11 +1042,11 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 
                     if self.MP2_PNO_correction is True:
                         CCSDT_1_MP2corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores, 
-                                                                charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting)
+                                                                charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     else:
                         CCSDT_1_MP2corr=0.0
 
-                    self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+                    self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     CCSDT_2_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
                     shutil.copyfile(self.ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
                     shutil.copyfile(self.ccsdt_2.filename+'.gbw', './' + calc_label + 'CCSDT_2' + '.gbw')
@@ -1047,7 +1054,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 
                     if self.MP2_PNO_correction is True:
                         CCSDT_2_MP2corr = self.MP2correction_Step(current_coords, elems,"CCSDT_2step", numcores, 
-                                                                charge=charge, mult=mult, basis=2, pnosetting=self.pnosetting)
+                                                                charge=charge, mult=mult, basis=2, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     else:
                         CCSDT_2_MP2corr=0.0
 
@@ -1081,7 +1088,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         if self.T1 == False:
             if self.T1correction == True:
                 T1energycorr = self.T1correction_Step(current_coords, elems, calc_label,numcores, charge=charge, mult=mult, 
-                    basis=self.T1corrbasis_size, pnosetting=self.T1corrpnosetting)
+                    basis=self.T1corrbasis_size, pnosetting=self.T1corrpnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                 #Adding T1 energy correction to E_corr_CBS and E_corrCCT_CBS
                 E_corr_CBS = E_corr_CBS + T1energycorr
                 E_corrCCT_CBS = E_corrCCT_CBS + T1energycorr
@@ -1108,12 +1115,12 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                 reloption=" "
                 calc_label=calc_label+"CV_"
                 print("Doing CVSR_Step with No Scalar Relativity and CV-basis: {}".format(self.CVbasis))
-                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores, charge=charge, mult=mult)
+                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
             else:
                 reloption="DKH"
                 calc_label=calc_label+"CVSR_stepDKH"
                 print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {}".format(reloption,self.CVbasis))
-                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores, charge=charge, mult=mult)
+                E_corecorr_and_SR = self.CVSR_Step(current_coords, elems, reloption,calc_label,numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         else:
             print("")
             print("Core-Valence Scalar Relativistic Correction is off!")
@@ -1446,7 +1453,7 @@ class MRCC_CC_CBS_Theory:
 
 
     #Core-Valence step
-    def CVSR_Step(self, current_coords, elems, reloption,calc_label, numcores, charge=None, mult=None):
+    def CVSR_Step(self, current_coords, elems, reloption,calc_label, numcores, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None):
         print("\nCVSR_Step")
 
         ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {}".format(self.ccsdtkeyword,self.CVbasis,self.auxbasiskeyword,self.pnokeyword,self.scfsetting,self.extrainputkeyword)
@@ -1456,11 +1463,11 @@ class MRCC_CC_CBS_Theory:
         ccsdt_mtsmall_FC = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=ccsdt_mtsmall_FC_line, orcablocks=self.blocks, numcores=self.numcores)
 
         #Run
-        energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.out')
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.gbw')
         
-        energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult)
+        energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC' + '.out')
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_FC' + '.gbw')
 
