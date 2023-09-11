@@ -4626,3 +4626,26 @@ def trim_list_of_lists(k):
     newk = list((k for k, _ in itertools.groupby(k)))
     return newk
     #return np.array(newk)
+
+
+def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
+    import openmm.app
+
+    #Funciton to merge PDB-files (e.g. protein and ligand) while preserving and updating connectivity records
+    #PDB inputfiles
+    pdb1 = openmm.app.PDBFile(pdbfile_1)
+    pdb2 = openmm.app.PDBFile(pdbfile_2)
+
+    #Create modeller object
+    modeller = openmm.app.Modeller(pdb1.topology, pdb1.positions) #Add pdbfile1
+    modeller.add(pdb2.topology, pdb2.positions) #Add pdbfile2
+    mergedTopology = modeller.topology #Merging topology files
+    mergedPositions = modeller.positions #merging ositions
+
+    #Write merged topology and positions to new PDB file
+    with open(outputname, "w") as f:
+        openmm.app.pdbfile.PDBFile.writeHeader(modeller.topology, f)
+        openmm.app.pdbfile.PDBFile.writeModel(mergedTopology, mergedPositions, f)
+        openmm.app.pdbfile.PDBFile.writeFooter(mergedTopology,f)
+
+    print("Wrote merged PDB file:", outputname)
