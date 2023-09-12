@@ -4662,7 +4662,7 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     return outputname
 
 
-def small_molecule_parameterizor(pdbfile, molfile=None, forcefield_option='GAFF', gaffversion='gaff-2.11',
+def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, forcefield_option='GAFF', gaffversion='gaff-2.11',
                                  output_xmlfile="ligand.xml",
                                 openff_file="openff-2.0.0.offxml"):
     print_line_with_mainheader("SmallMolecule Parameterizor")
@@ -4670,7 +4670,7 @@ def small_molecule_parameterizor(pdbfile, molfile=None, forcefield_option='GAFF'
     if forcefield_option=='GAFF':
         print("Using GAFF forcefield")
         print("Options:")
-    elif forcefield_option=='OpenFF':
+    elif forcefield_option=='OpenFF' or forcefield_option=='oldOpenFF':
         print("Sage and Parsely are OpenFF forcefields (see https://github.com/openforcefield/openff-forcefields)")
         print("openff_file :", openff_file)
     else:
@@ -4716,33 +4716,41 @@ def small_molecule_parameterizor(pdbfile, molfile=None, forcefield_option='GAFF'
         smi = mol.write(format="smi")
         return smi.split()[0].strip()
 
+    #How to read in file
+    if molfile:
+        print("Molfile provided")
+        molecule = Molecule.from_file(molfile)
+    elif sdffile:
+        print("SDFfile provided")
+        print("sdffile:",sdffile)
+        molecule = Molecule.from_file(sdffile)
+    else:
+        print("No molfile provided. Creating SMILES string PDB-file.")
+        print("Warning: atom charges may be strange")
+        # Create a SMILES string from PDB-file
+        smiles_string = pdb_to_smiles(pdbfile)
+
+        # Create an OpenFF Molecule object from SMILES string
+        molecule = Molecule.from_smiles(smiles_string)
+
+
+    # Create an OpenMM ForceField object
+    print("Now creating an Amber14 compatible OpenMM ForceField object")
+    forcefield = ForceField('amber/protein.ff14SB.xml', 'amber/tip3p_standard.xml', 
+                            'amber/tip3p_HFE_multivalent.xml')
+
     if forcefield_option is 'GAFF':
 
-        if molfile:
-            print("Molfile provided")
-            molecule = Molecule.from_file(molfile)
-        else:
-            print("No molfile provided. Creating SMILES string PDB-file.")
-            print("Warning: atom charges may be strange")
-            # Create a SMILES string from PDB-file
-            smiles_string = pdb_to_smiles(pdbfile)
-
-            # Create an OpenFF Molecule object from SMILES string
-            molecule = Molecule.from_smiles(smiles_string)
-        
         print("GAFF forcefield chosen")
         # Create the GAFF template generator
         gaff = GAFFTemplateGenerator(molecules=molecule, forcefield=gaffversion)
         print("GAFF version used:", gaff.gaff_version)
 
-        # Create an OpenMM ForceField object
-        forcefield = ForceField('amber/protein.ff14SB.xml', 'amber/tip3p_standard.xml', 
-                               'amber/tip3p_HFE_multivalent.xml')
         #forcefield = ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
         # Register the GAFF template generator
+        print("Now registering the GAFF template generator in Forcefieldobject")
         forcefield.registerTemplateGenerator(gaff.generator)
         #gaff.generate_residue_template(molecule)  #??
-
 
         # Parameterize an OpenMM Topology object that contains the specified molecule.
         # Forcefield will load the appropriate GAFF parameters when needed, and antechamber
@@ -4750,32 +4758,58 @@ def small_molecule_parameterizor(pdbfile, molfile=None, forcefield_option='GAFF'
 
         #Create system from PDB topology
         #pdb_obj = PDBFile(pdbfile)
+        #topology=pdb_obj.topology
         #Topology:
         #Option 1: pdb_obj.topology
         #Option 2:
         topology = openff.toolkit.topology.Topology.from_molecules([molecule])
         topology_openmm = topology.to_openmm()
+        topology=topology_openmm
 
-
-        system = forcefield.createSystem(topology_openmm)
+        #Creating OpenMM system both to check that things works and for passing to Parmed for XML writing
+        system = forcefield.createSystem(topology)
 
         # Write XML-file for ligand using Parmed
         final_xmlfilename="gaff_"+output_xmlfile
-
-        import parmed
         st = parmed.openmm.load_topology(molecule.to_topology().to_openmm(), system=system)
         w =  parmed.amber.parameters.ParameterSet.from_structure(st)
         
         params = parmed.openmm.parameters.OpenMMParameterSet.from_parameterset(w)
         params.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
-        print("Here")
         print(params.dihedral_types)
         params.write(final_xmlfilename)
 
         print("Wrote file:", final_xmlfilename)
-
-
     elif forcefield_option is 'OpenFF':
+        import openff
+
+        from openmmforcefields.generators import SMIRNOFFTemplateGenerator
+        smirnoff = SMIRNOFFTemplateGenerator(molecules=molecule)
+        
+        forcefield = ForceField('amber/protein.ff14SB.xml', 'amber/tip3p_standard.xml', 'amber/tip3p_HFE_multivalent.xml')
+        # Register the SMIRNOFF template generator
+        forcefield.registerTemplateGenerator(smirnoff.generator)
+        #forcefield = openff.toolkit.ForceField(openff_file)
+        #f_lig = openff.interchange.Interchange.from_smirnoff(force_field=forcefield, topology=molecule.to_topology())
+        
+        #Create system from PDB topology
+        #pdb_obj = PDBFile(pdbfile)
+        #topology=pdb_obj.topology
+
+        topology = openff.toolkit.topology.Topology.from_molecules([molecule])
+        topology_openmm = topology.to_openmm()
+        topology=topology_openmm
+        
+        system = forcefield.createSystem(topology)
+        st = parmed.openmm.load_topology(topology, system=system)
+        w =  parmed.amber.parameters.ParameterSet.from_structure(st)
+        ww = parmed.openmm.parameters.OpenMMParameterSet.from_parameterset(w)
+        ww.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
+
+        final_xmlfilename="openff_"+output_xmlfile
+        ww.write(final_xmlfilename)
+        print("Wrote file:", final_xmlfilename)
+    elif forcefield_option is 'oldOpenFF':
         import openff
         import openff.interchange
 
@@ -4796,6 +4830,18 @@ def small_molecule_parameterizor(pdbfile, molfile=None, forcefield_option='GAFF'
         final_xmlfilename="openff_"+output_xmlfile
         ww.write(final_xmlfilename)
         print("Wrote file:", final_xmlfilename)
+    print()
+    print()
+    print("-"*100)
+    print("A new XML-file for molecule has been created:", final_xmlfilename)
+    print("Now returning a Forcefield object containing ligand compatible with the Amber14 FF.\n")
+    print("You can feed this object into OpenMM_Modeller like this:\n\
+          OpenMM_Modeller(pdbfile=full_pdbfile, forcefield_object=forcefield")
 
-
+    print("You can feed this object into OpenMMTheory like this:\n\
+    OpenMM_Theory(pdbfile=full_pdbfile, forcefield_object=forcefield")
+    print("\nWarning: Make sure that the ligand has the same atom order in the large-system PDB-file \nas in the \
+file that was used in this function.")
+    print("Additionally the ligand requires correct CONECT record lines in that same PDB-file")
+    print("-"*100)
     return forcefield
