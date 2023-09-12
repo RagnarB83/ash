@@ -312,7 +312,14 @@ class OpenMMTheory:
         elif topoforce is True:
             if self.printlevel > 0:
                 print("Using forcefield info from topology and forcefield keyword.")
-            self.topology = topology
+            if topology is not None:
+                print("Topology provided as keyword")
+                self.topology = topology
+            else:
+                print("No topology provided as keyword")
+                print("Reading topology from PDB-file instead")
+                pdb = openmm.app.PDBFile(pdbfile)
+                self.topology = pdb.topology
             self.forcefield = forcefield
 
         elif ASH_FF_file is not None:
@@ -2095,7 +2102,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
 
 
-def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
+def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
                     ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False,
                     platform="CPU"):
@@ -2149,6 +2156,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         print("Using waterxmlfile:", waterxmlfile)
     # Forcefield options
     if forcefield is not None:
+        print("Forcefield:", forcefield)
         if forcefield == 'Amber99':
             xmlfile = "amber99sb.xml"
         elif forcefield == 'Amber96':
@@ -2179,41 +2187,41 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
             xmlfile = "amoeba2009.xml"
     elif xmlfile is not None:
         print("Using xmlfile:", xmlfile)
+    elif forcefield_object is not None:
+        pass    
     else:
-        print("You must provide a forcefield or xmlfile keyword!")
-        ashexit()
-
-    print("PDBfile:", pdbfile)
-    print("Forcefield:", forcefield)
-    print("XMfile:", xmlfile)
-    print("Water model:", watermodel)
-    print("Water xmlfile:", waterxmlfile)
-    print("pH:", pH)
-
-    print("User-provided dictionary of residue_variants:", residue_variants)
-    #Basic checks
-    if extraxmlfile is not None:
-        print("Using extra XML file:", extraxmlfile)
-        #Checking if file exists first before continuing
-        if os.path.isfile(extraxmlfile) is not True:
-            print(BC.FAIL,"File {} can not be found. Exiting.".format(extraxmlfile),BC.END)
-            ashexit()
-    if xmlfile is None:
-        print("xmlfile is none. Something went wrong. Exiting")
+        print("You must provide a forcefield name, forcefieldobject or xmlfile keywords!")
         ashexit()
 
     ############
-    # Define a forcefield based on defined xml-files
-    if extraxmlfile is None and waterxmlfile is None:
-        forcefield = openmm_app.forcefield.ForceField(xmlfile)
-    elif extraxmlfile is not None and waterxmlfile is None:
-        forcefield = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile)
-    elif extraxmlfile is None and waterxmlfile is not None:
-        forcefield = openmm_app.forcefield.ForceField(xmlfile,waterxmlfile)
-    elif extraxmlfile is not None and waterxmlfile is not None:
-        forcefield = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile,waterxmlfile)
+    # Define a forcefield if using XML-files
+    if xmlfile is not None:
+        print("XMfile:", xmlfile)
+        print("Water model:", watermodel)
+        print("Water xmlfile:", waterxmlfile)
+        #Basic checks
+        if extraxmlfile is not None:
+            print("Using extra XML file:", extraxmlfile)
+            #Checking if file exists first before continuing
+            if os.path.isfile(extraxmlfile) is not True:
+                print(BC.FAIL,"File {} can not be found. Exiting.".format(extraxmlfile),BC.END)
+                ashexit()
+        print("Now creating forcefield object")
+        if extraxmlfile is None and waterxmlfile is None:
+            forcefield_obj = openmm_app.forcefield.ForceField(xmlfile)
+        elif extraxmlfile is not None and waterxmlfile is None:
+            forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile)
+        elif extraxmlfile is None and waterxmlfile is not None:
+            forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,waterxmlfile)
+        elif extraxmlfile is not None and waterxmlfile is not None:
+            forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile,waterxmlfile)
+    else:
+        print("Using forcefield object provided")
+        forcefield_obj= forcefield_object
 
-
+    print("PDBfile:", pdbfile)
+    print("pH:", pH)
+    print("User-provided dictionary of residue_variants:", residue_variants)
     print("\nNow checking PDB-file for alternate locations, i.e. multiple occupancies:\n")
 
     
@@ -2316,7 +2324,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Warning: OpenMM Modeller will fail in this step if residue information is missing")
     print("residue_states:", residue_states)
     try:
-        modeller.addHydrogens(forcefield, pH=pH, variants=residue_states)
+        modeller.addHydrogens(forcefield_obj, pH=pH, variants=residue_states)
     except ValueError as errormessage:
         print(BC.FAIL,"\nError: OpenMM modeller.addHydrogens signalled a ValueError",BC.END)
         print("This is a common error and suggests a problem in PDB-file or missing residue information in the forcefield.")
@@ -2335,17 +2343,17 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
     print("Adding solvent, modeller_solvent_name:", modeller_solvent_name)
     if solvent_boxdims is not None:
         print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
-        modeller.addSolvent(forcefield, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
+        modeller.addSolvent(forcefield_obj, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
                                                             solvent_boxdims[2]) * openmm_unit.angstrom)
     else:
         print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
-        modeller.addSolvent(forcefield, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=modeller_solvent_name)
+        modeller.addSolvent(forcefield_obj, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=modeller_solvent_name)
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
     print_systemsize()
 
     # Ions
     print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
-    modeller.addSolvent(forcefield, neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
+    modeller.addSolvent(forcefield_obj, neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
         ionicStrength=ionicstrength * openmm_unit.molar)
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterions.pdb")
     write_pdbfile_openMM(modeller.topology, modeller.positions, "finalsystem.pdb")
@@ -2363,7 +2371,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
 
     #Creating new OpenMM object from forcefield so that we can write out system XMLfile
     print("Creating OpenMMTheory object")
-    openmmobject =OpenMMTheory(platform=platform, forcefield=forcefield, topoforce=True,
+    openmmobject =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True,
                         autoconstraints='HBonds', rigidwater=True, printlevel=0)
     #Write out System XMLfile
@@ -2395,15 +2403,16 @@ def OpenMM_Modeller(pdbfile=None, forcefield=None, xmlfile=None, waterxmlfile=No
         print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile),BC.END)
     else:
         print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile,extraxmlfile),BC.END)
-
-    print(BC.OKMAGENTA,"2. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
-        "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)\n",BC.END)
+    print(BC.OKMAGENTA,"2. Use forcefield object file :\n",BC.END, \
+        "omm = OpenMMTheory(topoforce=True, forcefield=forcefield_object, pdbfile=\"finalsystem.pdb\", topology=modeller.topology, periodic=True)",BC.END)
+    print(BC.OKMAGENTA,"3. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
+        "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)",BC.END)
     print()
     print()
     #Check system for atoms with large gradient and print warning
     #TODO: Can we avoid re-creating the omm object ?
     print("Now running single-point MM job to check for bad contacts")
-    omm =OpenMMTheory(platform=platform, forcefield=forcefield, topoforce=True,
+    omm =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True,
                         autoconstraints=None, rigidwater=False, printlevel=0)
     SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True)
@@ -4649,3 +4658,144 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
         openmm.app.pdbfile.PDBFile.writeFooter(mergedTopology,f)
 
     print("Wrote merged PDB file:", outputname)
+
+    return outputname
+
+
+def small_molecule_parameterizor(pdbfile, molfile=None, forcefield_option='GAFF', gaffversion='gaff-2.11',
+                                 output_xmlfile="ligand.xml",
+                                openff_file="openff-2.0.0.offxml"):
+    print_line_with_mainheader("SmallMolecule Parameterizor")
+    print("Forcefield options: GAFF, OpenFF")
+    if forcefield_option=='GAFF':
+        print("Using GAFF forcefield")
+        print("Options:")
+    elif forcefield_option=='OpenFF':
+        print("Sage and Parsely are OpenFF forcefields (see https://github.com/openforcefield/openff-forcefields)")
+        print("openff_file :", openff_file)
+    else:
+        print("Unknown forcefield_option")
+        ashexit()
+    #OpenMM
+    try:
+        import openmm
+        from openmm.app import ForceField
+        from openmm.app import PDBFile
+        from openmm.app import ForceField
+    except ModuleNotFoundError:
+        print("OpenMM is required but could not be imported")
+        ashexit()
+    #OpenBabel
+    try:
+        from openbabel import pybel
+    except ModuleNotFoundError:
+        print("OpenBabel is required but could not be imported")
+        print("You can install like this:    conda install --yes -c conda-forge openbabel")
+        ashexit()
+    #Parmed 
+    try:
+        import parmed
+    except ImportError:
+        print("Problem importing parmed Python library")
+        print("Parmed can be installed using pip: pip install parmed")
+        ashexit()
+    #OpenMMForcefields stuff
+    try:
+        import openff
+        from openff.toolkit.topology import Molecule
+        from openmmforcefields.generators import GAFFTemplateGenerator
+    except:
+        print("OpenFF and openmmforcefields libraries are required but could not be imported")
+        print("You can install like this:   conda install --yes -c conda-forge openmmforcefields")
+        ashexit()
+    
+
+    #Function to convert PDB-file to SMILES string
+    def pdb_to_smiles(fname: str) -> str:
+        mol = next(pybel.readfile("pdb", fname))
+        smi = mol.write(format="smi")
+        return smi.split()[0].strip()
+
+    if forcefield_option is 'GAFF':
+
+        if molfile:
+            print("Molfile provided")
+            molecule = Molecule.from_file(molfile)
+        else:
+            print("No molfile provided. Creating SMILES string PDB-file.")
+            print("Warning: atom charges may be strange")
+            # Create a SMILES string from PDB-file
+            smiles_string = pdb_to_smiles(pdbfile)
+
+            # Create an OpenFF Molecule object from SMILES string
+            molecule = Molecule.from_smiles(smiles_string)
+        
+        print("GAFF forcefield chosen")
+        # Create the GAFF template generator
+        gaff = GAFFTemplateGenerator(molecules=molecule, forcefield=gaffversion)
+        print("GAFF version used:", gaff.gaff_version)
+
+        # Create an OpenMM ForceField object
+        forcefield = ForceField('amber/protein.ff14SB.xml', 'amber/tip3p_standard.xml', 
+                               'amber/tip3p_HFE_multivalent.xml')
+        #forcefield = ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
+        # Register the GAFF template generator
+        forcefield.registerTemplateGenerator(gaff.generator)
+        #gaff.generate_residue_template(molecule)  #??
+
+
+        # Parameterize an OpenMM Topology object that contains the specified molecule.
+        # Forcefield will load the appropriate GAFF parameters when needed, and antechamber
+        # will be used to generate small molecule parameters on the fly.
+
+        #Create system from PDB topology
+        #pdb_obj = PDBFile(pdbfile)
+        #Topology:
+        #Option 1: pdb_obj.topology
+        #Option 2:
+        topology = openff.toolkit.topology.Topology.from_molecules([molecule])
+        topology_openmm = topology.to_openmm()
+
+
+        system = forcefield.createSystem(topology_openmm)
+
+        # Write XML-file for ligand using Parmed
+        final_xmlfilename="gaff_"+output_xmlfile
+
+        import parmed
+        st = parmed.openmm.load_topology(molecule.to_topology().to_openmm(), system=system)
+        w =  parmed.amber.parameters.ParameterSet.from_structure(st)
+        
+        params = parmed.openmm.parameters.OpenMMParameterSet.from_parameterset(w)
+        params.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
+        print("Here")
+        print(params.dihedral_types)
+        params.write(final_xmlfilename)
+
+        print("Wrote file:", final_xmlfilename)
+
+
+    elif forcefield_option is 'OpenFF':
+        import openff
+        import openff.interchange
+
+        #Note: When attempting to use SMILES string we get strange atom charges for benzene
+        #So forcing molfile for now
+        if molfile is None:
+            print("Error: forcefield_option OpenFF requires a molfile keyword input in addition")
+            ashexit()
+        molecule = openff.toolkit.Molecule.from_file(molfile)
+        forcefield = openff.toolkit.ForceField(openff_file)
+        f_lig = openff.interchange.Interchange.from_smirnoff(force_field=forcefield, topology=molecule.to_topology())
+
+        st = parmed.openmm.load_topology(molecule.to_topology().to_openmm(), system=f_lig.to_openmm())
+        w =  parmed.amber.parameters.ParameterSet.from_structure(st)
+        ww = parmed.openmm.parameters.OpenMMParameterSet.from_parameterset(w)
+        ww.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
+
+        final_xmlfilename="openff_"+output_xmlfile
+        ww.write(final_xmlfilename)
+        print("Wrote file:", final_xmlfilename)
+
+
+    return forcefield
