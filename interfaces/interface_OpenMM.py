@@ -3535,23 +3535,25 @@ class OpenMM_MDclass:
         print(f"A: ", a)
         print(f"B: ", b)
         print(f"C: ", c)
-
+        print("a 0", a[0])
         # Set new PBC vectors since they may have changed
         print("Updating PBC vectors.")
         # Context. Used?
         simulation.context.setPeriodicBoxVectors(a, b, c)
         # System. Necessary
         self.openmmobject.system.setDefaultPeriodicBoxVectors(a, b, c)
+        #Topology (for header in PDB-files). Necessary
+        self.openmmobject.topology.setPeriodicBoxVectors(self.state.getPeriodicBoxVectors())
 
         # Writing final frame to disk as PDB. 
-        positions=self.state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
-        write_pdbfile_openMM(self.openmmobject.topology, positions, self.trajfilename+'.pdb')
-        #with open(self.trajfilename+'.pdb', 'w') as f:
-        #    openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
-        #    openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology, 
-        #                                          self.state.getPositions(asNumpy=True).value_in_unit(
-        #                                                                openmm.unit.angstrom), f)
-        #    openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
+        #positions=self.state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
+        #write_pdbfile_openMM(self.openmmobject.topology, positions, self.trajfilename+'.pdb')
+        with open(self.trajfilename+'.pdb', 'w') as f:
+            openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
+            openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology, 
+                                                  self.state.getPositions(asNumpy=True).value_in_unit(
+                                                                        openmm.unit.angstrom), f)
+            openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
         
         # Updating ASH fragment
         newcoords = self.state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
@@ -3653,13 +3655,13 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
     print("Relaxation of periodic box size finished!\n")
 
     #Running mdtraj after each sim
-    if use_mdtraj is True:
-        print("Trying to load mdtraj for reimaging trajectory")
-        try:
-            print("Imaging trajectory")
-            MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}.pdb")
-        except ImportError:
-            print("mdtraj library could not be imported. Skipping")
+    #if use_mdtraj is True:
+    #    print("Trying to load mdtraj for reimaging trajectory")
+    #    try:
+    #        print("Imaging trajectory")
+    #        MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}.pdb")
+    #    except ImportError:
+    #        print("mdtraj library could not be imported. Skipping")
 
 
     return md.state.getPeriodicBoxVectors()
