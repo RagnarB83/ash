@@ -2090,13 +2090,13 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print("Updating coordinates in ASH fragment.")
     fragment.coords = newcoords
 
-    with open('frag-minimized.pdb', 'w') as f:
-        openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
-    with open('frag-minimized.pdb', 'a') as f:
-        openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology,
-                                                           simulation.context.getState(getPositions=True,
-                                                                                                    enforcePeriodicBox=enforcePeriodicBox).getPositions(),
-                                                           f)
+    positions=openmmobject.topology,simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions()
+    write_pdbfile_openMM(openmmobject.topology, positions, 'frag-minimized.pdb')
+    #with open('frag-minimized.pdb', 'w') as f:
+    #    openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
+    #    openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology,simulation.context.getState(getPositions=True,
+    #                        enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
+    #    openmm.app.pdbfile.PDBFile.writeFooter(openmmobject.topology,f)
 
     print('All Done!')
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
@@ -2129,9 +2129,6 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         print("You must provide a pdbfile= keyword argument")
         ashexit()
 
-    def write_pdbfile_openMM(topology, positions, filename):
-        openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
-        print("Wrote PDB-file:", filename)
 
     def print_systemsize():
         print("System size: {} atoms\n".format(len(modeller.getPositions())))
@@ -2424,7 +2421,10 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     return openmmobject, fragment
 
 
-
+def write_pdbfile_openMM(topology, positions, filename):
+    import openmm.app
+    openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
+    print("Wrote PDB-file:", filename)
 
 # Assumes all atoms present (including hydrogens)
 def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0, 70.0, 70.0],
@@ -2443,9 +2443,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
             "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
             Also see http://docs.openmm.org/latest/userguide/application.html")
 
-    def write_pdbfile_openMM(topology, positions, filename):
-        openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
-        print("Wrote PDB-file:", filename)
+
 
     def print_systemsize():
         print("System size: {} atoms\n".format(len(modeller.getPositions())))
@@ -3546,13 +3544,15 @@ class OpenMM_MDclass:
         self.openmmobject.system.setDefaultPeriodicBoxVectors(a, b, c)
 
         # Writing final frame to disk as PDB. 
-        # NOTE: Convenient for using as a topology file for mdtraj
-        with open(self.trajfilename+'.pdb', 'w') as f:
-            openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
-        with open(self.trajfilename+'.pdb', 'a') as f:
-            openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology,
-                                                                    self.state.getPositions(asNumpy=True).value_in_unit(
-                                                                        openmm.unit.angstrom), f)
+        positions=self.state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
+        write_pdbfile_openMM(self.openmmobject.topology, positions, self.trajfilename+'.pdb')
+        #with open(self.trajfilename+'.pdb', 'w') as f:
+        #    openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
+        #    openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology, 
+        #                                          self.state.getPositions(asNumpy=True).value_in_unit(
+        #                                                                openmm.unit.angstrom), f)
+        #    openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
+        
         # Updating ASH fragment
         newcoords = self.state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
         print("Updating coordinates in ASH fragment.")
@@ -3570,7 +3570,7 @@ class OpenMM_MDclass:
 def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
                           volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.004,
                           traj_frequency=100, trajfilename='relaxbox_NPT', trajectory_file_option='DCD', 
-                          coupling_frequency=1, enforcePeriodicBox=True, 
+                          coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=True,
                           dummyatomrestraint=False, solute_indices=None, barostat_frequency=25):
     """NPT simulations until volume and density stops changing
 
@@ -3651,6 +3651,17 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
         print("Density SD threshold:", density_threshold)
 
     print("Relaxation of periodic box size finished!\n")
+
+    #Running mdtraj after each sim
+    if use_mdtraj is True:
+        print("Trying to load mdtraj for reimaging trajectory")
+        try:
+            print("Imaging trajectory")
+            MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}.pdb")
+        except ImportError:
+            print("mdtraj library could not be imported. Skipping")
+
+
     return md.state.getPeriodicBoxVectors()
 
 
@@ -4652,10 +4663,11 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     mergedPositions = modeller.positions #merging ositions
 
     #Write merged topology and positions to new PDB file
-    with open(outputname, "w") as f:
-        openmm.app.pdbfile.PDBFile.writeHeader(modeller.topology, f)
-        openmm.app.pdbfile.PDBFile.writeModel(mergedTopology, mergedPositions, f)
-        openmm.app.pdbfile.PDBFile.writeFooter(mergedTopology,f)
+    write_pdbfile_openMM(modeller.topology, mergedPositions, outputname)
+    #with open(outputname, "w") as f:
+    #    openmm.app.pdbfile.PDBFile.writeHeader(modeller.topology, f)
+    #    openmm.app.pdbfile.PDBFile.writeModel(mergedTopology, mergedPositions, f)
+    #    openmm.app.pdbfile.PDBFile.writeFooter(mergedTopology,f)
 
     print("Wrote merged PDB file:", outputname)
 
@@ -4742,7 +4754,7 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
     forcefield = ForceField('amber/protein.ff14SB.xml', 'amber/tip3p_standard.xml', 
                             'amber/tip3p_HFE_multivalent.xml')
 
-    if forcefield_option is 'GAFF':
+    if forcefield_option == 'GAFF':
 
         print("GAFF forcefield chosen")
         # Create the GAFF template generator
@@ -4783,7 +4795,7 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
         params.write(final_xmlfilename)
 
         print("Wrote file:", final_xmlfilename)
-    elif forcefield_option is 'OpenFF':
+    elif forcefield_option == 'OpenFF':
         import openff
 
         from openmmforcefields.generators import SMIRNOFFTemplateGenerator
@@ -4812,7 +4824,7 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
         final_xmlfilename="openff_"+output_xmlfile
         ww.write(final_xmlfilename)
         print("Wrote file:", final_xmlfilename)
-    elif forcefield_option is 'oldOpenFF':
+    elif forcefield_option == 'oldOpenFF':
         import openff
         import openff.interchange
 
