@@ -4662,7 +4662,8 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     return outputname
 
 
-def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, forcefield_option='GAFF', gaffversion='gaff-2.11',
+def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smiles_string=None,
+                                 forcefield_option='GAFF', gaffversion='gaff-2.11',
                                  output_xmlfile="ligand.xml",
                                 openff_file="openff-2.0.0.offxml"):
     print_line_with_mainheader("SmallMolecule Parameterizor")
@@ -4724,9 +4725,11 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, force
         print("SDFfile provided")
         print("sdffile:",sdffile)
         molecule = Molecule.from_file(sdffile)
+    elif smiles_string:
+        # Create an OpenFF Molecule object from SMILES string
+        molecule = Molecule.from_smiles(smiles_string)
     else:
-        print("No molfile provided. Creating SMILES string PDB-file.")
-        print("Warning: atom charges may be strange")
+        print("No Molfile or SDFfile provided. Creating SMILES string PDB-file.")
         # Create a SMILES string from PDB-file
         smiles_string = pdb_to_smiles(pdbfile)
 
@@ -4748,7 +4751,7 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, force
 
         #forcefield = ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
         # Register the GAFF template generator
-        print("Now registering the GAFF template generator in Forcefieldobject")
+        print("Now registering the GAFF template generator in Forcefield object")
         forcefield.registerTemplateGenerator(gaff.generator)
         #gaff.generate_residue_template(molecule)  #??
 
@@ -4792,7 +4795,7 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, force
         #forcefield = openff.toolkit.ForceField(openff_file)
         #f_lig = openff.interchange.Interchange.from_smirnoff(force_field=forcefield, topology=molecule.to_topology())
         
-        #Create system from PDB topology
+        #Alternative: Create system from PDB topology
         #pdb_obj = PDBFile(pdbfile)
         #topology=pdb_obj.topology
 
@@ -4839,7 +4842,7 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, force
           OpenMM_Modeller(pdbfile=full_pdbfile, forcefield_object=forcefield")
 
     print("You can feed this object into OpenMMTheory like this:\n\
-    OpenMM_Theory(pdbfile=full_pdbfile, forcefield_object=forcefield")
+    OpenMM_Theory(pdbfile=full_pdbfile, forcefield=forcefield")
     print("\nWarning: Make sure that the ligand has the same atom order in the large-system PDB-file \nas in the \
 file that was used in this function.")
     print("Additionally the ligand requires correct CONECT record lines in that same PDB-file")
