@@ -3569,7 +3569,7 @@ class OpenMM_MDclass:
 #############################
 
 #Note: dummyatomrestraints necessary for NPT simulation when constraining atoms in space
-def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
+def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
                           volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.004,
                           traj_frequency=100, trajfilename='relaxbox_NPT', trajectory_file_option='DCD', 
                           coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=True,
@@ -3592,7 +3592,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
     """
 
 
-    print_line_with_mainheader("Periodic Box Size Relaxation")
+    print_line_with_mainheader("Periodic Box Size Equilibration")
 
     if fragment is None or theory is None:
         print("Fragment and theory required.")
@@ -3603,12 +3603,12 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
               " no data will be written during the relaxation!")
         ashexit()
 
-    print_line_with_subheader2("Relaxation Parameters")
+    print_line_with_subheader2("Equilibration Parameters")
     print("Steps per NPT cycle:", numsteps_per_NPT)
-    print(f"Step size: {timestep * 1000} fs")
+    print(f"Timestep: {timestep * 1000} fs")
     print("Density threshold:", density_threshold)
     print("Volume threshold:", volume_threshold)
-    print("Intermediate MD trajectory data file:", datafilename)
+    print("Intermediate MD data file:", datafilename)
 
     if len(theory.user_frozen_atoms) > 0:
         print("Frozen_atoms:", theory.user_frozen_atoms)
@@ -3629,6 +3629,9 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
                         barostat_frequency=barostat_frequency)
 
     while volume_std >= volume_threshold and density_std >= density_threshold:
+        print(f"Now starting new iteration with {numsteps_per_NPT} MD steps")
+        print("Note that simulation data (timestep, energy, temperature, volume,density etc.) is written to nptsim.csv instead of this outputfile")
+        print("Thus use npt.sim.csv for live monitoring")
         md.run(numsteps_per_NPT)
         steps += numsteps_per_NPT
 
@@ -3642,7 +3645,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
         volume_std = np.std(volume)
         density_std = np.std(density)
 
-        print_line_with_subheader2("Relaxation Status")
+        print_line_with_subheader2("Equilibration Status")
         print("Total steps taken:", steps)
         print(f"Total simulation time: {timestep * steps} ps")
         print("Current Volume:", volume[-1])
@@ -3652,7 +3655,7 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
         print("Volume SD threshold:", volume_threshold)
         print("Density SD threshold:", density_threshold)
 
-    print("Relaxation of periodic box size finished!\n")
+    print("Equilibration of periodic box size finished!\n")
 
     #Running mdtraj after each sim
     #if use_mdtraj is True:
@@ -3665,7 +3668,6 @@ def OpenMM_box_relaxation(fragment=None, theory=None, datafilename="nptsim.csv",
 
 
     return md.state.getPeriodicBoxVectors()
-
 
 #Kinetic energy from velocities
 def calc_kinetic_energy(velocities,dof):
@@ -3689,7 +3691,8 @@ def print_current_step_info(step,state,openmmobject):
     print("Kinetic energy:", kinetic_energy )
     print("Temperature: {}".format(temp))
     print("="*50)
-    
+
+
 
 #CHECKING PDB-FILE FOR multiple occupations.
 #Default behaviour: 

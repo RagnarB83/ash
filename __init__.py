@@ -103,9 +103,13 @@ from ash.interfaces.interface_PyMBE import PyMBETheory
 
 # MM: external and internal
 from ash.interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
-     OpenMM_box_relaxation, write_nonbonded_FF_for_ligand, solvate_small_molecule, small_molecule_parameterizor, \
+     OpenMM_box_equilibration, write_nonbonded_FF_for_ligand, solvate_small_molecule, small_molecule_parameterizor, \
         OpenMM_metadynamics, Gentle_warm_up_MD, check_gradient_for_bad_atoms, get_free_energy_from_biasfiles, \
         free_energy_from_bias_array,metadynamics_plot_data, merge_pdb_files
+
+#TODO: Temporary alias, to be deleted
+OpenMM_box_relaxation = OpenMM_box_equilibration
+
 from ash.modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy, coulombcharge, LennardJones, \
     LJCoulombv2, LJCoulomb, MMforcefield_read
 #MDtraj
