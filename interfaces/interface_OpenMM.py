@@ -10,8 +10,9 @@ import itertools
 import ash.constants
 
 ashpath = os.path.dirname(ash.__file__)
-from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile, search_list_of_lists_for_index,create_conn_dict
+from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, find_replace_string_in_file, \
+    print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile, search_list_of_lists_for_index, create_conn_dict
+
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
     change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2
@@ -75,17 +76,6 @@ class OpenMMTheory:
         #Degrees of freedom of system (accounts for frozen atoms and constraints)
         #Will be set by compute_DOF
         self.dof=None
-
-        # Load Parmed if requested
-        if use_parmed is True:
-            print("Using Parmed to read topologyfiles")
-            try:
-                import parmed
-            except ImportError:
-                print("Problem importing parmed Python library")
-                print("Make sure parmed is present in your Python.")
-                print("Parmed can be installed using pip: pip install parmed")
-                ashexit(code=9)
 
         # Autoconstraints when creating MM system: Default: None,  Options: Hbonds, AllBonds, HAng
         if autoconstraints == 'HBonds':
@@ -2164,6 +2154,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             xmlfile = "amber10.xml"
         elif forcefield == 'Amber14':
             xmlfile = "amber14-all.xml"
+            watermodel="tip3p"
             # Using specific Amber FB version of TIP3P
             if watermodel == "tip3p":
                 modeller_solvent_name="tip3p" #Used when adding solvent
@@ -2409,8 +2400,11 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     #Check system for atoms with large gradient and print warning
     #TODO: Can we avoid re-creating the omm object ?
     print("Now running single-point MM job to check for bad contacts")
+    #Setting sensible periodic cutoff to avoid error
+    periodic_nonbonded_cutoff=modeller.topology.getPeriodicBoxVectors()[0][0].value_in_unit(openmm_unit.angstrom)/2.0
+    print("periodic_nonbonded_cutoff:",periodic_nonbonded_cutoff)
     omm =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
-                        topology=modeller.topology, pdbfile=None, periodic=True,
+                        topology=modeller.topology, pdbfile=None, periodic=True, periodic_nonbonded_cutoff=periodic_nonbonded_cutoff,
                         autoconstraints=None, rigidwater=False, printlevel=0)
     SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True)
     check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=45000)
@@ -3045,13 +3039,23 @@ class OpenMM_MDclass:
             print_time_rel(module_init_time, modulename="OpenMM_MD setup", moduleindex=1)
 
     #Set sim reporters. Needs to be done after simulation is created and not modified anymore
-    def set_sim_reporters(self,simulation):
+    def set_sim_reporters(self,simulation,restart=False):
         import openmm
         #StateDataReporter
-        self.statedatareporter=openmm.app.StateDataReporter(self.dataoutputoption, self.traj_frequency, step=True, time=True,
-                                                           potentialEnergy=True, kineticEnergy=True, volume=self.volume,
-                                                           density=self.density, temperature=True, separator=',')
-        simulation.reporters.append(self.statedatareporter)
+        print("Creating StateDataReporter that will write to stdout")
+        statedatareporter_stdout=openmm.app.StateDataReporter(stdout, self.traj_frequency, step=True, time=True,
+                                                    potentialEnergy=True, kineticEnergy=True, volume=self.volume,
+                                                    density=self.density, temperature=True, separator=',')
+        simulation.reporters.append(statedatareporter_stdout)
+        #Another reporter for writing to file
+        if self.dataoutputoption != stdout:
+            print("Creating StateDataReporter that will write to file:", self.datafilename)
+            print("restart:", restart)
+            statedatareporter_file=openmm.app.StateDataReporter(self.dataoutputoption, self.traj_frequency, step=True, time=True,
+                                                            potentialEnergy=True, kineticEnergy=True, volume=self.volume,
+                                                            density=self.density, temperature=True, separator=',', append=restart)
+            simulation.reporters.append(statedatareporter_file)
+            self.dataoutputoption = open(self.datafilename,'a')
 
         #TODO: See if this can be made to work for simulations with step-by-step
         if self.trajectory_file_option == 'PDB':
@@ -3064,8 +3068,10 @@ class OpenMM_MDclass:
             # .writeModel(openmmobject.topology, self.simulation.context.getState(getPositions=True,
             # enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
             # print("Wrote PDB")
+
+            #Note: using append keyword here if restarting
             simulation.reporters.append(
-                openmm.app.DCDReporter(self.trajfilename+'.dcd', self.traj_frequency,
+                openmm.app.DCDReporter(self.trajfilename+'.dcd', self.traj_frequency, append=restart,
                                                          enforcePeriodicBox=self.enforcePeriodicBox))
         elif self.trajectory_file_option == 'NetCDFReporter':
             print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
@@ -3082,7 +3088,7 @@ class OpenMM_MDclass:
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
     def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, metadyn_settings=None, 
-            plumedinput=None, process_id=None, workerdir=None, restraints=None):
+            plumedinput=None, process_id=None, workerdir=None, restraints=None, restart=False):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
         import openmm
@@ -3191,8 +3197,12 @@ class OpenMM_MDclass:
 
 
         #Creating simulation object
-        simulation = self.openmmobject.create_simulation()
-        print("Simulation created.")
+        if restart is False:
+            print("Restart false. This is a new simulation")
+            self.simulation = self.openmmobject.create_simulation()
+            print("Simulation created.")
+        else:
+            print("Restart true. Reusing simulation object")
         print(self.openmmobject.integrator)
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
 
@@ -3213,7 +3223,7 @@ class OpenMM_MDclass:
         #Printing PBCs
         if self.openmmobject.Periodic is True:
             print("Checking Initial PBC vectors.")
-            self.state = simulation.context.getState()
+            self.state = self.simulation.context.getState()
             a, b, c = self.state.getPeriodicBoxVectors()
             print(f"A: ", a)
             print(f"B: ", b)
@@ -3230,20 +3240,31 @@ class OpenMM_MDclass:
         #    pass
 
         #Make sure file associated with StateDataReporter is open
-        if self.datafilename is not None:
-            #RB addition: Delete file after each run
-            print("Deleting old datafile:", self.datafilename)
-            try:
-                os.remove(self.datafilename)
-            except:
-                pass
-            self.dataoutputoption = open(self.datafilename,'a')
+        if restart is False:
+            print("Restart false")
+            if self.datafilename is not None:
+                #RB addition: Delete file after each run
+                print("Deleting old datafile:", self.datafilename)
+                try:
+                    os.remove(self.datafilename)
+                except:
+                    pass
+                self.dataoutputoption = open(self.datafilename,'a')
+            #Setup data and simulation reporters for simulation object
+            self.set_sim_reporters(self.simulation)
+            
+            # Setting coordinates of OpenMM object from current fragment.coords
+            self.openmmobject.set_positions(self.positions,self.simulation)
+        else:
+            print("Restart true. Reusing simulation reporters")
+            if self.datafilename is not None:
+                print("Reopening datafile:", self.datafilename)
+                #self.dataoutputoption = open(self.datafilename,'a')
+                #Setting simulation reporters
+                #Seems to be necessary to do this again after restart
+                #restart option means that StateDatareport and DCDReporter will append to files
+                self.set_sim_reporters(self.simulation, restart=True)
 
-        #Setup data and simulation reporters for simulation object
-        self.set_sim_reporters(simulation)
-
-        # Setting coordinates of OpenMM object from current fragment.coords
-        self.openmmobject.set_positions(self.positions,simulation)
         print()
 
         if self.QM_MM_object is not None:
@@ -3265,7 +3286,7 @@ class OpenMM_MDclass:
                     print("Step:", step)
                 
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
-                current_state=simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                current_state=self.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
                 print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
@@ -3319,7 +3340,7 @@ class OpenMM_MDclass:
                  #The QM_PC gradient (link-atom projected, from QM_MM object) is provided to OpenMM external force
                 CheckpointTime = time.time()
                 self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,
-                                                               self.QM_MM_object.QM_PC_gradient,simulation)
+                                                               self.QM_MM_object.QM_PC_gradient,self.simulation)
                 print_time_rel(CheckpointTime, modulename='QM/MM openMM: update custom external force', moduleindex=2, 
                                 currprintlevel=self.printlevel, currthreshold=1)
                 
@@ -3333,7 +3354,7 @@ class OpenMM_MDclass:
                 if metadynamics == True:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
-                    meta_object.step(simulation, 1)
+                    meta_object.step(self.simulation, 1)
                     print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
 
@@ -3341,7 +3362,7 @@ class OpenMM_MDclass:
                     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
                         if self.printlevel >= 2:
                             print("MTD: Writing current collective variables to disk")
-                        current_cv = meta_object.getCollectiveVariables(simulation)
+                        current_cv = meta_object.getCollectiveVariables(self.simulation)
                         if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
                             cv1scaling=10
                         elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
@@ -3359,7 +3380,7 @@ class OpenMM_MDclass:
                     print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
                 else:
-                    simulation.step(1)
+                    self.simulation.step(1)
                     print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
@@ -3389,7 +3410,7 @@ class OpenMM_MDclass:
                 if self.printlevel >= 2:
                     print("Step:", step)
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
-                current_state=simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                current_state=self.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
                 print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
@@ -3415,7 +3436,7 @@ class OpenMM_MDclass:
                 if self.printlevel >= 2:
                     print("Energy:", energy)
                 print_time_rel(checkpoint, modulename="QM run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                self.openmmobject.update_custom_external_force(self.qmcustomforce,gradient,simulation)
+                self.openmmobject.update_custom_external_force(self.qmcustomforce,gradient,self.simulation)
 
                 #Calculate energy associated with external force so that we can subtract it later
                 #TODO: take this and QM energy and add to print_current_step_info
@@ -3427,13 +3448,13 @@ class OpenMM_MDclass:
                 if metadynamics == True:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
-                    meta_object.step(simulation, 1)
+                    meta_object.step(self.simulation, 1)
 
                     #getCollectiveVariables
                     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
                         if self.printlevel >= 2:
                             print("MTD: Writing current collective variables to disk")
-                        current_cv = meta_object.getCollectiveVariables(simulation)
+                        current_cv = meta_object.getCollectiveVariables(self.simulation)
                         if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
                             cv1scaling=10
                         elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
@@ -3449,7 +3470,7 @@ class OpenMM_MDclass:
                             elif metadyn_settings["numCVs"] == 1:
                                 f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
                 else:
-                    simulation.step(1)
+                    self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
@@ -3478,7 +3499,7 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
                 print("Step:", step)
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
-                current_state=simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                current_state=self.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
                 print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
@@ -3496,19 +3517,19 @@ class OpenMM_MDclass:
                     #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                     #checkpoint = time.time()
 
-                simulation.step(1)
+                self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
         else:
             #OpenMM metadynamics
             if metadynamics == True:
                 print("Now calling OpenMM native metadynamics")
-                meta_object.step(simulation, simulation_steps)
+                meta_object.step(self.simulation, simulation_steps)
             else:
                 print("Regular classical OpenMM MD option chosen.")
                 #This is the fastest option as getState is never called in each loop iteration like above
                 # Running all steps in one go
-                simulation.step(simulation_steps)
+                self.simulation.step(simulation_steps)
 
         print_line_with_subheader2("OpenMM MD simulation finished!")
 
@@ -3529,7 +3550,7 @@ class OpenMM_MDclass:
             self.plumed_object.close()
 
         # enforcePeriodicBox=True
-        self.state = simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
+        self.state = self.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
         print("Checking PBC vectors:")
         a, b, c = self.state.getPeriodicBoxVectors()
         print(f"A: ", a)
@@ -3539,7 +3560,7 @@ class OpenMM_MDclass:
         # Set new PBC vectors since they may have changed
         print("Updating PBC vectors.")
         # Context. Used?
-        simulation.context.setPeriodicBoxVectors(a, b, c)
+        self.simulation.context.setPeriodicBoxVectors(a, b, c)
         # System. Necessary
         self.openmmobject.system.setDefaultPeriodicBoxVectors(a, b, c)
         #Topology (for header in PDB-files). Necessary
@@ -3627,13 +3648,17 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
                         datafilename=datafilename, trajectory_file_option=trajectory_file_option,
                         dummyatomrestraint=dummyatomrestraint, solute_indices=solute_indices,
                         barostat_frequency=barostat_frequency)
-
+    restart=False
     while volume_std >= volume_threshold and density_std >= density_threshold:
+        print()
+        print("-"*100)
         print(f"Now starting new iteration with {numsteps_per_NPT} MD steps")
         print("Note that simulation data (timestep, energy, temperature, volume,density etc.) is written to nptsim.csv instead of this outputfile")
         print("Thus use npt.sim.csv for live monitoring")
-        md.run(numsteps_per_NPT)
+        md.run(numsteps_per_NPT, restart=restart)
         steps += numsteps_per_NPT
+        #Setting restart to True for next iteration
+        restart=True
 
         # Read reporter file and calculate stdev
         NPTresults = read_NPT_statefile(datafilename)
@@ -3656,6 +3681,8 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         print("Density SD threshold:", density_threshold)
 
     print("Equilibration of periodic box size finished!\n")
+
+    print("Final PDB file:", relaxbox_NPT.pdb)
 
     #Running mdtraj after each sim
     #if use_mdtraj is True:
@@ -4682,7 +4709,8 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
 def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smiles_string=None,
                                  forcefield_option='GAFF', gaffversion='gaff-2.11',
                                  output_xmlfile="ligand.xml",
-                                openff_file="openff-2.0.0.offxml"):
+                                openff_file="openff-2.0.0.offxml",
+                                expected_coul14=0.8333333333333334, expected_lj14=0.5):
     print_line_with_mainheader("SmallMolecule Parameterizor")
     print("Forcefield options: GAFF, OpenFF")
     if forcefield_option=='GAFF':
@@ -4788,18 +4816,11 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
 
         #Creating OpenMM system both to check that things works and for passing to Parmed for XML writing
         system = forcefield.createSystem(topology)
-
+ 
         # Write XML-file for ligand using Parmed
         final_xmlfilename="gaff_"+output_xmlfile
-        st = parmed.openmm.load_topology(molecule.to_topology().to_openmm(), system=system)
-        w =  parmed.amber.parameters.ParameterSet.from_structure(st)
-        
-        params = parmed.openmm.parameters.OpenMMParameterSet.from_parameterset(w)
-        params.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
-        print(params.dihedral_types)
-        params.write(final_xmlfilename)
-
-        print("Wrote file:", final_xmlfilename)
+        write_xmlfile_parmed(topology,system,final_xmlfilename)
+    
     elif forcefield_option == 'OpenFF':
         import openff
 
@@ -4819,49 +4840,192 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
         topology = openff.toolkit.topology.Topology.from_molecules([molecule])
         topology_openmm = topology.to_openmm()
         topology=topology_openmm
-        
+
+        #Creating OpenMM system both to check that things works and for passing to Parmed for XML writing
         system = forcefield.createSystem(topology)
-        st = parmed.openmm.load_topology(topology, system=system)
-        w =  parmed.amber.parameters.ParameterSet.from_structure(st)
-        ww = parmed.openmm.parameters.OpenMMParameterSet.from_parameterset(w)
-        ww.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
 
+        # Write XML-file for ligand using Parmed
         final_xmlfilename="openff_"+output_xmlfile
-        ww.write(final_xmlfilename)
-        print("Wrote file:", final_xmlfilename)
-    elif forcefield_option == 'oldOpenFF':
-        import openff
-        import openff.interchange
+        write_xmlfile_parmed(topology,system,final_xmlfilename)
 
-        #Note: When attempting to use SMILES string we get strange atom charges for benzene
-        #So forcing molfile for now
-        if molfile is None:
-            print("Error: forcefield_option OpenFF requires a molfile keyword input in addition")
-            ashexit()
-        molecule = openff.toolkit.Molecule.from_file(molfile)
-        forcefield = openff.toolkit.ForceField(openff_file)
-        f_lig = openff.interchange.Interchange.from_smirnoff(force_field=forcefield, topology=molecule.to_topology())
-
-        st = parmed.openmm.load_topology(molecule.to_topology().to_openmm(), system=f_lig.to_openmm())
-        w =  parmed.amber.parameters.ParameterSet.from_structure(st)
-        ww = parmed.openmm.parameters.OpenMMParameterSet.from_parameterset(w)
-        ww.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
-
-        final_xmlfilename="openff_"+output_xmlfile
-        ww.write(final_xmlfilename)
-        print("Wrote file:", final_xmlfilename)
+    
+    #Now we have created an OpenMM system based on ligand Forcefield and created an XML-file
     print()
     print()
     print("-"*100)
+    #Modifying XML-files
     print("A new XML-file for molecule has been created:", final_xmlfilename)
+    print(f"Modifying 1-4 scaling parameters in XML-file to match Amber14 FF (coul14={expected_coul14}  and lj14={expected_lj14})")
+    find_replace_string_in_file(final_xmlfilename,f"coulomb14scale=\"1.0\"", f"coulomb14scale=\"{expected_coul14}\"")
+    find_replace_string_in_file(final_xmlfilename,f"lj14scale=\"1.0\"", f"lj14scale=\"{expected_lj14}\"")
+    
+    print("Now checking whether the 1-4 scaling is consistent in the XML-file vs. OpenMM system")
+    system_from_xml = create_sys_and_check_14_scaling_nonbonding(topology=topology, xml_file=final_xmlfilename, expected_coul14=expected_coul14, 
+                                expected_lj14 = expected_lj14)
+    coulomb_xml, lj_xml = calc_nonbonding_energy_exceptions(system=system_from_xml)
+
+    coulomb_sys, lj_sys = calc_nonbonding_energy_exceptions(system=system)
+    print()
+    print("Coulomb_xml:", coulomb_xml)
+    print("LJ_xml:", lj_xml)
+    print()
+    print("Coulomb_sys:", coulomb_sys)
+    print("LJ_sys:", lj_sys)
+    print()
+    if abs(coulomb_xml - coulomb_sys) > 1e-5:
+        print("abs(coulomb_xml - coulomb_sys):", abs(coulomb_xml - coulomb_sys))
+        print("Problem with Coulomb-14 scaling in XML-file")
+        ashexit()
+    if abs(lj_xml - lj_sys) > 1e-5:
+        print("abs(lj_xml - lj_system):", abs(lj_xml - lj_sys))
+        print("Problem with LJ-14 scaling in XML-file")
+        ashexit()
+    #
     print("Now returning a Forcefield object containing ligand compatible with the Amber14 FF.\n")
     print("You can feed this object into OpenMM_Modeller like this:\n\
           OpenMM_Modeller(pdbfile=full_pdbfile, forcefield_object=forcefield")
 
-    print("You can feed this object into OpenMMTheory like this:\n\
+    print("or feed it into OpenMMTheory like this:\n\
     OpenMM_Theory(pdbfile=full_pdbfile, forcefield=forcefield")
+    print()
+    print(f"The ligand XML-file {final_xmlfilename} can also be used together with an Amber14 forcefield.\n")
+    print(f"You can used it in OpenMM_Modeller like this:\n\
+          OpenMM_Modeller(pdbfile=full_pdbfile, forcefield=\'Amber14\', extraxmlfile=\"{final_xmlfilename}\")")
+
+    print(f"or in OpenMMTheory like this:\n\
+    OpenMMTheory(xmlfiles=[\"amber14-all.xml\", \"amber14/tip3pfb.xml\", \"{final_xmlfilename}\"]")
+    print()
     print("\nWarning: Make sure that the ligand has the same atom order in the large-system PDB-file \nas in the \
 file that was used in this function.")
     print("Additionally the ligand requires correct CONECT record lines in that same PDB-file")
     print("-"*100)
     return forcefield
+
+#Function to create system from XML-file and check whether the 14 scaling in the OpenMM system is consistent with expected scaling
+def create_sys_and_check_14_scaling_nonbonding(topology=None, xml_file=None, system=None, expected_coul14=0.833333, expected_lj14 = 0.5):
+    import openmm
+    import openmm.app
+    #exit()
+    print("Creating system from XML-file and topology")
+    if topology == None:
+        print("Error: topology is required if system is not provided")
+        ashexit()
+    if xml_file == None:
+        print("Error: xml_file is required if system is not provided")
+        ashexit()
+    forcefield_from_xmlfile = openmm.app.ForceField(xml_file)
+    system_from_xmlfile = forcefield_from_xmlfile.createSystem(topology)
+
+    #Find NonbondedForce in system_from_xmlfile
+    for force in system_from_xmlfile.getForces():
+        if isinstance(force, openmm.NonbondedForce):
+            force_from_xmlfile = force
+            break
+
+    #Looping over exceptions
+    for exception_index in range(force.getNumExceptions()):
+        #Get the pair parameters
+        atom1, atom2, qq, sigma, epsilon = force.getExceptionParameters(exception_index)
+        # if 0.0 then should be 1-2 or 1-3 interaction
+        if epsilon._value == 0.0:
+            continue
+        #Get the particle parameters in the pair
+        q1, sigma1, epsilon1 = force.getParticleParameters(atom1)
+        q2, sigma2, epsilon2 = force.getParticleParameters(atom2)
+
+        #Calculate expected value based on expected scaling factors
+        expected_qq = expected_coul14 * q1 * q2
+        expected_epsilon = expected_lj14 * (epsilon1 * epsilon2) ** 0.5
+
+
+        #Checking deviations
+        if abs(qq - expected_qq).value_in_unit(openmm.unit.elementary_charge**2) > 1e-5:
+            print("Problem with LJ-14 scaling")
+            print("Actual qq:", qq)
+            print("expected_qq:", expected_qq)
+            print("expected_epsilon:", expected_epsilon)
+            print(f"q1: {q1} sigma1:{sigma1} epsilon1:{epsilon1}")
+            print(f"q2: {q2} sigma2:{sigma2} epsilon2:{epsilon2}")
+            #ashexit()
+        if abs(epsilon - expected_epsilon).value_in_unit(openmm.unit.kilojoule_per_mole) > 1e-5:
+            print("Problem with LJ-14 scaling")
+            print("Actual epsilon:", epsilon)
+            print("expected_qq:", expected_qq)
+            print("expected_epsilon:", expected_epsilon)
+            #ashexit()
+        
+        return system_from_xmlfile
+
+#Function to check the nonbonded energy of exceptions of an OpenMM system
+def calc_nonbonding_energy_exceptions(system=None):
+    import openmm
+    import openmm.app
+
+    #Find NonbondedForce in system
+    for force in system.getForces():
+        if isinstance(force, openmm.NonbondedForce):
+            break
+    #Coulomb and LJ energies
+    coulomb_energy = 0.0
+    lj_energy = 0.0
+
+    #Looping over exceptions
+    for exception_index in range(force.getNumExceptions()):
+        #Get the pair parameters
+        atom1, atom2, qq, sigma, epsilon = force.getExceptionParameters(exception_index)
+        # if 0.0 then should be 1-2 or 1-3 interaction
+        if epsilon._value == 0.0:
+            continue
+
+        coulomb_energy+=qq.value_in_unit(openmm.unit.elementary_charge**2)
+        lj_energy+=epsilon.value_in_unit(openmm.unit.kilojoule_per_mole)
+
+        #Return Coulomb energy and LJ energy
+        return coulomb_energy, lj_energy
+
+#Function to calculate the total nonbonded energy  an OpenMM system
+def calc_total_nonbonding_energy(system):
+    import openmm
+    import openmm.app
+
+    #Find NonbondedForce in system
+    for force in system.getForces():
+        if isinstance(force, openmm.NonbondedForce):
+            break
+    #Coulomb and LJ energies
+    coulomb_energy = 0.0
+    lj_energy = 0.0
+
+    #Looping over exceptions
+    for exception_index in range(force.getNumExceptions()):
+        #Get the pair parameters
+        atom1, atom2, qq, sigma, epsilon = force.getExceptionParameters(exception_index)
+        # if 0.0 then should be 1-2 or 1-3 interaction
+        if epsilon._value == 0.0:
+            continue
+
+        coulomb_energy+=qq.value_in_unit(openmm.unit.elementary_charge**2)
+        lj_energy+=epsilon.value_in_unit(openmm.unit.kilojoule_per_mole)
+
+        #Return Coulomb energy and LJ energy
+        return coulomb_energy, lj_energy
+
+
+#Function that uses parmed to write and XML-file topology and OpenMM system
+#Warning: Nonbonded 14 scaling requires modification after writing
+def write_xmlfile_parmed(topology,system,xmlfilename):
+    # Load Parmed
+    print("Using Parmed to read topologyfiles")
+    try:
+        import parmed
+    except ImportError:
+        print("Problem importing parmed Python library")
+        print("Make sure parmed is present in your Python.")
+        print("Parmed can be installed using pip: pip install parmed")
+        ashexit(code=9)
+    st = parmed.openmm.load_topology(topology, system=system)
+    w =  parmed.amber.parameters.ParameterSet.from_structure(st)
+    ww = parmed.openmm.parameters.OpenMMParameterSet.from_parameterset(w)
+    ww.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
+    ww.write(xmlfilename)
+    print("Wrote XML-file:", xmlfilename)

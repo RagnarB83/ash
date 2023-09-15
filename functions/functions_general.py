@@ -207,6 +207,16 @@ def pygrep2(string, file, print_output=False):
         print(*l)
     return l
 
+#Simple function to do find and replace string in file
+def find_replace_string_in_file(file,findstring,replstring):
+    with open(file, 'r') as f:
+        filedata = f.read()
+    # Replace the target string
+    filedata = filedata.replace(findstring, replstring)
+    # Write the file out again
+    with open(file, 'w') as f:
+        f.write(filedata)
+
 
 # Give difference of two lists, sorted. List1: Bigger list
 def listdiff(list1, list2):
