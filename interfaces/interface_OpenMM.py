@@ -2749,7 +2749,12 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
     else:
         print("Either simulation_steps or simulation_time need to be defined (not both).")
         ashexit()
-
+    
+    #Now calling finalize_simulation: writing final files etc.
+    self.finalize_simulation()
+    
+    #TODO: Return an ASH Results object here?
+    return
 
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.004,
@@ -2913,14 +2918,14 @@ class OpenMM_MDclass:
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
         # Set up system with chosen barostat, thermostat, integrator
         if barostat is not None:
-            print("Attempting to add barostat.")
+            print("Checking for barostat")
             if "MonteCarloBarostat" not in forceclassnames:
-                print("Adding barostat.")
                 montecarlobarostat=openmm.MonteCarloBarostat(self.pressure * openmm.unit.bar,
                                                                 self.temperature * openmm.unit.kelvin)
                 #Setting barostat frequency to chosen value or default (25)
                 montecarlobarostat.setFrequency(self.barostat_frequency)
                 self.openmmobject.system.addForce(montecarlobarostat)
+                print("Barostat added")
             else:
                 print("Barostat already present. Skipping.")
             # print("after barostat added")
@@ -2961,7 +2966,7 @@ class OpenMM_MDclass:
         self.datafilename=datafilename
         if self.datafilename is not None:
             #Remove old file
-            #Added because of problems (19 May 2023 by CVS) in read NPT data file (OpenMM box relaxation) as header is printed each time
+            #Added because of problems (19 May 2023 by CVS) in read NPT data file (OpenMM box equilibration) as header is printed each time
             #Now removing file before starting. Possibly better to put this elsewhere as we may sometimes
             # want to keep running simulation while appending to datafile
             try:
@@ -3203,7 +3208,6 @@ class OpenMM_MDclass:
             print("Simulation created.")
         else:
             print("Restart true. Reusing simulation object")
-        print(self.openmmobject.integrator)
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
 
         ##################################
@@ -3532,24 +3536,28 @@ class OpenMM_MDclass:
                 self.simulation.step(simulation_steps)
 
         print_line_with_subheader2("OpenMM MD simulation finished!")
+        print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
 
-        
-        #Delete dummyatoms if defined
-        #NOTE: probably not possible
-        #if self.dummyatomrestraint is True:
-        #    print("Removing dummy atom from OpenMM topology and system")
-        #    self.openmmobject.remove_dummy_atom()
+        return
 
+    def finalize_simulation(self):
+        print("Finalizing simulation data")
+        import openmm.app
+
+        #######################
+        # CLOSING OPEN FILES
+        #######################
         #Close Statadatareporter file if open
         if self.datafilename != None:
             self.dataoutputoption.close()
-
 
         # Close Plumed also if active. Flushes HILLS/COLVAR etc.
         if self.plumed_object is not None:
             self.plumed_object.close()
 
-        # enforcePeriodicBox=True
+        ##########################
+        #PERIODIC BOX VECTORS
+        ##########################
         self.state = self.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
         print("Checking PBC vectors:")
         a, b, c = self.state.getPeriodicBoxVectors()
@@ -3558,7 +3566,7 @@ class OpenMM_MDclass:
         print(f"C: ", c)
         print("a 0", a[0])
         # Set new PBC vectors since they may have changed
-        print("Updating PBC vectors.")
+        print("Updating PBC vectors in simulation.context, OpenMM system and OpenMM topology")
         # Context. Used?
         self.simulation.context.setPeriodicBoxVectors(a, b, c)
         # System. Necessary
@@ -3566,9 +3574,9 @@ class OpenMM_MDclass:
         #Topology (for header in PDB-files). Necessary
         self.openmmobject.topology.setPeriodicBoxVectors(self.state.getPeriodicBoxVectors())
 
+        ########################################
         # Writing final frame to disk as PDB. 
-        #positions=self.state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
-        #write_pdbfile_openMM(self.openmmobject.topology, positions, self.trajfilename+'.pdb')
+        ########################################
         with open(self.trajfilename+'.pdb', 'w') as f:
             openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
             openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology, 
@@ -3576,14 +3584,15 @@ class OpenMM_MDclass:
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
         
+        ########################
         # Updating ASH fragment
+        ########################
         newcoords = self.state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
         print("Updating coordinates in ASH fragment.")
         self.fragment.coords = newcoords
         #Updating positions array also in case we call run again
         self.positions = newcoords
-        print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
-        return
+        
 
 #############################
 #  Multi-step MD protocols  #
@@ -3592,8 +3601,8 @@ class OpenMM_MDclass:
 #Note: dummyatomrestraints necessary for NPT simulation when constraining atoms in space
 def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
                           volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.004,
-                          traj_frequency=100, trajfilename='relaxbox_NPT', trajectory_file_option='DCD', 
-                          coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=True,
+                          traj_frequency=100, trajfilename='equilibration_NPT', trajectory_file_option='DCD', 
+                          coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=False,
                           dummyatomrestraint=False, solute_indices=None, barostat_frequency=25):
     """NPT simulations until volume and density stops changing
 
@@ -3621,7 +3630,7 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
 
     if numsteps_per_NPT < traj_frequency:
         print("Parameter 'numpsteps_per_NPT' must be greater than 'traj_frequency', otherwise"
-              " no data will be written during the relaxation!")
+              " no data will be written during the equilibration!")
         ashexit()
 
     print_line_with_subheader2("Equilibration Parameters")
@@ -3653,16 +3662,20 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         print()
         print("-"*100)
         print(f"Now starting new iteration with {numsteps_per_NPT} MD steps")
-        print("Note that simulation data (timestep, energy, temperature, volume,density etc.) is written to nptsim.csv instead of this outputfile")
-        print("Thus use npt.sim.csv for live monitoring")
-        md.run(numsteps_per_NPT, restart=restart)
+        print(f"Simulation data (timestep, energy, temperature, volume,density etc.) is also written to {datafilename}")
+        if restart is False:
+            #Call MD object run method for the first
+            md.run(numsteps_per_NPT, restart=restart)
+            #Setting restart to True for next iteration
+            restart=True
+        else:
+            #Easier and safer to continue by call simulation step directly instead of md.run
+            md.simulation.step(numsteps_per_NPT)
+        
         steps += numsteps_per_NPT
-        #Setting restart to True for next iteration
-        restart=True
 
         # Read reporter file and calculate stdev
         NPTresults = read_NPT_statefile(datafilename)
-
         volume = NPTresults["volume"][-traj_frequency:]
         density = NPTresults["density"][-traj_frequency:]
         # volume = volume[-traj_frequency:]
@@ -3674,24 +3687,29 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         print("Total steps taken:", steps)
         print(f"Total simulation time: {timestep * steps} ps")
         print("Current Volume:", volume[-1])
-        print("Current Volume SD:", volume_std)
-        print("Current Density", density[-1])
-        print("Current Density SD", density_std)
-        print("Volume SD threshold:", volume_threshold)
-        print("Density SD threshold:", density_threshold)
+        print(f"Current Density: {density[-1]}")
+        print()
+        print(f"Current Volume SD: {volume_std}   (threshold: {volume_threshold})")
+        print(f"Current Density SD: {density_std} (threshold: {density_threshold})")
+        #print("Volume SD threshold:", volume_threshold)
+        #print("Density SD threshold:", density_threshold)
 
-    print("Equilibration of periodic box size finished!\n")
+    print(f"Equilibration of periodic box size finished after {steps} and {timestep * steps} ps !\n")
+    #Finalizing simulation (writes and updates files)
+    md.finalize_simulation()
 
-    print("Final PDB file:", relaxbox_NPT.pdb)
 
-    #Running mdtraj after each sim
-    #if use_mdtraj is True:
-    #    print("Trying to load mdtraj for reimaging trajectory")
-    #    try:
-    #        print("Imaging trajectory")
-    #        MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}.pdb")
-    #    except ImportError:
-    #        print("mdtraj library could not be imported. Skipping")
+    print(f"Final PDB file: {trajfilename}.pdb")
+    print(f"NPT trajectory: {trajfilename}.{trajectory_file_option.lower()}")
+
+    #Running mdtraj 
+    if use_mdtraj is True:
+        print("Trying to load mdtraj for reimaging trajectory")
+        try:
+            print("Imaging trajectory")
+            MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}.pdb")
+        except ImportError:
+            print("mdtraj library could not be imported. Skipping")
 
 
     return md.state.getPeriodicBoxVectors()
@@ -4061,6 +4079,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
         simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, metadyn_settings=metadyn_settings,
                             restraints=restraints)
     print("Metadynamics simulation done")
+
+    #Finalizing simulation (writes and updates files)
+    md.finalize_simulation()
 
     #Data plotting
     if use_plumed is False:
@@ -4716,9 +4737,10 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
     if forcefield_option=='GAFF':
         print("Using GAFF forcefield")
         print("Options:")
-    elif forcefield_option=='OpenFF' or forcefield_option=='oldOpenFF':
-        print("Sage and Parsely are OpenFF forcefields (see https://github.com/openforcefield/openff-forcefields)")
-        print("openff_file :", openff_file)
+    elif forcefield_option=='OpenFF':
+        print("Using OpenFF forcefield")
+        print("OpenFF forcefield options are Sage (version 2.Y.Z) and Parsley (version 1.Y.Z)  (see https://github.com/openforcefield/openff-forcefields)")
+        print("Chosen forcefield is:", openff_file)
     else:
         print("Unknown forcefield_option")
         ashexit()
@@ -4731,13 +4753,7 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
     except ModuleNotFoundError:
         print("OpenMM is required but could not be imported")
         ashexit()
-    #OpenBabel
-    try:
-        from openbabel import pybel
-    except ModuleNotFoundError:
-        print("OpenBabel is required but could not be imported")
-        print("You can install like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
+
     #Parmed 
     try:
         import parmed
@@ -4755,12 +4771,6 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
         print("You can install like this:   conda install --yes -c conda-forge openmmforcefields")
         ashexit()
     
-
-    #Function to convert PDB-file to SMILES string
-    def pdb_to_smiles(fname: str) -> str:
-        mol = next(pybel.readfile("pdb", fname))
-        smi = mol.write(format="smi")
-        return smi.split()[0].strip()
 
     #How to read in file
     if molfile:
@@ -4886,14 +4896,14 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
           OpenMM_Modeller(pdbfile=full_pdbfile, forcefield_object=forcefield")
 
     print("or feed it into OpenMMTheory like this:\n\
-    OpenMM_Theory(pdbfile=full_pdbfile, forcefield=forcefield")
+          OpenMM_Theory(pdbfile=full_pdbfile, forcefield=forcefield")
     print()
-    print(f"The ligand XML-file {final_xmlfilename} can also be used together with an Amber14 forcefield.\n")
-    print(f"You can used it in OpenMM_Modeller like this:\n\
+    print(f"The XML-file just created: {final_xmlfilename} can also be used directly (recommended only together with Amber14)\n")
+    print(f"You can use it in OpenMM_Modeller like this:\n\
           OpenMM_Modeller(pdbfile=full_pdbfile, forcefield=\'Amber14\', extraxmlfile=\"{final_xmlfilename}\")")
 
     print(f"or in OpenMMTheory like this:\n\
-    OpenMMTheory(xmlfiles=[\"amber14-all.xml\", \"amber14/tip3pfb.xml\", \"{final_xmlfilename}\"]")
+          OpenMMTheory(xmlfiles=[\"amber14-all.xml\", \"amber14/tip3pfb.xml\", \"{final_xmlfilename}\"]")
     print()
     print("\nWarning: Make sure that the ligand has the same atom order in the large-system PDB-file \nas in the \
 file that was used in this function.")
@@ -5029,3 +5039,42 @@ def write_xmlfile_parmed(topology,system,xmlfilename):
     ww.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
     ww.write(xmlfilename)
     print("Wrote XML-file:", xmlfilename)
+
+#Function to convert Mol file to PDB-file
+def mol_to_pdb(file):
+    #OpenBabel
+    try:
+        from openbabel import pybel
+    except ModuleNotFoundError:
+        print("OpenBabel is required but could not be imported")
+        print("You can install like this:    conda install --yes -c conda-forge openbabel")
+        ashexit()
+    mol = next(pybel.readfile("mol", file))
+    mol.write(format='pdb', filename=os.path.splitext(file)[0]+'.pdb', overwrite=True)
+    return os.path.splitext(file)[0]+'.pdb'
+
+#Function to read in PDB-file and write new one with CONECT lines (geometry needs to be sensible)
+def writepdb_with_connectivity(file):
+    #OpenBabel
+    try:
+        from openbabel import pybel
+    except ModuleNotFoundError:
+        print("OpenBabel is required but could not be imported")
+        print("You can install like this:    conda install --yes -c conda-forge openbabel")
+        ashexit()
+    mol = next(pybel.readfile("pdb", file))
+    mol.write(format='pdb', filename=os.path.splitext(file)[0]+'.pdb', overwrite=True)
+    return os.path.splitext(file)[0]+'_withcon.pdb'
+
+#Function to convert PDB-file to SMILES string
+def pdb_to_smiles(fname: str) -> str:
+    #OpenBabel
+    try:
+        from openbabel import pybel
+    except ModuleNotFoundError:
+        print("OpenBabel is required but could not be imported")
+        print("You can install like this:    conda install --yes -c conda-forge openbabel")
+        ashexit()
+        mol = next(pybel.readfile("pdb", fname))
+        smi = mol.write(format="smi")
+        return smi.split()[0].strip()

@@ -1969,7 +1969,7 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
 
             pfile.write(line + '\n')
     print("Wrote PDB file: ", outputname + '.pdb')
-
+    return outputname + '.pdb'
 
 # Write PDBfile (dummy version) for PyFrame
 # NOTE: Deprecated???
