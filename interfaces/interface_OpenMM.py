@@ -2751,7 +2751,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
         ashexit()
     
     #Now calling finalize_simulation: writing final files etc.
-    self.finalize_simulation()
+    md.finalize_simulation()
     
     #TODO: Return an ASH Results object here?
     return
