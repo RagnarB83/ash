@@ -3600,6 +3600,7 @@ class OpenMM_MDclass:
 
 #Note: dummyatomrestraints necessary for NPT simulation when constraining atoms in space
 def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
+                             max_NPT_cycles=10, 
                           volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.004,
                           traj_frequency=100, trajfilename='equilibration_NPT', trajectory_file_option='DCD', 
                           coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=False,
@@ -3633,12 +3634,20 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
               " no data will be written during the equilibration!")
         ashexit()
 
+    numpoints_for_convergence_check=numsteps_per_NPT//traj_frequency
+
     print_line_with_subheader2("Equilibration Parameters")
     print("Steps per NPT cycle:", numsteps_per_NPT)
+    print("Max NPT cycles:", max_NPT_cycles)
     print(f"Timestep: {timestep * 1000} fs")
     print("Density threshold:", density_threshold)
     print("Volume threshold:", volume_threshold)
     print("Intermediate MD data file:", datafilename)
+    print("Number of datapoints used for convergence check in each cycle:", numpoints_for_convergence_check)
+
+    #Number of points used in each cycle to calculate stdev
+
+    
 
     if len(theory.user_frozen_atoms) > 0:
         print("Frozen_atoms:", theory.user_frozen_atoms)
@@ -3658,10 +3667,11 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
                         dummyatomrestraint=dummyatomrestraint, solute_indices=solute_indices,
                         barostat_frequency=barostat_frequency)
     restart=False
-    while volume_std >= volume_threshold and density_std >= density_threshold:
+    #while volume_std >= volume_threshold and density_std >= density_threshold:
+    for i in range(max_NPT_cycles):
         print()
         print("-"*100)
-        print(f"Now starting new iteration with {numsteps_per_NPT} MD steps")
+        print(f"Now starting  NPT cycle {i} with {numsteps_per_NPT} MD steps")
         print(f"Simulation data (timestep, energy, temperature, volume,density etc.) is also written to {datafilename}")
         if restart is False:
             #Call MD object run method for the first
@@ -3676,10 +3686,11 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
 
         # Read reporter file and calculate stdev
         NPTresults = read_NPT_statefile(datafilename)
-        volume = NPTresults["volume"][-traj_frequency:]
-        density = NPTresults["density"][-traj_frequency:]
-        # volume = volume[-traj_frequency:]
-        # density = density[-traj_frequency:]
+        volume = NPTresults["volume"][-numpoints_for_convergence_check:]
+        density = NPTresults["density"][-numpoints_for_convergence_check:]
+        print("Total number of volume datapoints:", len(volume))
+        print("Total number of density datapoints:", len(density))
+        print("Number of datapoints (last) used for convergence check in each cycle:", numpoints_for_convergence_check)
         volume_std = np.std(volume)
         density_std = np.std(density)
 
@@ -3691,10 +3702,17 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         print()
         print(f"Current Volume SD: {volume_std}   (threshold: {volume_threshold})")
         print(f"Current Density SD: {density_std} (threshold: {density_threshold})")
-        #print("Volume SD threshold:", volume_threshold)
-        #print("Density SD threshold:", density_threshold)
 
-    print(f"Equilibration of periodic box size finished after {steps} and {timestep * steps} ps !\n")
+        if volume_std < volume_threshold and density_std < density_threshold:
+            print(f"Equilibration of periodic box finished after {steps} and {timestep * steps} ps !\n")
+            break
+        
+        if i == max_NPT_cycles-1:
+            print(f"Warning: Max NPT cycles reached ({max_NPT_cycles}). Total steps taken: {steps} and {timestep * steps} ps !\n")
+            print("Warning: the NPT simulation may not be properly converged")
+            break
+
+    
     #Finalizing simulation (writes and updates files)
     md.finalize_simulation()
 
