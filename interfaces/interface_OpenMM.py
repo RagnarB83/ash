@@ -15,7 +15,8 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel, listdif
 
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
-    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2
+    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2, \
+    pdb_to_smiles,xyz_to_pdb_with_connectivity,writepdb_with_connectivity,mol_to_pdb
 from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
 from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
@@ -35,7 +36,7 @@ class OpenMMTheory:
                  xmlsystemfile=None,
                  do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
-                 periodic_nonbonded_cutoff=12.0, dispersion_correction=True,
+                 periodic_nonbonded_cutoff=None, dispersion_correction=True,
                  switching_function_distance=10.0,
                  ewalderrortolerance=5e-4, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
@@ -445,11 +446,20 @@ class OpenMMTheory:
         if self.system is None:
             # Periodic or non-periodic ystem
             if self.Periodic is True:
+                print_line_with_subheader1("Setting up periodicity.")
+
+                #Determining nonbonded cutoff strategy
+                #PME is hard-coded so we must specify a cutoff
+                if periodic_nonbonded_cutoff is None:
+                    if self.printlevel > 0:
+                        print("No periodic_nonbonded_cutoff provided. Determining cutoff value based on approx 1/2 box size.")
+                        print("Warning: for NPT simulations this may be too large")
+                    periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
+                    print("periodic_nonbonded_cutoff:",periodic_nonbonded_cutoff)
+
                 if self.printlevel > 0:
-                    print_line_with_subheader1("Setting up periodicity.")
                     print("Nonbonded cutoff is {} Angstrom.".format(periodic_nonbonded_cutoff))
                 # Parameters here are based on OpenMM DHFR example
-
                 if CHARMMfiles is True:
                     if self.printlevel > 0:
                         print("Using CHARMM files.")
@@ -528,10 +538,6 @@ class OpenMMTheory:
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=periodic_nonbonded_cutoff * openmm.unit.angstroms)
                     # switchDistance=switching_function_distance*self.unit.angstroms
-
-                # print("self.system dict", self.system.__dict__)
-
-                # TODO: Customnonbonded force option. Currently disabled
 
                 if PBCvectors is not None:
                     # pbcvectors_mod = PBCvectors
@@ -961,6 +967,40 @@ class OpenMMTheory:
         self.system.addForce(new_restraints)
 
     # TODO: Angleconstraints and Dihedral restraints
+    def add_funnel_restraint(self, host_index, guest_index,
+        k_xy=10.0, z_cc=11.0, alpha=35.0, R_cylinder=1.0, force_group=10):
+            import openmm
+            print("Adding funnel restraint potential")
+        # Funnel potential string expression
+            funnel = openmm.CustomCentroidBondForce(
+                2,
+                "U_funnel + U_cylinder;"
+                "U_funnel = step(z_cc - abs(r_z))*step(r_xy - R_funnel)*Wall;"
+                "U_cylinder = step(abs(r_z) - z_cc)*step(r_xy - R_cylinder)*Wall;"
+                "Wall = 0.5 * k_xy * r_xy^2;"
+                "R_funnel = (z_cc-abs(r_z))*tan(alpha) + R_cylinder;"
+                "r_xy = sqrt((x2 - x1)^2 + (y2 - y1)^2);"
+                "r_z = z2 - z1;",
+            )
+            funnel.setUsesPeriodicBoundaryConditions(False)
+            funnel.setForceGroup(force_group)
+
+            # Funnel parameters
+            funnel.addGlobalParameter("k_xy", k_xy)
+            funnel.addGlobalParameter("z_cc", z_cc)
+            funnel.addGlobalParameter("alpha", alpha)
+            funnel.addGlobalParameter("R_cylinder", R_cylinder)
+
+            # Add host and guest indices
+            g1 = funnel.addGroup(host_index)
+            g2 = funnel.addGroup(guest_index)
+
+            # Add bond
+            funnel.addBond([g1, g2], [])
+
+            # Add force to system
+            self.system.addForce(funnel)
+    
 
     #For restraining CVs, used by metadynamics
     #NOTE: Assuming Angstrom and kcal/mol^2 here like for regular restraints
@@ -2095,7 +2135,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
                     ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False,
-                    platform="CPU"):
+                    platform="CPU", use_pdbfixer=True):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
@@ -2224,28 +2264,32 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
 
     # Fix basic mistakes in PDB by PDBFixer
     # This will e.g. fix bad terminii
-    print("\nRunning PDBFixer")
-    fixer = pdbfixer.PDBFixer(pdbfile)
-    fixer.findMissingResidues()
-    print("Found missing residues:", fixer.missingResidues)
-    fixer.findNonstandardResidues()
-    print("Found non-standard residues:", fixer.nonstandardResidues)
-    # fixer.replaceNonstandardResidues()
-    fixer.findMissingAtoms()
-    print("Found missing atoms:", fixer.missingAtoms)
-    print("Found missing terminals:", fixer.missingTerminals)
-    fixer.addMissingAtoms()
-    print("Added missing atoms.")
-    #exit()
+    if use_pdbfixer is True:
+        print("\nRunning PDBFixer")
+        fixer = pdbfixer.PDBFixer(pdbfile)
+        fixer.findMissingResidues()
+        print("Found missing residues:", fixer.missingResidues)
+        fixer.findNonstandardResidues()
+        print("Found non-standard residues:", fixer.nonstandardResidues)
+        # fixer.replaceNonstandardResidues()
+        fixer.findMissingAtoms()
+        print("Found missing atoms:", fixer.missingAtoms)
+        print("Found missing terminals:", fixer.missingTerminals)
+        fixer.addMissingAtoms()
+        print("Added missing atoms.")
 
-    openmm_app.PDBFile.writeFile(fixer.topology, fixer.positions, open('system_afterfixes.pdb', 'w'))
-    print("PDBFixer done.")
-    print(BC.WARNING,"Warning: PDBFixer can create unreasonable orientations of residues if residues are missing or multiple occupancies are present.\n \
-    You should inspect the created PDB-file to be sure.",BC.END)
-    print("Wrote PDBfile: system_afterfixes.pdb")
+        openmm_app.PDBFile.writeFile(fixer.topology, fixer.positions, open('system_afterfixes.pdb', 'w'))
+        print("PDBFixer done.")
+        print(BC.WARNING,"Warning: PDBFixer can create unreasonable orientations of residues if residues are missing or multiple occupancies are present.\n \
+        You should inspect the created PDB-file to be sure.",BC.END)
+        print("Wrote PDBfile: system_afterfixes.pdb")
+        pdbfile_for_modeller="system_afterfixes.pdb"
+    else:
+        print("Skipping PDBFixer")
+        pdbfile_for_modeller=pdbfile
 
     # Load fixed PDB-file and create Modeller object
-    pdb = openmm_app.PDBFile("system_afterfixes.pdb")
+    pdb = openmm_app.PDBFile(pdbfile_for_modeller)
     print("\n\nNow loading Modeller.")
     modeller = openmm_app.Modeller(pdb.topology, pdb.positions)
     modeller_numatoms = modeller.topology.getNumAtoms()
@@ -2401,11 +2445,11 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     #TODO: Can we avoid re-creating the omm object ?
     print("Now running single-point MM job to check for bad contacts")
     #Setting sensible periodic cutoff to avoid error
-    periodic_nonbonded_cutoff=modeller.topology.getPeriodicBoxVectors()[0][0].value_in_unit(openmm_unit.angstrom)/2.0
+    periodic_nonbonded_cutoff=(modeller.topology.getPeriodicBoxVectors()[0][0].value_in_unit(openmm_unit.angstrom)/2.0)-1
     print("periodic_nonbonded_cutoff:",periodic_nonbonded_cutoff)
     omm =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True, periodic_nonbonded_cutoff=periodic_nonbonded_cutoff,
-                        autoconstraints=None, rigidwater=False, printlevel=0)
+                        autoconstraints=None, rigidwater=False, printlevel=2)
     SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True)
     check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=45000)
     
@@ -3599,9 +3643,9 @@ class OpenMM_MDclass:
 #############################
 
 #Note: dummyatomrestraints necessary for NPT simulation when constraining atoms in space
-def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.csv", numsteps_per_NPT=10000,
-                             max_NPT_cycles=10, 
-                          volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.004,
+def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.csv", 
+                             numsteps_per_NPT=10000, max_NPT_cycles=10, pressure=1,
+                          volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.001,
                           traj_frequency=100, trajfilename='equilibration_NPT', trajectory_file_option='DCD', 
                           coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=False,
                           dummyatomrestraint=False, solute_indices=None, barostat_frequency=25):
@@ -3660,7 +3704,7 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
     volume_std = 10
     density_std = 1
 
-    md = OpenMM_MDclass(fragment=fragment, theory=theory, timestep=timestep, traj_frequency=traj_frequency,
+    md = OpenMM_MDclass(fragment=fragment, theory=theory, timestep=timestep, traj_frequency=traj_frequency, pressure=pressure,
                         temperature=temperature, integrator="LangevinMiddleIntegrator", enforcePeriodicBox=enforcePeriodicBox,
                         coupling_frequency=coupling_frequency, barostat='MonteCarloBarostat', trajfilename=trajfilename,
                         datafilename=datafilename, trajectory_file_option=trajectory_file_option,
@@ -3685,11 +3729,12 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         steps += numsteps_per_NPT
 
         # Read reporter file and calculate stdev
+
         NPTresults = read_NPT_statefile(datafilename)
         volume = NPTresults["volume"][-numpoints_for_convergence_check:]
         density = NPTresults["density"][-numpoints_for_convergence_check:]
-        print("Total number of volume datapoints:", len(volume))
-        print("Total number of density datapoints:", len(density))
+        print("Total number of volume datapoints available:", len(NPTresults["volume"]))
+        print("Total number of density datapoints available:", len(NPTresults["density"]))
         print("Number of datapoints (last) used for convergence check in each cycle:", numpoints_for_convergence_check)
         volume_std = np.std(volume)
         density_std = np.std(density)
@@ -3959,6 +4004,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
               anderson_thermostat=False, restraints=None, flatbottom_restraint_CV1=None, flatbottom_restraint_CV2=None,
+              funnel_restraint=None, funnel_parameters=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
@@ -4079,11 +4125,29 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     #Unnecessary as md.run will create_simulation
     #md.openmmobject.create_simulation()
 
+
+    #Add restrining funnel for funnel metadynamics
+    if funnel_restraint is not None:
+        if funnel_parameters == None:
+            print("Error: funnel_restraint requires passing a dictionary with funnel definition parameters.")
+            print("Example: funnel_parameters = {ligand_indices:[0,1,2], k_xyz:10.0, z_cc=11.0, alpha=35.0, \
+                  R_cylinder=1.0, force_group=10}")
+            ashexit()
+        
+        #Getting atom indices
+        host_index, guest_index,
+        
+        md.add_funnel_restraint(host_index, guest_index,
+            k_xy=funnel_parameters[k_xy], z_cc=funnel_parameters[z_cc], alpha=funnel_parameters[alpha], 
+            R_cylinder=funnel_parameters[R_cylinder], force_group=funnel_parameters[force_group])
+
     #Calling md.run with either native option active or false
     print("Now starting metadynamics simulation")
 
     if multiplewalkers is True:
         print(f"Now launching Metadynamics job with {numcores} walkers")
+        print("Disabled")
+        ashexit()
         #Input parameters passed as dictionary to Simple_parallel
         #NOTE: multiprocess library (instead of multiprocessing) is necessary.
         #Otherwise pickling problem involving _io.TextIOWrapper
@@ -4735,22 +4799,18 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
 
     #Write merged topology and positions to new PDB file
     write_pdbfile_openMM(modeller.topology, mergedPositions, outputname)
-    #with open(outputname, "w") as f:
-    #    openmm.app.pdbfile.PDBFile.writeHeader(modeller.topology, f)
-    #    openmm.app.pdbfile.PDBFile.writeModel(mergedTopology, mergedPositions, f)
-    #    openmm.app.pdbfile.PDBFile.writeFooter(mergedTopology,f)
-
     print("Wrote merged PDB file:", outputname)
 
     return outputname
 
 
-def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smiles_string=None,
+def small_molecule_parameterizor(xyzfile=None, pdbfile=None, molfile=None, sdffile=None, smiles_string=None,
                                  forcefield_option='GAFF', gaffversion='gaff-2.11',
                                  output_xmlfile="ligand.xml",
                                 openff_file="openff-2.0.0.offxml",
                                 expected_coul14=0.8333333333333334, expected_lj14=0.5):
     print_line_with_mainheader("SmallMolecule Parameterizor")
+    print("Input options: xyzfile, pdbfile, molfile, sdffile, smiles_string")
     print("Forcefield options: GAFF, OpenFF")
     if forcefield_option=='GAFF':
         print("Using GAFF forcefield")
@@ -4788,27 +4848,39 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
         print("OpenFF and openmmforcefields libraries are required but could not be imported")
         print("You can install like this:   conda install --yes -c conda-forge openmmforcefields")
         ashexit()
-    
-
+    print()
     #How to read in file
     if molfile:
-        print("Molfile provided")
+        print("Mol file provided:", molfile)
         molecule = Molecule.from_file(molfile)
     elif sdffile:
-        print("SDFfile provided")
-        print("sdffile:",sdffile)
+        print("SDF file provided", sdffile)
         molecule = Molecule.from_file(sdffile)
     elif smiles_string:
+        print("SMILES string provided:", smiles_string)
+        # Create an OpenFF Molecule object from SMILES string
+        molecule = Molecule.from_smiles(smiles_string)
+    elif xyzfile:
+        print("XYZ file provided:", xyzfile)
+        print("Converting XYZ file to PDB file with connectivity")
+        pdbfile = xyz_to_pdb_with_connectivity(xyzfile)
+        # Create a SMILES string from PDB-file
+        print("Converting PDB-file into SMILES string")
+        smiles_string = pdb_to_smiles(pdbfile)
+        print("SMILES string:", smiles_string)
+        # Create an OpenFF Molecule object from SMILES string
+        molecule = Molecule.from_smiles(smiles_string)
+    elif pdbfile:
+        print("PDB-file provided:", pdbfile)
+        print("Converting PDB-file into SMILES string")
+        # Create a SMILES string from PDB-file
+        smiles_string = pdb_to_smiles(pdbfile)
+        print("SMILES string:", smiles_string)
         # Create an OpenFF Molecule object from SMILES string
         molecule = Molecule.from_smiles(smiles_string)
     else:
-        print("No Molfile or SDFfile provided. Creating SMILES string PDB-file.")
-        # Create a SMILES string from PDB-file
-        smiles_string = pdb_to_smiles(pdbfile)
-
-        # Create an OpenFF Molecule object from SMILES string
-        molecule = Molecule.from_smiles(smiles_string)
-
+        print("No inputfile provided. Exiting")
+        ashexit()
 
     # Create an OpenMM ForceField object
     print("Now creating an Amber14 compatible OpenMM ForceField object")
@@ -4908,6 +4980,7 @@ def small_molecule_parameterizor(pdbfile=None, molfile=None, sdffile=None, smile
         print("abs(lj_xml - lj_system):", abs(lj_xml - lj_sys))
         print("Problem with LJ-14 scaling in XML-file")
         ashexit()
+    print("XML-file and forcefield objects are consistent. All good!")
     #
     print("Now returning a Forcefield object containing ligand compatible with the Amber14 FF.\n")
     print("You can feed this object into OpenMM_Modeller like this:\n\
@@ -5057,42 +5130,3 @@ def write_xmlfile_parmed(topology,system,xmlfilename):
     ww.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
     ww.write(xmlfilename)
     print("Wrote XML-file:", xmlfilename)
-
-#Function to convert Mol file to PDB-file
-def mol_to_pdb(file):
-    #OpenBabel
-    try:
-        from openbabel import pybel
-    except ModuleNotFoundError:
-        print("OpenBabel is required but could not be imported")
-        print("You can install like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
-    mol = next(pybel.readfile("mol", file))
-    mol.write(format='pdb', filename=os.path.splitext(file)[0]+'.pdb', overwrite=True)
-    return os.path.splitext(file)[0]+'.pdb'
-
-#Function to read in PDB-file and write new one with CONECT lines (geometry needs to be sensible)
-def writepdb_with_connectivity(file):
-    #OpenBabel
-    try:
-        from openbabel import pybel
-    except ModuleNotFoundError:
-        print("OpenBabel is required but could not be imported")
-        print("You can install like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
-    mol = next(pybel.readfile("pdb", file))
-    mol.write(format='pdb', filename=os.path.splitext(file)[0]+'.pdb', overwrite=True)
-    return os.path.splitext(file)[0]+'_withcon.pdb'
-
-#Function to convert PDB-file to SMILES string
-def pdb_to_smiles(fname: str) -> str:
-    #OpenBabel
-    try:
-        from openbabel import pybel
-    except ModuleNotFoundError:
-        print("OpenBabel is required but could not be imported")
-        print("You can install like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
-        mol = next(pybel.readfile("pdb", fname))
-        smi = mol.write(format="smi")
-        return smi.split()[0].strip()

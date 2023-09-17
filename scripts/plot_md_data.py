@@ -33,5 +33,5 @@ for pd_col in data_list:
     label_no_unit = label.split('(')[0].replace(' ','')
     print(label_no_unit)
     eplot = ASH_plot(label, num_subplots=1, x_axislabel="Steps", y_axislabel=label)
-    eplot.addseries(0, x_list=steps.to_numpy(), y_list=np_array, label=label, color='blue', line=True, scatter=False)
+    eplot.addseries(0, x_list=steps.to_numpy(), y_list=np_array, label=label, color='blue', line=True, scatter=True)
     eplot.savefig(label_no_unit)
