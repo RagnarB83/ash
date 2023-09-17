@@ -4130,14 +4130,19 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
     if funnel_restraint is not None:
         if funnel_parameters == None:
             print("Error: funnel_restraint requires passing a dictionary with funnel definition parameters.")
-            print("Example: funnel_parameters = {ligand_indices:[0,1,2], k_xyz:10.0, z_cc=11.0, alpha=35.0, \
-                  R_cylinder=1.0, force_group=10}")
+            print("Example: funnel_parameters = {'ligand_indices':[0,1,2], 'k_xyz':10.0, 'z_cc':11.0, 'alpha':35.0, \
+'R_cylinder':1.0, 'force_group':10}")
             ashexit()
         
-        #Getting atom indices
-        host_index, guest_index,
-        
-        md.add_funnel_restraint(host_index, guest_index,
+        #Getting atom indices for host and guess
+        guest_indices =  funnel_parameters['ligand_indices']
+        print("guest_indices:", guest_indices)
+        #TODO: Define protein indices here somehow
+        #host_indices = 
+
+        print("Not ready yet")
+        exit()
+        md.add_funnel_restraint(host_indices, guest_indices,
             k_xy=funnel_parameters[k_xy], z_cc=funnel_parameters[z_cc], alpha=funnel_parameters[alpha], 
             R_cylinder=funnel_parameters[R_cylinder], force_group=funnel_parameters[force_group])
 
