@@ -720,7 +720,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
                 surfacedictionary=newsurfacedictionary
 
             #Write final surface to file
-            write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
+            #write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
         ###########################
         #PARALLEL:  Relaxed
         ##########################
@@ -739,7 +739,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
             print("Parallel calculation done!")
             surfacedictionary=results.energies_dict
             #Writing dictionary to file
-            write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
+            #write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
     else:
         ###########################
         #SERIAL CALCULATION
@@ -807,8 +807,8 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
                     #theory.cleanup()
                     surfacedictionary[(RCvalue1,RCvalue2)] = energy
                     #Writing dictionary to file
-                    write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
-                    print("")
+                    #write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
+                    #print("")
                 else:
                     print("RC1 and RC2 values in dict already. Skipping.")
             ###########################
@@ -863,11 +863,16 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
                         shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
                     surfacedictionary[(RCvalue1)] = energy
                     #Writing dictionary to file
-                    write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
+                    #write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
                     print("")            
                 else:
                     print("RC1 value in dict already. Skipping.")
     print("Final surfacedictionary:", surfacedictionary)
+
+    #Writing dictionary to file
+    write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
+
+
     print_time_rel(module_init_time, modulename='calc_surface_fromXYZ', moduleindex=0)
     result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
     return result                 
