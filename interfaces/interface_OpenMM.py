@@ -36,7 +36,7 @@ class OpenMMTheory:
                  xmlsystemfile=None,
                  do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
-                 periodic_nonbonded_cutoff=None, dispersion_correction=True,
+                 periodic_nonbonded_cutoff=12, dispersion_correction=True,
                  switching_function_distance=10.0,
                  ewalderrortolerance=5e-4, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
