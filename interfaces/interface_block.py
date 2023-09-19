@@ -27,7 +27,9 @@ class BlockTheory:
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None, 
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
                 Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
-                block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None):
+                block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
+                FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False,
+                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
@@ -122,6 +124,13 @@ class BlockTheory:
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
 
+        #post-DMRG
+        self.FIC_MRCI=FIC_MRCI
+        self.SC_NEVPT2_Wick=SC_NEVPT2_Wick
+        self.IC_NEVPT2=IC_NEVPT2
+        self.SC_NEVPT2=SC_NEVPT2
+        self.SC_NEVPT2_Mcompression=SC_NEVPT2_Mcompression
+
         #Print stuff
         print("Printlevel:", self.printlevel)
         print("PySCF object:", self.pyscftheoryobject)
@@ -144,8 +153,16 @@ class BlockTheory:
         print("MaxM", self.maxM)
         print("singlet_embedding:", self.singlet_embedding)
         print("Tolerance", self.tol)
+        print("Post-DMRG jobs:")
+        print("FIC_MRCI:", FIC_MRCI)
+        print("SC_NEVPT2_Wick:", SC_NEVPT2_Wick)
+        print("IC_NEVPT2:", IC_NEVPT2)
+        print("SC_NEVPT2:", SC_NEVPT2)
+        print("SC_NEVPT2_Mcompression:",SC_NEVPT2_Mcompression)
 
-    
+
+
+
     def load_pyscf(self):
         try:
             import pyscf
@@ -425,6 +442,37 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print(f"Memory in pyscf object set to: {self.mch.max_memory} MB")
         print(f"Memory in dmrgscf object set to: {self.mch.fcisolver.memory} GB")
 
+    #Run DMRG-FIC-MRCISD
+    def DMRG_FIC_MRCISD(self):
+        print("Calling DMRG_FIC_MRCISD")
+        from pyblock2.icmr.icmrcisd_full import WickICMRCISD
+        self.pyscftheoryobject.mol.verbose = 5
+        wsc = WickICMRCISD(self.mch).run()
+        print("wsc:",wsc)
+    #Run DMRG-IC-NEVPT2
+    def DMRG_IC_NEVPT2(self):
+        print("Calling DMRG-IC-NEVPT2")
+        from pyblock2.icmr.icnevpt2_full import WickICNEVPT2
+        wic = WickICNEVPT2(self.mch).run()
+        print("wic:",wic)
+    #Run DMRG-SC-NEVPT2 via Wick
+    def DMRG_SC_NEVPT2_Wick(self):
+        print("Calling DMRG-SC-NEVPT2")
+        from pyblock2.icmr.scnevpt2 import WickSCNEVPT2
+        wic = WickSCNEVPT2(self.mch).run()
+        print("wic:",wic)
+    #Regular SC-NEVPT2 with compression
+    def DMRG_SC_NEVPT2(self):
+        print("Importing pyscf MRPT module")
+        import pyscf.mrpt
+        print("SC_NEVPT2_Mcompression:", self.SC_NEVPT2_Mcompression)
+        if self.SC_NEVPT2_Mcompression != None:
+            print("Doing MPS compression")
+            sc = pyscf.mrpt.NEVPT(self.mch).compress_approx(maxM=SC_NEVPT2_Mcompression).run()
+        else:
+            print("No MPS compression. Doing full 4PDM")
+            sc = pyscf.mrpt.NEVPT(self.mch).run()
+
     #Run the defined pyscf mch object
     def DMRG_run(self,mos):
         module_init_time=time.time()
@@ -493,6 +541,22 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         else:
             print("Unknown blockversion")
             ashexit()
+
+        #DMRG-FIC-MRCI
+        if self.FIC_MRCI is True:
+            self.DMRG_FIC_MRCISD()
+        #DMRG-SC-NEVPT2
+        if self.SC_NEVPT2 is True:
+            self.DMRG_SC_NEVPT2()
+        #DMRG-SC-NEVPT2 via Wick
+        if self.SC_NEVPT2_Wick is True:
+            self.DMRG_SC_NEVPT2_Wick()
+        #DMRG-SC-NEVPT2
+        if self.SC_NEVPT2 is True:
+            self.DMRG_SC_NEVPT2()
+        #DMRG-IC-NEVPT2
+        if self.IC_NEVPT2 is True:
+            self.DMRG_IC_NEVPT2()
 
         print("Block is finished")
         #Cleanup Block scratch stuff (big files)

@@ -879,6 +879,20 @@ class OpenMMTheory:
         bond_force.setUsesPeriodicBoundaryConditions(True)
         self.system.addForce(bond_force)
     
+    #For umbrella sampling e.g
+    def add_custom_torsion_force(self,i,j,k,l,forceconstant):
+        import openmm
+        print(f"Adding custom torsion force for atoms: {i}, {j}, {k}, {l}  with forceconstant={forceconstant}")
+        torsion_force = openmm.CustomTorsionForce("0.5*K*dtheta^2; dtheta = min(diff, 2*Pi-diff); diff = abs(theta - theta0)")
+        torsion_force.addGlobalParameter("Pi", math.pi)
+        torsion_force.addGlobalParameter("k", forceconstant)
+        torsion_force.addGlobalParameter("r0", 1.0)
+        torsion_force.addGlobalParameter("theta0", 0.0)
+        #bond_force = openmm.HarmonicBondForce()
+        #bond_force.addBond(i,j,0.0,forceconstant)
+        torsion_force.addTorsion(i, j, k, l)
+        bond_force.setUsesPeriodicBoundaryConditions(True)
+        self.system.addForce(torsion_force)
     # This is custom externa force that restrains group of atoms to center of system
     def add_center_force(self, center_coords=None, atomindices=None, forceconstant=1.0):
         import openmm
