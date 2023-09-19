@@ -18,8 +18,7 @@ import ash.settings_ash
 
 #TODO: Block direct from Fcidump file. Dryrun option also maybe??
 #TODO: Threading  control is not working in general. 
-#TODO: NEVPT2 add
-#TODO: MRCI add. FIC-MRCISD and uncontracted
+
 
 
 class BlockTheory:
@@ -447,23 +446,27 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("Calling DMRG_FIC_MRCISD")
         from pyblock2.icmr.icmrcisd_full import WickICMRCISD
         self.pyscftheoryobject.mol.verbose = 5
-        wsc = WickICMRCISD(self.mch).run()
-        print("wsc:",wsc)
-        print("wicc dict", wsc.__dict__)
+        result = WickICMRCISD(self.mch).run()
+        e_corr = result.e_corr
+        return e_corr
     #Run DMRG-IC-NEVPT2
     def DMRG_IC_NEVPT2(self):
         print("Calling DMRG-IC-NEVPT2")
         from pyblock2.icmr.icnevpt2_full import WickICNEVPT2
-        wic = WickICNEVPT2(self.mch).run()
-        print("wic:",wic)
-        print("wicc dict", wic.__dict__)
+        result = WickICNEVPT2(self.mch).run()
+        print("result:",result)
+        print("result dict", result.__dict__)
+        e_corr = result.e_corr
+        return e_corr
     #Run DMRG-SC-NEVPT2 via Wick
     def DMRG_SC_NEVPT2_Wick(self):
         print("Calling DMRG-SC-NEVPT2")
         from pyblock2.icmr.scnevpt2 import WickSCNEVPT2
-        wic = WickSCNEVPT2(self.mch).run()
-        print("wic:",wic)
-        print("wicc dict", wic.__dict__)
+        result = WickSCNEVPT2(self.mch).run()
+        print("result:",result)
+        print("result dict", result.__dict__)
+        e_corr = result.e_corr
+        return e_corr
     #Regular SC-NEVPT2 with compression
     def DMRG_SC_NEVPT2(self):
         print("Importing pyscf MRPT module")
@@ -471,14 +474,15 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("SC_NEVPT2_Mcompression:", self.SC_NEVPT2_Mcompression)
         if self.SC_NEVPT2_Mcompression != None:
             print("Doing MPS compression")
-            sc = pyscf.mrpt.NEVPT(self.mch).compress_approx(maxM=SC_NEVPT2_Mcompression).run()
-            print("sc:", sc)
-            print("sc dict", sc.__dict__)
+            result = pyscf.mrpt.NEVPT(self.mch).compress_approx(maxM=SC_NEVPT2_Mcompression).run()
         else:
             print("No MPS compression. Doing full 4PDM")
-            sc = pyscf.mrpt.NEVPT(self.mch).run()
-            print("sc:", sc)
-            print("sc dict", sc.__dict__)
+            result = pyscf.mrpt.NEVPT(self.mch).run()
+
+        print("result:",result)
+        print("result dict", result.__dict__)
+        e_corr = result.e_corr
+        return e_corr
 
     #Run the defined pyscf mch object
     def DMRG_run(self,mos):
@@ -548,22 +552,32 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         else:
             print("Unknown blockversion")
             ashexit()
+        
+        dmrg_energy = self.energy
+        print("DMRG energy:", dmrg_energy)
 
         #DMRG-FIC-MRCI
         if self.FIC_MRCI is True:
-            self.DMRG_FIC_MRCISD()
+            e_corr = self.DMRG_FIC_MRCISD()
         #DMRG-SC-NEVPT2
         if self.SC_NEVPT2 is True:
-            self.DMRG_SC_NEVPT2()
+            e_corr = self.DMRG_SC_NEVPT2()
         #DMRG-SC-NEVPT2 via Wick
         if self.SC_NEVPT2_Wick is True:
-            self.DMRG_SC_NEVPT2_Wick()
+            e_corr = self.DMRG_SC_NEVPT2_Wick()
         #DMRG-SC-NEVPT2
         if self.SC_NEVPT2 is True:
-            self.DMRG_SC_NEVPT2()
+            e_corr = self.DMRG_SC_NEVPT2()
         #DMRG-IC-NEVPT2
         if self.IC_NEVPT2 is True:
-            self.DMRG_IC_NEVPT2()
+            e_corr = self.DMRG_IC_NEVPT2()
+
+        #Total energy
+        self.energy = dmrg_energy + e_corr
+
+        #Print final energy
+        print("Post-DMRG Correlation energy:", e_corr)
+        print("Final total energy:", self.energy)
 
         print("Block is finished")
         #Cleanup Block scratch stuff (big files)
