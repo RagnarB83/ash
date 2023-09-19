@@ -12,7 +12,7 @@ def MDtraj_import():
     return mdtraj
 
 
-def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.005, largest_values=10):
+def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.005, largest_values=10, parallel=True):
     print("Inside MDtraj_RMSF")
     #Import mdtraj library
     mdtraj = MDtraj_import()
@@ -21,7 +21,7 @@ def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.
     print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
     firstframe=traj[0]
-    rmsflist = mdtraj.rmsf(traj, reference=None, frame=0, atom_indices=None, parallel=True)
+    rmsflist = mdtraj.rmsf(traj, reference=None, frame=0, atom_indices=None, parallel=parallel)
     
     if print_largest_values is True:
         print(f"Will print RMSF largest_values={largest_values}")
@@ -39,7 +39,7 @@ def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.
     return large_rmsf_indices
 
 
-def MDtraj_RMSD(trajectory, pdbtopology, atom_indices=None, parallel=parallel):
+def MDtraj_RMSD(trajectory, pdbtopology, atom_indices=None, parallel=True):
     print("Inside MDtraj_RMSD")
     #Import mdtraj library
     mdtraj = MDtraj_import()
@@ -47,7 +47,7 @@ def MDtraj_RMSD(trajectory, pdbtopology, atom_indices=None, parallel=parallel):
     # Load trajectory
     print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
-    
+
     #RMSD
     rmsds = mdtraj.rmsd(traj, traj, 0, atom_indices=atom_indices, parallel=parallel)
 
