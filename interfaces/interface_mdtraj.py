@@ -39,6 +39,21 @@ def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.
     return large_rmsf_indices
 
 
+def MDtraj_RMSD(trajectory, pdbtopology, atom_indices=None, parallel=parallel):
+    print("Inside MDtraj_RMSD")
+    #Import mdtraj library
+    mdtraj = MDtraj_import()
+    
+    # Load trajectory
+    print("Loading trajectory using mdtraj.")
+    traj = mdtraj.load(trajectory, top=pdbtopology)
+    
+    #RMSD
+    rmsds = mdtraj.rmsd(traj, traj, 0, atom_indices=atom_indices, parallel=parallel)
+
+    return rmsds
+
+
 # anchor_molecules. Use if automatic guess fails
 def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=None, unitcell_angles=None,
                      solute_anchor=None):

@@ -449,18 +449,21 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         self.pyscftheoryobject.mol.verbose = 5
         wsc = WickICMRCISD(self.mch).run()
         print("wsc:",wsc)
+        print("wicc dict", wsc.__dict__)
     #Run DMRG-IC-NEVPT2
     def DMRG_IC_NEVPT2(self):
         print("Calling DMRG-IC-NEVPT2")
         from pyblock2.icmr.icnevpt2_full import WickICNEVPT2
         wic = WickICNEVPT2(self.mch).run()
         print("wic:",wic)
+        print("wicc dict", wic.__dict__)
     #Run DMRG-SC-NEVPT2 via Wick
     def DMRG_SC_NEVPT2_Wick(self):
         print("Calling DMRG-SC-NEVPT2")
         from pyblock2.icmr.scnevpt2 import WickSCNEVPT2
         wic = WickSCNEVPT2(self.mch).run()
         print("wic:",wic)
+        print("wicc dict", wic.__dict__)
     #Regular SC-NEVPT2 with compression
     def DMRG_SC_NEVPT2(self):
         print("Importing pyscf MRPT module")
@@ -470,10 +473,12 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("Doing MPS compression")
             sc = pyscf.mrpt.NEVPT(self.mch).compress_approx(maxM=SC_NEVPT2_Mcompression).run()
             print("sc:", sc)
+            print("sc dict", sc.__dict__)
         else:
             print("No MPS compression. Doing full 4PDM")
             sc = pyscf.mrpt.NEVPT(self.mch).run()
             print("sc:", sc)
+            print("sc dict", sc.__dict__)
 
     #Run the defined pyscf mch object
     def DMRG_run(self,mos):
