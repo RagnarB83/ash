@@ -469,9 +469,11 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.SC_NEVPT2_Mcompression != None:
             print("Doing MPS compression")
             sc = pyscf.mrpt.NEVPT(self.mch).compress_approx(maxM=SC_NEVPT2_Mcompression).run()
+            print("sc:", sc)
         else:
             print("No MPS compression. Doing full 4PDM")
             sc = pyscf.mrpt.NEVPT(self.mch).run()
+            print("sc:", sc)
 
     #Run the defined pyscf mch object
     def DMRG_run(self,mos):
