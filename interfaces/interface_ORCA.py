@@ -190,6 +190,8 @@ class ORCATheory:
     def cleanup(self):
         print("Cleaning up old ORCA files")
         list_files=[]
+        #Keeping outputfiles
+        #list_files.append(self.filename + '.out')
         list_files.append(self.filename + '.gbw')
         list_files.append(self.filename + '.densities')
         list_files.append(self.filename + '.ges')
@@ -197,7 +199,6 @@ class ORCATheory:
         list_files.append(self.filename + '.uco')
         list_files.append(self.filename + '_property.txt')
         list_files.append(self.filename + '.inp')
-        list_files.append(self.filename + '.out')
         list_files.append(self.filename + '.engrad')
         list_files.append(self.filename + '.cis')
         list_files.append(self.filename + '_last.out')
@@ -296,7 +297,12 @@ class ORCATheory:
         ash.modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='ORCA Opt-run', moduleindex=2)
         return 
-
+    #Method to grab dipole moment from an ORCA outputfile (assumes run has been executed)
+    def get_dipole_moment(self):
+        return grab_dipole_moment(self.filename+'.out')
+    def get_polarizability_tensor(self):
+        polarizability,diag_pz = grab_polarizability_tensor(self.filename+'.out')
+        return polarizability
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
@@ -501,11 +507,11 @@ end"""
         if self.printlevel >= 1:
             print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
-        #Check if finished. Grab energy and gradient
         outfile=self.filename+'.out'
         engradfile=self.filename+'.engrad'
         pcgradfile=self.filename+'.pcgrad'
-
+        
+        #Checking if finished. 
         if self.ignore_ORCA_error is False:
             ORCAfinished,numiterations = checkORCAfinished(outfile)
             #Check if ORCA finished or not. Exiting if so
@@ -597,6 +603,7 @@ end"""
 
         #Initializing zero gradient array
         self.grad = np.zeros((len(qm_elems), 3))
+        self.dipole_moment = None
 
         #XDM option: WFX file should have been created.
         if self.xdm == True:
@@ -619,6 +626,7 @@ end"""
             self.grad = self.grad + grad
             if self.printlevel >= 3:
                 print("ORCA gradient:", self.grad)
+
             if PC == True:
                 #Print time to calculate ORCA QM-PC gradient
                 if "pc_gradient" in orca_timings:
@@ -943,6 +951,42 @@ def ORCApcgradientgrab(pcgradfile):
                 gradient[count-1] = [val_x,val_y,val_z]
     return gradient
 
+def grab_dipole_moment(outfile):
+    dipole_moment = []
+    with open(outfile) as f:
+        for line in f:
+            if 'Total Dipole Moment    :' in line:
+                dipole_moment.append(float(line.split()[-3]))
+                dipole_moment.append(float(line.split()[-2]))
+                dipole_moment.append(float(line.split()[-1]))
+    return dipole_moment
+
+def grab_polarizability_tensor(outfile):
+    pz_tensor = np.zeros((3,3))
+    diag_pz_tensor=[]
+    count=0
+    grab=False;grab2=False
+    with open(outfile) as f:
+        for line in f:
+            if grab2 is True:
+                if len(line.split()) == 0:
+                    grab2=False
+                else:
+                    diag_pz_tensor.append(float(line.split()[0]))
+                    diag_pz_tensor.append(float(line.split()[1]))
+                    diag_pz_tensor.append(float(line.split()[2]))
+            if grab is True:
+                if 'diagonalized tensor:' in line:
+                    grab=False
+                    grab2=True
+                if len(line.split()) == 3:
+                    pz_tensor[count,0]=float(line.split()[0])
+                    pz_tensor[count,1]=float(line.split()[1])
+                    pz_tensor[count,2]=float(line.split()[2])
+                    count+=1
+            if 'THE POLARIZABILITY TENSOR' in line:
+                grab=True
+    return pz_tensor, diag_pz_tensor
 
 #Grab multiple Final single point energies in output. e.g. new_job calculation
 def finalenergiesgrab(file):
@@ -2008,6 +2052,26 @@ def SCF_FODocc_grab(filename):
                 occgrab=True
     return occupations
 
+def UHF_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if 'LOEWDIN' in line:
+                    natoccgrab=False
+                if 'N' in line:
+                    for s in line.split(' '):
+                        try:
+                            occ = float(s)
+                            natoccupations.append(occ)
+                        except:
+                            pass
+            if 'UHF NATURAL ORBITALS' in line:
+                natoccgrab=True
+    return natoccupations
+
+
 def MP2_natocc_grab(filename):
     natoccgrab=False
     natoccupations=[]
@@ -2049,6 +2113,21 @@ def CASSCF_natocc_grab(filename):
                     natoccgrab=False
                     return natoccupations
             if 'NO   OCC          E(Eh)            E(eV)' in line:
+                natoccgrab=True
+    return natoccupations
+
+def MRCI_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab==True:
+                if 'N[' in line:
+                    natoccupations.append(float(line.split()[-1]))
+                if '  -> stored natural orbitals' in line:
+                    natoccgrab=False
+                    return natoccupations
+            if 'NATURAL ORBITAL GENERATION' in line:
                 natoccgrab=True
     return natoccupations
 
@@ -2666,12 +2745,8 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
 
     return alphalist, betalist
 
-
-#Parse ORCA json file
-#Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
-def read_ORCA_json_file(file, orcadir=None):
-    # Parsing of files
-    import json
+#Using orca_2json to create JSON file from ORCA GBW file
+def create_ORCA_json_file(file, orcadir=None):
 
     orcadir = check_ORCA_location(orcadir)
     orcafile_basename = file.split('.')[0]
@@ -2694,6 +2769,16 @@ def read_ORCA_json_file(file, orcadir=None):
     sp.call([orcadir+'/orca_2json', orcafile_basename, '-format', '-json'])
 
     print(f"Created file: {orcafile_basename}.json")
+
+    return f"{orcafile_basename}.json"
+
+#Parse ORCA json file
+#Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
+def read_ORCA_json_file(file):
+    # Parsing of files
+    import json
+
+    orcafile_basename = file.split('.')[0]
     print("Opening file")
     print()
     with open(f"{orcafile_basename}.json") as f:
@@ -2723,19 +2808,55 @@ def get_densities_from_ORCA_json(data):
     for d in data["Densities"]:
         print(d)
         DMs[d] = np.array(data["Densities"][d])
-    #try:
-    #    SCF_density = data["Molecule"]["Densities"]["scfp"]
-    #    DMs["scfp"] = np.array(SCF_density)
-    #except:
-    #    pass
-    #try:
-    #    MP2_UR_density = data["Molecule"]["Densities"]["pmp2ur"]
-    #    DMs["pmp2ur"] = np.array(MP2_UR_density)
-    #except:
-    #    pass
     print("Found the following densities: ", DMs.keys())
     return DMs
-    #print("Molecule-H-Matrix:", data["Molecule"]["H-Matrix"])
-    #print("Molecule-S-Matrix:", data["Molecule"]["S-Matrix"])
-    #print("Molecule-T-Matrix:", data["Molecule"]["T-Matrix"])
-    #print("Molecule-MolecularOrbitals:", data["Molecule"]["MolecularOrbitals"])
+
+#Grab ORCA wfn from jsonfile or data-dictionary
+def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
+    print_line_with_mainheader("grab_ORCA_wfn")
+
+    #If neither data object or dictionary was provided
+    if data == None and jsonfile == None:
+        print("grab_ORCA_wfn requires either data dictionary or jsonfile as input")
+        ashexit()
+    elif data != None and jsonfile != None:
+        print("grab_ORCA_wfn requires either data dictionary or jsonfile as input")
+        ashexit()
+    elif data != None:
+        print("Data dictionary provided")
+        pass
+    elif jsonfile != None:
+        print("JSON file provided. Reading")
+        data = read_ORCA_json_file(jsonfile)
+
+    if density == None:
+        print("Error: You must pick a density option")
+        print("Available densities in data object:")
+        for d in data["Densities"]:
+            print(d)
+        ashexit()
+    #Grab chosen density
+    DM_AO = np.array(data["Densities"][density])
+    print("DM_AO:", DM_AO)
+
+    #Get the AO-basis
+    AO_basis = data["Atoms"]
+    AO_order = data["MolecularOrbitals"]["OrbitalLabels"]
+
+    #Get the overlap
+    S = np.array(data["S-Matrix"])
+
+    #Grabbing C (MO coefficients)
+    mos = data["MolecularOrbitals"]["MOs"]
+    C = np.array([m["MOCoefficients"] for m in mos])
+    C = np.transpose(C)
+
+    #MO energies and occupations
+    MO_energies = np.array([m["OrbitalEnergy"] for m in mos])
+    MO_occs = np.array([m["Occupancy"] for m in mos])
+
+    print("MO_energies:", MO_energies)
+    print("MO_occs:", MO_occs)
+    print("MO coeffs:", C)
+
+    return DM_AO,C,S, AO_basis, AO_order

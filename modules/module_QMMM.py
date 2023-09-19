@@ -572,6 +572,14 @@ class QMMMTheory:
         print(f"Setting new numcores {numcores}for QMtheory and MMtheory")
         self.qm_theory.set_numcores(numcores)
         self.mm_theory.set_numcores(numcores)
+    #Method to grab dipole moment from outputfile (assumes run has been executed)
+    def get_dipole_moment(self):
+        try:
+            print("Grabbing dipole moment from QM-part of QM/MM theory.")
+            dipole = self.qm_theory.get_dipole_moment()
+        except:
+            print("Error: Could not grab dipole moment from QM-part of QM/MM theory.")
+        return dipole
     #General run
     def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
 
@@ -1241,17 +1249,33 @@ def fullindex_to_qmindex(fullindex,qmatoms):
     return qmindex
 
 
-#Grab resid column from PDB-fil
-# NOTE: Problem: what if we have repeating sequences of resids, additional chains or segments ?
-#TODO: this is 1-based indexing. Switch to 0-based indexing??
+#Grab resid column from PDB-file and return list of resids
+# NOTE: New resid-indices are used to avoid problem of PDB-file having 
+# repeating sequences of resids, additional chains or segments
 def grab_resids_from_pdbfile(pdbfile):
-    resids=[]
+    resids=[] #New list of resid indices, starting from 0
+    actual_resids=[] #Actual resid values from PDB-file, used to check if resid has changed
+    indexcount=0 #This will be used to define residues
     with open(pdbfile) as f:
         for line in f:
             if 'ATOM' in line or 'HETATM' in line:
                 #Based on: https://cupnet.net/pdb-format/
                 resid_part=int(line[22:26].replace(" ",""))
-                resids.append(resid_part)
+                #Very first atom and first residue
+                if len(resids) == 0:
+                    resids.append(indexcount)
+                    actual_resids.append(resid_part)
+                #Checking if resid in PDB-file is the same 
+                elif resid_part == actual_resids[-1]:
+                    resids.append(indexcount)
+                    actual_resids.append(resid_part)
+                # Resid changed, meaning new residue
+                else:
+                    indexcount+=1
+                    #New residue
+                    resids.append(indexcount)
+                    actual_resids.append(resid_part)
+
     return resids
 
 #Read atomic charges present in PSF-file. assuming Xplor format
@@ -1321,12 +1345,11 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
         #No mmtheory but PDB file should have been provided
         #Defining resids list from PDB-file
         #NOTE: Call grab_resids_from_pdbfile
-        resids = grab_resids_from_pdbfile()
-        print("Not ready yet")
-        ashexit()
-        ashexit()
+        resids = grab_resids_from_pdbfile(pdbfile)
 
     origincoords=fragment.coords[originatom]
+    print("Origin-atom coordinates:", origincoords)
+    #print("resids:", resids)
     act_indices=[]
     #print("resids:", resids)
     for index,allc in enumerate(fragment.coords):
@@ -1334,15 +1357,10 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
         #print("allc:", allc)
         dist=ash.modules.module_coords.distance(origincoords,allc)
         if dist < radius:
-            #print("DIST!!")
-            #print("index:", index)
-            #print("allc:", allc)
             #Get residue ID for this atom index
             resid_value=resids[index]
-            #print("resid_value:", resid_value)
             #Get all residue members (atom indices)
             resid_members = [i for i, x in enumerate(resids) if x==resid_value]
-            #print("resid_members:", resid_members)
             #Adding to act_indices list unless already added
             for k in resid_members:
                 if k not in act_indices:

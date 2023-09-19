@@ -5,7 +5,7 @@ import time
 import numpy as np
 
 import ash.settings_ash
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep
 from ash.interfaces.interface_multiwfn import write_multiwfn_input_option
 
 MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z', 'ADZ':'aug-cc-pVDZ', 'ATZ':'aug-cc-pVTZ', 'AQZ':'aug-cc-pVQZ', 
@@ -15,7 +15,7 @@ MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z',
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
                 mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label=None,
-                keep_orientation=True):
+                keep_orientation=True, frozen_core_settings='Auto'):
 
         self.theorynamelabel="MRCC"
         self.theorytype="QM"
@@ -49,7 +49,7 @@ class MRCCTheory:
         self.filename=filename
         self.mrccinput=mrccinput
         self.numcores=numcores
-
+        self.frozen_core_settings = frozen_core_settings
         #Parallelization strategy: 'OMP', 'OMP-and-MKL' or 'MPI'
         self.parallelization=parallelization
         self.keep_orientation=keep_orientation
@@ -63,6 +63,43 @@ class MRCCTheory:
     def cleanup(self):
         print("MRCC cleanup not yet implemented.")
 
+    #Determines Frozen core seetings to apply
+    def determine_frozen_core(self,elems):
+        print("Determining frozen core")
+        print("frozen_core_settings options are: Auto, None or MRCC")
+        print("Auto uses ASH frozen core settings (mimics ORCA settings)")
+        print("MRCC uses default MRCC frozen core settings (not good for 3d metals)")
+        #Frozen core settings
+        FC_elems={'H':0,'He':0,'Li':0,'Be':0,'B':2,'C':2,'N':2,'O':2,'F':2,'Ne':2,
+        'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
+        'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,'Co':10,'Ni':10,'Cu':10,'Zn':10,
+        'Ga':18,'Ge':18,'As':18,'Se':18, 'Br':18, 'Kr':18}
+
+        if self.frozen_core_settings == None:
+            print("Frozen core requested OFF. MRCC will run all-electron calculations")
+            self.frozencore_string=f"0"
+        else:
+            print("Frozen core is ON!")
+            if self.frozen_core_settings == 'Auto':
+                print("Auto frozen-core settings requested")
+                num_el=0
+                for el in elems:
+                    num_el+=FC_elems[el]
+                frozen_core_el=num_el
+                frozen_core_orbs=int(num_el/2)
+                print("Total frozen electrons in system:", frozen_core_el)
+                print("Total frozen orbitals in system:", frozen_core_orbs)
+                self.frozencore_string=f"{frozen_core_orbs}"
+            elif self.frozen_core_settings == 'MRCC':
+                print("MRCC settings requested")
+                self.frozencore_string=f"frozen"
+            else:
+                print("Unknown option for frozen_core_settings")
+                ashexit()
+    #Method to grab dipole moment from a MRCC outputfile (assumes run has been executed)
+    def get_dipole_moment(self):
+        return grab_dipole_moment(self.filename+'.out')
+    #NOTE: Polarizability not available in MRCC
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
@@ -98,13 +135,16 @@ class MRCCTheory:
             else:
                 qm_elems = elems
 
+        #FROZEN CORE SETTINGS
+        self.determine_frozen_core(qm_elems)
+
         #Grab energy and gradient
         #TODO: No qm/MM yet. need to check if possible in MRCC
         #Note: for gradient and QM/MM it is best to keep_orientation=True in write_mrcc_input
 
         if Grad==True:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
@@ -119,7 +159,7 @@ class MRCCTheory:
 
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
@@ -166,9 +206,17 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
-def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None):
+def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None,
+                     frozen_core_option=None):
     with open("MINP", 'w') as inpfile:
-        inpfile.write(mrccinput + '\n')
+        for m in mrccinput:
+            if 'core' in m:
+                print("Warning: ignoring user-defined core option. Using frozen_core_option instead")
+            else:
+                inpfile.write(m )
+        #inpfile.write(mrccinput + '\n')
+        #Frozen core
+        inpfile.write(f'core={frozen_core_option}\n')
         inpfile.write(f'ccsdthreads={numcores}\n')
         inpfile.write(f'ptthreads={numcores}\n')
         inpfile.write('unit=angs\n')
@@ -383,3 +431,19 @@ def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfi
     print("Created new Molden file: mrccnew.molden")
     print("This file contains the natural orbitals of the correlated density from MRCC")
 
+
+def grab_dipole_moment(outfile):
+    dipole_moment = np.zeros(3)
+    grab=False
+    with open(outfile) as f:
+        for line in f:
+            if grab is True:
+                if ' Dipole moment [Debye]:' in line:
+                    grab=False
+                if 'x=' in line:
+                    dipole_moment[0] = float(line.split()[1])
+                    dipole_moment[1] = float(line.split()[3])
+                    dipole_moment[2] = float(line.split()[5])
+            if ' Dipole moment [au]:' in line:
+                grab=True
+    return dipole_moment

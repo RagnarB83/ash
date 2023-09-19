@@ -85,12 +85,15 @@ def print_header():
         if ash.settings_ash.interactive_session is False:
             #Ignore if pytest is active
             if "pytest" not in sys.modules:
-                inputfilepath = os.getcwd() + "/" + sys.argv[0]
-                print("Input script:", inputfilepath)
-                print(f"{BC.WARNING}{'=' * 80}")
-                with open(inputfilepath) as f:
-                    for line in f:
-                        print("   >", line, end="")
+                try:
+                  inputfilepath = os.getcwd() + "/" + sys.argv[0]
+                  print("Input script:", inputfilepath)
+                  print(f"{BC.WARNING}{'=' * 80}")
+                  with open(inputfilepath) as f:
+                      for line in f:
+                          print("   >", line, end="")
+                except:
+                    pass
                 print(f"{BC.WARNING}{'=' * 80}",BC.END)
                 print()
 

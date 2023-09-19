@@ -252,8 +252,9 @@ class xTBTheory:
         ash.modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='xtB Opt-run', moduleindex=2)
         return 
-
-
+    #Method to grab dipole moment from an xtb outputfile (assumes run has been executed)
+    def get_dipole_moment(self):
+        return grab_dipole_moment(self.filename+'.out')
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, printlevel=None,
                 elems=None, Grad=False, PC=False, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
@@ -802,3 +803,18 @@ def grabatomcharges_xTB():
         for line in file:
             charges.append(float(line.split()[0]))
     return charges
+
+def grab_dipole_moment(outfile):
+    grab=False
+    dipole_moment = []
+    with open(outfile) as f:
+        for line in f:
+            if grab is True:
+                if 'Debye' in line:
+                    dipole_moment.append(float(line.split()[0]))
+                    dipole_moment.append(float(line.split()[1]))
+                    dipole_moment.append(float(line.split()[2]))
+                    print("dipole_moment:", dipole_moment)
+            if ' dipole moment from electron density' in line:
+                grab=True
+    return dipole_moment

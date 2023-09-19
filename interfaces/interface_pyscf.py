@@ -15,7 +15,6 @@ import copy
 #TODO: PE: Polarizable embedding (CPPE). Revisit
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Dirac HF/KS
-#TODO: Look into pointcharge gradient
 #TODO: Gradient for post-SCF methods and TDDFT
 
 class PySCFTheory:
@@ -24,10 +23,12 @@ class PySCFTheory:
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
-                  TDDFT=False, tddft_numstates=10, mom=False, mom_virtindex=1, mom_spinmanifold=0,
+                  TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
+                  mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
+                  CC_density=False,
                   CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
@@ -72,6 +73,9 @@ class PySCFTheory:
                     print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
                     ashexit()
             
+        #Store optional properties of ORCA run job in a dict
+        self.properties ={}
+
         #Printlevel
         self.printlevel=printlevel
         self.label=label
@@ -93,6 +97,7 @@ class PySCFTheory:
         self.x2c=x2c
         self.CC=CC
         self.CCmethod=CCmethod
+        self.CC_density=CC_density #CC density True or False
         self.CC_direct=CC_direct
         self.cc_maxcycle=cc_maxcycle
         self.FNO=FNO
@@ -155,9 +160,13 @@ class PySCFTheory:
         #TDDFT
         self.TDDFT=TDDFT
         self.tddft_numstates=tddft_numstates
+        #NTO
+        self.NTO=NTO
+        self.NTO_states=NTO_states  #List of states to calculate NTOs for
         #MOM
         self.mom=mom
         self.mom_virtindex=mom_virtindex # The relative virtual orbital index to excite into. Default 1 (LUMO). Choose 2 for LUMO+1 etc.
+        self.mom_occindex=mom_occindex #The relative occupied orbital index to excite from. Default 0 (HOMO). Choose -1 for HOMO-1 etc.
         self.mom_spinmanifold=mom_spinmanifold #The spin-manifold (0: alpha or 1: beta) to excited electron in. Default: 0 (alpha)
         #SCF max iterations
         self.scf_maxiter=scf_maxiter
@@ -259,6 +268,7 @@ class PySCFTheory:
         print("Coupled cluster:", self.CC)
         print("CC method:", self.CCmethod)
         print("CC direct:", self.CC_direct)
+        print("CC density:", self.CC_density)
         print("CC maxcycles:", self.cc_maxcycle)
         print("FNO-CC:", self.FNO)
         print("FNO_thresh:", self.FNO_thresh)
@@ -329,12 +339,13 @@ class PySCFTheory:
                 os.remove(f)
             except:
                 print("Error removing file", f)
-    def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies, label="orbs"):
-        import pyscf
+    def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies=None, label="orbs"):
         from pyscf.tools import molden
         print("Writing orbitals to disk as Molden file")
-        #pyscf_molden.from_mo(mol, f'pyscf_{label}.molden', orbitals, occ=occupations)
-        with open(f'pyscf_{label}.molden', 'w') as f1:
+        if mo_energies is None:
+            print("No MO energies. Setting to 0.0")
+            mo_energies = np.array([0.0 for i in occupations])
+        with open(f'{label}.molden', 'w') as f1:
             molden.header(mol, f1)
             molden.orbital_coeff(mol, f1, mo_coeffs, ene=mo_energies, occ=occupations)
     
@@ -353,6 +364,7 @@ class PySCFTheory:
         import pyscf.tools
         pyscf.tools.cubegen.mep(mol, name, dm, nx=nx, ny=ny, nz=nz)
         print("cubegen_mep: Wrote file:", name)
+
     #Natural orbital at the RHF/UHF MP2, CCSD, CCSD(T), AVAS-CASSCF, DMET-CASSCF levels
     #Also possible to do  KS-CC or KS-MP2
     #TODO: Calling make_natural_orbitals calculated RDM1 for MP2 and CCSD but does not store it.
@@ -365,6 +377,7 @@ class PySCFTheory:
         print("Inside calculate_natural_orbitals")
         #Necessary to reimport
         import pyscf
+        import pyscf.cc as pyscf_cc
         import pyscf.mcscf
         print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
 
@@ -477,7 +490,6 @@ class PySCFTheory:
             print("CASSCF occupations", cas_result.mo_occ)
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'CCSD':
-            import pyscf.cc as pyscf_cc
             print("Running CCSD natural orbital calculation")
             ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
             ccsd.max_cycle=200
@@ -485,72 +497,60 @@ class PySCFTheory:
             ccsd.run()
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccsd)
         elif method == 'CCSD(T)':
-            import scipy
-            import pyscf.cc as pyscf_cc
-            from pyscf.cc import ccsd_t_lambda_slow as ccsd_t_lambda
-            from pyscf.cc import uccsd_t_lambda
-            from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
-            from pyscf.cc import uccsd_t_rdm
-
             print("Running CCSD(T) natural orbital calculation")
             #No CCSD(T) object in pyscf. So manual approach. Slower algorithms
             ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
             ccsd.max_cycle=200
             ccsd.verbose=5
             ccsd.run()
-            eris = ccsd.ao2mo()
-            #Make RDMs for ccsd(t) RHF and UHF
-            #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF
-            # and hence UCCSD
-            if type(ccsd) == pyscf.cc.uccsd.UCCSD:
-                print("CCSD(T) lambda UHF")
-                #NOTE: No threading parallelization seen here, not sure why
-                conv, l1, l2 = uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
-                rdm1 = uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
-                print("Mulliken analysis for UHF-CCSD(T) density matrix")
-                self.run_population_analysis(mf, unrestricted=True, dm=rdm1, type='Mulliken', label='CCSD(T)')
-            else:
-                print("CCSD(T) lambda RHF")
-                conv, l1, l2 = ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
-                rdm1 = ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
-                print("Mulliken analysis for RHF-CCSD(T) density matrix")
-                self.run_population_analysis(mf, unrestricted=False, dm=rdm1, type='Mulliken', label='CCSD(T)')
+            natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccsd=ccsd, mf=mf)
 
-            S = mf.get_ovlp()
-            # Slight difference for restricted vs. unrestriced case
-            if isinstance(rdm1, tuple):
-                Dm = rdm1[0]+rdm1[1]
-            elif isinstance(rdm1, np.ndarray):
-                if np.ndim(rdm1) == 3:
-                    Dm = rdm1[0]+rdm1[1]
-                elif np.ndim(rdm1) == 2:
-                    Dm = rdm1
-                else:
-                    raise ValueError(
-                        "rdm1 passed to is a numpy array," +
-                        "but it has the wrong number of dimensions: {}".format(np.ndim(rdm1)))
-            else:
-                raise ValueError(
-                    "\n\tThe rdm1 generated by method_obj.make_rdm1() was a {}."
-                    "\n\tThis type is not supported, please select a different method and/or "
-                    "open an issue at https://github.com/pyscf/pyscf/issues".format(type(rdm1))
-                )
-            # Diagonalize the DM in AO (using Eqn. (1) referenced above)
-            A = reduce(np.dot, (S, Dm, S))
-            w, v = scipy.linalg.eigh(A, b=S)
-            # Flip NOONs (and NOs) since they're in increasing order
-            natocc = np.flip(w)
-            natorb = np.flip(v, axis=1)
         with np.printoptions(precision=5, suppress=True):
             print(f"{method} natural orbital occupations:", natocc)
-        #Choosing MO-coeffients to be
-        if self.scf_type == 'RHF' or self.scf_type == 'RKS':
-            mo_coefficients=natorb              
-        else:
-            mo_coefficients=[natorb,natorb]
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
-        return natocc, mo_coefficients
-    
+        return natocc, natorb
+
+    #Manual verbose protocol for calculating CCSD(T) natural orbitals using ccsd and mf objects
+    def calculate_CCSD_T_natorbs(self,ccsd=None, mf=None):
+        print("Running CCSD(T) natural orbital calculation")
+        import pyscf
+        import pyscf.mcscf
+        import scipy
+        from pyscf.cc import ccsd_t_lambda_slow as ccsd_t_lambda
+        from pyscf.cc import uccsd_t_lambda
+        from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
+        from pyscf.cc import uccsd_t_rdm
+
+        eris = ccsd.ao2mo()
+
+        #Make RDMs for ccsd(t) RHF and UHF
+        #Note: Checking type of CCSD object because if ROHF object then was automatically converted to UHF and hence UCCSD
+        print("Solving lambda equations")
+        print("Warning: this step is slow and not parallelized")
+        if type(ccsd) == pyscf.cc.uccsd.UCCSD:
+            print("CCSD(T) lambda UHF")
+            #NOTE: No threading parallelization seen here, not sure why
+            conv, l1, l2 = uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+            rdm1 = uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
+            Dm = rdm1[0]+rdm1[1]
+        else:
+            print("CCSD(T) lambda RHF")
+            conv, l1, l2 = ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+            rdm1 = ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
+            if np.ndim(rdm1) == 3:
+                Dm = rdm1[0]+rdm1[1]
+            elif np.ndim(rdm1) == 2:
+                Dm = rdm1        
+        # Diagonalize the DM in AO basis
+        S = mf.get_ovlp()
+        A = reduce(np.dot, (S, Dm, S))
+        w, v = scipy.linalg.eigh(A, b=S)
+        # Flip NOONs (and NOs) since they're in increasing order
+        natocc = np.flip(w)
+        natorb = np.flip(v, axis=1)
+
+        return natocc,natorb,rdm1
+
     #Population analysis, requiring mf and dm objects
     #Currently only Mulliken
     def run_population_analysis(self, mf, unrestricted=True, dm=None, type='Mulliken', label=None, verbose=3):
@@ -752,7 +752,11 @@ class PySCFTheory:
 
     def run_CC(self,mf, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
         print("\nInside run_CC")
+        import pyscf.scf
+        import pyscf.dft
         import pyscf.cc as pyscf_cc
+        import pyscf.mcscf
+
         #CCSD-part as RCCSD or UCCSD
         print()
         print("Frozen_orbital_indices:", frozen_orbital_indices)
@@ -760,6 +764,22 @@ class PySCFTheory:
         print("Total number of orbitals:", len(mf.mo_occ))
         print("Number of active orbitals:", len(mf.mo_occ)-len(frozen_orbital_indices))
         print()
+        #Check mo_coefficients in case we have to do unrestricted CC (list of 2 MOCoeff ndarrays required)
+        if mo_coefficients is not None:
+            print("Input orbitals found for run_CC")
+            if type(mo_coefficients) is np.ndarray:
+                print("MO coefficients are ndarray")
+                if mo_coefficients.ndim == 2:
+                    print("ndims is 2")
+                    if isinstance(mf, pyscf.scf.rohf.ROHF): #Works for ROKS too
+                        print("Warning: Meanfield object is ROHF, but not supported by RCCSD. PySCF will convert to UHF and use UCCSD")
+                        print("Warning: Duplicating MO coefficients for UCCSD")
+                        mo_coefficients=[mo_coefficients,mo_coefficients]
+                    elif isinstance(mf, pyscf.scf.uhf.UHF) or isinstance(mf, pyscf.dft.uks.UKS):
+                        print("Warning: single set of MO coefficients found but UHF/UKS determinant used. Duplicating MO coefficients")
+                        mo_coefficients=[mo_coefficients,mo_coefficients]
+        else:
+            print("No input orbitals used. Using SCF orbitals from mf object")
         print("Now starting CCSD calculation")
         if self.scf_type == "RHF":
             cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
@@ -776,6 +796,12 @@ class PySCFTheory:
         elif self.scf_type == "UKS":
             print("Warning: CCSD on top of UKS determinant")
             cc = pyscf_cc.UCCSD(mf.to_uhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
+
+        #Checking whether CC object created is unrestricted or not
+        if type(cc) == pyscf.cc.uccsd.UCCSD:
+            unrestricted=True
+        else:
+            unrestricted=False
 
         #Setting CCSD maxcycles (default 200)
         cc.max_cycle=self.cc_maxcycle
@@ -799,9 +825,54 @@ class PySCFTheory:
             energy = result.e_tot + et
             print("Final CCSD(T) energy:", energy)
         
+        #Density and natural orbitals
+        if self.CC_density is True:
+            print("\nCC density option is active")
+            print(f"Now calculating {CCmethod} density matrix and natural orbitals")
+            if CCmethod == 'CCSD':
+                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(cc)
+            elif CCmethod == 'CCSD(T)':
+                natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(cc,mf)
+                print("Mulliken analysis for CCSD(T) density matrix")
+                self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
+            #Printing occupaations
+            print(f"\n{CCmethod} natural orbital occupations:")
+            print(natocc)
+            print()
+            print("NO-based polyradical metrics:")
+            ash.functions.functions_elstructure.poly_rad_index_nu(natocc)
+            ash.functions.functions_elstructure.poly_rad_index_nu_nl(natocc)
+            ash.functions.functions_elstructure.poly_rad_index_n_d(natocc)
+            print()
+            molden_name=f"pySCF_{CCmethod}_natorbs"
+            print(f"Writing {CCmethod} natural orbitals to Moldenfile: {molden_name}.molden")
+            self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
+
         return energy
+    #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
+    def get_dipole_moment(self, dm=None):
+        if self.postSCF is True:
+            print("pyscf postSCF dipole moment requeste")
+            if dm is None:
+                print("A pyscf density matrix (dm= ) is required as input")
+            dipole_debye = self.mf.dip_moment(dm=dm_re,unit='A.U.')
+        else:
+            #MF dipole moment
+            dipole_debye = self.mf.dip_moment(unit='A.U.')
 
-
+        return dipole_debye
+    def get_polarizability_tensor(self):
+        try:
+            from pyscf.prop import polarizability
+        except ModuleNotFoundError:
+            print("pyscf polarizability requires installation of pyscf.prop module")
+            print("See: https://github.com/pyscf/properties")
+            print("You can install with: pip install git+https://github.com/pyscf/properties")
+            ashexit()
+        print("Note: pySCF will now calculate the polarizability (SCF-level)")
+        polarizability = self.mf.Polarizability().polarizability()
+        return polarizability
+    # polarizability property now part of separate pyscf properties module
     #General run function to distinguish  possible specialrun (disabled) and mainrun
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
@@ -831,12 +902,29 @@ class PySCFTheory:
             print(BC.OKBLUE,BC.BOLD, "------------RUNNING PYSCF INTERFACE-------------", BC.END)
             print("Object-label:", self.label)
             print("Run-label:", label)
+
         #Load pyscf
         import pyscf
         print("PySCF version:", pyscf.__version__)
         #Set PySCF threads to numcores
         pyscf.lib.num_threads(self.numcores)
         print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
+        #Checking environment variables
+        try:
+            print("os.environ['OMP_NUM_THREADS']:", os.environ['OMP_NUM_THREADS'])
+            if os.environ['OMP_NUM_THREADS'] != '1':
+                print("Warning: Environment variable OMP_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
+        except:
+            pass
+        try:
+            print("os.environ['MKL_NUM_THREADS']:", os.environ['MKL_NUM_THREADS'])
+            if os.environ['MKL_NUM_THREADS'] != '1':
+                print("Warning: Environment variable MKL_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
+        except:
+            pass
+
+        
+
         #Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for PYSCFTheory.run method", BC.END)
@@ -1306,16 +1394,27 @@ class PySCFTheory:
                     print("Previous SCF MO occupations are:")
                     print("Alpha:", occ[0].tolist())
                     print("Beta:", occ[1].tolist())
+
+                    #The chosen spin manifold
                     spinmanifold = self.mom_spinmanifold
+
+                    #Finding HOMO index
                     HOMOnum = list(occ[spinmanifold]).index(0.0)-1
+
+                    #Defining the occupied orbital index to excite from (default HOMO). if mom_occindex is -1 and HOMO is 54 then used_occ_index = 54 + (-1) = 53
+                    used_occ_index = HOMOnum + self.mom_occindex
+
+                    #Finding LUMO index
                     LUMOnum = HOMOnum + self.mom_virtindex
 
+
                     print(f"HOMO (spinmanifold:{spinmanifold}) index:", HOMOnum)
+                    print(f"OCC MO index (spinmanifold:{spinmanifold}) to excite from:", used_occ_index)
                     print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
                     print("Spin manifold:", self.mom_spinmanifold)
                     print("Modifying guess")
                     # Assign initial occupation pattern
-                    occ[spinmanifold][HOMOnum]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    occ[spinmanifold][used_occ_index]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
                     occ[spinmanifold][LUMOnum]=1	 # it is still a singlet state
 
                     # New SCF caculation
@@ -1354,11 +1453,18 @@ class PySCFTheory:
 
                 elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS' or self.scf_type == 'RHF' or self.scf_type == 'RKS':
                     print("ROHF/ROKS MOM calculation")
+
+                    #Defining the index of the HOMO    
                     HOMOnum = list(occ).index(0.0)-1
+                    #Defining the occupied orbital index to excite from (default HOMO). if mom_occindex is -1 and HOMO is 54 then used_occ_index = 54 + (-1) = 53
+                    used_occ_index = HOMOnum + self.mom_occindex
+                    
+                    #Defining the virtual orbital index to excite into(default LUMO)
                     LUMOnum = HOMOnum + self.mom_virtindex
                     spinmanifold = self.mom_spinmanifold
                     print("Previous SCF MO occupations are:", occ.tolist())
                     print("HOMO index:", HOMOnum)
+                    print("Occupied MO index to excite from", used_occ_index)
                     print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
                     print("Spin manifold:", self.mom_spinmanifold)
                     print("Modifying guess")
@@ -1366,10 +1472,11 @@ class PySCFTheory:
                     setocc[:, occ==2] = 1
 
                     # Assigned initial occupation pattern
-                    setocc[0][HOMOnum] = 0    # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+                    setocc[0][used_occ_index] = 0    # this excited state is originated from OCCMO(alpha) -> LUMO(alpha)
                     setocc[0][LUMOnum] = 1    # it is still a singlet state
                     ro_occ = setocc[0][:] + setocc[1][:]    # excited occupation pattern within RO style
-
+                    print("setocc:",setocc)
+                    print("ro_occ:",ro_occ)
                     # New ROKS/ROHF SCF calculation
                     if self.scf_type == 'ROHF' or self.scf_type == 'RHF':
                         MOMSCF = pyscf.scf.ROHF(self.mol)
@@ -1402,12 +1509,31 @@ class PySCFTheory:
                 else:
                     print("Unknown scf-type for MOM")
                     ashexit()
+                
+                #delta-SCF results
+                self.properties["Transition_energy"] = trans_energy
+
                 #Overlap
-                #print("self.mf.get_ovlp():", self.mf.get_ovlp())
-                #overlap = pyscf.scf.uhf.det_ovlp(self.mf.mo_coeff,MOMSCF.mo_coeff,self.mf.mo_occ,MOMSCF.mo_occ,self.mf.get_ovlp())
-                #print("overlap:", overlap)
+                # Calculate overlap between two determiant <I|F>
+                #S,X = pyscf.scf.uhf.det_ovlp(self.mf.mo_coeff,MOMSCF.mo_coeff,self.mf.mo_occ,MOMSCF.mo_occ,self.mf.get_ovlp())
+                #print("overlap:", S)
+                #print("X:", X)
+
                 #Transition density matrix
-                #D_12 = MOMSCF.mo_coeff* adjugate(overlap)*self.mf.mo_occ * self.mf.mo_coeff
+                #D_21 = MOMSCF.mo_coeff* adjugate(s)*self.mf.mo_occ * self.mf.mo_coeff
+                #D_21 = reduce(np.dot, (MOMSCF.mo_coeff, np.transpose(S),np.transpose(self.mf.mo_coeff)))
+                #D_21 = MOMSCF.mo_coeff* np.transpose(S)*self.mf.mo_coeff
+                #print("D_21:",D_21)
+
+                #charges = self.mol.atom_charges()
+                #coords = self.mol.atom_coords()
+                #nuc_charge_center = np.einsum('z,zx->x', charges, coords) / charges.sum()
+                #print("nuc_charge_center:",nuc_charge_center)
+                #self.mol.set_common_orig_(nuc_charge_center)
+                #dip_ints = self.mol.intor('cint1e_r_sph', comp=3)
+                #print("dip_ints:",dip_ints)
+                #transition_dipoles = np.einsum('xij,ji->x', dip_ints, D_21)
+                #print("transition_dipoles:",transition_dipoles)
                 #https://github.com/pyscf/pyscf/blob/master/examples/scf/51-elecoup_mom.py
             #####################
             #TDDFT
@@ -1424,8 +1550,38 @@ class PySCFTheory:
                 mytd.nstates = self.tddft_numstates
                 mytd.kernel()
                 mytd.analyze()
+
+                #NTO Analysis for state 1
+                print("NTO analysis for state 1")
+                if self.NTO is True:
+                    if type(self.NTO_states) != list:
+                        print("NTO_states must be a list")
+                        ashexit()
+                    print("Now doing NTO analysis for states:", self.NTO_states)
+                    for ntostate in self.NTO_states:
+                        print("NTO state:", ntostate)
+                        weights_1, nto_1 = mytd.get_nto(state=ntostate, verbose=4)
+
+                print("-"*40)
+                print("TDDFT RESULTS")
+                print("-"*40)
                 #print("TDDFT transition energies (Eh):", mytd.e)
                 print("TDDFT transition energies (eV):", mytd.e*27.211399)
+
+                # Transition dipoles
+                t_dip = mytd.transition_dipole()
+                print("Transition dipoles:", t_dip)
+
+                # Oscillator strengths
+                osc_strengths_length = mytd.oscillator_strength(gauge='length')
+                osc_strengths_vel = mytd.oscillator_strength(gauge='velocity')
+                print("Oscillator strengths (length):", osc_strengths_length)
+                print("Oscillator strengths (velocity):", osc_strengths_vel)
+
+                #Storing in properties object
+                self.properties["TDDFT_transition_energies"] = mytd.e*27.211399
+                self.properties["TDDFT_transition_dipoles"] = t_dip
+                self.properties["TDDFT_oscillator strengths"] = osc_strengths_length
 
             #####################
             #COUPLED CLUSTER
@@ -1785,3 +1941,45 @@ def pyscf_MR_correction(fragment, theory=None):
     print("\nDelta (HighLevel - CCSD(T)) correction:", correction)
 
     return correction
+
+
+
+#Moldenfile from PySCF checkpointfile
+#Also requires geometry (not in chkfile)
+def make_molden_file_PySCF_from_chkfile(fragment=None, basis=None, chkfile=None,label=""):
+    import pyscf
+    from pyscf.tools import molden
+    print(f"Attempting to read chkfile: {chkfile}")
+    if chkfile != None:
+        print("Reading orbitals from checkpointfile:", chkfile)
+        if os.path.isfile(chkfile) is False:
+            print("File does not exist. Continuing!")
+            return False
+        try:
+            chkfileobject = pyscf.scf.chkfile.load(chkfile, 'scf')
+        except TypeError:
+            print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
+            print("Ignoring and continuing")
+            ashexit()
+    print("chkfileobject", chkfileobject)
+    mo_energy = chkfileobject["mo_energy"]
+    mo_occ = chkfileobject["mo_occ"]
+    mo_coeff = chkfileobject["mo_coeff"]
+
+    #Creating mol
+    mol = pyscf.gto.Mole()
+    #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
+    mol.verbose = 3
+    coords_string=ash.modules.module_coords.create_coords_string(fragment.elems,fragment.coords)
+    mol.atom = coords_string
+    mol.symmetry = None
+    mol.charge = fragment.charge
+    mol.spin = fragment.mult-1
+    mol.basis=basis
+    mol.build()
+
+    print("Writing orbitals to disk as Molden file")
+    molden.from_mo(mol, f'pyscf_{label}.molden', mo_coeff, occ=mo_occ)
+    with open(f'pyscf_{label}.molden', 'w') as f1:
+        molden.header(mol, f1)
+        molden.orbital_coeff(mol, f1, mo_coeff, ene=mo_energy, occ=mo_occ)

@@ -1,4 +1,4 @@
-#ALL conda/PyPi PACKAGES that ASH may use
+#The conda/PyPi PACKAGES that ASH may use
 #Run the lines for the packages you want within the conda environment. Make sure the correct conda environment is active
 #Requirements
 conda install python

@@ -84,6 +84,10 @@ class Psi4Theory:
             os.remove(self.filename+'.out')
         except:
             pass
+
+    def get_dipole_moment(self):
+        return self.dipole
+
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, label=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile='', restart=False, charge=None, mult=None ):
@@ -236,14 +240,20 @@ class Psi4Theory:
             if Grad==True:
                 print("Running gradient with Psi4 method:", self.psi4method)
                 #grad=psi4.gradient('scf', dft_functional=self.psi4functional)
-                grad=psi4.gradient(self.psi4method)
+                grad,wfn=psi4.gradient(self.psi4method, return_wfn=True)
+                print("grad:", grad)
+                print("wfn:", wfn)
+                psi4.fchk(wfn, f'sfds.fchk')
                 self.gradient=np.array(grad)
                 self.energy = psi4.variable("CURRENT ENERGY")
+                self.dipole = psi4.core.variables()['CURRENT DIPOLE']
+
             else:
-                #This might be unnecessary as I think all DFT functionals work as keyword to energy function. Hence psi4method works for all
-                #self.energy = psi4.energy('scf', dft_functional=self.psi4functional)
                 print("Running energy with Psi4 method:", self.psi4method)
+                #exit()
                 self.energy = psi4.energy(self.psi4method)
+                self.dipole = psi4.core.variables()['CURRENT DIPOLE']
+
             #Keep restart file 180 as lastrestart.180
             PID = str(os.getpid())
             try:
@@ -322,7 +332,9 @@ class Psi4Theory:
                 #Adding Psi4 settings
                 inputfile.write('set {\n')
                 for key,val in self.psi4settings.items():
-                    inputfile.write(key+' '+val+'\n')
+                    print("key:", key)
+                    print("val:", val)
+                    inputfile.write(key+' '+str(val)+'\n')
                 #Setting RKS or UKS reference. For now, RKS always if mult 1 Todo: Make more flexible
                 if mult == 1:
                     self.psi4settings['reference'] = 'RHF'

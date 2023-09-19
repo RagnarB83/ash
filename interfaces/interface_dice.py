@@ -201,8 +201,7 @@ class DiceTheory:
         except:
             print(BC.FAIL, "Problem importing pyscf. Make sure pyscf has been installed: pip install pyscf", BC.END)
             ashexit(code=9)
-        self.pyscf=pyscf
-        print("\nPySCF version:", self.pyscf.__version__)
+        print("\nPySCF version:", pyscf.__version__)
     def load_shciscf(self):
         #SHCI pyscf plugin
         try:
@@ -370,6 +369,7 @@ noio
     #Set up initial orbitals
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC/SHCI job
     def setup_initial_orbitals(self, elems):
+        import pyscf
         module_init_time=time.time()
         print("\n INITIAL ORBITAL OPTION")
         if len(self.pyscftheoryobject.mf.mo_occ) == 2:
@@ -404,7 +404,7 @@ noio
                 #????
                 print("Done with SHCI-run for initial orbital step")
                 print("Now making natural orbitals from SHCI WF")
-                occupations, mo_coefficients = self.pyscf.mcscf.addons.make_natural_orbitals(self.mch)
+                occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
                 print("SHCI natural orbital occupations:", occupations)
             elif self.initial_orbitals == 'AVAS-CASSCF' or self.initial_orbitals == 'DMET-CASSCF':
                 print("Calling calculate_natural_orbitals using AVAS/DMET method")
@@ -435,8 +435,8 @@ noio
             if '.chk' not in self.moreadfile:
                 print("Error: not a PySCF chkfile")
                 ashexit()
-            mo_coefficients = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
-            occupations = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_occ')
+            mo_coefficients = pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
+            occupations = pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_occ')
             print("Chk-file occupations:", occupations)
             print("Length of occupations array:", len(occupations))
             if len(occupations) != totnumborb:
@@ -508,11 +508,12 @@ noio
 
     #Setup a SHCI CAS-CI or CASSCF job using the SHCI-PySCF interface
     def setup_SHCI_job(self,verbose=5, rdmoption=None):
+        import pyscf
         print(f"\nDoing SHCI-CAS calculation with {self.nelec} electrons in {self.norb} orbitals!")
         print("SHCI_macroiter:", self.SHCI_macroiter)
 
         #Turn RDM creation on or off
-        if rdmoption is False:
+        if rdmoption is None:
             #Pick user-selected (default: False)
             dordm=self.SHCI_DoRDM
         else:
@@ -520,16 +521,27 @@ noio
             dordm=rdmoption
             print("RDM option:", dordm)
 
+        if dordm is True:
+            print("RDM is True")
+            print("Warning: Switching from stochastic PT (no RDM available) to deterministic PT")
+            print("This will be a more expensive calculation ")
+            self.SHCI_stochastic=False
+        
+        #If PT is not requested
+        if self.SHCI_PTiter == 0:
+            print("SHCI_PTiter is 0. PT turned off and will be skipped")
+            self.SHCI_stochastic=True  #NOTE: Has to be set to stochastic, otherwise deterministic PT happens (bug probably)
+
         if self.SHCI_macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and SHCI")
 
-            self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
+            self.mch = pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
             print("Turning off canonicalization step in mcscf object")
             self.mch.canonicalization = False
         else:
             print("This is CASSCF via pyscf and SHCI (orbital optimization)")
             #self.mch = self.shci.SHCISCF(self.pyscftheoryobject.mf, self.norb, self.nelec)
-            self.mch = self.pyscf.mcscf.CASSCF(self.pyscftheoryobject.mf,self.norb, self.nelec)
+            self.mch = pyscf.mcscf.CASSCF(self.pyscftheoryobject.mf,self.norb, self.nelec)
         #Settings
         self.mch.fcisolver = self.shci.SHCI(self.pyscftheoryobject.mol)
         self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
@@ -623,6 +635,7 @@ noio
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
+        import pyscf
         module_init_time=time.time()
         if numcores == None:
             numcores = self.numcores
@@ -766,6 +779,14 @@ noio
                 self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
                 self.SHCI_object_run() #Runs the self.mch object
                 print("Final Dice SHCI energy:", self.energy)
+
+                #Natural orbitals
+                if self.SHCI_DoRDM is True:
+                    print("SHCI DoRDM is True. Creating SHCI natural orbitals")
+                    occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
+                    print("SHCI natural orbital occupations:", occupations)
+                    print("\nWriting natural orbitals to Moldenfile")
+                    self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
 
         print("Dice is finished")
         #Cleanup Dice scratch stuff (big files)

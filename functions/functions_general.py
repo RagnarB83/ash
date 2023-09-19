@@ -50,6 +50,9 @@ def ashexit(errormessage=None, code=1):
     #raise SystemExit(code)
     sys.exit(1)
 
+def basename(filename):
+    return os.path.splitext(filename)[0]
+
 #Attempt to generally find a 3rd-party program based on path, exename etc.
 #Either programdir variable is already set, else we try to find based on programdirname or exename
 def find_program(programdir,programdirname,exename,theorynamelabel):
@@ -203,6 +206,16 @@ def pygrep2(string, file, print_output=False):
     if print_output is True:
         print(*l)
     return l
+
+#Simple function to do find and replace string in file
+def find_replace_string_in_file(file,findstring,replstring):
+    with open(file, 'r') as f:
+        filedata = f.read()
+    # Replace the target string
+    filedata = filedata.replace(findstring, replstring)
+    # Write the file out again
+    with open(file, 'w') as f:
+        f.write(filedata)
 
 
 # Give difference of two lists, sorted. List1: Bigger list
@@ -501,8 +514,8 @@ def write_datafile(x, y, filename="new.dat", separator="     "):
 
 
 # Write a string to file simply
-def writestringtofile(string, file):
-    with open(file, 'w') as f:
+def writestringtofile(string, file,writemode='w'):
+    with open(file, writemode) as f:
         f.write(string)
 
 
@@ -692,14 +705,6 @@ class Timings:
                 time_per = 100 * (mmtime / totalwalltime)
                 print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
             print("")
-        # if len(dictitems_index3) !=0 :
-        # print("Various modules")
-        # print("-"*30)
-        # for dictitem in dictitems_index3:
-        #    mmtime=self.simple_dict[dictitem]
-        #    time_per= 100*(mmtime/totalwalltime)
-        #    print("{:35}{:>20.2f}{:>10.1f}{:>20}".format(dictitem, mmtime, time_per, self.module_count[dictitem]))
-        # print("")
         if len(dictitems_index4) != 0:
             print("Other modules")
             print("-" * 30)
@@ -713,7 +718,7 @@ class Timings:
         print("{:35}{:>20.2f}{:>10}".format("Total walltime", totalwalltime, 100.0))
 
 
-#General pretty table of thing
+#General pretty table of things
 def print_pretty_table(list_of_objects=None, list_of_labels=None, title=None,  spacing=15, float_decimals=4,
                        divider_line_length=70):
 
