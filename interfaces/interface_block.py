@@ -454,8 +454,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("Calling DMRG-IC-NEVPT2")
         from pyblock2.icmr.icnevpt2_full import WickICNEVPT2
         result = WickICNEVPT2(self.mch).run()
-        print("result:",result)
-        print("result dict", result.__dict__)
         e_corr = result.e_corr
         return e_corr
     #Run DMRG-SC-NEVPT2 via Wick
@@ -463,8 +461,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("Calling DMRG-SC-NEVPT2")
         from pyblock2.icmr.scnevpt2 import WickSCNEVPT2
         result = WickSCNEVPT2(self.mch).run()
-        print("result:",result)
-        print("result dict", result.__dict__)
         e_corr = result.e_corr
         return e_corr
     #Regular SC-NEVPT2 with compression
@@ -478,9 +474,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         else:
             print("No MPS compression. Doing full 4PDM")
             result = pyscf.mrpt.NEVPT(self.mch).run()
-
-        print("result:",result)
-        print("result dict", result.__dict__)
         e_corr = result.e_corr
         return e_corr
 
