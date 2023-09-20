@@ -3686,6 +3686,7 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
 
 
     print_line_with_mainheader("Periodic Box Size Equilibration")
+    module_init_time=time.time()
 
     if fragment is None or theory is None:
         print("Fragment and theory required.")
@@ -3792,7 +3793,7 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         except ImportError:
             print("mdtraj library could not be imported. Skipping")
 
-
+    print_time_rel(module_init_time, modulename="OpenMM_box_equilibration", moduleindex=1)
     return md.state.getPeriodicBoxVectors()
 
 #Kinetic energy from velocities
@@ -4213,6 +4214,7 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
     temperatures=[1,10,300], check_gradient_first=True, gradient_threshold=100, use_mdtraj=True, 
     trajfilename="warmup_MD", initial_opt=True, traj_frequencies=[1,1,100], maxoptsteps=10, coupling_frequency=1):
     print_line_with_mainheader("Gentle_warm_up_MD")
+    module_init_time=time.time()
     print("Trajectory filename:", trajfilename)
     if theory is None or fragment is None:
         print("Gentle_warm_up_MD requires theory (OpenMM object) and fragment")
@@ -4278,7 +4280,7 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
                 print("mdtraj library could not be imported. Skipping")
 
     print("Gentle_warm_up_MD finished successfully!")
-
+    print_time_rel(module_init_time, modulename="Gentle_warm_up_MD", moduleindex=1)
     return
 
 #Function to create CV biases in native OpenMM metadynamics

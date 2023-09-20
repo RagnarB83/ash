@@ -235,7 +235,7 @@ class ASH_plot():
         import matplotlib.pyplot as plt
         plt.show()
     def savefig(self, filename, imageformat=None, dpi=None):
-
+        import matplotlib.pyplot as plt
         #Change legend position
         #https://stackoverflow.com/questions/4700614/how-to-put-the-legend-outside-the-plot-in-matplotlib
         if self.num_subplots == 1:
@@ -248,7 +248,7 @@ class ASH_plot():
             dpi = self.dpi
         file=filename+'.'+imageformat
         print("\nSaving plot to file: {} with resolution: {} ".format(file,dpi))
-        matplotlib.pyplot.savefig(file, format=imageformat, dpi=self.dpi, bbox_inches = "tight")
+        plt.savefig(file, format=imageformat, dpi=self.dpi, bbox_inches = "tight")
 
 
 
