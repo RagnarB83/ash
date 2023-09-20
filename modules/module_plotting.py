@@ -15,7 +15,7 @@ class BC:
     UNDERLINE = '\033[4m'
 
 
-def load_matplotlib():
+def load_matplotlib(backend='Agg'):
     print("Trying to load Matplotlib")
     global matplotlib
     try:
@@ -25,7 +25,7 @@ def load_matplotlib():
         return None
         #ashexit()
     print("Matplotlib loaded")
-    matplotlib.use('Agg')
+    matplotlib.use(backend)
     import matplotlib.pyplot as plt 
     return plt
 
@@ -51,16 +51,16 @@ def Voigt(x, x0, strength,sigma, gamma):
 class ASH_plot():
     def __init__(self, figuretitle='Plottyplot', num_subplots=1, dpi=200, imageformat='png', figsize=(9,5),
         x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title', 
-        subplot_titles=None, xlimit=None, ylimit=None,
+        subplot_titles=None, xlimit=None, ylimit=None, backend='Agg',
         legend_pos=None, horizontal=False, tight_layout=True, padding=None):
         print_line_with_mainheader("ASH_energy_plot")
-
-        plt = load_matplotlib() #Load Matplotlib
-        if plt == None:
-            print("Matplotlib failed to load. Exiting ASH_plot")
-            #Making working attribute False so that we can check if ASH_plot instance is useful or not
-            self.working=False
-            return None
+        import matplotlib.pyplot as plt
+        #plt = load_matplotlib(backend=backend) #Load Matplotlib
+        #if plt == None:
+        #    print("Matplotlib failed to load. Exiting ASH_plot")
+        #    #Making working attribute False so that we can check if ASH_plot instance is useful or not
+        #    self.working=False
+        #    return None
         #If matplotlib loaded then all is good
         self.working=True
         self.num_subplots=num_subplots
@@ -90,7 +90,7 @@ class ASH_plot():
 
 
         if self.num_subplots == 1:
-            self.fig, ax = matplotlib.pyplot.subplots(figsize=figsize)
+            self.fig, ax = plt.subplots(figsize=figsize)
             self.axs=[ax]
             self.x_axislabels=x_axislabels
             self.y_axislabels=y_axislabels
@@ -104,7 +104,7 @@ class ASH_plot():
         elif self.num_subplots == 2:
             if horizontal is True:
                 print("Horizontal plot is true")
-                self.fig, self.axs = matplotlib.pyplot.subplots(1, 2, figsize=figsize)
+                self.fig, self.axs = plt.subplots(1, 2, figsize=figsize)
                 if tight_layout is True:
                     print("Tight layout True")
                     self.fig.tight_layout()
@@ -113,7 +113,7 @@ class ASH_plot():
                     self.fig.subplots_adjust(wspace=padding)
 
             else:
-                self.fig, self.axs = matplotlib.pyplot.subplots(2, 1, figsize=figsize)
+                self.fig, self.axs = plt.subplots(2, 1, figsize=figsize)
                 if tight_layout is True:
                     print("Tight layout True")
                     self.fig.tight_layout()
@@ -136,11 +136,11 @@ class ASH_plot():
 
         elif self.num_subplots == 3:
             if horizontal is True:
-                self.fig, self.axs = matplotlib.pyplot.subplots(1, 3, figsize=figsize)  # a figure with a 1x4 grid of Axes
+                self.fig, self.axs = plt.subplots(1, 3, figsize=figsize)  # a figure with a 1x4 grid of Axes
                 self.axiscount=0
             else:
                 self.plotlistnames=['upleft','upright','low']
-                self.fig, axs_dict = matplotlib.pyplot.subplot_mosaic([['upleft', 'upright'],
+                self.fig, axs_dict = plt.subplot_mosaic([['upleft', 'upright'],
                                 ['low', 'low']])
                 self.axs=[axs_dict['upleft'],axs_dict['upright'],axs_dict['low']]
                 self.axiscount=0
@@ -149,7 +149,7 @@ class ASH_plot():
                 self.axs[1].set_ylim(ylimit[0], ylimit[1])
                 self.axs[2].set_ylim(ylimit[0], ylimit[1])
         elif self.num_subplots == 4:
-            self.fig, axs = matplotlib.pyplot.subplots(2, 2, figsize=figsize)  # a figure with a 2x2 grid of Axes
+            self.fig, axs = plt.subplots(2, 2, figsize=figsize)  # a figure with a 2x2 grid of Axes
             self.axs=[axs[0][0],axs[0][1], axs[1][0], axs[1][1]]
             self.axiscount=0
 
@@ -230,9 +230,10 @@ class ASH_plot():
                 curraxes.set_title(self.subplot_titles[subplot])  # Add a title to the axes if provided
         if legend is True:
             curraxes.legend(shadow=True, fontsize='small')  # Add a legend.
-    #def showplot(self):
-    #NOTE: Disabled until we support more backends
-    #    matplotlib.pyplot.show()
+    def showplot(self):
+        #Requires GUI backend
+        import matplotlib.pyplot as plt
+        plt.show()
     def savefig(self, filename, imageformat=None, dpi=None):
 
         #Change legend position
@@ -248,6 +249,10 @@ class ASH_plot():
         file=filename+'.'+imageformat
         print("\nSaving plot to file: {} with resolution: {} ".format(file,dpi))
         matplotlib.pyplot.savefig(file, format=imageformat, dpi=self.dpi, bbox_inches = "tight")
+
+
+
+
 
 #Simple reactionprofile_plot function
 #Input: dictionary of (X,Y): energy   entries

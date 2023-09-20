@@ -2227,6 +2227,9 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             xmlfile = "amoeba2013.xml"
         elif forcefield == 'Amoeba2009':
             xmlfile = "amoeba2009.xml"
+        else:
+            print("Unknown forcefield")
+            exit()
     elif xmlfile is not None:
         print("Using xmlfile:", xmlfile)
     elif forcefield_object is not None:
@@ -2459,7 +2462,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     #TODO: Can we avoid re-creating the omm object ?
     print("Now running single-point MM job to check for bad contacts")
     #Setting sensible periodic cutoff to avoid error
-    periodic_nonbonded_cutoff=(modeller.topology.getPeriodicBoxVectors()[0][0].value_in_unit(openmm_unit.angstrom)/2.0)-1
+    #periodic_nonbonded_cutoff=(modeller.topology.getPeriodicBoxVectors()[0][0].value_in_unit(openmm_unit.angstrom)/2.0)-1
+    periodic_nonbonded_cutoff=10
     print("periodic_nonbonded_cutoff:",periodic_nonbonded_cutoff)
     omm =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
                         topology=modeller.topology, pdbfile=None, periodic=True, periodic_nonbonded_cutoff=periodic_nonbonded_cutoff,
@@ -4207,7 +4211,7 @@ CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', P
 #
 def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000], 
     temperatures=[1,10,300], check_gradient_first=True, gradient_threshold=100, use_mdtraj=True, 
-    trajfilename="warmup_MD", initial_opt=True, traj_frequency=1, maxoptsteps=10, coupling_frequency=1):
+    trajfilename="warmup_MD", initial_opt=True, traj_frequencies=[1,1,100], maxoptsteps=10, coupling_frequency=1):
     print_line_with_mainheader("Gentle_warm_up_MD")
     print("Trajectory filename:", trajfilename)
     if theory is None or fragment is None:
@@ -4253,7 +4257,7 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
 
     print();print()
     #Gentle heating up protocol
-    for num, (ts, step, temp) in enumerate(zip(time_steps, steps, temperatures)):
+    for num, (ts, step, temp,traj_frequency) in enumerate(zip(time_steps, steps, temperatures,traj_frequencies)):
         #Name of PDB and DCD filename: i.e. warmup_MD_cycle1.pdb and warmup_MD_cycle1.dcd 
         MDcyclename=trajfilename+f"_cycle{num}"
         print(f"\n\nNow running MD-run {num}. Number of steps: {step} with timestep:{ts} and temperature: {temp} K")
