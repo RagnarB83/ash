@@ -3281,7 +3281,6 @@ class OpenMM_MDclass:
         print("Timestep: {} ps".format(self.timestep))
         print("Set temperature: {} K".format(self.temperature))
         print("OpenMM integrator:", self.openmmobject.integrator_name)
-        print("self.openmmobject.integrator:", self.openmmobject.integrator)
         print()
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
         print("OpenMM System forces present before run:", forceclassnames)
