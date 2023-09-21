@@ -4986,8 +4986,8 @@ def small_molecule_parameterizor(xyzfile=None, pdbfile=None, molfile=None, sdffi
     print("Now checking whether the 1-4 scaling is consistent in the XML-file vs. OpenMM system")
     system_from_xml = create_sys_and_check_14_scaling_nonbonding(topology=topology, xml_file=final_xmlfilename, expected_coul14=expected_coul14, 
                                 expected_lj14 = expected_lj14)
+    print("system_from_xml:",system_from_xml)
     coulomb_xml, lj_xml = calc_nonbonding_energy_exceptions(system=system_from_xml)
-
     coulomb_sys, lj_sys = calc_nonbonding_energy_exceptions(system=system)
     print()
     print("Coulomb_xml:", coulomb_xml)
@@ -5079,7 +5079,7 @@ def create_sys_and_check_14_scaling_nonbonding(topology=None, xml_file=None, sys
             print("expected_epsilon:", expected_epsilon)
             #ashexit()
         
-        return system_from_xmlfile
+    return system_from_xmlfile
 
 #Function to check the nonbonded energy of exceptions of an OpenMM system
 def calc_nonbonding_energy_exceptions(system=None):
@@ -5106,7 +5106,7 @@ def calc_nonbonding_energy_exceptions(system=None):
         lj_energy+=epsilon.value_in_unit(openmm.unit.kilojoule_per_mole)
 
         #Return Coulomb energy and LJ energy
-        return coulomb_energy, lj_energy
+    return coulomb_energy, lj_energy
 
 #Function to calculate the total nonbonded energy  an OpenMM system
 def calc_total_nonbonding_energy(system):
@@ -5132,8 +5132,8 @@ def calc_total_nonbonding_energy(system):
         coulomb_energy+=qq.value_in_unit(openmm.unit.elementary_charge**2)
         lj_energy+=epsilon.value_in_unit(openmm.unit.kilojoule_per_mole)
 
-        #Return Coulomb energy and LJ energy
-        return coulomb_energy, lj_energy
+    #Return Coulomb energy and LJ energy
+    return coulomb_energy, lj_energy
 
 
 #Function that uses parmed to write and XML-file topology and OpenMM system
