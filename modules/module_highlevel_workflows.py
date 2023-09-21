@@ -518,11 +518,11 @@ maxiter 150\nend
 
         #Memory
         blocks = f"""%maxcore {self.memory}
-%scf
-TolRMSP 99999999
-ConvCheckMode 1
-DampFac 1.
-end
+#%scf
+#TolRMSP 99999999
+#ConvCheckMode 1
+#DampFac 1.
+#end
 """ + blocks
 
         #PNO setting to use for MP2 correction
@@ -3401,6 +3401,10 @@ def Reaction_FCI_correction(reaction=None, basis=None, basis_per_element=None, n
 
 
 #MRCI+Q/CBS theory, inspired by Reimann, Kaupp JCTC 2023, 19, 97-108
+#Not ready
+#TODO: MRCI-correction: freeze all occupied orbitals except 3s-3p. check both MRCI and CASPT2 step
+#TODO: moreadfile option to read in orbitals. Maybe different orbitals for different cardinals ?
+#TODO: Separate function to prepare orbitals
 class ORCA_MRCI_CBS_Theory:
     def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', memory=5000, numcores=1, 
             cardinals=None, basisfamily=None,  SCFextrapolation=True, alpha=None, beta=None, orcadir=None, relativity=None,
