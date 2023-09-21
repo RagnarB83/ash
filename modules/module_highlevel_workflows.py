@@ -3497,10 +3497,11 @@ class ORCA_MRCI_CBS_Theory:
         ######################################################
         # BLOCK-INPUT
         ######################################################
-        caspt2_settings=""
-        if self.MRP2_method == "CASPT2":
+        
+        if self.MRPT2_method == "CASPT2":
             caspt2_settings=f"CASPT2_IPEAshift {self.IPEA_shift}"
-
+        else:
+            caspt2_settings=""
         if self.F12 is True:
             f12_option="""PTMethod FIC_NEVPT2
 """
