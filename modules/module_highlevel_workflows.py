@@ -3405,7 +3405,7 @@ class ORCA_MRCI_CBS_Theory:
     def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', memory=5000, numcores=1, 
             cardinals=None, basisfamily=None,  SCFextrapolation=True, alpha=None, beta=None, orcadir=None, relativity=None,
             atomicSOcorrection=False, auxbasis="autoaux-max", MRPT2_method="CASPT2", MRHL_method="MRCI+Q", MRHL_basis="small",
-            active_space=None, F12=False) :
+            active_space=None, F12=False, IPEA_shift=0.25) :
 
         print_line_with_mainheader("ORCA_MRCI_CBS_Theory")
 
@@ -3469,6 +3469,7 @@ class ORCA_MRCI_CBS_Theory:
         self.MRHL_method = MRHL_method
         self.MRHL_basis=MRHL_basis
         self.active_space=active_space
+        self.IPEA_shift=IPEA_shift
 
         self.extrainputkeyword=extrainputkeyword
         self.extrablocks=extrablocks
@@ -3496,12 +3497,12 @@ class ORCA_MRCI_CBS_Theory:
         ######################################################
         # BLOCK-INPUT
         ######################################################
+        caspt2_settings=""
+        if self.MRP2_method == "CASPT2":
+            caspt2_settings=f"CASPT2_IPEAshift {self.IPEA_shift}"
 
         if self.F12 is True:
             f12_option="""PTMethod FIC_NEVPT2
-PTSettings
-F12 true
-end
 """
         else:
             f12_option=""
@@ -3512,6 +3513,10 @@ end
         self.blocks=f"""%maxcore {memory}
 %casscf
 trafostep ri
+PTSettings
+{caspt2_settings}
+f12 {self.F12.lower()}
+end
 {f12_option}
 nel {active_space[0]}
 norb {active_space[1]}
