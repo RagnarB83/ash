@@ -2146,6 +2146,9 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print('All Done!')
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
 
+#Convenient
+def print_systemsize(modeller):
+    print("System size: {} atoms\n".format(len(modeller.getPositions())))
 
 def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
@@ -2175,10 +2178,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         ashexit()
 
 
-    def print_systemsize():
-        print("System size: {} atoms\n".format(len(modeller.getPositions())))
 
-    # https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#template
+
 
 
     if residue_variants == None:
@@ -2483,121 +2484,59 @@ def write_pdbfile_openMM(topology, positions, filename):
     openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
     print("Wrote PDB-file:", filename)
 
-# Assumes all atoms present (including hydrogens)
+
+
+# Assumes all atoms of small molecule present (including hydrogens)
 def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0, 70.0, 70.0],
-                           xmlfile=None, nonbonded_pars="CM5_UFF", orcatheory=None, numcores=1):
-    # , ionicstrength=0.1, iontype='K+'
+                           xmlfile=None):
+
     print_line_with_mainheader("SmallMolecule Solvator")
     try:
         import openmm as openmm
         import openmm.app as openmm_app
         import openmm.unit as openmm_unit
-        from openmm import XmlSerializer
         print("Imported OpenMM library version:", openmm.__version__)
-
     except ImportError:
         raise ImportError(
             "OpenMM requires installing the OpenMM package. Try: conda install -c conda-forge openmm  \
             Also see http://docs.openmm.org/latest/userguide/application.html")
 
+    # Check if fragment is provided
+    if fragment is None:
+        print("No fragment object provided. Exiting.")
+        ashexit()
 
-    def print_systemsize():
-        print("System size: {} atoms\n".format(len(modeller.getPositions())))
-
+    #Check charge/mult
+    charge, mult = check_charge_mult(charge, mult, "QM", fragment, "solvate_small_molecule")
 
     # Forcefield
     if xmlfile is None:
-        print("\nNo xmlfile was provided.")
-        print("Assuming that you want a simple nonbonded model for the solute.")
-        print("nonbonded_pars:", nonbonded_pars)
+        print("\nNo xmlfile was provided. You must provide one")
+        print("If you just need a simple nonbonded model for the solute e.g. for QM/MM then your options are:")
+        print("""
+              write_nonbonded_FF_for_ligand()
+              """)
+        print("""If you need a full forcefield for the solute then try :
+              small_molecule_parameterizor""")
+        ashexit()
+        
+    #
+    print("Now reading xmlfile:", xmlfile)
+    if xmlfile is None:
+        print("You must provide an xmlfile= keyword argument")
+        ashexit()
 
-
-        # Defining simple atomnames and atomtypes to be used for solute
-        atomnames = [el + "Y" + str(i) for i, el in enumerate(fragment.elems)]
-        atomtypes = [el + "X" + str(i) for i, el in enumerate(fragment.elems)]
-
-        # Take input ASH fragment and write a basic PDB file via ASH
-        pdbfile="smallmol.pdb"
-        write_pdbfile(fragment, outputname="smallmol", dummyname='LIG', atomnames=atomnames)
-
-        if watermodel == "tip3p" or watermodel == "TIP3P" :
-            print("Using watermodel=TIP3P . Using parameters in:", ashpath + "/databases/forcefields")
-            forcefieldpath = ashpath + "/databases/forcefields"
-            waterxmlfile = forcefieldpath + "/tip3p_water_ions.xml"
-            coulomb14scale = 1.0
-            lj14scale = 1.0
-        elif watermodel == "charmm_tip3p":
-            coulomb14scale = 1.0
-            lj14scale = 1.0
-            # NOTE: Problem combining this and solute XML file.
-            print("Using watermodel: CHARMM-TIP3P (has ion parameters also)")
-            # This is the modified CHARMM-TIP3P (LJ parameters on H at least, maybe bonded parameters defined also)
-            # Advantage: also contains ion parameters
-            waterxmlfile = "charmm36/water.xml"
-        else:
-            print("Unknown watermodel.")
-            ashexit()
-
-        # Define nonbonded paramers
-        if nonbonded_pars == "CM5_UFF":
-            print("Using CM5 atomcharges and UFF-LJ parameters.")
-            atompropdict = basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult,
-                                                orcatheory=orcatheory, chargemodel="CM5", numcores=numcores)
-            charges = atompropdict['charges']
-            # Basic UFF LJ parameters
-            # Converting r0 parameters from Ang to nm and to sigma
-            sigmas = [UFF_modH_dict[el][0] * 0.1 / (2 ** (1 / 6)) for el in fragment.elems]
-            # Convering epsilon from kcal/mol to kJ/mol
-            epsilons = [UFF_modH_dict[el][1] * 4.184 for el in fragment.elems]
-        elif nonbonded_pars == "DDEC3" or nonbonded_pars == "DDEC6":
-            print("Using {} atomcharges and DDEC-derived parameters.".format(nonbonded_pars))
-            atompropdict = basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult,
-                                                orcatheory=orcatheory, chargemodel=nonbonded_pars, numcores=numcores)
-            charges = atompropdict['charges']
-            r0 = atompropdict['r0s']
-            eps = atompropdict['epsilons']
-            sigmas = [s * 0.1 / (2 ** (1 / 6)) for s in r0]
-            epsilons = [e * 4.184 for e in eps]
-        elif nonbonded_pars == "xtb_UFF":
-            print("Using xTB charges and UFF-LJ parameters.")
-            charges = basic_atomcharges_xTB(fragment=fragment, charge=charge, mult=mult, xtbmethod='GFN2')
-            # Basic UFF LJ parameters
-            # Converting r0 parameters from Ang to nm and to sigma
-            sigmas = [UFF_modH_dict[el][0] * 0.1 / (2 ** (1 / 6)) for el in fragment.elems]
-            # Convering epsilon from kcal/mol to kJ/mol
-            epsilons = [UFF_modH_dict[el][1] * 4.184 for el in fragment.elems]
-        else:
-            print("Unknown nonbonded_pars option.")
-            ashexit()
-
-        print("sigmas:", sigmas)
-        print("epsilons:", epsilons)
-
-        # Creating XML-file for solute
-
-        xmlfile = write_xmlfile_nonbonded(resnames=["LIG"], atomnames_per_res=[atomnames], atomtypes_per_res=[atomtypes],
-                                        elements_per_res=[fragment.elems], masses_per_res=[fragment.masses],
-                                        charges_per_res=[charges],
-                                        sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename="solute.xml",
-                                        coulomb14scale=coulomb14scale, lj14scale=lj14scale)
+    print("Checking xmlfile for LJ treatment")
+    if pygrep('coulomb14scale="0.83333',xmlfile):
+        print("Found Amber-style scaling parameter.")
+        LJ_treatment="amber"
+    elif pygrep('LennardJonesForce',xmlfile):
+        print("Found CHARMM-style format.")
+        LJ_treatment="charmm"
     else:
-        print("Now reading xmlfile:", xmlfile)
-        if xmlfile is None:
-            print("You must provide an xmlfile= keyword argument")
-            ashexit()
-
-        print("Checking xmlfile for LJ treatment")
-        if pygrep('coulomb14scale="0.83333',xmlfile):
-            print("Found Amber-style scaling parameter.")
-            LJ_treatment="amber"
-        elif pygrep('LennardJonesForce',xmlfile):
-            print("Found CHARMM-style format.")
-            LJ_treatment="charmm"
-        else:
-            print("Unknown LJ14 scaling type. Assuming neither CHARMM or Amber")
-            LJ_treatment="normal"
-            print("Using watermodel=TIP3P . Using parameters in:", ashpath + "/databases/forcefields")
-
+        print("Unknown LJ14 scaling type. Assuming neither CHARMM or Amber")
+        LJ_treatment="normal"
+        print("Using watermodel=TIP3P . Using parameters in:", ashpath + "/databases/forcefields")
             
         print("LJ_treatment:", LJ_treatment)
 
@@ -2622,7 +2561,6 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
     forcefield = openmm_app.forcefield.ForceField(*[xmlfile, waterxmlfile])
 
-    #smallmol.pdb
 
     # Load PDB-file and create Modeller object
     pdb = openmm_app.PDBFile(pdbfile)
@@ -2644,7 +2582,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     # Write out solvated system coordinates
     print("Creating PDB-file: system_aftersolvent.pdb")
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
-    print_systemsize()
+    print_systemsize(modeller)
     # Create ASH fragment and write to disk
     newfragment = Fragment(pdbfile="system_aftersolvent.pdb")
     newfragment.print_system(filename="newfragment.ygg")
@@ -2659,6 +2597,86 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 
     # Return forcefield object,  topology object and ASH fragment
     return forcefield, modeller.topology, newfragment
+
+
+
+
+#Function to get nonbonded model parameters for a metal cluster
+#Too similar to create_nonbonded_model_xmlfile
+#TODO: Add option to symmetrize charges for similar atoms in residue
+def write_nonbonded_FF_for_ligand(fragment=None, charge=None, mult=None, coulomb14scale=1.0, lj14scale=1.0, 
+    ff_type="CHARMM", charge_model="CM5", theory=None, LJ_model="UFF", resname="LIG", numcores=1):
+    print_line_with_mainheader("write_nonbonded_FF_for_ligand")
+
+    # Check if fragment is provided
+    if fragment is None:
+        print("No fragment object provided. Exiting.")
+        ashexit()
+
+    #Check charge/mult
+    charge, mult = check_charge_mult(charge, mult, "QM", fragment, "write_nonbonded_FF_for_ligand")
+
+    #Coulomb and LJ scaling. Needs to be FF compatible.
+    print("ff_type:",ff_type)
+    if ff_type.upper() == "CHARMM":
+        print("CHARMM option: True")
+        print("Will create XML file so that the Nonbonded Interaction is compatible with CHARMM.\n")
+        charmm=True
+        coulomb14scale=1.0
+        lj14scale=1.0
+    elif ff_type.upper() == "AMBER":
+        charmm=False
+        coulomb14scale=0.83333333
+        lj14scale=0.5
+    else:
+        charmm=False
+        coulomb14scale=1.0
+        lj14scale=1.0
+
+    if charge_model == "xTB":
+        print("Using xTB charges")
+        charges = basic_atomcharges_xTB(fragment=fragment, charge=charge, mult=mult, xtbmethod='GFN2')
+    elif charge_model == "CM5_ORCA" or charge_model == "CM5":
+        print("CM5_ORCA option chosen")
+        if theory == None: print("theory keyword required");ashexit()
+        atompropdict = basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult,
+                                               orcatheory=theory, chargemodel="CM5", numcores=numcores)
+        charges = atompropdict['charges']
+    elif charge_model == "DDEC3" or charge_model == "DDEC6":
+        print("Using {} atomcharges and DDEC-derived parameters.".format(charge_model))
+        atompropdict = basic_atom_charges_ORCA(fragment=fragment, charge=charge, mult=mult,
+                                            orcatheory=theory, chargemodel=charge_model, numcores=numcores)
+        charges = atompropdict['charges']
+    else:
+        print("Unknown charge_model option")
+        exit()
+
+    if LJ_model == "UFF":
+        # Basic UFF LJ parameters
+        # Converting r0 parameters from Ang to nm and to sigma
+        sigmas = [UFF_modH_dict[el][0] * 0.1 / (2 ** (1 / 6)) for el in fragment.elems]
+        # Convering epsilon from kcal/mol to kJ/mol
+        epsilons = [UFF_modH_dict[el][1] * 4.184 for el in fragment.elems]
+    elif LJ_model == "DDEC3" or LJ_model == "DDEC6":
+        r0 = atompropdict['r0s']
+        eps = atompropdict['epsilons']
+        sigmas = [s * 0.1 / (2 ** (1 / 6)) for s in r0]
+        epsilons = [e * 4.184 for e in eps]
+    else:
+        print("unknown LJ_model")
+        ashexit()
+
+    # Defining simple atomnames and atomtypes to be used for ligand
+    atomnames = [el + "Y" + str(i) for i, el in enumerate(fragment.elems)]
+    atomtypes = [el + "X" + str(i) for i, el in enumerate(fragment.elems)]
+
+    # Creating XML-file for ligand
+    xmlfile = write_xmlfile_nonbonded(resnames=[resname], atomnames_per_res=[atomnames], atomtypes_per_res=[atomtypes],
+                                        elements_per_res=[fragment.elems], masses_per_res=[fragment.masses],
+                                        charges_per_res=[charges],
+                                        sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename=resname+".xml",
+                                        coulomb14scale=coulomb14scale, lj14scale=lj14scale, charmm=charmm)
+    return xmlfile
 
 
 # Simple XML-writing function. Will only write nonbonded parameters
@@ -3970,83 +3988,6 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
     #Returning original pdbfile if all OK        
 
     return pdbfile
-
-#Function to get nonbonded model parameters for a metal cluster
-#TODO: Add option to symmetrize charges for similar atoms in residue
-def write_nonbonded_FF_for_ligand(fragment=None, xyzfile=None, charge=None, mult=None, coulomb14scale=1.0, lj14scale=1.0, 
-    charmm=True, charge_model="xTB", theory=None, LJ_model="UFF", resname="LIG"):
-    print_line_with_mainheader("OpenMM write_nonbonded_FF_for_ligand")
-
-    if charmm == True:
-        print("CHARMM option: True")
-        print("Will create XML file so that the Nonbonded Interaction is compatible with CHARMM.\n")
-
-    else:
-        print("CHARMM option: False")
-        print("Will create XML file in the regular way\n")
-
-    #Coulomb and LJ scaling. Needs to be FF compatible. CHARMM values below
-
-    #Creating ASH fragment
-    if fragment != None:
-        if fragment.charge == None or fragment.mult == None:
-            print("No charge/mult information present in fragment")
-            if charge == None or mult == None:
-                print("No charge/mult info provided to function write_nonbonded_FF_for_ligand either.")
-                print("Exiting")
-                ashexit()
-            else:
-                fragment.charge=charge; fragment.mult=mult
-
-        #Charge
-    elif xyzfile != None:
-        if os.path.exists(xyzfile) == False:
-            print("XYZ-file does not exist. Exiting")
-            ashexit()
-        if charge == None or mult == None :
-            print("XYZ-file option requires charge and mult definition. Exiting.")
-            ashexit()
-        fragment=Fragment(xyzfile=xyzfile, charge=charge,mult=mult)
-    else:
-        print("Neither fragment or xyzfile was provided to write_nonbonded_FF_for_ligand")
-        ashexit()
-
-    # Defining simple atomnames and atomtypes to be used for ligand
-    atomnames = [el + "Y" + str(i) for i, el in enumerate(fragment.elems)]
-    atomtypes = [el + "X" + str(i) for i, el in enumerate(fragment.elems)]
-
-    if charge_model == "xTB":
-        print("Using xTB charges")
-        charges = basic_atomcharges_xTB(fragment=fragment, charge=fragment.charge, mult=fragment.mult, xtbmethod='GFN2')
-    elif charge_model == "CM5_ORCA":
-        print("CM5_ORCA option chosen")
-        if theory == None: print("theory keyword required");ashexit()
-        atompropdict = basic_atom_charges_ORCA(fragment=fragment, charge=fragment.charge, mult=fragment.mult,
-                                               orcatheory=theory, chargemodel="CM5", numcores=theory.numcores)
-        charges = atompropdict['charges']
-    else:
-        print("Unknown nonbonded_pars option")
-        exit()
-
-    if LJ_model == "UFF":
-        # Basic UFF LJ parameters
-        # Converting r0 parameters from Ang to nm and to sigma
-        sigmas = [UFF_modH_dict[el][0] * 0.1 / (2 ** (1 / 6)) for el in fragment.elems]
-        # Convering epsilon from kcal/mol to kJ/mol
-        epsilons = [UFF_modH_dict[el][1] * 4.184 for el in fragment.elems]
-    else:
-        print("other LJ model not available")
-        ashexit()
-
-    # Creating XML-file for ligand
-    xmlfile = write_xmlfile_nonbonded(resnames=[resname], atomnames_per_res=[atomnames], atomtypes_per_res=[atomtypes],
-                                        elements_per_res=[fragment.elems], masses_per_res=[fragment.masses],
-                                        charges_per_res=[charges],
-                                        sigmas_per_res=[sigmas], epsilons_per_res=[epsilons], filename=resname+".xml",
-                                        coulomb14scale=coulomb14scale, lj14scale=lj14scale, charmm=charmm)
-    return xmlfile
-
-
 
 ################################
 # Native OpenMM metadynamics
