@@ -31,9 +31,9 @@ def test_OpenMPI():
     print("Testing that mpirun is executable...", end="")
     p = sp.Popen(["mpirun", "-V"], stdout = sp.PIPE)
     out, err = p.communicate()
-    mpiversion=out.split()[3].decode()
+    mpiversion=out.decode()
     print(BC.OKGREEN,"yes",BC.END)
-    print("OpenMPI version:", mpiversion)
+    print("OpenMPI version (mpirun -V):", mpiversion)
 
 ###############################################
 #MULTIPROCESS/MULTIPROCESSING handling
