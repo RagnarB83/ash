@@ -3516,7 +3516,7 @@ class ORCA_MRCI_CBS_Theory:
 trafostep ri
 PTSettings
 {caspt2_settings}
-f12 {self.F12.lower()}
+f12 {str(self.F12).lower()}
 end
 {f12_option}
 nel {active_space[0]}
