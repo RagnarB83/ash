@@ -31,7 +31,7 @@ def test_OpenMPI():
     print("Testing that mpirun is executable...", end="")
     p = sp.Popen(["mpirun", "-V"], stdout = sp.PIPE)
     out, err = p.communicate()
-    mpiversion=out.decode()
+    mpiversion=out.decode() #Now taking whole string
     print(BC.OKGREEN,"yes",BC.END)
     print("OpenMPI version (mpirun -V):", mpiversion)
 
