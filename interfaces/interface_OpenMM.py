@@ -2509,7 +2509,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     #Check charge/mult
     charge, mult = check_charge_mult(charge, mult, "QM", fragment, "solvate_small_molecule")
 
-    # Forcefield
+    # Check xmlfile
     if xmlfile is None:
         print("\nNo xmlfile was provided. You must provide one")
         print("If you just need a simple nonbonded model for the solute e.g. for QM/MM then your options are:")
@@ -2520,12 +2520,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
               small_molecule_parameterizor""")
         ashexit()
         
-    #
-    print("Now reading xmlfile:", xmlfile)
-    if xmlfile is None:
-        print("You must provide an xmlfile= keyword argument")
-        ashexit()
-
+    # Read XML-file and check for LJ treatment
     print("Checking xmlfile for LJ treatment")
     if pygrep('coulomb14scale="0.83333',xmlfile):
         print("Found Amber-style scaling parameter.")
@@ -2540,40 +2535,45 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
             
         print("LJ_treatment:", LJ_treatment)
 
-        #Now selecting watermodel XML-file based on whether CHARMM, Amber etc.
-        if watermodel == "tip3p" or watermodel == "TIP3P" :
-            print("Using watermodel=TIP3P")
-            if LJ_treatment =="amber":
-                waterxmlfile="amber/tip3p_standard.xml"
-            elif LJ_treatment =="charmm":
-                waterxmlfile="charmm36/water.xml"
-            elif LJ_treatment == "normal":
-                print("Using parameters in:", ashpath + "/databases/forcefields")
-                forcefieldpath = ashpath + "/databases/forcefields"
-                waterxmlfile = forcefieldpath + "/tip3p_water_ions.xml"        
-        else:
-            print("Only TIP3P water supported for now")
-            ashexit()
-    
-        xyzfile = Fragment.write_xyzfile(fragment, xyzfilename="smallmol.xyz")
-        pdbfile = xyz_to_pdb_with_connectivity(xyzfile)
-    
+    #Now selecting watermodel XML-file based on whether CHARMM, Amber etc.
+    if watermodel == "tip3p" or watermodel == "TIP3P" :
+        print("Using watermodel=TIP3P")
+        if LJ_treatment =="amber":
+            waterxmlfile="amber/tip3p_standard.xml"
+        elif LJ_treatment =="charmm":
+            waterxmlfile="charmm36/water.xml"
+        elif LJ_treatment == "normal":
+            print("Using parameters in:", ashpath + "/databases/forcefields")
+            forcefieldpath = ashpath + "/databases/forcefields"
+            waterxmlfile = forcefieldpath + "/tip3p_water_ions.xml"        
+    else:
+        print("Only TIP3P water supported for now")
+        ashexit()
+
+    # Create forcefield object
     print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
     forcefield = openmm_app.forcefield.ForceField(*[xmlfile, waterxmlfile])
 
+    #WRITE PDB-file
+    #Check if xmlfile contains bonded parameters
+    if pygrep('<Bond',xmlfile):
+        print("XML-file contains bonded parameters. Writing PDB-file with connectivity.")
+        xyzfile = Fragment.write_xyzfile(fragment, xyzfilename="smallmol.xyz")
+        pdbfile = xyz_to_pdb_with_connectivity(xyzfile)
+    else:
+        atomnames = [el + "Y" + str(i) for i, el in enumerate(fragment.elems)]
+        pdbfile = write_pdbfile(fragment, outputname="smallmol", dummyname='LIG', atomnames=atomnames)
 
     # Load PDB-file and create Modeller object
     pdb = openmm_app.PDBFile(pdbfile)
     print("Loading Modeller.")
     modeller = openmm_app.Modeller(pdb.topology, pdb.positions)
-    numresidues = modeller.topology.getNumResidues()
-    print("Modeller topology has {} residues.".format(numresidues))
-
+    print(f"Modeller topology has {modeller.topology.getNumResidues()} residues.")
 
     # Solvent+Ions
     print("Adding solvent, watermodel:", watermodel)
     # NOTE: modeller.addsolvent will automatically add ions to neutralize any excess charge
-    # TODO: Replace with something simpler
+    print("Warning: Modeller will automatically neutralize system with ions if system is charged")
     if solvent_boxdims is not None:
         print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
         modeller.addSolvent(forcefield, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
@@ -2583,6 +2583,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     print("Creating PDB-file: system_aftersolvent.pdb")
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
     print_systemsize(modeller)
+
     # Create ASH fragment and write to disk
     newfragment = Fragment(pdbfile="system_aftersolvent.pdb")
     newfragment.print_system(filename="newfragment.ygg")
@@ -2597,7 +2598,6 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 
     # Return forcefield object,  topology object and ASH fragment
     return forcefield, modeller.topology, newfragment
-
 
 
 
