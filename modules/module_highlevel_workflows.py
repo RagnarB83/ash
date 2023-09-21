@@ -3398,3 +3398,524 @@ def Reaction_FCI_correction(reaction=None, basis=None, basis_per_element=None, n
 
     #delta_A=reaction_energy_ice-reaction_energy_cc
     #print(f"delta_A: {delta_A} {reaction.unit}")
+
+
+#MRCI+Q/CBS theory, inspired by Reimann, Kaupp JCTC 2023, 19, 97-108
+class ORCA_MRCI_CBS_Theory:
+    def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', memory=5000, numcores=1, 
+            cardinals=None, basisfamily=None,  SCFextrapolation=True, alpha=None, beta=None, orcadir=None, relativity=None,
+            atomicSOcorrection=False, auxbasis="autoaux-max", MRPT2_method="CASPT2", MRHL_method="MRCI+Q", MRHL_basis="small",
+            active_space=None, F12=False) :
+
+        print_line_with_mainheader("ORCA_MRCI_CBS_Theory")
+
+        #Indicates that this is a QMtheory
+        self.theorytype="QM"
+
+        #CHECKS to exit early 
+        if elements == None:
+            print(BC.FAIL, "\ORCA_MRCI_CBS_Theory requires a list of elements to be given in order to set up basis sets", BC.END)
+            print("Example: ORCA_MRCI_CBS_Theory(elements=['C','Fe','S','H','Mo'], basisfamily='def2',cardinals=[2,3], ...")
+            print("Should be a list containing all elements that a fragment might contain")
+            ashexit()
+        else:
+            #Removing redundant symbols (in case fragment.elems list was passed for example)
+            elements = list(set(elements))
+
+
+
+        #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single 
+        if cardinals == None:
+            print("Error: cardinals must be given as a list of integers")
+            ashexit()
+        elif len(cardinals) == 1:
+            print(BC.WARNING, "Only a single cardinal was chosen. This means that no extrapolation will be carried out", BC.END)
+            self.singlebasis=True
+        else:
+            self.singlebasis=False
+
+
+        #Check if F12 is chosen correctly
+        if F12 == False and basisfamily == "cc-f12":
+            print(BC.FAIL,"Basisfamily cc-f12 chosen but F12 is not active.")
+            print("To use F12 instead of extrapolation set: F12=True, basisfamily='cc-f12', cardinals=[X] (i.e. single cardinal)",BC.END)
+            ashexit()
+        if F12 is True and 'f12' not in basisfamily:
+            print(BC.FAIL,"F12 option chosen but an F12-basisfamily was not chosen. Choose basisfamily='cc-f12'",BC.END)
+            ashexit()
+        if F12 is True and len(cardinals) != 1:
+            print(BC.FAIL,"For F12 calculations, set cardinals=[X] i.e. a list of one integer.", BC.END)
+            ashexit()
+        if F12 is True and 'NEVPT2' not in MRPT2_method:
+            print(BC.FAIL,"F12 calculations require MRPT2 to be NEVPT2.", BC.END)
+            ashexit()
+
+        
+        #Main attributes
+        self.cardlabels={2:'D',3:'T',4:'Q',5:"5",6:"6"}
+        self.orcadir = orcadir
+        self.elements=elements
+        self.cardinals = cardinals
+        self.alpha=alpha
+        self.beta=beta
+        self.SCFextrapolation=SCFextrapolation
+        self.F12=F12
+        self.basisfamily = basisfamily
+        self.relativity = relativity
+        self.numcores=numcores
+        self.memory=memory
+        self.scfsetting=scfsetting
+        self.MRPT2_method=MRPT2_method
+        self.MRHL_method = MRHL_method
+        self.MRHL_basis=MRHL_basis
+        self.active_space=active_space
+
+        self.extrainputkeyword=extrainputkeyword
+        self.extrablocks=extrablocks
+        self.atomicSOcorrection=atomicSOcorrection
+
+        #ECP-flag may be set to True later
+        self.ECPflag=False
+
+        print("-----------------------------")
+        print("ORCA_MRCI_CBS PROTOCOL")
+        print("-----------------------------")
+        print("Settings:")
+        print("Cardinals chosen:", self.cardinals)
+        print("Basis set family chosen:", self.basisfamily)
+        print("F12:", self.F12)
+        print("SCF extrapolation:", self.SCFextrapolation)
+        print("Elements involved:", self.elements)
+        print("Number of cores: ", self.numcores)
+        print("Maxcore setting: ", self.memory, "MB")
+        print("SCF setting: ", self.scfsetting)
+        print("Relativity: ", self.relativity)
+        print("Atomic spin-orbit correction: ", self.atomicSOcorrection)
+        print("")
+
+        ######################################################
+        # BLOCK-INPUT
+        ######################################################
+
+        if self.F12 is True:
+            f12_option="""PTMethod FIC_NEVPT2
+PTSettings
+F12 true
+end
+"""
+        else:
+            f12_option=""
+
+        #Block input for CASSCF block options.
+        #Disabling FullLMP2 guess in general as not available for open-shell
+        #Adding memory and extrablocks.
+        self.blocks=f"""%maxcore {memory}
+%casscf
+trafostep ri
+{f12_option}
+nel {active_space[0]}
+norb {active_space[1]}
+maxiter	300
+end
+{extrablocks}\n"""
+
+
+        #AUXBASIS choice
+        if auxbasis == 'autoaux-max':
+            finalauxbasis="auxc \"autoaux\"\nautoauxlmax true"
+        elif auxbasis == 'autoaux':
+            finalauxbasis="auxc \"autoaux\""
+        else:
+            finalauxbasis="auxc \"{}\"".format(auxbasis)
+
+        #Getting basis sets and ECPs for each element for a given basis-family and cardinal
+        #Distinguish between 3 cardinal calculations (Separate triples), 2 cardinal and 1 cardinal calculations
+        if len(self.cardinals) == 3:
+            #We now have 3 cardinals.
+            self.Calc0_basis_dict={}
+            for elem in elements:
+                bas=basis_for_element(elem, basisfamily, cardinals[0])
+                self.Calc0_basis_dict[elem] = bas
+            print("Basis set definitions for each element:")
+            print("Calc0_basis_dict:", self.Calc0_basis_dict)
+
+            self.Calc1_basis_dict={}
+            for elem in elements:
+                bas=basis_for_element(elem, basisfamily, cardinals[1])
+                self.Calc1_basis_dict[elem] = bas
+            print("Basis set definitions for each element:")
+            print("Calc1_basis_dict:", self.Calc1_basis_dict)
+
+            self.Calc2_basis_dict={}
+            for elem in elements:
+                bas=basis_for_element(elem, basisfamily, cardinals[2])
+                self.Calc2_basis_dict[elem] = bas
+            print("Basis set definitions for each element:")
+            print("Calc2_basis_dict", self.Calc2_basis_dict)
+
+            #Adding basis set info for each element into blocks
+            basis0_block="%basis\n"
+            for el,bas_ecp in self.Calc0_basis_dict.items():
+                basis0_block=basis0_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                if bas_ecp[1] != None:
+                    #Setting ECP flag to True
+                    self.ECPflag=True
+                    basis0_block=basis0_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+
+            #Adding basis set info for each element into blocks
+            self.basis1_block="%basis\n"
+            for el,bas_ecp in self.Calc1_basis_dict.items():
+                self.basis1_block=self.basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                if bas_ecp[1] != None:
+                    #Setting ECP flag to True
+                    self.ECPflag=True
+                    self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+                    
+            #Adding basis set info for each element into blocks
+            self.basis2_block="%basis\n"
+            for el,bas_ecp in self.Calc2_basis_dict.items():
+                self.basis2_block=self.basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                if bas_ecp[1] != None:
+                    #Setting ECP flag to True
+                    self.ECPflag=True
+                    self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+
+            #Adding auxiliary basis to all defined blocks
+            self.basis0_block=self.basis0_block+finalauxbasis+"\nend" 
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
+            self.basis2_block=self.basis2_block+finalauxbasis+"\nend" 
+
+            self.blocks0= self.blocks +basis0_block #Used in CCSD and CCSD(T) calcs
+            self.blocks1= self.blocks +self.basis1_block #Used in CCSD and CCSD(T) calcs
+            self.blocks2= self.blocks +self.basis2_block  #Used in CCSD calcs only
+        elif len(self.cardinals) == 2:
+
+            self.Calc1_basis_dict={}
+            for elem in elements:
+                bas=basis_for_element(elem, basisfamily, cardinals[0])
+                self.Calc1_basis_dict[elem] = bas
+            print("Basis set definitions for each element:")
+            print("Calc1_basis_dict:", self.Calc1_basis_dict)
+
+            self.Calc2_basis_dict={}
+            for elem in elements:
+                bas=basis_for_element(elem, basisfamily, cardinals[1])
+                self.Calc2_basis_dict[elem] = bas
+            print("Basis set definitions for each element:")
+            print("Calc2_basis_dict", self.Calc2_basis_dict)
+
+            #Adding basis set info for each element into blocks
+            self.basis1_block="%basis\n"
+            for el,bas_ecp in self.Calc1_basis_dict.items():
+                self.basis1_block=self.basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                if bas_ecp[1] != None:
+                    #Setting ECP flag to True
+                    self.ECPflag=True
+                    self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+
+            #Adding basis set info for each element into blocks
+            self.basis1_block="%basis\n"
+            for el,bas_ecp in self.Calc1_basis_dict.items():
+                self.basis1_block=self.basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                if bas_ecp[1] != None:
+                    #Setting ECP flag to True
+                    self.ECPflag=True
+                    self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+
+            #Adding basis set info for each element into blocks
+            self.basis2_block="%basis\n"
+            for el,bas_ecp in self.Calc2_basis_dict.items():
+                self.basis2_block=self.basis2_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                if bas_ecp[1] != None:
+                    #Setting ECP flag to True
+                    self.ECPflag=True
+                    self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+
+            #Adding auxiliary basis to all defined blocks
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
+            self.basis2_block=self.basis2_block+finalauxbasis+"\nend" 
+
+            self.blocks1= self.blocks +self.basis1_block #Used in CCSD(T) calcs
+            self.blocks2= self.blocks +self.basis2_block #Used in CCSD(T) calcs
+
+        elif len(self.cardinals) == 1:
+            #Single-basis calculation
+            self.Calc1_basis_dict={}
+            for elem in elements:
+                bas=basis_for_element(elem, basisfamily, cardinals[0])
+                self.Calc1_basis_dict[elem] = bas
+            print("Basis set definitions for each element:")
+            print("Calc1_basis_dict:", self.Calc1_basis_dict)
+            #Adding basis set info for each element into blocks
+            self.basis1_block="%basis\n"
+            for el,bas_ecp in self.Calc1_basis_dict.items():
+                self.basis1_block=self.basis1_block+"newgto {} \"{}\" end\n".format(el,bas_ecp[0])
+                if bas_ecp[1] != None:
+                    #Setting ECP flag to True
+                    self.ECPflag=True
+                    self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
+            self.blocks1= self.blocks +self.basis1_block
+
+
+        #Auxiliary basis to self.blocks. Used by CVSR only:
+        self.blocks=self.blocks+"%basis {} end".format(finalauxbasis)
+
+
+        ###################
+        #SIMPLE-INPUT LINE
+        ###################
+
+        #SCALAR RELATIVITY HAMILTONIAN
+        if self.relativity == None:
+            if self.basisfamily in ['cc-dkh', 'aug-cc-dkh', 'cc-dk', 'aug-cc-dk', 'def2-zora', 'def2-dkh', 'def2-dk', 'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L'
+            'ma-def2-zora','ma-def2-dkh', 'cc-CV-dk', 'cc-CV-dkh', 'aug-cc-CV-dk', 'aug-cc-CV-dkh']:
+                print("Relativity option is None but a relativistic basis set family chosen:", self.basisfamily)
+                print("You probably want relativity keyword argument set to DKH or ZORA (relativity=\"NoRel\" option possible also but not recommended)")
+                ashexit()
+            self.extrainputkeyword = self.extrainputkeyword + '  '
+
+
+        elif self.relativity == "NoRel":
+            self.extrainputkeyword = self.extrainputkeyword + '  '
+        elif self.relativity == 'DKH':
+            self.extrainputkeyword = self.extrainputkeyword + ' DKH '
+        elif self.relativity == 'ZORA':
+            self.extrainputkeyword = self.extrainputkeyword + ' ZORA '
+        elif self.relativity == 'X2C':
+            self.extrainputkeyword = self.extrainputkeyword + ' X2C '
+            print("Not ready")
+            ashexit()
+
+
+        #Global F12-aux basis keyword
+        if self.F12 is True:
+            cardlabel=self.cardlabels[self.cardinals[0]]
+            self.auxbasiskeyword="cc-pV{}Z-F12-OptRI".format(cardlabel)
+        else:
+            #Chosen elsewhere for non-F12
+            self.auxbasiskeyword=""
+
+        #NOTE: For F12 calculations ORCA determines the F12GAMMA parameter based on the F12-basis keyword is present in the simple-input
+        #So we have to put a basis-set keyword there
+        if self.F12 is True:
+            self.mainbasiskeyword=self.Calc1_basis_dict[elements[0]][0]
+
+        else:
+            #For regular calculation we do not set a mainbasis-keyword
+            self.mainbasiskeyword=""
+
+
+        self.mrpt2_input_line=f"! {self.MRPT2_method} {self.scfsetting} {self.extrainputkeyword} {self.mainbasiskeyword} {self.auxbasiskeyword}"
+
+        self.mrhl_input_line=f"! {self.MRHL_method} {self.scfsetting} {self.extrainputkeyword} {self.mainbasiskeyword}"
+
+        ##########################################################################################
+        #Defining two theory objects for each basis set unless F12 or single-cardinal provided
+        #And 1 theory object for MRHL correction
+        ##########################################################################################
+        if self.singlebasis is True:
+            #For single-basis CCSD(T) or single-basis F12 calculations
+            self.mrpt2_1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.mrpt2_input_line, orcablocks=self.blocks1, numcores=self.numcores)
+        else:
+            #Extrapolations
+
+            #Regular direct CCSD(T) extrapolations on both cardinals
+            self.mrpt2_1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.mrpt2_input_line, orcablocks=self.blocks1, numcores=self.numcores)
+            self.mrpt2_2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.mrpt2_input_line, orcablocks=self.blocks2, numcores=self.numcores)
+        #HL correction
+        if self.MRHL_method != "None":
+            if self.MRHL_basis=="small":
+                self.mrhl = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.mrhl_input_line, 
+                                                                    orcablocks=self.blocks1, numcores=self.numcores)
+            elif self.MRHL_basis=="large":
+                self.mrhl = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.mrhl_input_line, 
+                                                                    orcablocks=self.blocks2, numcores=self.numcores)
+            elif self.MRHL_basis=="extrapolation":
+                print("not ready")
+            else:
+                print("unknow MRHL_basis option")
+                ashexit()
+
+
+    def cleanup(self):
+        print("Cleanup called")
+
+    def run(self, current_coords=None, qm_elems=None, 
+            elems=None, Grad=False, numcores=None, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None):
+
+        print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA_MRCI_CBS_Theory-------------", BC.END)
+
+
+        #Checking if charge and mult has been provided
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.run method", BC.END)
+            ashexit()
+
+        if PC is True:
+            print("Pointcharge embedding in ORCA_MRCI_CBS_Theory is active")
+            elems=qm_elems
+
+        if Grad == True:
+            print(BC.FAIL,"No gradient available for ORCA_MRCI_CBS_Theory yet! Exiting", BC.END)
+            ashexit()
+
+        #Checking that there is a basis set defined for each element provided here
+        #NOTE: ORCA will use default SVP basis set if basis set not defined for element
+        for element in elems:
+            if element not in self.Calc1_basis_dict:
+                print("Error. No basis-set definition available for element: {}".format(element))
+                print("Make sure to pass a list of all elements of molecule/benchmark-database when creating ORCA_CC_CBS_Theory object")
+                print("Example: ORCA_CC_CBS_Theory(elements=[\"{}\" ] ".format(element))
+                ashexit() 
+
+        #Number of atoms and number of electrons
+        numatoms=len(elems)
+        numelectrons = int(nucchargelist(elems) - charge)
+
+        #Defining initial label here based on element and charge/mult of system
+        formula=elemlisttoformula(elems)
+        calc_label = "Frag_" + str(formula) + "_" + str(charge) + "_" + str(mult) + "_"
+        print("Initial Calculation label: ", calc_label)
+
+
+        #CONTROLLING NUMCORES
+        #If numcores not provided to run, use self.numcores
+        if numcores == None:
+            numcores=self.numcores
+
+        original_numcores = numcores
+        #Reduce numcores if required
+        #NOTE: self.numcores is thus ignored if check_cores_vs_electrons reduces value based on system-size
+        numcores = check_cores_vs_electrons(elems,numcores,charge)
+
+        MRPT2_1_dict={}
+        MRPT2_2_dict={}
+
+        ############
+        #Basis-1
+        ############
+        self.mrpt2_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, 
+                         PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
+        
+        casscf_energy = float(pygrep('Final CASSCF energy', self.mrpt2_1.filename+'.out')[4])
+        caspt2_corr_energy = float(pygrep('Total Energy Correction :', self.mrpt2_1.filename+'.out')[-1])
+        MRPT2_1_dict['CASSCF'] = casscf_energy
+        MRPT2_1_dict['PT2_corr_energy'] = caspt2_corr_energy
+        
+        ############
+        #Basis-2
+        ############
+        if self.singlebasis is False:
+            self.mrpt2_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, 
+                            PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
+            
+            casscf_energy = float(pygrep('Final CASSCF energy', self.mrpt2_2.filename+'.out')[4])
+            caspt2_corr_energy = float(pygrep('Total Energy Correction :', self.mrpt2_2.filename+'.out')[-1])
+            MRPT2_2_dict['CASSCF'] = casscf_energy
+            MRPT2_2_dict['PT2_corr_energy'] = caspt2_corr_energy
+
+
+        ####################
+        #MRCI HL correction
+        ####################
+        print("Now doing HL MRCI correction")
+        #TODO: option to extrapolate to CBS
+        if self.MRHL_method != "None":
+            self.mrhl.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, 
+                                PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
+                
+            #MRCI total energy (2 lines are found, taking last one)
+            casscf_ref_energy = float(pygrep('Final CASSCF energy', self.mrhl.filename+'.out')[4])
+            mrci_total_energy = float(pygrep2('STATE   0:  Energy', self.mrhl.filename+'.out')[-1].split()[3])
+            E_corr_MRCI = mrci_total_energy-casscf_ref_energy
+
+            if self.MRHL_basis == "small":
+                delta_corr_MRCI = E_corr_MRCI - MRPT2_1_dict['PT2_corr_energy']
+            elif self.MRHL_basis == "large":
+                delta_corr_MRCI = E_corr_MRCI - MRPT2_2_dict['PT2_corr_energy']
+            else:
+                print("unknown")
+                exit()
+        else:
+            delta_corr_MRCI=0.0
+
+        print("Delta HL-MRCI correction:", delta_corr_MRCI, "Eh")
+
+        ####################
+        #EXTRAPOLATION
+        ####################
+
+        #List of all SCF energies  all CCSD-corr energies  and all (T) corr energies from the 2 jobs
+        if self.singlebasis is True:
+            E_SCF_CBS=MRPT2_1_dict['CASSCF']
+            E_corr_MRPT2_CBS=MRPT2_1_dict['PT2_corr_energy']
+        else:
+            casscf_energies = [MRPT2_1_dict['CASSCF'], MRPT2_2_dict['CASSCF']]
+            corr_energies= [MRPT2_1_dict['PT2_corr_energy'], MRPT2_2_dict['PT2_corr_energy']]
+            print("")
+            print("scf_energies :", casscf_energies)
+            print("corr_energies:", corr_energies)
+
+            #BASIS SET EXTRAPOLATION
+            #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
+            print("\nSCF extrapolation:")
+            E_SCF_CBS = Extrapolation_twopoint_SCF(casscf_energies, self.cardinals, self.basisfamily, 
+                alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
+
+            E_corr_MRPT2_CBS = Extrapolation_twopoint_corr(corr_energies, self.cardinals, self.basisfamily, 
+                beta=self.beta) #2-point extrapolation
+
+
+
+
+
+        ############################################################
+        #Spin-orbit correction for atoms.
+        ############################################################
+        if numatoms == 1 and self.atomicSOcorrection is True:
+            print("Fragment is an atom. Looking up atomic spin-orbit splitting value")
+            if charge == 0:
+                print("Charge of atom is zero. Looking up in neutral dict")
+                try:
+                    E_SO = ash.dictionaries_lists.atom_spinorbitsplittings[elems[0]] / ash.constants.hartocm
+                except KeyError:
+                    print("Found no SO value for atom. Will set to 0.0 and continue")
+                    E_SO = 0.0
+            else:
+                print("Charge of atom is not zero. Dictionary not available")
+                print("Found no SO value for atom. Will set to 0.0 and continue")
+                E_SO = 0.0
+        else :
+            E_SO = 0.0
+    
+        ############################################################
+        #FINAL RESULT
+        ############################################################
+        print("")
+        print("")
+        print("="*50)
+        print("FINAL RESULTS")
+        print("="*50)
+        E_FINAL = E_SCF_CBS + E_corr_MRPT2_CBS + delta_corr_MRCI + E_SO
+        print("Final CBS energy (with all corrections):", E_FINAL, "Eh")
+        #Components
+        E_dict = {}
+
+        print("")
+        print("Contributions:")
+        print("--------------")
+        print("E_CASSCF_CBS : ", E_SCF_CBS, "Eh")
+        print("E_corr_MRPT2_CBS : ", E_corr_MRPT2_CBS, "Eh")
+        print("E_corrMRCI : ", delta_corr_MRCI, "Eh")
+        print("Spin-orbit coupling correction : ", E_SO, "Eh")
+        
+        print("FINAL ENERGY :", E_FINAL, "Eh")
+        #Setting energy_components as an accessible attribute
+        self.energy_components=E_dict
+
+        #Cleanup GBW file. Full cleanup ??
+
+
+        #return only final energy now. Energy components accessible as energy_components attribute
+        return E_FINAL
