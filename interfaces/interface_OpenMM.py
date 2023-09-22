@@ -2175,7 +2175,7 @@ def print_systemsize(modeller):
 def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
                     ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False,
-                    platform="CPU", use_pdbfixer=True, implicit=True, implicit_solvent_xmlfile=None):
+                    platform="CPU", use_pdbfixer=True, implicit=False, implicit_solvent_xmlfile=None):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
@@ -2219,6 +2219,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     elif waterxmlfile is not None:
         # Problem: we need to define watermodel also
         print("Using waterxmlfile:", waterxmlfile)
+    
     # Forcefield options
     if forcefield is not None:
         print("Forcefield:", forcefield)
@@ -2232,11 +2233,20 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             xmlfile = "amber10.xml"
         elif forcefield == 'Amber14':
             xmlfile = "amber14-all.xml"
-            watermodel="tip3p"
+            
+            if watermodel is None:
+                print("No watermodel selected. Selecting automatically recommended TIP3P-4B (watermodel='tip3pfb')")
+                print("This is a reparameterized version of TIP3P")
+                watermodel='tip3pfb'
+            print("watermodel:", watermodel)
             # Using specific Amber FB version of TIP3P
-            if watermodel == "tip3p":
+            if watermodel.lower() == "tip3pfb" or watermodel.lower() == "tip3p-fb":
                 modeller_solvent_name="tip3p" #Used when adding solvent
-                waterxmlfile = "amber14/tip3pfb.xml"
+                waterxmlfile = "amber14/tip3pfb.xml" #NOTE: this is not actually TIP3P but a reparaterized version
+            elif watermodel.lower () == 'tip3p':
+                 modeller_solvent_name="tip3p"
+                 waterxmlfile = "amber14/tip3p.xml"
+            print("Waterxmlfile selected:", waterxmlfile)
         elif forcefield == 'Amber96':
             xmlfile = "amber96.xml"
         elif forcefield == 'CHARMM36':
@@ -2432,6 +2442,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         print("Setting periodic to True")
         periodic=True
         print("Adding solvent, modeller_solvent_name:", modeller_solvent_name)
+        print("Actual solvent name:", watermodel)
+        print("Actual solvent file:", waterxmlfile)
         if solvent_boxdims is not None:
             print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
             modeller.addSolvent(forcefield_obj, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
