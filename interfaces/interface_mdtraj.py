@@ -12,7 +12,7 @@ def MDtraj_import():
     return mdtraj
 
 
-def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.005, largest_values=10):
+def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.005, largest_values=10, parallel=True):
     print("Inside MDtraj_RMSF")
     #Import mdtraj library
     mdtraj = MDtraj_import()
@@ -21,7 +21,7 @@ def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.
     print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
     firstframe=traj[0]
-    rmsflist = mdtraj.rmsf(traj, reference=None, frame=0, atom_indices=None, parallel=True)
+    rmsflist = mdtraj.rmsf(traj, reference=None, frame=0, atom_indices=None, parallel=parallel)
     
     if print_largest_values is True:
         print(f"Will print RMSF largest_values={largest_values}")
@@ -39,6 +39,21 @@ def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.
     return large_rmsf_indices
 
 
+def MDtraj_RMSD(trajectory, pdbtopology, atom_indices=None, parallel=True):
+    print("Inside MDtraj_RMSD")
+    #Import mdtraj library
+    mdtraj = MDtraj_import()
+    
+    # Load trajectory
+    print("Loading trajectory using mdtraj.")
+    traj = mdtraj.load(trajectory, top=pdbtopology)
+
+    #RMSD
+    rmsds = mdtraj.rmsd(traj, traj, 0, atom_indices=atom_indices, parallel=parallel)
+
+    return rmsds
+
+
 # anchor_molecules. Use if automatic guess fails
 def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=None, unitcell_angles=None,
                      solute_anchor=None):
@@ -54,10 +69,6 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
 
-    #Also load the pdbfile as a trajectory-snapshot (in addition to being topology)
-    pdbsnap = mdtraj.load(pdbtopology, top=pdbtopology)
-    pdbsnap_imaged = pdbsnap.image_molecules()
-
     numframes = len(traj._time)
     print("Found {} frames in trajectory.".format(numframes))
     print("PBC information in trajectory:")
@@ -72,6 +83,10 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     # else:
     #    print("Missing PBC info. This can be provided by unitcell_lengths and unitcell_angles keywords")
 
+
+    #Also load the pdbfile as a trajectory-snapshot (in addition to being topology)
+    pdbsnap = mdtraj.load(pdbtopology, top=pdbtopology)
+
     # Manual anchor if needed
     # NOTE: not sure how well this works but it's something
     if solute_anchor is True:
@@ -79,9 +94,12 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
         print("anchors:", anchors)
         # Re-imaging trajectory
         imaged = traj.image_molecules(anchor_molecules=anchors)
+        #Reimaging PDB
+        pdbsnap_imaged = pdbsnap.image_molecules(anchor_molecules=anchors)
     else:
         imaged = traj.image_molecules()
-
+        pdbsnap_imaged = pdbsnap.image_molecules()
+        
     # Save trajectory in format
     if format == 'DCD':
         imaged.save(traj_basename + '_imaged.dcd')

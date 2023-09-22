@@ -2531,6 +2531,9 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
 def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None, unusualboundary=False):
     timeA = time.time()
     print("Determining QM-MM boundary")
+    print("Parameters determing connectivity:")
+    print("Scaling factor:", scale)
+    print("Tolerance:", tol)
     if excludeboundaryatomlist is None:
         excludeboundaryatomlist = []
 
@@ -2544,7 +2547,6 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
 
     qm_mm_boundary_dict = {}
     for qmatom in qmatoms:
-        #print("qmatom:", qmatom)
         # Option below to skip creating boundaryatom pair (and subsequent linkatoms) if atom index is flagged
         # Applies to rare case where QM atom is bonded to MM atom but we don't want a linkatom.
         # Example: bridging sulfide in Cys that connects to Fe4S4 and H-cluster.
@@ -2552,12 +2554,9 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             print("QMatom : {} in excludeboundaryatomlist: {}".format(qmatom, excludeboundaryatomlist))
             print("Skipping QM-MM boundary...")
             continue
-
         connatoms = get_connected_atoms(coords, elems, scale, tol, qmatom)
-        #print("connatoms:", connatoms)
         # Find connected atoms that are not in QM-atoms
         boundaryatom = listdiff(connatoms, qmatoms)
-        #print("boundaryatom:", boundaryatom)
 
         if len(boundaryatom) > 1:
 
@@ -2586,7 +2585,6 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
                           BC.END)
                     print(BC.WARNING, "To override exit, add: unusualboundary=True  to QMMMTheory object ", BC.END)
                     ashexit()
-
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
     print("qm_mm_boundary_dict:", qm_mm_boundary_dict)

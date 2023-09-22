@@ -2218,3 +2218,34 @@ def poly_rad_index_n_d(occupations):
         n+=on*(2-on)
     print(f"Takatsuka Number of effective unpaired electrons: {n:7.4f}")
     return n
+
+
+
+
+#General pcgradient function, inspired by pyscf
+#NOT READY
+def general_pointcharge_gradient(qm_coords, qm_charges,mm_coords,mm_charges,dm, mol):
+    print("not ready")
+    ashexit()
+    if dm.shape[0] == 2:
+        dmf = dm[0] + dm[1] #unrestricted
+    else:
+        dmf=dm
+    # The interaction between QM atoms and MM particles
+    # \sum_K d/dR (1/|r_K-R|) = \sum_K (r_K-R)/|r_K-R|^3
+    dr = qm_coords[:,None,:] - mm_coords
+    r = np.linalg.norm(dr, axis=2)
+    g = np.einsum('r,R,rRx,rR->Rx', qm_charges, mm_charges, dr, r**-3)
+    # The interaction between electron density and MM particles
+    # d/dR <i| (1/|r-R|) |j> = <i| d/dR (1/|r-R|) |j> = <i| -d/dr (1/|r-R|) |j>
+    #   = <d/dr i| (1/|r-R|) |j> + <i| (1/|r-R|) |d/dr j>
+    for i, q in enumerate(mm_charges):
+        with mol.with_rinv_origin(mm_coords[i]):
+            v = mol.intor('int1e_iprinv')
+        f =(np.einsum('ij,xji->x', dmf, v) +
+            np.einsum('ij,xij->x', dmf, v.conj())) * -q
+        g[i] += f
+        #
+        #TODO: Check with_rinv_orgin thingng 
+
+    return g

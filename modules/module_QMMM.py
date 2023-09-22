@@ -229,16 +229,16 @@ class QMMMTheory:
 
             #Update: Tolerance modification to make sure we definitely catch connected atoms and get QM-MM boundary right.
             #Scale=1.0 and tol=0.1 fails for S-C bond in rubredoxin from a classical MD run
-            #Bumping up a bit here
+            #Bumping up a bit here. 
+            #21 Sep 2023. bumping from +0.1 to +0.2. C-C bond in lysine failed
             conn_scale=ash.settings_ash.settings_dict["scale"]
-            conn_tolerance=ash.settings_ash.settings_dict["tol"]+0.1
+            conn_tolerance=ash.settings_ash.settings_dict["tol"]+0.2
 
 
             #If QM-MM boundary issue and ASH exits then printing QM-coordinates is useful
             print("QM-region coordinates (before linkatoms):")
             ash.modules.module_coords.print_coords_for_atoms(self.coords, self.elems, self.qmatoms, labels=self.qmatoms)
             print()
-
             self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, conn_scale, 
                 conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
             if len(self.boundaryatoms) >0:
