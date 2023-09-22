@@ -2586,9 +2586,9 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 
     # Create ASH fragment and write to disk
     newfragment = Fragment(pdbfile="system_aftersolvent.pdb")
-    newfragment.print_system(filename="newfragment.ygg")
-    newfragment.write_xyzfile(xyzfilename="newfragment.xyz")
-    print("Creating XYZ-file: newfragment.xyz")
+    #newfragment.print_system(filename="newfragment.ygg")
+    newfragment.write_xyzfile(xyzfilename="system_aftersolvent.xyz")
+    print("Creating XYZ-file: system_aftersolvent.xyz")
     print()
     print("\nTo use this system setup to define a future OpenMMTheory object you can  do:\n")
 

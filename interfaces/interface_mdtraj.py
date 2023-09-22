@@ -69,10 +69,6 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
 
-    #Also load the pdbfile as a trajectory-snapshot (in addition to being topology)
-    pdbsnap = mdtraj.load(pdbtopology, top=pdbtopology)
-    pdbsnap_imaged = pdbsnap.image_molecules()
-
     numframes = len(traj._time)
     print("Found {} frames in trajectory.".format(numframes))
     print("PBC information in trajectory:")
@@ -87,6 +83,10 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     # else:
     #    print("Missing PBC info. This can be provided by unitcell_lengths and unitcell_angles keywords")
 
+
+    #Also load the pdbfile as a trajectory-snapshot (in addition to being topology)
+    pdbsnap = mdtraj.load(pdbtopology, top=pdbtopology)
+
     # Manual anchor if needed
     # NOTE: not sure how well this works but it's something
     if solute_anchor is True:
@@ -94,9 +94,12 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
         print("anchors:", anchors)
         # Re-imaging trajectory
         imaged = traj.image_molecules(anchor_molecules=anchors)
+        #Reimaging PDB
+        pdbsnap_imaged = pdbsnap.image_molecules(anchor_molecules=anchors)
     else:
         imaged = traj.image_molecules()
-
+        pdbsnap_imaged = pdbsnap.image_molecules()
+        
     # Save trajectory in format
     if format == 'DCD':
         imaged.save(traj_basename + '_imaged.dcd')
