@@ -2200,25 +2200,21 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         ashexit()
 
 
-
-
-
-
     if residue_variants == None:
         residue_variants={}
 
 
     # Water model. May be overridden by forcefield below
-    if watermodel == "tip3p":
-        # Possible Problem: this only has water, no ions.
-        waterxmlfile = "tip3p.xml"
-        modeller_solvent_name="tip3p" #Used when adding solvent
-    elif watermodel == "tip3p_charmm":
-        waterxmlfile = "charmm36/water.xml"
-        modeller_solvent_name="tip3p" #Used when adding solvent
-    elif waterxmlfile is not None:
-        # Problem: we need to define watermodel also
-        print("Using waterxmlfile:", waterxmlfile)
+    #if watermodel == "tip3p":
+    #    # Possible Problem: this only has water, no ions.
+    #    waterxmlfile = "tip3p.xml"
+    #    modeller_solvent_name="tip3p" #Used when adding solvent
+    #elif watermodel == "tip3p_charmm":
+    #    waterxmlfile = "charmm36/water.xml"
+    #    modeller_solvent_name="tip3p" #Used when adding solvent
+    #elif waterxmlfile is not None:
+    #    # Problem: we need to define watermodel also
+    #    print("Using waterxmlfile:", waterxmlfile)
     
     # Forcefield options
     if forcefield is not None:
@@ -2235,9 +2231,12 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             xmlfile = "amber14-all.xml"
             
             if watermodel is None:
-                print("No watermodel selected. Selecting automatically recommended TIP3P-4B (watermodel='tip3pfb')")
-                print("This is a reparameterized version of TIP3P")
-                watermodel='tip3pfb'
+                print("No watermodel selected.")
+                if waterxmlfile is None:
+                    print("No waterxmlfile selected either")
+                    print("Selecting automatically recommended TIP3P-4B (watermodel='tip3pfb')")
+                    print("This is a reparameterized version of TIP3P")
+                    watermodel='tip3pfb'
             print("watermodel:", watermodel)
             # Using specific Amber FB version of TIP3P
             if watermodel.lower() == "tip3pfb" or watermodel.lower() == "tip3p-fb":
@@ -2252,9 +2251,18 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         elif forcefield == 'CHARMM36':
             xmlfile = "charmm36.xml"
             # Using specific CHARMM36 version of TIP3P
-            watermodel="tip3p"
-            modeller_solvent_name="tip3p" #Used when adding solvent
-            waterxmlfile = "charmm36/water.xml"
+            if watermodel is None:
+                print("No watermodel selected.")
+                if waterxmlfile is None:
+                    print("No waterxmlfile selected either")
+                    print("Selecting automatically recommended CHARMM-style TIP3P")
+                    watermodel='tip3p'
+
+            print("watermodel:", watermodel)
+            if watermodel.lower() == "tip3p":
+                modeller_solvent_name="tip3p" #Used when adding solvent
+                waterxmlfile = "charmm36/water.xml"
+            print("Waterxmlfile selected:", waterxmlfile)
         elif forcefield == 'CHARMM2013':
             xmlfile = "charmm_polar_2013.xml"
         elif forcefield == 'Amoeba2013':
