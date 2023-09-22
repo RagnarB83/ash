@@ -2430,7 +2430,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     else:
         print("We are doing explicit solvation")
         print("Setting periodic to True")
-        periodic=False
+        periodic=True
         print("Adding solvent, modeller_solvent_name:", modeller_solvent_name)
         if solvent_boxdims is not None:
             print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
