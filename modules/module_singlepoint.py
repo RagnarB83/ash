@@ -20,7 +20,7 @@ def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
     return result
 
 #Single-point energy function
-def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
+def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, printlevel=2):
     """Singlepoint function: runs a single-point energy calculation using ASH theory and ASH fragment.
 
     Args:
@@ -35,7 +35,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
         or
         float,np.array : Energy and gradient array
     """
-    print_line_with_mainheader("Singlepoint function")
+    if printlevel >= 1:
+        print_line_with_mainheader("Singlepoint function")
     module_init_time=time.time()
     if fragment is None or theory is None:
         print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
@@ -49,19 +50,22 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
 
     # Run a single-point energy job with gradient
     if Grad ==True:
-        print()
-        print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
+        if printlevel >= 1:
+            print()
+            print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
         # An Energy+Gradient calculation where we change the number of cores to 12
         energy,gradient= theory.run(current_coords=coords, elems=elems, Grad=True, charge=charge, mult=mult)
-        print("Energy: ", energy)
-        print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
+        if printlevel >= 1:
+            print("Energy: ", energy)
+            print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         result = ASH_Results(label="Singlepoint", energy=energy, gradient=gradient, charge=charge, mult=mult)
         return result
     # Run a single-point energy job without gradient (default)
     else:
-        print()
-        print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
-        print(f"Charge: {charge} Mult: {mult}") #Charge/mult should have been defined so we print
+        if printlevel >= 1:
+            print()
+            print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
+            print(f"Charge: {charge} Mult: {mult}") #Charge/mult should have been defined so we print
         #Run
         energy = theory.run(current_coords=coords, elems=elems, charge=charge, mult=mult)
 
@@ -70,11 +74,12 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None):
         if type(energy) is tuple:
             componentsdict=energy[1]
             energy=energy[0]
-
-        print("Energy: ", energy)
+        if printlevel >= 1:
+            print("Energy: ", energy)
         #Now adding total energy to fragment
         fragment.set_energy(energy)
-        print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
+        if printlevel >= 1:
+            print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         result = ASH_Results(label="Singlepoint", energy=energy, charge=charge, mult=mult)
         return result
 

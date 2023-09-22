@@ -33,11 +33,12 @@ class OpenMMTheory:
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None,
                  cluster_fragment=None, ASH_FF_file=None, PBCvectors=None,
+                 nonbondedMethod_noPBC='NoCutoff', nonbonded_cutoff_noPBC=20,
                  xmlfiles=None, pdbfile=None, use_parmed=False,
                  xmlsystemfile=None,
                  do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
-                 periodic_nonbonded_cutoff=12, dispersion_correction=True,
+                 periodic_nonbonded_cutoff=12,  dispersion_correction=True,
                  switching_function_distance=10.0,
                  ewalderrortolerance=5e-4, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
@@ -162,6 +163,9 @@ class OpenMMTheory:
         self.coords = []
         self.charges = []
         self.Periodic = periodic
+        self.periodic_nonbonded_cutoff=periodic_nonbonded_cutoff
+        self.nonbonded_cutoff_noPBC=nonbonded_cutoff_noPBC
+        self.nonbondedMethod_noPBC=nonbondedMethod_noPBC
         self.ewalderrortolerance = ewalderrortolerance
 
         # Whether to apply constraints or not when calculating MM energy via run method (does not apply to OpenMM MD)
@@ -441,6 +445,13 @@ class OpenMMTheory:
             self.resids = [i.residue.index for i in self.topology.atoms()]
 
 
+        #IF PBC vectors provided then we need to set them in the topology (otherwise system creation does not work)
+        if PBCvectors is not None:
+            print("PBC vectors provided by user.")
+            print("Setting PBC vectors of topology")
+            self.topology.setPeriodicBoxVectors(*PBCvectors*openmm.unit.angstroms)
+            print("PBC vectors set:")
+            print(self.topology.getPeriodicBoxVectors())
 
 
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
@@ -451,15 +462,15 @@ class OpenMMTheory:
 
                 #Determining nonbonded cutoff strategy
                 #PME is hard-coded so we must specify a cutoff
-                if periodic_nonbonded_cutoff is None:
+                if self.periodic_nonbonded_cutoff is None:
                     if self.printlevel > 0:
                         print("No periodic_nonbonded_cutoff provided. Determining cutoff value based on approx 1/2 box size.")
                         print("Warning: for NPT simulations this may be too large")
-                    periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
-                    print("periodic_nonbonded_cutoff:",periodic_nonbonded_cutoff)
+                    self.periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
+                    print("periodic_nonbonded_cutoff:",self.periodic_nonbonded_cutoff)
 
                 if self.printlevel > 0:
-                    print("Nonbonded cutoff is {} Angstrom.".format(periodic_nonbonded_cutoff))
+                    print("Nonbonded cutoff is {} Angstrom.".format(self.periodic_nonbonded_cutoff))
                 # Parameters here are based on OpenMM DHFR example
                 if CHARMMfiles is True:
                     if self.printlevel > 0:
@@ -507,7 +518,7 @@ class OpenMMTheory:
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
-                                                               nonbondedCutoff=periodic_nonbonded_cutoff * openmm.unit.angstroms,
+                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms,
                                                                switchDistance=switching_function_distance * openmm.unit.angstroms)
                 elif GROMACSfiles is True:
                     # NOTE: Gromacs has read PBC info from Gro file already
@@ -519,14 +530,14 @@ class OpenMMTheory:
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
-                                                               nonbondedCutoff=periodic_nonbonded_cutoff * openmm.unit.angstroms)
+                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
                 elif Amberfiles is True:
                     # NOTE: Amber-interface has read PBC info from prmtop file already
                     self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
-                                                               nonbondedCutoff=periodic_nonbonded_cutoff * openmm.unit.angstroms)
+                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
 
                     # print("self.system num con", self.system.getNumConstraints())
                 else:
@@ -537,7 +548,7 @@ class OpenMMTheory:
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
-                                                               nonbondedCutoff=periodic_nonbonded_cutoff * openmm.unit.angstroms)
+                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
                     # switchDistance=switching_function_distance*self.unit.angstroms
 
                 if PBCvectors is not None:
@@ -602,29 +613,40 @@ class OpenMMTheory:
 
             # Non-Periodic
             else:
+                if self.nonbondedMethod_noPBC == 'NoCutoff':
+                    noPBC_nonbondedMethod=openmm.app.NoCutoff
+                elif self.nonbondedMethod_noPBC == 'CutoffNonPeriodic':
+                    noPBC_nonbondedMethod=openmm.app.CutoffNonPeriodic
+                elif self.nonbondedMethod_noPBC == 'CutoffPeriodic':
+                    print("nonbondedMethod_noPBC with CutoffPeriodic not currently allowed")
+                    ashexit()
                 if self.printlevel > 0:
                     print("System is non-periodic.")
+                    print("nonbondedMethod is:", noPBC_nonbondedMethod)
+
+                if self.printlevel > 0:
+                    print("Nonbonded cutoff :", self.nonbonded_cutoff_noPBC, "Angstrom")
 
                 if CHARMMfiles is True:
-                    self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.NoCutoff,
+                    self.system = self.forcefield.createSystem(self.params, nonbondedMethod=noPBC_nonbondedMethod,
                                                                constraints=self.autoconstraints,
                                                                rigidWater=self.rigidwater,
-                                                               nonbondedCutoff=1000 * openmm.unit.angstroms,
+                                                               nonbondedCutoff=self.nonbonded_cutoff_noPBC * openmm.unit.angstroms,
                                                                hydrogenMass=self.hydrogenmass)
                 elif Amberfiles is True:
-                    self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.NoCutoff,
+                    self.system = self.forcefield.createSystem(nonbondedMethod=noPBC_nonbondedMethod,
                                                                constraints=self.autoconstraints,
                                                                rigidWater=self.rigidwater,
-                                                               nonbondedCutoff=1000 * openmm.unit.angstroms,
+                                                               nonbondedCutoff=self.nonbonded_cutoff_noPBC * openmm.unit.angstroms,
                                                                hydrogenMass=self.hydrogenmass)
                 #NOTE: might be unnecessary
                 elif dummysystem is True:
                     self. system = self.forcefield.createSystem(self.topology)
                 else:
-                    self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=openmm.app.NoCutoff,
+                    self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=noPBC_nonbondedMethod,
                                                                constraints=self.autoconstraints,
                                                                rigidWater=self.rigidwater,
-                                                               nonbondedCutoff=1000 * openmm.unit.angstroms,
+                                                               nonbondedCutoff=self.nonbonded_cutoff_noPBC * openmm.unit.angstroms,
                                                                hydrogenMass=self.hydrogenmass)
                 if self.printlevel > 0:
                     print_line_with_subheader2("OpenMM system created.")
@@ -790,7 +812,7 @@ class OpenMMTheory:
         #update_simulation needs to be called instead by run
         #self.create_simulation()
 
-        print_time_rel(module_init_time, modulename="OpenMM object creation")
+        print_time_rel(module_init_time, modulename="OpenMM object creation", currprintlevel=self.printlevel)
 
     #Set numcores method: currently inactive. Included for completeness
     def set_numcores(self,numcores):
@@ -1282,7 +1304,7 @@ class OpenMMTheory:
                   "LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ",
                   BC.END)
             ashexit()
-        print_time_rel(timeA, modulename="create integrator")
+        print_time_rel(timeA, modulename="create integrator",currprintlevel=self.printlevel)
     
     #Create simulation object (now not part of OpenMMTheory)
     def create_simulation(self, internal=False):
@@ -1314,7 +1336,7 @@ class OpenMMTheory:
             simulation = openmm.app.simulation.Simulation(self.topology, self.system, self.integrator, 
                                                             openmm.Platform.getPlatformByName(self.platform_choice),
                                                                 self.properties)
-            print_time_rel(timeA, modulename="creating/updating simulation")
+            print_time_rel(timeA, modulename="creating/updating simulation", currprintlevel=self.printlevel)
             return simulation
 
 
@@ -2153,7 +2175,7 @@ def print_systemsize(modeller):
 def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
                     ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False,
-                    platform="CPU", use_pdbfixer=True):
+                    platform="CPU", use_pdbfixer=True, implicit=True, implicit_solvent_xmlfile=None):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
@@ -2388,30 +2410,49 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         ashexit()
 
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterH.pdb")
-    print_systemsize()
+    print_systemsize(modeller)
 
     # Adding Solvent
-    print("Adding solvent, modeller_solvent_name:", modeller_solvent_name)
-    if solvent_boxdims is not None:
-        print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
-        modeller.addSolvent(forcefield_obj, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
-                                                            solvent_boxdims[2]) * openmm_unit.angstrom)
+
+    print("implicit:", implicit)
+    if implicit is True:
+        periodic=False
+        print("We are doing implicit solvation")
+        print("Setting periodic to False")
+        print("Available implicit solvent models:")
+        print("implicit/gbn2.xml, implicit/hct.xml, implicit/obc1.xml, implicit/obc2.xml, implicit/gbn.xml, implicit/gbn2.xml")
+        fragment = Fragment(pdbfile="system_afterH.pdb")
+        if implicit_solvent_xmlfile is None:
+            print("No XMLfile for implicit water selected (implicit_solvent_xmlfile keyword)")
+            print("Choosing : implicit/obc2.xml")
+            implicit_solvent_xmlfile="implicit/obc2.xml"
+            waterxmlfile=implicit_solvent_xmlfile
     else:
-        print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
-        modeller.addSolvent(forcefield_obj, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=modeller_solvent_name)
-    write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
-    print_systemsize()
+        print("We are doing explicit solvation")
+        print("Setting periodic to True")
+        periodic=False
+        print("Adding solvent, modeller_solvent_name:", modeller_solvent_name)
+        if solvent_boxdims is not None:
+            print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
+            modeller.addSolvent(forcefield_obj, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
+                                                                solvent_boxdims[2]) * openmm_unit.angstrom)
+        else:
+            print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
+            modeller.addSolvent(forcefield_obj, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=modeller_solvent_name)
+        write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
+        print_systemsize(modeller)
 
-    # Ions
-    print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
-    modeller.addSolvent(forcefield_obj, neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
-        ionicStrength=ionicstrength * openmm_unit.molar)
-    write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterions.pdb")
+        # Ions
+        print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
+        modeller.addSolvent(forcefield_obj, neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
+            ionicStrength=ionicstrength * openmm_unit.molar)
+        write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterions.pdb")
+        
+        print_systemsize(modeller)
+        # Create ASH fragment and write to disk
+        fragment = Fragment(pdbfile="system_afterions.pdb")
+    
     write_pdbfile_openMM(modeller.topology, modeller.positions, "finalsystem.pdb")
-    print_systemsize()
-
-    # Create ASH fragment and write to disk
-    fragment = Fragment(pdbfile="system_afterions.pdb")
     fragment.print_system(filename="finalsystem.ygg")
     fragment.write_xyzfile(xyzfilename="finalsystem.xyz")
 
@@ -2423,8 +2464,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     #Creating new OpenMM object from forcefield so that we can write out system XMLfile
     print("Creating OpenMMTheory object")
     openmmobject =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
-                        topology=modeller.topology, pdbfile=None, periodic=True,
-                        autoconstraints='HBonds', rigidwater=True, printlevel=0)
+                            topology=modeller.topology, pdbfile=None, periodic=periodic,
+                            autoconstraints='HBonds', rigidwater=True, printlevel=0)
     #Write out System XMLfile
     #TODO: Disable ?
     systemxmlfile="system_full.xml"
@@ -2451,13 +2492,13 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
 
     print(BC.OKMAGENTA,"1. Define using separate forcefield XML files:",BC.END)
     if extraxmlfile is None:
-        print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile),BC.END)
+        print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\"], pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
     else:
-        print("omm = OpenMMTheory(xmlfiles=[\"{}\", \"{}\", \"{}\"], pdbfile=\"finalsystem.pdb\", periodic=True)".format(xmlfile,waterxmlfile,extraxmlfile),BC.END)
+        print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\", \"{extraxmlfile}\"], pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
     print(BC.OKMAGENTA,"2. Use forcefield object file :\n",BC.END, \
-        "omm = OpenMMTheory(topoforce=True, forcefield=forcefield_object, pdbfile=\"finalsystem.pdb\", topology=modeller.topology, periodic=True)",BC.END)
+        f"omm = OpenMMTheory(topoforce=True, forcefield=forcefield_object, pdbfile=\"finalsystem.pdb\", topology=modeller.topology, periodic={periodic})",BC.END)
     print(BC.OKMAGENTA,"3. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
-        "omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic=True)",BC.END)
+        f"omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
     print()
     print()
     #Check system for atoms with large gradient and print warning
@@ -2466,11 +2507,11 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     #Setting sensible periodic cutoff to avoid error
     #periodic_nonbonded_cutoff=(modeller.topology.getPeriodicBoxVectors()[0][0].value_in_unit(openmm_unit.angstrom)/2.0)-1
     periodic_nonbonded_cutoff=10
-    print("periodic_nonbonded_cutoff:",periodic_nonbonded_cutoff)
     omm =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
-                        topology=modeller.topology, pdbfile=None, periodic=True, periodic_nonbonded_cutoff=periodic_nonbonded_cutoff,
-                        autoconstraints=None, rigidwater=False, printlevel=2)
-    SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True)
+                            topology=modeller.topology, pdbfile=None, periodic=periodic, 
+                            periodic_nonbonded_cutoff=periodic_nonbonded_cutoff,
+                            autoconstraints=None, rigidwater=False, printlevel=0)
+    SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True, printlevel=0)
     check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=45000)
     
     print_time_rel(module_init_time, modulename="OpenMM_Modeller", moduleindex=1)
@@ -2572,6 +2613,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 
     # Solvent+Ions
     print("Adding solvent, watermodel:", watermodel)
+
     # NOTE: modeller.addsolvent will automatically add ions to neutralize any excess charge
     print("Warning: Modeller will automatically neutralize system with ions if system is charged")
     if solvent_boxdims is not None:
