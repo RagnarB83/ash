@@ -3718,20 +3718,22 @@ class OpenMM_MDclass:
         #PERIODIC BOX VECTORS
         ##########################
         self.state = self.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
-        print("Checking PBC vectors:")
-        a, b, c = self.state.getPeriodicBoxVectors()
-        print(f"A: ", a)
-        print(f"B: ", b)
-        print(f"C: ", c)
-        print("a 0", a[0])
-        # Set new PBC vectors since they may have changed
-        print("Updating PBC vectors in simulation.context, OpenMM system and OpenMM topology")
-        # Context. Used?
-        self.simulation.context.setPeriodicBoxVectors(a, b, c)
-        # System. Necessary
-        self.openmmobject.system.setDefaultPeriodicBoxVectors(a, b, c)
-        #Topology (for header in PDB-files). Necessary
-        self.openmmobject.topology.setPeriodicBoxVectors(self.state.getPeriodicBoxVectors())
+        
+        if self.openmmobject.Periodic is True:
+            print("Checking PBC vectors:")
+            a, b, c = self.state.getPeriodicBoxVectors()
+            print(f"A: ", a)
+            print(f"B: ", b)
+            print(f"C: ", c)
+            print("a 0", a[0])
+            # Set new PBC vectors since they may have changed
+            print("Updating PBC vectors in simulation.context, OpenMM system and OpenMM topology")
+            # Context. Used?
+            self.simulation.context.setPeriodicBoxVectors(a, b, c)
+            # System. Necessary
+            self.openmmobject.system.setDefaultPeriodicBoxVectors(a, b, c)
+            #Topology (for header in PDB-files). Necessary
+            self.openmmobject.topology.setPeriodicBoxVectors(self.state.getPeriodicBoxVectors())
 
         ########################################
         # Writing final frame to disk as PDB. 
@@ -4249,7 +4251,9 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
         print("check_gradient_first is True")
         print("Will run singlepoint gradient calculation to check for large forces")
         theory.force_run=True
-        SP_result = Singlepoint(theory=theory, fragment=fragment, Grad=True)
+        theory.printlevel=0
+        SP_result = Singlepoint(theory=theory, fragment=fragment, Grad=True, printlevel=0)
+        theory.printlevel=2
         badindices = check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=gradient_threshold)
         if len(badindices) > 0:
             print(f"\nNumber of atoms with large forces: {len(badindices)}")
