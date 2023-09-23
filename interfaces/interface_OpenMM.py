@@ -34,11 +34,11 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None,
                  cluster_fragment=None, ASH_FF_file=None, PBCvectors=None,
                  nonbondedMethod_noPBC='NoCutoff', nonbonded_cutoff_noPBC=20,
-                 xmlfiles=None, pdbfile=None, use_parmed=False,
-                 xmlsystemfile=None,
+                 xmlfiles=None, pdbfile=None, use_parmed=False, xmlsystemfile=None,
                  do_energy_decomposition=False,
                  periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
                  periodic_nonbonded_cutoff=12,  dispersion_correction=True,
+                 nonbondedMethod_PBC='PME',
                  switching_function_distance=10.0,
                  ewalderrortolerance=5e-4, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
@@ -165,6 +165,8 @@ class OpenMMTheory:
         self.Periodic = periodic
         self.periodic_nonbonded_cutoff=periodic_nonbonded_cutoff
         self.nonbonded_cutoff_noPBC=nonbonded_cutoff_noPBC
+        #Methods for nonbonded interactions, PBC and no-PBC
+        self.nonbondedMethod_PBC=nonbondedMethod_PBC
         self.nonbondedMethod_noPBC=nonbondedMethod_noPBC
         self.ewalderrortolerance = ewalderrortolerance
 
@@ -458,8 +460,25 @@ class OpenMMTheory:
         if self.system is None:
             # Periodic or non-periodic ystem
             if self.Periodic is True:
-                print_line_with_subheader1("Setting up periodicity.")
+                if self.printlevel > 0:
+                    print("System is periodic.")
+                    print_line_with_subheader1("Setting up periodicity.")
 
+                #Nonbonded method to use for PBC
+                if self.nonbondedMethod_PBC == 'PME':
+                    nonb_method_PBC=openmm.app.PME
+                elif self.nonbondedMethod_PBC == 'Ewald':
+                    nonb_method_PBC=openmm.app.Ewald
+                elif self.nonbondedMethod_PBC == 'LJPME':
+                    nonb_method_PBC=openmm.app.LJPME
+                elif self.nonbondedMethod_PBC == 'CutoffPeriodic':
+                    nonb_method_PBC=openmm.app.CutoffPeriodic
+                else:
+                    print("Unknown nonbonded method")
+                    ashexit()
+                
+                if self.printlevel > 0:
+                    print("Nonbonded PBC method selected:", nonb_method_PBC)
                 #Determining nonbonded cutoff strategy
                 #PME is hard-coded so we must specify a cutoff
                 if self.periodic_nonbonded_cutoff is None:
@@ -467,7 +486,6 @@ class OpenMMTheory:
                         print("No periodic_nonbonded_cutoff provided. Determining cutoff value based on approx 1/2 box size.")
                         print("Warning: for NPT simulations this may be too large")
                     self.periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
-                    print("periodic_nonbonded_cutoff:",self.periodic_nonbonded_cutoff)
 
                 if self.printlevel > 0:
                     print("Nonbonded cutoff is {} Angstrom.".format(self.periodic_nonbonded_cutoff))
@@ -514,7 +532,7 @@ class OpenMMTheory:
                             print("Set box vectors:", self.forcefield.box_vectors)
 
 
-                    self.system = self.forcefield.createSystem(self.params, nonbondedMethod=openmm.app.PME,
+                    self.system = self.forcefield.createSystem(self.params, nonbondedMethod=nonb_method_PBC,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
@@ -526,14 +544,14 @@ class OpenMMTheory:
                         print("Ewald Error tolerance:", self.ewalderrortolerance)
                     # Note: Turned off switchDistance. Not available for GROMACS?
                     #
-                    self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME,
+                    self.system = self.forcefield.createSystem(nonbondedMethod=nonb_method_PBC,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
                 elif Amberfiles is True:
                     # NOTE: Amber-interface has read PBC info from prmtop file already
-                    self.system = self.forcefield.createSystem(nonbondedMethod=openmm.app.PME,
+                    self.system = self.forcefield.createSystem(nonbondedMethod=nonb_method_PBC,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
@@ -541,15 +559,12 @@ class OpenMMTheory:
 
                     # print("self.system num con", self.system.getNumConstraints())
                 else:
-                    if self.printlevel > 0:
-                        print("Setting up periodic system here.")
                     # Modeller and manual xmlfiles
-                    self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=openmm.app.PME,
+                    self.system = self.forcefield.createSystem(self.topology, nonbondedMethod=nonb_method_PBC,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
-                    # switchDistance=switching_function_distance*self.unit.angstroms
 
                 if PBCvectors is not None:
                     # pbcvectors_mod = PBCvectors
@@ -622,7 +637,7 @@ class OpenMMTheory:
                     ashexit()
                 if self.printlevel > 0:
                     print("System is non-periodic.")
-                    print("nonbondedMethod is:", noPBC_nonbondedMethod)
+                    print("nonbonded noPBC Method is:", noPBC_nonbondedMethod)
 
                 if self.printlevel > 0:
                     print("Nonbonded cutoff :", self.nonbonded_cutoff_noPBC, "Angstrom")
