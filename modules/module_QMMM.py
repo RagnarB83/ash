@@ -1291,7 +1291,6 @@ def grab_resids_from_psffile(psffile):
             if 'REMARKS' in line:
                 continue
             if len(line.split()) > 8:
-                print(line)
                 resname_part=line.split()[3]
                 resid_part=int(line.split()[2])
                 #resnames.append(resname_part)
