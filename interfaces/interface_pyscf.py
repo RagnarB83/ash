@@ -835,7 +835,8 @@ class PySCFTheory:
                 natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(cc,mf)
                 print("Mulliken analysis for CCSD(T) density matrix")
                 self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
-            #Printing occupaations
+
+            #Printing occupations
             print(f"\n{CCmethod} natural orbital occupations:")
             print(natocc)
             print()
