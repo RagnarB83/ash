@@ -811,19 +811,34 @@ class PySCFTheory:
         #NOTE: Faster but only possible for small/medium systems
         cc.direct = self.CC_direct
         
-        result = cc.run()
-        print("Reference energy:", result.e_hf)
-        #CCSD energy
-        energy = result.e_tot
+        ccsd_result = cc.run()
+        print("Reference energy:", ccsd_result.e_hf)
+        #CCSD energy (this is total energy unless Bruckner or triples are added)
+        energy = ccsd_result.e_tot
         print("CCSD energy:", energy)
+
+        #Brueckner coupled-cluster wrapper, using an outer-loop algorithm.
+        if 'BCCD' in CCmethod:
+            print("Bruckner CC active. Doing.")
+            from pyscf.cc.bccd import bccd_kernel_
+            mybcc = bccd_kernel_(cc, diis=True, verbose=4,canonicalization=True)
+            bccd_energy = mybcc.e_tot
         
         #(T) part
         if CCmethod == 'CCSD(T)':
             print("Calculating triples ")
             et = cc.ccsd_t()
             print("Triples energy:", et)
-            energy = result.e_tot + et
+            energy = ccsd_result.e_tot + et
             print("Final CCSD(T) energy:", energy)
+        elif CCmethod == 'BCCD(T)':
+            print("Calculating triples for BCCD WF")
+            et = mybcc.ccsd_t()
+            print("Triples energy:", et)
+            energy = bccd_energy + et
+            print("Final BCCD(T) energy:", energy)
+        
+        
         
         #Density and natural orbitals
         if self.CC_density is True:
@@ -831,10 +846,15 @@ class PySCFTheory:
             print(f"Now calculating {CCmethod} density matrix and natural orbitals")
             if CCmethod == 'CCSD':
                 natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(cc)
+            elif CCmethod == 'BCCD':
+                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mybcc)
             elif CCmethod == 'CCSD(T)':
                 natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(cc,mf)
                 print("Mulliken analysis for CCSD(T) density matrix")
                 self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
+            elif CCmethod == 'BCCD(T)':
+                print("Density for BCCD(T) has not been tested")
+                ashexit()
 
             #Printing occupations
             print(f"\n{CCmethod} natural orbital occupations:")
