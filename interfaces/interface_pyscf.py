@@ -30,7 +30,7 @@ class PySCFTheory:
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False,
                   CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
-                  frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
+                  frozen_virtuals=None, FNO=False, FNO_orbitals='MP2', FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
@@ -103,6 +103,7 @@ class PySCFTheory:
         self.cc_diis_space=cc_diis_space
         self.FNO=FNO
         self.FNO_thresh=FNO_thresh
+        self.FNO_orbitals=FNO_orbitals
         self.frozen_core_setting=frozen_core_setting
         self.frozen_virtuals=frozen_virtuals
         self.gridlevel=gridlevel
@@ -274,6 +275,7 @@ class PySCFTheory:
         print("CC DIIS space size:", self.cc_diis_space)
         print("FNO-CC:", self.FNO)
         print("FNO_thresh:", self.FNO_thresh)
+        print("FNO orbitals:", self.FNO_orbitals)
 
         print("Frozen_core_setting:", self.frozen_core_setting)
         print("Frozen_virtual orbitals:",self.frozen_virtuals)
@@ -1619,10 +1621,15 @@ class PySCFTheory:
                 #Optional Frozen natural orbital approach via MP2 natural orbitals
                 if self.FNO is True:
                     print("FNO is True")
-                    print("MP2 natural orbitals on!")
-                    print("Will calculate MP2 natural orbitals to use as input in CC job")
-                    natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
-
+                    if self.FNO_orbitals =='MP2':
+                        print("MP2 natural orbitals on!")
+                        print("Will calculate MP2 natural orbitals to use as input in CC job")
+                        natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
+                    elif self.FNO_orbitals =='CCSD':
+                        print("CCSD natural orbitals on!")
+                        print("Will calculate CCSD natural orbitals to use as input in CC job")
+                        natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='CCSD', elems=elems)
+                    
                     #Optional natorb truncation if FNO_thresh is chosen
                     if self.FNO_thresh is not None:
                         print("FNO thresh option chosen:", self.FNO_thresh)
