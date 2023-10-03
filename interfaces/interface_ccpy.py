@@ -18,7 +18,8 @@ import ash.settings_ash
 
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, filename='input.dat', printlevel=2,
-                moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, tol=1e-10, numcores=1, 
+                moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, tol=1e-10, numcores=1,
+                cc_maxiter=300,
                 method="CCPQ", adaptive=False, percentages=None):
 
         self.theorynamelabel="ccpy"
@@ -55,6 +56,7 @@ class ccpyTheory:
         self.frozencore=frozencore
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
+        self.cc_maxiter=cc_maxiter #Maximum number of iterations for CC calculation
 
         #CCpy adaptive
         if adaptive is True and self.percentages is None:
@@ -147,7 +149,10 @@ class ccpyTheory:
         print("self.pyscftheoryobject.mf:", self.pyscftheoryobject.mf)
         driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
         print("driver:",driver)
+        #Some settings
+        driver.options["maximum_iterations"] = self.cc_maxiter
         driver.system.print_info()
+
 
         if self.adaptive is True:
             print("adaptive CC(P;Q) calculation.")
