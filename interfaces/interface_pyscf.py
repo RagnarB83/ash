@@ -27,7 +27,7 @@ class PySCFTheory:
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
-                  CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
+                  CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False,
                   CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
@@ -100,6 +100,7 @@ class PySCFTheory:
         self.CC_density=CC_density #CC density True or False
         self.CC_direct=CC_direct
         self.cc_maxcycle=cc_maxcycle
+        self.cc_diis_space=cc_diis_space
         self.FNO=FNO
         self.FNO_thresh=FNO_thresh
         self.frozen_core_setting=frozen_core_setting
@@ -270,6 +271,7 @@ class PySCFTheory:
         print("CC direct:", self.CC_direct)
         print("CC density:", self.CC_density)
         print("CC maxcycles:", self.cc_maxcycle)
+        print("CC DIIS space size:", self.cc_diis_space)
         print("FNO-CC:", self.FNO)
         print("FNO_thresh:", self.FNO_thresh)
 
@@ -806,6 +808,7 @@ class PySCFTheory:
         #Setting CCSD maxcycles (default 200)
         cc.max_cycle=self.cc_maxcycle
         cc.verbose=5 #Shows CC iterations with 5
+        cc.diis_space=self.cc_diis_space  #DIIS space size (default 6)
 
         #Switch to integral-direct CC if user-requested
         #NOTE: Faster but only possible for small/medium systems
