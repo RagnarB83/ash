@@ -151,10 +151,8 @@ def write_terachem_input(teracheminput,charge,mult,elems,coords,xyzfilename="ter
         inpfile.write(f'coordinates {xyzfilename}\n')
         inpfile.write(f'charge {charge}\n')
         inpfile.write(f'spinmult {mult}\n')
-        inpfile.write(f'method {teracheminput["method"]}\n')
-        inpfile.write(f'basis {teracheminput["basis"]}\n')
-        inpfile.write(f'sphericalbasis {teracheminput["sphericalbasis"]}\n')
-        inpfile.write(f'scf {teracheminput["scf"]}\n')
+        for key in teracheminput:
+          inpfile.write('{0} {1}\n'.format(key, teracheminput[key]))
         inpfile.write(f'run {joboption}\n')
         inpfile.write(f'pointcharges {pckeyword}\n')
         inpfile.write(f'timings yes\n')
