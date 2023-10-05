@@ -884,7 +884,8 @@ class PySCFTheory:
             print("pyscf postSCF dipole moment requeste")
             if dm is None:
                 print("A pyscf density matrix (dm= ) is required as input")
-                dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
+                ashexit()
+            dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
         else:
             #MF dipole moment
             dipole = self.mf.dip_moment(unit='A.U.')
