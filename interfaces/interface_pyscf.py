@@ -882,12 +882,19 @@ class PySCFTheory:
         if self.postSCF is True:
             print("pyscf postSCF dipole moment requested")
             if dm is None:
-                print("A pyscf density matrix (dm= ) is required as input")
+                print("For postSCF calculations, a density matrix (dm= ) is required as input")
                 ashexit()
             dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
         else:
-            #MF dipole moment
-            dipole = self.mf.dip_moment(unit='A.U.')
+            print("pySCF post-SCF False case")
+            if dm is None:
+                print("No DM provided. Using mean-field object dm")
+                #MF dipole moment
+                dipole = self.mf.dip_moment(unit='A.U.')
+            else:
+                print("Using provided DM")
+                dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
+
 
         return dipole
     def get_polarizability_tensor(self):
@@ -1368,7 +1375,7 @@ class PySCFTheory:
                 s2, spinmult = self.mf.spin_square()
                 print("UHF/UKS <S**2>:", s2)
                 print(f"UHF/UKS spinmult: {spinmult}\n")
-            print("SCF Dipole moment")
+            print("SCF Dipole moment:")
             self.get_dipole_moment()
             #Dispersion correction
             if self.dispersion != None:
