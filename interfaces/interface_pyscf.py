@@ -859,7 +859,6 @@ class PySCFTheory:
                 self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
 
                 dipole = self.get_dipole_moment(dm=rdm1)
-                print(f"Dipole moment: {dipole} A.U.")
             elif CCmethod == 'BCCD(T)':
                 print("Density for BCCD(T) has not been tested")
                 ashexit()
@@ -881,7 +880,7 @@ class PySCFTheory:
     #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
     def get_dipole_moment(self, dm=None):
         if self.postSCF is True:
-            print("pyscf postSCF dipole moment requeste")
+            print("pyscf postSCF dipole moment requested")
             if dm is None:
                 print("A pyscf density matrix (dm= ) is required as input")
                 ashexit()

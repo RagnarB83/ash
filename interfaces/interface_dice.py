@@ -790,7 +790,13 @@ noio
                     occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
                     print("SHCI natural orbital occupations:", occupations)
                     print("\nWriting natural orbitals to Moldenfile")
-                    self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
+                    self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, 
+                                                                        mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
+                    #Dipole moment
+                    print("Now doing dipole")
+                    rdm1 = self.mch.make_rdm1(ao_repr=True)
+                    #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
+                    dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1)
 
         print("Dice is finished")
         #Cleanup Dice scratch stuff (big files)
