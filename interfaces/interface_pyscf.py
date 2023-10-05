@@ -857,6 +857,9 @@ class PySCFTheory:
                 natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(cc,mf)
                 print("Mulliken analysis for CCSD(T) density matrix")
                 self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
+
+                dipole = self.get_dipole_moment(dm=rdm1)
+                print(f"Dipole moment: {dipole} A.U.")
             elif CCmethod == 'BCCD(T)':
                 print("Density for BCCD(T) has not been tested")
                 ashexit()
@@ -881,12 +884,12 @@ class PySCFTheory:
             print("pyscf postSCF dipole moment requeste")
             if dm is None:
                 print("A pyscf density matrix (dm= ) is required as input")
-            dipole_debye = self.mf.dip_moment(dm=dm_re,unit='A.U.')
+                dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
         else:
             #MF dipole moment
-            dipole_debye = self.mf.dip_moment(unit='A.U.')
+            dipole = self.mf.dip_moment(unit='A.U.')
 
-        return dipole_debye
+        return dipole
     def get_polarizability_tensor(self):
         try:
             from pyscf.prop import polarizability
@@ -1619,6 +1622,8 @@ class PySCFTheory:
                 mo_coefficients=None
 
                 #Optional Frozen natural orbital approach via MP2 natural orbitals
+                #NOTE: this is not entirely correct since occupied orbitals are natural orbitals rather than frozen HF orbitals as in the original method
+                #Not sure how much it matters
                 if self.FNO is True:
                     print("FNO is True")
                     if self.FNO_orbitals =='MP2':
