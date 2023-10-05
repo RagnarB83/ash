@@ -1368,6 +1368,8 @@ class PySCFTheory:
                 s2, spinmult = self.mf.spin_square()
                 print("UHF/UKS <S**2>:", s2)
                 print(f"UHF/UKS spinmult: {spinmult}\n")
+            print("SCF Dipole moment")
+            self.get_dipole_moment()
             #Dispersion correction
             if self.dispersion != None:
                 if self.dispersion == "D3" or self.dispersion == "D4":
