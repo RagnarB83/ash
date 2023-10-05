@@ -879,23 +879,14 @@ class PySCFTheory:
         return energy
     #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
     def get_dipole_moment(self, dm=None):
-        if self.postSCF is True:
-            print("pyscf postSCF dipole moment requested")
-            if dm is None:
-                print("For postSCF calculations, a density matrix (dm= ) is required as input")
-                ashexit()
-            dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
+        print("get_dipole_moment")
+        if dm is None:
+            print("No DM provided. Using mean-field object dm")
+            #MF dipole moment
+            dipole = self.mf.dip_moment(unit='A.U.')
         else:
-            print("pySCF post-SCF False case")
-            if dm is None:
-                print("No DM provided. Using mean-field object dm")
-                #MF dipole moment
-                dipole = self.mf.dip_moment(unit='A.U.')
-            else:
-                print("Using provided DM")
-                dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
-
-
+            print("Using provided DM")
+            dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
         return dipole
     def get_polarizability_tensor(self):
         try:
