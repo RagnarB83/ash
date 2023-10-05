@@ -851,8 +851,11 @@ class PySCFTheory:
             print(f"Now calculating {CCmethod} density matrix and natural orbitals")
             if CCmethod == 'CCSD':
                 natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(cc)
+                self.get_dipole_moment(dm=cc.make_rdm1())
             elif CCmethod == 'BCCD':
                 natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mybcc)
+                #Dipole moment
+                self.get_dipole_moment(dm=mybcc.make_rdm1())
             elif CCmethod == 'CCSD(T)':
                 natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(cc,mf)
                 print("Mulliken analysis for CCSD(T) density matrix")
