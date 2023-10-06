@@ -824,10 +824,11 @@ class PySCFTheory:
 
         #Brueckner coupled-cluster wrapper, using an outer-loop algorithm.
         if 'BCCD' in CCmethod:
-            print("Bruckner CC active. Doing.")
+            print("Bruckner CC active. Now doing BCCD on top of CCSD calculation.")
             from pyscf.cc.bccd import bccd_kernel_
             mybcc = bccd_kernel_(cc, diis=True, verbose=4,canonicalization=True)
             bccd_energy = mybcc.e_tot
+            print("BCCD energy:", bccd_energy)
         
         #(T) part
         if CCmethod == 'CCSD(T)':
@@ -860,11 +861,13 @@ class PySCFTheory:
                 natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(cc,mf)
                 print("Mulliken analysis for CCSD(T) density matrix")
                 self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
-
                 dipole = self.get_dipole_moment(dm=rdm1)
             elif CCmethod == 'BCCD(T)':
-                print("Density for BCCD(T) has not been tested")
-                ashexit()
+                print("Warning: Density for BCCD(T) has not been tested")
+                natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(mybcc,mf)
+                print("Mulliken analysis for BCCD(T) density matrix")
+                self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='BCCD(T)')
+                dipole = self.get_dipole_moment(dm=rdm1)
 
             #Printing occupations
             print(f"\n{CCmethod} natural orbital occupations:")
