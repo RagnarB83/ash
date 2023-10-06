@@ -29,7 +29,7 @@ class PySCFTheory:
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False,
-                  MP2=False,MP2_DF=False,
+                  MP2=False,MP2_DF=False,MP2_density=False, DFMP2_density_relaxed=False,
                   CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_orbitals='MP2', FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
@@ -156,6 +156,8 @@ class PySCFTheory:
         #MP2
         self.MP2=MP2
         self.MP2_DF=MP2_DF
+        self.MP2_density=MP2_density
+        self.DFMP2_density_relaxed=DFMP2_density_relaxed #Whether DF-MP2 density is relaxed or not
 
         #BS
         self.BS=BS
@@ -765,7 +767,14 @@ class PySCFTheory:
     def run_MP2(self, frozen_orbital_indices=None, mo_coefficients=None):
         print("\nInside run_MP2")
         import pyscf.mp
+        import pyscf.mcscf
         print("Frozen orbital indices:",self.frozen_orbital_indices)
+        if self.scf_type == "RKS" or self.scf_type == "RHF" :
+            print("Using restricted MP2 code")
+            unrestricted=False
+        else:
+            unrestricted=True
+        
         #Simple canonical MP2
         if self.MP2_DF is False:
             print("Warning: MP2_DF keyword is False. Will run slow canonical MP2")
@@ -778,18 +787,62 @@ class PySCFTheory:
             print("MP2_DF is True. Will run density-fitted MP2 code")
             from pyscf.mp.dfmp2_native import DFRMP2
             from pyscf.mp.dfump2_native import DFUMP2
-            #DF-MP2 scales better but syntax differs: https://pyscf.org/user/mp.html#dfmp2
-            if self.scf_type == "RKS" or self.scf_type == "RHF" :
+            if unrestricted is False:
                 print("Using restricted DF-MP2 code")
-                unrestricted=False
                 dmp2 = DFRMP2(self.mf, frozen=self.frozen_orbital_indices)
             else:
                 print("Using unrestricted DF-MP2 code")
-                unrestricted=True
                 dmp2 = DFUMP2(self.mf, frozen=(self.frozen_orbital_indices,self.frozen_orbital_indices))
             #Now running DMP2 object
             dmp2.run()   
             MP2_energy =  dmp2.e_tot
+
+        #Density and natural orbitals
+        if self.MP2_density is True:
+            print("\nMP2 density option is active")
+            print(f"Now calculating MP2 density matrix and natural orbitals")
+
+            #DM
+            if self.MP2_DF is False:
+                print("Now calculating unrelaxed canonical MP2 density")
+                #This is unrelaxed canonical MP2 density
+                mp2_dm = mp2.make_rdm1(ao_repr=False)
+                density_type='MP2'
+            else:
+                #RDMs: Unrelaxed vs. Relaxed
+                if self.DFMP2_density_relaxed is True:
+                    print("Calculating relaxed DF-MP2 density")
+                    mp2_dm = dmp2.make_rdm1_relaxed(ao_repr=True) #Relaxed
+                    density_type='DFMP2-relaxed'
+                else:
+                    print("Calculating unrelaxed DF-MP2 density")
+                    mp2_dm = dmp2.make_rdm1_unrelaxed(ao_repr=True) #Unrelaxed
+                    density_type='DFMP2-unrelaxed'
+
+            print("Mulliken analysis for MP2 density matrix")
+            self.run_population_analysis(self.mf, unrestricted=unrestricted, dm=mp2_dm, type='Mulliken', label=density_type)
+
+            #TODO: Fix. Slightly silly, calling make_natural_orbitals will cause dm calculation again
+            if self.MP2_DF is False:
+                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mp2)
+            else:
+                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(dmp2)
+
+            #Dipole moment
+            self.get_dipole_moment(dm=mp2_dm)
+
+            #Printing occupations
+            print(f"\nMP2 natural orbital occupations:")
+            print(natocc)
+            print()
+            print("NO-based polyradical metrics:")
+            ash.functions.functions_elstructure.poly_rad_index_nu(natocc)
+            ash.functions.functions_elstructure.poly_rad_index_nu_nl(natocc)
+            ash.functions.functions_elstructure.poly_rad_index_n_d(natocc)
+            print()
+            molden_name=f"pySCF_MP2_natorbs"
+            print(f"Writing MP2 natural orbitals to Moldenfile: {molden_name}.molden")
+            self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
 
         return MP2_energy
 
@@ -925,7 +978,7 @@ class PySCFTheory:
         return energy
     #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
     def get_dipole_moment(self, dm=None):
-        print("get_dipole_moment")
+        print("get_dipole_moment function:")
         if dm is None:
             print("No DM provided. Using mean-field object dm")
             #MF dipole moment
