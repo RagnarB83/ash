@@ -29,6 +29,7 @@ class PySCFTheory:
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False,
+                  MP2=False,MP2_DF=False,
                   CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_orbitals='MP2', FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
@@ -82,19 +83,29 @@ class PySCFTheory:
         self.memory=memory
         self.filename=filename
         self.printsetting=printsetting
+        self.verbose_setting=verbose_setting
+
         #CPPE Polarizable Embedding options
         self.pe=pe
         #Potfile from user or passed on via QM/MM Theory object ?
         self.potfile=potfile
 
-        #
+        # SCF
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
+        self.conv_tol=conv_tol
+        self.direct_scf=direct_scf
         self.basis=basis #Basis set can be string or dict with elements as keys
         self.magmom=magmom
         self.ecp=ecp
         self.functional=functional
         self.x2c=x2c
+        self.gridlevel=gridlevel
+        self.symmetry=symmetry
+        #post-SCF
+        self.frozen_core_setting=frozen_core_setting
+        self.frozen_virtuals=frozen_virtuals
+        #CC
         self.CC=CC
         self.CCmethod=CCmethod
         self.CC_density=CC_density #CC density True or False
@@ -104,16 +115,12 @@ class PySCFTheory:
         self.FNO=FNO
         self.FNO_thresh=FNO_thresh
         self.FNO_orbitals=FNO_orbitals
-        self.frozen_core_setting=frozen_core_setting
-        self.frozen_virtuals=frozen_virtuals
-        self.gridlevel=gridlevel
 
-        self.conv_tol=conv_tol
-        self.verbose_setting=verbose_setting
+        #Orbitals
         self.moreadfile=moreadfile
         self.write_chkfile_name=write_chkfile_name
         self.noautostart=noautostart
-        self.symmetry=symmetry
+
         #CAS
         self.CAS=CAS
         self.CASSCF=CASSCF
@@ -146,8 +153,9 @@ class PySCFTheory:
         #Uses: https://github.com/ajz34/vdw
         self.dispersion=dispersion
 
-        #Direct SCF
-        self.direct_scf=direct_scf
+        #MP2
+        self.MP2=MP2
+        self.MP2_DF=MP2_DF
 
         #BS
         self.BS=BS
@@ -203,6 +211,14 @@ class PySCFTheory:
 
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
+        if self.CC is True:
+            self.postSCF=True
+        if self.MP2 is True:
+            self.postSCF=True
+        if self.TDDFT is True:
+            self.postSCF=True
+        if self.mom is True:
+            self.postSCF=True
         if self.CAS is True:
             self.postSCF=True
             print("CAS is True. Active_space keyword should be defined unless AVAS, APC or DMET_CAS is True.")
@@ -224,7 +240,6 @@ class PySCFTheory:
                 print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
                 ashexit()
 
-        if CAS is True:
             #Checking if multi-state CASSCF or not
             if type(self.CASSCF_numstates) is int:
                 print("CASSCF_numstates given as integer")
@@ -234,14 +249,6 @@ class PySCFTheory:
                 self.CASSCF_totnumstates=sum(self.CASSCF_numstates)
             print("Total number of CASSCF states: ", self.CASSCF_totnumstates)
 
-
-
-        if self.CC is True:
-            self.postSCF=True
-        if self.TDDFT is True:
-            self.postSCF=True
-        if self.mom is True:
-            self.postSCF=True
 
         #Are we doing an initial SCF calculation or not
         #Generally yes.
@@ -253,7 +260,6 @@ class PySCFTheory:
         self.numcores=numcores
         if self.losc is True:
             self.load_losc(loscpath)
-
 
         #Print the options
         print("SCF:", self.SCF)
@@ -276,7 +282,8 @@ class PySCFTheory:
         print("FNO-CC:", self.FNO)
         print("FNO_thresh:", self.FNO_thresh)
         print("FNO orbitals:", self.FNO_orbitals)
-
+        print("MP2:", self.MP2)
+        print("MP2_DF:",self.MP2_DF)
         print("Frozen_core_setting:", self.frozen_core_setting)
         print("Frozen_virtual orbitals:",self.frozen_virtuals)
         print("Polarizable embedding:", self.pe)
@@ -754,6 +761,39 @@ class PySCFTheory:
             self.loscmf=loscmf
             self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
+
+    def run_MP2(self, frozen_orbital_indices=None, mo_coefficients=None):
+        print("\nInside run_MP2")
+        import pyscf.mp
+        print("Frozen orbital indices:",self.frozen_orbital_indices)
+        #Simple canonical MP2
+        if self.MP2_DF is False:
+            print("Warning: MP2_DF keyword is False. Will run slow canonical MP2")
+            print("Set MP2_DF to True for faster DF-MP2/RI-MP2")
+            mp2 = pyscf.mp.MP2(self.mf, frozen=self.frozen_orbital_indices)
+            print("Running MP2")
+            mp2.run()
+            MP2_energy = mp2.e_tot
+        else:
+            print("MP2_DF is True. Will run density-fitted MP2 code")
+            from pyscf.mp.dfmp2_native import DFRMP2
+            from pyscf.mp.dfump2_native import DFUMP2
+            #DF-MP2 scales better but syntax differs: https://pyscf.org/user/mp.html#dfmp2
+            if self.scf_type == "RKS" or self.scf_type == "RHF" :
+                print("Using restricted DF-MP2 code")
+                unrestricted=False
+                dmp2 = DFRMP2(self.mf, frozen=self.frozen_orbital_indices)
+            else:
+                print("Using unrestricted DF-MP2 code")
+                unrestricted=True
+                dmp2 = DFUMP2(self.mf, frozen=(self.frozen_orbital_indices,self.frozen_orbital_indices))
+            #Now running DMP2 object
+            dmp2.run()   
+            MP2_energy =  dmp2.e_tot
+
+        return MP2_energy
+
+
     def run_CC(self,mf, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
         print("\nInside run_CC")
         import pyscf.scf
@@ -1204,12 +1244,12 @@ class PySCFTheory:
         ##############################
         #FROZEN ORBITALS in CC
         ##############################
-        if self.CC:
+        if self.CC or self.MP2:
             #Frozen-core settings
             if self.frozen_core_setting == 'Auto':
                 self.determine_frozen_core(elems)
             elif self.frozen_core_setting == None or self.frozen_core_setting == 'None':
-                print("Warning: No core-orbitals will be frozen in the CC calculation.")
+                print("Warning: No core-orbitals will be frozen in the CC/MP2 calculation.")
                 self.frozen_core_orbital_indices=None
             else:
                 print("Manual user frozen core:", self.frozen_core_setting)
@@ -1617,6 +1657,14 @@ class PySCFTheory:
                 self.properties["TDDFT_transition_energies"] = mytd.e*27.211399
                 self.properties["TDDFT_transition_dipoles"] = t_dip
                 self.properties["TDDFT_oscillator strengths"] = osc_strengths_length
+
+            #####################
+            #MP2
+            #####################
+            if self.MP2 is True:
+                print("MP2 is on !")
+                MP2_energy = self.run_MP2()
+                self.energy = MP2_energy
 
             #####################
             #COUPLED CLUSTER
