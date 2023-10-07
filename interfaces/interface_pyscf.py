@@ -792,7 +792,7 @@ class PySCFTheory:
         if self.MP2_DF is False:
             print("Now calculating unrelaxed canonical MP2 density")
             #This is unrelaxed canonical MP2 density
-            mp2_dm = mp2object.make_rdm1(ao_repr=False)
+            mp2_dm = mp2object.make_rdm1(ao_repr=True)
             density_type='MP2'
         else:
             #RDMs: Unrelaxed vs. Relaxed
