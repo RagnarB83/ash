@@ -27,6 +27,30 @@ from ash.interfaces.interface_mdtraj import MDtraj_import, MDtraj_imagetraj, MDt
 import ash.functions.functions_parallel
 import ash.modules.module_plotting
 
+# Reporter for forces similar to xyz format
+class ForceReporter(object):
+    def __init__(self, file, reportInterval):
+        self._out = open(file, 'w')
+        self._reportInterval = reportInterval
+
+    def __del__(self):
+        self._out.close()
+
+    def describeNextReport(self, simulation):
+        steps = self._reportInterval - simulation.currentStep%self._reportInterval
+        return (steps, False, False, True, False, None)
+
+    def report(self, simulation, state):
+        import openmm
+        forces = state.getForces().value_in_unit(openmm.unit.kilojoules/openmm.unit.mole/openmm.unit.nanometer)
+        print("writing forces")
+        energy=state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoule_per_mole) 
+        self._out.write('%g\n%g\n' % (len(forces), energy))
+        for f in forces:
+            self._out.write('%g %g %g\n' % (f[0], f[1], f[2]))
+        self._out.flush()
+
+
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=1, topoforce=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
@@ -2844,7 +2868,7 @@ def read_NPT_statefile(npt_output):
 # Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None,
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
               anderson_thermostat=False, platform='CPU', constraints=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
@@ -2853,7 +2877,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, constraints=constraints,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, force_file_option=force_file_option, constraints=constraints,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, printlevel=printlevel, hydrogenmass=hydrogenmass,
@@ -2877,7 +2901,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.004,
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None,
                  coupling_frequency=1, printlevel=2, platform='CPU',
                  anderson_thermostat=False, hydrogenmass=1.5, constraints=None,
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
@@ -2945,6 +2969,7 @@ class OpenMM_MDclass:
         self.plumed_object = plumed_object
         self.barostat_frequency = barostat_frequency
         self.trajectory_file_option=trajectory_file_option
+        self.force_file_option=force_file_option
         #PERIODIC or not
         if self.openmmobject.Periodic is True:
             #Generally we want True but for now allowing user to modify (default=True)
@@ -3193,6 +3218,7 @@ class OpenMM_MDclass:
             # print("Wrote PDB")
 
             #Note: using append keyword here if restarting
+            print('DCDReporter added')
             simulation.reporters.append(
                 openmm.app.DCDReporter(self.trajfilename+'.dcd', self.traj_frequency, append=restart,
                                                          enforcePeriodicBox=self.enforcePeriodicBox))
@@ -3207,6 +3233,9 @@ class OpenMM_MDclass:
             simulation.reporters.append(
                 mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=self.enforcePeriodicBox))
+        if self.force_file_option == 'txt':
+            print("ForceReporter traj format selected.")
+            simulation.reporters.append(ForceReporter(self.trajfilename + '_force.txt', self.traj_frequency))
 
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
