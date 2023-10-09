@@ -29,7 +29,6 @@ import ash.modules.module_plotting
 
 # Reporter for forces similar to xyz format
 class ForceReporter(object):
-    import openmm
     def __init__(self, file, reportInterval):
         self._out = open(file, 'w')
         self._reportInterval = reportInterval
@@ -42,10 +41,11 @@ class ForceReporter(object):
         return (steps, False, False, True, False, None)
 
     def report(self, simulation, state):
+        import openmm
         forces = state.getForces().value_in_unit(openmm.unit.kilojoules/openmm.unit.mole/openmm.unit.nanometer)
         print("writing forces")
         energy=state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoule_per_mole) 
-        self._out.write('%g\n%g' % (len(forces), energy))
+        self._out.write('%g\n%g\n' % (len(forces), energy))
         for f in forces:
             self._out.write('%g %g %g\n' % (f[0], f[1], f[2]))
         self._out.flush()
