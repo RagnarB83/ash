@@ -214,7 +214,7 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
             if 'core' in m:
                 print("Warning: ignoring user-defined core option. Using frozen_core_option instead")
             else:
-                inpfile.write(m)+'\n'
+                inpfile.write(str(m)+'\n')
         #inpfile.write(mrccinput + '\n')
         #Frozen core
         inpfile.write(f'core={frozen_core_option}\n')
