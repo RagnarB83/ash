@@ -2593,7 +2593,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
               write_nonbonded_FF_for_ligand()
               """)
         print("""If you need a full forcefield for the solute then try :
-              small_molecule_parameterizor""")
+              small_molecule_parameterizer""")
         ashexit()
         
     # Read XML-file and check for LJ treatment
@@ -4888,7 +4888,7 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     return outputname
 
 
-def small_molecule_parameterizor(xyzfile=None, pdbfile=None, molfile=None, sdffile=None, smiles_string=None,
+def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffile=None, smiles_string=None,
                                  forcefield_option='GAFF', gaffversion='gaff-2.11',
                                  output_xmlfile="ligand.xml",
                                 openff_file="openff-2.0.0.offxml",
