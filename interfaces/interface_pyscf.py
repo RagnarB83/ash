@@ -896,6 +896,15 @@ class PySCFTheory:
         energy = ccsd_result.e_tot
         print("CCSD energy:", energy)
 
+        #T1 diagnostic
+        if unrestricted is True:
+            T1_diagnostic_alpha = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1[0])
+            T1_diagnostic_beta = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1[1])
+            print("T1 diagnostic (alpha):", T1_diagnostic_alpha)
+            print("T1 diagnostic (beta):", T1_diagnostic_beta)
+        else:
+            T1_diagnostic = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1)
+            print("T1 diagnostic:", T1_diagnostic)
         #Brueckner coupled-cluster wrapper, using an outer-loop algorithm.
         if 'BCCD' in CCmethod:
             print("Bruckner CC active. Now doing BCCD on top of CCSD calculation.")
