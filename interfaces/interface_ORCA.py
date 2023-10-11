@@ -258,11 +258,10 @@ class ORCATheory:
         print(self.orcablocks)
         print("Charge: {}  Mult: {}".format(charge, mult))
 
-
         #TODO: Make more general
         create_orca_input_plain(self.filename, elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                 charge, mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
-        print(BC.OKGREEN, "ORCA Calculation started.", BC.END)
+        print(BC.OKGREEN, f"ORCA Calculation started using {numcores} CPU cores", BC.END)
         run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option, 
                             ignore_ORCA_error=self.ignore_ORCA_error)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)

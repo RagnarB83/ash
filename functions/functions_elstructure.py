@@ -1089,18 +1089,18 @@ def num_core_electrons(elems):
 #Check if electrons pairs in element list are less than numcores. Reduce numcores if so.
 #Using even number of electrons
 def check_cores_vs_electrons(elems,numcores,charge):
-    print("numcores:", numcores)
-    print("charge:", charge)
+    print("Checking whether number of cores should be reduced")
     numelectrons = int(nucchargelist(elems) - charge)
     #Reducing numcores if fewer active electron pairs than numcores.
     core_electrons = num_core_electrons(elems)
-    print("core_electrons:", core_electrons)
+    print("Number of core electrons:", core_electrons)
     valence_electrons = (numelectrons - core_electrons)
     electronpairs = int(valence_electrons / 2)
+    print("Number of total electrons :", numelectrons)
+    print("Number of valence electrons :", valence_electrons )
+    print("Number of valence electron pairs :", electronpairs )
     if electronpairs  < numcores:
-        print("Number of total electrons :", numelectrons)
-        print("Number of valence electrons :", valence_electrons )
-        print("Number of valence electron pairs :", electronpairs )
+        print(f"Number of electron pairs ({electronpairs}) less than number of cores ({numcores})")
         if isodd(electronpairs):
             if electronpairs > 1:
                 #Changed from subtracting 1 to 3 after DLPNO-CC of NaH calculation failed (MB16-43)
@@ -1109,9 +1109,10 @@ def check_cores_vs_electrons(elems,numcores,charge):
                 numcores=electronpairs
         else:
             numcores=electronpairs
+        print("Changing number of cores to be approximately equal to number of electron pairs")
     if numcores == 0:
         numcores=1
-    print("Setting numcores to:", numcores)
+    print("Number of cores will be:", numcores)
     return numcores
 
 
