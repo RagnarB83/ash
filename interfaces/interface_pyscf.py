@@ -435,11 +435,11 @@ class PySCFTheory:
                 #Now run DMP2 object
                 mp2.run()
 
-                #Make natorbs
-                #NOTE: This should not have to recalculate RDM here since provided
-                #natocc, natorb = dmp2.make_natorbs(rdm1_mo=dfmp2_dm, relaxed=relaxed)
-                #NOTE: Slightly silly, calling make_natural_orbitals will cause dm calculation again
-                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mp2)                
+            #Make natorbs
+            #NOTE: This should not have to recalculate RDM here since provided
+            #natocc, natorb = dmp2.make_natorbs(rdm1_mo=dfmp2_dm, relaxed=relaxed)
+            #NOTE: Slightly silly, calling make_natural_orbitals will cause dm calculation again
+            natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mp2)                
             #natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
         elif method =='FCI':
             print("Running FCI natural orbital calculation")
