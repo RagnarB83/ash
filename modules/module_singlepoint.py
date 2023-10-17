@@ -8,6 +8,7 @@
 import numpy as np
 import time
 import subprocess as sp
+import shutil
 
 import ash
 from ash.functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader
@@ -101,7 +102,14 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
 
         #Running single-point. 
         result = Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
-        
+
+        #Preserve outputfile
+        calc_label = "Frag_" + theory.__class__.__name__+"_"
+        try:
+            shutil.copyfile(theory.filename+'.out', f'./{calc_label}.out')
+        except:
+            pass
+
         print("Theory Label: {} Energy: {} Eh".format(theory.label, result.energy))
         theory.cleanup()
         energies.append(result.energy)
@@ -171,6 +179,14 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
         result = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
         
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, result.energy))
+
+        #Preserve outputfile
+        calc_label = "Frag_" + str(frag.formula) + "_" + str(frag.charge) + "_" + str(frag.mult) + "_"
+        try:
+            shutil.copyfile(theory.filename+'.out', f'./{calc_label}.out')
+        except:
+            pass
+
         theory.cleanup()
         energies.append(result.energy)
         #Adding energy as the fragment attribute
@@ -280,6 +296,12 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
         result = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
         energy = result.energy
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
+        #Preserve outputfile
+        calc_label = "Frag_" + str(frag.formula) + "_" + str(frag.charge) + "_" + str(frag.mult) + "_"
+        try:
+            shutil.copyfile(theory.filename+'.out', f'./{calc_label}.out')
+        except:
+            pass
         theory.cleanup()
         reaction.energies.append(energy)
 

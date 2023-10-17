@@ -19,7 +19,7 @@ import copy
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
-                  scf_type=None, basis=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
+                  scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
@@ -47,8 +47,9 @@ class PySCFTheory:
         if scf_type is None:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
             ashexit()
-        if basis is None:
-            print("Error: You must give a basis set. Basis set can a name (string) or dict (elements as keys)")
+        if basis is None and basis_file is None:
+            print("Error: You must provide basis or basis_file kewyrod . Basis set can a name (string) or dict (elements as keys)")
+            print("basis_file should be a string of the filename containing basis set in NWChem format")
             ashexit()
         if functional is not None:
             print(f"Functional keyword: {functional} chosen. DFT is on!")
@@ -96,6 +97,7 @@ class PySCFTheory:
         self.conv_tol=conv_tol
         self.direct_scf=direct_scf
         self.basis=basis #Basis set can be string or dict with elements as keys
+        self.basis_file = basis_file
         self.magmom=magmom
         self.ecp=ecp
         self.functional=functional
@@ -273,6 +275,7 @@ class PySCFTheory:
         print("Grid level:", self.gridlevel)
         print("verbose_setting:", self.verbose_setting)
         print("Basis:", self.basis)
+        print("Basis-file:", self.basis_file)
         print("SCF stability analysis:", self.stability_analysis)
         print("Functional:", self.functional)
         print("Coupled cluster:", self.CC)
@@ -1101,10 +1104,26 @@ class PySCFTheory:
         self.mol.symmetry = self.symmetry
         self.mol.charge = charge
         self.mol.spin = mult-1
-        print("Setting mol.spin to:", mult-1)
+        ########
+        # BASIS
+        ########
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
-        self.mol.basis=self.basis
+        #NOTE: Basis-file parsing not quite ready.
+        #NOTE: Need to read file containing also basis for that element I think
+        #NOTE: We should also support basis set exchange API: https://github.com/pyscf/pyscf/issues/1299
+        if self.basis_file != None:
+            print("basis_file option is not ready")
+            ashexit()
+            #with open(self.basis_file) as b:
+            #    basis_string_from_file=' '.join(b.readlines())
+            #print("basis_string_from_file:", basis_string_from_file)
+            self.mol.basis= pyscf.gto.basis.parse(basis_string_from_file)
+            #https://github.com/nmardirossian/PySCF_Tutorial/blob/master/dev_guide.ipynb
+            #self.mol.basis = #{'H': gto.basis.read('basis/STO-2G.dat')
+        else:
+            self.mol.basis=self.basis
+        print(self.mol.basis)
         #Optional setting magnetic moments 
         if self.magmom != None:
             print("Setting magnetic moments from user-input:", self.magmom)
