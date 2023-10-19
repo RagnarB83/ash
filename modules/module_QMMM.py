@@ -1278,6 +1278,38 @@ def grab_resids_from_pdbfile(pdbfile):
 
     return resids
 
+#Grab resid column from PSF-file and return list of resids
+# NOTE: New resid-indices are used to avoid problem of PSF-file having 
+# repeating sequences of resids, additional chains or segments
+def grab_resids_from_psffile(psffile):
+    resids=[] #New list of resid indices, starting from 0
+    actual_resids=[] #Actual resid values from PSF-file, used to check if resid has changed
+    indexcount=0 #This will be used to define residues
+    #resnames=[]
+    with open(psffile) as f:
+        for line in f:
+            if 'REMARKS' in line:
+                continue
+            if len(line.split()) > 8:
+                resname_part=line.split()[3]
+                resid_part=int(line.split()[2])
+                #resnames.append(resname_part)
+                #Very first atom and first residue
+                if len(resids) == 0:
+                    resids.append(indexcount)
+                    actual_resids.append(resid_part)
+                #Checking if resid in PDB-file is the same 
+                elif resid_part == actual_resids[-1]:
+                    resids.append(indexcount)
+                    actual_resids.append(resid_part)
+                # Resid changed, meaning new residue
+                else:
+                    indexcount+=1
+                    #New residue
+                    resids.append(indexcount)
+                    actual_resids.append(resid_part)
+    return resids
+
 #Read atomic charges present in PSF-file. assuming Xplor format
 def read_charges_from_psf(file):
     charges=[]
@@ -1297,20 +1329,13 @@ def read_charges_from_psf(file):
     return charges
 
 #Define active region based on radius from an origin atom.
-#Requires fragment (for coordinates) and resids list inside OpenMMTheory object
-#TODO: Also allow PDBfile to grab resid information from?? Prettier since we don't have to create an OpenMMTheory object
-def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, originatom=None):
-    """ActRegionDefine function
+#Requires fragment (for coordinates) and residue information from either:
+# 1. resids list inside OpenMMTheory object
+# 2. residues taken from PDB-file
+# 3. residues taken from PSF-file
 
-    Args:
-        mmtheory ([OpenMMTheory]): OpenMMTheory object. Defaults to None.
-        fragment ([Fragment]): ASH Fragment. Defaults to None.
-        radius ([int]): Radius (in Angstrom). Defaults to None.
-        originatom ([int]): Origin atom for radius. Defaults to None.
+def actregiondefine(pdbfile=None, mmtheory=None, psffile=None, fragment=None, radius=None, originatom=None):
 
-    Returns:
-        [type]: [description]
-    """
     print_line_with_mainheader("ActregionDefine")
 
     #Checking if proper information has been provided
@@ -1320,9 +1345,10 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
     if pdbfile == None and fragment == None:
         print("actregiondefine requires either fragment or pdbfile arguments (for coordinates)")
         ashexit()
-    if pdbfile == None and mmtheory == None:
-        print("actregiondefine requires either pdbfile or mmtheory arguments (for residue topology information)")
+    if pdbfile == None and mmtheory == None and psffile == None:
+        print("actregiondefine requires either pdbfile, psffile or mmtheory arguments (for residue topology information)")
         ashexit()
+    
     #Creating fragment from pdbfile 
     if fragment == None:
         print("No ASH fragment provided. Creating ASH fragment from PDBfile")
@@ -1341,7 +1367,11 @@ def actregiondefine(pdbfile=None, mmtheory=None, fragment=None, radius=None, ori
             ashexit()
         #Defining list of residue from OpenMMTheory object 
         resids=mmtheory.resids
+    elif psffile != None:
+        print("PSF-file provided. Using residue information")
+        resids = grab_resids_from_psffile(psffile)
     else:
+        print("PDB-file provided. Using residue information")
         #No mmtheory but PDB file should have been provided
         #Defining resids list from PDB-file
         #NOTE: Call grab_resids_from_pdbfile

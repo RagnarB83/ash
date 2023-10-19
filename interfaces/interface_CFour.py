@@ -51,9 +51,11 @@ class CFourTheory:
         self.EXTERN_POT='OFF' #Pointcharge potential off by default
         self.DBOC=DBOC
         self.FIXGEOM='OFF' #Off by default. May be turned on by run-method
+        self.BRUECKNER='OFF'
         #Overriding default
         #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
         if 'BASIS' in cfouroptions: self.basis=cfouroptions['BASIS']
+        if 'BRUECKNER' in cfouroptions: self.BRUECKNER=cfouroptions['BRUECKNER']
         if 'CALC' in cfouroptions: self.CALC=cfouroptions['CALC']
         if 'MEMORY' in cfouroptions: self.memory=cfouroptions['MEMORY']
         if 'MEM_UNIT' in cfouroptions: self.memory_unit=cfouroptions['MEM_UNIT']
@@ -92,6 +94,7 @@ class CFourTheory:
         print("SCF_MAXCYC:", self.scf_maxcyc)
         print("LINEQ_CONV:", self.lineq_conv)
         print("CC_MAXCYC:", self.cc_maxcyc)
+        print("BRUECKNER:",self.BRUECKNER)
         print("SYMMETRY:", self.symmetry)
         print("HFSTABILITY:", self.stabilityanalysis)
         
@@ -359,7 +362,7 @@ REF={self.reference},CHARGE={charge},MULT={mult},{self.frozencore_string}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},BRUECKNER={self.BRUECKNER},SYMMETRY={self.symmetry}\n
 HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
@@ -391,7 +394,7 @@ REF={self.reference},CHARGE={charge},MULT={mult},{self.frozencore_string}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},BRUECKNER={self.BRUECKNER},SYMMETRY={self.symmetry}\n\
 HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
@@ -424,7 +427,7 @@ REF={self.reference},CHARGE={charge},MULT={mult},{self.frozencore_string}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},BRUECKNER={self.BRUECKNER},SYMMETRY={self.symmetry}\n\
 HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
                 #for specbas in self.specialbasis.items():
                 for el in qm_elems:
@@ -455,7 +458,7 @@ REF={self.reference},CHARGE={charge},MULT={mult},{self.frozencore_string}\n\
 MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
-LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},SYMMETRY={self.symmetry}\n\
+LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},BRUECKNER={self.BRUECKNER},SYMMETRY={self.symmetry}\n\
 HFSTABILITY={self.stabilityanalysis})\n\n""")
                 #for specbas in self.specialbasis.items():
                 for el in qm_elems:

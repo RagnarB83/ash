@@ -208,12 +208,13 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
 def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None,
                      frozen_core_option=None):
+    print("Writing MRCC inputfile")
     with open("MINP", 'w') as inpfile:
-        for m in mrccinput:
+        for m in mrccinput.split('\n'):
             if 'core' in m:
                 print("Warning: ignoring user-defined core option. Using frozen_core_option instead")
             else:
-                inpfile.write(m )
+                inpfile.write(str(m)+'\n')
         #inpfile.write(mrccinput + '\n')
         #Frozen core
         inpfile.write(f'core={frozen_core_option}\n')

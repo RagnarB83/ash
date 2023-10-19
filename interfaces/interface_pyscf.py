@@ -19,7 +19,7 @@ import copy
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
-                  scf_type=None, basis=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
+                  scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
@@ -27,10 +27,11 @@ class PySCFTheory:
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
-                  CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200,
+                  CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False,
+                  MP2=False,MP2_DF=False,MP2_density=False, DFMP2_density_relaxed=False,
                   CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
-                  frozen_virtuals=None, FNO=False, FNO_thresh=None, x2c=False,
+                  frozen_virtuals=None, FNO=False, FNO_orbitals='MP2', FNO_thresh=None, x2c=False,
                   moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
@@ -46,8 +47,9 @@ class PySCFTheory:
         if scf_type is None:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
             ashexit()
-        if basis is None:
-            print("Error: You must give a basis set. Basis set can a name (string) or dict (elements as keys)")
+        if basis is None and basis_file is None:
+            print("Error: You must provide basis or basis_file kewyrod . Basis set can a name (string) or dict (elements as keys)")
+            print("basis_file should be a string of the filename containing basis set in NWChem format")
             ashexit()
         if functional is not None:
             print(f"Functional keyword: {functional} chosen. DFT is on!")
@@ -82,36 +84,45 @@ class PySCFTheory:
         self.memory=memory
         self.filename=filename
         self.printsetting=printsetting
+        self.verbose_setting=verbose_setting
+
         #CPPE Polarizable Embedding options
         self.pe=pe
         #Potfile from user or passed on via QM/MM Theory object ?
         self.potfile=potfile
 
-        #
+        # SCF
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
+        self.conv_tol=conv_tol
+        self.direct_scf=direct_scf
         self.basis=basis #Basis set can be string or dict with elements as keys
+        self.basis_file = basis_file
         self.magmom=magmom
         self.ecp=ecp
         self.functional=functional
         self.x2c=x2c
+        self.gridlevel=gridlevel
+        self.symmetry=symmetry
+        #post-SCF
+        self.frozen_core_setting=frozen_core_setting
+        self.frozen_virtuals=frozen_virtuals
+        #CC
         self.CC=CC
         self.CCmethod=CCmethod
         self.CC_density=CC_density #CC density True or False
         self.CC_direct=CC_direct
         self.cc_maxcycle=cc_maxcycle
+        self.cc_diis_space=cc_diis_space
         self.FNO=FNO
         self.FNO_thresh=FNO_thresh
-        self.frozen_core_setting=frozen_core_setting
-        self.frozen_virtuals=frozen_virtuals
-        self.gridlevel=gridlevel
+        self.FNO_orbitals=FNO_orbitals
 
-        self.conv_tol=conv_tol
-        self.verbose_setting=verbose_setting
+        #Orbitals
         self.moreadfile=moreadfile
         self.write_chkfile_name=write_chkfile_name
         self.noautostart=noautostart
-        self.symmetry=symmetry
+
         #CAS
         self.CAS=CAS
         self.CASSCF=CASSCF
@@ -144,8 +155,11 @@ class PySCFTheory:
         #Uses: https://github.com/ajz34/vdw
         self.dispersion=dispersion
 
-        #Direct SCF
-        self.direct_scf=direct_scf
+        #MP2
+        self.MP2=MP2
+        self.MP2_DF=MP2_DF
+        self.MP2_density=MP2_density
+        self.DFMP2_density_relaxed=DFMP2_density_relaxed #Whether DF-MP2 density is relaxed or not
 
         #BS
         self.BS=BS
@@ -201,6 +215,14 @@ class PySCFTheory:
 
         #Whether job is SCF (HF/DFT) only or a post-SCF method like CC or CAS 
         self.postSCF=False
+        if self.CC is True:
+            self.postSCF=True
+        if self.MP2 is True:
+            self.postSCF=True
+        if self.TDDFT is True:
+            self.postSCF=True
+        if self.mom is True:
+            self.postSCF=True
         if self.CAS is True:
             self.postSCF=True
             print("CAS is True. Active_space keyword should be defined unless AVAS, APC or DMET_CAS is True.")
@@ -222,7 +244,6 @@ class PySCFTheory:
                 print("active_space must be defined as a list of 2 numbers (M electrons in N orbitals)")
                 ashexit()
 
-        if CAS is True:
             #Checking if multi-state CASSCF or not
             if type(self.CASSCF_numstates) is int:
                 print("CASSCF_numstates given as integer")
@@ -232,14 +253,6 @@ class PySCFTheory:
                 self.CASSCF_totnumstates=sum(self.CASSCF_numstates)
             print("Total number of CASSCF states: ", self.CASSCF_totnumstates)
 
-
-
-        if self.CC is True:
-            self.postSCF=True
-        if self.TDDFT is True:
-            self.postSCF=True
-        if self.mom is True:
-            self.postSCF=True
 
         #Are we doing an initial SCF calculation or not
         #Generally yes.
@@ -252,7 +265,6 @@ class PySCFTheory:
         if self.losc is True:
             self.load_losc(loscpath)
 
-
         #Print the options
         print("SCF:", self.SCF)
         print("SCF-type:", self.scf_type)
@@ -263,6 +275,7 @@ class PySCFTheory:
         print("Grid level:", self.gridlevel)
         print("verbose_setting:", self.verbose_setting)
         print("Basis:", self.basis)
+        print("Basis-file:", self.basis_file)
         print("SCF stability analysis:", self.stability_analysis)
         print("Functional:", self.functional)
         print("Coupled cluster:", self.CC)
@@ -270,9 +283,12 @@ class PySCFTheory:
         print("CC direct:", self.CC_direct)
         print("CC density:", self.CC_density)
         print("CC maxcycles:", self.cc_maxcycle)
+        print("CC DIIS space size:", self.cc_diis_space)
         print("FNO-CC:", self.FNO)
         print("FNO_thresh:", self.FNO_thresh)
-
+        print("FNO orbitals:", self.FNO_orbitals)
+        print("MP2:", self.MP2)
+        print("MP2_DF:",self.MP2_DF)
         print("Frozen_core_setting:", self.frozen_core_setting)
         print("Frozen_virtual orbitals:",self.frozen_virtuals)
         print("Polarizable embedding:", self.pe)
@@ -398,57 +414,35 @@ class PySCFTheory:
                 mf = mf.to_rhf()
             elif self.scf_type == "UKS":
                 mf = mf.to_uhf()
+
+        #TODO: rewrite so we can reuse run_MP2 method instead
         if 'MP2' in method:
             print("Running MP2 natural orbital calculation")
             import pyscf.mp
-            # MP2 natural occupation numbers and natural orbitals
-            #natocc, natorb = pyscf_dmp2(mf.to_uhf()).make_natorbs() Old
-            
+            # MP2 natural occupation numbers and natural orbitals            
             #Simple canonical MP2 with unrelaxed density
-            #NOTE: slow for large systems
-            #TODO: Later change MP2 to re-direct to DFMP2 ?
             if method == 'MP2' or method == 'canMP2':
                 mp2 = pyscf.mp.MP2(mf, frozen=self.frozen_orbital_indices)
                 print("Running MP2")
                 mp2.run()
-                print("Making MP2 density matrix")
-                mp2_dm = mp2.make_rdm1()
-                if self.scf_type == "RKS" or self.scf_type == "RHF" :
-                    print("Mulliken analysis for RHF-MP2 density matrix")
-                    self.run_population_analysis(mf, unrestricted=False, dm=mp2_dm, type='Mulliken', label='MP2')
-                else:
-                    print("Mulliken analysis for UHF-MP2 density matrix")
-                    self.run_population_analysis(mf, unrestricted=True, dm=mp2_dm, type='Mulliken', label='MP2')
-                #TODO: Fix. Slightly silly, calling make_natural_orbitals will cause dm calculation again
-                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mp2)
             elif method == 'DFMP2' or method =='DFMP2relax':
+                from pyscf.mp.dfmp2_native import DFRMP2
+                from pyscf.mp.dfump2_native import DFUMP2
                 #DF-MP2 scales better but syntax differs: https://pyscf.org/user/mp.html#dfmp2
                 if self.scf_type == "RKS" or self.scf_type == "RHF" :
                     unrestricted=False
-                    dmp2 = pyscf_dfrmp2(mf, frozen=self.frozen_orbital_indices)
+                    mp2 = DFRMP2(mf, frozen=self.frozen_orbital_indices)
                 else:
                     unrestricted=True
-                    dmp2 = pyscf_dfump2(mf, frozen=(self.frozen_orbital_indices,self.frozen_orbital_indices))
+                    mp2 = DFUMP2(mf, frozen=(self.frozen_orbital_indices,self.frozen_orbital_indices))
                 #Now run DMP2 object
-                dmp2.run()
-                #RDMs: Unrelaxed vs. Relaxed
-                if method =='DFMP2relax':
-                    relaxed=True
-                if relaxed is True:
-                    dfmp2_dm = dmp2.make_rdm1_relaxed(ao_repr=False) #Relaxed
-                    print("Mulliken analysis for restricted DF-MP2 relaxed density matrix")
-                    self.run_population_analysis(mf, unrestricted=unrestricted, dm=dfmp2_dm, type='Mulliken', label='DFMP2-relaxed') 
-                else:
-                    dfmp2_dm = dmp2.make_rdm1_unrelaxed(ao_repr=False) #Unrelaxed
-                    print("Mulliken analysis for restricted DF-MP2 unrelaxed density matrix")
-                    self.run_population_analysis(mf, unrestricted=unrestricted, dm=dfmp2_dm, type='Mulliken', label='DFMP2-unrelaxed')
-                   
-                #Make natorbs
-                #NOTE: This should not have to recalculate RDM here since provided
-                #natocc, natorb = dmp2.make_natorbs(rdm1_mo=dfmp2_dm, relaxed=relaxed)
-                #NOTE: Above gives weird occupations ?
-                #NOTE: Slightly silly, calling make_natural_orbitals will cause dm calculation again
-                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(dmp2)                
+                mp2.run()
+
+            #Make natorbs
+            #NOTE: This should not have to recalculate RDM here since provided
+            #natocc, natorb = dmp2.make_natorbs(rdm1_mo=dfmp2_dm, relaxed=relaxed)
+            #NOTE: Slightly silly, calling make_natural_orbitals will cause dm calculation again
+            natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mp2)                
             #natocc, natorb = self.mcscf.addons.make_natural_orbitals(mp2)
         elif method =='FCI':
             print("Running FCI natural orbital calculation")
@@ -750,6 +744,92 @@ class PySCFTheory:
             self.loscmf=loscmf
             self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
+
+    def run_MP2(self):
+        print("\nInside run_MP2")
+        import pyscf.mp
+        print("Frozen orbital indices:",self.frozen_orbital_indices)
+        if self.scf_type == "RKS" or self.scf_type == "RHF" :
+            print("Using restricted MP2 code")
+            unrestricted=False
+        else:
+            unrestricted=True
+        
+        #Simple canonical MP2
+        if self.MP2_DF is False:
+            print("Warning: MP2_DF keyword is False. Will run slow canonical MP2")
+            print("Set MP2_DF to True for faster DF-MP2/RI-MP2")
+            mp2 = pyscf.mp.MP2(self.mf, frozen=self.frozen_orbital_indices)
+            print("Running MP2")
+            mp2.run()
+            MP2_energy = mp2.e_tot
+            mp2_object=mp2
+        else:
+            print("MP2_DF is True. Will run density-fitted MP2 code")
+            from pyscf.mp.dfmp2_native import DFRMP2
+            from pyscf.mp.dfump2_native import DFUMP2
+            if unrestricted is False:
+                print("Using restricted DF-MP2 code")
+                dmp2 = DFRMP2(self.mf, frozen=self.frozen_orbital_indices)
+            else:
+                print("Using unrestricted DF-MP2 code")
+                dmp2 = DFUMP2(self.mf, frozen=(self.frozen_orbital_indices,self.frozen_orbital_indices))
+            #Now running DMP2 object
+            dmp2.run()   
+            MP2_energy =  dmp2.e_tot
+            mp2_object=dmp2
+
+        return MP2_energy, mp2_object
+    
+    def run_MP2_density(self, mp2object):
+        import pyscf.mcscf
+        if self.scf_type == "RKS" or self.scf_type == "RHF" :
+            unrestricted=False
+        else:
+            unrestricted=True
+
+        #Density and natural orbitals
+        print("\nMP2 density option is active")
+        print(f"Now calculating MP2 density matrix and natural orbitals")
+        #DM
+        if self.MP2_DF is False:
+            print("Now calculating unrelaxed canonical MP2 density")
+            #This is unrelaxed canonical MP2 density
+            mp2_dm = mp2object.make_rdm1(ao_repr=True)
+            density_type='MP2'
+        else:
+            #RDMs: Unrelaxed vs. Relaxed
+            if self.DFMP2_density_relaxed is True:
+                print("Calculating relaxed DF-MP2 density")
+                mp2_dm = mp2object.make_rdm1_relaxed(ao_repr=True) #Relaxed
+                density_type='DFMP2-relaxed'
+            else:
+                print("Calculating unrelaxed DF-MP2 density")
+                mp2_dm = mp2object.make_rdm1_unrelaxed(ao_repr=True) #Unrelaxed
+                density_type='DFMP2-unrelaxed'
+
+        print("Mulliken analysis for MP2 density matrix")
+        self.run_population_analysis(self.mf, unrestricted=unrestricted, dm=mp2_dm, type='Mulliken', label=density_type)
+
+        #TODO: Fix. Slightly silly, calling make_natural_orbitals will cause dm calculation again
+        natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mp2object)
+
+        #Dipole moment
+        self.get_dipole_moment(dm=mp2_dm)
+
+        #Printing occupations
+        print(f"\nMP2 natural orbital occupations:")
+        print(natocc)
+        print()
+        print("NO-based polyradical metrics:")
+        ash.functions.functions_elstructure.poly_rad_index_nu(natocc)
+        ash.functions.functions_elstructure.poly_rad_index_nu_nl(natocc)
+        ash.functions.functions_elstructure.poly_rad_index_n_d(natocc)
+        print()
+        molden_name=f"pySCF_MP2_natorbs"
+        print(f"Writing MP2 natural orbitals to Moldenfile: {molden_name}.molden")
+        self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
+
     def run_CC(self,mf, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
         print("\nInside run_CC")
         import pyscf.scf
@@ -797,6 +877,7 @@ class PySCFTheory:
             print("Warning: CCSD on top of UKS determinant")
             cc = pyscf_cc.UCCSD(mf.to_uhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
 
+        ccobject=cc
         #Checking whether CC object created is unrestricted or not
         if type(cc) == pyscf.cc.uccsd.UCCSD:
             unrestricted=True
@@ -806,61 +887,123 @@ class PySCFTheory:
         #Setting CCSD maxcycles (default 200)
         cc.max_cycle=self.cc_maxcycle
         cc.verbose=5 #Shows CC iterations with 5
+        cc.diis_space=self.cc_diis_space  #DIIS space size (default 6)
 
         #Switch to integral-direct CC if user-requested
         #NOTE: Faster but only possible for small/medium systems
         cc.direct = self.CC_direct
         
-        result = cc.run()
-        print("Reference energy:", result.e_hf)
-        #CCSD energy
-        energy = result.e_tot
+        ccsd_result = cc.run()
+        print("Reference energy:", ccsd_result.e_hf)
+        #CCSD energy (this is total energy unless Bruckner or triples are added)
+        energy = ccsd_result.e_tot
         print("CCSD energy:", energy)
+
+        #T1,D1 and D2 diagnostics
+        if unrestricted is True:
+            T1_diagnostic_alpha = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1[0])
+            T1_diagnostic_beta = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1[1])
+            print("T1 diagnostic (alpha):", T1_diagnostic_alpha)
+            print("T1 diagnostic (beta):", T1_diagnostic_beta)
+            D1_diagnostic_alpha = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[0])
+            D1_diagnostic_beta = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[1])
+            print("D1 diagnostic (alpha):", D1_diagnostic_alpha)
+            print("D1 diagnostic (beta):", D1_diagnostic_beta)
+            D2_diagnostic_alpha = pyscf.cc.ccsd.get_d2_diagnostic(cc.t2[0])
+            D2_diagnostic_beta = pyscf.cc.ccsd.get_d2_diagnostic(cc.t2[1])
+            print("D2 diagnostic (alpha):", D2_diagnostic_alpha)
+            print("D2 diagnostic (beta):", D2_diagnostic_beta)
+        else:
+            T1_diagnostic = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1)
+            print("T1 diagnostic:", T1_diagnostic)
+            D1_diagnostic = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1)
+            print("D1 diagnostic:", D1_diagnostic)
+            D2_diagnostic = pyscf.cc.ccsd.get_d2_diagnostic(cc.t2)
+            print("D2 diagnostic:", D2_diagnostic)
+        
+        #Brueckner coupled-cluster wrapper, using an outer-loop algorithm.
+        if 'BCCD' in CCmethod:
+            print("Bruckner CC active. Now doing BCCD on top of CCSD calculation.")
+            from pyscf.cc.bccd import bccd_kernel_
+            mybcc = bccd_kernel_(cc, diis=True, verbose=4,canonicalization=True)
+            ccobject=mybcc
+            bccd_energy = mybcc.e_tot
+            print("BCCD energy:", bccd_energy)
         
         #(T) part
         if CCmethod == 'CCSD(T)':
             print("Calculating triples ")
             et = cc.ccsd_t()
             print("Triples energy:", et)
-            energy = result.e_tot + et
+            energy = ccsd_result.e_tot + et
             print("Final CCSD(T) energy:", energy)
-        
-        #Density and natural orbitals
-        if self.CC_density is True:
-            print("\nCC density option is active")
-            print(f"Now calculating {CCmethod} density matrix and natural orbitals")
-            if CCmethod == 'CCSD':
-                natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(cc)
-            elif CCmethod == 'CCSD(T)':
-                natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(cc,mf)
-                print("Mulliken analysis for CCSD(T) density matrix")
-                self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
-            #Printing occupaations
-            print(f"\n{CCmethod} natural orbital occupations:")
-            print(natocc)
-            print()
-            print("NO-based polyradical metrics:")
-            ash.functions.functions_elstructure.poly_rad_index_nu(natocc)
-            ash.functions.functions_elstructure.poly_rad_index_nu_nl(natocc)
-            ash.functions.functions_elstructure.poly_rad_index_n_d(natocc)
-            print()
-            molden_name=f"pySCF_{CCmethod}_natorbs"
-            print(f"Writing {CCmethod} natural orbitals to Moldenfile: {molden_name}.molden")
-            self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
+        elif CCmethod == 'BCCD(T)':
+            print("Calculating triples for BCCD WF")
+            et = mybcc.ccsd_t()
+            print("Triples energy:", et)
+            energy = bccd_energy + et
+            print("Final BCCD(T) energy:", energy)
+    
+        return energy, ccobject
+    
+    def run_CC_density(self,ccobject,mf):
+        import pyscf.mcscf
 
-        return energy
+        print(type(ccobject))
+        if type(ccobject) == pyscf.cc.uccsd.UCCSD:
+            unrestricted=True
+        elif type(ccobject) == pyscf.cc.ccsd.CCSD:
+            unrestricted=False
+        else:
+            print("Unknown CC object found inside run_CC_density")
+            ashexit()
+        #Density and natural orbitals
+        print("\nCC density option is active")
+        print(f"Now calculating {self.CCmethod} density matrix and natural orbitals")
+        if self.CCmethod == 'CCSD':
+            natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
+            self.get_dipole_moment(dm=ccobject.make_rdm1(ao_repr=True))
+        elif self.CCmethod == 'BCCD':
+            natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
+            #Dipole moment
+            self.get_dipole_moment(dm=ccobject.make_rdm1(ao_repr=True))
+        elif self.CCmethod == 'CCSD(T)':
+            natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccobject,mf)
+            print("Mulliken analysis for CCSD(T) density matrix")
+            self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
+            dipole = self.get_dipole_moment(dm=rdm1)
+        elif self.CCmethod == 'BCCD(T)':
+            print("Warning: Density for BCCD(T) has not been tested")
+            natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccobject,mf)
+            print("Mulliken analysis for BCCD(T) density matrix")
+            self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='BCCD(T)')
+            dipole = self.get_dipole_moment(dm=rdm1)
+
+        #Printing occupations
+        print(f"\n{self.CCmethod} natural orbital occupations:")
+        print(natocc)
+        print()
+        print("NO-based polyradical metrics:")
+        ash.functions.functions_elstructure.poly_rad_index_nu(natocc)
+        ash.functions.functions_elstructure.poly_rad_index_nu_nl(natocc)
+        ash.functions.functions_elstructure.poly_rad_index_n_d(natocc)
+        print()
+        molden_name=f"pySCF_{self.CCmethod}_natorbs"
+        print(f"Writing {self.CCmethod} natural orbitals to Moldenfile: {molden_name}.molden")
+        self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
+
+        return
     #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
     def get_dipole_moment(self, dm=None):
-        if self.postSCF is True:
-            print("pyscf postSCF dipole moment requeste")
-            if dm is None:
-                print("A pyscf density matrix (dm= ) is required as input")
-            dipole_debye = self.mf.dip_moment(dm=dm_re,unit='A.U.')
-        else:
+        print("get_dipole_moment function:")
+        if dm is None:
+            print("No DM provided. Using mean-field object dm")
             #MF dipole moment
-            dipole_debye = self.mf.dip_moment(unit='A.U.')
-
-        return dipole_debye
+            dipole = self.mf.dip_moment(unit='A.U.')
+        else:
+            print("Using provided DM")
+            dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
+        return dipole
     def get_polarizability_tensor(self):
         try:
             from pyscf.prop import polarizability
@@ -961,10 +1104,26 @@ class PySCFTheory:
         self.mol.symmetry = self.symmetry
         self.mol.charge = charge
         self.mol.spin = mult-1
-        print("Setting mol.spin to:", mult-1)
+        ########
+        # BASIS
+        ########
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
-        self.mol.basis=self.basis
+        #NOTE: Basis-file parsing not quite ready.
+        #NOTE: Need to read file containing also basis for that element I think
+        #NOTE: We should also support basis set exchange API: https://github.com/pyscf/pyscf/issues/1299
+        if self.basis_file != None:
+            print("basis_file option is not ready")
+            ashexit()
+            #with open(self.basis_file) as b:
+            #    basis_string_from_file=' '.join(b.readlines())
+            #print("basis_string_from_file:", basis_string_from_file)
+            self.mol.basis= pyscf.gto.basis.parse(basis_string_from_file)
+            #https://github.com/nmardirossian/PySCF_Tutorial/blob/master/dev_guide.ipynb
+            #self.mol.basis = #{'H': gto.basis.read('basis/STO-2G.dat')
+        else:
+            self.mol.basis=self.basis
+        print(self.mol.basis)
         #Optional setting magnetic moments 
         if self.magmom != None:
             print("Setting magnetic moments from user-input:", self.magmom)
@@ -1171,12 +1330,12 @@ class PySCFTheory:
         ##############################
         #FROZEN ORBITALS in CC
         ##############################
-        if self.CC:
+        if self.CC or self.MP2:
             #Frozen-core settings
             if self.frozen_core_setting == 'Auto':
                 self.determine_frozen_core(elems)
             elif self.frozen_core_setting == None or self.frozen_core_setting == 'None':
-                print("Warning: No core-orbitals will be frozen in the CC calculation.")
+                print("Warning: No core-orbitals will be frozen in the CC/MP2 calculation.")
                 self.frozen_core_orbital_indices=None
             else:
                 print("Manual user frozen core:", self.frozen_core_setting)
@@ -1339,6 +1498,8 @@ class PySCFTheory:
                 s2, spinmult = self.mf.spin_square()
                 print("UHF/UKS <S**2>:", s2)
                 print(f"UHF/UKS spinmult: {spinmult}\n")
+            print("SCF Dipole moment:")
+            self.get_dipole_moment()
             #Dispersion correction
             if self.dispersion != None:
                 if self.dispersion == "D3" or self.dispersion == "D4":
@@ -1584,6 +1745,17 @@ class PySCFTheory:
                 self.properties["TDDFT_oscillator strengths"] = osc_strengths_length
 
             #####################
+            #MP2
+            #####################
+            if self.MP2 is True:
+                print("MP2 is on !")
+                MP2_energy,mp2object = self.run_MP2()
+                self.energy = MP2_energy
+
+                if self.MP2_density is True:
+                    self.run_MP2_density(mp2object)
+
+            #####################
             #COUPLED CLUSTER
             #####################
             if self.CC is True:
@@ -1593,12 +1765,19 @@ class PySCFTheory:
                 mo_coefficients=None
 
                 #Optional Frozen natural orbital approach via MP2 natural orbitals
+                #NOTE: this is not entirely correct since occupied orbitals are natural orbitals rather than frozen HF orbitals as in the original method
+                #Not sure how much it matters
                 if self.FNO is True:
                     print("FNO is True")
-                    print("MP2 natural orbitals on!")
-                    print("Will calculate MP2 natural orbitals to use as input in CC job")
-                    natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
-
+                    if self.FNO_orbitals =='MP2':
+                        print("MP2 natural orbitals on!")
+                        print("Will calculate MP2 natural orbitals to use as input in CC job")
+                        natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
+                    elif self.FNO_orbitals =='CCSD':
+                        print("CCSD natural orbitals on!")
+                        print("Will calculate CCSD natural orbitals to use as input in CC job")
+                        natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='CCSD', elems=elems)
+                    
                     #Optional natorb truncation if FNO_thresh is chosen
                     if self.FNO_thresh is not None:
                         print("FNO thresh option chosen:", self.FNO_thresh)
@@ -1611,10 +1790,13 @@ class PySCFTheory:
                         self.frozen_orbital_indices = self.frozen_orbital_indices + virt_frozen
             
                 #Calling CC method
-                CC_energy = self.run_CC(self.mf,frozen_orbital_indices=self.frozen_orbital_indices, CCmethod=self.CCmethod, 
+                CC_energy,ccobject = self.run_CC(self.mf,frozen_orbital_indices=self.frozen_orbital_indices, CCmethod=self.CCmethod, 
                             CC_direct=self.CC_direct, mo_coefficients=mo_coefficients)
                 self.energy = CC_energy
-            
+
+                if self.CC_density is True:
+                    self.run_CC_density(ccobject,self.mf)
+                    
             #####################
             #CAS-CI and CASSCF
             #####################

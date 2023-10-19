@@ -83,14 +83,17 @@ class DiceTheory:
 
         #Path to Dice binary
         self.dice_binary=self.dicedir+"/bin/Dice"
-        #Put Dice script dir in path
+        #Put Dice script dir in path (QMCUtils)
         sys.path.insert(0, self.dicedir+"/scripts")
 
         #Now import pyscf, shciscf (plugin), qmcutils (Dice dir scripts)
         if SHCI == True and Dice_SHCI_direct != True:
             self.load_pyscf()
             self.load_shciscf()
-        self.load_qmcutils()
+        #Only load QMCUtils if AFQMC is True or NEVPT2 is True
+        if NEVPT2 is True or AFQMC is True:
+            print("NEVPT2 or AFQMC is True. This requires QMCUtils module to be installed.")
+            self.load_qmcutils()
 
         if numcores > 1:
             try:
@@ -222,14 +225,15 @@ MPIPREFIX=""
             print(m)
             ashexit()
     def load_qmcutils(self):
+        print("Attempting to load QMCUtils module")
         try:
             import QMCUtils
             self.QMCUtils=QMCUtils
         except ModuleNotFoundError as me:
             print("ModuleNotFoundError:")
             print("Exception message:", me)
-            print("Either: QMCUtils requires another module (pandas?). Please install it via conda or pip.")
-            print("or: Problem importing QMCUtils. Dice directory is probably incorrectly set")
+            print("Problem importing QMCUtils. Dice directory may be incorrectly set")
+            print("Or: QMCUtils requires another module (pandas?). Please install it via conda or pip.")
             ashexit()
     #Set numcores method
     def set_numcores(self,numcores):
@@ -786,7 +790,13 @@ noio
                     occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
                     print("SHCI natural orbital occupations:", occupations)
                     print("\nWriting natural orbitals to Moldenfile")
-                    self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
+                    self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, 
+                                                                        mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
+                    #Dipole moment
+                    print("Now doing dipole")
+                    rdm1 = self.mch.make_rdm1(ao_repr=True)
+                    #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
+                    dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1)
 
         print("Dice is finished")
         #Cleanup Dice scratch stuff (big files)
