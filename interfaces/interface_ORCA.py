@@ -2487,6 +2487,9 @@ def make_molden_file_ORCA(GBWfile, orcadir=None, printlevel=2):
     sp.call([orcadir+'/orca_2mkl', GBWfile_noext, '-molden'])
     moldenfile=GBWfile_noext+'.molden.input'
     print("Created molden file:", moldenfile)
+    os.rename(moldenfile,GBWfile_noext+'.molden')
+    print("Renaming to:", GBWfile_noext+'.molden')
+
     if renamefile is True:
         print("Removing copy of file:", newfile)
         os.remove(newfile)
