@@ -121,7 +121,7 @@ class Optimizer(object):
         self.recalcHess = False
         if print_info:
             self.print_info()
-        
+
     def print_info(self):
         params = self.params
         logger.info("> ===== Optimization Info: ====\n")
@@ -129,7 +129,7 @@ class Optimizer(object):
             logger.info("> Job type: Transition state optimization\n")
         else:
             logger.info("> Job type: Energy minimization\n")
-            
+
         logger.info("> Maximum number of optimization cycles: %i\n" % params.maxiter)
         logger.info("> Initial / maximum trust radius (Angstrom): %.3f / %.3f\n" % (params.trust, params.tmax))
         logger.info("> Convergence Criteria:\n")
@@ -163,14 +163,14 @@ class Optimizer(object):
             else:
                 logger.info(">  Max-Grad < %.2e\n" % params.Convergence_molpro_gmax)
             logger.info(">  Max-Disp < %.2e -OR- |Delta-E| < %.2e\n" % (params.Convergence_molpro_dmax, params.Convergence_energy))
-            
+
         if self.IC.haveConstraints():
             logger.info("> \n")
             logger.info("> Constraints are requested. The following criterion is added:\n")
             logger.info(">  Max Constraint Violation (in Angstroms/degrees) < %.2e \n" % self.params.Convergence_cmax)
 
         logger.info("> === End Optimization Info ===\n")
-        
+
     def get_cartesian_norm(self, dy, verbose=None):
         if not verbose: verbose = self.params.verbose
         return get_cartesian_norm(self.X, dy, self.IC, self.params.enforce, self.params.verbose, self.params.usedmax)
@@ -266,7 +266,7 @@ class Optimizer(object):
             logger.info("Requesting %i samples from Wigner distribution.\n" % self.params.wigner)
         prefix = self.params.xyzout.replace("_optim.xyz", "").replace(".xyz", "")
         # Call the frequency analysis function with an input Hessian, with most arguments populated from self.params
-        frequency_analysis(self.X, hessian, self.molecule.elem, energy=self.E, temperature=self.params.temperature, pressure=self.params.pressure, verbose=self.params.verbose, 
+        frequency_analysis(self.X, hessian, self.molecule.elem, energy=self.E, temperature=self.params.temperature, pressure=self.params.pressure, verbose=self.params.verbose,
                            outfnm='%s.vdata_%s' % (prefix, suffix), note='Iteration %i Energy % .8f%s' % (self.Iteration, self.E, ' (Optimized Structure)' if afterOpt else ''),
                            wigner=((self.params.wigner, os.path.join(self.dirname, 'wigner')) if do_wigner else None), ignore=self.params.ignore_modes)
 
@@ -387,7 +387,7 @@ class Optimizer(object):
         else:
             logger.info("Hessian Eigenvalues: " + ' '.join("%.5e" % i for i in Eig) + '\n')
         return Eig
-        
+
     def step(self):
         """
         Perform one step of the optimization.
@@ -508,7 +508,7 @@ class Optimizer(object):
         # Shorthand for self.params
         params = self.params
         # Write current optimization trajectory to file
-        if self.params.xyzout is not None: 
+        if self.params.xyzout is not None:
             self.progress.write(self.params.xyzout)
             if self.viz_rotations:
                 self.progress_with_r.write(os.path.splitext(self.params.xyzout)[0]+"_with_r.xyz")
@@ -588,7 +588,7 @@ class Optimizer(object):
             return
 
         assert self.state == OPT_STATE.NEEDS_EVALUATION
-        
+
         ### Adjust Trust Radius and/or Reject Step ###
         prev_trust = self.trust
         # logger.info(" Check force/torque: rmsd = %.5f rmsd_noalign = %.5f ratio = %.5f\n" %
@@ -682,7 +682,7 @@ class Optimizer(object):
 
     def UpdateHessian(self):
         self.H = update_hessian(self.IC, self.H, [self.X, self.Xprev], [self.gradx, self.Gxprev], self.params, trust_limit=False, max_updates=1)
-        
+
     def optimizeGeometry(self):
         """
         High-level optimization loop.
@@ -728,7 +728,7 @@ class Optimizer(object):
                 errorStr += "> %i-%i-%i %6.2f\n" % (key[0]+1, key[1]+1, key[2]+1, val)
             raise LinearTorsionError("A constrained torsion has three consecutive atoms\n"
                                      "forming a nearly linear angle, making the torsion angle poorly defined.\n"+errorStr)
-        
+
 
 class OPT_STATE(object):
     """ This describes the state of an OptObject during the optimization process
@@ -745,7 +745,7 @@ class StepState(object):
     Poor    = 1 # Poor step; decrease the trust radius down to the lower limit.
     Okay    = 2 # Okay step; do not change the trust radius.
     Good    = 3 # Good step; increase the trust radius up to the limit.
-    
+
 def Optimize(coords, molecule, IC, engine, dirname, params, print_info=True):
     """
     Optimize the geometry of a molecule. This function used to contain the whole
@@ -816,7 +816,7 @@ def run_optimizer(**kwargs):
     now = datetime.now()
     logger.info('-=# \x1b[1;94m geomeTRIC started. Version: %s \x1b[0m #=-\n' % (geometric.__version__))
     logger.info('Current date and time: %s\n' % now.strftime("%Y-%m-%d %H:%M:%S"))
-    
+
     if backed_up:
         logger.info('Backed up existing log file: %s -> %s\n' % (logfilename, os.path.basename(backed_up)))
 
@@ -831,10 +831,10 @@ def run_optimizer(**kwargs):
     if not os.path.exists(dirname):
         os.makedirs(dirname)
     kwargs['dirname'] = dirname
-    
+
     # Get the Molecule and engine objects needed for optimization
     M, engine = get_molecule_engine(**kwargs)
-    
+
     # Create Work Queue object
     if kwargs.get('port', 0):
         logger.info("Creating Work Queue object for distributed Hessian calculation\n")
@@ -891,7 +891,7 @@ def run_optimizer(**kwargs):
 
     IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons, cvals=CVals[0] if CVals is not None else None,
                     conmethod=params.conmethod)
-    
+
     #========================================#
     #| End internal coordinate system setup |#
     #========================================#

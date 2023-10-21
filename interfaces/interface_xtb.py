@@ -34,7 +34,7 @@ class xTBTheory:
 
         #Printlevel
         self.printlevel=printlevel
-        
+
         #Controlling output in xtb-library
         if self.printlevel >= 3:
             self.verbosity = "full" #Full output
@@ -53,9 +53,9 @@ class xTBTheory:
         self.xtbmethod=xtbmethod
         self.maxiter=maxiter
         self.runmode=runmode
-        
+
         self.electronic_temp=electronic_temp
-        
+
         print_line_with_mainheader("xTB INTERFACE")
         print("Runmode:", self.runmode)
         print("xTB method:", self.xtbmethod)
@@ -126,7 +126,7 @@ class xTBTheory:
         if self.printlevel >= 2:
             print("Cleaning up old xTB files")
         files=[self.filename + '.xyz',self.filename + '.out','xtbopt.xyz','xtbopt.log','xtbrestart','molden.input','charges','pcgrad','wbo','xtbinput','pcharge','xtbtopo.mol']
-        
+
         for file in files:
             try:
                 os.remove(file)
@@ -169,8 +169,8 @@ class xTBTheory:
                 print("Running xtB using {} cores".format(numcores))
                 print("...")
 
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, 
-                                    Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, 
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
+                                    Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores)
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -182,7 +182,7 @@ class xTBTheory:
             #Also setting Hessian of fragment
             fragment.hessian=hessian
             return hessian
-            
+
         else:
             print("Only runmode='inputfile allowed for xTBTheory.Opt(). Exiting")
             ashexit()
@@ -223,8 +223,8 @@ class xTBTheory:
                 print("Running xtB using {} cores".format(numcores))
                 print("...")
 
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, 
-                                    Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, 
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
+                                    Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores)
 
             if self.printlevel >= 2:
@@ -236,7 +236,7 @@ class xTBTheory:
             fragment.replace_coords(fragment.elems,opt_coords)
 
             #return
-            #TODO: Check if xtB properly converged or not 
+            #TODO: Check if xtB properly converged or not
             #Regardless take coordinates and go on. Possibly abort if xtb completely
         else:
             print("Only runmode='inputfile allowed for xTBTheory.Opt(). Exiting")
@@ -251,7 +251,7 @@ class xTBTheory:
         #Printing internal coordinate table
         ash.modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='xtB Opt-run', moduleindex=2)
-        return 
+        return
     #Method to grab dipole moment from an xtb outputfile (assumes run has been executed)
     def get_dipole_moment(self):
         return grab_dipole_moment(self.filename+'.out')
@@ -361,7 +361,7 @@ class xTBTheory:
                     print("------------ENDING XTB-INTERFACE-------------")
                 print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy
-        
+
         elif self.runmode =='library':
             if self.printlevel >= 1:
                 print("------------Running xTB (library)-------------")
@@ -550,7 +550,7 @@ def xtbVEAgrab(file):
 
 # Run xTB single-point job
 def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
-    
+
     if solvent == None:
         solvent_line=""
     else:
@@ -573,20 +573,20 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
     else:
         print("Unknown xtbmethod chosen. Exiting...")
         ashexit()
-    
+
     if Grad==True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                               '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]
     elif Opt == True:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--opt', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]    
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]
     elif Hessian == True:
         try:
             os.remove("hessian")
         except:
             pass
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--hess', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]    
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]
     else:
         command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
                       '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)]

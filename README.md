@@ -8,7 +8,7 @@ Excellent environment for writing simple or complex computational chemistry work
 
 While ASH is ready to be used in computational chemistry research, it is a young project and there will probably be some issues and bugs to be discovered if you start using it.
 
-**In case of problems:** 
+**In case of problems:**
 Please open an issue on Github and I will try to fix any problems as soon as possible.
 
 

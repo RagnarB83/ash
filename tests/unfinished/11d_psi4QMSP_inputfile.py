@@ -37,7 +37,7 @@ print(Psi4SPcalculation.__dict__)
 print(Psi4SPcalculation.energy)
 print(Psi4SPcalculation.gradient)
 
-#Clean 
+#Clean
 Psi4SPcalculation.cleanup()
 
 sys.exit(0)

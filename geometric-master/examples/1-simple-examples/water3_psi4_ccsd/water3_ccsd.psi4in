@@ -14,4 +14,3 @@ H        2.6420500000    0.6632600000    1.2947900000
 set basis cc-pvdz
 
 gradient('ccsd')
-

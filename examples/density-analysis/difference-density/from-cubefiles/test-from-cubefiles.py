@@ -18,4 +18,3 @@ cube_data2 = read_cube(file2)
 
 #Write out difference density as a Cubefile
 write_cube_diff(cube_data1, cube_data2, "diffence_density")
-

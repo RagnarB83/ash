@@ -16,7 +16,7 @@ from ash.functions.functions_general import ashexit
 # Idea: Instead of CCSD(T), try out CEPA or pCCSD as alternative method. Hopefully as accurate as CCSD(T).
 # Or DLPNO-CCSD(T) with LoosePNO ?
 
-def W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, scfsetting='TightSCF', numcores=1, 
+def W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, scfsetting='TightSCF', numcores=1,
                 memory=5000, HFreference='QRO',extrainputkeyword='', extrablocks='', **kwargs):
     """
     Single-point W1 theory workflow.
@@ -40,7 +40,7 @@ def W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanaly
     # If run_benchmark or other passed workflow_args then use them instead
     if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
-        workflow_args=kwargs['workflow_args']      
+        workflow_args=kwargs['workflow_args']
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'scfsetting' in workflow_args:
@@ -52,8 +52,8 @@ def W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanaly
         if 'extrainputkeyword' in workflow_args:
             extrainputkeyword=workflow_args['extrainputkeyword']
         if 'extrablocks' in workflow_args:
-            extrablocks=workflow_args['extrablocks']    
-    
+            extrablocks=workflow_args['extrablocks']
+
     print("-----------------------------")
     print("W1theory PROTOCOL")
     print("-----------------------------")
@@ -65,7 +65,7 @@ def W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanaly
     print("")
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
-    
+
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
     numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
@@ -97,7 +97,7 @@ end
 """.format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
-        
+
     #HF reference to use
     #If UHF then UHF will be enforced, also for closed-shell. unncessarily expensive
     if HFreference == 'UHF':
@@ -229,7 +229,7 @@ end
     return W1_total, E_dict
 
 
-def W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, scfsetting='TightSCF', 
+def W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1, scfsetting='TightSCF',
                    memory=5000, HFreference='QRO',extrainputkeyword='', extrablocks='', **kwargs):
     """
     Single-point W1-F12 theory workflow.
@@ -239,7 +239,7 @@ def W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
 
     Differences: Core-valence and Rel done togeth using MTSmall as in W1 at the moment. TO be changed?
     No DBOC term
-    
+
 
     :param fragment: ASH fragment object
     :param charge: integer
@@ -251,11 +251,11 @@ def W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     :param HFreference: string (UHF, QRO, ROHF)
     :return:
     """
-    
+
     # If run_benchmark or other passed workflow_args then use them instead
     if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
-        workflow_args=kwargs['workflow_args']      
+        workflow_args=kwargs['workflow_args']
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'scfsetting' in workflow_args:
@@ -268,7 +268,7 @@ def W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
             extrainputkeyword=workflow_args['extrainputkeyword']
         if 'extrablocks' in workflow_args:
             extrablocks=workflow_args['extrablocks']
-            
+
     print("-----------------------------")
     print("W1-F12 theory PROTOCOL")
     print("-----------------------------")
@@ -280,11 +280,11 @@ def W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityan
     print("")
     calc_label = "Frag" + str(fragment.formula) + "_" + str(fragment.charge) + "_"
     print("Calculation label: ", calc_label)
-    
+
     numelectrons = int(fragment.nuccharge - charge)
     #Reduce numcores if required
     numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
-    
+
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -313,7 +313,7 @@ end
 """.format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
-        
+
     #HF reference to use
     #If UHF then UHF will be enforced, also for closed-shell. unncessarily expensive
     if HFreference == 'UHF':
@@ -353,9 +353,9 @@ end
 
     #Regular
     ccsdt_dz = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
-    ccsdt_tz = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)    
-    
-    
+    ccsdt_tz = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+
+
     ash.Singlepoint(fragment=fragment, theory=ccsdf12_dz)
     CCSDF12_DZ_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(ccsdf12_dz.filename+'out', F12=True)
     shutil.copyfile(ccsdf12_dz.filename+'out', './' + calc_label + 'CCSDF12_DZ' + '.out')
@@ -460,7 +460,7 @@ end
     return W1F12_total, E_dict
 
 
-def DLPNO_W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, 
+def DLPNO_W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False,
                          numcores=1, memory=5000, pnosetting='NormalPNO', scfsetting='TightSCF',extrainputkeyword='', extrablocks='', **kwargs):
     """
     Single-point DLPNO W1-F12 theory workflow.
@@ -471,7 +471,7 @@ def DLPNO_W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabi
 
     Differences: Core-valence and Rel done togeth using MTSmall as in W1 at the moment. TO be changed?
     No DBOC term
-    
+
 
     :param fragment: ASH fragment object
     :param charge: integer
@@ -487,7 +487,7 @@ def DLPNO_W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabi
     # If run_benchmark or other passed workflow_args then use them instead
     if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
-        workflow_args=kwargs['workflow_args']      
+        workflow_args=kwargs['workflow_args']
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'pnosetting' in workflow_args:
@@ -500,7 +500,7 @@ def DLPNO_W1F12theory(fragment=None, charge=None, orcadir=None, mult=None, stabi
             extrainputkeyword=workflow_args['extrainputkeyword']
         if 'extrablocks' in workflow_args:
             extrablocks=workflow_args['extrablocks']
-            
+
     print("-----------------------------")
     print("DLPNO-W1-F12 theory PROTOCOL")
     print("-----------------------------")
@@ -545,7 +545,7 @@ end
 """.format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
-        
+
     #Auxiliary basis set. One big one
     auxbasis='cc-pV5Z/C'
 
@@ -559,7 +559,7 @@ end
     ccsdf12_tz_line="! DLPNO-CCSD-F12 cc-pVTZ-F12 cc-pVTZ-F12-CABS  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
     #TODO: Testing QZ CCSD step
     #ccsdf12_qz_line="! DLPNO-CCSD-F12 cc-pVQZ-F12 cc-pVQZ-F12-CABS  {} {} {}".format(auxbasis,pnosetting,scfsetting)
-    
+
     #Regular triples
     ccsdt_dz_line="! DLPNO-CCSD(T) W1-DZ  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
     ccsdt_tz_line="! DLPNO-CCSD(T) W1-TZ  {} {} {} {}".format(auxbasis,pnosetting,scfsetting,extrainputkeyword)
@@ -568,12 +568,12 @@ end
     ccsdf12_dz = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_dz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
     ccsdf12_tz = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
     #ccsdf12_qz = ash.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdf12_qz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
-    
+
     #Regular
     ccsdt_dz = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_dz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
-    ccsdt_tz = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)    
-    
-    
+    ccsdt_tz = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_tz_line, orcablocks=blocks, numcores=numcores, charge=charge, mult=mult)
+
+
     ash.Singlepoint(fragment=fragment, theory=ccsdf12_dz)
     CCSDF12_DZ_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(ccsdf12_dz.filename+'.out', F12=True, DLPNO=True)
     shutil.copyfile(ccsdf12_dz.filename+'.out', './' + calc_label + 'CCSDF12_DZ' + '.out')
@@ -707,11 +707,11 @@ def DLPNO_W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
-    
+
     # If run_benchmark or other passed workflow_args then use them instead
     if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
-        workflow_args=kwargs['workflow_args']      
+        workflow_args=kwargs['workflow_args']
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'pnosetting' in workflow_args:
@@ -726,7 +726,7 @@ def DLPNO_W1theory(fragment=None, charge=None, orcadir=None, mult=None, stabilit
             extrainputkeyword=workflow_args['extrainputkeyword']
         if 'extrablocks' in workflow_args:
             extrablocks=workflow_args['extrablocks']
-                
+
     print("-----------------------------")
     print("DLPNO_W1theory PROTOCOL")
     print("-----------------------------")
@@ -919,11 +919,11 @@ def DLPNO_F12(fragment=None, charge=None, orcadir=None, mult=None, stabilityanal
     ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
-    
+
     # If run_benchmark or other passed workflow_args then use them instead
     if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
-        workflow_args=kwargs['workflow_args']      
+        workflow_args=kwargs['workflow_args']
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'pnosetting' in workflow_args:
@@ -940,7 +940,7 @@ def DLPNO_F12(fragment=None, charge=None, orcadir=None, mult=None, stabilityanal
             extrainputkeyword=workflow_args['extrainputkeyword']
         if 'extrablocks' in workflow_args:
             extrablocks=workflow_args['extrablocks']
-            
+
     print("-----------------------------")
     print("DLPNO_F12 PROTOCOL")
     print("-----------------------------")
@@ -994,7 +994,7 @@ end
 
     #Whether to use iterative triples or not. Default: regular DLPNO-CCSD(T)
     if T1 is True:
-        
+
         print("test...")
         ashexit()
         ccsdtkeyword='DLPNO-CCSD(T1)'
@@ -1113,11 +1113,11 @@ def DLPNO_W2theory(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     ;param T1: Boolean (whether to do expensive iterative triples or not)
     :return: energy and dictionary with energy-components
     """
-    
+
     # If run_benchmark or other passed workflow_args then use them instead
     if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
-        workflow_args=kwargs['workflow_args']      
+        workflow_args=kwargs['workflow_args']
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'pnosetting' in workflow_args:
@@ -1131,8 +1131,8 @@ def DLPNO_W2theory(fragment=None, charge=None, orcadir=None, mult=None, stabilit
         if 'extrainputkeyword' in workflow_args:
             extrainputkeyword=workflow_args['extrainputkeyword']
         if 'extrablocks' in workflow_args:
-            extrablocks=workflow_args['extrablocks']    
-    
+            extrablocks=workflow_args['extrablocks']
+
     print("-----------------------------")
     print("DLPNO_W2theory PROTOCOL")
     print("-----------------------------")
@@ -1144,7 +1144,7 @@ def DLPNO_W2theory(fragment=None, charge=None, orcadir=None, mult=None, stabilit
     numelectrons = int(fragment.nuccharge - charge)
     #Check if numcores should be reduced
     numcores = check_cores_vs_electrons(fragment.elems,numcores,charge)
-    
+
     #if 1-electron species like Hydrogen atom then we either need to code special HF-based procedure or just hardcode values
     #Currently hardcoding H-atom case. Replace with proper extrapolated value later.
     if numelectrons == 1:
@@ -1175,7 +1175,7 @@ end
 """.format(memory,extrablocks)
     if stabilityanalysis is True:
         blocks = blocks + "%scf stabperform true end"
-        
+
 
     #Auxiliary basis set. One big one
     #Todo: check whether it should be bigger
@@ -1308,7 +1308,7 @@ end
 #Flexible CCSD(T)/CBS protocol. Simple. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #alpha and beta can be manually set. If not set then they are picked based on basisfamily
-def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None, 
+def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None, charge=None, orcadir=None, mult=None,
            stabilityanalysis=False, numcores=1, CVSR=False, CVbasis="W1-mtsmall", F12=False, DFTreference=None, DFT_RI=False,
                         DLPNO=False, memory=5000, pnosetting='NormalPNO', pnoextrapolation=[5,6], T1=False, scfsetting='TightSCF',
                         alpha=None, beta=None,
@@ -1326,7 +1326,7 @@ def CC_CBS(cardinals = [2,3], basisfamily="def2", relativity=None, fragment=None
     :param memory: Memory in MB
     :param scfsetting: ORCA keyword (e.g. NormalSCF, TightSCF, VeryTightSCF)
     :param F12: True/False
-    :param DLPNO: True/False  
+    :param DLPNO: True/False
     :param pnosetting: ORCA keyword: NormalPNO, LoosePNO, TightPNO or extrapolation
     :param pnoextrapolation: list. e.g. [5,6]
     ;param T1: Boolean (whether to do expensive iterative triples or not)
@@ -1472,7 +1472,7 @@ end
             auxbasis='def2-QZVPP/C'
         else:
             if 'aug' in basisfamily:
-                auxbasis='aug-cc-pV5Z/C'                
+                auxbasis='aug-cc-pV5Z/C'
             else:
                 auxbasis='cc-pV5Z/C'
     elif relativity == 'DKH':
@@ -1481,7 +1481,7 @@ end
             auxbasis='def2-QZVPP/C'
         else:
             if 'aug' in basisfamily:
-                auxbasis='aug-cc-pV5Z/C'                
+                auxbasis='aug-cc-pV5Z/C'
             else:
                 auxbasis='cc-pV5Z/C'
     elif relativity == 'ZORA':
@@ -1491,7 +1491,7 @@ end
             auxbasis='def2-QZVPP/C'
         else:
             if 'aug' in basisfamily:
-                auxbasis='aug-cc-pV5Z/C'                
+                auxbasis='aug-cc-pV5Z/C'
             else:
                 auxbasis='cc-pV5Z/C'
     elif relativity == 'X2C':
@@ -1511,12 +1511,12 @@ end
     ############################################################s
     #Frozen-core CCSD(T) calculations defined here
     ############################################################
-    
+
     #TODO: Figure out a check here to make sure if basis present for all element in elements list
-    #EXAMPLE: cc-pwCVNZ-DK available for Fe but not S. cc-pCVNZ-DK available for S but not Fe. 
+    #EXAMPLE: cc-pwCVNZ-DK available for Fe but not S. cc-pCVNZ-DK available for S but not Fe.
     #Hence for cc-pw-DK choose appropriate pw basis for Fe but CV basis for S ???
     # Maybe call basis family: cc-CV-dk or something ?
-    #Choosing 
+    #Choosing
     ccsdt_1_line,ccsdt_2_line=choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbasis,pnokeyword,scfsetting,extrainputkeyword)
 
 
@@ -1524,16 +1524,16 @@ end
     #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
     blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
     blocks2 = special_element_basis(fragment,cardinals[1],basisfamily,blocks)
-    
+
     #Check if we are using an ECP
     ECPflag=isECP(blocks1)
-    
-    
+
+
     #Defining two theory objects for each basis set
     ccsdt_1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, numcores=numcores, charge=charge, mult=mult)
     ccsdt_2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks2, numcores=numcores, charge=charge, mult=mult)
-    
-    
+
+
     # EXTRAPOLATION TO PNO LIMIT BY 2 PNO calculations
     if pnosetting=="extrapolation":
         print("PNO Extrapolation option chosen.")
@@ -1569,7 +1569,7 @@ end
     print("ccsdcorr_energies :", ccsdcorr_energies)
     print("triplescorr_energies :", triplescorr_energies)
     print("corr_energies :", corr_energies)
-    
+
     #BASIS SET EXTRAPOLATION
 
     E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basisfamily, alpha=alpha, beta=beta) #2-point extrapolation
@@ -1586,7 +1586,7 @@ end
         #TODO: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
         # Switch to doing only CV correction in that case ?
         # TODO: Option if W1-mtsmall basis set is not available?
-        
+
         if ECPflag is True:
             print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")
             reloption=" "
@@ -1598,8 +1598,8 @@ end
             pnooption="NormalPNO"
             print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {} and PNO-option: {}".format(reloption,CVbasis,pnooption))
             E_corecorr_and_SR = CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
-            
-        
+
+
     else:
         print("")
         print("Core-Valence Scalar Relativistic Correction is off!")
@@ -1648,12 +1648,12 @@ end
     #return final energy and also dictionary with energy components
     return E_FINAL, E_dict
 
-    
-    
-    
+
+
+
 
 #FCI/CBS protocol. No core-correlation, scalar relativistic or spin-orbit coupling for now.
-# Extrapolates CC series to Full-CI and to CBS 
+# Extrapolates CC series to Full-CI and to CBS
 def FCI_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, orcadir=None, mult=None, stabilityanalysis=False, numcores=1,
                       memory=5000, DLPNO=True, pnosetting='NormalPNO', F12=False, T1=False, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', **kwargs):
     """
@@ -1679,7 +1679,7 @@ def FCI_CBS(cardinals = [2,3], basisfamily="def2", fragment=None, charge=None, o
         if 'cardinals' in workflow_args:
             cardinals=workflow_args['cardinals']
         if 'basisfamily' in workflow_args:
-            basisfamily=workflow_args['basisfamily']        
+            basisfamily=workflow_args['basisfamily']
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'pnosetting' in workflow_args:
@@ -1760,7 +1760,7 @@ end
             if F12 is True:
                 ccsdtkeyword='DLPNO-CCSD(T)-F12'
             else:
-                ccsdtkeyword='DLPNO-CCSD(T)'   
+                ccsdtkeyword='DLPNO-CCSD(T)'
     else:
         pnokeyword=""
         if F12 is True:
@@ -1779,10 +1779,10 @@ end
     #Adding special-ECP basis like cc-pVnZ-PP for heavy elements if present
     blocks1 = special_element_basis(fragment,cardinals[0],basisfamily,blocks)
     blocks2 = special_element_basis(fragment,cardinals[1],basisfamily,blocks)
-    
+
     #Check if we are using an ECP
     ECPflag=isECP(blocks1)
-    
+
     #Defining two theory objects for each basis set
     ccsdt_1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_1_line, orcablocks=blocks1, numcores=numcores, charge=charge, mult=mult)
     ccsdt_2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir, orcasimpleinput=ccsdt_2_line, orcablocks=blocks2, numcores=numcores, charge=charge, mult=mult)
@@ -1812,7 +1812,7 @@ end
     print("ccsdcorr_energies :", ccsdcorr_energies)
     print("triplescorr_energies :", triplescorr_energies)
     print("corr_energies :", corr_energies)
-    
+
     #Extrapolations
     # TODO: Extrapolation formula appropriate for separate CCSD and triples extraplation ?? Use W1 formulas instead?
     E_SCF_CBS, E_corrCC_CBS = Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basisfamily) #2-point extrapolation
@@ -1823,9 +1823,9 @@ end
     print("E_corrCCSD_CBS:", E_corrCCSD_CBS)
     print("E_corrCCT_CBS:", E_corrCCT_CBS)
     E_total_CC = E_SCF_CBS + E_corrCC_CBS
-    
-    
-    
+
+
+
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
@@ -1835,7 +1835,7 @@ end
         #TODO: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
         # Switch to doing only CV correction in that case ?
         # TODO: Option if W1-mtsmall basis set is not available?
-        
+
         if ECPflag is True:
             print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")
             cvbasis="W1-mtsmall"
@@ -1849,8 +1849,8 @@ end
             pnooption="NormalPNO"
             print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {} and PNO-option: {}".format(reloption,cvbasis,pnooption))
             E_corecorr_and_SR = CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
-            
-        
+
+
     else:
         print("")
         print("Core-Valence Scalar Relativistic Correction is off!")
@@ -1869,15 +1869,15 @@ end
     else :
         E_SO = 0.0
 
-    
+
     ############################################################
     #FCI extrapolation via Goodson
     ############################################################
     print("FCI extrapolation by Goodson in use")
     #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
     E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
-    
-    
+
+
     ############################################################
     #FINAL RESULT PRINTING
     ############################################################
@@ -1917,7 +1917,7 @@ end
 
 
 
-  
+
 
 #FCI-F12 protocol. No core-correlation, scalar relativistic or spin-orbit coupling for now.
 # Extrapolates CC series to Full-CI and uses F12 to deal with basis set limit
@@ -1943,7 +1943,7 @@ def FCI_F12(F12level='DZ', fragment=None, charge=None, orcadir=None, mult=None, 
     # If run_benchmark or other passed workflow_args then use them instead
     if 'workflow_args' in kwargs and kwargs['workflow_args'] is not None:
         print("Workflow args passed")
-        workflow_args=kwargs['workflow_args']      
+        workflow_args=kwargs['workflow_args']
         if 'stabilityanalysis' in workflow_args:
             stabilityanalysis=workflow_args['stabilityanalysis']
         if 'pnosetting' in workflow_args:
@@ -2032,12 +2032,12 @@ end
     #PNO extrapolation or not
     if pnosetting=="extrapolation":
         E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corrCC_CBS = PNOExtrapolationStep(fragment=fragment, theory=ccsdt_f12, pnoextrapolation=pnoextrapolation, DLPNO=True, F12=True, calc_label=calc_label)
-        
+
     #Regular single-PNO-setting job
     else:
         ash.Singlepoint(fragment=fragment, theory=ccsdt_f12)
         CCSDT_F12_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(ccsdt_f12.filename+'.out', DLPNO=DLPNO,F12=True)
-    
+
         shutil.copyfile(ccsdt_f12.filename+'.out', './' + calc_label + 'CCSDT_F12' + '.out')
         print("CCSDT_F12_dict:", CCSDT_F12_dict)
 
@@ -2049,9 +2049,9 @@ end
 
 
     E_total_CC = E_SCF_CBS + E_corrCC_CBS
-    
-    
-    
+
+
+
     ############################################################
     #Core-correlation + scalar relativistic as joint correction
     ############################################################
@@ -2061,7 +2061,7 @@ end
         #TODO: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
         # Switch to doing only CV correction in that case ?
         # TODO: Option if W1-mtsmall basis set is not available?
-        
+
         if ECPflag is True:
             print("ECPs present. Not doing ScalarRelativistic Correction. Switching to Core-Valence Correction only.")
             cvbasis="W1-mtsmall"
@@ -2075,13 +2075,13 @@ end
             pnooption="NormalPNO"
             print("Doing CVSR_Step with Relativistic Option: {} and CV-basis: {} and PNO-option: {}".format(reloption,cvbasis,pnooption))
             E_corecorr_and_SR = CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label)
-            
-        
+
+
     else:
         print("")
         print("Core-Valence Scalar Relativistic Correction is off!")
         E_corecorr_and_SR=0.0
-    
+
     ############################################################
     #Spin-orbit correction for atoms.
     ############################################################
@@ -2094,14 +2094,14 @@ end
             E_SO = 0.0
     else :
         E_SO = 0.0
-    
+
     ############################################################
     #FCI extrapolation via Goodson
     ############################################################
     print("FCI extrapolation by Goodson in use")
     #Here using CBS-values for SCF, CCSD-corr and (T)-corr.
     E_FCI_CBS = FCI_extrapolation([E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS])
-    
+
     ############################################################
     #FINAL RESULT PRINTING
     ############################################################
@@ -2176,7 +2176,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         #Auxiliary basis set.
         auxbasis='def2-QZVPP/C'
         ccsdt_1_line="! {} def2-TZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
-        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)  
+        ccsdt_2_line="! {} def2-QZVPP {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
     elif cardinals == [2,3] and basisfamily=="ma-def2":
         #Auxiliary basis set.
         auxbasis='aug-cc-pVQZ/C'
@@ -2251,7 +2251,7 @@ def choose_inputlines_from_basisfamily(cardinals,basisfamily,ccsdtkeyword,auxbas
         ccsdt_1_line="! {} aug-cc-pVQZ-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         ccsdt_2_line="! {} aug-cc-pV5Z-DK {} {} {} {}".format(ccsdtkeyword, auxbasis, pnokeyword, scfsetting,extrainputkeyword)
         #TODO Note: 4/5 cc/aug-cc basis sets are available but we need extrapolation parameters
-    
+
     #DKH CORE-VALENCE CORRELATION CONSISTENT BASIS SETS
     elif cardinals == [2,3] and basisfamily=="cc-pw-dk":
         #Auxiliary basis set.
@@ -2318,7 +2318,7 @@ def PNO_extrapolation(E):
     F is 1.5, good for both 5/6 and 6/7 extrapolations.
     where 5/6 and 6/7 refers to the X/Y TcutPNO threshold (10^-X and 10^-Y).
     Args:
-        E ([list]): list of 
+        E ([list]): list of
     """
     F=1.5
     E_C_PNO= E[0] + F*(E[1]-E[0])
@@ -2331,7 +2331,7 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     print("Inside PNOExtrapolationStep")
     PNO_X=pnoextrapolation[0]
     PNO_Y=pnoextrapolation[1]
-    
+
     #Adding TCutPNO option X
     #TightPNO options for other thresholds
     mdciblockX="""
@@ -2341,7 +2341,7 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     TCutDO 5e-3
     TCutMKN 1e-3
     end
-    
+
     """.format(PNO_X)
     #TCutPNO option Y
     #TightPNO options for other thresholds
@@ -2352,27 +2352,27 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     TCutDO 5e-3
     TCutMKN 1e-3
     end
-    
+
     """.format(PNO_Y)
     #Add mdciblock to blocks of theory
     PNOXblocks = theory.orcablocks + mdciblockX
     PNOYblocks = theory.orcablocks + mdciblockY
-    
+
     theory.orcablocks = PNOXblocks
-    
+
     ash.Singlepoint(fragment=fragment, theory=theory)
     resultdict_X = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=DLPNO,F12=F12)
     shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOX' + '.out')
     print("resultdict_X:", resultdict_X)
 
 
-    
+
     theory.orcablocks = PNOYblocks
     ash.Singlepoint(fragment=fragment, theory=theory)
     resultdict_Y = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=DLPNO,F12=F12)
     shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOY' + '.out')
     print("resultdict_Y:", resultdict_Y)
-    
+
     #Extrapolation to PNO limit
 
     E_SCF = resultdict_Y['HF']
@@ -2386,12 +2386,12 @@ def PNOExtrapolationStep(fragment=None, theory=None, pnoextrapolation=None, DLPN
     print("PNO extrapolated CCSD correlation energy:", E_corrCCSD_final, "Eh")
     print("PNO extrapolated triples correlation energy:", E_corrCCT_final, "Eh")
     print("PNO extrapolated full correlation energy:", E_corrCC_final, "Eh")
-    
+
     return E_SCF, E_corrCCSD_final, E_corrCCT_final, E_corrCC_final
 
 #Core-Valence ScalarRelativistic Step
 def CVSR_Step(cvbasis,reloption,ccsdtkeyword,auxbasis,pnooption,scfsetting,extrainputkeyword,orcadir,blocks,numcores,charge,mult,fragment,calc_label):
-    
+
     ccsdt_mtsmall_NoFC_line="! {} {} {}   nofrozencore {} {} {} {}".format(ccsdtkeyword,reloption,cvbasis,auxbasis,pnooption,scfsetting,extrainputkeyword)
     ccsdt_mtsmall_FC_line="! {} {}  {} {} {} {}".format(ccsdtkeyword,cvbasis,auxbasis,pnooption,scfsetting,extrainputkeyword)
 
@@ -2418,7 +2418,7 @@ def FCI_extrapolation(E):
        Energies provided could be e.g. all at DZ level or alternatively at estimated CBS level
 
     Args:
-        E (list): list of E_SCF, E_corr_CCSD, E_corr_T 
+        E (list): list of E_SCF, E_corr_CCSD, E_corr_T
     """
     d1=E[0];d2=E[1];d3=E[2]
     E_FCI=d1/(1-((d2/d1)/(1-(d3/d2))))
@@ -2535,7 +2535,7 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
     #Dictionary of extrapolation parameters. Key: Basisfamilyandcardinals Value: list: [alpha, beta]
     #Added default value of beta=3.0 (theoretical value), alpha=3.9
     extrapolation_parameters_dict = { 'cc_23' : [4.42, 2.460], 'aug-cc_23' : [4.30, 2.510], 'cc_34' : [5.46, 3.050], 'aug-cc_34' : [5.790, 3.050],
-    'def2_23' : [10.390,2.4], 'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09],  'ma-def2_23' : [10.390,2.4], 
+    'def2_23' : [10.390,2.4], 'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09],  'ma-def2_23' : [10.390,2.4],
     'ma-def2_34' : [7.880,2.970], 'default' : [3.9,3.0]}
 
     #NOTE: pc-n family uses different numbering. pc-1 is DZ(cardinal 2), pc-2 is TZ(cardinal 3), pc-4 is QZ(cardinal 4).
@@ -2592,15 +2592,15 @@ def Extrapolation_twopoint(scf_energies, corr_energies, cardinals, basis_family,
         extrap_dict_key='default'
         print("Using default settings: alpha: {} , beta: {}".format(extrapolation_parameters_dict[extrap_dict_key][0], extrapolation_parameters_dict[extrap_dict_key][1]))
         extrap_dict_key='default'
-    
+
     #Override settings if desired
     print("Extrapolation parameters:")
-    
+
     # If alpha/beta have not been set then we define based on basisfamily and cardinals
     if alpha == None and beta == None:
         alpha=extrapolation_parameters_dict[extrap_dict_key][0]
         beta=extrapolation_parameters_dict[extrap_dict_key][1]
-    
+
     print("alpha :",alpha)
     print("beta :", beta)
 

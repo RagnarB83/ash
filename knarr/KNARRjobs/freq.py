@@ -26,7 +26,7 @@ def DoFreq(atoms, calculator, freq):
     start_t = time.time()
 
     partialHessian = freq["PARTIAL_HESSIAN"]
-    
+
     basename = atoms.GetOutputFile()
     ischain = atoms.IsChain()
 
@@ -62,8 +62,8 @@ def DoFreq(atoms, calculator, freq):
         else:
             raise NotImplementedError("Frequency computations using full numerical Hessian is not implemented")
 
-        
-    
+
+
     i = np.where(eig == np.min(eig[np.nonzero(eig)]))
     lowest_index = int(i[0])
     wlowest = w[:, lowest_index]

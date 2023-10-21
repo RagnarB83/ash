@@ -2023,4 +2023,3 @@ Step   20 : Displace = [0m4.496e-03[0m/[0m6.071e-03[0m (rms/max) Trust = 3.0
 Hessian Eigenvalues: 1.47704e-03 1.89327e-03 7.37706e-03 ... 5.67051e-01 6.46522e-01 6.68912e-01
 Step   21 : Displace = [92m3.485e-04[0m/[92m6.694e-04[0m (rms/max) Trust = 3.000e-01 (=) Grad_T = [92m1.469e-05[0m/[92m4.356e-05[0m (rms/max) E (change) = -1692.1043168377 ([91m+2.500e-09[0m) Quality = [91m-0.046[0m
 Converged! =D
-

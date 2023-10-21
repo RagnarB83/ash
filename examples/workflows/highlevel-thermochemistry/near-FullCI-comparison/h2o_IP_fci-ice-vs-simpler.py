@@ -11,7 +11,7 @@ from ash import *
 numcores = 16
 
 ####################################################################################
-#Defining reaction: Vertical IP of H2O 
+#Defining reaction: Vertical IP of H2O
 h2o_n = Fragment(xyzfile="h2o.xyz", charge=0, mult=1)
 h2o_o = Fragment(xyzfile="h2o.xyz", charge=1, mult=2)
 reaction = Reaction(fragments=[h2o_n, h2o_o], stoichiometry=[-1,1])
@@ -21,10 +21,10 @@ reaction_label='H2O_IP'
 #Plotting options
 plot = True #Whether to plot data or not (required matplotlib installed)
 y_axis_label='IP'
-# To specify the y-axis limits either define ylimits like this: ylimits=[11.5,12.0] or use yshift. 
+# To specify the y-axis limits either define ylimits like this: ylimits=[11.5,12.0] or use yshift.
 # ylimits=[11.5,12.0] #Values of y-axis
 # yshift will define y-axis limits based on last ICE-CI energy
-yshift=0.3 #Shift (in reaction_energy_unit) in + and - direction of the last ICE-CI energy calculated 
+yshift=0.3 #Shift (in reaction_energy_unit) in + and - direction of the last ICE-CI energy calculated
 
 #Basis set to use
 basis = "cc-pVDZ"
@@ -37,7 +37,7 @@ DoCC = True
 
 #What Tgen thresholds to calculate in ICE-CI?
 tgen_thresholds=[1e-1,5e-2,1e-2,5e-3, 1e-3,5e-4,1e-4,5e-5,1e-5,5e-6,1e-6,5e-7,1e-7,5e-8,1e-8]
-#ICE thresholds for selecting active space 
+#ICE thresholds for selecting active space
 ice_nmin = 1.999 #Good value for getting O 1s frozen-core for H2O
 ice_nmax = 0 #All virtual orbitals
 

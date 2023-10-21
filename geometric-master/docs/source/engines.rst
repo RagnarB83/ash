@@ -41,8 +41,8 @@ TeraChem
 
 Selected using ``--engine tera``.  This is also the default if ``--engine`` is not provided.
 
-Make sure `TeraChem <https://www.petachem.com/>`_ is installed and 
-the ``$TeraChem`` environment variable is properly set (it should be the folder that 
+Make sure `TeraChem <https://www.petachem.com/>`_ is installed and
+the ``$TeraChem`` environment variable is properly set (it should be the folder that
 contains the ``terachem`` executable under ``bin/``).
 Versions 1.9 and above are supported (possibly earlier, but not guaranteed).
 
@@ -69,7 +69,7 @@ Q-Chem
 
 Selected using ``--engine qchem``.
 
-Make sure `Q-Chem <https://www.q-chem.com/>`_ is installed and 
+Make sure `Q-Chem <https://www.q-chem.com/>`_ is installed and
 environment variables are properly set.
 Versions 4.4 and above are supported (possibly earlier, but not guaranteed).
 The input file should contain the molecular structure in Cartesian coordinates.
@@ -107,7 +107,7 @@ Molpro
 
 Selected using ``--engine molpro``.
 
-Make sure `Molpro <https://www.molpro.net/>`_ is installed and 
+Make sure `Molpro <https://www.molpro.net/>`_ is installed and
 environment variables are properly set.
 Versions 2015.1 and above are supported (possibly earlier, but not guaranteed).
 The input file should contain the molecular structure in Cartesian coordinates.
@@ -124,7 +124,7 @@ Gaussian
 
 Selected using ``--engine gaussian``.
 
-Make sure `Gaussian <https://gaussian.com/>`_ is installed and 
+Make sure `Gaussian <https://gaussian.com/>`_ is installed and
 environment variables are properly set.
 Gaussian versions 09 and 16 are supported.
 The input file should contain the molecular structure in Cartesian coordinates.
@@ -147,10 +147,10 @@ Versions 7.1 and above are supported (possibly earlier, but not guaranteed).
 You will need a ``.pdb`` file containing the structure and topology, and either a force field ``.xml`` or system ``.xml`` file (geomeTRIC will autodetect the type).
 (If you provide the name of a force field ``.xml`` file that is not in the current folder but is in the search path of OpenMM, that also works.))
 
-The engine contains an OpenMM Simulation object which is created using the topology information in the ``.pdb`` file and a parameterized system; 
+The engine contains an OpenMM Simulation object which is created using the topology information in the ``.pdb`` file and a parameterized system;
 the latter is either created from the force field ``.xml`` file, or read in from the system ``.xml`` file.
 
-Because this is an MM engine, optimizing conical intersections is not recommended.  
+Because this is an MM engine, optimizing conical intersections is not recommended.
 There is also no way to set the number of threads, as the engine is hard-coded to use the Reference platform.
 
     Note: geomeTRIC's internal routines are currently not efficient for systems containing more than a few hundred atoms,
@@ -159,7 +159,7 @@ There is also no way to set the number of threads, as the engine is hard-coded t
 Gromacs
 -------
 
-Selected using ``--engine gromacs``.  
+Selected using ``--engine gromacs``.
 
 Make sure `Gromacs <https://www.gromacs.org>`_ is installed and environment variables are properly set.
 This engine also requires `ForceBalance <https://www.github.com/leeping/forcebalance>`_ to be installed.

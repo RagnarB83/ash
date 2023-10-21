@@ -40,4 +40,3 @@ def test_hessian_assort(test_logger):
     assert np.allclose(fhess_prim, ahess_prim, atol=1.e-6)
     assert np.allclose(fgrad_dlc, agrad_dlc, atol=1.e-6)
     assert np.allclose(fhess_dlc, ahess_dlc, atol=1.e-6)
-

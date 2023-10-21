@@ -17,14 +17,14 @@ xtbcalc = xTBTheory(xtbdir=xtbdir, xtbmethod=xtbmethod, runmode='inputfile', num
 
 #Chargemodel options: CHELPG, Hirshfeld, CM5, NPA, Mulliken
 chargemodel='Hirshfeld'
-#Shortrange model. Usually Lennard-Jones. Options: UFF, 
+#Shortrange model. Usually Lennard-Jones. Options: UFF,
 shortrangemodel='UFF'
 
 #Define fragment types in crystal: Descriptive name, formula, charge and mult
 #TODO: Have alternative for formula being nuccharge, as a backup. Maybe mass too (rounded to 1 amu)
 mainfrag = Fragmenttype("BF3HCN","BF3HCN", charge=0,mult=1)
 #counterfrag1 = Fragmenttype("Sodium","Na", charge=1,mult=1)
-#Define list of fragmentobjects. Passed on to molcrys 
+#Define list of fragmentobjects. Passed on to molcrys
 fragmentobjects=[mainfrag]
 
 #Define global system settings (currently scale and tol keywords for connectivity)
@@ -38,7 +38,7 @@ settings_ash.tol=0.1
 
 
 #Calling molcrys function and define Cluster object
-Cluster = molcrys(cif_file=cif_file, fragmentobjects=fragmentobjects, theory=xtbcalc, 
+Cluster = molcrys(cif_file=cif_file, fragmentobjects=fragmentobjects, theory=xtbcalc,
         numcores=numcores, clusterradius=sphereradius, chargemodel=chargemodel, shortrangemodel=shortrangemodel, auto_connectivity=True)
 
 
@@ -48,10 +48,10 @@ try:
     print("Cluster:", Cluster)
 except:
     print("No Cluster object found. Reading from file")
-    Cluster=Fragment(fragfile='Cluster.ygg')        
+    Cluster=Fragment(fragfile='Cluster.ygg')
 
 #Once molcrys is done we have a Cluster object (named Cluster) in memory and also printed to disk
-# We can then do optimization right here using Cluster object. 
+# We can then do optimization right here using Cluster object.
 #Alternatively or for restart purposes we can read Cluster object into a separate QM/MM Opt job.
 #READ fragmentobjects also from file. Must have charge and mult attributes
 #Something similar to mainfrag-info.txt / counterfrag-info.txt but in one file ???
@@ -74,7 +74,7 @@ xtbmethod='GFN2'
 xtbcalc = xTBTheory(xtbdir=xtbdir, runmode='inputfile', numcores=numcores, charge=charge, mult=mult, xtbmethod=xtbmethod)
 MMpart = NonBondedTheory(charges = Cluster.atomcharges, atomtypes=Cluster.atomtypes, forcefield=Cluster_FF, LJcombrule='geometric')
 print("MMpart:", MMpart.__dict__)
-QMMMobject = QMMMTheory(fragment=Cluster, qm_theory=xtbcalc, mm_theory=MMpart, 
+QMMMobject = QMMMTheory(fragment=Cluster, qm_theory=xtbcalc, mm_theory=MMpart,
     qmatoms=Centralmainfrag, charges=Cluster.atomcharges, embedding='Elstat', numcores=numcores)
 
 

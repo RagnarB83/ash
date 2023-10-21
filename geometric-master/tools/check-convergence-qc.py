@@ -19,7 +19,7 @@ Convergence_drms = 1.2e-3
 Convergence_dmax = 1.8e-3
 
 for frame in range(1, len(M)):
-    # Compute energy change, gradient mean norm / max norm, 
+    # Compute energy change, gradient mean norm / max norm,
     Eprev = M.qm_energies[frame-1]
     E = M.qm_energies[frame]
     G = M.qm_grads[frame]

@@ -7,7 +7,7 @@ Example input and output files for geomeTRIC can be found in the ``examples/`` f
 
 - ``examples/0-regression-tests``:  These example calculations are also used to measure performance changes.  The purpose is to ensure that geomeTRIC's performance does not degrade over time.  Despite the folder name, they are complete and easily runnable example calculations from the user's perspective.
 - ``examples/1-simple-examples``:  Example calculations designed to familiarize the user with running geomeTRIC using different engines and job types.  These examples are designed to run in a few minutes or less, and are an ideal starting point for new users.
-- ``examples/2-challenges``:  A collection of calculations that represent "difficult" optimizations, some of which inspired new feature development.  They may require a large number of iterations to converge or passing non-default arguments.  
+- ``examples/2-challenges``:  A collection of calculations that represent "difficult" optimizations, some of which inspired new feature development.  They may require a large number of iterations to converge or passing non-default arguments.
 
 Organization of an example
 --------------------------
@@ -18,10 +18,10 @@ The root folder of an example calculation contains the input file(s) and a scrip
 
 In simple examples, the command line arguments specify only the input file and engine name.  More complex examples may require additional command line arguments or auxiliary input files (such as a constraints.txt file).
 
-A reference set of saved calculation outputs are provided in the ``saved/`` subfolder.  Each set of outputs has its own sub-subfolder such as ``saved/2022-07-10`` for the run date, or ``saved/v0.9.7.2`` corresponding to a released version.  These files are for ensuring your calculation is running as expected, and for developers to check that performance has not degraded from past versions.  
+A reference set of saved calculation outputs are provided in the ``saved/`` subfolder.  Each set of outputs has its own sub-subfolder such as ``saved/2022-07-10`` for the run date, or ``saved/v0.9.7.2`` corresponding to a released version.  These files are for ensuring your calculation is running as expected, and for developers to check that performance has not degraded from past versions.
 
 .. note::
-    If you wish to run the examples, make sure you have the corresponding QC program installed.  Many of the examples use Q-Chem and TeraChem; both are commercial software packages.  geomeTRIC also supports Psi4, which is freely available, as well as the commercial packages Gaussian (G09 or G16) and Molpro.  For more information, refer to the :ref:`Engines <engines>` page.  
+    If you wish to run the examples, make sure you have the corresponding QC program installed.  Many of the examples use Q-Chem and TeraChem; both are commercial software packages.  geomeTRIC also supports Psi4, which is freely available, as well as the commercial packages Gaussian (G09 or G16) and Molpro.  For more information, refer to the :ref:`Engines <engines>` page.
 
     Additionally, many of the calculations use commonly implemented features (such as the B3LYP density functional, 6-31G* basis set, etc.) so you may be able to "translate" the provided input files to the QC program of your choice.  A few examples, such as the water hexamer, have multiple copies available with inputs for different QC programs.
 
@@ -39,7 +39,7 @@ Energy minimization of water hexamer using Q-Chem
 - Theoretical model: HF/STO-3G
 - Optimization cycles (approx.): 65
 - Run time (approx.): <5 minutes
-- Description: Energy minimization of water hexamer using minimal basis Hartree-Fock in Q-Chem. 
+- Description: Energy minimization of water hexamer using minimal basis Hartree-Fock in Q-Chem.
   This is a simple example that shows how translation-rotation internal coordinates (TRIC) performs well for optimizing clusters of molecules where translation and rotation are important degrees of freedom.
 
 .. image:: images/water6.png
@@ -128,4 +128,3 @@ Energy minimization of azithromycin using Gaussian
    :width: 600
 
 The above image shows the initial structure (in green) and final optimized structure, with the 2D structure on the right for reference.
-

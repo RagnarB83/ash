@@ -29,7 +29,7 @@ sys.path.insert(0, ashpath+"/geometric-master")
 from ash.functions.functions_general import blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
     printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit
 
-#Results dataclass 
+#Results dataclass
 from ash.modules.module_results import ASH_Results
 
 # Fragment class and coordinate functions
@@ -188,7 +188,7 @@ if ash.settings_ash.settings_dict["print_exit_footer"] is True:
     if ash.settings_ash.settings_dict["print_full_timings"] is True:
         atexit.register(ash.ash_header.print_timings)
 
-# Julia dependency. Load in the beginning or not. 
+# Julia dependency. Load in the beginning or not.
 #As both PyJulia and PythonCall are a bit slow to load, it is best to only load when needed (current behaviour)
 if ash.settings_ash.settings_dict["load_julia"] is True:
     try:

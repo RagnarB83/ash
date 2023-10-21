@@ -366,7 +366,7 @@ def MakeReparametrizationWithCI(ndim, nim, ci, s, r, tang, type_of_interp):
 
 
 def GenerateNewPath(type_of_interp, ndim, nim, npoints, s, coords, tang):
-    
+
     newr = np.zeros(shape=(ndim * npoints, 1))
     xi = np.linspace(s[0], s[-1], npoints)
 

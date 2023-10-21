@@ -23,30 +23,30 @@ ATOM     21  H0K UNK     1      -1.006   0.999  -0.971
 ATOM     22  H0M UNK     1      -2.344   0.941   1.047
 ATOM     23  H0N UNK     1      -0.778   0.109   3.015
 ATOM     24  H0O UNK     1      -1.233   1.811   3.112
-TER 
-CONECT    1    2 
-CONECT    2    3 
-CONECT    3    4 
-CONECT    4    5 
-CONECT    5    6 
-CONECT    1    7 
-CONECT    7    8 
-CONECT    7    9 
-CONECT    9   10 
-CONECT    9   11 
-CONECT    5   12 
-CONECT   12   13 
-CONECT   11   14 
-CONECT   14   15 
-CONECT   15   16 
-CONECT   15   17 
-CONECT   15   18 
-CONECT    1   19 
-CONECT    1   20 
-CONECT    2   21 
-CONECT    3   22 
-CONECT    4   23 
-CONECT    4   24 
-CONECT    5    7 
-CONECT   11   12 
+TER
+CONECT    1    2
+CONECT    2    3
+CONECT    3    4
+CONECT    4    5
+CONECT    5    6
+CONECT    1    7
+CONECT    7    8
+CONECT    7    9
+CONECT    9   10
+CONECT    9   11
+CONECT    5   12
+CONECT   12   13
+CONECT   11   14
+CONECT   14   15
+CONECT   15   16
+CONECT   15   17
+CONECT   15   18
+CONECT    1   19
+CONECT    1   20
+CONECT    2   21
+CONECT    3   22
+CONECT    4   23
+CONECT    4   24
+CONECT    5    7
+CONECT   11   12
 END

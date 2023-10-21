@@ -5,10 +5,10 @@
       Benzene-Methane
 Number of Benzene-Methane Configurations: 7
 Minimum: R_COM=3.80
-Geometry: Taken from Sherrill et al., J. Phys.Chem. A, 2009, v113, 10146.    
+Geometry: Taken from Sherrill et al., J. Phys.Chem. A, 2009, v113, 10146.
 **************************************
 
-Benzene-Methane Configuration Number = 1   
+Benzene-Methane Configuration Number = 1
 R_COM=   3.28000
 CCSD(T) = +0.11943 kcal/mol
 CBS     = -0.04704 kcal/mol
@@ -32,7 +32,7 @@ H      1.03663   0.00000  -3.64650
 H     -0.51831   0.89775  -3.64650
 H     -0.51831  -0.89775  -3.64650
 -----END-------
-   
+
 Benzene-Methane Configuration Number = 2
 R_COM=   3.80000
 CCSD(T) = -1.42801 kcal/mol
@@ -57,7 +57,7 @@ H      1.03663   0.00000  -4.16650
 H     -0.51831   0.89775  -4.16650
 H     -0.51831  -0.89775  -4.16650
 -----END-------
-   
+
 Benzene-Methane Configuration Number = 3
 R_COM=   4.80000
 CCSD(T) = -0.63826 kcal/mol
@@ -82,7 +82,7 @@ H      1.03663   0.00000  -5.16650
 H     -0.51831   0.89775  -5.16650
 H     -0.51831  -0.89775  -5.16650
 -----END-------
-   
+
 Benzene-Methane Configuration Number = 4
 R_COM=   5.80000
 CCSD(T) = -0.21574 kcal/mol
@@ -107,7 +107,7 @@ H      1.03663   0.00000  -6.16650
 H     -0.51831   0.89775  -6.16650
 H     -0.51831  -0.89775  -6.16650
 -----END-------
-   
+
 Benzene-Methane Configuration Number = 5
 R_COM=   6.80000
 CCSD(T) = -0.08283 kcal/mol
@@ -132,8 +132,8 @@ H      1.03663   0.00000  -7.16650
 H     -0.51831   0.89775  -7.16650
 H     -0.51831  -0.89775  -7.16650
 -----END-------
-  
-Benzene-Methane Configuration Number = 6 
+
+Benzene-Methane Configuration Number = 6
 R_COM=   7.80000
 CCSD(T) = -0.03638 kcal/mol
 CBS     = -0.03655 kcal/mol
@@ -157,7 +157,7 @@ H      1.03663   0.00000  -8.16650
 H     -0.51831   0.89775  -8.16650
 H     -0.51831  -0.89775  -8.16650
 -----END-------
-   
+
 Benzene-Methane Configuration Number = 7
 R_COM=   8.80000
 CCSD(T) = -0.01766 kcal/mol
@@ -196,7 +196,7 @@ optimized at PBE/aug-cc-pVTZ. Geometry of complex was not optimized. Minimum
 was estimated to be ~R_COM=3.4A by Ma et al.
 **************************************
 
-Benzene-Water Configuration Number = 1  
+Benzene-Water Configuration Number = 1
 R_COM=   2.50000
 CCSD(T) = +5.45767 kcal/mol
 CBS     = +4.86811 kcal/mol
@@ -219,7 +219,7 @@ H      0.00000  -0.76545   2.02300
 O      0.00000   0.00000   2.61925
 -----END-------
 
-Benzene-Water Configuration Number = 2    
+Benzene-Water Configuration Number = 2
 R_COM=   3.00000
 CCSD(T) = -2.68424 kcal/mol
 CBS     = -2.88113 kcal/mol
@@ -241,8 +241,8 @@ H      0.00000   0.76545   2.52300
 H      0.00000  -0.76545   2.52300
 O      0.00000   0.00000   3.11925
 -----END-------
-   
-Benzene-Water Configuration Number = 3 
+
+Benzene-Water Configuration Number = 3
 R_COM=   3.50000
 CCSD(T) = -2.80214 kcal/mol
 CBS     = -2.86929 kcal/mol
@@ -264,8 +264,8 @@ H      0.00000   0.76545   3.02300
 H      0.00000  -0.76545   3.02300
 O      0.00000   0.00000   3.61925
 -----END-------
-   
-Benzene-Water Configuration Number = 4 
+
+Benzene-Water Configuration Number = 4
 R_COM=   4.00000
 CCSD(T) = -1.91273 kcal/mol
 CBS     = -1.94242 kcal/mol
@@ -288,7 +288,7 @@ H      0.00000  -0.76545   3.52300
 O      0.00000   0.00000   4.11925
 -----END-------
 
-Benzene-Water Configuration Number = 5    
+Benzene-Water Configuration Number = 5
 R_COM=   4.50000
 CCSD(T) = -1.23460 kcal/mol
 CBS     = -1.25135 kcal/mol
@@ -310,8 +310,8 @@ H      0.00000   0.76545   4.02300
 H      0.00000  -0.76545   4.02300
 O      0.00000   0.00000   4.61925
 -----END-------
-  
-Benzene-Water Configuration Number = 6 
+
+Benzene-Water Configuration Number = 6
 R_COM=   5.00000
 CCSD(T) = -0.81481 kcal/mol
 CBS     = -0.82563 kcal/mol
@@ -333,8 +333,8 @@ H      0.00000   0.76545   4.52300
 H      0.00000  -0.76545   4.52300
 O      0.00000   0.00000   5.11925
 -----END-------
-   
-Benzene-Water Configuration Number = 7 
+
+Benzene-Water Configuration Number = 7
 R_COM=   6.00000
 CCSD(T) = -0.39782 kcal/mol
 CBS     = -0.40343 kcal/mol
@@ -356,8 +356,8 @@ H      0.00000   0.76545   5.52300
 H      0.00000  -0.76545   5.52300
 O      0.00000   0.00000   6.11925
 -----END-------
-   
-Benzene-Water Configuration Number = 8 
+
+Benzene-Water Configuration Number = 8
 R_COM=   7.00000
 CCSD(T) = -0.21986 kcal/mol
 CBS     = -0.22304 kcal/mol
@@ -379,8 +379,8 @@ H      0.00000   0.76545   6.52300
 H      0.00000  -0.76545   6.52300
 O      0.00000   0.00000   7.11925
 -----END-------
-   
-Benzene-Water Configuration Number = 9 
+
+Benzene-Water Configuration Number = 9
 R_COM=   8.00000
 CCSD(T) = -0.13227 kcal/mol
 CBS     = -0.13404 kcal/mol
@@ -413,13 +413,13 @@ O      0.00000   0.00000   8.11925
       Ethanol Dimer
 Number of Ethanol Dimer Configurations: 7
 Minimum: R_COM=3.558
-Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09   
+Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09
 **************************************
 
-Ethanol Dimer Configuration Number = 1  
+Ethanol Dimer Configuration Number = 1
 R_COM=   3.25600
 CCSD(T) = -1.24689 kcal/mol
-CBS     = -1.57411 kcal/mol 
+CBS     = -1.57411 kcal/mol
 Monomer A
 C      0.15981   1.24506  -0.30631
 H     -0.19820   1.68039   0.63904
@@ -441,7 +441,7 @@ H      2.34791  -0.30764   1.08090
 O      3.44267   1.12100  -0.00625
 H      3.54341   1.67890   0.77682
 -----END-------
-   
+
 Ethanol Dimer Configuration Number = 2
 R_COM=   3.55800
 CCSD(T) = -2.71588 kcal/mol
@@ -467,7 +467,7 @@ H      2.64974  -0.30999   1.07098
 O      3.74450   1.11865  -0.01617
 H      3.84524   1.67655   0.76690
 -----END-------
-   
+
 Ethanol Dimer Configuration Number = 3
 R_COM=   4.55800
 CCSD(T) = -1.35167 kcal/mol
@@ -493,7 +493,7 @@ H      3.64917  -0.31775   1.03812
 O      4.74393   1.11089  -0.04903
 H      4.84467   1.66879   0.73404
 -----END-------
-   
+
 Ethanol Dimer Configuration Number = 4
 R_COM=   5.55800
 CCSD(T) = -0.49300 kcal/mol
@@ -519,7 +519,7 @@ H      4.64860  -0.32551   1.00526
 O      5.74336   1.10313  -0.08189
 H      5.84410   1.66103   0.70118
 -----END-------
-   
+
 Ethanol Dimer Configuration Number = 5
 R_COM=   6.55800
 CCSD(T) = -0.21461 kcal/mol
@@ -545,7 +545,7 @@ H      5.64803  -0.33328   0.97240
 O      6.74279   1.09536  -0.11475
 H      6.84353   1.65326   0.66832
 -----END-------
-   
+
 Ethanol Dimer Configuration Number = 6
 R_COM=   7.55800
 CCSD(T) = -0.11099 kcal/mol
@@ -571,7 +571,7 @@ H      6.64746  -0.34104   0.93954
 O      7.74222   1.08760  -0.14761
 H      7.84296   1.64550   0.63546
 -----END-------
-   
+
 Ethanol Dimer Configuration Number = 7
 R_COM=   8.55800
 CCSD(T) = -0.06508 kcal/mol
@@ -601,17 +601,17 @@ H      8.84239   1.63774   0.60261
       END Ethanol Dimer
 **************************************
 
-   
+
 
 **************************************
       Ethylenedinitramine (EDNA) Dimer
 Number of EDNA Dimer Configurations: 8
 Minimum: R_COM=4.798
-Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09   
+Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09
 **************************************
 
 
-EDNA Dimer Configuration Number = 1   
+EDNA Dimer Configuration Number = 1
 R_COM=   4.49800
 CCSD(T) = -6.26161 kcal/mol
 CBS     = -8.80931 kcal/mol
@@ -650,7 +650,7 @@ O     -7.96671   1.06029  -1.15671
 O     -1.10483   2.92267  -0.69973
 O     -0.40493   2.28664   1.29604
 -----END-------
-   
+
 EDNA Dimer Configuration Number = 2
 R_COM=   4.79800
 CCSD(T) = -10.90887 kcal/mol
@@ -690,7 +690,7 @@ O     -8.24468   1.17309  -1.15408
 O     -1.38280   3.03547  -0.69710
 O     -0.68290   2.39944   1.29867
 -----END-------
-   
+
 EDNA Dimer Configuration Number = 3
 R_COM=   5.79800
 CCSD(T) = -8.35374 kcal/mol
@@ -730,7 +730,7 @@ O     -9.17127   1.54907  -1.14530
 O     -2.30939   3.41145  -0.68832
 O     -1.60949   2.77542   1.30745
 -----END-------
-   
+
 EDNA Dimer Configuration Number = 4
 R_COM=   6.79800
 CCSD(T) = -4.29857 kcal/mol
@@ -770,7 +770,7 @@ O    -10.09785   1.92505  -1.13652
 O     -3.23597   3.78743  -0.67954
 O     -2.53607   3.15140   1.31623
 -----END-------
-   
+
 EDNA Dimer Configuration Number = 5
 R_COM=   7.79800
 CCSD(T) = -2.28739 kcal/mol
@@ -810,7 +810,7 @@ O    -11.02444   2.30104  -1.12774
 O     -4.16256   4.16342  -0.67076
 O     -3.46266   3.52739   1.32501
 -----END-------
-   
+
 EDNA Dimer Configuration Number = 6
 R_COM=   8.79800
 CCSD(T) = -1.27497 kcal/mol
@@ -850,7 +850,7 @@ O    -11.95102   2.67702  -1.11896
 O     -5.08914   4.53940  -0.66198
 O     -4.38924   3.90337   1.33379
 -----END-------
-   
+
 EDNA Dimer Configuration Number = 7
 R_COM=   9.79800
 CCSD(T) = -0.72831 kcal/mol
@@ -890,7 +890,7 @@ O    -12.87761   3.05301  -1.11018
 O     -6.01573   4.91539  -0.65320
 O     -5.31583   4.27936   1.34257
 -----END-------
-   
+
 EDNA Dimer Configuration Number = 8
 R_COM=  10.79800
 CCSD(T) = -0.42711 kcal/mol
@@ -940,11 +940,11 @@ O     -6.24241   4.65534   1.35134
       FOX-7 Dimer
 Number of FOX-7 Dimer Configurations: 6
 Minimum: R_COM=6.5790
-Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09   
+Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09
 *************************************
 
 
-FOX-7 Dimer Configuration Number = 1   
+FOX-7 Dimer Configuration Number = 1
 R_COM=   6.37900
 CCSD(T) = -10.92503 kcal/mol
 CBS     = -11.39114 kcal/mol
@@ -979,7 +979,7 @@ N     -4.12094   0.92714  -0.11894
 H     -3.15341   0.83424  -0.40892
 H     -4.47094   1.77138   0.32657
 -----END-------
-   
+
 
 FOX-7 Dimer Configuration Number = 2
 R_COM=   6.57900
@@ -1016,7 +1016,7 @@ N     -4.32090   0.92865  -0.11523
 H     -3.35337   0.83575  -0.40521
 H     -4.67090   1.77289   0.33028
 -----END-------
-   
+
 FOX-7 Dimer Configuration Number = 3
 R_COM=   7.57900
 CCSD(T) = -7.60014 kcal/mol
@@ -1052,7 +1052,7 @@ N     -5.32070   0.93618  -0.09668
 H     -4.35317   0.84328  -0.38666
 H     -5.67070   1.78042   0.34883
 -----END-------
-   
+
 FOX-7 Dimer Configuration Number = 4
 R_COM=   8.57900
 CCSD(T) = -4.20650 kcal/mol
@@ -1088,7 +1088,7 @@ N     -6.32050   0.94372  -0.07812
 H     -5.35297   0.85082  -0.36810
 H     -6.67050   1.78796   0.36739
 -----END-------
-   
+
 FOX-7 Dimer Configuration Number = 5
 R_COM=   9.57900
 CCSD(T) = -2.66717 kcal/mol
@@ -1124,7 +1124,7 @@ N     -7.32030   0.95126  -0.05957
 H     -6.35277   0.85836  -0.34955
 H     -7.67030   1.79550   0.38594
 -----END-------
-   
+
 FOX-7 Dimer Configuration Number = 6
 R_COM=  10.57900
 CCSD(T) = -1.84297 kcal/mol
@@ -1170,10 +1170,10 @@ H     -8.67010   1.80304   0.40449
       Imidazole Dimer
 Number of Imidazole Dimer Configurations: 7
 Minimum: R_COM=5.2470
-Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09   
+Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09
 *************************************
 
-Imidazole Dimer Configuration Number = 1 
+Imidazole Dimer Configuration Number = 1
 R_COM=   4.92500
 CCSD(T) = -5.77777 kcal/mol
 CBS     = -6.21725 kcal/mol
@@ -1198,7 +1198,7 @@ H      4.43851  -1.90897   1.07045
 H      3.94076   1.71536  -1.04012
 N      3.72595  -0.14770   0.03809
 -----END-------
-   
+
 Imidazole Dimer Configuration Number = 2
 R_COM=   5.24700
 CCSD(T) = -10.02380 kcal/mol
@@ -1224,7 +1224,7 @@ H      4.76050  -1.90869   1.06817
 H      4.26275   1.71564  -1.04240
 N      4.04794  -0.14742   0.03581
 -----END-------
-   
+
 Imidazole Dimer Configuration Number = 3
 R_COM=   6.24700
 CCSD(T) = -5.39817 kcal/mol
@@ -1250,7 +1250,7 @@ H      5.76047  -1.90782   1.06110
 H      5.26272   1.71651  -1.04947
 N      5.04791  -0.14655   0.02874
 -----END-------
-   
+
 Imidazole Dimer Configuration Number = 4
 R_COM=   7.24700
 CCSD(T) = -2.46424 kcal/mol
@@ -1276,7 +1276,7 @@ H      6.76045  -1.90695   1.05403
 H      6.26270   1.71738  -1.05654
 N      6.04789  -0.14568   0.02167
 -----END-------
-   
+
 Imidazole Dimer Configuration Number = 5
 R_COM=   8.24700
 CCSD(T) = -1.33341 kcal/mol
@@ -1302,7 +1302,7 @@ H      7.76042  -1.90607   1.04697
 H      7.26267   1.71826  -1.06360
 N      7.04786  -0.14480   0.01461
 -----END-------
-   
+
 Imidazole Dimer Configuration Number = 6
 R_COM=   9.24700
 CCSD(T) = -0.81773 kcal/mol
@@ -1328,7 +1328,7 @@ H      8.76040  -1.90520   1.03990
 H      8.26265   1.71913  -1.07067
 N      8.04784  -0.14393   0.00754
 -----END-------
-   
+
 Imidazole Dimer Configuration Number = 7
 R_COM=  10.24700
 CCSD(T) = -0.54380 kcal/mol
@@ -1363,7 +1363,7 @@ N      9.04781  -0.14306   0.00047
       Methyl Formate Dimer
 Number of Methyl Formate Dimer Configurations: 6
 Minimum: R_COM=4.4340
-Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09   
+Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09
 *************************************
 
 
@@ -1390,7 +1390,7 @@ C     -4.79819  -0.54189  -0.00001
 O     -3.76913  -1.19806   0.00000
 H     -5.81570  -0.96764   0.00020
 -----END-------
-   
+
 Methyl Formate Dimer Configuration Number = 2
 R_COM=   4.43400
 CCSD(T) = -3.31721 kcal/mol
@@ -1414,7 +1414,7 @@ C     -4.98908  -0.53536  -0.00001
 O     -3.96002  -1.19153   0.00000
 H     -6.00659  -0.96111   0.00020
 -----END-------
-   
+
 Methyl Formate Dimer Configuration Number = 3
 R_COM=   5.43400
 CCSD(T) = -1.56550 kcal/mol
@@ -1438,7 +1438,7 @@ C     -5.98850  -0.50120  -0.00001
 O     -4.95944  -1.15737   0.00000
 H     -7.00601  -0.92695   0.00020
 -----END-------
-   
+
 Methyl Formate Dimer Configuration Number = 4
 R_COM=   6.43400
 CCSD(T) = -0.56925 kcal/mol
@@ -1462,7 +1462,7 @@ C     -6.98791  -0.46703  -0.00001
 O     -5.95885  -1.12320   0.00000
 H     -8.00542  -0.89278   0.00020
 -----END-------
-   
+
 Methyl Formate Dimer Configuration Number = 5
 R_COM=   7.43400
 CCSD(T) = -0.23352 kcal/mol
@@ -1486,7 +1486,7 @@ C     -7.98733  -0.43286  -0.00001
 O     -6.95827  -1.08903   0.00000
 H     -9.00484  -0.85861   0.00020
 -----END-------
-   
+
 Methyl Formate Dimer Configuration Number = 6
 R_COM=   8.43400
 CCSD(T) = -0.10549 kcal/mol
@@ -1520,9 +1520,9 @@ H    -10.00426  -0.82445   0.00020
       Nitrobenzene Dimer
 Number of Nitrobenzene Dimer Configurations: 7
 Minimum: R_COM=3.20
-Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09   
+Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09
 *************************************
-   
+
 Nitrobenzene Dimer Configuration Number = 1
 R_COM=  2.90
 CCSD(T) = +0.80731 kcal/mol
@@ -1558,7 +1558,7 @@ N     -2.13774   1.10769   2.93474
 O     -2.80036   0.05930   2.91102
 O     -0.89837   1.15599   2.93539
 -----END-------
-   
+
 Nitrobenzene Dimer Configuration Number = 2
 R_COM=   3.2
 CCSD(T) = -6.52510 kcal/mol
@@ -1594,7 +1594,7 @@ N     -2.13774   1.10769   3.23474
 O     -2.80036   0.05930   3.21102
 O     -0.89837   1.15599   3.23539
 -----END-------
-   
+
 Nitrobenzene Dimer Configuration Number = 3
 R_COM=   4.200000
 CCSD(T) = -4.51039 kcal/mol
@@ -1630,7 +1630,7 @@ N     -2.13774   1.10769   4.23474
 O     -2.80036   0.05930   4.21102
 O     -0.89837   1.15599   4.23539
 -----END-------
-   
+
 Nitrobenzene Dimer Configuration Number = 4
 R_COM=   5.200000
 CCSD(T) = -1.84061 kcal/mol
@@ -1666,7 +1666,7 @@ N     -2.13774   1.10769   5.23474
 O     -2.80036   0.05930   5.21102
 O     -0.89837   1.15599   5.23539
 -----END-------
-   
+
 Nitrobenzene Dimer Configuration Number = 5
 R_COM=   6.200000
 CCSD(T) = -0.91018 kcal/mol
@@ -1702,7 +1702,7 @@ N     -2.13774   1.10769   6.23474
 O     -2.80036   0.05930   6.21102
 O     -0.89837   1.15599   6.23539
 -----END-------
-   
+
 Nitrobenzene Dimer Configuration Number = 6
 R_COM=   7.200000
 CCSD(T) = -0.53995 kcal/mol
@@ -1738,7 +1738,7 @@ N     -2.13774   1.10769   7.23474
 O     -2.80036   0.05930   7.21102
 O     -0.89837   1.15599   7.23539
 -----END-------
-   
+
 Nitrobenzene Dimer Configuration Number = 7
 R_COM=   8.200000
 CCSD(T) = -0.36074 kcal/mol
@@ -1784,7 +1784,7 @@ O     -0.89837   1.15599   8.23539
       Nitromethane Dimer
 Number of Nitromethane Dimer Configurations: 7
 Minimum: R_COM=3.1310
-Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09   
+Geometry: Optimized at MP2/aug-cc-pVDZ using Gaussian09
 *************************************
 
 
@@ -1811,7 +1811,7 @@ O      0.07983   0.84261   2.52667
 -----END-------
 
 
-Nitromethane Dimer Configuration Number = 2   
+Nitromethane Dimer Configuration Number = 2
 R_COM=   3.13100
 CCSD(T) = -6.15376 kcal/mol
 CBS     = -6.39284 kcal/mol
@@ -1832,8 +1832,8 @@ N      0.06148   2.18396   2.20920
 O     -0.97350   2.77744   1.87587
 O      0.09328   1.06835   2.75024
 -----END-------
-   
-Nitromethane Dimer Configuration Number = 3 
+
+Nitromethane Dimer Configuration Number = 3
 R_COM=   4.13100
 CCSD(T) = -3.47673 kcal/mol
 CBS     = -3.50772 kcal/mol
@@ -1855,7 +1855,7 @@ O     -0.93121   3.48732   2.57892
 O      0.13557   1.77823   3.45329
 -----END-------
 
-Nitromethane Dimer Configuration Number = 4   
+Nitromethane Dimer Configuration Number = 4
 R_COM=   5.13100
 CCSD(T) = -1.57890 kcal/mol
 CBS     = -1.59213 kcal/mol
@@ -1876,7 +1876,7 @@ N      0.14605   3.60373   3.61530
 O     -0.88893   4.19721   3.28197
 O      0.17785   2.48812   4.15634
 -----END-------
-   
+
 Nitromethane Dimer Configuration Number = 5
 R_COM=   6.13100
 CCSD(T) = -0.84608 kcal/mol
@@ -1898,7 +1898,7 @@ N      0.18834   4.31361   4.31834
 O     -0.84664   4.90709   3.98501
 O      0.22014   3.19800   4.85938
 -----END-------
-   
+
 Nitromethane Dimer Configuration Number = 6
 R_COM=   7.13100
 CCSD(T) = -0.51203 kcal/mol
@@ -1920,7 +1920,7 @@ N      0.23063   5.02350   5.02139
 O     -0.80435   5.61698   4.68806
 O      0.26243   3.90789   5.56243
 -----END-------
-   
+
 Nitromethane Dimer Configuration Number = 7
 R_COM=   8.13100
 CCSD(T) = -0.33552 kcal/mol
@@ -1952,7 +1952,7 @@ O      0.30471   4.61777   6.26548
       Water Dimer
 Number of Water Dimer Configurations: 16
 Minimum: R_COM=2.910
-Geometry: Optimized at MP2/aug-cc-pVTZ using Gaussian09   
+Geometry: Optimized at MP2/aug-cc-pVTZ using Gaussian09
 **************************************
 
 Water Dimer Configuration Number = 1
@@ -1983,7 +1983,7 @@ H     -2.83514  -0.76272   0.79691
 H     -2.84287   0.75920   0.79787
 -----END-------
 
-Water Dimer Configuration Number = 3   
+Water Dimer Configuration Number = 3
 R_COM=   2.91000
 CCSD(T) = -5.00506 kcal/mol
 CBS     = -5.04849 kcal/mol
@@ -1996,7 +1996,7 @@ O     -2.85413  -0.00000   0.31938
 H     -3.13261  -0.76274   0.83576
 H     -3.14034   0.75918   0.83672
 -----END-------
-   
+
 Water Dimer Configuration Number = 4
 R_COM=   3.21000
 CCSD(T) = -4.40210 kcal/mol
@@ -2011,7 +2011,7 @@ H     -3.43009  -0.76276   0.87461
 H     -3.43782   0.75916   0.87557
 -----END-------
 
-Water Dimer Configuration Number = 5   
+Water Dimer Configuration Number = 5
 R_COM=   3.51000
 CCSD(T) = -3.38701 kcal/mol
 CBS     = -3.39899 kcal/mol
@@ -2024,7 +2024,7 @@ O     -3.44908  -0.00004   0.39707
 H     -3.72756  -0.76278   0.91345
 H     -3.73529   0.75914   0.91441
 -----END-------
-   
+
 Water Dimer Configuration Number = 6
 R_COM=   4.01000
 CCSD(T) = -2.06103 kcal/mol
@@ -2039,7 +2039,7 @@ H     -4.22335  -0.76282   0.97820
 H     -4.23108   0.75910   0.97916
 -----END-------
 
-Water Dimer Configuration Number = 7   
+Water Dimer Configuration Number = 7
 R_COM=   4.51000
 CCSD(T) = -1.28866 kcal/mol
 CBS     = -1.29223 kcal/mol
@@ -2053,7 +2053,7 @@ H     -4.71914  -0.76285   1.04294
 H     -4.72687   0.75907   1.04390
 -----END-------
 
-Water Dimer Configuration Number = 8   
+Water Dimer Configuration Number = 8
 R_COM=   5.01000
 CCSD(T) = -0.85123 kcal/mol
 CBS     = -0.85374 kcal/mol
@@ -2066,7 +2066,7 @@ O     -4.93645  -0.00015   0.59130
 H     -5.21493  -0.76289   1.10768
 H     -5.22266   0.75903   1.10864
 -----END-------
-   
+
 Water Dimer Configuration Number = 9
 R_COM=   5.51000
 CCSD(T) = -0.59215 kcal/mol
@@ -2080,7 +2080,7 @@ O     -5.43224  -0.00018   0.65605
 H     -5.71072  -0.76292   1.17243
 H     -5.71845   0.75900   1.17339
 -----END-------
-   
+
 Water Dimer Configuration Number = 10
 R_COM=   6.01000
 CCSD(T) = -0.42971 kcal/mol
@@ -2094,7 +2094,7 @@ O     -5.92803  -0.00022   0.72079
 H     -6.20651  -0.76296   1.23717
 H     -6.21424   0.75896   1.23813
 -----END-------
-   
+
 Water Dimer Configuration Number = 11
 R_COM=   6.51000
 CCSD(T) = -0.32252 kcal/mol
@@ -2108,7 +2108,7 @@ O     -6.42382  -0.00025   0.78554
 H     -6.70230  -0.76299   1.30192
 H     -6.71003   0.75893   1.30288
 -----END-------
-   
+
 Water Dimer Configuration Number = 12
 R_COM=   7.01000
 CCSD(T) = -0.24874 kcal/mol
@@ -2122,11 +2122,11 @@ O     -6.91961  -0.00029   0.85028
 H     -7.19809  -0.76303   1.36666
 H     -7.20582   0.75889   1.36762
 -----END-------
-   
+
 Water Dimer Configuration Number = 13
 R_COM=   7.50500
 CCSD(T) = -0.19660 kcal/mol
-CBS     = -0.19730 kcal/mol 
+CBS     = -0.19730 kcal/mol
  Monomer A
 H     -0.92809   0.00000   0.05166
 O      0.04047   0.00000   0.05166
@@ -2136,7 +2136,7 @@ O     -7.41045  -0.00032   0.91438
 H     -7.68893  -0.76306   1.43076
 H     -7.69666   0.75886   1.43172
 -----END-------
-   
+
 Water Dimer Configuration Number = 14
 R_COM=   8.00500
 CCSD(T) = -0.15792 kcal/mol
@@ -2150,7 +2150,7 @@ O     -7.90624  -0.00035   0.97912
 H     -8.18472  -0.76309   1.49550
 H     -8.19245   0.75883   1.49646
 -----END-------
-   
+
 Water Dimer Configuration Number = 15
 R_COM=   8.50500
 CCSD(T) = -0.12887 kcal/mol
@@ -2164,7 +2164,7 @@ O     -8.40203  -0.00039   1.04386
 H     -8.68051  -0.76313   1.56024
 H     -8.68824   0.75879   1.56120
 -----END-------
-   
+
 Water Dimer Configuration Number = 16
 R_COM=   9.00500
 CCSD(T) = -0.10661 kcal/mol

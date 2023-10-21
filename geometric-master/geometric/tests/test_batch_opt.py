@@ -12,7 +12,7 @@ from geometric.molecule import bohr2ang
 logger = logging.getLogger(__name__)
 
 from . import addons
-import geometric.optimize as gt 
+import geometric.optimize as gt
 from geometric.internal import CartesianCoordinates,\
     PrimitiveInternalCoordinates, DelocalizedInternalCoordinates
 from geometric.nifty import ang2bohr
@@ -52,24 +52,24 @@ _geo2 = [0.0139,  -0.4830,   0.2848,
 
 class BatchOptimizer(object):
     """ Demo BatchOptmizer for runnig pytest test """
-    
+
     def __init__(self, **kwargs):
         self.kwargs = kwargs
         self.params = gt.OptParams(**kwargs)
-        
-        
+
+
     def _initOptimizer(self, schemas):
         """ initilize all OptObjects for the schmas passed.
-        
+
         Arguements
         ----------
         schemas: list of schemas for qcengine
-        
+
         return
         ------
         list of OptOject's for each schema
         """
-        
+
         #=========================================#
         #| Set up the internal coordinate system |#
         #=========================================#
@@ -88,7 +88,7 @@ class BatchOptimizer(object):
         for schema in schemas:
             M, engine = gt.get_molecule_engine(engine='qcengine', qcschema=schema, **self.kwargs)
             coords = M.xyzs[0].flatten() * ang2bohr
-    
+
             # Read in the constraints
             constraints = self.kwargs.get('constraints', None) #Constraint input file (optional)
             if constraints is not None:
@@ -96,8 +96,8 @@ class BatchOptimizer(object):
             else:
                 Cons = None
                 CVals = None
-            
-            IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons, 
+
+            IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons,
                             cvals=CVals[0] if CVals is not None else None)
             tmpDir = tempfile.mkdtemp(".tmp", "batchOpt")
 
@@ -107,9 +107,9 @@ class BatchOptimizer(object):
             logger.debug("[AU]: e=%.5f bl=%.5f,%.5f g=%.4f" % (
                     optimizer.E, optimizer.X[0],optimizer.X[3], optimizer.gradx[0]))
             optimizers.append(optimizer)
-            
+
         return optimizers
-    
+
 
     def _batchComputeEnergyAndForces(self, optimizers):
         """ This just an mockup. if this was NNP this would work in one batch
@@ -120,44 +120,44 @@ class BatchOptimizer(object):
                 optimizer.calcEnergyForce()
                 logger.debug("[AU]: e=%.5f bl=%.5f,%.5f g=%.4f" % (
                     optimizer.E, optimizer.X[0],optimizer.X[3], optimizer.gradx[0]))
-    
+
     def optimizeMols(self, schemas):
         """ Optmize all molecules as represented by the schemas.
-        
+
             return
             ------
             list of optimized Molecule's
         """
         optimizers = self._initOptimizer(schemas)
         res = []
-        
+
         # Optimization Loop, while not all have completed optimization
         while len(optimizers) > 0:
             nextOptObjs = []
-            
+
             # take one step, energy and gradient must have been stored in optObj
-            for optimizer in optimizers:    
+            for optimizer in optimizers:
                 optimizer.step()
 
             self._batchComputeEnergyAndForces(optimizers)
 
             # evaluate step
-            for optimizer in optimizers:    
+            for optimizer in optimizers:
                 if optimizer.state == gt.OPT_STATE.NEEDS_EVALUATION:
-                    
-                    optimizer.evaluateStep() 
+
+                    optimizer.evaluateStep()
                     if optimizer.state in [gt.OPT_STATE.CONVERGED, gt.OPT_STATE.FAILED]:
                         logger.info("Optmization convereged!")
                         res.append(optimizer.progress)
                         continue
                 nextOptObjs.append(optimizer)
             if len(nextOptObjs) == 0: break  ######## All Done
-             
+
             # step and evaluation completed, next step for remaining conformations
             optimizers = nextOptObjs
-            
+
         return res
- 
+
 
 @addons.using_qcengine
 @addons.using_rdkit
@@ -166,7 +166,7 @@ def test_rdkit_simple(test_logger):
     schema1 = copy.deepcopy(_base_schema)
     schema2 = copy.deepcopy(_base_schema)
     schema2['molecule']['geometry']= [c  / bohr2ang for c in _geo2]
-    
+
     opts = {"qcengine": True, "input": "tmp_data", "qce_program": "rdkit"}
 
     bOptimizer = BatchOptimizer(**opts)
@@ -175,7 +175,7 @@ def test_rdkit_simple(test_logger):
     # Currently in angstrom
     ref = np.array([0., 0., -0.0644928042, 0., -0.7830365196, 0.5416895554, 0., 0.7830365196, 0.5416895554])
     assert np.allclose(ref, ret[0].xyzs[-1].ravel(), atol=1.e-5)
-    
+
     # check that distances in ref are same as in ret[1]
     refAt = ref.reshape(-1,3)
     retAt = ret[1].xyzs[-1]
@@ -183,11 +183,11 @@ def test_rdkit_simple(test_logger):
         for atRef2,atRet2 in zip(refAt,retAt):
             d2Ref = np.power(atRef[0]-atRef2[0],2) + np.power(atRef[1]-atRef2[1],2) +np.power(atRef[2]-atRef2[2],2)
             d2Ret = np.power(atRet[0]-atRet2[0],2) + np.power(atRet[1]-atRet2[1],2) +np.power(atRet[2]-atRet2[2],2)
-            
+
             assert math.isclose(d2Ref, d2Ret, abs_tol=1e-3)
-    
-    
-    
+
+
+
 
 _N2_schema = {
         "schema_version": 1,
@@ -220,7 +220,7 @@ def test_rdkit_N2(test_logger):
     schema1 = copy.deepcopy(_N2_schema)
     schema2 = copy.deepcopy(_N2_schema)
     schema2['molecule']['geometry']= [c / bohr2ang for c in _N2_geo2]
-    
+
     opts = {"qcengine": True, "input": "tmp_data", "qce_program": "rdkit"}
 
     bOptimizer = BatchOptimizer(**opts)
@@ -229,7 +229,7 @@ def test_rdkit_N2(test_logger):
     # Currently in angstrom
     ref = np.array([-0.05729, 0., 0.,   1.06272, 0., 0.])
     assert np.allclose(ref, ret[0].xyzs[-1].ravel(), atol=1.e-3)
-    
+
     # check that distances in ref are same as in ret[1]
     refAt = ref.reshape(-1,3)
     retAt = ret[1].xyzs[-1]
@@ -237,5 +237,5 @@ def test_rdkit_N2(test_logger):
         for atRef2,atRet2 in zip(refAt,retAt):
             d2Ref = np.power(atRef[0]-atRef2[0],2) + np.power(atRef[1]-atRef2[1],2) +np.power(atRef[2]-atRef2[2],2)
             d2Ret = np.power(atRet[0]-atRet2[0],2) + np.power(atRet[1]-atRet2[1],2) +np.power(atRet[2]-atRet2[2],2)
-            
+
             assert math.isclose(d2Ref, d2Ret, abs_tol=1e-3)

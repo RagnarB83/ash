@@ -18,5 +18,3 @@ def test_geometric_dummy():
 
     if result.energy == 0.0:
         print("ASH and geometric finished. Everything looks good")
-
-

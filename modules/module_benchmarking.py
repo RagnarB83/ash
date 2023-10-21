@@ -56,13 +56,13 @@ class AtomProperty:
         self.calcvalue_corrected = None
         self.error = None
 
-#Read benchmark-set reference file ("Reference_data") inside indicated directory 
+#Read benchmark-set reference file ("Reference_data") inside indicated directory
 def read_referencedata_file(benchmarksetpath):
     #Open file and get database info as dict
     database_dict={}
     corrections=False
     count=0
-    
+
     #with open(benchmarksetpath+"Reference_data.txt") as ref_file:
     if os.path.isfile(benchmarksetpath+'corrections.txt') is True:
         print("Found corrections.txt file. Grabbing corrections")
@@ -74,7 +74,7 @@ def read_referencedata_file(benchmarksetpath):
                     rindex=int(line.split()[0])
                     corr = float(line.split()[1])
                     corrections_dict[rindex] = corr
-    
+
     with open(benchmarksetpath+"Reference_data.txt") as ref_file:
         for line in ref_file:
             if '#TESTSET_INFO' in line:
@@ -87,7 +87,7 @@ def read_referencedata_file(benchmarksetpath):
                 filenames=[]
                 stoichiometry=[]
                 #Getting index (first line)
-                # Next entries are either strings (filename) or stoichiometry-indices (integers). 
+                # Next entries are either strings (filename) or stoichiometry-indices (integers).
                 # Check if integer or float, if neither then assume filename string
                 for i,word in enumerate(line.split()):
                     if i == 0:
@@ -100,11 +100,11 @@ def read_referencedata_file(benchmarksetpath):
                         filenames.append(word)
                 #New reaction
                 if corrections is True:
-                    newreaction = BenchReaction(index, filenames, stoichiometry, refenergy, unit, correction=corrections_dict[index])                    
+                    newreaction = BenchReaction(index, filenames, stoichiometry, refenergy, unit, correction=corrections_dict[index])
                 else:
                     newreaction = BenchReaction(index, filenames, stoichiometry, refenergy, unit)
-                
-                
+
+
                 #print("New reaction: ", newreaction.__dict__)
                 #Add to dict.
                 database_dict[index] = newreaction
@@ -116,13 +116,13 @@ def read_referencedata_file(benchmarksetpath):
             ashexit()
     return database_dict
 
-#Read Property benchmark-set reference file ("Reference_data") inside indicated directory 
+#Read Property benchmark-set reference file ("Reference_data") inside indicated directory
 def read_referencedata_property_file(benchmarksetpath):
     #Open file and get database info as dict
     database_dict={}
     corrections=False
     count=0
-    
+
     #with open(benchmarksetpath+"Reference_data.txt") as ref_file:
     if os.path.isfile(benchmarksetpath+'corrections.txt') is True:
         print("Found corrections.txt file. Grabbing corrections")
@@ -134,7 +134,7 @@ def read_referencedata_property_file(benchmarksetpath):
                     rindex=int(line.split()[0])
                     corr = float(line.split()[1])
                     corrections_dict[rindex] = corr
-    
+
     with open(benchmarksetpath+"Reference_data.txt") as ref_file:
         for line in ref_file:
             if '#TESTSET_INFO' in line:
@@ -145,7 +145,7 @@ def read_referencedata_property_file(benchmarksetpath):
             if '#' not in line:
                 count+=1
                 #Getting index (first line)
-                # Next entries are either strings (filename) or stoichiometry-indices (integers). 
+                # Next entries are either strings (filename) or stoichiometry-indices (integers).
                 # Check if integer or float, if neither then assume filename string
                 for i,word in enumerate(line.split()):
                     if i == 0:
@@ -158,11 +158,11 @@ def read_referencedata_property_file(benchmarksetpath):
                         filename=word
                 #New reaction
                 if corrections is True:
-                    newatomproperty = AtomProperty(index, filename, atomindex, refvalue, unit, correction=corrections_dict[index])          
+                    newatomproperty = AtomProperty(index, filename, atomindex, refvalue, unit, correction=corrections_dict[index])
                 else:
-                    newatomproperty = AtomProperty(index, filename, atomindex, refvalue, unit)   
-                
-                
+                    newatomproperty = AtomProperty(index, filename, atomindex, refvalue, unit)
+
+
                 #print("New reaction: ", newreaction.__dict__)
                 #Add to dict.
                 database_dict[index] = newatomproperty
@@ -174,11 +174,11 @@ def read_referencedata_property_file(benchmarksetpath):
             ashexit()
     return database_dict
 
-    
+
 #Get pretty reaction string from molecule-filenames and stoichiometry
 def get_reaction_string(filenames, stoichiometry):
     string =""
-    
+
     def convert_stoich_to_string(i):
         if abs(i) == 1:
             return ""
@@ -193,7 +193,7 @@ def get_reaction_string(filenames, stoichiometry):
             beforeindex=stoichiometry[i-1]
         else:
             beforeindex=stoichiometry[i]
-        
+
         #Sign changed => First right-hand side case
         if is_same_sign(currindex,beforeindex) is False:
             string+=" ⟶   "
@@ -214,7 +214,7 @@ def get_reaction_string(filenames, stoichiometry):
 #Benchmarking for structures
 # Use geometric optimizer always or have choice?
 # Compare RMSDs and also bond lengths?
-# Make automatic important bond-lengths choose function? 
+# Make automatic important bond-lengths choose function?
 # E.g. always include bond lengths for transition metal (via get_conn_atoms), always all metal-metal distances
 #If no metal present then do all C-C, C-N, C-O, C-X bonds
 # Use both for benchmark and also for end of optimizations
@@ -225,7 +225,7 @@ def run_geobenchmark(set=None, theory=None, orcadir=None, numcores=None):
 
 #run_benchmark
 #Reuseorbs option: Reuse orbitals within same reaction. This only makes sense if reaction contains very similar geometries (e.g. IE/EA reaction)
-#property='energy', 
+#property='energy',
 def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, corrections=None, keepoutputfiles=True):
     """[summary]
 
@@ -253,13 +253,13 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
         benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+bigset+"/"+subset+"/data/"
     else:
         benchmarksetpath=ashpath+"/databases/Benchmarking-sets/"+set+"/data/"
-    
+
     #Determine what type of type of property by grepping file
-    
+
     test_property = pygrep("#TESTSET_INFO Property:",benchmarksetpath+'Reference_data.txt')
     if test_property == None:
         print("Found no \"#TESTSET_INFO Property\" line in Reference.txt file. Assuming property to be energy")
-        property='energy' 
+        property='energy'
     else:
         property=test_property[-1]
         print("Property is:", property)
@@ -278,12 +278,12 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
         assert len(corrections) == len(database_dict), "Length of list corrections not matching length of test set"
         for i,corr in enumerate(corrections):
             database_dict[i+1].correction = corr
-    
+
     #If no numcores then presumably present in theory object
     if numcores is None:
         numcores=theory.numcores
-    
-    
+
+
     #Always same unit so taking first case
     unit=database_dict[1].unit
     try:
@@ -291,9 +291,9 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
     except FileExistsError:
         pass
     os.chdir("benchmarks_calcs")
-    
+
     errors=[]
-    
+
 
     #Non-energy properties
     if property!='energy':
@@ -305,7 +305,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
 
         for systemindex in database_dict:
             system=database_dict[systemindex]
-            
+
             print("")
             print("-"*70)
             print(BC.WARNING,"System {} : {} {} ".format(systemindex, BC.OKBLUE, system.filename),BC.END)
@@ -315,16 +315,16 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
             print("-"*70)
 
             propertyvalues=[]
-                
+
             #Creating fragment
             frag = ash.Fragment(xyzfile=benchmarksetpath+system.filename+'.xyz', readchargemult=True, conncalc=False)
-            
+
             #Modifying theory object
             charge=frag.charge
             mult=frag.mult
             #Reducing numcores if few electrons, otherwise original value
             theory.numcores = check_cores_vs_electrons(frag.elems,numcores,charge)
-            
+
             #Case EFG
             if property == 'EFG':
                 Proptype='EFG'
@@ -339,7 +339,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 pass
                 Proptype='Mossbauer'
                 theory.propertyblock="\n%eprnmr\nnuclei = all Fe {rho,fgrad}\n"
-                
+
                 result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
                 energy = result.energy
                 #grab_Mossbauer_from_ORCA_output(theory.filename)
@@ -363,7 +363,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
             #List of all property values for reaction
             propertyvalues.append(propertyvalue)
             print("")
-            #reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex, 
+            #reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex,
             #                                            reference=reaction.refenergy)
             system.calcvalue = propertyvalue
             system.calcvalue_corrected = propertyvalue + system.correction
@@ -380,12 +380,12 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
         Proptype='Energy'
         #Dictionary of energies of calculated fragments so that we don't have to calculate same fragment multiple times
         all_calc_energies ={}
-        
+
         for reactionindex in database_dict:
             reaction=database_dict[reactionindex]
             #TODO: Get longest reaction string here to make sure final is good
             #reactionstring=get_reaction_string(reaction.filenames, reaction.stoichiometry)
-            
+
             print("")
             print("-"*70)
             print(BC.WARNING,"Reaction {} : {} {} ".format(reactionindex, BC.OKBLUE, reaction.filenames),BC.END)
@@ -396,7 +396,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
             #Reading XYZ file and grabbing charge and multiplicity
             energies=[]
             for file in reaction.filenames:
-                
+
                 #If previously calculated fragment, grab energy from all_calc_energies and skip
                 if file in all_calc_energies:
                     print("File {} already calculated. Skipping calculation".format(file))
@@ -404,7 +404,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                     reaction.totalenergies.append(energy)
                     energies.append(energy)
                     continue
-                
+
                 frag = ash.Fragment(xyzfile=benchmarksetpath+file+'.xyz', readchargemult=True, conncalc=False)
                 # Setting charge and mult for theory
                 if theory is not None:
@@ -412,7 +412,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                     mult=frag.mult
                     #Reducing numcores if few electrons, otherwise original value
                     theory.numcores = check_cores_vs_electrons(frag.elems,numcores,charge)
-                    
+
                     result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
                     energy = result.energy
                     all_calc_energies[file] = energy
@@ -421,7 +421,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                     #Keep copy of outputfile if ORCATheory.
                     if isinstance(theory,ORCATheory):
                         shutil.copyfile(theory.filename+'.out', './' + file  + '.out')
-                    
+
                     #If reuseorbs False (default) then delete ORCA files in each step
                     #If True, keep file, including orca.gbw which enables Autostart
                     if reuseorbs is False:
@@ -432,17 +432,17 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
             print("")
             print("Total energies:", energies)
             print("Stoichiometry:", reaction.stoichiometry)
-            reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex, 
+            reaction_energy, error = ash.ReactionEnergy(stoichiometry=reaction.stoichiometry, list_of_energies=energies, unit=unit, label=reactionindex,
                                                         reference=reaction.refenergy)
             reaction.calcenergy = reaction_energy
             reaction.calcenergy_corrected = reaction_energy + reaction.correction
             #Adding error with correction
             reaction.error = error + reaction.correction
-        
+
         #Cleanup after reaction is done. Theory only.
         if theory is not None:
             theory.cleanup()
-        
+
     print("")
     print(BC.WARNING,"="*70, BC.END)
     print(BC.WARNING,"FINAL RESULTS FOR TESTSET: ", BC.OKBLUE, set, BC.END)
@@ -458,7 +458,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
     ME=sum(errors)/len(errors)
     MaxError=max(errors, key=abs)
     RMSE=math.sqrt(sum([i**2 for i in errors])/len(errors))
-    
+
     #Print nice table
     print(BC.WARNING, "{:7s} {:55s}  {:13s} {:13s} {:13s}   {:17s}".format("Index", Proptype, "Ref.", "Calc.", "Calc.+corr.", "Error"), BC.END)
     print("-"*120)
@@ -468,14 +468,14 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
             colorcode=BC.FAIL
         else:
             colorcode=BC.END
-        
+
         if property=='energy':
             reactionstring=get_reaction_string(r.filenames, r.stoichiometry)
             print(" {:<7} {:<80s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, reactionstring, r.refenergy, r.calcenergy, r.calcenergy_corrected, colorcode, r.error,BC.END))
         else:
             #print(" {:<10} {:<40s}  {:<13.4f} {:<13.4f}{} {:<13.4f}{}".format(rindex, ' '.join(r.filenames), r.refenergy, r.calcenergy, colorcode, r.error,BC.END))
             print(" {:<7} {:<80s}  {:<13.4f} {:<13.4f} {:<13.4f}{} {:>8.4f}{}".format(rindex, str(r.filename), r.refvalue, r.calcvalue, r.calcvalue_corrected, colorcode, r.error,BC.END))
-        
+
     print("-"*120)
     print(" {:<10s} {:13.4f} {:<10s} ".format("MAE", MAE, unit))
     print(" {:<10s} {:13.4f} {:<10s} ".format("ME", ME, unit))

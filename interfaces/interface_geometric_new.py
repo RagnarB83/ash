@@ -19,7 +19,7 @@ from ash.modules.module_results import ASH_Results
 
 #Wrapper function around GeomeTRICOptimizerClass
 #NOTE: theory and fragment given to Optimizer function but not part of Class initialization. Only passed to run method
-def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraints=None, 
+def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraints=None,
                        constrainvalue=False, maxiter=100, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
                        modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
@@ -29,13 +29,13 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
     #print_line_with_mainheader("geomeTRICOptimizer")
     timeA=time.time()
     #NOTE: Class does not take fragment and theory
-    optimizer=GeomeTRICOptimizerClass(charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms, 
-                        maxiter=maxiter, ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt, 
+    optimizer=GeomeTRICOptimizerClass(charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms,
+                        maxiter=maxiter, ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt,
                         hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,modelhessian=modelhessian,
-                        convergence_setting=convergence_setting, conv_criteria=conv_criteria, 
+                        convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                         print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write,
                         printlevel=printlevel)
-    
+
     #Providing theory and fragment to run method. Also constraints
     result = optimizer.run(theory=theory, fragment=fragment, charge=charge, mult=mult,
                            constraints=constraints, constrainvalue=constrainvalue)
@@ -43,12 +43,12 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
 
     return result
 
-# Class for optimization. 
+# Class for optimization.
 class GeomeTRICOptimizerClass:
-        def __init__(self,theory=None, charge=None, mult=None, coordsystem='tric', 
-                     frozenatoms=None, maxiter=50, ActiveRegion=False, actatoms=None, 
+        def __init__(self,theory=None, charge=None, mult=None, coordsystem='tric',
+                     frozenatoms=None, maxiter=50, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
-                       print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None, 
+                       print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None,
                        subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
             print_line_with_mainheader("geomeTRICOptimizer initialization")
             print("Creating optimizer object")
@@ -68,7 +68,7 @@ class GeomeTRICOptimizerClass:
                 print("Activeregion true and coordsystem = tric are not compatible")
                 print("Switching to HDLC")
                 coordsystem='hdlc'
-            
+
             #Defining some attributes
             self.maxiter=maxiter
             self.printlevel=printlevel
@@ -105,13 +105,13 @@ class GeomeTRICOptimizerClass:
                 print("Number of active atoms:", len(self.actatoms))
             print("TS Optimization:", self.TSOpt)
             print("Hessian Option:", self.hessian)
-                    
+
         #Requires info on theory and fragment
         def print_atoms_output_setting(self,theory,fragment):
             #What atoms to print in outputfile in each opt-step. Example choice: QM-region only
             #If not specified then active-region or all-atoms
             if self.print_atoms_list == None:
-                #Print-atoms list not specified. What to do: 
+                #Print-atoms list not specified. What to do:
                 if self.ActiveRegion == True:
                     #If QM/MM object then QM-region:
                     if isinstance(theory,QMMMTheory):
@@ -132,25 +132,25 @@ class GeomeTRICOptimizerClass:
             if convergence_setting is None or convergence_setting == 'ORCA':
                 #default
                 if conv_criteria is None:
-                    self.conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
+                    self.conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3,
                             'convergence_dmax' : 4.0e-3 }
             elif convergence_setting == 'Chemshell':
-                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
+                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3,
                                 'convergence_dmax' : 1.8e-3 }
             elif convergence_setting == 'ORCA_TIGHT':
-                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-5, 'convergence_gmax' : 1.0e-4, 'convergence_drms' : 6.0e-4, 
+                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-5, 'convergence_gmax' : 1.0e-4, 'convergence_drms' : 6.0e-4,
                             'convergence_dmax' : 1.0e-3 }
             elif convergence_setting == 'GAU':
-                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
+                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3,
                             'convergence_dmax' : 1.8e-3 }
             elif convergence_setting == 'GAU_TIGHT':
-                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 1e-5, 'convergence_gmax' : 1.5e-5, 'convergence_drms' : 4.0e-5, 
+                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 1e-5, 'convergence_gmax' : 1.5e-5, 'convergence_drms' : 4.0e-5,
                                 'convergence_dmax' : 6e-5 }
             elif convergence_setting == 'GAU_VERYTIGHT':
-                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 1e-6, 'convergence_gmax' : 2e-6, 'convergence_drms' : 4.0e-6, 
-                                'convergence_dmax' : 6e-6 }        
+                self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 1e-6, 'convergence_gmax' : 2e-6, 'convergence_drms' : 4.0e-6,
+                                'convergence_dmax' : 6e-6 }
             elif convergence_setting == 'SuperLoose':
-                        self.conv_criteria = { 'convergence_energy' : 1e-1, 'convergence_grms' : 1e-1, 'convergence_gmax' : 1e-1, 'convergence_drms' : 1e-1, 
+                        self.conv_criteria = { 'convergence_energy' : 1e-1, 'convergence_grms' : 1e-1, 'convergence_gmax' : 1e-1, 'convergence_drms' : 1e-1,
                             'convergence_dmax' : 1e-1 }
             else:
                 print("Unknown convergence setting. Exiting...")
@@ -167,7 +167,7 @@ class GeomeTRICOptimizerClass:
             ########################################
             #CONSTRAINTS
             ########################################
-            # For QM/MM we need to convert full-system atoms into active region atoms 
+            # For QM/MM we need to convert full-system atoms into active region atoms
             #constraints={'bond':[[8854,37089]]}
             if self.ActiveRegion == True:
                 if constraints != None:
@@ -195,7 +195,7 @@ class GeomeTRICOptimizerClass:
                 bondconstraints=None
                 angleconstraints=None
                 dihedralconstraints=None
-            
+
             return bondconstraints, angleconstraints, dihedralconstraints
 
         def write_constraintsfile(self,frozenatoms,bondconstraints,constrainvalue,angleconstraints,dihedralconstraints):
@@ -227,7 +227,7 @@ class GeomeTRICOptimizerClass:
                 self.constraintsfile='constraints.txt'
                 with open("constraints.txt", 'a') as confile:
                     if constrainvalue is True:
-                        confile.write('$set\n')            
+                        confile.write('$set\n')
                     else:
                         confile.write('$freeze\n')
 
@@ -236,7 +236,7 @@ class GeomeTRICOptimizerClass:
                         if constrainvalue is True:
                             #First 2 are indices, last is value
                             #bond_indices=bondpair[0:2]; bond_val=bondpair[2]
-                            confile.write(f'distance {bondpair[0]+1} {bondpair[1]+1} {bondpair[2]}\n')                    
+                            confile.write(f'distance {bondpair[0]+1} {bondpair[1]+1} {bondpair[2]}\n')
                         else:
                             confile.write(f'distance {bondpair[0]+1} {bondpair[1]+1}\n')
             #Angle constraints
@@ -244,7 +244,7 @@ class GeomeTRICOptimizerClass:
                 self.constraintsfile='constraints.txt'
                 with open("constraints.txt", 'a') as confile:
                     if constrainvalue is True:
-                        confile.write('$set\n')            
+                        confile.write('$set\n')
                     else:
                         confile.write('$freeze\n')
                     for angleentry in angleconstraints:
@@ -260,7 +260,7 @@ class GeomeTRICOptimizerClass:
                 self.constraintsfile='constraints.txt'
                 with open("constraints.txt", 'a') as confile:
                     if constrainvalue is True:
-                        confile.write('$set\n')            
+                        confile.write('$set\n')
                     else:
                         confile.write('$freeze\n')
                     for dihedralentry in dihedralconstraints:
@@ -309,7 +309,7 @@ class GeomeTRICOptimizerClass:
                 self.hessian='file:'+str(hessianfile)
             elif self.hessian == "partial":
                 print("Partial Hessian option requested")
-                
+
                 if self.partial_hessian_atoms is None:
                     print("hessian='partial' option requires setting the partial_hessian_atoms option. Exiting.")
                     ashexit()
@@ -319,7 +319,7 @@ class GeomeTRICOptimizerClass:
                 result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, hessatoms=self.partial_hessian_atoms, runmode='serial', numcores=1)
                 #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
                 #Large Hessian is the actatoms Hessian if actatoms provided
-                
+
                 combined_hessian = approximate_full_Hessian_from_smaller(fragment,result_freq.hessian, self.partial_hessian_atoms, large_atomindices=actatoms, restHessian=modelhessian)
 
                 #Write combined Hessian to disk
@@ -346,7 +346,7 @@ class GeomeTRICOptimizerClass:
                 ashexit()
             #Get active region coordinates and elements
             actcoords, actelems = fragment.get_coords_for_atoms(self.actatoms)
-            
+
             #Writing act-region coords (only) of ASH fragment to disk as XYZ file and reading into geomeTRIC
             write_xyzfile(actelems, actcoords, 'initialxyzfiletric')
 
@@ -355,7 +355,7 @@ class GeomeTRICOptimizerClass:
             if self.printlevel > 1:
                 print()
                 print_line_with_subheader1("Running geomeTRIC object")
-                print(BC.WARNING, f"\nDoing geometry optimization on fragment. Formula: {fragment.prettyformula} Label: {fragment.label} ", BC.END)            
+                print(BC.WARNING, f"\nDoing geometry optimization on fragment. Formula: {fragment.prettyformula} Label: {fragment.label} ", BC.END)
             #Cleanup of temp-files before we begin
             self.cleanup() #NOTE: This deletes constraintsfile
 
@@ -377,7 +377,7 @@ class GeomeTRICOptimizerClass:
                         #Option used by Surface-scan relaxed parallel
                         print("Found constraints in fragment object")
                         constraints = fragment.constraints
-                        constrainvalue=True #Assuming to be the case. 
+                        constrainvalue=True #Assuming to be the case.
                     else:
                         print("No constraints in fragment object.")
             else:
@@ -395,14 +395,14 @@ class GeomeTRICOptimizerClass:
             charge, mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "geomeTRICOptimizer", theory=theory)
             fragment.charge=charge
             fragment.mult=mult
-            
+
             #Check if atom and do Singlepoint instead if so
             if fragment.numatoms == 1:
                 print("System has 1 atoms.")
                 print("Doing single-point energy calculation instead")
                 result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                 return result.energy
-            
+
             #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
             if self.ActiveRegion == True:
                 self.setup_active_region_geometry(fragment)
@@ -435,12 +435,12 @@ class GeomeTRICOptimizerClass:
 
             #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
             #Also now passing list of atoms to print in each step.
-            ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=self.ActiveRegion, actatoms=self.actatoms, 
+            ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=self.ActiveRegion, actatoms=self.actatoms,
                 print_atoms_list=self.print_atoms_list, MM_PDB_traj_write=self.MM_PDB_traj_write,
                 charge=charge, mult=mult, conv_criteria=self.conv_criteria, fragment=fragment, printlevel=self.printlevel)
-            
+
             #Defining args object, containing engine object
-            final_geometric_args=geomeTRICArgsObject(ashengine,self.constraintsfile,coordsys=self.coordsystem, 
+            final_geometric_args=geomeTRICArgsObject(ashengine,self.constraintsfile,coordsys=self.coordsystem,
                 maxiter=self.maxiter, conv_criteria=self.conv_criteria, transition=self.TSOpt, hessian=self.hessian, subfrctor=self.subfrctor)
 
             print("Convergence criteria:", self.conv_criteria)
@@ -468,7 +468,7 @@ class GeomeTRICOptimizerClass:
                 if theory.TruncatedPC is True:
                     print("Truncated PC approximation was active. Doing final energy calculation with full PC environment")
                     theory.TruncatedPC=False
-                    finalenergy, finalgrad = theory.run(current_coords=ashengine.full_current_coords, elems=fragment.elems, 
+                    finalenergy, finalgrad = theory.run(current_coords=ashengine.full_current_coords, elems=fragment.elems,
                         Grad=True,  charge=charge, mult=mult)
                         #label='FinalIter',
                 else:
@@ -485,7 +485,7 @@ class GeomeTRICOptimizerClass:
             fragment.print_system(filename='Fragment-optimized.ygg')
             fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
             fragment.set_energy(finalenergy)
-            
+
             #Active region XYZ-file
             if self.ActiveRegion==True:
                 write_XYZ_for_atoms(fragment.coords, fragment.elems, self.actatoms, "Fragment-optimized_Active")
@@ -499,7 +499,7 @@ class GeomeTRICOptimizerClass:
 
             #Now returning final Results object
             #TODO: Return dictionary of energy, gradient, coordinates etc, coordinates along trajectory ??
-            result = ASH_Results(label="Optimizer", energy=finalenergy, initial_geometry=None, 
+            result = ASH_Results(label="Optimizer", energy=finalenergy, initial_geometry=None,
                     geometry=fragment.coords)
             return result
 
@@ -630,14 +630,14 @@ class ASHengineclass:
             #Defining full_coords as original coords temporarily
             #full_coords = np.array(fragment.coords)
             full_coords = self.fragment.coords
-            
+
             #Replacing act-region coordinates in full_coords with coords from currcoords
             for act_i,curr_i in zip(self.actatoms,currcoords):
                 full_coords[act_i] = curr_i
             #print_time_rel(timeA, modulename='geometric ASHcalc.calc replacing act-region', moduleindex=2)
             timeA=time.time()
             self.full_current_coords = full_coords
-            
+
             #Write out fragment with updated coordinates for the purpose of doing restart
             self.fragment.replace_coords(self.fragment.elems, self.full_current_coords, conn=False)
             self.fragment.print_system(filename='Fragment-currentgeo.ygg')
@@ -647,9 +647,9 @@ class ASHengineclass:
 
             #PRINTING TO OUTPUT SPECIFIC GEOMETRY IN EACH GEOMETRIC ITERATION (now: self.print_atoms_list)
             print(f"Current geometry (Å) in step {self.iteration_count} (print_atoms_list region)")
-            
+
             print("-------------------------------------------------")
-            
+
             #print_atoms_list
             #Previously act: print_coords_for_atoms(self.full_current_coords, fragment.elems, self.actatoms)
             print_coords_for_atoms(self.full_current_coords, self.fragment.elems, self.print_atoms_list)
@@ -662,7 +662,7 @@ class ASHengineclass:
             #label='Iter'+str(self.iteration_count)
             #print_time_rel(timeA, modulename='geometric ASHcalc.calc theory.run', moduleindex=2)
             timeA=time.time()
-            
+
             if self.printlevel >2:
                 print("printlevel >2. Writing full grad to disk")
                 write_coords_all(Grad, self.fragment.elems, indices=self.fragment.allatoms, file="Grad", description="Grad (au/Bohr):")
@@ -680,7 +680,7 @@ class ASHengineclass:
 
             #Now writing trajectory for full system
             self.write_trajectory_full()
-            
+
             #Case QM/MM:
             if isinstance(self.theory,QMMMTheory):
                 #Writing trajectory for QM-region only

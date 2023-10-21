@@ -45,7 +45,7 @@ def EON(calculator, atoms, list_to_compute):
 
             counter += 1
 
-    
+
     # Run XTB in parallel execution over number of images
     results = ExecuteCalculatorParallel(EONWorker, ncore, list_of_jobs)
     atoms.AddFC(counter)
@@ -64,8 +64,8 @@ def WriteConfigFile(template=None):
         potential = 'tip4p'
     else:
         potential =template)
-    
-        
+
+
     with open('config.ini','w') as fconfig:
         fconfig.write('[main]\n')
         fconfig.write('job=point\n')
@@ -86,7 +86,7 @@ def ReadEnergy(fname='energy.dat'):
         except:
             raise RuntimeError("Incorrect format of energy.dat")
     return energy
-    
+
 
 def EONWorker(X):
     current_dir = X[1]
@@ -111,8 +111,8 @@ def EONWorker(X):
 
     # execute EON
     args=[path_to_code]
-    eon_tmp = open(working_dir + '/eon.out', 'w')  
-    eon_err = open(working_dir + '/eon.err', 'w')  
+    eon_tmp = open(working_dir + '/eon.out', 'w')
+    eon_err = open(working_dir + '/eon.err', 'w')
     P = subprocess.Popen(args, stdout=eon_tmp, stderr=eon_err)
     P.wait()
     eon_tmp.close()
@@ -125,4 +125,3 @@ def EONWorker(X):
     os.chdir(current_dir)
 
     return F, E, X[0]
-

@@ -62,7 +62,7 @@ class CP2KTheory:
                         ashexit()
         else:
             self.cp2kdir = cp2kdir
-        
+
 
         #Printlevel
         self.printlevel=printlevel
@@ -131,7 +131,7 @@ class CP2KTheory:
 
             #1.Write coordinate file for whole system
             #write_xyzfile(qm_elems, current_coords, f"{self.filename}", printlevel=1)
-            
+
 
 
             #3. Write CP2K QM/MM inputfile
@@ -142,7 +142,7 @@ class CP2KTheory:
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              functional=self.functional, restartfile=None,
                              PCfile=None, Grad=Grad, filename='cp2k', charge=charge, mult=mult,
-                             periodic_val=self.periodic_val, cell_length=self.cell_length, basis_file=self.basis_file, 
+                             periodic_val=self.periodic_val, cell_length=self.cell_length, basis_file=self.basis_file,
                              potential_file=self.potential_file,
                              psolver=self.psolver, coupling=coupling, qm_kind_dict=qm_kind_dict,
                              pdbfile=pdbfile)
@@ -190,7 +190,7 @@ class CP2KTheory:
         self.energy=grab_energy_cp2k(self.filename+'.out',method=self.method)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
-        
+
         #Grab gradient if calculated
         if Grad is True:
             #Grab gradient
@@ -227,7 +227,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
                     basis_dict=None, potential_dict=None, functional=None, restartfile=None,
                     PCfile=None, Grad=True, filename='cp2k', charge=None, mult=None,
                     periodic_val=None, cell_length=10, basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
-                    psolver='wavelet', 
+                    psolver='wavelet',
                     coupling='COULOMB', qm_kind_dict=None,
                     pdbfile=None):
     #Energy or Energy+gradient
@@ -235,7 +235,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
         jobdirective='ENERGY_FORCE'
     else:
         jobdirective='ENERGY'
-    
+
     #Make sure we center coordinates if wavelet
     if psolver == 'wavelet':
         print("psolver is wavelet. Coordinates must be centered")
@@ -301,11 +301,11 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
             inpfile.write(f'      &FORCEFIELD\n')
             inpfile.write(f'        DO_NONBONDED FALSE\n')
             inpfile.write(f'      &END FORCEFIELD\n')
-            inpfile.write(f'      &POISSON\n')            
+            inpfile.write(f'      &POISSON\n')
             inpfile.write(f'        &EWALD\n')
             inpfile.write(f'          EWALD_TYPE NONE\n')
             inpfile.write(f'        &END EWALD\n')
-            inpfile.write(f'      &END POISSON\n') 
+            inpfile.write(f'      &END POISSON\n')
             inpfile.write(f'    &END MM\n')
             #QM/MM
             inpfile.write(f'    &QMMM\n')
@@ -405,7 +405,7 @@ def grab_pcgradient_CP2K(pcgradfile,numpc):
                 pc_gradient[pccount,0] = float(line.split()[0])
                 pc_gradient[pccount,1] = float(line.split()[1])
                 pc_gradient[pccount,2] = float(line.split()[2])
-                pccount+=1 
+                pccount+=1
     if pccount != numpc:
         print("Problem grabbing PC gradient from file:", pcgradfile)
         ashexit()

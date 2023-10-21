@@ -7,7 +7,7 @@ import numpy as np
 from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel,writestringtofile
 import ash.settings_ash
 
-CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG-PVDZ', 'ATZ':'AUG-PVTZ', 'AQZ':'AUG-PVQZ', 
+CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG-PVDZ', 'ATZ':'AUG-PVTZ', 'AQZ':'AUG-PVQZ',
                 'A5Z':'AUG-PV5Z'}
 
 #CFour Theory object.
@@ -15,12 +15,12 @@ class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
                  filename='cfourjob', specialbasis=None, ash_basisfile=None, basisfile=None, label=None,
                  parallelization='MKL', frozen_core_settings='Auto', DBOC=False):
-        
+
         self.theorynamelabel="CFour"
         self.analytic_hessian=True
         #Indicate that this is a QMtheory
         self.theorytype="QM"
-        
+
         self.printlevel=printlevel
         self.numcores=numcores
         self.filename=filename
@@ -28,7 +28,7 @@ class CFourTheory:
         #Type of parallelization. Options: 'MKL' or 'MPI.
         #MPI not yet implemented.
         self.parallelization=parallelization
-        
+
         #Default Cfour settings
         self.basis='SPECIAL' #this is default and preferred
         self.CALC='CCSD(T)'
@@ -71,8 +71,8 @@ class CFourTheory:
         if 'CC_MAXCYC' in cfouroptions: self.cc_maxcyc=cfouroptions['CC_MAXCYC']
         if 'SYMMETRY' in cfouroptions: self.symmetry=cfouroptions['SYMMETRY']
         if 'HFSTABILITY' in cfouroptions: self.stabilityanalysis=cfouroptions['HFSTABILITY']
-        if 'ABCDTYPE' in cfouroptions: self.ABCDTYPE=cfouroptions['ABCDTYPE']    
-        
+        if 'ABCDTYPE' in cfouroptions: self.ABCDTYPE=cfouroptions['ABCDTYPE']
+
         #Changing ABCDTYPE algorithm if not possible
         if self.CALC == 'CCSDT' or self.CALC == 'CCSDTQ' or self.CALC == 'CCSDT(Q)':
             if self.ABCDTYPE == 'AOBASIS':
@@ -97,7 +97,7 @@ class CFourTheory:
         print("BRUECKNER:",self.BRUECKNER)
         print("SYMMETRY:", self.symmetry)
         print("HFSTABILITY:", self.stabilityanalysis)
-        
+
 
         #Getting special basis dict etc
         if self.basis=='SPECIAL':
@@ -128,7 +128,7 @@ class CFourTheory:
             #ash_basisfile
             print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,ash.settings_ash.ashpath+'/basis-sets/cfour/'))
             shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
-        #Copying basis-file from any dir to current dir 
+        #Copying basis-file from any dir to current dir
         elif basisfile != None:
             print(f"Copying basis-file {basisfile} to current directory as GENBAS")
             shutil.copyfile(basisfile, 'GENBAS')
@@ -142,9 +142,9 @@ class CFourTheory:
                 shutil.copyfile(self.cfourdir+'/../basis/ECPDATA', 'ECPDATA')
             except shutil.SameFileError:
                 pass
-            
 
-        
+
+
         #Clean-up of possible old Cfour files before beginning
         #TODO: Skip cleanup of chosen files?
         self.cleanup()
@@ -165,7 +165,7 @@ class CFourTheory:
                 os.environ['OMP_NUM_THREADS'] = str(1)
                 process = sp.run([f"{self.cfourdir}/xcfour"], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
-    
+
     def cleanup(self):
         print("Cleaning up old CFOUR files")
         #Problematic, since it removes by globbing
@@ -227,7 +227,7 @@ class CFourTheory:
                 if '                            Molecular gradient' in line:
                     grab=True
         return pcgradient
-    
+
     def cfour_grabhessian(self,numatoms,hessfile="FCMFINAL"):
         hessdim=3*numatoms
         hessian=np.zeros((hessdim,hessdim))
@@ -287,7 +287,7 @@ class CFourTheory:
 
     #Method to grab dipole moment from a CFour outputfile (assumes run has been executed)
     def get_dipole_moment(self):
-        return grab_dipole_moment(self.filename+'.out')                
+        return grab_dipole_moment(self.filename+'.out')
     #Method to grab polarizability tensor from a CFour outputfile (assumes run has been executed)
     def get_polarizability_tensor(self):
         return grab_polarizability_tensor(self.filename+'.out')
@@ -400,7 +400,7 @@ HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
                     if len(self.specialbasis) > 0:
                         inpfile.write("{}:{}\n".format(el.upper(),self.specialbasis[el]))
                 inpfile.write("\n")
-            
+
             #Calling CFour
             self.cfour_call()
             #Grabbing energy and gradient
@@ -488,7 +488,7 @@ HFSTABILITY={self.stabilityanalysis})\n\n""")
 
 #CFour DBOC correction on fragment. Either provide CFourTheory object or use default settings
 # Either provide fragment or provide coords and elems
-def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, method='CCSD',basis='TZ', 
+def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, method='CCSD',basis='TZ',
                               fragment=None, theory=None, openshell=False, numcores=1):
     init_time = time.time()
     if fragment is None:
@@ -533,7 +533,7 @@ def run_CFour_DBOC_correction(coords=None, elems=None, charge=None, mult=None, m
 #CFour HLC correction on fragment. Either provide CFourTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
 # Either use fragment or provide coordinates and elements
-def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fragment=None,theory=None, method='CCSDT', 
+def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fragment=None,theory=None, method='CCSDT',
                              basis='TZ', ref='RHF', openshell=False, numcores=1, cc_prog='VCC', abcdtype='AOBASIS'):
     init_time = time.time()
     if fragment is None:
@@ -578,7 +578,7 @@ def run_CFour_HLC_correction(coords=None, elems=None, charge=None, mult=None, fr
         #Running HL calculation provided
         theory.cleanup()
         theory.filename='CFour_HLC_HL'
-        
+
         print("Now running CFour HLC calculation")
         result_big = ash.Singlepoint(theory=theory,fragment=fragment)
         theory.cleanup()
@@ -677,7 +677,7 @@ def convert_CFour_Molden_file(moldenfile, molden2aimdir=None, printlevel=2):
     """
         m2afile.write(string)
 
-        
+
     #Write Molden2aim input file
     mol2aiminput=['', moldenfile, '', '']
     m2aimfile = open("mol2aim.inp", "w")

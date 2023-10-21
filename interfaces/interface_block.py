@@ -17,13 +17,13 @@ import ash.settings_ash
 #BLock 1.5 docs: https://pyscf.org/Block/with-pyscf.html
 
 #TODO: Block direct from Fcidump file. Dryrun option also maybe??
-#TODO: Threading  control is not working in general. 
+#TODO: Threading  control is not working in general.
 
 
 
 class BlockTheory:
     def __init__(self, blockdir=None, pyscftheoryobject=None, blockversion='Block2', filename='input.dat', printlevel=2,
-                moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None, 
+                moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None,
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
                 Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
@@ -33,19 +33,19 @@ class BlockTheory:
         self.theorynamelabel="Block"
         self.theorytype="QM"
         self.analytic_hessian=False
-        
+
         self.blockversion=blockversion
         exename="block2main"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-        #Check for PySCFTheory object 
+        #Check for PySCFTheory object
         if pyscftheoryobject is None:
             print("Error: No pyscftheoryobject was provided. This is required")
             ashexit()
 
         #MAKING SURE WE HAVE BLOCK
         #TODO: Look for regular block binary also here??
-        print("Using Blockversion:", self.blockversion)        
+        print("Using Blockversion:", self.blockversion)
         #Look up directory based on blockdir variable (takes precedence), "blockdir" in ash.settings or finally exename
         self.blockdir = find_program(blockdir,"blockdir",exename,self.theorynamelabel)
         print("self.blockdir:", self.blockdir)
@@ -216,7 +216,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
     def determine_frozen_core(self,elems):
         print("Determining frozen core based on system list of elements")
-        #Main elements 
+        #Main elements
         FC_elems={'H':0,'He':0,'Li':0,'Be':0,'B':2,'C':2,'N':2,'O':2,'F':2,'Ne':2,
         'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
         'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,'Co':10,'Ni':10,'Cu':10,'Zn':10,
@@ -238,7 +238,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         with open('output.dat', "w") as outfile:
             sp.call(['mpirun', '-np', str(self.numcores), ' --bind-to none', self.block_binary, self.filename], stdout=outfile)
         print_time_rel(module_init_time, modulename='Block-direct-run', moduleindex=2)
-    
+
     #Set up initial orbitals
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC job
     def setup_initial_orbitals(self, elems):
@@ -257,7 +257,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
             print("Options are: MP2, CCSD, CCSD(T), DMRG, AVAS-CASSCF, DMET-CASSCF")
-            #Option to do small-M DMRG-CASCI/CASSCF step 
+            #Option to do small-M DMRG-CASCI/CASSCF step
             if self.initial_orbitals == 'DMRG':
                 print("DMRG initial orbital option")
                 print("First calculating MP2 natural orbitals, then doing DMRG-job")
@@ -268,7 +268,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                                                                 self.pyscftheoryobject.mf, method='MP2', elems=elems)
                 self.setup_active_space(occupations=MP2nat_occupations)
                 self.setup_DMRG_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True
-                #self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
+                #self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object
                 self.DMRG_object_run(MP2nat_mo_coefficients) #Runs the self.mch object
 
                 #????
@@ -284,7 +284,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                     ashexit()
 
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals, 
+                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals,
                                                                 CAS_AO_labels=self.CAS_AO_labels, elems=elems, numcores=self.numcores)
             else:
                 print("Calling nat-orb option in pyscftheory")
@@ -321,7 +321,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print()
         #Making sure MO coefficients are a Numpy array
         mo_coefficients = np.array(mo_coefficients)
-        
+
         if mo_coefficients.ndim != 2:
             print("Error: MO coefficients array is not 2. This should not be")
             print("mo_coefficients.ndim: ", mo_coefficients.ndim)
@@ -331,7 +331,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print_time_rel(module_init_time, modulename='Block-Initial-orbital-step', moduleindex=2)
         return mo_coefficients, occupations
 
-    #Determine active space based on either natural occupations of initial orbitals or 
+    #Determine active space based on either natural occupations of initial orbitals or
     def setup_active_space(self, occupations=None):
         print("Inside setup_active_space")
         with np.printoptions(precision=3, suppress=True):
@@ -349,7 +349,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("Active space range:", self.active_space_range)
             self.norb = len(occupations[self.active_space_range[0]:self.active_space_range[1]])
             self.nelec = round(sum(occupations[self.active_space_range[0]:self.active_space_range[1]]))
-            print(f"Selected active space from range: CAS({self.nelec},{self.norb})")      
+            print(f"Selected active space from range: CAS({self.nelec},{self.norb})")
         else:
             print(f"Active space determined from {self.initial_orbitals} NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
 
@@ -535,7 +535,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.frozen_core_orbs=0
 
         # NOW RUNNING
-        #TODO: Distinguish between Block2, Stackblock, Block1.5. 
+        #TODO: Distinguish between Block2, Stackblock, Block1.5.
         #TODO: Distinguish between direct run using FCIDUMP also
         if self.blockversion =='Block2':
             mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
@@ -545,7 +545,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         else:
             print("Unknown blockversion")
             ashexit()
-        
+
         dmrg_energy = self.energy
         print("DMRG energy:", dmrg_energy)
 
@@ -580,5 +580,3 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel}Theory run', moduleindex=2)
         return self.energy
-
-

@@ -26,6 +26,5 @@ using Pkg
 
 # precompile dependencies
 #using PackageCompiler
-#create_sysimage([:Glob, :Plots, :GLM, :DataFrames], 
+#create_sysimage([:Glob, :Plots, :GLM, :DataFrames],
 #                 sysimage_path = "jexio_deps.so")
-

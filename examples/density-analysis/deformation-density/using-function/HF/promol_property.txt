@@ -12,15 +12,15 @@ $ DFT_Energy
    description: The DFT energy
    geom. index: 1
    prop. index: 1
-   Number of Alpha Electrons                 19.0001677653 
-   Number of Beta  Electrons                  1.0000154072 
-   Total number of  Electrons                20.0001831725 
-   Exchange energy                          -16.4790989953 
-   Correlation energy                        -0.4702183150 
-   Correlation energy NL                      0.0000000000 
-   Exchange-Correlation energy              -16.9493173103 
-   Embedding correction                       0.0000000000 
-   Total DFT Energy (No VdW correction)     -54.6967751041 
+   Number of Alpha Electrons                 19.0001677653
+   Number of Beta  Electrons                  1.0000154072
+   Total number of  Electrons                20.0001831725
+   Exchange energy                          -16.4790989953
+   Correlation energy                        -0.4702183150
+   Correlation energy NL                      0.0000000000
+   Exchange-Correlation energy              -16.9493173103
+   Embedding correction                       0.0000000000
+   Total DFT Energy (No VdW correction)     -54.6967751041
 # -----------------------------------------------------------
 $ Mayer_Pop
    description: The Mayer population analysis
@@ -60,24 +60,24 @@ $ SCF_Electric_Properties
    description: The SCF Calculated Electric Properties
    geom. index: 1
    prop. index: 1
-       Filename                          : promol.scfp 
-       Do Dipole Moment Calculation      : true 
-       Do Quadrupole Moment Calculation  : false 
-       Do Polarizability Calculation     : false 
+       Filename                          : promol.scfp
+       Do Dipole Moment Calculation      : true
+       Do Quadrupole Moment Calculation  : false
+       Do Polarizability Calculation     : false
 ** Dipole moment part of electric properties **
         Magnitude of dipole moment (Debye) :       13.6946743353
         Electronic Contribution:
-                  0    
+                  0
       0       0.000000
       1      -0.000000
       2       6.325380
         Nuclear Contribution:
-                  0    
+                  0
       0       0.000000
       1       0.000000
       2      -0.937590
         Total Dipole moment:
-                  0    
+                  0
       0       0.000000
       1      -0.000000
       2       5.387790
@@ -85,8 +85,8 @@ $ SCF_Electric_Properties
 ----------------------- !GEOMETRIES! ------------------------
 # -------------------------------------------------------------
 ------------------------ !GEOMETRY! -------------------------
-    Number of atoms:    2 
-    Geometry Index:     1 
+    Number of atoms:    2
+    Geometry Index:     1
     Coordinates:
                0 H      0.000000000000    0.000000000000    0.000000000000
                1 F      0.000000000000    0.000000000000    1.000000000000

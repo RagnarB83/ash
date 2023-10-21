@@ -53,7 +53,7 @@ from .errors import EngineError, CheckCoordError, Psi4EngineError, QChemEngineEr
 
 # Strings matching common DFT functionals
 # exclude "pw", "scan" because they might cause false positives
-dft_strings = ["lda", "svwn", "lyp", "b88", "p86", "b97", "hcth", "tpss", "hse", 
+dft_strings = ["lda", "svwn", "lyp", "b88", "p86", "b97", "hcth", "tpss", "hse",
                "hjs", "pbe", "m05", "m06", "m08", "m11", "m12", "m15", "gga"]
 
 #=============================#
@@ -201,11 +201,11 @@ class Engine(object):
 
     def calc(self, coords, dirname, read_data=False, copydir=None):
         """
-        Top-level method for a single-point calculation. 
-        Calculation will be skipped if results are contained in the hash table, 
-        and optionally, can skip calculation if output exists on disk (which is 
+        Top-level method for a single-point calculation.
+        Calculation will be skipped if results are contained in the hash table,
+        and optionally, can skip calculation if output exists on disk (which is
         useful in the case of restarting a crashed Hessian calculation)
-        
+
         Parameters
         ----------
         coords : np.array
@@ -261,15 +261,15 @@ class Engine(object):
 
     def calc_wq(self, coords, dirname, read_data=False, copydir=None):
         """
-        Top-level method for submitting a single-point calculation using Work Queue. 
+        Top-level method for submitting a single-point calculation using Work Queue.
         Different from calc(), this method does not return results, because the control
         flow involves submitting calculations to WQ and gathering data after calculations
         are complete.
-        
-        Calculation will be skipped if results are contained in the hash table, 
-        and optionally, can skip calculation if output exists on disk (which is 
+
+        Calculation will be skipped if results are contained in the hash table,
+        and optionally, can skip calculation if output exists on disk (which is
         useful in the case of restarting a crashed Hessian calculation)
-        
+
         Parameters
         ----------
         coords : np.array
@@ -404,7 +404,7 @@ class TeraChem(Engine): # pragma: no cover
         for f in self.initguess_files:
             if not os.path.exists(f):
                 raise TeraChemEngineError('%s guess file is missing' % f)
-        # Management of QM/MM: Read qmindices and 
+        # Management of QM/MM: Read qmindices and
         # store locations of prmtop and qmindices files,
         self.qmmm = 'qmindices' in tcin
         if self.qmmm:
@@ -436,15 +436,15 @@ class TeraChem(Engine): # pragma: no cover
 
     def copy_guess_files(self, dirname):
         """
-        Prior to running a TeraChem gradient calculation, 
+        Prior to running a TeraChem gradient calculation,
         copy guess files to expected locations and make edits
         to the TeraChem input file to use these files.
 
         Guess files are used in the following priority:
-        1) If default orbital filenames exist in dirname/scr e.g. from a previous calculation, 
+        1) If default orbital filenames exist in dirname/scr e.g. from a previous calculation,
            they will supersede the user-provided initial guess for the current calculation
         2) Otherwise, the user-provided initial guess will be used.
-        
+
         These files are copied to "dirname", either from <root>dirname/scr in the former case,
         or from <root> in the latter case. (<root> is the folder in which the calculation is run.)
 
@@ -463,9 +463,9 @@ class TeraChem(Engine): # pragma: no cover
             for f in orbital_files:
                 shutil.copy2(os.path.join(dirname, self.scr, f), os.path.join(dirname, f))
                 copied_files.append(f)
-            if 'purify' not in self.tcin: 
+            if 'purify' not in self.tcin:
                 self.tcin['purify'] = 'no'
-            if 'mixguess' not in self.tcin: 
+            if 'mixguess' not in self.tcin:
                 self.tcin['mixguess'] = "0.0"
             if self.casscf:
                 self.tcin['scf'] = 'diis'
@@ -488,7 +488,7 @@ class TeraChem(Engine): # pragma: no cover
     def save_guess_files(self, dirname):
         for f in self.orbital_filenames():
             shutil.copy2(os.path.join(dirname, self.scr, f), os.path.join(dirname, self.scr, f+".sav"))
-        
+
     def load_guess_files(self, dirname):
         for f in self.orbital_filenames():
             if os.path.exists(os.path.join(dirname, self.scr, f+".sav")):
@@ -999,7 +999,7 @@ class Psi4(Engine):
         except (OSError, IOError, RuntimeError, subprocess.CalledProcessError):
             raise Psi4EngineError
         return result
-    
+
     def read_result(self, dirname, check_coord=None):
         """ Read Psi4 calculation output. """
         if check_coord is not None:
@@ -1054,7 +1054,7 @@ class Psi4(Engine):
             raise RuntimeError("Psi4 gradient is not found in %s, please check." % psi4out)
         gradient = np.array(gradient, dtype=np.float64).ravel()
         return {'energy':energy, 'gradient':gradient}
-    
+
     def copy_scratch(self, src, dest):
         # Psi4 scratch file handling is complicated and depends on the type of job being run,
         # so we will opt not to store and retrieve scratch files for now.
@@ -1160,7 +1160,7 @@ class QChem(Engine): # pragma: no cover
     def read_result(self, dirname, check_coord=None):
         if check_coord is not None:
             read_xyz_success = False
-            if os.path.exists('%s/run.out' % dirname): 
+            if os.path.exists('%s/run.out' % dirname):
                 try:
                     M1 = Molecule('%s/run.out' % dirname, build_topology=False)
                     read_xyz = M1.xyzs[0].flatten() / bohr2ang
@@ -1194,7 +1194,7 @@ class QChem(Engine): # pragma: no cover
                     if any([i.lower() in val.lower() for i in dft_strings]):
                         return True
         return False
-    
+
 class Gromacs(Engine):
     def __init__(self, molecule):
         super(Gromacs, self).__init__(molecule)
@@ -1487,7 +1487,7 @@ class ConicalIntersection(Engine):
 
         Obj = EAvg + EPen
         ObjGrad = GAvg + GPen
-        
+
         logger.info(">>> MECI Report: <E> = % 18.10f Penalty = %15.10f <<<\n" % (EAvg, EPen))
         logger.info("%5s %18s %7s %9s %9s   %%%is   %%%is\n" % ("State", "Energy (a.u.)", "<S^2>", "G_rms", "G_max", width2, width3) % ("Gaps (eV)", "Cos(^Gi,^Gj)"))
         for ln in range(len(report_blk1)):

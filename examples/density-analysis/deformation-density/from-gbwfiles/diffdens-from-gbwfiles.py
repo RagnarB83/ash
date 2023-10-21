@@ -4,8 +4,8 @@ from ash.functions.functions_elstructure import  read_cube, write_cube_diff
 #########################################
 # Deformation density from ORCA GBW FILES
 ##########################################
-#Use this script if you have ORCA GBW for a promolecular density (created via orca_mergefrag) 
-# and the final density 
+#Use this script if you have ORCA GBW for a promolecular density (created via orca_mergefrag)
+# and the final density
 #Warning: the promolecular density must be created from orthogonalized orbitals (noiter calc)
 #Warning: geometry needs to be the same
 
@@ -24,4 +24,3 @@ cube_data2 = read_cube(f"{file2.split('.')[0]}.eldens.cube")
 
 #Write out difference density as a Cubefile
 write_cube_diff(cube_data1, cube_data2, "deformation_density")
-

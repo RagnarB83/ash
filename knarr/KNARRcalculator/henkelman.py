@@ -215,7 +215,7 @@ def HenkelmanWorker20D(rxyz):
 
     Etmp, F = V_20D(rnew) # perform computation
     energy = Etmp
-    
+
     forces = np.zeros(shape=(ndim, 1))
 
     ind = 0
@@ -242,7 +242,7 @@ def V_2D(r):
         KNARRsettings.boosted = True
         Vold = V
         V = boost
-        KNARRsettings.boost_time = np.exp( (V-Vold) / 0.2) #NOTE HERE THE TEMPERATURE FOR BOOST IS HARD-CODED AS 0.2 KbT 
+        KNARRsettings.boost_time = np.exp( (V-Vold) / 0.2) #NOTE HERE THE TEMPERATURE FOR BOOST IS HARD-CODED AS 0.2 KbT
         print('boost (%6.4f %6.4f) time:%6.4f' % (V, Vold, KNARRsettings.boost_time))
         force = np.zeros(shape=(2,1))
     else:

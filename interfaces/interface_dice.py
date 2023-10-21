@@ -14,13 +14,13 @@ import ash.settings_ash
 #Interface to Dice: SHCI, QMC (single-det or SHCI multi-det) and NEVPT2
 #TODO: fix nevpt2
 #TODO: Add proper frozen core to mch object setup (instead of relying on nmax threshold)
-#Straightforward: https://pyscf.org/user/mcscf.html#frozen-orbital-mcscf 
+#Straightforward: https://pyscf.org/user/mcscf.html#frozen-orbital-mcscf
 #Add also to pyscf part
 
 class DiceTheory:
-    def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1, 
+    def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1,
                 moreadfile=None, initial_orbitals='MP2', CAS_AO_labels=None,memory=20000, frozencore=True,
-                SHCI=False, NEVPT2=False, AFQMC=False,  
+                SHCI=False, NEVPT2=False, AFQMC=False,
                 SHCI_stochastic=True, SHCI_PTiter=200, SHCI_sweep_iter= [0,3],
                 SHCI_DoRDM=False, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
@@ -34,7 +34,7 @@ class DiceTheory:
         self.theorytype="QM"
         self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
-        
+
 
         if dicedir == None:
             print(BC.WARNING, f"No dicedir argument passed to {self.theorynamelabel}Theory. Attempting to find dicedir variable inside settings_ash", BC.END)
@@ -57,12 +57,12 @@ class DiceTheory:
         else:
             print(f"Chosen Dice directory : {self.dicedir} does not exist. Exiting...")
             ashexit()
-        #Check for PySCFTheory object 
+        #Check for PySCFTheory object
         if pyscftheoryobject is None:
             if Dice_SHCI_direct == None:
                 print("Error:No pyscftheoryobject was provided. This is required")
                 ashexit()
-        
+
         #Check if conflicting options selected
         if NEVPT2 is True and AFQMC is True:
             print("NEVPT2 and AFQMC can not both be True")
@@ -102,7 +102,7 @@ class DiceTheory:
             except:
                 print("Problem with mpirun")
                 ashexit()
-        
+
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
@@ -197,7 +197,7 @@ class DiceTheory:
             print("Number of steps per block (QMC_nsteps):", self.QMC_nsteps)
             print("Number of blocks (QMC_nblocks):", self.QMC_nblocks)
             print("Number of walkers per proc:", self.QMC_nwalkers_per_proc)
-    
+
     def load_pyscf(self):
         try:
             import pyscf
@@ -249,7 +249,7 @@ MPIPREFIX=""
 
     def determine_frozen_core(self,elems):
         print("Determining frozen core based on system list of elements")
-        #Main elements 
+        #Main elements
         FC_elems={'H':0,'He':0,'Li':0,'Be':0,'B':2,'C':2,'N':2,'O':2,'F':2,'Ne':2,
         'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
         'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,'Co':10,'Ni':10,'Cu':10,'Zn':10,
@@ -324,7 +324,7 @@ MPIPREFIX=""
 
 # reference determinant
 nocc {nocc}
-{self.Dice_refdeterminant} 
+{self.Dice_refdeterminant}
 end
 
 orbitals {self.fcidumpfile}
@@ -349,7 +349,7 @@ noio
         """
         with open("input.dat", 'w') as f:
             f.write(inputstring)
-        
+
         # Call Dice directly
         self.call_dice_directly()
         #Read energy and determinants from outputfile: output.dat
@@ -369,7 +369,7 @@ noio
         with open('output.dat', "w") as outfile:
             sp.call(['mpirun', '-np', str(self.numcores), self.dice_binary, self.filename], stdout=outfile)
         print_time_rel(module_init_time, modulename='Dice-SHCI-direct-run', moduleindex=2)
-    
+
     #Set up initial orbitals
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC/SHCI job
     def setup_initial_orbitals(self, elems):
@@ -389,7 +389,7 @@ noio
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
             print("Options are: RHF, UHF, RKS, UKS, MP2, CCSD, CCSD(T), SHCI, AVAS-CASSCF, DMET-CASSCF")
-            #Option to do small-eps SHCI step 
+            #Option to do small-eps SHCI step
             if self.initial_orbitals == 'SHCI':
                 print("SHCI initial orbital option")
                 print("First calculating MP2 natural orbitals, then doing SHCI-job")
@@ -399,7 +399,7 @@ noio
                 print("MP2 step done. Now setting up SHCI calc (initial orbital-run)")
                 self.setup_active_space(occupations=MP2nat_occupations)
                 self.setup_SHCI_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True
-                self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
+                self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object
                 self.SHCI_object_run() #Runs the self.mch object
                 #NOTE: Only worry is that we create self.mch object here and then again later
                 #TODO: Control eps and PT for SHCI job
@@ -418,9 +418,9 @@ noio
                     ashexit()
 
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
-                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals, 
+                                                                self.pyscftheoryobject.mf, method=self.initial_orbitals,
                                                                 CAS_AO_labels=self.CAS_AO_labels, elems=elems, numcores=self.numcores)
-            #If 
+            #If
             elif self.initial_orbitals in ['RHF','UHF','RKS','UKS']:
                 print("Initial orbital option is original SCF orbitals. Using MO-coeffs from ")
                 mo_coefficients = self.pyscftheoryobject.mf.mo_coeff
@@ -463,7 +463,7 @@ noio
         print_time_rel(module_init_time, modulename='Dice-Initial-orbital-step', moduleindex=2)
         return mo_coefficients, occupations
 
-    #Determine active space based on either natural occupations of initial orbitals or 
+    #Determine active space based on either natural occupations of initial orbitals or
     def setup_active_space(self, occupations=None):
         print("Inside setup_active_space")
         with np.printoptions(precision=3, suppress=True):
@@ -530,7 +530,7 @@ noio
             print("Warning: Switching from stochastic PT (no RDM available) to deterministic PT")
             print("This will be a more expensive calculation ")
             self.SHCI_stochastic=False
-        
+
         #If PT is not requested
         if self.SHCI_PTiter == 0:
             print("SHCI_PTiter is 0. PT turned off and will be skipped")
@@ -567,7 +567,7 @@ noio
         self.mch.max_memory=self.memory
         print("Memory in pyscf object set to:", self.mch.max_memory)
         #CASSCF iterations
-        self.mch.max_cycle_macro = self.SHCI_macroiter        
+        self.mch.max_cycle_macro = self.SHCI_macroiter
 
     #This sets MO coefficients of mch object unless None (then)
     def SHCI_object_set_mos(self,mo_coeffs=None):
@@ -631,7 +631,7 @@ noio
                 print("Be careful about using the results")
         except IndexError:
             print("Warning: No deterministic PT energy printed in Dice output")
-            print(f"This probably means that you requested variational-only SHCI.")            
+            print(f"This probably means that you requested variational-only SHCI.")
 
 
         print_time_rel(module_init_time, modulename='Dice-SHCI-run', moduleindex=2)
@@ -693,10 +693,10 @@ noio
             mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
             self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
             self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
-            self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
+            self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object
             self.SHCI_object_run() #Runs the self.mch object
             #NOTE: Pretty sure we have to do full CASSCF here
-            
+
             print(f"Now running NEVPT2 on SHCI reference WF: CAS({self.nelec},{self.norb})")
             module_init_time=time.time()
             self.QMCUtils.run_nevpt2(self.mch, nelecAct=self.nelec, numAct=self.norb, norbFrozen=self.frozen_core_orbs,
@@ -721,7 +721,7 @@ noio
                 mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
                 self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
                 self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
-                self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
+                self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object
                 self.SHCI_object_run(write_det_CASCI=True, numdets=self.QMC_SHCI_numdets) #Runs the self.mch object with dets-printout
 
                 #Get dets.bin file
@@ -745,7 +745,7 @@ noio
                                 nblocks=self.QMC_nblocks, ortho_steps=20, burn_in=50,
                                 cholesky_threshold=1.0e-3, weight_cap=None, write_one_rdm=False,
                                 use_eri=False, dry_run=False)
-                e_afqmc=e_afqmc[0] 
+                e_afqmc=e_afqmc[0]
                 err_afqmc=err_afqmc[0]
                 print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
             #Single determinant trial wavefunction
@@ -780,7 +780,7 @@ noio
                 mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
                 self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
                 self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
-                self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object              
+                self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object
                 self.SHCI_object_run() #Runs the self.mch object
                 print("Final Dice SHCI energy:", self.energy)
 
@@ -790,7 +790,7 @@ noio
                     occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
                     print("SHCI natural orbital occupations:", occupations)
                     print("\nWriting natural orbitals to Moldenfile")
-                    self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, 
+                    self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol,
                                                                         mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
                     #Dipole moment
                     print("Now doing dipole")
@@ -806,5 +806,3 @@ noio
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
         return self.energy
-
-

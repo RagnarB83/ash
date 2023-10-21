@@ -18,7 +18,7 @@ class Simulation:
         #Create from masslist ?
         self.masses_array=[[]]
         self.numatoms=len(self.elems)
-        
+
         #Run variables, updated by internal run
         self.currentstep=0
         self.set_temperature=0.0
@@ -33,11 +33,11 @@ class Simulation:
     def run(self):
         #Use or not??
         fdsf="sdf"
-        
-        
+
+
 #Simple MD function
 def MolecularDynamics(fragment=None, theory=None, ensemble="NVE", timestep=1, numsteps=100, temperature=298.15, tau=500,
-    thermostat="berendsen", write_xyz_frequency=1, write_log_frequency=1, write_userfunction_frequency=100, MDtrajname="trajectory.xyz", 
+    thermostat="berendsen", write_xyz_frequency=1, write_log_frequency=1, write_userfunction_frequency=100, MDtrajname="trajectory.xyz",
     initial_velocities="zero", debug=False):
     print("Running MOLECULAR DYNAMICS module")
 
@@ -54,9 +54,7 @@ def MolecularDynamics(fragment=None, theory=None, ensemble="NVE", timestep=1, nu
     bohr2ang = 0.52917721067
     ang2bohr = 1.88972612546
 
- 
+
     ####################
     #INITIALIZATION
     ####################
-
-

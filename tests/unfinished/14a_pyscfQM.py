@@ -20,13 +20,13 @@ pyscffunctional='b3lyp'
 #PySCF basis. Can be string or dict object (elem-specific info)
 pyscfbasis='def2-QZVP'
 
-PySCFTheorycalculation = PySCFTheory(fragment=HF_frag, charge=0, mult=1, 
+PySCFTheorycalculation = PySCFTheory(fragment=HF_frag, charge=0, mult=1,
     pyscfbasis=pyscfbasis, pyscffunctional=pyscffunctional, printsetting=False)
 
 Singlepoint(theory=PySCFTheorycalculation, fragment=HF_frag)
 
 
-#Clean 
+#Clean
 PySCFTheorycalculation.cleanup()
 
 sys.exit(0)

@@ -4,4 +4,3 @@
 # Currently it simply runs Q-Chem with two threads
 
 qchem -nt 2 $@
-

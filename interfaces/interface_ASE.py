@@ -27,7 +27,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         os.remove('md.log')
     except:
         pass
-    
+
     if frozen_atoms==None: frozen_atoms=[]
     if frozen_bonds==None: frozen_bonds=[]
     if frozen_angles==None: frozen_angles=[]
@@ -111,7 +111,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
                     print_time_rel(timeA, modulename="get_forces: returning old forces")
                     return self.forces
             print("Will calculate new forces")
-            
+
             self.gradientcalls+=1
 
             #Copy ASE coords into ASH fragment
@@ -130,7 +130,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             self.results['forces'] = self.forces
             #print("potenergy:", self.potenergy)
             #print("self.forces before plumed:", self.forces)
-            
+
             #DO PLUMED-STEP HERE
             if self.plumedobj!=None:
                 print("Plumed active.")
@@ -145,12 +145,12 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
                 #self.forces=forces
                 #self.potenergy, self.forces = plumed_ash(energy,forces)
                 #energy, forces = plumedlib.cv_calculation(istep, pos, vel, box, jobforces, jobenergy)
-            
-            
+
+
             print("ASHcalc get_forces done")
             print_time_rel(timeA, modulename="get_forces : new")
             return self.forces
-        
+
     #Option 2: Dummy ASE class where we create the attributes and methods we want
     #Too complicated
 
@@ -184,7 +184,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
                                 for j in [0, 1, 2]])
             rattle = FixBondLengths_gpaw(rattle)
             return rattle
-    
+
         rattle = rigid(atoms)
         atoms.constraints = ([rattle])
     else:
@@ -197,7 +197,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             frozenatom_cons = FixAtoms(indices=frozen_atoms)
             all_constraints.append(frozenatom_cons)
         #Constraints
-        
+
         if len(frozen_bonds) > 0:
             print("Freezing bonds")
             frozenbondlength_cons = FixBondLengths(frozen_bonds)
@@ -218,17 +218,17 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     #Adding all constraints
     atoms.set_constraint(all_constraints)
     printdebug("Printing ASE atoms object:", atoms.__dict__)
-    
-    
+
+
     # Set the momenta corresponding to T=300K
     print("Calling MaxwellBoltzmannDistribution")
     #MaxwellBoltzmannDistribution(atoms, temp=None, temperature_K=temperature)
     MaxwellBoltzmannDistribution(atoms, temp=None, temperature_K=temperature)
-    
+
     #NVE VV:
     if thermostat==None and barostat==None:
         print("Setting up VelocityVerlet")
-        #trajectory=trajectoryname+'.traj', 
+        #trajectory=trajectoryname+'.traj',
         dyn = VelocityVerlet(atoms, timestep_fs * units.fs, logfile='md.log')
     elif thermostat=="Langevin":
         print("Setting up Langevin thermostat")
@@ -240,10 +240,10 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
         dyn = Langevin(atoms, timestep_fs*units.fs, friction=friction_coeff*units.fs, temperature_K=temperature, logfile='md.log')
     elif thermostat=="Andersen":
         collision_prob=coupling_freq
-        #trajectory=trajectoryname+'.traj', 
+        #trajectory=trajectoryname+'.traj',
         dyn = Andersen(atoms, timestep_fs*units.fs, temperature, collision_prob, logfile='md.log')
     elif thermostat=="Berendsen":
-        #trajectory=trajectoryname+'.traj', 
+        #trajectory=trajectoryname+'.traj',
         dyn = NVTBerendsen(atoms, timestep_fs*units.fs, temperature, taut=coupling_freq*1000*units.fs, logfile='md.log')
     elif thermostat=="NoseHoover":
         print("Nose-Hoover thermostat using ASE NPT class")
@@ -289,9 +289,9 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
 
     #SAFIRES: attach SAFIRES object to ASE dyn
     if safires == True:
-        attach_safires_to_ASE(atoms=atoms, dyn=dyn, safires_solvent_atomsnum=safires_solvent_atomsnum, 
+        attach_safires_to_ASE(atoms=atoms, dyn=dyn, safires_solvent_atomsnum=safires_solvent_atomsnum,
                                   safires_solute=safires_solute, safires_inner_region=safires_inner_region )
-        
+
     print("")
     print("")
     print("Running dynamics")

@@ -8,11 +8,11 @@ def getEnergyAndForce(r, cell=None, De=1.0, a=1.0, re=1.0):
     ndim = len(r)
     box = self.atoms.get_cell().copy()
     Rnew = np.reshape(r, (ndim,1))
-    
+
     De = self.parameters.epsilon
     a = self.parameters.rho0
     re = self.parameters.r0
-    
+
     cutoff = 10000.0
     diffR=0.0
     diffRX=0.0
@@ -31,7 +31,7 @@ def getEnergyAndForce(r, cell=None, De=1.0, a=1.0, re=1.0):
                 diffRZ = diffRZ - cell[2]*np.floor(diffRZ/cell[2]+0.5)
             diffR = np.sqrt(diffRX*diffRX+diffRY*diffRY+diffRZ*diffRZ);
             #expression for energy and force
-            
+
             d=1.0-np.exp(-a*(diffR-re))
             energy=De*d*d-De
             force= 2.0*De*d*(d-1.0)*a
@@ -43,5 +43,3 @@ def getEnergyAndForce(r, cell=None, De=1.0, a=1.0, re=1.0):
             F[3*j+1]-=force*diffRY/diffR
             F[3*j+2]-=force*diffRZ/diffR
     return F,E
-    
-

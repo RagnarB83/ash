@@ -40,28 +40,28 @@ def gauss(r, alfa=12.0, A=1.0, B=-0.05):
         x.append(float(r[i]))
         x0.append(math.floor(r[i])+0.5)
         y.append(float(r[i+1]))
-        
+
 
     y0 = 0.1013
     sum_of_squares = 0.0
     for i in range(len(x)):
         sum_of_squares += (x[i]-x0[i])**2 + (y[i]-y0)**2
 
-        
+
 
     energy = A*(np.exp(-alfa*sum_of_squares)) + B
     try:
         energy <= 2 # energy can not exceed
     except:
         raise RuntimeError("Energy of gauss exceeded the saddle point")
-    
+
     F = np.zeros(shape=(len(x)*3,1))
 
     for i in range(0,len(x),3):
         F[i]=(-2.0*A*alfa*(x0[i]-x[i])*np.exp(-alfa*sum_of_squares))
         F[i+1]=(-2.0*A*alfa*(y0-y[i])*np.exp(-alfa*sum_of_squares))
         F[i+2]=0.0
-        
+
     return F,energy
 
 
@@ -78,5 +78,5 @@ def HenkelmanGaussBoosted2DWorker(r):
         V = Eg + E
         KNARRsettings.boosted = True
         KNARRsettings.boost_time = np.exp( (V-E) / 0.2) # TEMP HARD CODED
-    
+
     return F,E

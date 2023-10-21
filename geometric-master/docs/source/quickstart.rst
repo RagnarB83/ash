@@ -8,7 +8,7 @@ The easiest way to use geomeTRIC is the command line executable, ``geometric-opt
 To get started, you need an input file
 for your chosen quantum chemistry (QC) program or "engine" for computing energies and gradients (see :ref:`Engines <engines>`.)
 This file will be parsed for the initial structures
-and run parameters for the QC program.  
+and run parameters for the QC program.
 You also need the QC program to be installed into your environment
 and in your path.
 
@@ -55,6 +55,6 @@ The folder ``water2.tmp`` is the working folder of the engine and contains the Q
     You can control the number of Psi4 parallel threads using the command line option ``--nt``, for example, ``geometric-optimize --engine psi4 --nt 4 water2.psi4in`` to run Psi4 with 4 threads.  This does not affect geomeTRIC's internal behavior.
 
 .. note::
-    Psi4 has an `interface to geomeTRIC <http://www.psicode.org/psi4manual/master/optking.html#interface-to-geometric>`_ 
-    that allows the user to use geomeTRIC for geometry optimization by running Psi4 directly. 
+    Psi4 has an `interface to geomeTRIC <http://www.psicode.org/psi4manual/master/optking.html#interface-to-geometric>`_
+    that allows the user to use geomeTRIC for geometry optimization by running Psi4 directly.
     Although the geomeTRIC optimization routines are being used in both cases, the user interface differs from what's being described here.

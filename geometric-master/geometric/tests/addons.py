@@ -70,9 +70,9 @@ def in_folder(request):
 @pytest.fixture(scope="function")
 def test_logger(request):
 
-    # Adding these three lines here removes the extra newline that was printed 
+    # Adding these three lines here removes the extra newline that was printed
     logIni = pkg_resources.resource_filename(geometric.optimize.__name__, 'config/logTest.ini')
     logging.config.fileConfig(logIni,disable_existing_loggers=False)
-    
+
     # Yield for testing
-    yield 
+    yield

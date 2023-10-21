@@ -89,7 +89,7 @@ def MAIN(current_job):
     KNARRsettings.seed = main_control["SEED"]
     random.seed(KNARRsettings.seed)
     print('Setting random seed as: %f' % KNARRsettings.seed)
-    
+
     try:
         int(main_control["OMP_THREADS"])
     except:
@@ -157,7 +157,7 @@ def MAIN(current_job):
     KNARRsettings.ljsigma = float(calculator_control["LJ_SIGMA"])
     KNARRsettings.ljepsilon = float(calculator_control["LJ_EPSILON"])
 
-    
+
     calc = Calculator(name=name, ncore=ncore, template_file=template_file,
                       fd_step=fd_step, charge=charge, multiplicity=multiplicity)
     calc.Setup()

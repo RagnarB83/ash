@@ -1049,13 +1049,13 @@ def AtomContact(xyz, pairs, box=None, displace=False):
 def form_rot(q):
     """
     Given a quaternion p, form a rotation matrix from it.
-    
+
     Parameters
     ----------
     q : numpy.ndarray
         1D array with 3 elements representing the rotation quaterion.
         Elements of quaternion are : [cos(a/2), sin(a/2)*axis[0..2]]
-    
+
     Returns
     -------
     numpy.array
@@ -1094,7 +1094,7 @@ def axis_angle(axis, angle):
         1D array with 3 elements representing the rotation axis
     angle : float
         The angle of the rotation
-    
+
     Returns
     -------
     numpy.array
@@ -1703,7 +1703,7 @@ class Molecule(object):
         return np.array(rgs)
 
     def moment_of_inertia(self, mass=True):
-        """ Calculate moment of inertia in amu * angstrom**2. 
+        """ Calculate moment of inertia in amu * angstrom**2.
         If mass = False, then all masses will be set to one."""
         moments = []
         for i in range(len(self)):
@@ -1716,7 +1716,7 @@ class Molecule(object):
                 I += factor*(np.dot(xj,xj)*np.eye(3) - np.outer(xj,xj))
             moments.append(I)
         return moments
-        
+
     def calc_netforce_torque(self, mass=True):
         """ Calculate net force and torque vectors
         in units of hartree/bohr and hartree/bohr*bohr respectively.
@@ -1928,7 +1928,7 @@ class Molecule(object):
         if 'bonds' in self.Data:
             New.Data['bonds'] = [(list(atomslice).index(b[0]), list(atomslice).index(b[1])) for b in self.bonds if (b[0] in atomslice and b[1] in atomslice)]
         New.top_settings = copy.deepcopy(self.top_settings)
-        
+
         if build_topology:
             New.build_topology(force_bonds=False)
         return New
@@ -1947,7 +1947,7 @@ class Molecule(object):
         def FrameStack(k):
             if k in self.Data and k in other.Data:
                 New.Data[k] = [np.vstack((s, o)) for s, o in zip(self.Data[k], other.Data[k])]
-                
+
         def FrameStack2D(k):
             if k in self.Data and k in other.Data:
                 new_data = [np.zeros((self.na+other.na, self.na+other.na), dtype=float) for i in range(len(self))]
@@ -1955,7 +1955,7 @@ class Molecule(object):
                     new_data[i][:self.na, :self.na] = self.Data[k][i].copy()
                     new_data[i][self.na:, self.na:] = other.Data[k][i].copy()
                 New.Data[k] = new_data[i].copy()
-                
+
         for i in ['xyzs', 'qm_grads', 'qm_espxyzs', 'qm_espvals', 'qm_extchgs', 'qm_mulliken_charges', 'qm_mulliken_spins']:
             FrameStack(i)
         for i in ['qm_hessians', 'qm_bondorder']:
@@ -2237,8 +2237,8 @@ class Molecule(object):
             __init__, do not force the building of bonds by default
             (only build bonds if not read from file.)
         bond_order : float
-            If set to a nonzero number, do not use distance criteria and 
-            build the bonds from QM bond orders using the provided threshold, 
+            If set to a nonzero number, do not use distance criteria and
+            build the bonds from QM bond orders using the provided threshold,
             if the qm_bondorder data attribute exists.
         metal_bo_factor : float
             Transition metal complexes tend to have a lower bond order.
@@ -2328,11 +2328,11 @@ class Molecule(object):
         return np.argmin(drij, axis=1)
 
     def rotate_bond(self, frame, aj, ak, increment=15):
-        """ 
+        """
         Return a new Molecule object containing the selected frame
         plus a number of frames where the selected dihedral angle is rotated
         in steps of 'increment' given in degrees.
-        
+
         This function is designed to be called by Molecule.rotate_check_clash().
 
         Parameters
@@ -2343,7 +2343,7 @@ class Molecule(object):
             Atom numbers of the bond to be rotated
         increment : float
             Degrees of the rotation increment
-        
+
         Returns
         -------
         Molecule
@@ -2386,15 +2386,15 @@ class Molecule(object):
             atom1 = aj
             atom2 = ak
         M.bonds.append(delBonds[0])
-        
+
         # Rotation axis
         axis = M.xyzs[0][atom2] - M.xyzs[0][atom1]
-    
+
         # Move the "reference atom" to the origin
         x0 = M.xyzs[0][gAtoms]
         x0_ref = M.xyzs[0][atom2]
         x0 -= x0_ref
-    
+
         # Create grid in rotation angle
         # and the rotated structures
         for thetaDeg in np.arange(increment, 360, increment):
@@ -2414,14 +2414,14 @@ class Molecule(object):
         return M, (gAtoms, oAtoms)
 
     def find_clashes(self, thre=0.0, pbc=True, groups=None):
-        """ 
+        """
         Obtain a list of atoms that 'clash' (i.e. are more than
         3 bonds apart and are closer than the provided threshold.)
 
         Parameters
         ----------
         thre : float
-            Create a sorted-list of all non-bonded atom pairs 
+            Create a sorted-list of all non-bonded atom pairs
             with distance below this threshold
         pbc : bool
             Whether to use PBC when computing interatomic distances
@@ -2477,8 +2477,8 @@ class Molecule(object):
         return minPair_frames, minDist_frames, clashPairs_frames, clashDists_frames
 
     def rotate_check_clash(self, frame, rotate_index, thresh_hyd=1.4, thresh_hvy=1.8, printLevel=1):
-        """ 
-        Return a new Molecule object containing the selected frame 
+        """
+        Return a new Molecule object containing the selected frame
         plus a number of frames where the selected dihedral angle is rotated
         in steps of 'increment' given in degrees.  Additionally, check for
         if pairs of non-bonded atoms "clash" i.e. approach below the specified
@@ -2498,7 +2498,7 @@ class Molecule(object):
             Clash threshold for heavy atoms.  Reasonable values are in between 1.7 and 2.5.
         printLevel: int
             Sets the amount of printout (larger = more printout)
-        
+
         Returns
         -------
         Molecule
@@ -2514,8 +2514,8 @@ class Molecule(object):
         M_rot_H, frags = self.rotate_bond(frame, aj, ak, 15)
         phis = M_rot_H.measure_dihedrals(*rotate_index)
         for i in range(len(M_rot_H)):
-            M_rot_H.comms[i] = ('Rigid scan: atomname %s, serial %s, dihedral %.3f' 
-                                % ('-'.join([self.atomname[i] for i in rotate_index]), 
+            M_rot_H.comms[i] = ('Rigid scan: atomname %s, serial %s, dihedral %.3f'
+                                % ('-'.join([self.atomname[i] for i in rotate_index]),
                                    '-'.join(["%i" % (i+1) for i in rotate_index]), phis[i]))
         heavyIdx = [i for i in range(self.na) if self.elem[i] != 'H']
         heavy_frags = [[],[]]
@@ -2538,7 +2538,7 @@ class Molecule(object):
         minAtoms_C = minPair_C_frames[minFrame_C]
         minDist_C = minDist_C_frames[minFrame_C]
         if not (haveClash_H or haveClash_C):
-            if printLevel >= 1: 
+            if printLevel >= 1:
                 print("\n    \x1b[1;92mSuccess - no clashes. Thresh(H, Hvy) = (%.2f, %.2f)\x1b[0m" % (thresh_hyd, thresh_hvy))
                 mini = M_rot_H.atomname[minAtoms_H[0]]
                 minj = M_rot_H.atomname[minAtoms_H[1]]
@@ -2661,10 +2661,10 @@ class Molecule(object):
     def find_rings(self, max_size=12):
         """
         Return a list of rings in the molecule.
-        
+
         Step 1: To find rings we loop through all triples of two atoms
         bonded to a central one a...b...c and find all shortest
-        paths connecting a...x...y...c excluding atom b. 
+        paths connecting a...x...y...c excluding atom b.
         Therefore, a...b...c...x...y...a forms a ring.
 
         This set of rings is then reduced to the "complete set of smallest
@@ -2673,7 +2673,7 @@ class Molecule(object):
         eliminates fused rings, i.e. rings that can be formed by taking the
         union of several smaller ones. Note that this is different from the
         smallest set of smallest rings (SSSR) as it includes a number of
-        linearly dependent rings, but the outcome is unique for a molecule 
+        linearly dependent rings, but the outcome is unique for a molecule
         unlike SSSR.
 
         Systems that this is tested for include:
@@ -2743,7 +2743,7 @@ class Molecule(object):
                 if (min(r[i], r[j]), max(r[i], r[j])) == (min(a, b), max(a, b)):
                     return True
             return False
-                    
+
         for r in rings:
             for i in range(len(r)-1):
                 if r[i] not in self.topology.neighbors(r[(i+1) % len(r)]):
@@ -2766,7 +2766,7 @@ class Molecule(object):
             for r in keep_candidates:
                 if len(rings[r]) <= min_size and r not in keep_rings:
                     keep_rings.append(r)
-                        
+
         # for r in range(len(rings)):
         #     if r in keep_rings:
         #         print("Keeping ring %s" % ' '.join(['%i' % i for i in rings[r]]))
@@ -3125,7 +3125,7 @@ class Molecule(object):
             if ln == 0:
                 comms = [line]
             elif ln == 1:
-                # Although is isn't exactly up to spec, 
+                # Although is isn't exactly up to spec,
                 # it seems that some .rst7 files have spaces that precede the "integer"
                 # and others have >99999 atoms
                 # na = int(line[:5])
@@ -4180,7 +4180,7 @@ class Molecule(object):
 
         if any([Answer['qcrems'][i]['jobtype'].lower() == 'rpath' for i in range(len(Answer['qcrems']))]):
             Answer['Irc'] = IRCData
-            
+
         if len(modes) > 0:
             unnorm = [np.array(i) for i in modes]
             Answer['freqs'] = np.array(frqs)

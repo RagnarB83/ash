@@ -16,7 +16,7 @@ class MorsePotential(Calculator):
                           'rho0': 1.6047,
                           'r0': 2.897}
     #default parameters epsilon=1.0 rho0=6.0 r0=1.0
-    
+
     nolabel = True
 
     def __init__(self, **kwargs):
@@ -25,7 +25,7 @@ class MorsePotential(Calculator):
     def calculate(self, atoms=None, properties=['energy'],
                   system_changes=['positions', 'numbers', 'cell',
                                   'pbc', 'charges', 'magmoms']):
-        
+
         Calculator.calculate(self, atoms, properties, system_changes)
         #epsilon = self.parameters.epsilon
         #rho0 = self.parameters.rho0
@@ -55,7 +55,7 @@ class MorsePotential(Calculator):
         De = self.parameters.epsilon
         a = self.parameters.rho0
         re = self.parameters.r0
-        
+
         cutoff = 10000.0
         diffR=0.0
         diffRX=0.0
@@ -73,7 +73,7 @@ class MorsePotential(Calculator):
                 diffRZ = diffRZ - box[2,2]*np.floor(diffRZ/box[2,2]+0.5)
                 diffR = np.sqrt(diffRX*diffRX+diffRY*diffRY+diffRZ*diffRZ);
                 #expression for energy and force
-            
+
                 d=1.0-np.exp(-a*(diffR-re))
                 energy=De*d*d-De
                 force= 2.0*De*d*(d-1.0)*a
@@ -84,9 +84,9 @@ class MorsePotential(Calculator):
                 F[ 3*j ]-=force*diffRX/diffR
                 F[3*j+1]-=force*diffRY/diffR
                 F[3*j+2]-=force*diffRZ/diffR
-                    
 
-                    
+
+
 
         #ADLAGA F ad forces
         forces = np.reshape(F,(ndim/3, 3))
@@ -94,4 +94,3 @@ class MorsePotential(Calculator):
         self.results['energy'] = E
         self.results['forces'] = forces
         f.close()
-

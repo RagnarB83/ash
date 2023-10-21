@@ -10,7 +10,7 @@ frag=Fragment(amber_prmtopfile=prmtopfile, amber_inpcrdfile=inpcrdfile, conncalc
 
 
 #Periodic OpenMM on DHFR system using Amber files
-# Reference data from: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/ 
+# Reference data from: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
 openmmobject = OpenMMTheory(Amberfiles=True, amberprmtopfile=prmtopfile,
     periodic=True, do_energy_decomposition=True,
     applyconstraints=False, dispersion_correction=True, periodic_nonbonded_cutoff=10)
@@ -72,4 +72,3 @@ print("Angle threshold was: {} kJ/mol.".format(anglethreshold))
 print("Dihedral threshold was: {} kJ/mol.".format(dihedralthreshold))
 print("Nonbonded threshold was: {} kJ/mol.".format(nonbondedthreshold))
 print("Total-energy threshold was: {} kJ/mol.".format(totalthreshold))
-

@@ -70,7 +70,7 @@ tar xzf v${version}.tar.gz
 cd cctools-${version}
 
 # sed -i on Mac OS works differently
-if [[ "$OSTYPE" == "darwin"* ]] ; then 
+if [[ "$OSTYPE" == "darwin"* ]] ; then
     sedsuffix="'.original'"
 fi
 

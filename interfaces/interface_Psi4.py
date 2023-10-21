@@ -24,7 +24,7 @@ class Psi4Theory:
         self.theorynamelabel="Psi4"
         self.theorytype="QM"
         self.analytic_hessian=False
-        
+
         #outputname='psi4output.dat'
         #Printlevel
         self.printlevel=printlevel
@@ -91,7 +91,7 @@ class Psi4Theory:
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, label=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile='', restart=False, charge=None, mult=None ):
-        
+
         module_init_time=time.time()
 
         if numcores==None:
@@ -381,7 +381,7 @@ class Psi4Theory:
                     inputfile.write('#Fchk write\n')
                     inputfile.write('fchk_writer = psi4.FCHKWriter(wfn)\n')
                     inputfile.write('fchk_writer.write(\'{}.fchk\')\n'.format(self.filename))
-        
+
 
 
             print("Running inputfile:", self.filename+'.inp')

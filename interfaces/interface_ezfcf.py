@@ -6,7 +6,7 @@ from ash.functions.functions_general import BC,ashexit, writestringtofile, pygre
 
 #Interface to ezFCF (https://iopenshell.usc.edu/downloads)
 #
-#To acknowledge ezFCF, use the following citation: 
+#To acknowledge ezFCF, use the following citation:
 #S. Gozem, A. I. Krylov, "The ezSpectra suite: An easy-to-use toolkit for spectroscopy modeling", WIRES CMS, e1546 (2021) and P. Wojcik, S. Gozem, V. Mozhayskiy, and A.I. Krylov, http://iopenshell.usc.edu/downloads
 
 
@@ -21,7 +21,7 @@ def ezFCF_run(input_file="ezFCF.xml", output_file="ezFCF.out"):
 
     #Check if ezFCF is installed
     print("Checking if ezFCF binary is available in PATH")
-    print("Looking for executables named: ezFCF_linux.exe and ezFCF_mac.exe") 
+    print("Looking for executables named: ezFCF_linux.exe and ezFCF_mac.exe")
     if shutil.which(binary_name) is None:
         print("ezFCF binary not found in PATH. Please install ezFCF and add the binary directory to PATH.")
     else:
@@ -35,7 +35,7 @@ def ezFCF_run(input_file="ezFCF.xml", output_file="ezFCF.out"):
     #Create input file
     with open(input_file, "w") as inp:
         inp.write(xmldata)
-    
+
     #Create masses file
 
     output = open(output_file, "w")

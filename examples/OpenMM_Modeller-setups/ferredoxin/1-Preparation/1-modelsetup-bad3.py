@@ -9,5 +9,3 @@ extraxmlfile="specialresidue.xml"
 # Setting up system via Modeller
 OpenMM_Modeller(pdbfile=pdbfile,forcefield="CHARMM36", use_higher_occupancy=True,
     extraxmlfile="specialresidue.xml")
-
-

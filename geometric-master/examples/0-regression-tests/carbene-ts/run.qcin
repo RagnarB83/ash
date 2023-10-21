@@ -28,4 +28,3 @@ scf_algorithm         diis_gdm
 max_scf_cycles        100
 scf_max_cycles        300
 $end
-

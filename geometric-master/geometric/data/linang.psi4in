@@ -25,4 +25,3 @@ molecule {
 set basis sto-3g
 
 gradient('hf')
-

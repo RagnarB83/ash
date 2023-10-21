@@ -11,4 +11,3 @@ molecule {
 set basis 6-31g*
 
 gradient('hf')
-

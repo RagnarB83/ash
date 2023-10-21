@@ -7,7 +7,7 @@ pdbfile="2dsx.pdb"
 extraxmlfile="./specialresidue.xml"
 
 #Setting some manual protonation states.
-#Here defining residues in chain A with resid values: 6,9,39,42 to be deprotonated cysteines (CYX). 
+#Here defining residues in chain A with resid values: 6,9,39,42 to be deprotonated cysteines (CYX).
 #NOTE: Here the actual resid values in the PDB-file are used (ASH's 0-based indexing does not apply)
 residue_variants={'A':{6:'CYX',9:'CYX',39:'CYX',42:'CYX'}}
 

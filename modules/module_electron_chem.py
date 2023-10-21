@@ -11,7 +11,7 @@ import ash.settings_ash
 #Various electron chemistry
 #DEA/DI
 
-#Get lowest multiplicity 
+#Get lowest multiplicity
 def lowest_mult(mult):
     if isodd(mult):
         return 1
@@ -24,7 +24,7 @@ def ElectronImpact(fragment=None, theory=None, HLtheory=None, charge=None, mult=
     print_line_with_subheader1("ElectronImpact")
 
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Electron impact", theory=theory)
-    
+
     print()
     #######################
     # Initial species
@@ -118,7 +118,7 @@ def call_QCxMS(fragment=None, qcxmsdir=None, xtbmethod=None, charge=None, mult=N
             except:
                 print("Found no qcxms executable in path. Exiting... ")
                 ashexit()
-    
+
     print("qcxmsdir:", qcxmsdir)
     #qcxmsdir should contain: qcxms, pqcxms q-batch, getres
 
@@ -144,9 +144,9 @@ def call_QCxMS(fragment=None, qcxmsdir=None, xtbmethod=None, charge=None, mult=N
     #Create inputfile: qcxms.in
     #TODO: To be extended. See manual: https://xtb-docs.readthedocs.io/en/latest/qcxms_doc/qcxms_run.html
     inputstring="""{}
-ntraj {}  
-tmax  {}    
-tinit {} 
+ntraj {}
+tmax  {}
+tinit {}
 ieeatm {}""".format(xtbkw,ntraj, tmax, tinit, ieeatm)
 
     writestringtofile(inputstring, "qcxms.in")
@@ -168,7 +168,7 @@ ieeatm {}""".format(xtbkw,ntraj, tmax, tinit, ieeatm)
     #Setting OMP threads, equal to qcxms runs. Each run with 1 core though
     os.environ["OMP_NUM_THREADS"] = str(numcores)
     process = sp.run([qcxmsdir + '/pqcxms', '-t', 1]) #-j option did not work last time
-    
+
     #Process the output. Define reactions and fragments associated
 
     #Each TMP dir contains fragments labelled like this: e.g. 1.1.xyz    or 1.1.xyz, 1.2.xyz, 1.3.xyz    qcxms.out, qcxms.res, ion.out, neutral.out

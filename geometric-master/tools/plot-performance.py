@@ -15,7 +15,7 @@ if len(logfnms) == 0 or any([not os.path.exists(fnm) for fnm in logfnms]):
     print("Exiting because did not provide valid log filenames.")
     print("Usage: ./plot-performance.py <geomeTRIC log filenames>")
     sys.exit()
-    
+
 fig_title_default = "Optimization performance for %s" % os.path.split(os.getcwd())[1]
 fig_title = input('Enter custom figure title (Default: %s) -->' % fig_title_default)
 if not fig_title:
@@ -90,7 +90,7 @@ def get_vmin_vmax_log(df, pad=0.2):
     vmin = 10**np.floor(np.log10(np.nanmin(df.replace(0, np.nan).values))-pad)
     vmax = 10**np.ceil(np.log10(np.nanmax(df.replace(0, np.nan).values))+pad)
     return vmin, vmax
-    
+
 if np.std(df_energy.iloc[0]) > 1e-6:
     print("--== Warning - step 0 energies are not all the same ==--")
 
@@ -149,7 +149,7 @@ with PdfPages('plot-performance.pdf') as pdf:
         ax.legend(labels)
         pdf.savefig(fig)
         plt.close()
-    
+
         titles = ['RMS Gradient', 'Max Gradient', 'RMS Displacement', 'Max Displacement']
         dfs = [df_grms, df_gmax, df_drms, df_dmax]
         convs = [3.0e-4, 4.5e-4, 1.2e-3, 1.8e-3]

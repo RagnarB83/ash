@@ -1,10 +1,10 @@
 %Mem=6GB
 %NProcShared=2
-# hf/6-31G(d) Force=NoStep SCRF=(Solvent=Water,Read) 
+# hf/6-31G(d) Force=NoStep SCRF=(Solvent=Water,Read)
 
 ethane
 
-0 1    
+0 1
 C                 -4.13498124    0.70342204    0.00000000
 H                 -3.53650966   -0.16516720   -0.17967886
 H                 -4.07172084    1.36057017   -0.84205371
@@ -16,7 +16,3 @@ H                 -2.60384227    1.15314360    1.43819258
 
 QConv=10
 Alpha=1.1
-	      
-
-
-	      

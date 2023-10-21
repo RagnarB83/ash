@@ -9,7 +9,7 @@ xyzfile=forcefielddir+"file.xyz"
 frag = Fragment(xyzfile=xyzfile, conncalc=False)
 
 #Periodic OpenMM on DHFR system using CHARMM files:
-# Reference data from: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/ 
+# Reference data from: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
 #Periodic cell according to CHARMM inputfile, PBE parameters according to CHARMM settings also
 #No long-range dispersion used
 #Nonbonded cutoff: 12 Å, switching function: 10 Å

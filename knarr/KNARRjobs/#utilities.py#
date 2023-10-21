@@ -200,7 +200,7 @@ def VelocityVerletStep(calculator, atoms, dt=0.01):
 def LangevinStep(atoms, calculator, dt=0.01, gamma=0.5, temperature=293.15):
     mass = atoms.GetM()
     atoms.UpdateR()
-    
+
     # Compute acceleration
     calculator.Compute(atoms)
     atoms.UpdateF()

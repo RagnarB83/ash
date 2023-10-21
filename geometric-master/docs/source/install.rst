@@ -54,7 +54,7 @@ Supported QM packages are as follows. Older versions of packages may work, no gu
 * Psi4 : Version 1.2 or above
 * Molpro : Version 2015 and 2019
 * Gaussian : Version 09 or 16
-  
+
 Supported MM packages are:
 * OpenMM : Version 6.3 or above
 * Gromacs : Version 4.6.7 or 5.1.4. Newer versions are not tested.
@@ -66,7 +66,7 @@ A testing environment can be set up using ``conda`` which includes OpenMM, Psi4,
     cd geomeTRIC
     python devtools/scripts/create_conda_env.py -n=geo_test -p=3.7 devtools/conda-envs/omm_psi4_rdkit.yaml
 
-  
+
 Testing
 -------
 

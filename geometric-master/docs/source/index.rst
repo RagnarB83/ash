@@ -18,7 +18,7 @@ GeomeTRIC Documentation for Users and Contributors
    engines
    options
    citation
-   
+
 Indices and tables
 ==================
 

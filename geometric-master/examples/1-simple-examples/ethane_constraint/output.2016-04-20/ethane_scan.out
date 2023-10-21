@@ -243,4 +243,3 @@ Step    8 : Displace = [92m9.509e-04[0m/[92m1.155e-03[0m (rms/max) Trust = 3
 Constraint                         Current      Target       Diff.
 Dihedral Angle 2-1-5-6           119.85280   120.00000    -0.14720
 Converged! =D
-

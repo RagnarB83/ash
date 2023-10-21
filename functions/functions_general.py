@@ -77,7 +77,7 @@ def find_program(programdir,programdirname,exename,theorynamelabel):
         else:
             print(f"Chosen directory : {programdir} does not exist. Exiting...")
             ashexit()
-        finalpath = programdir   
+        finalpath = programdir
     return finalpath
 
 def load_pythoncall():
@@ -480,7 +480,7 @@ def read_floatlist_from_file(filename):
     return floatlist
 
 
-#Read simple datafile (e.g. .dat and .stk files from ORCA). 
+#Read simple datafile (e.g. .dat and .stk files from ORCA).
 # Separator is Python default whitespace.
 def read_datafile(filename, separator=None):
     x=[]
@@ -588,7 +588,7 @@ def column(matrix, i):
 
 
 # Various function to print time of module/step. Will add time also to Timings object
-#Printing if currprintlevel 
+#Printing if currprintlevel
 def print_time_rel(timestamp, modulename='Unknown', moduleindex=4, currprintlevel=1, currthreshold=1):
     secs = time.time() - timestamp
     mins = secs / 60
@@ -654,11 +654,11 @@ class Timings:
 
         self.totalsumtime += mtime
 
-    # Distinguish and sort between: 
+    # Distinguish and sort between:
     # workflows (thermochem_protol, PES, calc_surface etc.): 0
     # jobtype (optimizer,Singlepoint,Anfreq,Numfreq): 1
-    # theory-run (ORCAtheory run, QM/MM run, MM run etc.): 2 
-    # various: 3 
+    # theory-run (ORCAtheory run, QM/MM run, MM run etc.): 2
+    # various: 3
     # others (calc connectivity etc.): 4
 
     def print(self, inittime):

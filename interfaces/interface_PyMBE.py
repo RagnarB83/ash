@@ -41,7 +41,7 @@ class PyMBETheory:
             self.pymbedir = pymbedir
 
         #Checking if pyscf is present
-        #TODO: Avoid importing since PyMBE 
+        #TODO: Avoid importing since PyMBE
         print("Checking if pyscf exists")
         #try:
         #    import pyscf
@@ -98,7 +98,7 @@ class PyMBETheory:
             print(self.pymbeinput)
         if self.pymbedict is not None:
             print(self.pymbedict)
-        
+
         #Coords provided to run
         if current_coords is not None:
             pass
@@ -113,7 +113,7 @@ class PyMBETheory:
                 ashexit()
             else:
                 qm_elems = elems
-        
+
         #Write inputfile
         write_pymbe_input(pymbeinput=self.pymbeinput,pymbedict=self.pymbedict,
                 charge=charge,mult=mult,elems=qm_elems,coords=current_coords)
@@ -121,11 +121,11 @@ class PyMBETheory:
         #Needed for PyMBE run
         print("Setting environment variable PYTHONHASHSEED to 0.")
         os.environ["PYTHONHASHSEED"] = "0"
-        
+
         #Running
         run_pymbe(self.pymbedir,self.filename+'.out', numcores=numcores)
         print()
-        
+
         #Printing results
         print("PyMBE results")
         mbe_results_dict=grab_results_pymbe()
@@ -137,7 +137,7 @@ class PyMBETheory:
         for totE,corrE,label in zip(mbe_results_dict["tot_energies"],mbe_results_dict["corr_energies"],mbe_results_dict["labels"]):
             print(f"{label:>5s} {totE:14.7f} {corrE:14.7f}")
         print()
-        
+
         #Setting final energy as last
         self.energy=mbe_results_dict["MBE total energy"]
         #TODO: write in error handling here
@@ -218,7 +218,7 @@ def grab_results_pymbe():
                 final_dict["reference-orbs"] = line.split()[9]
             if 'base model       =' in line:
                 final_dict["base-model"] = line.split()[8]
-            
+
             if ' Hartree-Fock energy     =' in line:
                 final_dict["HF_E"] = float(line.split()[-1])
             if 'base model energy       =' in line:

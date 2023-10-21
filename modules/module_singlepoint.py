@@ -30,7 +30,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
         Grad (bool, optional): Do gradient or not Defaults to False.
         charge (int, optional): Specify charge of system. Overrides fragment charge information.
         mult (int, optional): Specify mult of system. Overrides fragment charge information.
-        
+
     Returns:
         float: Energy
         or
@@ -100,7 +100,7 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
         #Check charge/mult
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint_theories", theory=theory)
 
-        #Running single-point. 
+        #Running single-point.
         result = Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
 
         #Preserve outputfile
@@ -177,7 +177,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
 
         #Running single-point
         result = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
-        
+
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, result.energy))
 
         #Preserve outputfile
@@ -194,7 +194,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
         print("")
 
     #Create Results object
-    result = ASH_Results(label="Singlepoint_fragments", energies=energies, charge=charge, mult=mult)   
+    result = ASH_Results(label="Singlepoint_fragments", energies=energies, charge=charge, mult=mult)
 
     #Print table
     print_fragments_table(fragments,energies)
@@ -203,14 +203,14 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
     if relative_energies is True:
         print()
         print("relative_energies option is True!")
-        conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+        conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
         convfactor=conversionfactor[unit]
         relenergies=[(i - min(energies)) * convfactor for i in energies]
         print_fragments_table(fragments,relenergies, unit=unit)
         result.relative_energies = relenergies
         result.labels = [f.label for f in fragments]
- 
+
     #Printing reaction energy if stoichiometry was provided
     if stoichiometry != None:
         print("Stoichiometry provided:", stoichiometry)
@@ -250,7 +250,7 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
             print("Stoichiometry provided:", stoichiometry)
             ReactionEnergy(list_of_energies=elist, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='{}'.format(t.label))
 
-                
+
             print("_"*60)
     print("\nFinal list of lists of total energies:", all_energies)
 
@@ -306,7 +306,7 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
         reaction.energies.append(energy)
 
         #TODO: Change this so that instead we just grab whatever each Theory level deemed important
-        #theory.properties feature? 
+        #theory.properties feature?
         #Check if ORCATheory object contains ICE-CI info
         if isinstance(theory,ash.ORCATheory):
             print("theory.properties:", theory.properties)
@@ -336,7 +336,7 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
     unit=reaction.unit
 
     reaction.calculate_reaction_energy()
-    
+
     result = ASH_Results(label="Singlepoint_reaction", energies=reaction.energies,
         reaction_energy=reaction.reaction_energy)
 
@@ -413,7 +413,7 @@ def newSinglepoint(fragment=None, theory=None, Grad=False):
     if fragment is None or theory is None:
         print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
         ashexit()
-    
+
     #Case QM/MM: we don't pass whole fragment?
     if isinstance(theory, ash.QMMMTheory):
         print("this is QM/MM. not ready")
@@ -463,7 +463,7 @@ class ZeroTheory:
         self.theorytype="QM"
     def run(self, current_coords=None, elems=None, Grad=False, PC=False, numcores=None, charge=None, mult=None, label=None ):
         self.energy = 0.0
-        #Gradient as np array 
+        #Gradient as np array
         self.gradient = np.zeros((len(elems), 3))
         if Grad==False:
             return self.energy
@@ -489,10 +489,10 @@ class ScriptTheory:
         self.filename="zerotheory"
         #Indicate that this is a QMtheory
         self.theorytype="QM"
-        
+
         #Scriptname
         self.scriptpath=scriptpath
-    
+
     def create_script_from_string(self,input):
 
         #Create shell/python script from input-string
@@ -542,7 +542,7 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
     Returns:
         tuple : energy and error in chosen unit
     """
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
     if label is None:
         label=''
@@ -593,4 +593,3 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
             if silent is False:
                 print(BC.BOLD, "Reaction_energy({}): {} {} {} (Error: {})".format(label,BC.OKGREEN,reaction_energy, unit, error), BC.END)
     return reaction_energy, error
-

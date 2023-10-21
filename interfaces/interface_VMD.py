@@ -5,9 +5,9 @@ from ash.functions.functions_general import writestringtofile, ashexit
 #Basic VMD interface
 
 
-def write_VMD_script_cube(cubefiles=None,VMDfilename="VMD_script.vmd", 
+def write_VMD_script_cube(cubefiles=None,VMDfilename="VMD_script.vmd",
                           isovalue=0.7, isosurfacecolor_pos="blue", isosurfacecolor_neg="red"):
-    
+
     #Color settings
     vmd_colors_ids = {'blue':0, 'red':1, 'gray':2, 'orange':3, 'yellow':4, 'tan':5,
                       'silver':6, 'green':7, 'white':8, 'pink':9, 'cyan':10, 'purple':11,

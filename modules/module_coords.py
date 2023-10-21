@@ -27,8 +27,8 @@ ashpath = os.path.dirname(ash.__file__)
 #TODO: Check charge on both sides of reaction. Warning if different.
 #TODO: Check if mult is different on both sides of reaction. Print warning
 
-#FUNCTIONS that could interact with Reaction class: 
-# Singlepoint_reaction ?, 
+#FUNCTIONS that could interact with Reaction class:
+# Singlepoint_reaction ?,
 # thermochemprotocol_reaction ?
 # Optimizer ? Probably not
 
@@ -74,7 +74,7 @@ class Reaction:
                 ashexit()
     def calculate_reaction_energy(self):
         if len(self.energies) == len(self.fragments):
-            self.reaction_energy = ash.ReactionEnergy(list_of_energies=self.energies, stoichiometry=self.stoichiometry, unit=self.unit, silent=False, 
+            self.reaction_energy = ash.ReactionEnergy(list_of_energies=self.energies, stoichiometry=self.stoichiometry, unit=self.unit, silent=False,
                 label=self.label)[0]
         else:
             print("Warning. Could not calculate reaction energy as we are missing energies for fragments")
@@ -151,7 +151,7 @@ class Fragment:
                     ashexit()
                 else:
                     bondlength=diatomic_bondlength
-            
+
             self.elems=molformulatolist(diatomic)
             if len(self.elems) != 2:
                 print(f"Problem with molecular formula diatomic={diatomic} string!")
@@ -201,7 +201,7 @@ class Fragment:
             self.label = label
 
         # Now set charge and mult attributes of fragment from keyword arg unless None. Will override readchargemult option above if used
-        if charge != None: 
+        if charge != None:
             self.charge = charge
         if mult != None:
             self.mult = mult
@@ -646,10 +646,10 @@ class Fragment:
         self.Centralmainfrag = list
 
     def write_xyzfile(self, xyzfilename="Fragment-xyzfile.xyz", writemode='w', write_chargemult=True, write_energy=True):
-        
+
         with open(xyzfilename, writemode) as ofile:
             ofile.write(str(len(self.elems)) + '\n')
-            
+
             #Title line
             #Write charge,mult and energy by default. Will be None if not available
             if write_chargemult is True and write_energy is True:
@@ -664,7 +664,7 @@ class Fragment:
             #        ofile.write("Energy: None" + '\n')
             #    else:
             #        ofile.write("Energy: {:14.8f}".format(self.energy) + '\n')
-            
+
             #Coordinates
             for el, c in zip(self.elems, self.coords):
                 line = "{:4} {:14.8f} {:14.8f} {:14.8f}".format(el, c[0], c[1], c[2])
@@ -920,8 +920,8 @@ def print_internal_coordinate_table(fragment, actatoms=None):
         actatoms = []
         chosen_coords = fragment.coords
         chosen_elems = fragment.elems
-    
-    #NOTE: Changing so that we calculate connectivity always regardless of availability. 
+
+    #NOTE: Changing so that we calculate connectivity always regardless of availability.
     # If no connectivity in fragment then recalculate it for actatoms only
     #if len(fragment.connectivity) == 0:
     print("Connectivity needs to be calculated")
@@ -979,7 +979,7 @@ def print_internal_coordinate_table(fragment, actatoms=None):
         elB = chosen_elems[listkey[1]]
         # Only print bond lengths if both atoms in actatoms list
         if not actatoms:
-            
+
                 print("Bond: {:8}{:4} - {:4}{:4} {:>6.3f}".format(listkey[0], elA, listkey[1], elB, val))
         else:
             #converting to full-system indices
@@ -1822,7 +1822,7 @@ def read_gromacsfile(grofile):
                     coords_z = float(linelist[-1])
                 # Converting from nm to Ang
                 coords.append([10 * coords_x, 10 * coords_y, 10 * coords_z])
-    npcoords=reformat_list_to_array(coords)    
+    npcoords=reformat_list_to_array(coords)
     if len(npcoords) != len(elems):
         print(BC.FAIL,"Num coords not equal to num elems. Parsing of Gromacsfile: {} failed. BUG!".format(grofile))
         ashexit()
@@ -2709,7 +2709,7 @@ def cut_cluster(coords=None, elems=None, radius=None, center_atomindex=None):
     # connectivity=[]
 
     # atomlist=[]
-    ##Keep only atoms with distances from within R of center_atomindex 
+    ##Keep only atoms with distances from within R of center_atomindex
     # for count in range(len(coords)):
     #    if distances[count] < radius:
     #        #Look up connected members
@@ -3077,14 +3077,14 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
     atomtypes=openmmtheoryobject.atomtypes
     resnames=openmmtheoryobject.resnames
     elements=openmmtheoryobject.mm_elements
-    
+
     waterconstraints = []
     if resnames:
         for index,(rn,el) in enumerate(zip(resnames,elements)):
             # Skipping if not in atomlist
             if index not in atomlist:
                 continue
-            
+
             if rn in water_resname:
                 if el == 'O':
                     waterconstraints.append([index, index + 1])
@@ -3094,7 +3094,7 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
     #    #NOTE: Atomtypes only defined if OpenMMTheory created from CHARMM Files
     #    # Assuming OT or OW oxygen atomtypes used if TIP3P. Assuming oxygen comes first
     #    # TODO: support more water models here. like 4-site and 5-site models
-    #    
+    #
     #    waterconstraints = []
     #    for index, at in enumerate(atomtypes):
     #        # Skipping if not in actatomslist
@@ -3331,7 +3331,7 @@ def sdf_to_pdb(file):
             atomname = res.GetAtomID(atom)
             #print("atomname:", atomname)
             #res.SetAtomID(atom,Atomlabel[i])
-    
+
     #Write final PDB-file
     newmol.write(format='pdb', filename=os.path.splitext(file)[0]+'.pdb', overwrite=True)
     print("Wrote PDB-file:", os.path.splitext(file)[0]+'.pdb')
@@ -3383,7 +3383,7 @@ def xyz_to_pdb_with_connectivity(file):
             atomname = res.GetAtomID(atom)
             #print("atomname:", atomname)
             #res.SetAtomID(atom,Atomlabel[i])
-    
+
     #Write final PDB-file
     newmol.write(format='pdb', filename=os.path.splitext(file)[0]+'.pdb', overwrite=True)
     print("Wrote PDB-file:", os.path.splitext(file)[0]+'.pdb')
@@ -3401,5 +3401,3 @@ def pdb_to_smiles(fname: str) -> str:
     mol = next(pybel.readfile("pdb", fname))
     smi = mol.write(format="smi")
     return smi.split()[0].strip()
-    
-    

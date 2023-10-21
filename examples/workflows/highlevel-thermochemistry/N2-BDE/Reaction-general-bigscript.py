@@ -18,7 +18,7 @@ reactionlabel='BDE'
 
 
 ###################################################
-# Do single-basis CCSD(T) calculations: def2 family 
+# Do single-basis CCSD(T) calculations: def2 family
 ###################################################
 print("Now running through single-basis CCSD(T) calculations with def2 family")
 

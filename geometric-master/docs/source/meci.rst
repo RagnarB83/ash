@@ -17,7 +17,7 @@ Conceptually, this method minimizes an objective function that is the sum of the
 .. math::
     L = \frac{1}{2}(E_I + E_J) + \sigma \frac{\Delta E_{IJ}^2}{\Delta E_{IJ} + \alpha}
 
-The two parameters of the penalty function control, :math:`\sigma` (``meci_sigma``) and :math:`\alpha` (``meci_alpha``), correspond to scaling and width parameters that control the shape of the penalty function. 
+The two parameters of the penalty function control, :math:`\sigma` (``meci_sigma``) and :math:`\alpha` (``meci_alpha``), correspond to scaling and width parameters that control the shape of the penalty function.
 
 As :math:`\alpha` goes to zero, the penalty function tends toward a limiting value of :math:`\sigma |E_I - E_J|`, producing a "V-shaped" derivative discontinuity of the objective function perpendicular to the seam that is also a minimum if a large enough value of :math:`\sigma` is used.
 Although the energy gap is exactly zero at the minimum, the derivative discontinuity makes the application of unconstrained optimization methods impossible; that is essentially the reason why other methods require the nonadiabatic coupling vectors in order to project out the directions along the branching plane containing the discontinuity.
@@ -33,7 +33,7 @@ To use MECI / MECP optimization in geomeTRIC, you may use any engine, although w
 The input file for the calculation should calculate the gradient for one of the states desired. Provide an input file for the other state using ``--meci <second_input_file>``.
 Internally, geomeTRIC will create a "MECI engine" that contains two Engine objects for computing :math:`E_I` and :math:`E_J`, then these values are used to compute the MECI objective function and its gradient.
 The two input files should use the same level of theory and other settings, differing only in the energy and gradient of the target state.
-Alternatively, if the quantum chemistry code is able to compute the MECI objective function directly, use ``--meci engine`` instead of passing a second input file. 
+Alternatively, if the quantum chemistry code is able to compute the MECI objective function directly, use ``--meci engine`` instead of passing a second input file.
 
     Note: Because this is advanced usage, you may need to modify the output file parsers in the Engine in order to correctly obtain the energy and gradient of each state. In that case, please consider making a code contribution back to the main repository.
 

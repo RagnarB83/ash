@@ -43,8 +43,8 @@ from .molecule import Molecule, PeriodicTable
 from .nifty import logger, kb, kb_si, hbar, au2kj, au2kcal, ang2bohr, bohr2ang, c_lightspeed, avogadro, cm2au, amu2au, ambervel2au, wq_wait, getWorkQueue, commadash, bak
 
 def calc_cartesian_hessian(coords, molecule, engine, dirname, read_data=True, verbose=0):
-    """ 
-    Calculate the Cartesian Hessian using finite difference, and/or read data from disk. 
+    """
+    Calculate the Cartesian Hessian using finite difference, and/or read data from disk.
     Data is stored in a folder <prefix>.tmp/hessian, with gradient calculations found in
     <prefix>.tmp/hessian/displace/001p.
 
@@ -60,7 +60,7 @@ def calc_cartesian_hessian(coords, molecule, engine, dirname, read_data=True, ve
         Directory name for files to be written, i.e. <prefix>.tmp
     read_data : bool
         Read Hessian data from disk if valid
-        
+
     Returns
     -------
         Hx : np.ndarray
@@ -102,9 +102,9 @@ def calc_cartesian_hessian(coords, molecule, engine, dirname, read_data=True, ve
     molecule.xyzs[0] = coords.reshape(-1, 3)*bohr2ang
     if not os.path.exists(os.path.join(dirname, "hessian")):
         os.makedirs(os.path.join(dirname, "hessian"))
-        
+
     molecule[0].write(hessxyz)
-    if not read_data: 
+    if not read_data:
         if os.path.exists(os.path.join(dirname, "hessian", "displace")):
             shutil.rmtree(os.path.join(dirname, "hessian", "displace"))
     # Calculate Hessian using finite difference
@@ -172,7 +172,7 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
         (n_atoms*3)*(n_atoms*3) length array containing Hessian elements in au
         (i.e. Hessian/bohr^2), the typical units output by QM calculations
     elem : list
-        n_atoms length list containing atomic symbols. 
+        n_atoms length list containing atomic symbols.
         Used in printing displacements and for looking up masses if mass = None.
     mass : list or np.array
         n_atoms length list or 1D array containing atomic masses in amu.
@@ -196,7 +196,7 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
         to which samples should be written
     ignore : int
         Ignore the free energy contributions from the lowest N vibrational modes
-        (including negative force constants if there are any). 
+        (including negative force constants if there are any).
     normalized : bool
         If True, normalize the un-mass-weighted Cartesian displacements of each normal mode (default)
         If False, return the un-normalized vectors (necessary for IR and Raman intensities)
@@ -207,7 +207,7 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
         n_vibmodes length array containing vibrational frequencies in wavenumber
         (imaginary frequencies are reported as negative)
     normal_modes_cart : np.array
-        n_vibmodes*n_atoms length array containing un-mass-weighted Cartesian displacements 
+        n_vibmodes*n_atoms length array containing un-mass-weighted Cartesian displacements
         of each normal mode
     """
     # Create a copy of coords and reshape into a 2D array
@@ -225,17 +225,17 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
     assert coords.shape == (na, 3)
     assert Hessian.shape == (3*na, 3*na)
     # Convert Hessian eigenvalues into wavenumbers:
-    # 
+    #
     # omega = sqrt(k/m)
-    # 
+    #
     # X hartree bohr^-2 amu^-1 * 2625.5 (kJ mol^-1 / hartree) * (1/0.0529 bohr/nm)^2
     # --> omega^2 = 938211*X ps^-2
-    # 
+    #
     # Frequencies in units of inverse ps:
     # nu = sqrt(938211*X)/2*pi
-    # 
+    #
     # Convert to inverse wavelength in units of cm^-1:
-    # 
+    #
     # 1/lambda = nu/c = (sqrt(938211*X)/2*pi) / (2.998e8 m/s) * (m/100cm) * 10^12ps/s
 
     bohr2nm = bohr2ang / 10
@@ -264,14 +264,14 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
 
     # Coordinates in the center-of-mass frame
     xcm = coords - cxyz[np.newaxis, :]
-    
+
     # Moment of inertia tensor
     I = np.sum([mass[i] * (np.eye(3)*(np.dot(xcm[i], xcm[i])) - np.outer(xcm[i], xcm[i])) for i in range(na)], axis=0)
 
     # Principal moments
     Ivals, Ivecs = np.linalg.eigh(I)
     # Eigenvectors are in the rows after transpose
-    Ivecs = Ivecs.T 
+    Ivecs = Ivecs.T
 
     # Obtain the number of rotational degrees of freedom
     RotDOF = 0
@@ -295,18 +295,18 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
     # Internal coordinates of the Eckart frame
     ic_eckart=np.zeros((6, TotDOF))
     for i in range(na):
-        # The dot product of (the coordinates of the atoms with respect to the center of mass) and 
+        # The dot product of (the coordinates of the atoms with respect to the center of mass) and
         # the corresponding row of the matrix used to diagonalize the moment of inertia tensor
         p_vec = np.dot(Ivecs, xcm[i])
-        smass = np.sqrt(mass[i]) 
-        ic_eckart[0,3*i  ] = smass 
-        ic_eckart[1,3*i+1] = smass 
-        ic_eckart[2,3*i+2] = smass 
+        smass = np.sqrt(mass[i])
+        ic_eckart[0,3*i  ] = smass
+        ic_eckart[1,3*i+1] = smass
+        ic_eckart[2,3*i+2] = smass
         for ix in range(3):
             ic_eckart[3,3*i+ix] = smass*(Ivecs[2,ix]*p_vec[1] - Ivecs[1,ix]*p_vec[2])
             ic_eckart[4,3*i+ix] = smass*(Ivecs[2,ix]*p_vec[0] - Ivecs[0,ix]*p_vec[2])
             ic_eckart[5,3*i+ix] = smass*(Ivecs[0,ix]*p_vec[1] - Ivecs[1,ix]*p_vec[0])
-    
+
     if verbose >= 2:
         logger.info("Coordinates in Eckart frame:\n")
         for i in range(ic_eckart.shape[0]):
@@ -330,7 +330,7 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
                 logger.info(" % .12f " % ic_eckart[i, j])
             logger.info("\n")
 
-    # Using Gram-Schmidt orthogonalization, create a basis where translation 
+    # Using Gram-Schmidt orthogonalization, create a basis where translation
     # and rotation is projected out of Cartesian coordinates
     proj_basis = np.identity(TotDOF)
     maxIt = 100
@@ -338,15 +338,15 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
         max_overlap = 0.0
         for i in range(TotDOF):
             for n in range(TR_DOF):
-                proj_basis[i] -= np.dot(ic_eckart[n], proj_basis[i]) * ic_eckart[n] 
+                proj_basis[i] -= np.dot(ic_eckart[n], proj_basis[i]) * ic_eckart[n]
             overlap = np.sum(np.dot(ic_eckart, proj_basis[i]))
-            max_overlap = max(overlap, max_overlap)        
+            max_overlap = max(overlap, max_overlap)
         if verbose >= 2:
             logger.info("Gram-Schmidt Iteration %i: % .12f\n" % (iteration, overlap))
         if max_overlap < 1e-12 : break
         if iteration == maxIt - 1:
             raise FrequencyError("Gram-Schmidt orthogonalization failed after %i iterations" % maxIt)
-    
+
     # Diagonalize the overlap matrix to create (3N-6) orthonormal basis vectors
     # constructed from translation and rotation-projected proj_basis
     proj_overlap = np.dot(proj_basis, proj_basis.T)
@@ -390,7 +390,7 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
 
     # These are the orthonormal, TR-projected internal coordinates
     ic_basis = np.dot(norm_vecs, proj_basis)
-    
+
     #===========================================#
     #| Calculate frequencies and displacements |#
     #===========================================#
@@ -400,7 +400,7 @@ def frequency_analysis(coords, Hessian, elem=None, mass=None, energy=0.0, temper
     ichess_vals, ichess_vecs = np.linalg.eigh(ic_hessian)
     ichess_vecs = ichess_vecs.T
     normal_modes = np.dot(ichess_vecs, ic_basis)
-    
+
     # Undo mass weighting to get Cartesian displacements
     normal_modes_cart = normal_modes * invsqrtm3[np.newaxis, :]
     if normalized:
@@ -529,7 +529,7 @@ def free_energy_harmonic(coords, mass, freqs_wavenumber, energy, temperature, pr
     S_trans = kb_cal * (np.log(V/L**3) + 2.5)
     # Rotational energy in classical approximation
     E_rot = kb_cal * T * RotDOF / (2 * 1000)
-    # Rotational entropy 
+    # Rotational entropy
     if RotDOF == 3:
         (Ia, Ib, Ic) = Ivals_si
         # Not dividing by the symmetry number; may implement in future
@@ -576,7 +576,7 @@ def free_energy_harmonic(coords, mass, freqs_wavenumber, energy, temperature, pr
             # F = E - TS -> S = (E-F)/T
             s_vib1 = 1000*(zpve1+e_vib1-f_vib1)/T
         if verbose >= 1:
-            logger.info("%4i   % 10.4f       %8.4f    %8.4f         %8.4f        %8.4f        %8.4f\n" % 
+            logger.info("%4i   % 10.4f       %8.4f    %8.4f         %8.4f        %8.4f        %8.4f\n" %
                         (ifreq, freq, zpve1, e_vib1, zpve1+e_vib1, s_vib1, zpve1+e_vib1 - T*s_vib1/1000))
         ZPVE += zpve1
         E_vib += e_vib1
@@ -615,20 +615,20 @@ def free_energy_harmonic(coords, mass, freqs_wavenumber, energy, temperature, pr
 def write_vdata(freqs_wavenumber, normal_modes_cart, xyz, elem, outfnm, extracomms=None, note=None):
     """
     Write vibrational data to a text file readable by ForceBalance.
-    
+
     Parameters
     ----------
     freqs_wavenumber : np.array
         n_vibmodes length array containing vibrational frequencies in wavenumber
         (imaginary frequencies should be negative)
     normal_modes_cart : np.array
-        n_vibmodes*n_atoms length array containing un-mass-weighted Cartesian displacements 
+        n_vibmodes*n_atoms length array containing un-mass-weighted Cartesian displacements
         of each normal mode
     coords : np.ndarray
         Nx3 array of Cartesian coordinates in atomic units
         (note: coordinates will be written to file in Angstrom)
     elem : list
-        n_atoms length list containing atomic symbols. 
+        n_atoms length list containing atomic symbols.
     outfnm : str
         Output file name:
     extracomms : list
@@ -640,7 +640,7 @@ def write_vdata(freqs_wavenumber, normal_modes_cart, xyz, elem, outfnm, extracom
     commblk = """    #==========================================#
     #|   File containing vibrational modes    |#
     #|      generated by geomeTRIC and        |#
-    #|       readable by ForceBalance         |# 
+    #|       readable by ForceBalance         |#
     #|                                        |#
     #| Octothorpes are comments               |#
     #| This file should be formatted like so: |#
@@ -726,7 +726,7 @@ def wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperatur
     mass_au = np.array(mass)* amu2au
     au2joule = 1000 * 2625.4996394798254 / 6.02214076e23
 
-    # beta = k_B*T 
+    # beta = k_B*T
     beta = 1.0 /( kb_si / au2joule * temperature);
 
     nmodes = len(freq_au)
@@ -736,14 +736,14 @@ def wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperatur
     totmass = np.sum(mass)
     # Compute the center of mass
     cxyz = np.sum(coords * mass[:, np.newaxis], axis=0)/totmass
-    
+
     # Coordinates in the center-of-mass frame
     ctr_coors = coords - cxyz[np.newaxis, :]
 
     # how to test imaginary frequency
 
     sigma_x = []
-    sigma_p = []    
+    sigma_p = []
     for n in range(nmodes):
         freq = freq_au[n]
         if temperature ==0:
@@ -752,9 +752,9 @@ def wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperatur
             tanhf = np.tanh(freq*0.5*beta)
         # f= 0.5* beta* hbar* omega
         # position: exp( -tanh(f)* m* omega/hbar * q^2)
-        sigma_x2 = 0.5/(freq*tanhf) 
-        sigma_x.append(np.sqrt(sigma_x2)) 
-        
+        sigma_x2 = 0.5/(freq*tanhf)
+        sigma_x.append(np.sqrt(sigma_x2))
+
         # momentum: exp( -tanh(f)/(hbar*m*omega)* p^2)
         sigma_p2 = 0.5*(freq/tanhf)
         sigma_p.append(np.sqrt(sigma_p2))
@@ -762,7 +762,7 @@ def wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperatur
     # print("sigma_p", sigma_p)
     sample_data = []
     ovr_idx = []
-    
+
     for idx in range(n_samples):
         xvec = np.zeros(nAtoms*3)
         pvec = np.zeros(nAtoms*3)
@@ -774,7 +774,7 @@ def wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperatur
             xvec += xlen* normal_modes[n]
             pvec += plen* normal_modes[n]
 
-        # undo mass-weights           
+        # undo mass-weights
         for a in range(nAtoms):
             smass = np.sqrt(mass_au[a])
             for ix in range(3):
@@ -791,7 +791,7 @@ def wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperatur
         for a in range(nAtoms):
             totmass += mass_au[a]
             for ix in range(3):
-                vel_com[ix] += pvec[a*3+ix]  
+                vel_com[ix] += pvec[a*3+ix]
         vel_com /= totmass
 
         velos = np.zeros((nAtoms, 3))
@@ -800,12 +800,12 @@ def wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperatur
             smass = mass_au[a]
             for ix in range(3):
                 velos[a,ix] = pvec[a*3+ix]/ smass - vel_com[ix]
-                momenta[a,ix] = velos[a,ix]*mass_au[a] 
+                momenta[a,ix] = velos[a,ix]*mass_au[a]
 
         EKin = 0.0
         for a in range(nAtoms):
             for ix in range(3):
-                EKin += mass_au[a]* velos[a,ix]* velos[a,ix] 
+                EKin += mass_au[a]* velos[a,ix]* velos[a,ix]
         EKin *= 0.5
 
         # Write sample data to files.
@@ -833,7 +833,7 @@ def wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperatur
     logger.info("Wigner distribution sampling: %i samples using T = %.2f written to %s\n" % (n_samples, temperature, dirname))
     if ovr_idx:
         print("Wigner distribution sample generation: %s samples %s" % (commadash(ovr_idx), 'overwritten' if overwrite else 'skipped'))
-            
+
 def main():
     import logging.config, pkg_resources
     import geometric.optimize

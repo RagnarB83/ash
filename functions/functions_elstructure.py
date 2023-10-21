@@ -81,7 +81,7 @@ def distance_matrix_from_coords(coords):
         dist_row=[ash.modules.module_coords.distance(i,j) for j in coords]
         distmatrix.append(dist_row)
     return distmatrix
-            
+
 
 
 def calc_cm5(atomicNumbers, coords, hirschfeldcharges):
@@ -177,7 +177,7 @@ def read_cube (cubefile):
             description=line
         #Grabbing origin
         if count == 3:
-            #Getting possibly signed numatoms 
+            #Getting possibly signed numatoms
             numat_orig=int(line.split()[0])
             if numat_orig < 0:
                 #If negative then we have an ID line later with DSET_IDS
@@ -229,7 +229,7 @@ def read_cube (cubefile):
         #In case we use it later
         finaldict['DSET_IDS_1']=DSET_IDS_1
         finaldict['DSET_IDS_2']=DSET_IDS_2
-    
+
     #Sum of values
     sum_vals= sum([sum(i) for i in vals])
     #Integration volume
@@ -330,7 +330,7 @@ def write_cube_diff(cubedict1,cubedict2, name="Default"):
                 sum_pos_vals+=j
             elif j < 0:
                 sum_neg_vals+=j
-    
+
     #Integration volume
     int_vol = dx*dy*dz
     #Integration
@@ -651,7 +651,7 @@ def HOMOnumbercalc(file,charge,mult):
 #Uses Chargemol program
 # Uses ORCA to calculate densities of molecule and its free atoms. Uses orca_2mkl to create Molden file and molden2aim to create WFX file from Molden.
 # Wfx file is read into Chargemol program for DDEC analysis which radial moments used to compute C6 parameters and radii for Lennard-Jones equation.
-def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=None, 
+def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC3', calcdir='DDEC', molecule_charge=None,
               molecule_spinmult=None, chargemolbinarydir=None):
     #Creating calcdir. Should not exist previously
     try:
@@ -675,7 +675,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
         ashexit()
     else:
         print("Found molden2aim.exe: ", molden2aim)
-        
+
     print("Warning: DDEC_calc requires chargemol-binary dir to be present in environment PATH variable.")
 
     #Finding chargemoldir from PATH in os.path
@@ -686,7 +686,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
         if 'chargemol' in p:
             print("Found chargemol in path line (this dir should contain the executables):", p)
             chargemolbinarydir=p
-    
+
     #Checking if we can proceed
     if chargemolbinarydir is None:
         print("chargemolbinarydir is not defined.")
@@ -897,14 +897,14 @@ end"""
     sp.call(['orca_2mkl', "molecule", '-molden'])
 
     #Write input for molden2aim
-    
+
     if molecule_charge==0:
         mol2aiminput=[' ',  "molecule"+'.molden.input', str(molecule_spinmult), ' ', ' ', ' ']
     else:
         #Charged system, will ask for charge
         #str(molecule_charge)
-        mol2aiminput=[' ',  "molecule"+'.molden.input', 'N', '2', ' ', str(molecule_spinmult), ' ', ' ', ' ']        
-        
+        mol2aiminput=[' ',  "molecule"+'.molden.input', 'N', '2', ' ', str(molecule_spinmult), ' ', ' ', ' ']
+
     m2aimfile = open("mol2aim.inp", "w")
     for mline in mol2aiminput:
         m2aimfile.write(mline+'\n')
@@ -996,18 +996,18 @@ def Rvdwfree(polz):
     Phi=FSC**(4/3)
     RvdW=(polz/Phi)**(1/7)
     return RvdW
-    
+
 
 def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
-    
+
     #voldict: Vfree. Computed using MP4SDQ/augQZ and chargemol in Jorgensen paper
     # Testing: Use free atom volumes calculated at same level of theory as molecule
-    
+
     #Rfree fit parameters. Jorgensen 2016 J. Chem. Theory Comput. 2016, 12, 2312−2323. H,C,N,O,F,S,Cl
     #Thes are free atomic vdW radii
     # In Jorgensen and Cole papers these are fit parameters : rfreedict = {'H':1.64, 'C':2.08, 'N':1.72, 'O':1.6, 'F':1.58, 'S':2.0, 'Cl':1.88}
     # We are instead using atomic Rvdw derived directly from atomic polarizabilities
-    
+
     print("Elems:", elems)
     print("Molmoms:", molmoms)
     print("voldict:", voldict)
@@ -1041,7 +1041,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
         print("r0:", r0)
         epsilon=(A_i/(4*sigma**12))
         print("epsilon:", epsilon)
-        
+
         sigmalist.append(sigma)
         Blist.append(B_i)
         Alist.append(A_i)
@@ -1056,7 +1056,7 @@ def DDEC_to_LJparameters(elems, molmoms, voldict, scale_polarH=False):
     print("sigmalist is", sigmalist)
     print("epsilonlist is", epsilonlist)
     print("r0list is", r0list)
-    
+
     #Accounting for polar H. This could be set to zero as in Jorgensen paper
     if scale_polarH is True:
         print("Scaling og polar H not implemented yet")
@@ -1125,7 +1125,7 @@ def Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2):
     J_cm=J*ash.constants.hartocm
     print("J coupling constant: {} Eh".format(J))
     print("J coupling constant: {} kcal/Mol".format(J_kcal))
-    print("J coupling constant: {} cm**-1".format(J_cm))            
+    print("J coupling constant: {} cm**-1".format(J_cm))
     return J
 #Strong-interaction limit (bond-formation)
 def Jcoupling_Bencini(HSenergy,BSenergy,smax):
@@ -1185,7 +1185,7 @@ def xdm_run(wfxfile=None, postgdir=None,a1=None, a2=None,functional=None):
         a1, a2 = parameterdict[functional.lower()]
         print(f"XDM a1: {a1}, a2: {a2}")
     with open('xdm-postg.out', 'w') as ofile:
-        process = sp.run([postgdir+'/postg', str(a1), str(a2), str(wfxfile), str(functional) ], check=True, 
+        process = sp.run([postgdir+'/postg', str(a1), str(a2), str(wfxfile), str(functional) ], check=True,
             stdout=ofile, stderr=ofile, universal_newlines=True)
 
     dispgrab=False
@@ -1285,7 +1285,7 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     if theory == None or theory.__class__.__name__ != "ORCATheory":
         print("You must provide an ORCATheory level")
         ashexit()
-    
+
     #Creating copies of theory object provided
     calc_AB = copy.copy(theory); calc_AB.filename="calcAB"
     calc_A = copy.copy(theory); calc_A.filename="calcA"
@@ -1420,7 +1420,7 @@ end
         run_orca_plot("calcAB.nocv.gbw", "density", gridvalue=griddensity)
         os.rename(f"calcAB.nocv.eldens.cube", f"NOCV-total-density.cube")
         num_mos=int(pygrep("Number of basis functions                   ...", "calcAB.out")[-1])
-        
+
         #Storing individual NOCV MOs and densities in separate dir (less useful)
         print("-"*120)
         print("Creating final Cube files for NOCV pair orbitals, orbital-densities and orbital-pair deformation densities")
@@ -1439,19 +1439,19 @@ end
             os.rename(f"calcAB.nocv.mo{i}a.cube", f"calcAB.NOCVpair_{i}.donor_mo{i}a.cube")
             print("Creating density for orbital")
             create_density_from_orb (f"calcAB.NOCVpair_{i}.donor_mo{i}a.cube", denswrite=True, LargePrint=True)
-            
+
             print("Creating Cube file for NOCV acceptor MO number:", num_mos-1-i)
             run_orca_plot("calcAB.nocv.gbw", "mo", mo_number=num_mos-1-i, gridvalue=griddensity)
             os.rename(f"calcAB.nocv.mo{num_mos-1-i}a.cube", f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube")
             print("Creating density for orbital")
             create_density_from_orb (f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube", denswrite=True, LargePrint=False)
-            
+
             #Difference density for orbital pair
             donor = read_cube(f"calcAB.NOCVpair_{i}.donor_mo{i}a-dens.cube")
             acceptor = read_cube(f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a-dens.cube")
             print(f"Making difference density file: NOCV_pair_{i}_deform_density.cube")
             write_cube_diff(acceptor,donor, name=f"NOCV_pair_{i}_deform_density")
-            
+
             #Move less important stuff to dir
             os.rename(f"calcAB.NOCVpair_{i}.donor_mo{i}a.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.donor_mo{i}a.cube")
             os.rename(f"calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube",f"NOCV_orbitals_and_densities/calcAB.NOCVpair_{i}.acceptor_mo{num_mos-1-i}a.cube")
@@ -1516,7 +1516,7 @@ def grab_NOCV_interactions(file):
     return neg_eigenvals,pos_eigenvals,DE_k
 
 #NOCV analysis using Multiwfn
-#Need to figure out how to generalize more. 
+#Need to figure out how to generalize more.
 #If Molden files is the best for Multiwfn then theory levels need to create those.
 #TODO: Make internal theory methods for ORCATheory, xTBtheory, PySCF etc. ?? that outputs a Molden file ???
 #NOTE: Benefit, multiwfn supports open-shell analysis
@@ -1623,7 +1623,7 @@ def NOCV_Multiwfn(fragment_AB=None, fragment_A=None, fragment_B=None, theory=Non
     # Writing out as simple lower-triangular form does not work due to weird column swapping
 
     #Call Multiwfn
-    multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel, 
+    multiwfn_run("AB.molden.input", option='nocv', grid=gridlevel,
                     fragmentfiles=["A.molden.input","B.molden.input"],
                     fockfile=fockfile, numcores=numcores, openshell=openshell)
 
@@ -1664,7 +1664,7 @@ def read_Fock_matrix_from_ORCA(file):
             if 'Number of basis functions                   ...' in line:
                 ndim=int(line.split()[-1])
             if grabA is True:
-                Acounter+=1                  
+                Acounter+=1
                 if Acounter % (ndim+1) == 0:
                     col_indices=[int(i) for i in line.split()]
                 if Acounter >= 1:
@@ -1677,7 +1677,7 @@ def read_Fock_matrix_from_ORCA(file):
                     if a == b == ndim-1:
                         grabA=False
             if grabB is True:
-                Bcounter+=1                  
+                Bcounter+=1
                 if Bcounter % (ndim+1) == 0:
                     col_indices=[int(i) for i in line.split()]
                 if Bcounter >= 1:
@@ -1728,7 +1728,7 @@ def write_Fock_matrix_ORCA_format(outputfile, Fock_a=None,Fock_b=None, openshell
             Fock_beta = get_Fock_matrix_ORCA_format(Fock_b)
             f.write(Fock_beta)
 
-#Get 
+#Get
 def get_Fock_matrix_ORCA_format(Fock):
     finalstring=""
     dim=Fock.shape[0]
@@ -1839,7 +1839,7 @@ def diffdens_tool(option='density', reference_orbfile="HF.gbw", dir='.', grid=3,
     print(f"Option: {option} (options are: density, valence-density)")
     print()
     ##############################################################
-    # Difference density generation script via ORCA orbitalfiles and Moldenf    
+    # Difference density generation script via ORCA orbitalfiles and Moldenf
     ##############################################################
     # Defines a reference orbitalfile (GBW,NAT,Molden) and creates a Cubefile
     # Finds other ORCA .gbw (for SCF) or nat files (natural orbitals from WFT) or Moldenfiles
@@ -1854,7 +1854,7 @@ def diffdens_tool(option='density', reference_orbfile="HF.gbw", dir='.', grid=3,
     if os.path.isfile(reference_orbfile) is False:
         print(f"Reference orbital file: {reference_orbfile} not found in directory: {dir}")
         ashexit()
-    
+
     #Create Molden file from reference-orbital file
     print("Creating Cube file from reference file")
     #TODO: Check if cube file already exists
@@ -1865,7 +1865,7 @@ def diffdens_tool(option='density', reference_orbfile="HF.gbw", dir='.', grid=3,
     else:
         ref_cubefile = create_cubefile_from_orbfile(reference_orbfile, option=option, grid=grid, printlevel=printlevel)
     print("Reference cubefile that will be used:", ref_cubefile)
-        
+
     ###################################
 
     #Find all GBW,NAT and Molden files in dir
@@ -1903,12 +1903,12 @@ def diffdens_tool(option='density', reference_orbfile="HF.gbw", dir='.', grid=3,
             num_el_vals_neg.append(num_el_val_neg)
 
 
-    
+
     print("\n All done. Difference density files created:")
     if len(diff_files) > 0:
         max_file_length = max([len(i) for i in diff_files])
-        print_pretty_table(list_of_objects=[diff_files,num_el_vals,num_el_vals_pos,num_el_vals_neg], 
-                       list_of_labels=["File","Sum all","Sum of pos. val.","Sum of neg. val."], 
+        print_pretty_table(list_of_objects=[diff_files,num_el_vals,num_el_vals_pos,num_el_vals_neg],
+                       list_of_labels=["File","Sum all","Sum of pos. val.","Sum of neg. val."],
                        title="",  spacing=20, divider_line_length=120)
 
     return diff_files, num_el_vals, num_el_vals_pos, num_el_vals_neg
@@ -1992,7 +1992,7 @@ def convert_NOs_from_MO_to_AO(NOs,C):
 #https://github.com/psi4/psi4/issues/60
 #https://github.com/psi4/psi4/blob/master/psi4/driver/p4util/writer.py
 def make_molden_file(fragment, AO_basis, MO_coeffs, MO_energies=None, MO_occs=None, AO_order=None, label="ASH_orbs", spherical_MOs=True):
-    
+
     print_line_with_mainheader("make_molden_file")
 
     print()
@@ -2002,14 +2002,14 @@ def make_molden_file(fragment, AO_basis, MO_coeffs, MO_energies=None, MO_occs=No
 
     print("WARNING: NORMALIZATION may not be entirely correct")
     print("WARNING: ORDER has only been checked for s,p,d and f")
-    
+
     if AO_order is None:
         print("Warning: no AO_order given. Will guess??")
         ashexit()
     else:
          print("AO_order_object given. Will use this to order AOs")
          print(AO_order)
-   
+
     ############
     #Geometry
     ############
@@ -2047,7 +2047,7 @@ Molden file created by ASH (using orca format)
                 coeff_used = coeff*N
                 gtostring+=f"       {exp} {coeff_used}\n"
         gtostring+="\n"
-    
+
     #Applies to ORCA
     if spherical_MOs:
         gtostring+="[5D]\n"
@@ -2089,7 +2089,7 @@ Molden file created by ASH (using orca format)
         mfile.write(coords_string)
         mfile.write(gtostring)
         mfile.write(mostring)
-    
+
     print(f"Created Molden file: {label}.molden")
     return f"{label}.molden"
 
@@ -2156,13 +2156,13 @@ def reorder_AOs_in_MO_ORCA_to_Molden(coeffs,order):
             new_order[i] = o
         elif "f-3" in o:
             new_coeffs[i] = c
-            new_order[i] = o    
+            new_order[i] = o
         else:
             #s and others
             new_coeffs[i] = c
             new_order[i] = o
         #print("new_coeffs:",new_coeffs)
-        #print("new_order:",new_order)    
+        #print("new_order:",new_order)
     return  new_coeffs
 
 #Basic reading of molden_file
@@ -2192,7 +2192,7 @@ def read_molden_file(moldenfile):
     molden_properties_dict["elems"]=elems
     molden_properties_dict["coords"]=np.array(coords)
 
-    return molden_properties_dict 
+    return molden_properties_dict
 
 
 #Polyradical character metrics head-Gordon
@@ -2247,6 +2247,6 @@ def general_pointcharge_gradient(qm_coords, qm_charges,mm_coords,mm_charges,dm, 
             np.einsum('ij,xij->x', dmf, v.conj())) * -q
         g[i] += f
         #
-        #TODO: Check with_rinv_orgin thingng 
+        #TODO: Check with_rinv_orgin thingng
 
     return g

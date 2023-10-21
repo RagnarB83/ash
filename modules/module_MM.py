@@ -336,7 +336,7 @@ class NonBondedTheory:
                 #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*ash.constants.harkcal)
                 self.MMEnergy += self.LJenergy
                 self.MMGradient += self.LJgradient
-                
+
         #Combined Coulomb+LJ Python version. Slow
         elif self.codeversion=='py_comb':
             print("not active")
@@ -379,7 +379,7 @@ class NonBondedTheory:
             #print_time_rel(CheckpointTime, modulename="NonBondedTheory:from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 Juliafunctions.LJcoulomb_julia(charges, current_coords, self.epsij, self.sigmaij)
-            #Converting to numpy array 
+            #Converting to numpy array
             self.MMGradient = np.asarray(self.MMGradient)
             #print_time_rel(CheckpointTime, modulename="NonBondedTheoryfrom run to done julia")
         else:
@@ -434,7 +434,7 @@ def MMforcefield_read(file):
                     if 'charges' in line:
                         residname=line.split()[0].replace("_charges","")
                         lsplit=line.split()
-                        MM_forcefield[residname+'_charges']=[float(i) for i in lsplit[1:]]                 
+                        MM_forcefield[residname+'_charges']=[float(i) for i in lsplit[1:]]
                     if 'elements' in line:
                         #adding elements for residue
                         lsplit=line.split()
@@ -444,13 +444,13 @@ def MMforcefield_read(file):
                     #    lsplit=line.split()
                     #    for c in lsplit:
                     #        MM_forcefield[atomtype].add_charge(atomcharge=c)
-                    #    MM_forcefield[residname]=lsplit[1:]     
-                
+                    #    MM_forcefield[residname]=lsplit[1:]
+
                 if 'combination_rule' in line:
                     combrule=line.split()[-1]
                     print("Found combination rule defintion in forcefield file:", combrule)
                     MM_forcefield["combination_rule"]=combrule
-                #This 
+                #This
                 if line.startswith("charge") == True:
                     print("Found charge definition in forcefield file:", ' '.join(line.split()[:]))
                     atomtype=line.split()[1]
@@ -525,7 +525,7 @@ UFFdict={'H': [2.886, 0.044], 'He': [2.362, 0.056], 'Li': [2.451, 0.025], 'Be': 
 #https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5997559/#SD1
 #REST IS UFF
 #CHARMMXXXdict={'H': [2.886, 0.044],  'B': [4.083, 0.18],
-#         'C': [3.851, 0.105], 'N': [3.66, 0.069], 'O': [3.5, 0.06], 'F': [3.364, 0.05], 
+#         'C': [3.851, 0.105], 'N': [3.66, 0.069], 'O': [3.5, 0.06], 'F': [3.364, 0.05],
 #         'Na': [2.983, 0.03], 'Mg': [3.021, 0.111], 'Al': [4.499, 0.505], 'Si': [4.295, 0.402], 'P': [4.147, 0.305],
 #         'S': [4.035, 0.274], 'Cl': [3.947, 0.227]}
 

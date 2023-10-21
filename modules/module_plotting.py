@@ -26,7 +26,7 @@ def load_matplotlib(backend='Agg'):
         #ashexit()
     print("Matplotlib loaded")
     matplotlib.use(backend)
-    import matplotlib.pyplot as plt 
+    import matplotlib.pyplot as plt
     return plt
 
 def Gaussian(x, mu, strength, sigma):
@@ -50,7 +50,7 @@ def Voigt(x, x0, strength,sigma, gamma):
 
 class ASH_plot():
     def __init__(self, figuretitle='Plottyplot', num_subplots=1, dpi=200, imageformat='png', figsize=(9,5),
-        x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title', 
+        x_axislabel='X-axis', y_axislabel='Energy (X)', x_axislabels=None, y_axislabels=None, title='Plot-title',
         subplot_titles=None, xlimit=None, ylimit=None, backend='Agg',
         legend_pos=None, horizontal=False, tight_layout=True, padding=None):
         print_line_with_mainheader("ASH_energy_plot")
@@ -122,7 +122,7 @@ class ASH_plot():
                     self.fig.subplots_adjust(hspace=padding)
 
             self.axiscount=0
-            
+
             #X-limit and y-limit
             #TODO: Allow different limits for each subplot
             if xlimit != None:
@@ -158,13 +158,13 @@ class ASH_plot():
         self.axs[subplot].invert_xaxis()
     def invert_y_axis(self,subplot):
         self.axs[subplot].invert_yaxis()
-    def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
+    def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40,
                     scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
                     xticklabelrotation=80, x_scale_log=False, y_scale_log=False):
         print("Adding new series to ASH_plot object")
         self.addplotcount+=1
         curraxes=self.axs[subplot]
-        
+
         #Using x_list and y_list unless not provided
         if surfacedictionary == None:
             #If Python lists
@@ -202,7 +202,7 @@ class ASH_plot():
             else:
                 legendlabel=label
             curraxes.plot(x, y, linestyle='-', color=color, linewidth=line_linewidth, label=label)
-        
+
         #Add labels to x-axis if
         if x_labels is not None:
             print("Adding xticks labels using rotation parameter:", xticklabelrotation)
@@ -256,8 +256,8 @@ class ASH_plot():
 
 #Simple reactionprofile_plot function
 #Input: dictionary of (X,Y): energy   entries
-#NOTE: Partially deprecated thanks to ASHplot. Relative energy option is useful though. 
-#TODO: Keep but call ASHplot here instead of doing separate plotting 
+#NOTE: Partially deprecated thanks to ASHplot. Relative energy option is useful though.
+#TODO: Keep but call ASHplot here instead of doing separate plotting
 def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, mode='pyplot',
                          imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue',
                         filename='Plot'):
@@ -266,7 +266,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 
     plt = load_matplotlib()
 
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
     coords=[]
@@ -290,7 +290,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
     print(f"Coords ({len(coords)}): {coords}")
     print(f"finalvalues ({len(finalvalues)}): {finalvalues}")
     print(f"Relative energies({finalunit}): {finalvalues}")
-    
+
     if mode == 'pyplot':
         plt.close() #Clear memory of previous plots
         plt.scatter(coords, finalvalues, color=color, marker = 'o',  s=pointsize, linewidth=scatter_linewidth )
@@ -312,16 +312,16 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 
 
 #contourplot
-#Input: dictionary of (X,Y): energy   entries 
+#Input: dictionary of (X,Y): energy   entries
 # Can also be other property than energy. Use RelativeEnergy=False
 #Good colormaps: viridis, viridis_r, inferno, inferno_r, plasma, plasma_r, magma, magma_r
 # Less recommended: jet, jet_r
-def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit='kcal/mol', interpolation='Cubic', 
+def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabel='Coord', finalunit='kcal/mol', interpolation='Cubic',
                 interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=500,
                 contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title=""):
     print_line_with_mainheader("contourplot")
     #Relative energy conversion (if RelativeEnergy is True)
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
     coords=[]
@@ -335,7 +335,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         x_c.append(i[0])
         y_c.append(i[1])
         e.append(surfacedictionary[i])
-    
+
     #X and Y ranges
     x = sorted(set(x_c))
     y = sorted(set(y_c))
@@ -420,12 +420,12 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
             # mode='nearest' seems to give the value instead
             print("problem. zero value exiting")
             ashexit()
-            
+
         Y = zoom(Y, pw, mode='nearest')
         Z = zoom(Z, pw, mode='nearest')
-    #Filled contours. 
+    #Filled contours.
     print("Using {} numcontourlines for colormap".format(numcontourlines))
-    
+
 
     #Loading matplotlib
     print("Loading Matplotlib")
@@ -434,11 +434,11 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
 
     #Clearing plt object in case previous plot
     plt.clf()
-    
+
     #Fille contourplot
     contour_surface=plt.contourf(X, Y, Z, numcontourlines, alpha=contour_alpha, cmap=colormap)
-    
-    #Contour lines. numcontourlines is 50 by default 
+
+    #Contour lines. numcontourlines is 50 by default
     #Or if contourvalues provided then should be ascending list
     if contour_values is not None:
         print("Using set contour_values for contourlines:", contour_values)
@@ -447,29 +447,29 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
         #By default using value/10 as used for colormap
         print("Using {} numcontourlines ".format(numcontourlines/10))
         Clines = plt.contour(X, Y, Z, int(numcontourlines/10), colors=contourline_color)
-    
+
     # Contour-line labels
-    if clinelabels is True: 
+    if clinelabels is True:
         plt.clabel(Clines, inline=True, fontsize=10)
-    
+
     plt.title(title)
     plt.colorbar(contour_surface)
     plt.xlabel(x_axislabel)
     plt.ylabel(y_axislabel)
     plt.savefig('Surface{}.{}'.format(label,imageformat), format=imageformat, dpi=dpi)
     print("Created PNG file: Surface{}.{}".format(label,imageformat))
-    
-    
+
+
 #plot_Spectrum reads stick-values (e.g. absorption energie or IPs) and intensities, broadens spectrum (writes out dat and stk files) and then creates image-file using Matplotlib.
 #Default Gaussian broadening, Lorentz and Gaussian-Lorentzian (Voigt) also possible.
-def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000, 
+def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000,
     imageformat='png', dpi=200, matplotlib=True, CSV=True, color='blue', plot_sticks=True, lineshape='Gaussian', voigt_broadening=None):
-    
+
     print_line_with_mainheader("plot_Spectrum")
     if xvalues is None or yvalues is None or range is None:
         print("plot_Spectrum requires xvalues, yvalues and range variables")
         ashexit()
-    assert len(xvalues) == len(yvalues), "List of yvalues not same size as list of xvalues." 
+    assert len(xvalues) == len(yvalues), "List of yvalues not same size as list of xvalues."
 
     start=range[0]
     finish=range[1]
@@ -530,20 +530,20 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
     with open(plotname+".dat", 'w') as tdatfile:
         for i,j in zip(x,spectrum):
             if CSV is True:
-                tdatfile.write("{:13.10f}, {:13.10f} \n".format(i,j))            
+                tdatfile.write("{:13.10f}, {:13.10f} \n".format(i,j))
             else:
                 tdatfile.write("{:13.10f} {:13.10f} \n".format(i,j))
     #Save stk file
     with open(plotname+".stk", 'w') as tstkfile:
         for b,c in zip(xvalues,yvalues):
             if CSV is True:
-                tstkfile.write("{:13.10f}, {:13.10f} \n".format(b,c))                
+                tstkfile.write("{:13.10f}, {:13.10f} \n".format(b,c))
             else:
                 tstkfile.write("{:13.10f} {:13.10f} \n".format(b,c))
 
     print("Wrote file:", plotname+".dat")
     print("Wrote file:", plotname+".stk")
-    
+
     ##################################
     # Plot with Matplotlib
     ####################################
@@ -603,4 +603,3 @@ def MOplot_vertical(mos_dict, pointsize=4000, linewidth=2, label="Label", yrange
     plt.savefig(label+"."+imageformat, format=imageformat, dpi=200)
 
     print("Created plot:", label+"."+imageformat)
-

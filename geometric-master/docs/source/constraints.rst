@@ -46,7 +46,7 @@ In order to scan the dihedral angle from 0 degrees to 180 degrees in 15 degree i
 
     $scan
     dihedral 20 21 22 23 0.0 180.0 13
-    
+
 Note that although 180/12 = 15, we need 13 steps to be inclusive of both endpoints.  If 12 is specified, then the step size will
 be 180/11 = 16.3636.. degrees.
 
@@ -105,11 +105,11 @@ The atom selection uses comma and dash syntax to specify a range of atoms (see a
 
 The values of the rotation coordinate are given in terms of a rotation axis and a rotation angle relative to the initial structure.
 
-To use ``$set``, provide four total numbers: three numbers for the rotation axis, which is automatically normalized, 
+To use ``$set``, provide four total numbers: three numbers for the rotation axis, which is automatically normalized,
 plus a single number for the rotation angle (in degrees) to indicate that the final structure should
 be rotated by this amount from the initial angle along the provided axis.
 
-To use ``$scan``, provide six total numbers: three numbers for the rotation axis, which is automatically normalized, 
+To use ``$scan``, provide six total numbers: three numbers for the rotation axis, which is automatically normalized,
 then three numbers for the initial and final values of the rotation angle (in degrees) and the number of steps.
 
 .. image:: images/penta3.png
@@ -117,7 +117,7 @@ then three numbers for the initial and final values of the rotation angle (in de
 
 The above image shows the results of three geomeTRIC scans on two pentacene molecules where
 the orientation of one molecule is frozen (C, gray and H, white) and the other molecule's orientation is scanned over a 180-degree range
-along three different rotation axes (color indicates the amount of rotation). 
+along three different rotation axes (color indicates the amount of rotation).
 Note that the positions and internal structure of the molecules are relaxed as orientation is scanned.
 An example calculation is provided in the ``examples/pentacene`` directory.
 

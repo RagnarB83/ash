@@ -158,4 +158,3 @@ def write_displacements(coords, M, IC, dirname, verbose):
             logger.info("%i %.1f Displacement (rms/max) = %.5f / %.5f %s\n" % (i, j, rms_displacement, max_displacement, "(Bork)" if IC.bork else "(Good)"))
         M.xyzs = x
         M.write("%s/ic_%03i.xyz" % (dirname, i))
-

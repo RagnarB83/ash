@@ -33,7 +33,7 @@ class DualTheory:
     """ASH DualTheory theory.
     Combines two theory levels to give a modified energy and modified gradient
     """
-    def __init__(self, theory1=None, theory2=None, printlevel=1, label=None, correctiontype="Difference", 
+    def __init__(self, theory1=None, theory2=None, printlevel=1, label=None, correctiontype="Difference",
             update_schedule='frequency', update_freq=5, max_updates=100, numcores=1, Maxthreshold=3e-5, minimum_steps=7):
         print("Creating DualTheory object. Correctiontype: ", correctiontype)
         self.theorytype="QM"
@@ -55,7 +55,7 @@ class DualTheory:
 
         #Type of update schedule (default='frequency). Options: 'Robust_start',
         self.update_schedule=update_schedule
-        #Minimum number of steps for 
+        #Minimum number of steps for
         self.minimum_steps=minimum_steps
         #self.RMSthreshold=RMSthreshold
         self.Maxthreshold=Maxthreshold
@@ -192,11 +192,11 @@ class DualTheory:
         if os.path.isfile(filename) is False:
             print(f"File {filename} does not exist")
             print("Continuing")
-            #Returning original 
+            #Returning original
             return
         print("here")
         self.update_freq_dict = json.load(open(filename))
-        return 
+        return
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, elems=None, Grad=False, numcores=None, label='default', charge=None, mult=None, run_both_theories=False ):
@@ -310,10 +310,10 @@ class DualTheory:
             print("YYYY")
             print("self.update_freq_dict:", self.update_freq_dict)
             ################
-            self.update_freq_dict[label][0] +=1 
+            self.update_freq_dict[label][0] +=1
             if Grad == True:
                 print("Grad True")
-                self.update_freq_dict[label][1] +=1 
+                self.update_freq_dict[label][1] +=1
                 T1_energy, T1_grad = self.theory1.run(current_coords=current_coords, elems=elems, numcores=numcores, Grad=True, charge=charge, mult=mult)
                 if run_both_theories == True:
                     print("runboth true")
@@ -324,7 +324,7 @@ class DualTheory:
                     self.correction(Grad,label,T2_E=T2_energy,T1_E=T1_energy,T2_G=T2_grad,T1_G=T1_grad)
                     #self.correction_stats(label)
             else:
-                self.update_freq_dict[label][1] +=1 
+                self.update_freq_dict[label][1] +=1
                 T1_energy = self.theory1.run(current_coords=current_coords, elems=elems, numcores=numcores, Grad=False, charge=charge, mult=mult)
                 if run_both_theories == True:
                     print("Here zz")
@@ -344,7 +344,7 @@ class DualTheory:
         if Grad == True:
             #Combine into current gradient
             gradient = T1_grad + self.gradient_correction[label]
-            
+
             self.store_gradient_info(gradient, label,type="combined")
 
             #Print stuff
@@ -354,5 +354,3 @@ class DualTheory:
             return energy,gradient
         else:
             return energy
-    
-

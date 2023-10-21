@@ -453,4 +453,3 @@ def BernyOpt(theory,fragment, charge=None, mult=None):
     print("Final optimized energy:",  fragment.energy)
     fragment.replace_coords(elems,geom.coords)
     blankline()
-

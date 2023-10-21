@@ -594,7 +594,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
 
 
     if converged:
-        #RB: adding to 
+        #RB: adding to
         calculator.status(converged=True)
         PrintConverged(it+1, path.GetFC())
         PrintDivider()
@@ -643,7 +643,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         #PrintAtomMatrix("Tangent to path:", path.GetNDofIm(),
         #                tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],
         #                path.GetSymbols())
-        
+
         #RB addition: Provide final tangent to calculator
         tang_2d_CI = np.reshape(tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],(int(path.ndofIm/3),3))
         calculator.tangent = tang_2d_CI
@@ -673,7 +673,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         PrintMaxIter(maxiter)
         WritePath(basename + "_last_iter.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
                   path.GetSymbols(), path.GetEnergy())
-        
+
         #RB: keep current.xyz file
         #if os.path.isfile(basename + "_current.xyz"):
         #    os.remove(basename + "_current.xyz")

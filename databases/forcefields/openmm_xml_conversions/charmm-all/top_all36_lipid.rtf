@@ -1,5 +1,5 @@
 *  \\\\\\\ CHARMM36 All-Hydrogen Lipid Topology File ///////
-*  All comments and questions should be submitted to the 
+*  All comments and questions should be submitted to the
 *  parameter forum at the CHARMM website: www.charmm.org
 *
 36  1
@@ -26,7 +26,7 @@
 !Jeffery B. Klauda, Viviana Monje, Taehoon Kim, and Wonpil Im. "Improving
 !the CHARMM Force Field for Polyunsaturated Fatty Acid Chains" J. Phys. Chem. B.
 !2012 ASAP http://dx.doi.org/10.1021/jp304056p
-  
+
 !Atom nomenclature is based on that of Sundaralingan, M.,
 !Ann. N.Y. Acad. Sci. USA, 195:324-355, 1972
 !see lipid_convert.tgz for information on nomenclature conversion
@@ -71,16 +71,16 @@ MASS  -1  PL        30.97400 P ! phosphorus
 MASS  -1  SL        32.06000 S ! Sulfate sulfur
 MASS  -1  CRL1      12.01100 C ! sp3 carbon with 1 H on a ring  (-CH1-) for sterols
 MASS  -1  CRL2      12.01100 C ! carbon of methylene group on a ring (-CH2-) for sterols
- 
+
 DEFA FIRS none LAST none
 AUTOGENERATE ANGLES DIHEDRALS PATCH
 
-RESI LPPC        0.00 ! deoxylysophosphatidylcholine 
+RESI LPPC        0.00 ! deoxylysophosphatidylcholine
 ! Polar Head and glycerol backbone
 GROUP                 !          H15B
 ATOM N    NTL   -0.60 !            |
 ATOM C13  CTL5  -0.35 !      H15A-C15-H15C
-ATOM H13A HL     0.25 !            | 
+ATOM H13A HL     0.25 !            |
 ATOM H13B HL     0.25 !    H13B    |    H14A
 ATOM H13C HL     0.25 !      |     |     |
 ATOM C14  CTL5  -0.35 !H13A-C13----N----C14-H14B     (+)
@@ -89,11 +89,11 @@ ATOM H14B HL     0.25 !    H13C    |    H14C
 ATOM H14C HL     0.25 !            |
 ATOM C15  CTL5  -0.35 !            |
 ATOM H15A HL     0.25 !            |    alpha6
-ATOM H15B HL     0.25 !            |  
+ATOM H15B HL     0.25 !            |
 ATOM H15C HL     0.25 !            |
-ATOM C12  CTL2  -0.10 !     H12A--C12---H12B     
+ATOM C12  CTL2  -0.10 !     H12A--C12---H12B
 ATOM H12A HL     0.25 !            |
-ATOM H12B HL     0.25 !            |    
+ATOM H12B HL     0.25 !            |
 GROUP                 !                  alpha5
 ATOM C11  CTL2  -0.08 !            |
 ATOM H11A HAL2   0.09 !     H11A--C11---H11B
@@ -108,10 +108,10 @@ ATOM HA   HAL2   0.09 !       HA---C1---HB
 ATOM HB   HAL2   0.09 !            |     theta1
 GROUP                 !            |
 ATOM C2   CTL2  -0.18 !       HR---C2----HS
-ATOM HS   HAL2   0.09 !            | 
-ATOM HR   HAL2   0.09 !            | 
+ATOM HS   HAL2   0.09 !            |
+ATOM HR   HAL2   0.09 !            |
 GROUP                 !            |
-ATOM C3   CTL2   0.08 !       HX---C3---HY 
+ATOM C3   CTL2   0.08 !       HX---C3---HY
 ATOM HX   HAL2   0.09 !            |
 ATOM HY   HAL2   0.09 !            |   gamma1
 ATOM O31  OSL   -0.49 !      O32  O31
@@ -122,7 +122,7 @@ ATOM H2X  HAL2   0.09 !  H2X---C32---H2Y
 ATOM H2Y  HAL2   0.09 !         |
 GROUP                 !
 ATOM C33  CTL2  -0.18 !         |
-ATOM H3X  HAL2   0.09 !  H3X---C33---H3Y 
+ATOM H3X  HAL2   0.09 !  H3X---C33---H3Y
 ATOM H3Y  HAL2   0.09 !         |
 GROUP                 !
 ATOM C34  CTL2  -0.18 !         |
@@ -146,7 +146,7 @@ ATOM H8X  HAL2   0.09 !  H8X---C38---H8Y
 ATOM H8Y  HAL2   0.09 !         |
 GROUP                 !
 ATOM C39  CTL2  -0.18 !         |
-ATOM H9X  HAL2   0.09 !  H9X---C39---H9Y 
+ATOM H9X  HAL2   0.09 !  H9X---C39---H9Y
 ATOM H9Y  HAL2   0.09 !         |
 GROUP                 !
 ATOM C310 CTL2  -0.18 !         |
@@ -163,16 +163,16 @@ ATOM H12Y HAL3   0.09 !         |
 ATOM H12Z HAL3   0.09 !        H12Z
                       !
 ! Polar Head
-BOND  N    C13       N    C14       N    C15       
-BOND  C13  H13A      C13  H13B      C13  H13C 
-BOND  C14  H14A      C14  H14B      C14  H14C 
-BOND  C15  H15A      C15  H15B      C15  H15C 
+BOND  N    C13       N    C14       N    C15
+BOND  C13  H13A      C13  H13B      C13  H13C
+BOND  C14  H14A      C14  H14B      C14  H14C
+BOND  C15  H15A      C15  H15B      C15  H15C
 BOND  N    C12
 BOND  C12  H12A      C12  H12B      C12  C11
-BOND  C11  H11A      C11  H11B      C11  O12   
-BOND  O12  P         P    O11       P    O13       P    O14 
+BOND  C11  H11A      C11  H11B      C11  O12
+BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        C1   O11       
+BOND  C1   HA        C1    HB       C1   C2        C1   O11
 BOND  C2   HS        C2    HR       C2   C3
 BOND  C3   HX        C3    HY       C3   O31
 
@@ -180,19 +180,19 @@ BOND  C3   HX        C3    HY       C3   O31
 BOND  O31  C31
 BOND  C31  C32
 DOUBLE  C31  O32
-BOND  C32  H2X       C32  H2Y       C32  C33 
-BOND  C33  H3X       C33  H3Y       C33  C34 
-BOND  C34  H4X       C34  H4Y       C34  C35 
-BOND  C35  H5X       C35  H5Y       C35  C36 
-BOND  C36  H6X       C36  H6Y       C36  C37 
-BOND  C37  H7X       C37  H7Y       C37  C38 
-BOND  C38  H8X       C38  H8Y       C38  C39 
+BOND  C32  H2X       C32  H2Y       C32  C33
+BOND  C33  H3X       C33  H3Y       C33  C34
+BOND  C34  H4X       C34  H4Y       C34  C35
+BOND  C35  H5X       C35  H5Y       C35  C36
+BOND  C36  H6X       C36  H6Y       C36  C37
+BOND  C37  H7X       C37  H7Y       C37  C38
+BOND  C38  H8X       C38  H8Y       C38  C39
 BOND  C39  H9X       C39  H9Y       C39  C310
 BOND  C310 H10X      C310 H10Y      C310 C311
 BOND  C311 H11X      C311 H11Y      C311 C312
 BOND  C312 H12X      C312 H12Y      C312 H12Z
 
-IMPR C31 O31 C32 O32 
+IMPR C31 O31 C32 O32
 
 !IC table from IC generated, minimized geometry
 IC C13    N      C12    C11        1.5007  109.16   60.77  118.01   1.5532
@@ -564,7 +564,7 @@ RESI DLPE         0.00 ! 2,3 dilauroyl-D-glycero-1-Phosphatidylethanolamine
 !       CH2 - PO4 - CH2 - CH2 - NH3
 !
 ! Polar Head and glycerol backbone
-GROUP                 ! 
+GROUP                 !
 ATOM N    NH3L  -0.30 !           HN2
 ATOM HN1  HCL    0.33 !            |
 ATOM HN2  HCL    0.33 !  (+) HN1---N---HN3
@@ -826,7 +826,7 @@ IC  H12X   C311   *C312  H12Z       1.1114  110.49  120.02  110.54   1.1114
 
 RESI DLPS        -1.00 ! 2,3 dilauroyl-D-glycero-1-Phosphatidylserine
 !
-!  R1 - CH2        
+!  R1 - CH2
 !       |                 (-)
 !  R2 - CH                CO2
 !       |     (-)         |    (+)
@@ -957,7 +957,7 @@ ATOM C312 CTL3  -0.27 !                         |
 ATOM H12X HAL3   0.09 !                  H12X---C312--H12Y
 ATOM H12Y HAL3   0.09 !                         |
 ATOM H12Z HAL3   0.09 !                         H12Z
- 
+
 ! Polar Head
 BOND  N    HN1       N    HN2       N    HN3       N    C12
 BOND  O13B C13       C13  C12
@@ -966,7 +966,7 @@ BOND  C12  H12A      C12  C11       C1   O11
 BOND  C11  H11A      C11  H11B      C11  O12
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -1110,7 +1110,7 @@ RESI DLPA        -1.00 ! 2,3 dilauroyl-D-glycero-1-Phosphatidic acid
 !
 ! Polar Head and glycerol backbone
 GROUP                 !            H12
-                      !            |     
+                      !            |
 ATOM P    PL     1.50 !   (-) O13  O12
 ATOM O13  O2L   -0.82 !         \ /      alpha3
 ATOM O14  O2L   -0.82 !          P (+)
@@ -1221,12 +1221,12 @@ ATOM C312 CTL3  -0.27 !                         |
 ATOM H12X HAL3   0.09 !                  H12X---C312--H12Y
 ATOM H12Y HAL3   0.09 !                         |
 ATOM H12Z HAL3   0.09 !                         H12Z
- 
+
 ! Polar Head
 BOND  O12  P         P    O11       P    O13       P    O14
 BOND  O12  H12       O11  C1
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -1482,14 +1482,14 @@ ATOM C312 CTL3  -0.27 !                         |
 ATOM H12X HAL3   0.09 !                  H12X---C312--H12Y
 ATOM H12Y HAL3   0.09 !                         |
 ATOM H12Z HAL3   0.09 !                         H12Z
- 
+
 ! Polar Head
 BOND  HO3  OC3       OC3  C13       C13  H13A      C13  H13B      C13  C12
 BOND  HO2  OC2       OC2  C12       C12  H12A      C12  C11
 BOND  C11  H11A      C11  H11B      C11  O12       O11  C1
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -1956,7 +1956,7 @@ RESI DMPE         0.00 ! 2,3 dimyristoyl-D-glycero-1-Phosphatidylethanolamine
 !       CH2 - PO4 - CH2 - CH2 - NH3
 !
 ! Polar Head and glycerol backbone
-GROUP                 ! 
+GROUP                 !
 ATOM N    NH3L  -0.30 !           HN2
 ATOM HN1  HCL    0.33 !            |
 ATOM HN2  HCL    0.33 !  (+) HN1---N---HN3
@@ -2250,7 +2250,7 @@ IC H14X  C313  *C31  H14Z   7.0643   15.91   42.84    5.47   7.8630
 
 RESI DMPS        -1.00 ! 2,3 dimyristoyl-D-glycero-1-Phosphatidylserine
 !
-!  R1 - CH2        
+!  R1 - CH2
 !       |                 (-)
 !  R2 - CH                CO2
 !       |     (-)         |    (+)
@@ -2406,7 +2406,7 @@ BOND  C12  H12A      C12  C11       C1   O11
 BOND  C11  H11A      C11  H11B      C11  O12
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -2566,7 +2566,7 @@ RESI DMPA        -1.00 ! 2,3 dimyristoyl-D-glycero-1-Phosphatidic acid
 !
 ! Polar Head and glycerol backbone
 GROUP                 !            H12
-                      !            |     
+                      !            |
 ATOM P    PL     1.50 !   (-) O13  O12
 ATOM O13  O2L   -0.82 !         \ /      alpha3
 ATOM O14  O2L   -0.82 !          P (+)
@@ -2698,7 +2698,7 @@ ATOM H14Z HAL3   0.09 !                         H14Z
 BOND  O12  P         P    O11       P    O13       P    O14
 BOND  O12  H12       O11  C1
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -2986,14 +2986,14 @@ ATOM C314 CTL3  -0.27 !                         |
 ATOM H14X HAL3   0.09 !                  H14X---C314--H14Y
 ATOM H14Y HAL3   0.09 !                         |
 ATOM H14Z HAL3   0.09 !                         H14Z
- 
+
 ! Polar Head
 BOND  HO3  OC3       OC3  C13       C13  H13A      C13  H13B      C13  C12
 BOND  HO2  OC2       OC2  C12       C12  H12A      C12  C11
 BOND  C11  H11A      C11  H11B      C11  O12       O11  C1
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -3508,7 +3508,7 @@ RESI DPPE         0.00 ! 2,3 dipalmitoyl-D-glycero-1-Phosphatidylethanolamine
 !       CH2 - PO4 - CH2 - CH2 - NH3
 !
 ! Polar Head and glycerol backbone
-GROUP                 ! 
+GROUP                 !
 ATOM N    NH3L  -0.30 !           HN2
 ATOM HN1  HCL    0.33 !            |
 ATOM HN2  HCL    0.33 !  (+) HN1---N---HN3
@@ -3834,7 +3834,7 @@ IC H16X  C315  *C31  H16Z   9.6613    4.19  -77.33   10.61   9.1221
 
 RESI DPPS        -1.00 ! 2,3 dipalmitoyl-D-glycero-1-Phosphatidylserine
 !
-!  R1 - CH2        
+!  R1 - CH2
 !       |                 (-)
 !  R2 - CH                CO2
 !       |     (-)         |    (+)
@@ -4006,7 +4006,7 @@ BOND  C12  H12A      C12  C11       C1   O11
 BOND  C11  H11A      C11  H11B      C11  O12
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -4182,7 +4182,7 @@ RESI DPPA        -1.00 ! 2,3 dipalmitoyl--D-glycero-1-Phosphatidic acid
 !
 ! Polar Head and glycerol backbone
 GROUP                 !            H12
-                      !            |     
+                      !            |
 ATOM P    PL     1.50 !   (-) O13  O12
 ATOM O13  O2L   -0.82 !         \ /      alpha3
 ATOM O14  O2L   -0.82 !          P (+)
@@ -4330,7 +4330,7 @@ ATOM H16Z HAL3   0.09 !                         H16Z
 BOND  O12  P         P    O11       P    O13       P    O14
 BOND  O12  H12       O11  C1
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -4657,7 +4657,7 @@ BOND  HO2  OC2       OC2  C12       C12  H12A      C12  C11
 BOND  C11  H11A      C11  H11B      C11  O12       O11  C1
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -5219,7 +5219,7 @@ RESI DSPE         0.00 ! 2,3-distearoyl-D-glycero-1-Phosphatidylethanolamine
 !       CH2 - PO4 - CH2 - CH2 - NH3
 !
 ! Polar Head and glycerol backbone
-GROUP                 ! 
+GROUP                 !
 ATOM N    NH3L  -0.30 !           HN2
 ATOM HN1  HCL    0.33 !            |
 ATOM HN2  HCL    0.33 !  (+) HN1---N---HN3
@@ -5577,7 +5577,7 @@ IC H18X  C317  *C31  H18Z  13.7564    3.79  -43.55    8.87  12.8199
 
 RESI DSPS        -1.00 ! 2,3-distearoyl-D-glycero-1-Phosphatidylserine
 !
-!  R1 - CH2        
+!  R1 - CH2
 !       |                 (-)
 !  R2 - CH                CO2
 !       |     (-)         |    (+)
@@ -5765,7 +5765,7 @@ BOND  C12  H12A      C12  C11       C1   O11
 BOND  C11  H11A      C11  H11B      C11  O12
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -5957,7 +5957,7 @@ RESI DSPA        -1.00 ! 2,3-distearoyl--D-glycero-1-Phosphatidic acid
 !
 ! Polar Head and glycerol backbone
 GROUP                 !            H12
-                      !            |     
+                      !            |
 ATOM P    PL     1.50 !   (-) O13  O12
 ATOM O13  O2L   -0.82 !         \ /      alpha3
 ATOM O14  O2L   -0.82 !          P (+)
@@ -6121,7 +6121,7 @@ ATOM H18Z HAL3   0.09 !                         H18Z
 BOND  O12  P         P    O11       P    O13       P    O14
 BOND  O12  H12       O11  C1
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -6480,7 +6480,7 @@ BOND  HO2  OC2       OC2  C12       C12  H12A      C12  C11
 BOND  C11  H11A      C11  H11B      C11  O12       O11  C1
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain #2
@@ -6839,7 +6839,7 @@ ATOM C318 CTL3   -0.27 !                              |
 ATOM H18X HAL3    0.09 !                       H18X---C318--H18Y
 ATOM H18Y HAL3    0.09 !                              |
 ATOM H18Z HAL3    0.09 !                              H18Z
- 
+
 ! Polar Head
 BOND  N    C13       N    C14       N    C15
 BOND  C13  H13A      C13  H13B      C13  H13C
@@ -6850,7 +6850,7 @@ BOND  C12  H12A      C12  H12B      C12  C11
 BOND  C11  H11A      C11  H11B      C11  O12       O11  C1
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain from C2
@@ -6864,7 +6864,7 @@ BOND  C25  H5R       C25  H5S       C25  C26
 BOND  C26  H6R       C26  H6S       C26  C27
 BOND  C27  H7R       C27  H7S       C27  C28
 BOND  C28  H8R       C28  H8S       C28  C29
-BOND  C29  H9R       
+BOND  C29  H9R
 DOUBLE  C29 C210
 BOND  C210 H10R      C210 C211
 BOND  C211 H11R      C211 H11S      C211 C212
@@ -6886,7 +6886,7 @@ BOND  C35  H5X       C35  H5Y       C35  C36
 BOND  C36  H6X       C36  H6Y       C36  C37
 BOND  C37  H7X       C37  H7Y       C37  C38
 BOND  C38  H8X       C38  H8Y       C38  C39
-BOND  C39  H9X 
+BOND  C39  H9X
 DOUBLE C39 C310
 BOND  C310 H10X      C310 C311
 BOND  C311 H11X      C311 H11Y      C311 C312
@@ -7046,7 +7046,7 @@ RESI DOPE         0.00 ! 2,3-dioleoyl-D-glycero-1-phosphatidylethanolamine
 !       CH2 - PO4 - CH2 - CH2 - NH3
 !
 ! Polar Head and glycerol backbone
-GROUP                 ! 
+GROUP                 !
 ATOM N    NH3L  -0.30 !           HN2
 ATOM HN1  HCL    0.33 !            |
 ATOM HN2  HCL    0.33 !  (+) HN1---N---HN3
@@ -7211,7 +7211,7 @@ ATOM C318 CTL3  -0.27 !                         |
 ATOM H18X HAL3   0.09 !                  H18X---C318--H18Y
 ATOM H18Y HAL3   0.09 !                         |
 ATOM H18Z HAL3   0.09 !                         H18Z
- 
+
 ! Polar Head
 BOND  N    HN1       N    HN2       N    HN3       N    C12
 BOND  C12  H12A      C12  H12B      C12  C11
@@ -7397,7 +7397,7 @@ IC H18X   C317   *C318  H18Z       1.1113  110.46 -120.06  110.61   1.1112
 
 RESI DOPS        -1.00 ! 2,3-dioleoyl-D-glycero-1-phosphatidylserine
 !
-!  R1 - CH2        
+!  R1 - CH2
 !       |                 (-)
 !  R2 - CH                CO2
 !       |     (-)         |    (+)
@@ -7572,7 +7572,7 @@ ATOM C318 CTL3   -0.27 !                              |
 ATOM H18X HAL3    0.09 !                       H18X---C318--H18Y
 ATOM H18Y HAL3    0.09 !                              |
 ATOM H18Z HAL3    0.09 !                              H18Z
- 
+
 ! Polar Head
 BOND  N    HN1       N    HN2       N    HN3       N    C12
 BOND  O13B C13       C13  C12
@@ -7581,7 +7581,7 @@ BOND  C12  H12A      C12  C11       C1   O11
 BOND  C11  H11A      C11  H11B      C11  O12
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain from C2
@@ -7770,7 +7770,7 @@ RESI DOPA        -1.00 ! 2,3-dioleoyl-D-glycero-1-phosphatidic acid
 !
 ! Polar Head and glycerol backbone
 GROUP                  !                 H12
-                       !                 |     
+                       !                 |
 ATOM P    PL      1.50 !        (-) O13  O12
 ATOM O13  O2L    -0.82 !              \ /      alpha3
 ATOM O14  O2L    -0.82 !               P (+)
@@ -7925,12 +7925,12 @@ ATOM C318 CTL3   -0.27 !                              |
 ATOM H18X HAL3    0.09 !                       H18X---C318--H18Y
 ATOM H18Y HAL3    0.09 !                              |
 ATOM H18Z HAL3    0.09 !                              H18Z
- 
+
 ! Polar Head
 BOND  O12  P         P    O11       P    O13       P    O14
 BOND  O12  H12       O11  C1
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain from C2
@@ -8275,14 +8275,14 @@ ATOM C318 CTL3   -0.27 !                              |
 ATOM H18X HAL3    0.09 !                       H18X---C318--H18Y
 ATOM H18Y HAL3    0.09 !                              |
 ATOM H18Z HAL3    0.09 !                              H18Z
- 
+
 ! Polar Head
 BOND  HO3  OC3       OC3  C13       C13  H13A      C13  H13B      C13  C12
 BOND  HO2  OC2       OC2  C12       C12  H12A      C12  C11
 BOND  C11  H11A      C11  H11B      C11  O12       O11  C1
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain from C2
@@ -8463,8 +8463,8 @@ IC H18X   C317   *C318  H18Z       1.1113  110.46 -120.06  110.61   1.1112
 
 RESI POPC         0.00 ! 3-palmitoyl-2-oleoyl-D-glycero-1-Phosphatidylcholine
 !
-!  Palmitoyl - CH2        
-!              |  
+!  Palmitoyl - CH2
+!              |
 !     Oleyol - CH
 !              |     (-)              (+)
 !              CH2 - PO4 - CH2 - CH2 - N-(CH3)3
@@ -8639,7 +8639,7 @@ ATOM C316 CTL3   -0.27 !                              |
 ATOM H16X HAL3    0.09 !                       H16X---C316--H16Y
 ATOM H16Y HAL3    0.09 !                              |
 ATOM H16Z HAL3    0.09 !                              H16Z
- 
+
 ! Polar Head
 BOND  N    C13       N    C14       N    C15
 BOND  C13  H13A      C13  H13B      C13  H13C
@@ -8650,7 +8650,7 @@ BOND  C12  H12A      C12  H12B      C12  C11
 BOND  C11  H11A      C11  H11B      C11  O12       O11  C1
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain from C2
@@ -8664,7 +8664,7 @@ BOND  C25  H5R       C25  H5S       C25  C26
 BOND  C26  H6R       C26  H6S       C26  C27
 BOND  C27  H7R       C27  H7S       C27  C28
 BOND  C28  H8R       C28  H8S       C28  C29
-BOND  C29  H91       
+BOND  C29  H91
 DOUBLE  C29 C210
 BOND  C210 H101      C210 C211
 BOND  C211 H11R      C211 H11S      C211 C212
@@ -9176,7 +9176,7 @@ IC H16X   C315   *C316  H16Z       1.1113  110.51 -120.06  110.58   1.1112
 
 RESI POPS        -1.00 ! 3-palmitoyl-2-oleoyl-D-glycero-1-Phosphatidylserine
 !
-!  Palmitoyl - CH2        
+!  Palmitoyl - CH2
 !              |                 (-)
 !     Oleoyl - CH                CO2
 !              |     (-)         |    (+)
@@ -9345,7 +9345,7 @@ ATOM C316 CTL3   -0.27 !                              |
 ATOM H16X HAL3    0.09 !                       H16X---C316--H16Y
 ATOM H16Y HAL3    0.09 !                              |
 ATOM H16Z HAL3    0.09 !                              H16Z
- 
+
 ! Polar Head
 BOND  N    HN1       N    HN2       N    HN3       N    C12
 BOND  O13B C13       C13  C12
@@ -9354,7 +9354,7 @@ BOND  C12  H12A      C12  C11       C1   O11
 BOND  C11  H11A      C11  H11B      C11  O12
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain from C2
@@ -9368,7 +9368,7 @@ BOND  C25  H5R       C25  H5S       C25  C26
 BOND  C26  H6R       C26  H6S       C26  C27
 BOND  C27  H7R       C27  H7S       C27  C28
 BOND  C28  H8R       C28  H8S       C28  C29
-BOND  C29  H91       
+BOND  C29  H91
 DOUBLE  C29 C210
 BOND  C210 H101      C210 C211
 BOND  C211 H11R      C211 H11S      C211 C212
@@ -9537,7 +9537,7 @@ RESI POPA        -1.00 ! 3-palmitoyl-2-oleoyl-D-glycero-1-Phosphatidic acid
 !
 ! Polar Head and glycerol backbone
 GROUP                  !                 H12
-                       !                 |     
+                       !                 |
 ATOM P    PL      1.50 !        (-) O13  O12
 ATOM O13  O2L    -0.82 !              \ /      alpha3
 ATOM O14  O2L    -0.82 !               P (+)
@@ -9686,12 +9686,12 @@ ATOM C316 CTL3   -0.27 !                              |
 ATOM H16X HAL3    0.09 !                       H16X---C316--H16Y
 ATOM H16Y HAL3    0.09 !                              |
 ATOM H16Z HAL3    0.09 !                              H16Z
- 
+
 ! Polar Head
 BOND  O12  P         P    O11       P    O13       P    O14
 BOND  O12  H12       O11  C1
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain from C2
@@ -9705,7 +9705,7 @@ BOND  C25  H5R       C25  H5S       C25  C26
 BOND  C26  H6R       C26  H6S       C26  C27
 BOND  C27  H7R       C27  H7S       C27  C28
 BOND  C28  H8R       C28  H8S       C28  C29
-BOND  C29  H91       
+BOND  C29  H91
 DOUBLE  C29 C210
 BOND  C210 H101      C210 C211
 BOND  C211 H11R      C211 H11S      C211 C212
@@ -10024,14 +10024,14 @@ ATOM C316 CTL3   -0.27 !                              |
 ATOM H16X HAL3    0.09 !                       H16X---C316--H16Y
 ATOM H16Y HAL3    0.09 !                              |
 ATOM H16Z HAL3    0.09 !                              H16Z
- 
+
 ! Polar Head
 BOND  HO3  OC3       OC3  C13       C13  H13A      C13  H13B      C13  C12
 BOND  HO2  OC2       OC2  C12       C12  H12A      C12  C11
 BOND  C11  H11A      C11  H11B      C11  O12       O11  C1
 BOND  O12  P         P    O11       P    O13       P    O14
 ! Glycerol Backbone
-BOND  C1   HA        C1    HB       C1   C2        
+BOND  C1   HA        C1    HB       C1   C2
 BOND  C2   HS        C2    C3       C2   O21
 BOND  C3   HX        C3    HY       C3   O31
 ! Chain from C2
@@ -10045,7 +10045,7 @@ BOND  C25  H5R       C25  H5S       C25  C26
 BOND  C26  H6R       C26  H6S       C26  C27
 BOND  C27  H7R       C27  H7S       C27  C28
 BOND  C28  H8R       C28  H8S       C28  C29
-BOND  C29  H91       
+BOND  C29  H91
 DOUBLE  C29 C210
 BOND  C210 H101      C210 C211
 BOND  C211 H11R      C211 H11S      C211 C212
@@ -10206,8 +10206,8 @@ IC H16X   C315   *C316  H16Z       1.1113  110.44 -120.07  110.60   1.1112
 
 RESI SAPC         0.00 ! 3-stearoyl-2-arachidonyl-D-glycero-1-phosphatidylcholine
 !
-!    Stearoyl - CH2        
-!               |  
+!    Stearoyl - CH2
+!               |
 ! Arachidonyl - CH
 !               |     (-)              (+)
 !               CH2 - PO4 - CH2 - CH2 - N-(CH3)3
@@ -10391,7 +10391,7 @@ ATOM C318 CTL3   -0.27 !                              |
 ATOM H18X HAL3    0.09 !                       H18X---C318--H18Y
 ATOM H18Y HAL3    0.09 !                              |
 ATOM H18Z HAL3    0.09 !                              H18Z
- 
+
 ! Polar Head
 BOND  N    C13       N    C14       N    C15
 BOND  C13  H13A      C13  H13B      C13  H13C
@@ -10546,7 +10546,7 @@ IC H20T  C219  *C220 H20R   1.5192  121.35 -124.15  108.68   1.1135
 IC H20T  C219  *C220 H20S   1.5192  121.35  123.34  106.97   1.1128
 IC C31   C32   C33   C34    1.5405  116.85  180.00  126.13   1.5951
 IC C34   C32   *C33  H3X    1.5410  113.36 -119.96  111.74   1.1148
-IC C34   C32   *C33  H3Y    1.5192  121.35  123.34  106.97   1.1128  
+IC C34   C32   *C33  H3Y    1.5192  121.35  123.34  106.97   1.1128
 IC C32   C33   C34   C35    1.6060  126.13  180.00  113.36   1.5410
 IC C35   C33   *C34  H4X    1.5396  113.52 -123.43  110.53   1.1101
 IC C35   C33   *C34  H4Y    1.5192  121.35  123.34  106.97   1.1128
@@ -10595,8 +10595,8 @@ IC H18X  C317  *C318 H18Z   1.5192  121.35  123.34  106.97   1.1128
 
 RESI SDPC         0.00 ! 3-stearoyl-2-docosahexaenoyl-D-glycero-1-phosphatidylcholine
 !
-!        Stearoyl - CH2        
-!                   |  
+!        Stearoyl - CH2
+!                   |
 ! Docosahexaenoyl - CH
 !                   |     (-)              (+)
 !                   CH2 - PO4 - CH2 - CH2 - N-(CH3)3
@@ -10785,7 +10785,7 @@ ATOM C318 CTL3   -0.27 !                              |
 ATOM H18X HAL3    0.09 !                       H18X---C318--H18Y
 ATOM H18Y HAL3    0.09 !                              |
 ATOM H18Z HAL3    0.09 !                              H18Z
- 
+
 ! Polar Head
 BOND  N    C13       N    C14       N    C15
 BOND  C13  H13A      C13  H13B      C13  H13C
@@ -10946,7 +10946,7 @@ IC H22R  C221  *C222 H22S   1.5396  113.52 -123.43  110.53   1.1101
 IC H22R  C221  *C222 H22T   1.5192  121.35  123.34  106.97   1.1128
 IC C31   C32   C33   C34    1.5405  116.85  180.00  126.13   1.5951
 IC C34   C32   *C33  H3X    1.5410  113.36 -119.96  111.74   1.1148
-IC C34   C32   *C33  H3Y    1.5192  121.35  123.34  106.97   1.1128  
+IC C34   C32   *C33  H3Y    1.5192  121.35  123.34  106.97   1.1128
 IC C32   C33   C34   C35    1.6060  126.13  180.00  113.36   1.5410
 IC C35   C33   *C34  H4X    1.5396  113.52 -123.43  110.53   1.1101
 IC C35   C33   *C34  H4Y    1.5192  121.35  123.34  106.97   1.1128
@@ -10995,8 +10995,8 @@ IC H18X  C317  *C318 H18Z   1.5192  121.35  123.34  106.97   1.1128
 
 RESI SOPC         0.00 ! 3-stearoyl-2-oleoyl-D-glycero-1-phosphatidylcholine
 !
-!   Stearoyl - CH2        
-!              |  
+!   Stearoyl - CH2
+!              |
 !     Oleoyl - CH
 !              |     (-)              (+)
 !              CH2 - PO4 - CH2 - CH2 - N-(CH3)3
@@ -11179,7 +11179,7 @@ ATOM C318 CTL3   -0.27 !                              |
 ATOM H18X HAL3    0.09 !                       H18X---C318--H18Y
 ATOM H18Y HAL3    0.09 !                              |
 ATOM H18Z HAL3    0.09 !                              H18Z
- 
+
 ! Polar Head
 BOND  N    C13       N    C14       N    C15
 BOND  C13  H13A      C13  H13B      C13  H13C
@@ -11204,7 +11204,7 @@ BOND  C25  H5R       C25  H5S       C25  C26
 BOND  C26  H6R       C26  H6S       C26  C27
 BOND  C27  H7R       C27  H7S       C27  C28
 BOND  C28  H8R       C28  H8S       C28  C29
-BOND  C29  H91       
+BOND  C29  H91
 DOUBLE  C29 C210
 BOND  C210 H101      C210 C211
 BOND  C211 H11R      C211 H11S      C211 C212
@@ -11329,7 +11329,7 @@ IC H18R  C217  *C218 H18S   1.5396  113.52 -123.43  110.53   1.1101
 IC H18R  C217  *C218 H18T   1.5097  125.28  121.00  119.65   1.1004
 IC C31   C32   C33   C34    1.5405  116.85  180.00  126.13   1.5951
 IC C34   C32   *C33  H3X    1.5410  113.36 -119.96  111.74   1.1148
-IC C34   C32   *C33  H3Y    1.5192  121.35  121.00  106.97   1.1128  
+IC C34   C32   *C33  H3Y    1.5192  121.35  121.00  106.97   1.1128
 IC C32   C33   C34   C35    1.6060  126.13  180.00  113.36   1.5410
 IC C35   C33   *C34  H4X    1.5396  113.52 -123.43  110.53   1.1101
 IC C35   C33   *C34  H4Y    1.5192  121.35  121.00  106.97   1.1128
@@ -11378,8 +11378,8 @@ IC H18X  C317  *C318 H18Z   1.5192  121.35  123.34  106.97   1.1128
 
 RESI DAPC         0.00 ! 2,3-diarachidonyl-D-glycero-1-phosphatidylcholine (20:4 20:4 PC)
 !
-!         R1 - CH2        
-!              |  
+!         R1 - CH2
+!              |
 !         R2 - CH
 !              |     (-)              (+)
 !              CH2 - PO4 - CH2 - CH2 - N-(CH3)3
@@ -11500,70 +11500,70 @@ ATOM H20R HAL3    0.09 !       H20R---C220--H20S      !
 ATOM H20S HAL3    0.09 !               |              !
 ATOM H20T HAL3    0.09 !              H20T            !
 GROUP                  !                              |
-ATOM C33  CTL2   -0.18 !                              |             
-ATOM H3X  HAL2    0.09 !                        H3X---C33---H3Y     
-ATOM H3Y  HAL2    0.09 !                              |             
-GROUP                  !                              |             
-ATOM C34  CTL2   -0.18 !                              |             
-ATOM H4X  HAL2    0.09 !                        H4X---C34---H4Y     
-ATOM H4Y  HAL2    0.09 !                              |             
-GROUP                  !                              |             
-ATOM C35  CEL1   -0.15 !                              |             
-ATOM H5X  HEL1    0.15 !                        H5X---C35           
-GROUP                  !                              ||            
-ATOM C36  CEL1   -0.15 !                              ||            
-ATOM H6X  HEL1    0.15 !                        H6X---C36           
-GROUP                  !                              |             
-ATOM C37  CTL2   -0.18 !                              |             
-ATOM H7X  HAL2    0.09 !                        H7X---C37---H7Y     
-ATOM H7Y  HAL2    0.09 !                              |             
-GROUP                  !                              |             
-ATOM C38  CEL1   -0.15 !                              |             
-ATOM H8X  HEL1    0.15 !                        H8X---C38           
-GROUP                  !                              ||            
-ATOM C39  CEL1   -0.15 !                              ||            
-ATOM H9X  HEL1    0.15 !                        H9X---C39           
-GROUP                  !                              |             
-ATOM C310 CTL2   -0.18 !                              |             
-ATOM H10X HAL2    0.09 !                              |             
-ATOM H10Y HAL2    0.09 !                       H10X---C310--H10Y    
-GROUP                  !                              |             
-ATOM C311 CEL1   -0.15 !                              |             
-ATOM H11X HEL1    0.15 !                       H11X---C311          
-GROUP                  !                              ||            
-ATOM C312 CEL1   -0.15 !                              ||            
-ATOM H12X HEL1    0.15 !                       H12X---C312          
-GROUP                  !                              |             
-ATOM C313 CTL2   -0.18 !                              |             
-ATOM H13X HAL2    0.09 !                       H13X---C313---H13Y   
-ATOM H13Y HAL2    0.09 !                              |             
-GROUP                  !                              |             
-ATOM C314 CEL1   -0.15 !                              |             
-ATOM H14X HEL1    0.15 !                       H14X---C314          
-GROUP                  !                              ||            
-ATOM C315 CEL1   -0.15 !                              ||            
-ATOM H15X HEL1    0.15 !                       H15X---C315          
-GROUP                  !                              |             
-ATOM C316 CTL2   -0.18 !                              |             
-ATOM H16X HAL2    0.09 !                       H16X---C316---H16Y   
-ATOM H16Y HAL2    0.09 !                              |             
-GROUP                  !                              |             
-ATOM C317 CTL2   -0.18 !                              |             
-ATOM H17X HAL2    0.09 !                       H17X---C317--H17Y    
-ATOM H17Y HAL2    0.09 !                              |             
-GROUP                  !                              |             
-ATOM C318 CTL2   -0.18 !                              |             
-ATOM H18X HAL2    0.09 !                       H18X---C318--H18Y    
-ATOM H18Y HAL2    0.09 !                              |             
-GROUP                  !                              |             
-ATOM C319 CTL2   -0.18 !                              |             
-ATOM H19X HAL2    0.09 !                       H19X---C319--H19Y    
-ATOM H19Y HAL2    0.09 !                              |             
-GROUP                  !                              |             
-ATOM C320 CTL3   -0.27 !                              |             
-ATOM H20X HAL3    0.09 !                       H20X---C320--H20Y    
-ATOM H20Y HAL3    0.09 !                              |             
-ATOM H20Z HAL3    0.09 !                              H20Z          
+ATOM C33  CTL2   -0.18 !                              |
+ATOM H3X  HAL2    0.09 !                        H3X---C33---H3Y
+ATOM H3Y  HAL2    0.09 !                              |
+GROUP                  !                              |
+ATOM C34  CTL2   -0.18 !                              |
+ATOM H4X  HAL2    0.09 !                        H4X---C34---H4Y
+ATOM H4Y  HAL2    0.09 !                              |
+GROUP                  !                              |
+ATOM C35  CEL1   -0.15 !                              |
+ATOM H5X  HEL1    0.15 !                        H5X---C35
+GROUP                  !                              ||
+ATOM C36  CEL1   -0.15 !                              ||
+ATOM H6X  HEL1    0.15 !                        H6X---C36
+GROUP                  !                              |
+ATOM C37  CTL2   -0.18 !                              |
+ATOM H7X  HAL2    0.09 !                        H7X---C37---H7Y
+ATOM H7Y  HAL2    0.09 !                              |
+GROUP                  !                              |
+ATOM C38  CEL1   -0.15 !                              |
+ATOM H8X  HEL1    0.15 !                        H8X---C38
+GROUP                  !                              ||
+ATOM C39  CEL1   -0.15 !                              ||
+ATOM H9X  HEL1    0.15 !                        H9X---C39
+GROUP                  !                              |
+ATOM C310 CTL2   -0.18 !                              |
+ATOM H10X HAL2    0.09 !                              |
+ATOM H10Y HAL2    0.09 !                       H10X---C310--H10Y
+GROUP                  !                              |
+ATOM C311 CEL1   -0.15 !                              |
+ATOM H11X HEL1    0.15 !                       H11X---C311
+GROUP                  !                              ||
+ATOM C312 CEL1   -0.15 !                              ||
+ATOM H12X HEL1    0.15 !                       H12X---C312
+GROUP                  !                              |
+ATOM C313 CTL2   -0.18 !                              |
+ATOM H13X HAL2    0.09 !                       H13X---C313---H13Y
+ATOM H13Y HAL2    0.09 !                              |
+GROUP                  !                              |
+ATOM C314 CEL1   -0.15 !                              |
+ATOM H14X HEL1    0.15 !                       H14X---C314
+GROUP                  !                              ||
+ATOM C315 CEL1   -0.15 !                              ||
+ATOM H15X HEL1    0.15 !                       H15X---C315
+GROUP                  !                              |
+ATOM C316 CTL2   -0.18 !                              |
+ATOM H16X HAL2    0.09 !                       H16X---C316---H16Y
+ATOM H16Y HAL2    0.09 !                              |
+GROUP                  !                              |
+ATOM C317 CTL2   -0.18 !                              |
+ATOM H17X HAL2    0.09 !                       H17X---C317--H17Y
+ATOM H17Y HAL2    0.09 !                              |
+GROUP                  !                              |
+ATOM C318 CTL2   -0.18 !                              |
+ATOM H18X HAL2    0.09 !                       H18X---C318--H18Y
+ATOM H18Y HAL2    0.09 !                              |
+GROUP                  !                              |
+ATOM C319 CTL2   -0.18 !                              |
+ATOM H19X HAL2    0.09 !                       H19X---C319--H19Y
+ATOM H19Y HAL2    0.09 !                              |
+GROUP                  !                              |
+ATOM C320 CTL3   -0.27 !                              |
+ATOM H20X HAL3    0.09 !                       H20X---C320--H20Y
+ATOM H20Y HAL3    0.09 !                              |
+ATOM H20Z HAL3    0.09 !                              H20Z
 ! Polar Head
 BOND  N    C13       N    C14       N    C15
 BOND  C13  H13A      C13  H13B      C13  H13C

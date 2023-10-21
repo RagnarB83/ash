@@ -4,8 +4,8 @@
 [![codecov](https://codecov.io/gh/leeping/geometric/branch/master/graph/badge.svg)](https://codecov.io/gh/leeping/geometric)
 
 This is a geometry optimization code for molecular structures.
-The code works by calling external software for the energy and 
-gradient through wrapper functions.  Q-Chem, TeraChem, Psi4, 
+The code works by calling external software for the energy and
+gradient through wrapper functions.  Q-Chem, TeraChem, Psi4,
 Molpro, and Gaussian 09/16 are supported quantum chemistry
 codes through the command line interface.  The PySCF and
 QCArchive packages also provide interfaces to geomeTRIC for
@@ -36,14 +36,14 @@ To install the latest release from conda-forge, run "conda install -c conda-forg
 To execute the geometry optimizer, run "geometric-optimize".
 Use "-h" to see the list of command line options.
 
-Generally, you will need a .xyz file for the coordinates and 
+Generally, you will need a .xyz file for the coordinates and
 one of the supported quantum chemistry software packages installed
 on your system.
 
 Supported QM packages are: TeraChem, Q-Chem, Molpro, Psi4, and Gaussian 09/16.
 Supported MM packages are: OpenMM, Gromacs.
 
-Please refer to the example calculations for how to run the code.  
+Please refer to the example calculations for how to run the code.
 The commands to execute the code are contained in "command.sh".
 
 ## Citation
