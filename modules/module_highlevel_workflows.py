@@ -2556,12 +2556,17 @@ end
 
 #Workflow to do active-space selection with MP2 or CCSD and then ICE-CI
 def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainput="",
-                 initial_orbitals="RI-MP2", moreadfile=None, gtol=2.50e-04,
+                 initial_orbitals="RI-MP2", MP2_density="unrelaxed", moreadfile=None, gtol=2.50e-04,
                  numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000):
 
     if fragment is None:
         print("Error: No fragment provided to Auto_ICE_CAS.")
         ashexit()
+
+    if 'MP2' in initial_orbitals:
+        print("MP2-type orbitals requested")
+        print("MP2_density option:", MP2_density)
+
 
     if CASCI is True:
         noiterkeyword="noiter"
@@ -2580,7 +2585,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     %maxcore {memory}
     %mp2
     natorbs true
-    density unrelaxed
+    density {MP2_density}
     end
     """
     #Make CCSD natural orbitals
@@ -2613,7 +2618,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
         mofile=f"{natorbs.filename}.mdci.nat"
         natoccgrab=CCSD_natocc_grab
     else:
-        print("Error: initial_orbitals must be MP2 or CCSD")
+        print("Error: initial_orbitals must be MP2, RI-MP2 or CCSD")
         ashexit()
     
     #Run MP2/CCSD natorb calculation
