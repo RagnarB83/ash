@@ -2556,7 +2556,7 @@ end
 
 #Workflow to do active-space selection with MP2 or CCSD and then ICE-CI
 def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainput="",
-                 initial_orbitals="RI-MP2", MP2_density="unrelaxed", CC_density="unrelaxed, moreadfile=None, gtol=2.50e-04,
+                 initial_orbitals="RI-MP2", MP2_density="unrelaxed", CC_density="unrelaxed", moreadfile=None, gtol=2.50e-04,
                  numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000):
 
     if fragment is None:
