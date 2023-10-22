@@ -2672,10 +2672,13 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     print(f"Selecting CAS({nel},{norb}) based on thresholds: upper_sel_threshold={nmin} and lower_sel_threshold={nmax}")
 
     #Rare option: Use selection above but do not read in file
+    autostart=True
     if no_moreadfile_in_CAS:
         print("Warning: no_moreadfile_in_CAS option active. This means that we use the active space definition above")
         print("But we will not read in orbitals in the CAS-CI ICE step. This is not recommended")
+        print("Turning off moreadfile option and setting autostart to False")
         mofile=None
+        autostart=autostart
 
 
     #ICE-theory: Fixed active space
@@ -2692,7 +2695,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     end
     """
     ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {noiterkeyword} {basis} tightscf", 
-                                orcablocks=casblocks, moreadfile=mofile, label=f"{label}", numcores=numcores)
+                                orcablocks=casblocks, moreadfile=mofile, autostart=autostart, label=f"{label}", numcores=numcores)
 
     result_ICE = ash.Singlepoint(fragment=fragment, theory=ice_cas_CI, charge=charge,mult=mult)
 
