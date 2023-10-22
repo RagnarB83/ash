@@ -378,13 +378,13 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("macroiter:", self.macroiter)
 
         #Turn RDM creation on or off
-        if rdmoption is None:
-            #Pick user-selected (default: False)
-            dordm=self.DMRG_DoRDM
-        else:
-            #Probably from initial-orbitals call (RDM True)
-            dordm=rdmoption
-            print("RDM option:", dordm)
+        #if rdmoption is None:
+        #    #Pick user-selected (default: False)
+        #    dordm=self.DMRG_DoRDM
+        #else:
+        #    #Probably from initial-orbitals call (RDM True)
+        #    dordm=rdmoption
+        #    print("RDM option:", dordm)
 
         if self.macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and DMRG")
@@ -433,8 +433,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.singlet_embedding is True:
             self.mch.fcisolver.block_extra_keyword= ["singlet_embedding"]
 
-        #RDM option
-        self.mch.fcisolver.DoRDM = dordm
+        #RDM option: DONE ELSEWHERE
+        #self.mch.fcisolver.DoRDM = dordm
+        #if dordm is True:
+        #    dm1 = self.mch.fcisolver.make_rdm1(0, self.mch.ncas, self.mch.nelec)
 
         self.mch.verbose=verbose
         #Setting memory
@@ -497,6 +499,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
         module_init_time=time.time()
+        import pyscf
         if numcores == None:
             numcores = self.numcores
 
@@ -575,6 +578,21 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         #Print final energy
         print("Post-DMRG Correlation energy:", e_corr)
         print("Final total energy:", self.energy)
+
+        #RDM and Natural orbitals
+        if self.DMRG_DoRDM is True:
+            print("DMRG DoRDM is True. Calculating RDM1 and creating DMRG natural orbitals")
+            rdm1 = self.mch.make_rdm1(ao_repr=True)
+            #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
+            #Natural orbitals
+            occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
+            print("DMRG natural orbital occupations:", occupations)
+            print("\nWriting natural orbitals to Moldenfile")
+            self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, 
+                                                                mo_coefficients, occupations, label="DMRG_Final_nat_orbs")
+            #Dipole moment
+            print("Now doing dipole")
+            dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1)
 
         print("Block is finished")
         #Cleanup Block scratch stuff (big files)

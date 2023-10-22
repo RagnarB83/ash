@@ -784,7 +784,7 @@ noio
                 self.SHCI_object_run() #Runs the self.mch object
                 print("Final Dice SHCI energy:", self.energy)
 
-                #Natural orbitals
+                #RDM and Natural orbitals
                 if self.SHCI_DoRDM is True:
                     print("SHCI DoRDM is True. Creating SHCI natural orbitals")
                     occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
