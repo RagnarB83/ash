@@ -590,7 +590,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                                                                 mo_coefficients, occupations, label="DMRG_Final_nat_orbs")
             #Dipole moment
             print("Now doing dipole")
-            dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1)
+            dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label="DMRG")
 
         print("Block is finished")
         #Cleanup Block scratch stuff (big files)
