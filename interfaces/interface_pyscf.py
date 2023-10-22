@@ -1005,7 +1005,7 @@ class PySCFTheory:
         else:
             print("Using provided DM")
             dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
-            print(f"WF Dipole moment ({label}): {}dipole A.U.")
+            print(f"WF Dipole moment ({label}): {dipole} A.U.")
         return dipole
     def get_polarizability_tensor(self):
         try:
