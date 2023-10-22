@@ -17,7 +17,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 #NWChem Theory object.
 class NWChemTheory:
-    def __init__(self, nwchemdir=None, filename='nwchem', openshell=False, printlevel=2, label="NWChem"
+    def __init__(self, nwchemdir=None, filename='nwchem', openshell=False, printlevel=2, label="NWChem",
                 nwcheminput=None, method='scf', tce=False, numcores=1):
 
         self.theorynamelabel="NWChem"
