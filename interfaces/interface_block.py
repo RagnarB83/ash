@@ -27,7 +27,7 @@ class BlockTheory:
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
                 Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
-                FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False,
+                FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False,
                 SC_NEVPT2=False, SC_NEVPT2_Mcompression=None):
 
         self.theorynamelabel="Block"
@@ -122,7 +122,7 @@ class BlockTheory:
         self.frozencore=frozencore
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
-
+        self.DMRG_DoRDM=DMRG_DoRDM
         #post-DMRG
         self.FIC_MRCI=FIC_MRCI
         self.SC_NEVPT2_Wick=SC_NEVPT2_Wick
@@ -378,13 +378,13 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("macroiter:", self.macroiter)
 
         #Turn RDM creation on or off
-        #if rdmoption is False:
-        #    #Pick user-selected (default: False)
-        #    dordm=self.SHCI_DoRDM
-        #else:
-        #    #Probably from initial-orbitals call (RDM True)
-        #    dordm=rdmoption
-        #    print("RDM option:", dordm)
+        if rdmoption is None:
+            #Pick user-selected (default: False)
+            dordm=self.DMRG_DoRDM
+        else:
+            #Probably from initial-orbitals call (RDM True)
+            dordm=rdmoption
+            print("RDM option:", dordm)
 
         if self.macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and DMRG")
@@ -432,6 +432,9 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         #Adding singlet embedding if requested
         if self.singlet_embedding is True:
             self.mch.fcisolver.block_extra_keyword= ["singlet_embedding"]
+
+        #RDM option
+        self.mch.fcisolver.DoRDM = dordm
 
         self.mch.verbose=verbose
         #Setting memory
