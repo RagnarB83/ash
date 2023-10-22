@@ -14,12 +14,13 @@ MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z',
 #MRCC Theory object.
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
-                mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label=None,
+                mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label="MRCC",
                 keep_orientation=True, frozen_core_settings='Auto'):
 
         self.theorynamelabel="MRCC"
         self.theorytype="QM"
         self.analytic_hessian=False
+        self.label=label
 
         print_line_with_mainheader("MRCCTheory initialization")
 

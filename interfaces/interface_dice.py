@@ -20,7 +20,7 @@ import ash.settings_ash
 class DiceTheory:
     def __init__(self, dicedir=None, pyscftheoryobject=None, filename='input.dat', printlevel=2, numcores=1, 
                 moreadfile=None, initial_orbitals='MP2', CAS_AO_labels=None,memory=20000, frozencore=True,
-                SHCI=False, NEVPT2=False, AFQMC=False,  
+                SHCI=False, NEVPT2=False, AFQMC=False, label="Dice",
                 SHCI_stochastic=True, SHCI_PTiter=200, SHCI_sweep_iter= [0,3],
                 SHCI_DoRDM=False, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
@@ -33,6 +33,7 @@ class DiceTheory:
         self.theorynamelabel="Dice"
         self.theorytype="QM"
         self.analytic_hessian=False
+        self.label=label
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
         
 
@@ -796,7 +797,7 @@ noio
                     print("Now doing dipole")
                     rdm1 = self.mch.make_rdm1(ao_repr=True)
                     #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
-                    dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label="SHCI")
+                    dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_SHCI_eps_{self.SHCI_sweep_epsilon[-1]}")
 
         print("Dice is finished")
         #Cleanup Dice scratch stuff (big files)

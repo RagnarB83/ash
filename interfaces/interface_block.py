@@ -28,12 +28,12 @@ class BlockTheory:
                 Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
                 FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False,
-                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None):
+                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block"):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
         self.analytic_hessian=False
-        
+        self.label=label
         self.blockversion=blockversion
         exename="block2main"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
@@ -590,7 +590,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                                                                 mo_coefficients, occupations, label="DMRG_Final_nat_orbs")
             #Dipole moment
             print("Now doing dipole")
-            dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label="DMRG")
+            dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_DMRG_M_{self.maxM}")
 
         print("Block is finished")
         #Cleanup Block scratch stuff (big files)

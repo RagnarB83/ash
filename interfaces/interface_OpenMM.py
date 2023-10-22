@@ -29,7 +29,7 @@ import ash.modules.module_plotting
 
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=1, topoforce=False, forcefield=None, topology=None,
-                 CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None,
+                 CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None, label="OpenMM",
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
                  Amberfiles=False, amberprmtopfile=None,
                  cluster_fragment=None, ASH_FF_file=None, PBCvectors=None,
@@ -55,6 +55,7 @@ class OpenMMTheory:
         self.theorytype="MM"
         self.theorynamelabel="OpenMM"
         self.analytic_hessian=False
+        self.label=label
 
         # OPEN MM load
         try:

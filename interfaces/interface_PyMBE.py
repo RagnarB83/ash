@@ -10,12 +10,13 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 
 #PyMBE Theory object.
 class PyMBETheory:
-    def __init__(self, pymbedir=None, filename='pymbe_', printlevel=2,
+    def __init__(self, pymbedir=None, filename='pymbe_', printlevel=2, label="PyMBE",
                 pymbedict=None,pymbeinput=None, numcores=1):
 
         self.theorynamelabel="PyMBE"
         self.theorytype="QM"
         self.analytic_hessian=False
+        self.label=label
 
         print_line_with_mainheader("PyMBETheory initialization")
 

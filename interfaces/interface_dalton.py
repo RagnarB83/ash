@@ -8,7 +8,7 @@ import ash.modules.module_coords
 
 class DaltonTheory:
     def __init__(self, daltondir=None, filename='dalton', printlevel=2, 
-                numcores=1, pe=False, potfile='', label=None, dalton_input=None, 
+                numcores=1, pe=False, potfile='', label="Dalton", dalton_input=None, 
                 basis_name=None, basis_dir=None):
 
         self.theorytype="QM"

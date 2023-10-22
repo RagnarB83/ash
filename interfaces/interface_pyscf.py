@@ -18,7 +18,7 @@ import copy
 #TODO: Gradient for post-SCF methods and TDDFT
 
 class PySCFTheory:
-    def __init__(self, printsetting=False, printlevel=2, numcores=1, label=None,
+    def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf",
                   scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
