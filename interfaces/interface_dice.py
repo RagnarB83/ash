@@ -796,7 +796,7 @@ noio
                     print("Now doing dipole")
                     rdm1 = self.mch.make_rdm1(ao_repr=True)
                     #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
-                    dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1)
+                    dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label="SHCI")
 
         print("Dice is finished")
         #Cleanup Dice scratch stuff (big files)

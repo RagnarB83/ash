@@ -267,8 +267,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 MP2nat_occupations, MP2nat_mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method='MP2', elems=elems)
                 self.setup_active_space(occupations=MP2nat_occupations)
-                self.setup_DMRG_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True
-                #self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
+                self.setup_DMRG_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True         
                 self.DMRG_object_run(MP2nat_mo_coefficients) #Runs the self.mch object
 
                 #????
@@ -404,7 +403,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.mch.canonicalization = True
             self.mch.natorb = True
         #Settings
-        #self.mch.fcisolver = self.shci.SHCI(self.pyscftheoryobject.mol)
         if self.block_parallelization == 'MPI':
             print("blocblock_parallelization_mpi is set to MPI")
             print("block2-mpi version needs to be installed for this to work")

@@ -815,7 +815,7 @@ class PySCFTheory:
         natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(mp2object)
 
         #Dipole moment
-        self.get_dipole_moment(dm=mp2_dm)
+        self.get_dipole_moment(dm=mp2_dm,label="MP2")
 
         #Printing occupations
         print(f"\nMP2 natural orbital occupations:")
@@ -962,22 +962,22 @@ class PySCFTheory:
         print(f"Now calculating {self.CCmethod} density matrix and natural orbitals")
         if self.CCmethod == 'CCSD':
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
-            self.get_dipole_moment(dm=ccobject.make_rdm1(ao_repr=True))
+            self.get_dipole_moment(dm=ccobject.make_rdm1(ao_repr=True), label="CCSD")
         elif self.CCmethod == 'BCCD':
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
             #Dipole moment
-            self.get_dipole_moment(dm=ccobject.make_rdm1(ao_repr=True))
+            self.get_dipole_moment(dm=ccobject.make_rdm1(ao_repr=True), label="BCCD")
         elif self.CCmethod == 'CCSD(T)':
             natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccobject,mf)
             print("Mulliken analysis for CCSD(T) density matrix")
             self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
-            dipole = self.get_dipole_moment(dm=rdm1)
+            dipole = self.get_dipole_moment(dm=rdm1, label="CCSD(T)")
         elif self.CCmethod == 'BCCD(T)':
             print("Warning: Density for BCCD(T) has not been tested")
             natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccobject,mf)
             print("Mulliken analysis for BCCD(T) density matrix")
             self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='BCCD(T)')
-            dipole = self.get_dipole_moment(dm=rdm1)
+            dipole = self.get_dipole_moment(dm=rdm1, label="BCCD(T)")
 
         #Printing occupations
         print(f"\n{self.CCmethod} natural orbital occupations:")
@@ -994,8 +994,10 @@ class PySCFTheory:
 
         return
     #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
-    def get_dipole_moment(self, dm=None):
+    def get_dipole_moment(self, dm=None, label=None):
         print("get_dipole_moment function:")
+        if label == None:
+            label=""
         if dm is None:
             print("No DM provided. Using mean-field object dm")
             #MF dipole moment
@@ -1003,6 +1005,7 @@ class PySCFTheory:
         else:
             print("Using provided DM")
             dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
+            print(f"WF Dipole moment ({label}): {}dipole A.U.")
         return dipole
     def get_polarizability_tensor(self):
         try:
