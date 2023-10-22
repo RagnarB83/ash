@@ -2609,7 +2609,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
         print("Performing UHF natural orbital calculation")
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores, 
                                  label='HF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
-        mofile=f"{natorbs.filename}.uno"
+        mofile=f"{natorbs.filename}.unso"
         natoccgrab=UHF_natocc_grab
     elif initial_orbitals =="MP2" :
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
