@@ -556,18 +556,19 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.FIC_MRCI is True:
             e_corr = self.DMRG_FIC_MRCISD()
         #DMRG-SC-NEVPT2
-        if self.SC_NEVPT2 is True:
+        elif self.SC_NEVPT2 is True:
             e_corr = self.DMRG_SC_NEVPT2()
         #DMRG-SC-NEVPT2 via Wick
-        if self.SC_NEVPT2_Wick is True:
+        elif self.SC_NEVPT2_Wick is True:
             e_corr = self.DMRG_SC_NEVPT2_Wick()
         #DMRG-SC-NEVPT2
-        if self.SC_NEVPT2 is True:
+        elif self.SC_NEVPT2 is True:
             e_corr = self.DMRG_SC_NEVPT2()
         #DMRG-IC-NEVPT2
-        if self.IC_NEVPT2 is True:
+        elif self.IC_NEVPT2 is True:
             e_corr = self.DMRG_IC_NEVPT2()
-
+        else:
+            e_corr=0.0
         #Total energy
         self.energy = dmrg_energy + e_corr
 
