@@ -159,9 +159,16 @@ class ASH_plot():
     def invert_y_axis(self,subplot):
         self.axs[subplot].invert_yaxis()
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
-                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
-                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False):
+                    scatter=True, line=True, bar=False, scatter_linewidth=2, line_linewidth=1, barwidth=None, barcolors=None, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
+                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False, colormap='viridis'):
+        import matplotlib.pyplot as plt
         print("Adding new series to ASH_plot object")
+
+        if bar is True:
+            if scatter is True or line is True:
+                print("Error: you can not add a bar together with scatter and line at the same time")
+                ashexit()
+
         self.addplotcount+=1
         curraxes=self.axs[subplot]
         
@@ -202,7 +209,21 @@ class ASH_plot():
             else:
                 legendlabel=label
             curraxes.plot(x, y, linestyle='-', color=color, linewidth=line_linewidth, label=label)
-        
+        if bar is True:
+            if barcolors is None:
+                print("No barcolors keyword supplied. Will color the bars according to colormap:", colormap)
+                #Scale data
+                denominator = max(y) - min(y)
+                scaled_data = [(datum-min(y))/denominator for datum in y]
+                barcolors = []
+                cmap = plt.get_cmap(colormap)
+                for decimal in scaled_data:
+                    barcolors.append(cmap(decimal))
+            if barwidth is None:
+                curraxes.bar(x, y, color=barcolors, label=label)
+            else:
+                curraxes.bar(x, y, width=barwidth, color=barcolors, label=label)
+
         #Add labels to x-axis if
         if x_labels is not None:
             print("Adding xticks labels using rotation parameter:", xticklabelrotation)

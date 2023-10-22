@@ -12,7 +12,7 @@ from collections import defaultdict
 import ash.constants
 import ash.dictionaries_lists
 import ash.interfaces.interface_ORCA
-from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size, CCSD_natocc_grab, MP2_natocc_grab, CASSCF_natocc_grab,create_orca_pcfile
+from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size, CCSD_natocc_grab, MP2_natocc_grab, CASSCF_natocc_grab,UHF_natocc_grab,create_orca_pcfile
 from ash.functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
 from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader, pygrep2, pygrep,print_time_rel
 from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers,check_charge_mult
@@ -2605,7 +2605,13 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     if moreadfile == None:
         autostart_option=False
 
-    if initial_orbitals =="MP2" :
+    if initial_orbitals =="UHF-UNO" or initial_orbitals =="HF" :
+        print("Performing UHF natural orbital calculation")
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores, 
+                                 label='HF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.uno"
+        natoccgrab=UHF_natocc_grab
+    elif initial_orbitals =="MP2" :
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
                                  label='MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
@@ -2621,7 +2627,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
         mofile=f"{natorbs.filename}.mdci.nat"
         natoccgrab=CCSD_natocc_grab
     else:
-        print("Error: initial_orbitals must be MP2, RI-MP2 or CCSD")
+        print("Error: initial_orbitals must be HF, MP2, RI-MP2 or CCSD")
         ashexit()
     
     #Run MP2/CCSD natorb calculation
