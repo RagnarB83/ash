@@ -2678,7 +2678,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
         print("But we will not read in orbitals in the CAS-CI ICE step. This is not recommended")
         print("Turning off moreadfile option and setting autostart to False")
         mofile=None
-        autostart=autostart
+        autostart=False
 
 
     #ICE-theory: Fixed active space
