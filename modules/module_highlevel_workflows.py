@@ -2605,11 +2605,23 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     if moreadfile == None:
         autostart_option=False
 
-    if initial_orbitals =="UHF-UNO" or initial_orbitals =="HF" :
-        print("Performing UHF natural orbital calculation")
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores, 
-                                 label='HF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+    if initial_orbitals =="UHF-UNO" or initial_orbitals =="UHF" :
+        print("Performing RHF orbital calculation")
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RHF {basis}  tightscf", numcores=numcores, 
+                                 label='RHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.unso"
+        natoccgrab=UHF_natocc_grab
+    elif initial_orbitals =="UHF-UNO" or initial_orbitals =="UHF" :
+        print("Performing UHF natural orbital calculation")
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis} normalprint UNO tightscf", numcores=numcores, 
+                                 label='UHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.unso"
+        natoccgrab=UHF_natocc_grab
+    elif initial_orbitals =="UHF-QRO":
+        print("Performing UHF-QRO natural orbital calculation")
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores, 
+                                 label='UHF-QRO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.qro"
         natoccgrab=UHF_natocc_grab
     elif initial_orbitals =="MP2" :
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
