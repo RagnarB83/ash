@@ -17,7 +17,7 @@ import ash.settings_ash
 
 
 class ccpyTheory:
-    def __init__(self, pyscftheoryobject=None, filename='input.dat', printlevel=2, label="ccpy"
+    def __init__(self, pyscftheoryobject=None, filename='input.dat', printlevel=2, label="ccpy",
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, tol=1e-10, numcores=1,
                 cc_maxiter=300,
                 method="CCPQ", adaptive=False, percentages=None):
