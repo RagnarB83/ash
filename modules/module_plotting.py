@@ -160,7 +160,8 @@ class ASH_plot():
         self.axs[subplot].invert_yaxis()
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
                     scatter=True, line=True, bar=False, scatter_linewidth=2, line_linewidth=1, barwidth=None, barcolors=None, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
-                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False, colormap='viridis'):
+                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False, colormap='viridis', 
+                    linestyle='-'):
         import matplotlib.pyplot as plt
         print("Adding new series to ASH_plot object")
 
@@ -208,7 +209,7 @@ class ASH_plot():
                 label='_nolegend_'
             else:
                 legendlabel=label
-            curraxes.plot(x, y, linestyle='-', color=color, linewidth=line_linewidth, label=label)
+            curraxes.plot(x, y, linestyle=linestyle, color=color, linewidth=line_linewidth, label=label)
         if bar is True:
             if barcolors is None:
                 print("No barcolors keyword supplied. Will color the bars according to colormap:", colormap)
