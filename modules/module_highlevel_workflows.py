@@ -2557,7 +2557,7 @@ end
 #Workflow to do active-space selection with MP2 or CCSD and then ICE-CI
 def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainput="",
                  initial_orbitals="RI-MP2", MP2_density="unrelaxed", CC_density="unrelaxed", moreadfile=None, gtol=2.50e-04,
-                 numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000):
+                 numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000, no_moreadfile_in_CAS=False):
 
     if fragment is None:
         print("Error: No fragment provided to Auto_ICE_CAS.")
@@ -2605,20 +2605,26 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     if moreadfile == None:
         autostart_option=False
 
-    if initial_orbitals =="UHF-UNO" or initial_orbitals =="UHF" :
-        print("Performing RHF orbital calculation")
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RHF {basis}  tightscf", numcores=numcores, 
+    #NOTE: HF, UHF-UNO and QRO not yet ready
+    #Need to somehow account for space-selection based on occupation numbers
+    if initial_orbitals =="HF" or initial_orbitals =="RHF" :
+        print("Performing HF orbital calculation")
+        exit()
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} HF {basis}  tightscf", numcores=numcores, 
                                  label='RHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
-        mofile=f"{natorbs.filename}.unso"
+        mofile=f"{natorbs.filename}.gbw"
+        #Dummy occupations
         natoccgrab=UHF_natocc_grab
     elif initial_orbitals =="UHF-UNO" or initial_orbitals =="UHF" :
         print("Performing UHF natural orbital calculation")
+        exit()
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis} normalprint UNO tightscf", numcores=numcores, 
                                  label='UHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.unso"
         natoccgrab=UHF_natocc_grab
     elif initial_orbitals =="UHF-QRO":
         print("Performing UHF-QRO natural orbital calculation")
+        exit()
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores, 
                                  label='UHF-QRO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.qro"
@@ -2647,7 +2653,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
 
     #Determine CAS space based on thresholds
     nat_occupations=natoccgrab(natorbs.filename+'.out')
-    #print(f"{initial_orbitals} Natorb. ccupations:", nat_occupations)
+    print(f"{initial_orbitals} Natorb. ccupations:", nat_occupations)
     print("\nTable of natural occupation numbers")
     print("")
     print("{:<9} {:6} ".format("Orbital", f"{initial_orbitals}-nat-occ"))
@@ -2664,6 +2670,13 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
         print(f"{index:<9} {nocc:9.4f}")
     nel,norb=ash.functions.functions_elstructure.select_space_from_occupations(nat_occupations, selection_thresholds=[nmin,nmax])
     print(f"Selecting CAS({nel},{norb}) based on thresholds: upper_sel_threshold={nmin} and lower_sel_threshold={nmax}")
+
+    #Rare option: Use selection above but do not read in file
+    if no_moreadfile_in_CAS:
+        print("Warning: no_moreadfile_in_CAS option active. This means that we use the active space definition above")
+        print("But we will not read in orbitals in the CAS-CI ICE step. This is not recommended")
+        mofile=None
+
 
     #ICE-theory: Fixed active space
     casblocks=f"""
