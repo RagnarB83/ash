@@ -1,0 +1,602 @@
+#!/data-hdd/PROGRAMS/VMD-binaries/vmd
+# VMD script written by ASH
+# Display settings
+display projection   Orthographic
+display depthcue   off
+    #Mol
+mol new DMRG_natorbs_maxM_2000_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top DMRG_natorbs_maxM_2000_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top DMRG_natorbs_maxM_2000_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new SHCI_CCSD_T_natorbs_noPT_eps_1e-05_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top SHCI_CCSD_T_natorbs_noPT_eps_1e-05_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top SHCI_CCSD_T_natorbs_noPT_eps_1e-05_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new MRCI_10_8.b0_s0.nat_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MRCI_10_8.b0_s0.nat_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MRCI_10_8.b0_s0.nat_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new pySCF_CCSD(T)_natorbs_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top pySCF_CCSD(T)_natorbs_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top pySCF_CCSD(T)_natorbs_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new MP2-unrelax.mp2nat_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MP2-unrelax.mp2nat_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MP2-unrelax.mp2nat_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new MRCC_CCSDT_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MRCC_CCSDT_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MRCC_CCSDT_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new MP2-relax.mp2nat_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MP2-relax.mp2nat_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MP2-relax.mp2nat_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new ICE_CI_mp2nat_tgen_1e-06_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top ICE_CI_mp2nat_tgen_1e-06_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top ICE_CI_mp2nat_tgen_1e-06_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new pySCF_CCSD_natorbs_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top pySCF_CCSD_natorbs_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top pySCF_CCSD_natorbs_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new CCSD-unrelax.mdci.nat_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top CCSD-unrelax.mdci.nat_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top CCSD-unrelax.mdci.nat_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new CAS_10_8_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top CAS_10_8_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top CAS_10_8_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new CCSD-orbopt.mdci.nat_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top CCSD-orbopt.mdci.nat_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top CCSD-orbopt.mdci.nat_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new MRCC_CCSDTQ_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MRCC_CCSDTQ_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top MRCC_CCSDTQ_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new HF_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top HF_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top HF_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        #Mol
+mol new CCSD-lin.mdci.nat_ELF.cube type cube first 0 last -1 step 1 filebonds 1 autobonds 1 waitfor all
+mol delrep 0 top
+mol representation CPK 1.000000 0.300000 12.000000 12.000000
+mol color Element
+mol selection {all}
+mol material Opaque
+mol addrep top
+mol selupdate 0 top 0
+mol colupdate 0 top 0
+mol scaleminmax top 0 0.000000 0.000000
+mol smoothrep top 0 0
+mol drawframes top 0 {now}
+mol representation Isosurface 0.8 0 0 0 1 1
+mol color ColorID 0
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top CCSD-lin.mdci.nat_ELF.cube
+mol representation Isosurface -0.8 0 0 0 1 1
+mol color ColorID 1
+mol selection {all}
+mol material Transparent
+mol addrep top
+mol selupdate 1 top 0
+mol colupdate 1 top 0
+mol scaleminmax top 1 0.000000 0.000000
+mol smoothrep top 1 0
+mol drawframes top 1 {now}
+mol rename top CCSD-lin.mdci.nat_ELF.cube
+
+set topmol [molinfo top]
+mol top $topmol
+unset topmol
+        
+proc vmdrestoremycolors {} {
+set colorcmds {
+  {color Display {Background} white}
+  {color Element {Al} purple}
+}
+foreach colcmd $colorcmds {
+  set val [catch {eval $colcmd}]
+}
+}
+vmdrestoremycolors
+    
