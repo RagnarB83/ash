@@ -647,13 +647,29 @@ class PySCFTheory:
                 print("File does not exist. Continuing!")
                 return False
             try:
+                print("here")
                 self.chkfileobject = pyscf.scf.chkfile.load(chkfile, 'scf')
-                #print("chkfileobject:", self.chkfileobject)
+                #TODO: Check if orbitals read are correct
+                if len(self.chkfileobject["mo_occ"]) == 2:
+                    print("Reading unrestricted orbitals from checkpointfile")
+                    #unrestricted
+                    sum_occ = sum(self.chkfileobject["mo_occ"][0]) + sum(self.chkfileobject["mo_occ"][1])
+                else:
+                    print("Reading restricted orbitals from checkpointfile")
+                    #restricted
+                    sum_occ = sum(self.chkfileobject.mo_occ)
+                print("sum_occ:",sum_occ)
+                if self.num_electrons != sum_occ:
+                    print(f"Number of electrons in checkpointfile ({sum_occ}) does not match number of electrons in molecule ({self.num_electrons})")
+                    print("Ignoring MOs in chkfile and continuing")
+                    return False
                 return True
             except TypeError:
                 print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
                 print("Ignoring and continuing")
                 return False
+
+
 
 
     def setup_guess(self):
@@ -841,8 +857,12 @@ class PySCFTheory:
         print()
         print("Frozen_orbital_indices:", frozen_orbital_indices)
         print("Total number of frozen orbitals:", len(frozen_orbital_indices))
-        print("Total number of orbitals:", len(mf.mo_occ))
-        print("Number of active orbitals:", len(mf.mo_occ)-len(frozen_orbital_indices))
+        if mf.mo_occ.ndim == 2:
+            totnumorbs=len(mf.mo_occ[0])
+        else:
+            totnumorbs=len(mf.mo_occ)
+        print("Total number of orbitals:", totnumorbs)
+        print("Number of active orbitals:", totnumorbs - len(frozen_orbital_indices))
         print()
         #Check mo_coefficients in case we have to do unrestricted CC (list of 2 MOCoeff ndarrays required)
         if mo_coefficients is not None:
@@ -1107,6 +1127,10 @@ class PySCFTheory:
         self.mol.symmetry = self.symmetry
         self.mol.charge = charge
         self.mol.spin = mult-1
+
+        #Setting number of electrons for system (used by load_chkfile etc)
+        self.num_electrons  = int(ash.modules.module_coords.nucchargelist(elems) - charge)
+        print("Number of electrons:", self.num_electrons)
         ########
         # BASIS
         ########
@@ -2107,7 +2131,15 @@ def pyscf_MR_correction(fragment, theory=None):
     #1. Use exactly the same MO-coefficients (MP2/CC natural orbitals) as used in Dice/Block calculation
     #2. Use exactly same active space
     ###################################
-    full_list = list(range(0,len(theory.pyscftheoryobject.mf.mo_occ))) #From 0 to last virtual orbital
+    print("theory.pyscftheoryobject.mf.mo_occ:", theory.pyscftheoryobject.mf.mo_occ)
+    if len(theory.pyscftheoryobject.mf.mo_occ) == 2:
+        unrestricted=True
+        num_orbs = len(theory.pyscftheoryobject.mf.mo_occ[0]) #Assuming Unrestricted
+    else:
+        num_orbs = len(theory.pyscftheoryobject.mf.mo_occ) #Assuming Restricted
+    print("num_orbs:",num_orbs)
+    full_list = list(range(0,num_orbs)) #From 0 to last virtual orbital
+    print("full_list:", full_list)
     print("Size of full orbital list:", len(full_list))
     act_list=list(range(theory.firstMO_index,theory.lastMO_index+1)) #The range that Dice-SHCI used. Generalize this to DMRGTheory also ?
     print("Size of active-space list:", len(act_list))
@@ -2118,10 +2150,12 @@ def pyscf_MR_correction(fragment, theory=None):
     mo_coefficients=theory.mch.mo_coeff  #The MO coefficients used by Dice/Block
 
     #Calling CC PySCF method direct with our mf object and the orbital indices and MO coeffs we want
-    CC_energy = theory.pyscftheoryobject.run_CC(theory.pyscftheoryobject.mf,frozen_orbital_indices=frozen_orbital_indices, CCmethod='CCSD(T)',
-                                CC_direct=False, mo_coefficients=mo_coefficients)
+    CC_energy,CC_object = theory.pyscftheoryobject.run_CC(theory.pyscftheoryobject.mf,frozen_orbital_indices=frozen_orbital_indices, 
+                                                          CCmethod='CCSD(T)',
+                                                          CC_direct=False, mo_coefficients=mo_coefficients)
 
     print("\nCC_energy:", CC_energy)
+    print("HL energy:",result_HL.energy)
     correction = result_HL.energy - CC_energy
     print("\nDelta (HighLevel - CCSD(T)) correction:", correction)
 
