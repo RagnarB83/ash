@@ -2115,7 +2115,7 @@ def pyscf_MR_correction(fragment, theory=None):
     frozen_orbital_indices= listdiff(full_list,act_list)
     print("Number of frozen_orbital_indices:", len(frozen_orbital_indices))
     print("Indices:", frozen_orbital_indices)
-    mo_coefficients=theory.mch.mo_coeffs  #The MO coefficients used by Dice/Block
+    mo_coefficients=theory.mch.mo_coeff  #The MO coefficients used by Dice/Block
 
     #Calling CC PySCF method direct with our mf object and the orbital indices and MO coeffs we want
     CC_energy = theory.pyscftheoryobject.run_CC(theory.pyscftheoryobject.mf,frozen_orbital_indices=frozen_orbital_indices, CCmethod='CCSD(T)',
