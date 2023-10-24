@@ -940,7 +940,7 @@ class PySCFTheory:
                 print("D2 diagnostic (alpha):", D2_diagnostic_alpha)
                 print("D2 diagnostic (beta):", D2_diagnostic_beta)
             except IndexError:
-                print("Problem, calculating D1/D2 diagnostics. Skipping")
+                print("Problem calculating D1/D2 diagnostics. Skipping")
         else:
             T1_diagnostic = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1)
             print("T1 diagnostic:", T1_diagnostic)
@@ -2114,8 +2114,8 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
 
 
 #Function to do multireference correction via pyscf-based theories: Dice or Block. 
-# Calculates difference w.r.t CCSD(T)
-def pyscf_MR_correction(fragment, theory=None):
+# Calculates difference w.r.t CCSD or CCSD(T)
+def pyscf_MR_correction(fragment, theory=None, MLmethod='CCSD(T)'):
     print_line_with_mainheader("pyscf_MR_correction")
     print("Multireference correction via pyscf-based theories: Dice or Block. Calculates difference w.r.t CCSD(T)")
     #Checking that correct theory is provided
@@ -2127,21 +2127,20 @@ def pyscf_MR_correction(fragment, theory=None):
     elif isinstance(theory,ash.BlockTheory):
         print("BlockTheory object provided")
     else:
-        print("Unreconigzed theory object provided. Must be DiceTheory or BlockTheory")
+        print("Unrecognized theory object provided. Must be DiceTheory or BlockTheory")
         ashexit()
         
     #Now calling Singlepoint on the HLTheory
     result_HL = ash.Singlepoint(fragment=fragment, theory=theory)
 
     ###################################
-    #Active space CCSD(T) via pyscf
+    #Active space CCSD or CCSD(T) via pyscf
     ###################################
     #1. Use exactly the same MO-coefficients (MP2/CC natural orbitals) as used in Dice/Block calculation
     #2. Use exactly same active space
     ###################################
     print("theory.pyscftheoryobject.mf.mo_occ:", theory.pyscftheoryobject.mf.mo_occ)
     if len(theory.pyscftheoryobject.mf.mo_occ) == 2:
-        unrestricted=True
         num_orbs = len(theory.pyscftheoryobject.mf.mo_occ[0]) #Assuming Unrestricted
     else:
         num_orbs = len(theory.pyscftheoryobject.mf.mo_occ) #Assuming Restricted
@@ -2159,13 +2158,13 @@ def pyscf_MR_correction(fragment, theory=None):
 
     #Calling CC PySCF method direct with our mf object and the orbital indices and MO coeffs we want
     CC_energy,CC_object = theory.pyscftheoryobject.run_CC(theory.pyscftheoryobject.mf,frozen_orbital_indices=frozen_orbital_indices, 
-                                                          CCmethod='CCSD(T)',
+                                                          CCmethod=MLmethod,
                                                           CC_direct=False, mo_coefficients=mo_coefficients)
 
     print("\nCC_energy:", CC_energy)
     print("HL energy:",result_HL.energy)
     correction = result_HL.energy - CC_energy
-    print("\nDelta (HighLevel - CCSD(T)) correction:", correction)
+    print(f"\nDelta (HighLevel - {MLmethod}) correction:", correction)
 
     return correction
 
