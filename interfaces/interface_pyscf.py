@@ -925,10 +925,18 @@ class PySCFTheory:
             T1_diagnostic_beta = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1[1])
             print("T1 diagnostic (alpha):", T1_diagnostic_alpha)
             print("T1 diagnostic (beta):", T1_diagnostic_beta)
-            D1_diagnostic_alpha = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[0])
-            D1_diagnostic_beta = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[1])
-            print("D1 diagnostic (alpha):", D1_diagnostic_alpha)
-            print("D1 diagnostic (beta):", D1_diagnostic_beta)
+            try:
+                D1_diagnostic_alpha = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[0])
+                D1_diagnostic_beta = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[1])
+                print("D1 diagnostic (alpha):", D1_diagnostic_alpha)
+                print("D1 diagnostic (beta):", D1_diagnostic_beta)
+            
+                D1_diagnostic_alpha = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[0])
+                D1_diagnostic_beta = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[1])
+                print("D1 diagnostic (alpha):", D1_diagnostic_alpha)
+                print("D1 diagnostic (beta):", D1_diagnostic_beta)
+            except IndexError:
+                print("Problem, calculating D1 diagnostic. Skipping")
             D2_diagnostic_alpha = pyscf.cc.ccsd.get_d2_diagnostic(cc.t2[0])
             D2_diagnostic_beta = pyscf.cc.ccsd.get_d2_diagnostic(cc.t2[1])
             print("D2 diagnostic (alpha):", D2_diagnostic_alpha)
