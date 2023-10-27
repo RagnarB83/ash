@@ -2557,7 +2557,8 @@ end
 #Workflow to do active-space selection with MP2 or CCSD and then ICE-CI
 def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainput="",
                  initial_orbitals="RI-MP2", MP2_density="unrelaxed", CC_density="unrelaxed", moreadfile=None, gtol=2.50e-04,
-                 numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000, no_moreadfile_in_CAS=False):
+                 numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000, no_moreadfile_in_CAS=False,
+                 ciblockline=""):
 
     if fragment is None:
         print("Error: No fragment provided to Auto_ICE_CAS.")
@@ -2691,6 +2692,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     cistep ice
     ci
     tgen {tgen}
+    {ciblockline}
     end
     end
     """
