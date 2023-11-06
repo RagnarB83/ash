@@ -395,10 +395,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 grad_neg_1d=0
                 #IR intensities if dipoles available
                 if len(displacement_dipole_dictionary) > 0:
-                    disp_dipole_pos = np.array(displacement_dipole_dictionary[lookup_string_pos])
-                    disp_dipole_neg = np.array(displacement_dipole_dictionary[lookup_string_neg])
-                    dd_deriv = (disp_dipole_pos - disp_dipole_neg)/(2*displacement_bohr)
-                    dipole_derivs[hessindex,:] = dd_deriv
+                    if len(displacement_dipole_dictionary["0_0_+"]) > 0:
+                        disp_dipole_pos = np.array(displacement_dipole_dictionary[lookup_string_pos])
+                        disp_dipole_neg = np.array(displacement_dipole_dictionary[lookup_string_neg])
+                        dd_deriv = (disp_dipole_pos - disp_dipole_neg)/(2*displacement_bohr)
+                        dipole_derivs[hessindex,:] = dd_deriv
                 #Raman if requested
                 if Raman is True:
                     if len(displacement_polarizability_dictionary) > 0:
@@ -1881,7 +1882,8 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
 
 
 #Simple function to get Wigner distribution from geometry
-def wigner_distribution(fragment=None, hessian=None, temperature=300, num_samples=100,dirname="wigner",projection=True):
+def wigner_distribution(fragment=None, hessian=None, temperature=300, num_samples=100,dirname="wigner",projection=True, hessatoms=None,
+                        hessatoms_masses=None):
     print_line_with_mainheader("Wigner distribution")
 
     if fragment is None:
@@ -1894,16 +1896,75 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     else:
         TRmodenum=6
 
+    numatoms=fragment.numatoms
+    allatoms=list(range(0,numatoms))
+    fullelems = copy.deepcopy(fragment.elems)
+    print(f"Fragment contains {numatoms} atoms")
+
+    #Full Hessian
+    if hessatoms == None:
+        print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
+        projection=True
+        #Setting variables
+        used_coords=fragment.coords
+        used_elems=copy.deepcopy(fragment.elems)
+        used_atoms=allatoms
+        hessmasses=fragment.list_of_masses 
+    #Partial Hessian
+    else:
+        print("Hessatoms list provided. This is assumed to be a partial Hessian. Turning off rot+trans projection")
+        used_atoms=hessatoms
+        projection=False
+        #Making sure hessatoms list is sorted
+        used_atoms.sort()
+
+        #Grabbing coords and elems for Hessian atoms
+        used_elems=copy.deepcopy(fragment.elems)
+        used_elems = ash.modules.module_coords.get_partial_list(allatoms, used_atoms, used_elems)
+        used_coords = np.array([fragment.coords[i] for i in used_atoms])
+
+        #Use input masses if given, otherwise take from frament
+        if hessatoms_masses == None:
+            hessmasses = ash.modules.module_coords.get_partial_list(allatoms, used_atoms, fragment.list_of_masses)
+        else:
+            hessmasses=hessatoms_masses
+    
+    print("Printing hessatoms geometry...")
+    print("Hessatoms list:", hessatoms)
+    ash.modules.module_coords.print_coords_for_atoms(fragment.coords,fragment.elems,used_atoms)
+    print("Elements:", used_elems)
+    print("Masses used:", hessmasses)
+
+
     #Get or calculate normal_modes
     if hessian is not None:
-        print("Hessian provided")
+        print("\nHessian provided")
+        #Check Hessian
+        print("Hessian size:", hessian.size)
+        print("Hessian shape:", hessian.shape)
+        print("Fragment numatoms:", fragment.numatoms)
+        if hessian.shape[0] != len(hessatoms)*3:
+            print(f"Error: Hessian shape ({hessian.shape[0]}) does not match number of defined Hessian-atoms *3 ({len(used_atoms)*3})")
+            print("This likely means one of 2 things:")
+            print("1. You read in the wrong Hessian-file for this Fragment")
+            print("2. This is a partial Hessian (perhaps from a QM/MM job) and you did not specify the hessatoms")
+            ashexit()
+
         print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,hessian,fragment.masses,fragment.elems,
+        frequencies, normal_modes, evectors = diagonalizeHessian(used_coords,hessian,hessmasses,used_elems,
                                                                  TRmodenum=TRmodenum,projection=projection)
     elif fragment.hessian is not None:
-        print("Hessian found inside Fragment")
+        print("\nHessian found inside Fragment")
+
+        if fragment.hessian.shape[0] != len(hessatoms)*3:
+            print(f"Error: Hessian shape ({hessian.shape[0]}) does not match number of defined Hessian-atoms *3 ({len(used_atoms)*3})")
+            print("This likely means one of 2 things:")
+            print("1. You read in the wrong Hessian-file for this Fragment")
+            print("2. This is a partial Hessian (perhaps from a QM/MM job) and you did not specify the hessatoms")
+            ashexit()
+
         print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,fragment.hessian,fragment.masses,fragment.elems,
+        frequencies, normal_modes, evectors = diagonalizeHessian(used_coords,fragment.hessian,hessmasses,used_elems,
                                                                  TRmodenum=TRmodenum,projection=projection)
     else:
         print("You need to provide either hessian, a hessian as part of fragment")
@@ -1918,7 +1979,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     evectors_proj=evectors[TRmodenum:]
 
     #Converting coords to Bohr
-    coords_in_au = fragment.coords * ash.constants.ang2bohr
+    coords_in_au = used_coords * ash.constants.ang2bohr
     print("Calling wigner_sample")
 
     #Importing wigner_sample
@@ -1932,20 +1993,39 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     #Calling geometric 
     #frequency_analysis(coords_in_au, hessian, elem=fragment.elems, mass=fragment.masses, temperature=temperature, wigner=(num_samples,dirname))
     os.mkdir(dirname)
-    wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, dirname, True)
+    wigner_sample(coords_in_au, hessmasses, used_elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, dirname, True)
 
+    print("Wigner sample call done!")
     #Grabbing all coordinates from wigner-dir into one list and create fragments
     final_coords=[]
+    final_coords_full=[]
     final_frags=[]
+    
+    #Coordinates for full fragment
+    full_coords = fragment.coords
+    
     for dir in sorted(os.listdir(dirname)):
+        #Grabbing coordinates for each displaced hessian-region geometry
         e,c = read_xyzfile(f"{dirname}/{dir}/coords.xyz",printlevel=0)
         final_coords.append((e,c))
-        newfrag = Fragment(coords=c, elems=e, charge=fragment.charge, mult=fragment.mult, printlevel=0)
+        
+        #Replacing hessian-region coordinates in full_coords with coords from currcoords
+        for used_i,curr_i in zip(used_atoms,c):
+            full_coords[used_i] = curr_i
+            full_current_coords = full_coords
+        final_coords_full.append((fullelems,full_current_coords))
+        
+        newfrag = Fragment(coords=full_current_coords, elems=fullelems, charge=fragment.charge, mult=fragment.mult, printlevel=0)
         final_frags.append(newfrag)
 
-    #Write multi-XYZ file (Used by PES module e.g.)
-    write_multi_xyz_file(final_coords,fragment.numatoms,filename="Wigner_traj.xyz")
+    #Write multi-XYZ file but for Hessian-region only
+    write_multi_xyz_file(final_coords,len(used_atoms),filename="Wigner_traj.xyz")
     print("Wrote file: Wigner_traj.xyz")
+    #Write multi-XYZ file for full fragment
+    write_multi_xyz_file(final_coords_full,numatoms,filename="Wigner_traj_full.xyz")
+    print("Wrote file: Wigner_traj_full.xyz")
+    
+    
     #Return list of ASH fragments 
     return final_frags
 

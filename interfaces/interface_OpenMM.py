@@ -30,8 +30,8 @@ import ash.modules.module_plotting
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=1, topoforce=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None, label="OpenMM",
-                 GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None,
-                 Amberfiles=False, amberprmtopfile=None,
+                 GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None, 
+                 Amberfiles=False, amberprmtopfile=None, properties=None,
                  cluster_fragment=None, ASH_FF_file=None, PBCvectors=None,
                  nonbondedMethod_noPBC='NoCutoff', nonbonded_cutoff_noPBC=20,
                  xmlfiles=None, pdbfile=None, use_parmed=False, xmlsystemfile=None,
@@ -130,7 +130,10 @@ class OpenMMTheory:
         # CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell
         # before running.
         self.numcores=numcores #Setting for general ASH compatibility
-        self.properties = {}
+        if properties == None:
+            self.properties = {}
+        else:
+            self.properties = properties
         if self.platform_choice == 'CPU':
             if self.printlevel > 0:
                 print("Using platform: CPU")
@@ -157,6 +160,7 @@ class OpenMMTheory:
         else:
             if self.printlevel > 0:
                 print("Using platform:", self.platform_choice)
+        print("Properties settings:", self.properties)     
         # Whether to do energy decomposition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_decomposition = do_energy_decomposition
 
@@ -583,17 +587,22 @@ class OpenMMTheory:
                     print(c)
                 # print("Periodic vectors:", self.system.getDefaultPeriodicBoxVectors())
                 print("")
+                
+                
                 # Force modification here
                 # print("OpenMM Forces defined:", self.system.getForces())
                 if self.printlevel > 0:
                     print_line_with_subheader2("OpenMM Forces defined:")
+                
+                #Looping over forces
                 for force in self.system.getForces():
                     if self.printlevel > 0:
                         print(force.getName())
                     #NONBONDED FORCE 
                     if isinstance(force, openmm.CustomNonbondedForce):
-                        # NOTE: THIS IS CURRENTLY NOT USED
+                        # NOTE: This is only sometimes used: XML-CHARMM setup, GROMACS-files etc.
                         pass
+                        #print(force.getName())
                     elif isinstance(force, openmm.NonbondedForce):
 
                         # Turn Dispersion correction on/off depending on user
@@ -603,7 +612,7 @@ class OpenMMTheory:
                         # force.setPMEParameters(1.0/0.34, fftx, ffty, fftz)
                         if PMEparameters is not None:
                             if self.printlevel > 0:
-                                print("Changing PME parameters")
+                                print("Nonbonded force:  Changing PME parameters")
                             force.setPMEParameters(PMEparameters[0], PMEparameters[1], PMEparameters[2],
                                                    PMEparameters[3])
                         # force.setSwitchingDistance(switching_function_distance)
@@ -613,17 +622,16 @@ class OpenMMTheory:
                         #   force.setSwitchingDistance(switching_function_distance)
                         #    print('SwitchingFunction distance: %s' % force.getSwitchingDistance())
                         if self.printlevel > 0:
-                            print_line_with_subheader2("Nonbonded force settings (after all modifications):")
-                            print("Periodic cutoff distance: {}".format(force.getCutoffDistance()))
-                            print('Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
+                            print("Nonbonded force settings (after all modifications):")
+                            print("   Periodic cutoff distance: {}".format(force.getCutoffDistance()))
+                            print('   Use SwitchingFunction: %s' % force.getUseSwitchingFunction())
                         if force.getUseSwitchingFunction() is True:
                             if self.printlevel > 0:
-                                print('SwitchingFunction distance: {}'.format(force.getSwitchingDistance()))
+                                print('   SwitchingFunction distance: {}'.format(force.getSwitchingDistance()))
                         if self.printlevel > 0:
-                            print('Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
-                            print("PME Parameters:", force.getPMEParameters())
-                            print("Ewald error tolerance:", force.getEwaldErrorTolerance())
-
+                            print('   Use Long-range Dispersion correction: %s' % force.getUseDispersionCorrection())
+                            print("   PME Parameters:", force.getPMEParameters())
+                            print("   Ewald error tolerance:", force.getEwaldErrorTolerance())
                 if self.printlevel > 0:
                     print_line_with_subheader2("OpenMM system created.")
 
@@ -737,7 +745,7 @@ class OpenMMTheory:
         #List of currently used masses. Can be modified by self.modify_masses and self.freeze_atoms
         #NOTE: Regular list of floats
         self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
-
+        
 
         if constraints or frozen_atoms or restraints:
             if self.printlevel > 0:
