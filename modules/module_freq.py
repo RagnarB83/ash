@@ -261,16 +261,22 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
             displacement_grad_dictionary[stringlabel] = gradient
-            #Grabbing dipole moment for those theories
+            
+            #Grabbing dipole moment if available
             try:
-                displacement_dipole_dictionary[stringlabel] = theory.get_dipole_moment()
+                displacement_dm = theory.get_dipole_moment()
+                displacement_dipole_dictionary[stringlabel] = displacement_dm
             except:
                 pass
             #Grabbing polarizability tensor if requested
             if Raman is True:
                 try:
                     print("Getting polarizability tensor")
-                    displacement_polarizability_dictionary[stringlabel] = theory.get_polarizability_tensor()
+                    displacement_pol = theory.get_polarizability_tensor()
+                    #Checking if array is all zero (i.e. no polarizability information was found)
+                    if not np.any(displacement_pol):
+                        print("Warning: no polarizability information found")
+                    displacement_polarizability_dictionary[stringlabel] = displacement_pol
                 except:
                     print("Warning: Problem getting polarizability tensor from theory interface. Skipping")
                     pass
@@ -301,6 +307,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     
     ############################################
     print("Displacement calculations done.")
+    #print("displacement_dipole_dictionary:", displacement_dipole_dictionary)
+    #print("displacement_grad_dictionary:", displacement_grad_dictionary)
+    #exit()
     if len(displacement_grad_dictionary) == 0:
         print("Missing gradients for displacement.")
         print("Something went wrong in Numfreq displacement calculations.")
@@ -326,7 +335,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #IR intensities if dipoles available
         if len(displacement_dipole_dictionary) > 0:
             original_dipole = np.array(displacement_dipole_dictionary['Originalgeo'])
-            print("original_dipole:",original_dipole)
+            #print("original_dipole:",original_dipole)
         #Raman if requested
         if Raman is True:
             if len(displacement_polarizability_dictionary) > 0:
@@ -353,9 +362,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 #IR
                 #IR intensities if dipoles available
                 if len(displacement_dipole_dictionary) > 0:
-                    disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
-                    dd_deriv = (disp_dipole - original_dipole)/displacement_bohr
-                    dipole_derivs[hessindex,:] = dd_deriv
+                    if len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
+                        disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
+                        dd_deriv = (disp_dipole - original_dipole)/displacement_bohr
+                        dipole_derivs[hessindex,:] = dd_deriv
                 #Raman if requested
                 if Raman is True:
                     if len(displacement_polarizability_dictionary) > 0:
@@ -393,13 +403,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 hessian[hessindex,:]=Hessrow
                 grad_pos_1d=0
                 grad_neg_1d=0
+
                 #IR intensities if dipoles available
                 if len(displacement_dipole_dictionary) > 0:
-                    if len(displacement_dipole_dictionary["0_0_+"]) > 0:
+                    if len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
                         disp_dipole_pos = np.array(displacement_dipole_dictionary[lookup_string_pos])
                         disp_dipole_neg = np.array(displacement_dipole_dictionary[lookup_string_neg])
                         dd_deriv = (disp_dipole_pos - disp_dipole_neg)/(2*displacement_bohr)
                         dipole_derivs[hessindex,:] = dd_deriv
+                #else:
+                #    print("No dipole information found. Skipping IR")
                 #Raman if requested
                 if Raman is True:
                     if len(displacement_polarizability_dictionary) > 0:
@@ -442,11 +455,15 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Raman activities if polarizabilities available
     if Raman is True:
         print("Raman calculation active")
-        if len(displacement_polarizability_dictionary) > 0:
+        if len(displacement_polarizability_dictionary) == 0:
+            print("No polarizability information found. Skipping Raman.")
+            Raman_activities=None; depolarization_ratios=None
+        elif not np.any(displacement_polarizability_dictionary["0_0_+"]):
+            print("Something wrong with polarizability information. Skipping Raman.")
+            Raman_activities=None; depolarization_ratios=None
+        else:
             print("Polarizability derivatives are available.")
             Raman_activities, depolarization_ratios = calc_Raman_activities(hessmasses,evectors,polarizability_derivs)
-        else:
-            Raman_activities=None; depolarization_ratios=None
     else:
         Raman_activities=None; depolarization_ratios=None
     blankline()
