@@ -273,7 +273,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 try:
                     print("Getting polarizability tensor")
                     displacement_pol = theory.get_polarizability_tensor()
-                    print("displacement_pol:",displacement_pol)
                     #Checking if array is all zero (i.e. no polarizability information was found)
                     if not np.any(displacement_pol):
                         print("Warning: no polarizability information found")
@@ -462,12 +461,13 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Raman activities if polarizabilities available
     if Raman is True:
         print("Raman calculation active")
+        print("displacement_polarizability_dictionary:", displacement_polarizability_dictionary)
         if len(displacement_polarizability_dictionary) == 0:
             print("No polarizability information found. Skipping Raman.")
             Raman_activities=None; depolarization_ratios=None
-        elif not np.any(displacement_polarizability_dictionary["0_0_+"]):
-            print("Something wrong with polarizability information. Skipping Raman.")
-            Raman_activities=None; depolarization_ratios=None
+        #elif not np.any(displacement_polarizability_dictionary["0_0_+"]):
+        #    print("Something wrong with polarizability information. Skipping Raman.")
+        #    Raman_activities=None; depolarization_ratios=None
         else:
             print("Polarizability derivatives are available.")
             #Reordering just in case
