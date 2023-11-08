@@ -580,6 +580,14 @@ class QMMMTheory:
         except:
             print("Error: Could not grab dipole moment from QM-part of QM/MM theory.")
         return dipole
+    #Method to polarizability from outputfile (assumes run has been executed)
+    def get_polarizability_tensor(self):
+        try:
+            print("Grabbing polarizability from QM-part of QM/MM theory.")
+            polarizability = self.qm_theory.get_polarizability_tensor()
+        except:
+            print("Error: Could not grab polarizability from QM-part of QM/MM theory.")
+        return polarizability
     #General run
     def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
 
