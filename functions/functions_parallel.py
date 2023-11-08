@@ -267,8 +267,12 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     #This prevents hanging for ApplyResult.get() if Pool did not finish correctly
     energy_dict={}
     worker_dirnames_dict={}
+    property_dict={}
+    #Dipole-dict, polarizability-dict etc.
+    dipole_dict={}
+    polarizability_dict={}
 
-    result = ASH_Results(label="Job_parallel", energies=[], gradients=[])
+    final_result = ASH_Results(label="Job_parallel", energies=[], gradients=[])
     if Grad == True:
         gradient_dict={}
         for i,r in enumerate(results):
@@ -276,25 +280,42 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                 energy_dict[r.get()[0]] = r.get()[1]
                 gradient_dict[r.get()[0]] = r.get()[2]
                 worker_dirnames_dict[r.get()[0]] = r.get()[3]
-                result.energies.append(r.get()[1])
-                result.gradients.append(r.get()[2])
-        #return energy_dict,gradient_dict
-        result.gradients_dict = gradient_dict
+                final_result.energies.append(r.get()[1])
+                final_result.gradients.append(r.get()[2])
+                if len(r.get()[4]) > 0:
+                    print("Property dict found from Worker-par", r.get()[4])
+                    property_dict[r.get()[0]] = r.get()[4]
+                    #Dipole and polarizability
+                    if 'dipole_moment' in r.get()[4]:
+                        dipole_dict[r.get()[0]] = r.get()[4]['dipole_moment']
+                    if 'polarizability' in r.get()[4]:
+                        polarizability_dict[r.get()[0]] = r.get()[4]['polarizability']
+                
+        final_result.gradients_dict = gradient_dict
+        final_result.properties = property_dict
+        #Dipole and polarizability
+        final_result.displacement_dipole_dictionary = dipole_dict
+        final_result.displacement_polarizability_dictionary = polarizability_dict
+
     else:
         for i,r in enumerate(results):
             #print("Result {} ready: {}".format(i, r.ready()))
             if r.ready() == True:
                 energy_dict[r.get()[0]] = r.get()[1]
                 worker_dirnames_dict[r.get()[0]] = r.get()[2]
-                result.energies.append(r.get()[1])
-        #return energy_dict
+                final_result.energies.append(r.get()[1])
+                #Optional property dict
+                if len(r.get()[3]) > 0:
+                    print("r.get()[3]:", r.get()[3])
+                    property_dict[r.get()[0]] = r.get()[3]
+        final_result.properties = property_dict
 
     #Adding energy dictionary also
-    result.energies_dict = energy_dict
+    final_result.energies_dict = energy_dict
     #And dictionary with dirnames used (so we can look up stuff)
-    result.worker_dirnames = worker_dirnames_dict
+    final_result.worker_dirnames = worker_dirnames_dict
 
-    return result
+    return final_result
 
 #Worker_par for both Singlepoint-type and Opt-type jobs
 #NOTE: Version intended for apply_async
@@ -406,6 +427,8 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     #####################
     #RUN WORKER JOB
     #####################
+    #Create property dict containing some results except energy and gradient
+    properties={}
     #Optimizer
     if optimizer != None:
         #Make copy of optimizer
@@ -415,6 +438,19 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
     #Singlepoint Grad
     elif Grad == True:
         energy,gradient = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult, Grad=Grad)
+
+        #Dipole and polarizability
+        try:
+            dm = theory.get_dipole_moment()
+            properties = {"dipole_moment": dm}
+        except:
+            pass
+        try:
+            polarizability = theory.get_polarizability_tensor()
+            properties = {"polarizability": polarizability}
+        except:
+            pass
+
     #Singlepoint energy
     else:
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult)
@@ -432,9 +468,9 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 
     #Return label and energy or label, energy and gradient. Also worker_dirname
     if Grad == True:
-        return (label,energy,gradient,worker_dirname)
+        return (label,energy,gradient,worker_dirname,properties)
     else:
-        return (label,energy,worker_dirname)
+        return (label,energy,worker_dirname,properties)
 
 
 #Simple parallel function for cases where no file handling is needed.

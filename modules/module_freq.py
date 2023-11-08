@@ -273,6 +273,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 try:
                     print("Getting polarizability tensor")
                     displacement_pol = theory.get_polarizability_tensor()
+                    print("displacement_pol:",displacement_pol)
                     #Checking if array is all zero (i.e. no polarizability information was found)
                     if not np.any(displacement_pol):
                         print("Warning: no polarizability information found")
@@ -281,7 +282,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                     print("Warning: Problem getting polarizability tensor from theory interface. Skipping")
                     pass
 
-    #TODO: Dipole moment grab for parallel mode
+    #TODO: Dipole moment/polarizability grab for parallel mode
     elif runmode == 'parallel':
 
         if isinstance(theory,ash.QMMMTheory):
@@ -299,6 +300,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         gradient_dict = result.gradients_dict
         #Gradient_dict is already correctly formatted
         displacement_grad_dictionary = gradient_dict
+
+        displacement_dipole_dictionary = result.displacement_dipole_dictionary
+        print("displacement_dipole_dictionary:",displacement_dipole_dictionary)
+        displacement_polarizability_dictionary = result.displacement_polarizability_dictionary
+        print("displacement_polarizability_dictionary:",displacement_polarizability_dictionary)
 
         #print("displacement_grad_dictionary:", displacement_grad_dictionary)
     else:
