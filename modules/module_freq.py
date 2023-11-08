@@ -40,7 +40,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         print("Getting Hessian from theory object")
         hessian = theory.hessian
         #Diagonalize
-        frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
+        frequencies, nmodes, evectors, mode_order = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
                                                             TRmodenum=TRmodenum,projection=True)
         #Print out Freq output. Maybe print normal mode compositions here instead???
         printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
@@ -441,13 +441,14 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
 
-    frequencies, nmodes, evectors = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
+    frequencies, nmodes, evectors, mode_order = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
 
     #Evectors: eigenvectors of the mass-weighed Hessian
     #Normal modes: unweighted
 
     #IR intensities if dipoles available
     if len(displacement_dipole_dictionary) > 0:
+        dipole_derivs = dipole_derivs[mode_order]
         IR_intens_values = calc_IR_Intensities(hessmasses,evectors,dipole_derivs)
     else:
         IR_intens_values=None
@@ -463,6 +464,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             Raman_activities=None; depolarization_ratios=None
         else:
             print("Polarizability derivatives are available.")
+            #Reordering just in case
+            polarizability_derivs = [polarizability_derivs[i] for i in mode_order]
             Raman_activities, depolarization_ratios = calc_Raman_activities(hessmasses,evectors,polarizability_derivs)
     else:
         Raman_activities=None; depolarization_ratios=None
@@ -563,7 +566,9 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
             evectors = np.insert(evectors,0,[0.0]*evectors.shape[1],axis=0)
             nmodes = np.insert(nmodes,0,[0.0]*nmodes.shape[1],axis=0)
 
-        return vfreqs,nmodes,evectors
+        #Moder-order unchanged
+        mode_order = list(range(0,len(nmodes)))
+        return vfreqs,nmodes,evectors,mode_order
     else:
         print("No projection of rotational and translational modes will be done!")
         # Massweight Hessian
@@ -611,7 +616,7 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
         evectors = evectors[neworder]
         nmodes = nmodes[neworder]
 
-        return vfreqs,nmodes,evectors
+        return vfreqs,nmodes,evectors,neworder
 
 #Calculate IR intensities from masses, (mass-weighted) eigenvectors and dipole derivative matrix
 def calc_IR_Intensities(hessmasses,evectors,dipole_derivs):
@@ -1341,7 +1346,7 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
         TRmodenum=6
 
     print("Now diagonalizing full Hessian")
-    frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,fullhessian,usedfragment.masses,usedfragment.elems,TRmodenum=TRmodenum,projection=projection)
+    frequencies, normal_modes, evectors, mode_order = diagonalizeHessian(fragment.coords,fullhessian,usedfragment.masses,usedfragment.elems,TRmodenum=TRmodenum,projection=projection)
     print("Size:", fullhessian.size)
     print("Frequencies of full Hessian:", frequencies)
     write_hessian(fullhessian,hessfile="Finalfullhessian")
@@ -1386,10 +1391,10 @@ def isotope_change_Hessian(fragment=None, hessfile=None, hessian=None, elems=Non
 
     #Regular mass-weighted Hessian
     coords=fragment.coords
-    vfreqs1,nmodes1,evectors1 = diagonalizeHessian(coords,hessian, masses, elems,TRmodenum=TRmodenum,projection=projection)
+    vfreqs1,nmodes1,evectors1, mode_order1 = diagonalizeHessian(coords,hessian, masses, elems,TRmodenum=TRmodenum,projection=projection)
 
     #Mass- substituted
-    vfreqs2,nmodes2,evectors2 = diagonalizeHessian(coords,hessian, masses_mod, elems, TRmodenum=TRmodenum, projection=projection)
+    vfreqs2,nmodes2,evectors2,mode_order2 = diagonalizeHessian(coords,hessian, masses_mod, elems, TRmodenum=TRmodenum, projection=projection)
 
     print("masses:", masses)
     print("masses_mod:", masses)
@@ -1529,7 +1534,7 @@ def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3, hessatoms=None
     else:
         TRmodenum=6
     #Diagonalize Hessian
-    frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
+    frequencies, nmodes, evectors, mode_order = diagonalizeHessian(fragment.coords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
 
     #Get full list of atom contributions to mode
     normcomplist_for_mode = normalmodecomp_all(mode,fragment,evectors, hessatoms=hessatoms)
@@ -1968,7 +1973,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
             ashexit()
 
         print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, evectors = diagonalizeHessian(used_coords,hessian,hessmasses,used_elems,
+        frequencies, normal_modes, evectors, mode_order = diagonalizeHessian(used_coords,hessian,hessmasses,used_elems,
                                                                  TRmodenum=TRmodenum,projection=projection)
     elif fragment.hessian is not None:
         print("\nHessian found inside Fragment")
@@ -1981,7 +1986,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
             ashexit()
 
         print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, evectors = diagonalizeHessian(used_coords,fragment.hessian,hessmasses,used_elems,
+        frequencies, normal_modes, evectors,mode_order = diagonalizeHessian(used_coords,fragment.hessian,hessmasses,used_elems,
                                                                  TRmodenum=TRmodenum,projection=projection)
     else:
         print("You need to provide either hessian, a hessian as part of fragment")
