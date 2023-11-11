@@ -2867,16 +2867,13 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 #Function to prepare ORCA orbitals for another ORCA calculation
 #Mainly for getting natural orbitals 
 
-def ORCA_orbital_setup(fragment=None, basis=None, basisblock="", orbitals_option=None,
-        MP2_density=None, MDCI_density=None, 
-        moreadfile=None, gtol=2.50e-04, nmin=1.98, nmax=0.02, extrainput="",
-                CAS_nel=None, CAS_norb=None,
-                 numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, 
-                 memory=10000, no_moreadfile_in_CAS=False,
-                 ciblockline=""):
+def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrainput="",
+        MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
+        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,
+        CASCI=True, tgen=1e-4, no_moreadfile_in_CAS=False, ciblockline=""):
+
     print_line_with_mainheader("ORCA_orbital_setup")
     
-
 
     if fragment is None:
         print("Error: No fragment provided to ORCA_orbital_setup.")
