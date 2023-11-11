@@ -12,7 +12,7 @@ from collections import defaultdict
 import ash.constants
 import ash.dictionaries_lists
 import ash.interfaces.interface_ORCA
-from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size, CCSD_natocc_grab, MP2_natocc_grab, CASSCF_natocc_grab,UHF_natocc_grab,create_orca_pcfile
+from ash.interfaces.interface_ORCA import ICE_WF_CFG_CI_size, CCSD_natocc_grab, MP2_natocc_grab, CASSCF_natocc_grab,UHF_natocc_grab,create_orca_pcfile,ORCA_orbital_setup
 from ash.functions.functions_elstructure import num_core_electrons, check_cores_vs_electrons
 from ash.functions.functions_general import ashexit, BC, print_line_with_mainheader, pygrep2, pygrep,print_time_rel
 from ash.modules.module_coords import elemlisttoformula, nucchargelist,elematomnumbers,check_charge_mult
@@ -2553,6 +2553,96 @@ end
 """
     icetheory = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, basis_per_element=basis_per_element, label=f'{label}ICE_tgen{tgen}_tvar_{tvar}', save_output_with_label=True)
     return icetheory
+
+#New Workflow to do ICE-CI calculation using CASSCF module using any input orbitals
+#no orbital selection
+def newAuto_ICE_CAS(fragment=None, basis="cc-pVDZ", basisblock="", moreadfile=None, nmin=1.98, nmax=0.02, extrainput="",nat_occupations=None,
+                 gtol=2.50e-04, numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000, no_moreadfile_in_CAS=False,
+                 ciblockline=""):
+
+    if fragment is None:
+        print("Error: No fragment provided to Auto_ICE_CAS.")
+        ashexit()
+    if nat_occupations is None:
+        print("Error: No natural occupations provided to Auto_ICE_CAS.")
+        ashexit()
+
+    if CASCI is True:
+        noiterkeyword="noiter"
+        label=f"ICE-CASCI"
+    else:
+        #Regular CASSCF
+        noiterkeyword=""
+        label=f"ICE-CASSCF"
+
+    #Determine CAS space based on thresholds
+    print(f"Natorb. ccupations:", nat_occupations)
+    print("\nTable of natural occupation numbers")
+    print("")
+    print("{:<9} {:6} ".format("Orbital", f"Nat-occ"))
+    print("----------------------------------------")
+    init_flag=False
+    final_flag=False
+    for index,(nocc) in enumerate(nat_occupations):
+        if init_flag is False and nocc<nmin:
+            print("-"*40)
+            init_flag=True
+        if final_flag is False and nocc<nmax:
+            print("-"*40)
+            final_flag=True
+        print(f"{index:<9} {nocc:9.4f}")
+    nel,norb=ash.functions.functions_elstructure.select_space_from_occupations(nat_occupations, selection_thresholds=[nmin,nmax])
+    print(f"Selecting CAS({nel},{norb}) based on thresholds: upper_sel_threshold={nmin} and lower_sel_threshold={nmax}")
+
+    #Rare option: Use selection above but do not read in file
+    autostart=True
+    if no_moreadfile_in_CAS:
+        print("Warning: no_moreadfile_in_CAS option active. This means that we use the active space definition above")
+        print("But we will not read in orbitals in the CAS-CI ICE step. This is not recommended")
+        print("Turning off moreadfile option and setting autostart to False")
+        moreadfile=None
+        autostart=False
+
+    #ICE-theory: Fixed active space
+    casblocks=f"""
+    %maxcore {memory}
+    {basisblock}
+    %casscf
+    gtol {gtol}
+    nel {nel}
+    norb {norb}
+    cistep ice
+    ci
+    tgen {tgen}
+    {ciblockline}
+    end
+    end
+    """
+    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {noiterkeyword} {basis} tightscf", 
+                                orcablocks=casblocks, moreadfile=moreadfile, autostart=autostart, label=f"{label}", numcores=numcores)
+
+    result_ICE = ash.Singlepoint(fragment=fragment, theory=ice_cas_CI, charge=charge,mult=mult)
+
+    ICEnatoccupations=CASSCF_natocc_grab(f"{ice_cas_CI.filename}.out")
+
+    print("Table of natural occupation numbers")
+    print("")
+    print("{:<9} {:6} {:6}".format("Orbital", f"Initial", "ICE-nat-occ"))
+    print("----------------------------------------")
+    init_flag=False
+    final_flag=False
+    for index,(initocc,iceocc) in enumerate(zip(nat_occupations,ICEnatoccupations)):
+        if init_flag is False and initocc<nmin:
+            print("-"*40)
+            init_flag=True
+        if final_flag is False and initocc<nmax:
+            print("-"*40)
+            final_flag=True
+        print("{:<9} {:9.4f} {:9.4f}".format(index,initocc,iceocc))
+
+    return result_ICE
+
+
 
 #Workflow to do active-space selection with MP2 or CCSD and then ICE-CI
 def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainput="",
