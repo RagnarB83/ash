@@ -2870,7 +2870,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,
-        CASCI=True, tgen=1e-4, no_moreadfile_in_CAS=False, ciblockline=""):
+        CASCI=True):
 
     print_line_with_mainheader("ORCA_orbital_setup")
     
@@ -2886,7 +2886,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
 
     if orbitals_option is None:
         print("Error: No orbitals_option keyword provided to ORCA_orbital_setup. This is necessary")
-        print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, HF, MRCI")
+        print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI")
         ashexit()
 
 
@@ -2909,6 +2909,22 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
     if 'QCISD' in orbitals_option:
         MDCIkeyword="QCISD"
         print("QCISD-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density")
+        if MDCI_density is None:
+            print("Error: MDCI_density must be provided")
+            print("Options: linearized, unrelaxed or orbopt")
+            ashexit()
+        print("MDCI_density option:", MDCI_density)
+    if 'CEPA/1' in orbitals_option:
+        MDCIkeyword="CEPA/1"
+        print("CEPA/1-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density")
+        if MDCI_density is None:
+            print("Error: MDCI_density must be provided")
+            print("Options: linearized, unrelaxed or orbopt")
+            ashexit()
+        print("MDCI_density option:", MDCI_density)
+    if 'CPF/1' in orbitals_option:
+        MDCIkeyword="CPF/1"
+        print("CPF/1-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density")
         if MDCI_density is None:
             print("Error: MDCI_density must be provided")
             print("Options: linearized, unrelaxed or orbopt")
@@ -3000,7 +3016,35 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
                                  label='RIMP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
-    elif orbitals_option =="CCSD" or orbitals_option =="QCISD":
+    elif orbitals_option =="RI-SCS-MP2" :
+        mp2blocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %mp2
+        natorbs true
+        density {MP2_density}
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+                                 label='RI-SCS-MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mp2nat"
+        natoccgrab=MP2_natocc_grab
+    elif orbitals_option =="OO-RI-MP2" :
+        mp2blocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %mp2
+        natorbs true
+        density relaxed
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} OO-RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+                                 label='OO-RI-MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mp2nat"
+        natoccgrab=MP2_natocc_grab
+    elif orbitals_option =="CCSD" or orbitals_option =="QCISD" or orbitals_option =="CEPA/1" or orbitals_option =="CPF/1":
         ccsdblocks=f"""
         %maxcore {memory}
         {basisblock}
