@@ -2867,7 +2867,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 #Function to prepare ORCA orbitals for another ORCA calculation
 #Mainly for getting natural orbitals 
 
-def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrainput="",
+def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,
         CASCI=True, tgen=1e-4, no_moreadfile_in_CAS=False, ciblockline=""):
@@ -2976,6 +2976,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         mp2blocks=f"""
         %maxcore {memory}
         {basisblock}
+        {extrablock}
         %mp2
         natorbs true
         density {MP2_density}
@@ -2989,32 +2990,35 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         mp2blocks=f"""
         %maxcore {memory}
         {basisblock}
+        {extrablock}
         %mp2
         natorbs true
         density {MP2_density}
         end
         """
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
-                                 label='MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+                                 label='RIMP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
     elif orbitals_option =="CCSD" or orbitals_option =="QCISD":
         ccsdblocks=f"""
         %maxcore {memory}
         {basisblock}
+        {extrablock}
         %mdci
         natorbs true
         density {MDCI_density}
         end
         """
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores, 
-                                 label={MDCIkeyword}, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+                                 label=MDCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mdci.nat"
         natoccgrab=CCSD_natocc_grab
     elif 'MR' in orbitals_option:
         mrciblocks=f"""
         %maxcore {memory}
         {basisblock}
+        {extrablock}
         %casscf
         nel {CAS_nel}
         norb {CAS_norb}
