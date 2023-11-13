@@ -2994,7 +2994,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         density {MP2_density}
         end
         """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
                                  label='MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
@@ -3007,7 +3007,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         density {MDCI_density}
         end
         """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores, 
                                  label={MDCIkeyword}, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mdci.nat"
         natoccgrab=CCSD_natocc_grab
@@ -3023,7 +3023,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         natorbs 2
         end
         """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {MRCIkeyword} {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MRCIkeyword} {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores, 
                                  label=MRCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.b0_s0.nat"
         natoccgrab=None
