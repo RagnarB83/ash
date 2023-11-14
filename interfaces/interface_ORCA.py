@@ -3054,7 +3054,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         density {MDCI_density}
         end
         """
-        mdcilabel = MDCIkeyword.replace("/") #To avoid / in CEPA/1 etc
+        mdcilabel = MDCIkeyword.replace("/","") #To avoid / in CEPA/1 etc
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores, 
                                  label=mdcilabel, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mdci.nat"
