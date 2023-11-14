@@ -2953,6 +2953,9 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         if CAS_nel is None or CAS_nel is None:
             print("MRCI natural orbitals required CAS_nel and CAS_norb keywords for CAS active space calculation")
             ashexit()
+        if CASCI is True:
+            print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
+            extrainput = extrainput + " noiter"
 
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, "QM", fragment, "bla", theory=None)
