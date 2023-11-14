@@ -2886,7 +2886,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
 
     if orbitals_option is None:
         print("Error: No orbitals_option keyword provided to ORCA_orbital_setup. This is necessary")
-        print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI")
+        print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
         ashexit()
 
 
@@ -2930,6 +2930,15 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             print("Options: linearized, unrelaxed or orbopt")
             ashexit()
         print("MDCI_density option:", MDCI_density)
+    #CASSCF
+    if 'CASSCF' in orbitals_option:
+        print("CASSCF-type orbitals requested. This means that natural orbitals will be created from a CASSCF WF")
+        if CAS_nel is None or CAS_nel is None:
+            print("CASSCF natural orbitals required CAS_nel and CAS_norb keywords for CAS active space calculation")
+            ashexit()
+        if CASCI is True:
+            print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
+            extrainput = extrainput + " noiter"
     if 'MR' in orbitals_option:
         print("orbitals_option:", orbitals_option)
         if 'SORCI' in orbitals_option:
@@ -3062,6 +3071,20 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
                                  label=mdcilabel, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mdci.nat"
         natoccgrab=CCSD_natocc_grab
+    elif 'CASSCF' in orbitals_option:
+        casscfblocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %casscf
+        nel {CAS_nel}
+        norb {CAS_norb}
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} CASSCF {basis} tightscf", orcablocks=casscfblocks, numcores=numcores, 
+                                 label='CASSCF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.gbw"
+        natoccgrab=CASSCF_natocc_grab
     elif 'MR' in orbitals_option:
         mrciblocks=f"""
         %maxcore {memory}
