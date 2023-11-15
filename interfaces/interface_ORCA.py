@@ -2889,8 +2889,6 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
         ashexit()
 
-
-    #TODO: set MP2_density to None and force user to provide density
     if 'MP2' in orbitals_option:
         print("MP2-type orbitals requested. This means that natural orbitals will be created from the chosen MP2 density")
         if MP2_density is None:
@@ -3104,7 +3102,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         natoccgrab=None
         print("Warning: can not get full natural occupations from MRCI+Q calculation")
     else:
-        print("Error: orbitals_option must be HF, MP2, RI-MP2, CCSD, QCISD")
+        print("Error: orbitals_option not recognized")
         ashexit()
     
     #Run natorb calculation
@@ -3131,8 +3129,6 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             print(f"{index:<9} {nocc:9.4f}")
     else:
         nat_occupations=[]
-    #nel,norb=ash.functions.functions_elstructure.select_space_from_occupations(nat_occupations, selection_thresholds=[nmin,nmax])
-    #print(f"Selecting CAS({nel},{norb}) based on thresholds: upper_sel_threshold={nmin} and lower_sel_threshold={nmax}")
 
     print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", mofile)
     print("Also returning natural occupations list:", nat_occupations)

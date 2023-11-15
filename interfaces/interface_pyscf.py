@@ -326,7 +326,7 @@ class PySCFTheory:
         #Create list of frozen orbital indices
         self.frozen_core_orbital_indices=[i for i in range(0,self.frozen_core_orbs)]
         print("List of frozen orbital indices:", self.frozen_core_orbital_indices)
-
+        return self.frozen_core_orbital_indices
     def load_losc(self,loscpath):
         #Not sure if this works. Think PYTHONPATH is necessary
         if loscpath != None:
@@ -485,11 +485,12 @@ class PySCFTheory:
             return cas_result.mo_occ, cas_result.mo_coeff
         elif method == 'CCSD':
             print("Running CCSD natural orbital calculation")
-            ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
-            ccsd.max_cycle=200
-            ccsd.verbose=5
-            ccsd.run()
-            natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccsd)
+            natocc,natorb,rdm1 = self.calculate_CCSD_natorbs(ccsd=None, mf=mf)
+            #ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
+            #ccsd.max_cycle=200
+            #ccsd.verbose=5
+            #ccsd.run()
+            #natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccsd)
         elif method == 'CCSD(T)':
             print("Running CCSD(T) natural orbital calculation")
             #No CCSD(T) object in pyscf. So manual approach. Slower algorithms
@@ -503,7 +504,20 @@ class PySCFTheory:
             print(f"{method} natural orbital occupations:", natocc)
         print_time_rel(module_init_time, modulename='calculate_natural_orbitals', moduleindex=2)
         return natocc, natorb
-
+   
+   #Function for CCSD natural orbitals using ccsd and mf objects
+    def calculate_CCSD_natorbs(self,ccsd=None, mf=None):
+        import pyscf
+        import pyscf.cc as pyscf_cc
+        import pyscf.mcscf
+        print("Running CCSD natural orbital calculation")
+        if ccsd == None:
+            ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
+            ccsd.max_cycle=200
+            ccsd.verbose=5
+            ccsd.run()
+        natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccsd)
+        return natocc,natorb,None
     #Manual verbose protocol for calculating CCSD(T) natural orbitals using ccsd and mf objects
     def calculate_CCSD_T_natorbs(self,ccsd=None, mf=None):
         print("Running CCSD(T) natural orbital calculation")
@@ -918,6 +932,8 @@ class PySCFTheory:
         #CCSD energy (this is total energy unless Bruckner or triples are added)
         energy = ccsd_result.e_tot
         print("CCSD energy:", energy)
+        corr_CCSD_energy = ccsd_result.e_tot - ccsd_result.e_hf
+        print("CCSD correlation energy:", corr_CCSD_energy)
 
         #T1,D1 and D2 diagnostics
         if unrestricted is True:
@@ -1244,6 +1260,7 @@ class PySCFTheory:
             #Grid setting
             self.mf.grids.level = self.gridlevel 
 
+
         ###################
         #SCF CONVERGENCE
         ###################
@@ -1482,6 +1499,13 @@ class PySCFTheory:
                 #NOTE: dm needs to have been created here (regardless of the type of guess)
                 scf_result = self.mf.run(dm)
                 print("SCF energy:", scf_result.e_tot)
+
+            #Setting number of orbitals as attribute of object
+            if len(self.mf.mo_occ) == 2:
+                self.num_orbs = len(self.mf.mo_occ[0]) # Unrestricted
+            else:
+                self.num_orbs = len(self.mf.mo_occ) # Restricted
+            print("Number of orbitals:", self.num_orbs)
 
             #Possible stability analysis
             self.run_stability_analysis()
@@ -1825,12 +1849,12 @@ class PySCFTheory:
                         self.frozen_orbital_indices = self.frozen_orbital_indices + virt_frozen
             
                 #Calling CC method
-                CC_energy,ccobject = self.run_CC(self.mf,frozen_orbital_indices=self.frozen_orbital_indices, CCmethod=self.CCmethod, 
+                self. CC_energy,self.ccobject = self.run_CC(self.mf,frozen_orbital_indices=self.frozen_orbital_indices, CCmethod=self.CCmethod, 
                             CC_direct=self.CC_direct, mo_coefficients=mo_coefficients)
-                self.energy = CC_energy
+                self.energy = self.CC_energy
 
                 if self.CC_density is True:
-                    self.run_CC_density(ccobject,self.mf)
+                    self.run_CC_density(self.ccobject,self.mf)
                     
             #####################
             #CAS-CI and CASSCF

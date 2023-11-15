@@ -1159,6 +1159,17 @@ def select_space_from_occupations(occlist, selection_thresholds=[1.98,0.02]):
     numorbitals=len(welloccorbs)
     return [numelectrons,numorbitals]
 
+# Similar to above but returns the first and last indices of space instead of el/orbs
+# # Determing active space from natorb thresholds
+def select_indices_from_occupations(occlist, selection_thresholds=[1.98,0.02]):
+    print("select_indices_from_occupations function")
+    print("selection_thresholds:", selection_thresholds)
+    nat_occs_for_thresholds=[i for i in occlist if i < selection_thresholds[0] and i > selection_thresholds[1]]
+    indices_for_thresholds=[i for i,j in enumerate(occlist) if j < selection_thresholds[0] and j > selection_thresholds[1]]
+    actlist = list(range(indices_for_thresholds[0],indices_for_thresholds[-1]+1))
+    return actlist
+
+
 # Interface to XDM postg program
 #https://github.com/aoterodelaroza/postg
 def xdm_run(wfxfile=None, postgdir=None,a1=None, a2=None,functional=None):
