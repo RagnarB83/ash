@@ -2889,32 +2889,11 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
         ashexit()
 
-
-    #ROHF option for SCF
-    if ROHF is True:
-        print("ROHF is True. Will first run a ROHF calculation")
-        #ROHF bug in ORCA, necessary for cc-basis sets in ORCA 5:
-        if ROHF_case == None:
-            rohfcase_line=""
-        else:
-            rohfcase_line=f"ROHF_case {ROHF_case}"
-        rohfblocks=f"""
-%shark
-usegeneralcontraction false
-partialgcflag 0
-end
-%scf
-{rohfcase_line}
-end
-"""
-        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf", orcablocks=rohfblocks, numcores=numcores, 
-                                 label='ROHF', filename="ROHF", save_output_with_label=True, moreadfile=moreadfile)
-        Singlepoint(theory=rohf,fragment=fragment)
-        #Now SCF-step is done. Now adding noiter to extrainput and moreadfile
-        moreadfile=f"{rohf.filename}.gbw"
-        extrainput="noiter"
-        print("ROHF step is done. Now adding noiter to extrainput and moreadfile for next step")
-
+    #ORBITALS_OPTIONS
+    #If ROHF only is requested we activate the ROHF procedure
+    if 'ROHF' in orbitals_option:
+        print("ROHF orbitals_option requested")
+        ROHF=True
     if 'MP2' in orbitals_option:
         print("MP2-type orbitals requested. This means that natural orbitals will be created from the chosen MP2 density")
         if MP2_density is None:
@@ -2996,6 +2975,41 @@ end
             print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
             extrainput = extrainput + " noiter"
 
+
+
+    ######################
+    #ROHF option for SCF
+    #######################
+    if ROHF is True:
+        print("ROHF is True. Will first run a ROHF calculation preparatory step")
+        print("Warning: ORCA will attempt an ROHF calculation while guessing what type of open-shell case you are dealing with")
+        print("If ORCA fails in this step you may have to provide ROHF-case manually via the ROHF_case keyword")
+        print("ROHF_case options: 'HighSpin' (typically what you want), 'CAHF', 'SAHF'  (see ORCA manual for details)")
+        #ROHF bug in ORCA, necessary for cc-basis sets in ORCA 5:
+        if ROHF_case == None:
+            rohfcase_line=""
+        else:
+            rohfcase_line=f"ROHF_case {ROHF_case}"
+        rohfblocks=f"""
+%shark
+usegeneralcontraction false
+partialgcflag 0
+end
+%scf
+{rohfcase_line}
+end
+"""
+        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf", orcablocks=rohfblocks, numcores=numcores, 
+                                 label='ROHF', filename="ROHF", save_output_with_label=True, moreadfile=moreadfile)
+        Singlepoint(theory=rohf,fragment=fragment)
+        #Now SCF-step is done. Now adding noiter to extrainput and moreadfile
+        moreadfile=f"{rohf.filename}.gbw"
+        extrainput="noiter"
+        print("ROHF step is done. Now adding noiter to extrainput and moreadfile for next step")
+
+
+
+
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, "QM", fragment, "bla", theory=None)
 
@@ -3006,7 +3020,7 @@ end
     autostart_option=False
 
 
-
+    alldone=False
     #NOTE: HF, UHF-UNO and QRO not yet ready
     #Need to somehow account for space-selection based on occupation numbers
     if orbitals_option =="HF" or orbitals_option =="RHF" :
@@ -3031,6 +3045,12 @@ end
                                  label='UHF-QRO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.qro"
         natoccgrab=UHF_natocc_grab
+    elif orbitals_option =="ROHF":
+        print("ROHF orbitals_option was chosen. ROHF calculation should already have been carried out.")
+        print("Returning")
+        alldone=True
+        mofile=f"{rohf.filename}.gbw"
+        natoccgrab=None
     elif orbitals_option =="MP2" :
         mp2blocks=f"""
         %maxcore {memory}
@@ -3183,10 +3203,11 @@ end
         print("Error: orbitals_option not recognized")
         ashexit()
     
-    #Run natorb calculation
-    ash.Singlepoint(theory=natorbs, fragment=fragment, charge=charge, mult=mult)
+    #Run natorb calculation unless everything is done
+    if alldone is False:
+        ash.Singlepoint(theory=natorbs, fragment=fragment, charge=charge, mult=mult)
 
-    #Print natural occupations
+    #Print natural occupations if available
     if natoccgrab is not None:
         nat_occupations=natoccgrab(natorbs.filename+'.out')
         print(f"{orbitals_option} Natorb. ccupations:", nat_occupations)
