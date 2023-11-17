@@ -2870,7 +2870,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
-        FOBO_excitation_options=None):
+        FOBO_excitation_options=None, ROHF=False, ROHF_case=None):
 
     print_line_with_mainheader("ORCA_orbital_setup")
     
@@ -2888,6 +2888,32 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         print("Error: No orbitals_option keyword provided to ORCA_orbital_setup. This is necessary")
         print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
         ashexit()
+
+
+    #ROHF option for SCF
+    if ROHF is True:
+        print("ROHF is True. Will first run a ROHF calculation")
+        #ROHF bug in ORCA, necessary for cc-basis sets in ORCA 5:
+        if ROHF_case == None:
+            rohfcase_line=""
+        else:
+            rohfcase_line=f"ROHF_case {ROHF_case}"
+        rohfblocks=f"""
+%shark
+usegeneralcontraction false
+partialgcflag 0
+end
+%scf
+{rohfcase_line}
+end
+"""
+        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf", orcablocks=rohfblocks, numcores=numcores, 
+                                 label='ROHF', filename="ROHF", save_output_with_label=True, moreadfile=moreadfile)
+        Singlepoint(theory=rohf,fragment=fragment)
+        #Now SCF-step is done. Now adding noiter to extrainput and moreadfile
+        moreadfile=f"{rohf.filename}.gbw"
+        extrainput="noiter"
+        print("ROHF step is done. Now adding noiter to extrainput and moreadfile for next step")
 
     if 'MP2' in orbitals_option:
         print("MP2-type orbitals requested. This means that natural orbitals will be created from the chosen MP2 density")
