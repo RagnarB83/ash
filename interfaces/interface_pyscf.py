@@ -2306,3 +2306,6 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
     print("normal_frozen_orbital_indices:", normal_frozen_orbital_indices)
     CC_energy,CC_object = pyscfcalc.run_CC(pyscfcalc.mf,frozen_orbital_indices=normal_frozen_orbital_indices,
                                                             CCmethod='CCSD(T)', mo_coefficients=final_orbs)
+
+    result = ASH_Results(label="pyscf_CCSD_T_natorb_selection", energy=CC_energy, charge=fragment.charge, mult=fragment.mult)
+    return result
