@@ -775,10 +775,10 @@ class PySCFTheory:
             self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
 
-    def run_MP2(self):
+    def run_MP2(self,frozen_orbital_indices=None, MP2_DF=None):
         print("\nInside run_MP2")
         import pyscf.mp
-        print("Frozen orbital indices:",self.frozen_orbital_indices)
+        print("Frozen orbital indices:",frozen_orbital_indices)
         if self.scf_type == "RKS" or self.scf_type == "RHF" :
             print("Using restricted MP2 code")
             unrestricted=False
@@ -786,10 +786,10 @@ class PySCFTheory:
             unrestricted=True
         
         #Simple canonical MP2
-        if self.MP2_DF is False:
+        if MP2_DF is False:
             print("Warning: MP2_DF keyword is False. Will run slow canonical MP2")
             print("Set MP2_DF to True for faster DF-MP2/RI-MP2")
-            mp2 = pyscf.mp.MP2(self.mf, frozen=self.frozen_orbital_indices)
+            mp2 = pyscf.mp.MP2(self.mf, frozen=frozen_orbital_indices)
             print("Running MP2")
             mp2.run()
             MP2_energy = mp2.e_tot
@@ -800,10 +800,10 @@ class PySCFTheory:
             from pyscf.mp.dfump2_native import DFUMP2
             if unrestricted is False:
                 print("Using restricted DF-MP2 code")
-                dmp2 = DFRMP2(self.mf, frozen=self.frozen_orbital_indices)
+                dmp2 = DFRMP2(self.mf, frozen=frozen_orbital_indices)
             else:
                 print("Using unrestricted DF-MP2 code")
-                dmp2 = DFUMP2(self.mf, frozen=(self.frozen_orbital_indices,self.frozen_orbital_indices))
+                dmp2 = DFUMP2(self.mf, frozen=(frozen_orbital_indices,frozen_orbital_indices))
             #Now running DMP2 object
             dmp2.run()   
             MP2_energy =  dmp2.e_tot
@@ -811,7 +811,7 @@ class PySCFTheory:
 
         return MP2_energy, mp2_object
     
-    def run_MP2_density(self, mp2object):
+    def run_MP2_density(self, mp2object, MP2_DF=None, DFMP2_density_relaxed=None):
         import pyscf.mcscf
         if self.scf_type == "RKS" or self.scf_type == "RHF" :
             unrestricted=False
@@ -822,14 +822,14 @@ class PySCFTheory:
         print("\nMP2 density option is active")
         print(f"Now calculating MP2 density matrix and natural orbitals")
         #DM
-        if self.MP2_DF is False:
+        if MP2_DF is False:
             print("Now calculating unrelaxed canonical MP2 density")
             #This is unrelaxed canonical MP2 density
             mp2_dm = mp2object.make_rdm1(ao_repr=True)
             density_type='MP2'
         else:
             #RDMs: Unrelaxed vs. Relaxed
-            if self.DFMP2_density_relaxed is True:
+            if DFMP2_density_relaxed is True:
                 print("Calculating relaxed DF-MP2 density")
                 mp2_dm = mp2object.make_rdm1_relaxed(ao_repr=True) #Relaxed
                 density_type='DFMP2-relaxed'
@@ -860,6 +860,8 @@ class PySCFTheory:
         print(f"Writing MP2 natural orbitals to Moldenfile: {molden_name}.molden")
         self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
 
+        return natocc, natorb, mp2_dm
+
     def run_CC(self,mf, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
         print("\nInside run_CC")
         import pyscf.scf
@@ -884,7 +886,6 @@ class PySCFTheory:
             if type(mo_coefficients) is np.ndarray:
                 print("MO coefficients are ndarray")
                 if mo_coefficients.ndim == 2:
-                    print("ndims is 2")
                     if isinstance(mf, pyscf.scf.rohf.ROHF): #Works for ROKS too
                         print("Warning: Meanfield object is ROHF, but not supported by RCCSD. PySCF will convert to UHF and use UCCSD")
                         print("Warning: Duplicating MO coefficients for UCCSD")
@@ -1808,11 +1809,11 @@ class PySCFTheory:
             #####################
             if self.MP2 is True:
                 print("MP2 is on !")
-                MP2_energy,mp2object = self.run_MP2()
+                MP2_energy,mp2object = self.run_MP2(frozen_orbital_indices=self.frozen_orbital_indices, MP2_DF=self.MP2_DF)
                 self.energy = MP2_energy
 
                 if self.MP2_density is True:
-                    self.run_MP2_density(mp2object)
+                    self.run_MP2_density(mp2object, MP2_DF=self.MP2_DF, DFMP2_density_relaxed=self.DFMP2_density_relaxed)
 
             #####################
             #COUPLED CLUSTER
@@ -2233,3 +2234,75 @@ def make_molden_file_PySCF_from_chkfile(fragment=None, basis=None, chkfile=None,
     with open(f'pyscf_{label}.molden', 'w') as f1:
         molden.header(mol, f1)
         molden.orbital_coeff(mol, f1, mo_coeff, ene=mo_energy, occ=mo_occ)
+
+
+#pySCF CCSD(T) via cheap CCSD natural orbitals from a MP2-natorb selected CCSD-active space
+def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcores=1, thresholds=[1.997,0.02],
+        MP2_DF=True, DFMP2_density_relaxed=True, Do_CC_active_space=True, debug=False):
+
+    print_line_with_mainheader("pyscf_natorb_CCSD_T_selection")
+    
+    if fragment is None:
+        print("Error: No fragment provided to pyscf_natorb_CCSD_T_selection.")
+        ashexit()
+
+    if pyscftheoryobject is None:
+        print("Error: No pyscftheoryobject object provided to pyscf_natorb_CCSD_T_selection. This is necessary")
+        ashexit()
+
+    if pyscftheoryobject.MP2 is True or pyscftheoryobject.CC is True:
+        print("Error: pySCFTHeory object already has MP2 or CC turned on. This is not allowed for pyscf_natorb_CCSD_T_selection")
+        print("The pySCFTheory object should only contain settings for an SCF mean-field object (basis set, scf_type, functional etc.)")
+        exit()
+
+
+    #Use input PySCFTheory object for MF calculation and run
+    pyscfcalc = pyscftheoryobject
+    result = ash.Singlepoint(fragment=fragment, theory=pyscfcalc) #Run a SP job using object
+
+    #Define frozen core
+    frozen_orbital_indices=pyscfcalc.determine_frozen_core(fragment.elems)
+    print("frozen_orbital_indices:",frozen_orbital_indices)
+    #Run MP2 calculation
+    MP2_energy, mp2object = pyscfcalc.run_MP2(frozen_orbital_indices=frozen_orbital_indices, MP2_DF=MP2_DF)
+    print("MP2_energy:", MP2_energy)
+    print("mp2object:", mp2object)
+    #Run MP2 density calculation and get natural orbitals
+    MP2_natocc, MP2_natorb, mp2_dm = pyscfcalc.run_MP2_density(mp2object, MP2_DF=MP2_DF, DFMP2_density_relaxed=DFMP2_density_relaxed)
+    print("MP2_natocc:", MP2_natocc)
+
+    if Do_CC_active_space is True:
+        #Select active space
+        full_list = list(range(0,pyscfcalc.num_orbs))
+        act_list = ash.select_indices_from_occupations(MP2_natocc,selection_thresholds=thresholds)
+        print("Full orbital list:", full_list)
+        print("Size of full orbital list:", len(full_list))
+        print("Selected active orbital list:", act_list)
+        print("Size of selected active-space list:", len(act_list))
+        frozen_orbital_indices= listdiff(full_list,act_list)
+        print("Number of frozen_orbital_indices:", len(frozen_orbital_indices))
+        print("Indices:", frozen_orbital_indices)
+
+
+        #Small active space CCSD calculation on MP2 natural orbitals
+        CC_energy,CC_object = pyscfcalc.run_CC(pyscfcalc.mf,frozen_orbital_indices=frozen_orbital_indices,
+                                                                CCmethod='CCSD', CC_direct=False, mo_coefficients=MP2_natorb)
+
+        CC_natocc,CC_natorb,bla = pyscfcalc.calculate_CCSD_natorbs(ccsd=CC_object, mf=pyscfcalc.mf)
+        print("CC_natocc:", CC_natocc)
+
+        final_orbs=CC_natorb
+
+        if debug is True:
+            print("MP2_natorb:",MP2_natorb)
+            print("CC_natorb:", CC_natorb)
+            diff = CC_natorb - MP2_natorb
+            print("diff:",diff)
+    else:
+        print("Do_CC_active_space is False. Using MP2 natural orbs instead")
+        final_orbs=MP2_natorb
+    #Final: CCSD(T) using CCSD-MP2-hybrid natorbs
+    normal_frozen_orbital_indices=pyscfcalc.determine_frozen_core(fragment.elems)
+    print("normal_frozen_orbital_indices:", normal_frozen_orbital_indices)
+    CC_energy,CC_object = pyscfcalc.run_CC(pyscfcalc.mf,frozen_orbital_indices=normal_frozen_orbital_indices,
+                                                            CCmethod='CCSD(T)', mo_coefficients=final_orbs)

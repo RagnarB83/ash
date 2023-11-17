@@ -2869,8 +2869,8 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
-        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,
-        CASCI=True):
+        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=True,
+        FOBO_excitation_options=None):
 
     print_line_with_mainheader("ORCA_orbital_setup")
     
@@ -2934,6 +2934,12 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         if CAS_nel is None or CAS_nel is None:
             print("CASSCF natural orbitals required CAS_nel and CAS_norb keywords for CAS active space calculation")
             ashexit()
+        if CASCI is True:
+            print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
+            extrainput = extrainput + " noiter"
+    #FOBO
+    if 'FOBO' in orbitals_option:
+        print("FOBO-type orbitals requested.")
         if CASCI is True:
             print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
             extrainput = extrainput + " noiter"
@@ -3098,6 +3104,51 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         """
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MRCIkeyword} {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores, 
                                  label=MRCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.b0_s0.nat"
+        natoccgrab=None
+        print("Warning: can not get full natural occupations from MRCI+Q calculation")
+    elif 'FOBO' in orbitals_option:
+        #Defining a ROHF-type CASSCF
+        if CAS_nel is None or CAS_norb is None:
+            print("CAS_nel and CAS_norb not given. Guessing ROHF-type CASSCF based on multiplicity")
+            CAS_nel=mult-1
+            CAS_norb=mult-1
+        
+        if CAS_nel == 0:
+            print("Closed-shell system. Adding AllowRHF keyword")
+            extrainput="AllowRHF"
+        #FOBO_options
+        if FOBO_excitation_options is None:
+            FOBO_excitation_options = {'1h':1,'1p':1,'1h1p':1,'2h':0,'2h1p':1}
+            print("Using default FOBO_excitation_options:", FOBO_excitation_options)
+
+        mrciblocks=f"""
+%maxcore {memory}
+{basisblock}
+{extrablock}
+%casscf
+  nel {CAS_nel}
+  norb {CAS_norb}
+end
+
+%mrci
+newblock {mult} *
+   excitations none
+   refs cas({CAS_nel},{CAS_norb}) end
+   Flags[is]   {FOBO_excitation_options['1h']}
+   Flags[sa]   {FOBO_excitation_options['1p']}
+   Flags[ia]   {FOBO_excitation_options['1h1p']}
+   Flags[ijss] {FOBO_excitation_options['2h']}
+   Flags[ijsa] {FOBO_excitation_options['2h1p']}
+   nroots      1
+end
+AllSingles true
+PrintWF det
+natorbs 2
+end
+"""
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput}  {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores, 
+                                 label='FOBO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.b0_s0.nat"
         natoccgrab=None
         print("Warning: can not get full natural occupations from MRCI+Q calculation")
