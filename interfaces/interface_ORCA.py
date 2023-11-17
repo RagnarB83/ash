@@ -2869,7 +2869,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
-        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=True,
+        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
         FOBO_excitation_options=None):
 
     print_line_with_mainheader("ORCA_orbital_setup")
@@ -2977,8 +2977,9 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
     print("orbitals_option:", orbitals_option)
 
     #Starting from scratch unless moreadfile is provided
-    if moreadfile == None:
-        autostart_option=False
+    autostart_option=False
+
+
 
     #NOTE: HF, UHF-UNO and QRO not yet ready
     #Need to somehow account for space-selection based on occupation numbers
