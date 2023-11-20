@@ -2,6 +2,7 @@ import time
 
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
 import ash.modules.module_coords
+from ash.modules.module_results import ASH_Results
 import os
 import sys
 import glob
