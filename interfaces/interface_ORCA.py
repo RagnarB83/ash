@@ -2494,7 +2494,7 @@ def make_molden_file_ORCA(GBWfile, orcadir=None, printlevel=2):
         print("Removing copy of file:", newfile)
         os.remove(newfile)
 
-    return moldenfile
+    return GBWfile_noext+'.molden'
 
 
 
