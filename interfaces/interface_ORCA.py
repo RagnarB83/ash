@@ -2870,8 +2870,8 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
-        FOBO_excitation_options=None, ROHF=False, ROHF_case=None, MRCI_natorbiterations=0,
-        MRCI_tsel=1e-6):
+        FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6, 
+        ROHF=False, ROHF_case=None, MP2_nat_step=False):
 
     print_line_with_mainheader("ORCA_orbital_setup")
     
@@ -2890,11 +2890,18 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
         ashexit()
 
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "bla", theory=None)
+
     #ORBITALS_OPTIONS
     #If ROHF only is requested we activate the ROHF procedure
     if 'ROHF' in orbitals_option:
         print("ROHF orbitals_option requested")
         ROHF=True
+    if MP2_nat_step is True and MP2_density is None:
+            print("Error: MP2_density must be provided for MP2_nat_step")
+            print("Options: unrelaxed or relaxed")
+            ashexit()
     if 'MP2' in orbitals_option:
         print("MP2-type orbitals requested. This means that natural orbitals will be created from the chosen MP2 density")
         if MP2_density is None:
@@ -2977,6 +2984,8 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             extrainput = extrainput + " noiter"
 
 
+    #Starting from scratch unless moreadfile is provided
+    autostart_option=False
 
     ######################
     #ROHF option for SCF
@@ -3008,22 +3017,33 @@ end
         extrainput="noiter"
         print("ROHF step is done. Now adding noiter to extrainput and moreadfile for next step")
 
+    #############################################################
+    #Possible initial MP2-nat step before final orbitals
+    ##############################################################
+    if MP2_nat_step is True:
+        print("MP2_nat_step is True. Will run an MP2-natural orbital calculation preparatory step")
+        print("MP2_density option:", MP2_density)
+        print("moreadfile:", moreadfile)
+        mp2blocks=f"""
+%mp2
+density {MP2_density}
+natorbs true
+end
+"""
+        mp2_prep = ash.ORCATheory(orcasimpleinput=f"! RI-MP2 {basis} {extrainput} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+                                 label='MP2prep', filename="MP2prep", save_output_with_label=True, moreadfile=moreadfile)
+        Singlepoint(theory=mp2_prep,fragment=fragment)
+        #Now MP2-step is done. Now adding noiter to extrainput and moreadfile
+        moreadfile=f"{mp2_prep.filename}.mp2nat"
+        extrainput="noiter"
+        print("MP2-prep step is done. Now adding noiter to extrainput and moreadfile for next step")
 
 
-
-    #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "bla", theory=None)
-
-
-    print("orbitals_option:", orbitals_option)
-
-    #Starting from scratch unless moreadfile is provided
-    autostart_option=False
-
-
+    #############################################################
+    #FINAL ORBITALS
+    ##############################################################
     alldone=False
     #NOTE: HF, UHF-UNO and QRO not yet ready
-    #Need to somehow account for space-selection based on occupation numbers
     if orbitals_option =="HF" or orbitals_option =="RHF" :
         print("Performing HF orbital calculation")
         exit()
