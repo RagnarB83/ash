@@ -3009,7 +3009,7 @@ end
 {rohfcase_line}
 end
 """
-        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf", orcablocks=rohfblocks, numcores=numcores, autostart_option=autostart_option,
+        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf", orcablocks=rohfblocks, numcores=numcores, autostart=autostart_option,
                                  label='ROHF', filename="ROHF", save_output_with_label=True, moreadfile=moreadfile)
         Singlepoint(theory=rohf,fragment=fragment)
         #Now SCF-step is done. Now adding noiter to extrainput and moreadfile
@@ -3031,7 +3031,7 @@ natorbs true
 end
 """
         mp2_prep = ash.ORCATheory(orcasimpleinput=f"! RI-MP2 {basis} {extrainput} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
-                                 label='MP2prep', filename="MP2prep", save_output_with_label=True, moreadfile=moreadfile, autostart_option=autostart_option)
+                                 label='MP2prep', filename="MP2prep", save_output_with_label=True, moreadfile=moreadfile, autostart=autostart_option)
         Singlepoint(theory=mp2_prep,fragment=fragment)
         #Now MP2-step is done. Now adding noiter to extrainput and moreadfile
         moreadfile=f"{mp2_prep.filename}.mp2nat"
