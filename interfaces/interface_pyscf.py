@@ -29,7 +29,7 @@ class PySCFTheory:
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
-                  CC_density=False,
+                  CC_density=False, cc_conv_tol_normt=None, cc_conv_tol=None,
                   MP2=False,MP2_DF=False,MP2_density=False, DFMP2_density_relaxed=False,
                   CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_orbitals='MP2', FNO_thresh=None, x2c=False,
@@ -115,6 +115,8 @@ class PySCFTheory:
         self.CC_direct=CC_direct
         self.cc_maxcycle=cc_maxcycle
         self.cc_diis_space=cc_diis_space
+        self.cc_conv_tol_normt=cc_conv_tol_normt
+        self.cc_conv_tol=cc_conv_tol
         self.FNO=FNO
         self.FNO_thresh=FNO_thresh
         self.FNO_orbitals=FNO_orbitals
@@ -912,6 +914,10 @@ class PySCFTheory:
         elif self.scf_type == "UKS":
             print("Warning: CCSD on top of UKS determinant")
             cc = pyscf_cc.UCCSD(mf.to_uhf(), frozen_orbital_indices,mo_coeff=mo_coefficients)
+
+        #Setting thresholds
+        cc.conv_tol=self.cc_conv_tol
+        cc.conv_tol_normt=self.cc_conv_tol_normt
 
         ccobject=cc
         #Checking whether CC object created is unrestricted or not
