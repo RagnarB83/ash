@@ -733,7 +733,7 @@ def run_orca_SP(list):
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if numcores >1.
 def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True, bind_to_core_option=True, ignore_ORCA_error=False):
     if numcores>1:
-        palstring='%pal nprocs {} end'.format(numcores)
+        palstring='%pal \nnprocs {}\nend'.format(numcores)
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', palstring, Once=True )
     basename = inpfile.replace('.inp','')
