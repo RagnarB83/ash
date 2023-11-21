@@ -3009,7 +3009,7 @@ end
 {rohfcase_line}
 end
 """
-        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf", orcablocks=rohfblocks, numcores=numcores, , autostart_option=autostart_option,
+        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf", orcablocks=rohfblocks, numcores=numcores, autostart_option=autostart_option,
                                  label='ROHF', filename="ROHF", save_output_with_label=True, moreadfile=moreadfile)
         Singlepoint(theory=rohf,fragment=fragment)
         #Now SCF-step is done. Now adding noiter to extrainput and moreadfile
