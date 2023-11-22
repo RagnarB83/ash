@@ -2871,7 +2871,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
         FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6, 
-        ROHF=False, ROHF_case=None, MP2_nat_step=False):
+        ROHF=False, ROHF_case=None, MP2_nat_step=False, MREOMtype="MR-EOM"):
 
     print_line_with_mainheader("ORCA_orbital_setup")
     
@@ -2972,6 +2972,8 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             MRCIkeyword="MRDDCI3"
         elif 'MRCI+Q'  in orbitals_option:
             MRCIkeyword="MRCI+Q"
+        elif 'MREOM'  in orbitals_option:
+            MRCIkeyword=MREOMtype
         else:
             MRCIkeyword="MRCI"
         print("MRCIkeyword:", MRCIkeyword)
