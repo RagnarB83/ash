@@ -29,7 +29,7 @@ class PySCFTheory:
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
                   pe=False, potfile='', filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4, 
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
-                  CC_density=False, cc_conv_tol_normt=None, cc_conv_tol=None,
+                  CC_density=False, cc_conv_tol_normt=1e-06, cc_conv_tol=1e-07,
                   MP2=False,MP2_DF=False,MP2_density=False, DFMP2_density_relaxed=False,
                   CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_orbitals='MP2', FNO_thresh=None, x2c=False,
