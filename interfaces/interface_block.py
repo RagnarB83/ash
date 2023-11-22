@@ -38,6 +38,9 @@ class BlockTheory:
         exename="block2main"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
+        #Store optional properties of Block run job in a dict
+        self.properties ={}
+
         #Check for PySCFTheory object 
         if pyscftheoryobject is None:
             print("Error: No pyscftheoryobject was provided. This is required")
@@ -576,6 +579,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         #Print final energy
         print("Post-DMRG Correlation energy:", e_corr)
         print("Final total energy:", self.energy)
+        self.properties['energy'] = self.energy
 
         #RDM and Natural orbitals
         if self.DMRG_DoRDM is True:
@@ -591,6 +595,14 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             #Dipole moment
             print("Now doing dipole")
             dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_DMRG_M_{self.maxM}")
+
+
+            #Setting properties for a possible future job
+            self.properties['rdm1'] = rdm1
+            self.properties['natural_occupations'] = occupations
+            self.properties['natural_orbitals'] = mo_coefficients
+            self.properties['dipole'] = dipole
+
 
         print("Block is finished")
         #Cleanup Block scratch stuff (big files)

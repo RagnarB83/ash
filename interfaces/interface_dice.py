@@ -799,6 +799,12 @@ noio
                     #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
                     dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_SHCI_eps_{self.SHCI_sweep_epsilon[-1]}")
 
+                    #Setting properties for a possible future job
+                    self.properties['rdm1'] = rdm1
+                    self.properties['natural_occupations'] = occupations
+                    self.properties['natural_orbitals'] = mo_coefficients
+                    self.properties['dipole'] = dipole
+
         print("Dice is finished")
         #Cleanup Dice scratch stuff (big files)
         self.cleanup()

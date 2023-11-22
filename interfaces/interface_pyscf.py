@@ -76,7 +76,7 @@ class PySCFTheory:
                     print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
                     ashexit()
             
-        #Store optional properties of ORCA run job in a dict
+        #Store optional properties of pySCF run job in a dict
         self.properties ={}
 
         #Printlevel
