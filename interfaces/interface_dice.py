@@ -35,7 +35,9 @@ class DiceTheory:
         self.analytic_hessian=False
         self.label=label
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
-        
+
+        #Store optional properties of Dice run job in a dict
+        self.properties ={}
 
         if dicedir == None:
             print(BC.WARNING, f"No dicedir argument passed to {self.theorynamelabel}Theory. Attempting to find dicedir variable inside settings_ash", BC.END)
