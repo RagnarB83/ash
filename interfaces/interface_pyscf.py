@@ -876,12 +876,8 @@ class PySCFTheory:
         print()
         print("Frozen_orbital_indices:", frozen_orbital_indices)
         print("Total number of frozen orbitals:", len(frozen_orbital_indices))
-        if mf.mo_occ.ndim == 2:
-            totnumorbs=len(mf.mo_occ[0])
-        else:
-            totnumorbs=len(mf.mo_occ)
-        print("Total number of orbitals:", totnumorbs)
-        print("Number of active orbitals:", totnumorbs - len(frozen_orbital_indices))
+        print("Total number of orbitals:", self.num_orbs) #Should have been set when mf.run was called
+        print("Number of active orbitals:", self.num_orbs - len(frozen_orbital_indices))
         print()
         #Check mo_coefficients in case we have to do unrestricted CC (list of 2 MOCoeff ndarrays required)
         if mo_coefficients is not None:
