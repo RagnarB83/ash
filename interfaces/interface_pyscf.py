@@ -943,8 +943,12 @@ class PySCFTheory:
         if unrestricted is True:
             T1_diagnostic_alpha = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1[0])
             T1_diagnostic_beta = pyscf.cc.ccsd.get_t1_diagnostic(cc.t1[1])
+            T1_diagnostic_ave = np.sqrt(T1_diagnostic_alpha*T1_diagnostic_beta)
+            #T1_diagnostic_ave2 = 0.5*(T1_diagnostic_alpha+T1_diagnostic_beta)
             print("T1 diagnostic (alpha):", T1_diagnostic_alpha)
             print("T1 diagnostic (beta):", T1_diagnostic_beta)
+            print("T1 diagnostic (average):", T1_diagnostic_ave)
+            #print("T1 diagnostic (average2):", T1_diagnostic_ave2)
             try:
                 D1_diagnostic_alpha = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[0])
                 D1_diagnostic_beta = pyscf.cc.ccsd.get_d1_diagnostic(cc.t1[1])
