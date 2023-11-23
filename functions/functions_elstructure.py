@@ -2261,3 +2261,24 @@ def general_pointcharge_gradient(qm_coords, qm_charges,mm_coords,mm_charges,dm, 
         #TODO: Check with_rinv_orgin thingng 
 
     return g
+
+#Get electron correlation energy as a function of occupation numbers, sigma and the chosen distribution
+def get_ec_entropy(occ, sigma, method='fermi', alpha=0.6):
+    from scipy.special import erfinv
+    f = occ/2.0
+    f = f[(f>0) & (f<1)]
+    mask=f>0.5
+    f[mask] = 1.0-f[mask]
+    if method=='fermi':
+        print("Fermi entropy")
+        fc = f*np.log(f) + (1-f)*np.log(1-f)
+    elif method == 'gaussian':
+        print("Gaussian entropy")
+        fc = -np.exp(-(erfinv(1-f*2))**2)/2.0/np.sqrt(np.pi)
+    elif method == 'linear':
+        print("Linear entropy")
+        fc = -f+np.sqrt(2)*f**(3.0/2.0)*2.0/3.0
+    else:
+        raise ValueError('Not support', method)
+    Ec = 2.0*sigma*fc.sum()
+    return Ec

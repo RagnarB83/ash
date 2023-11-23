@@ -24,7 +24,7 @@ class ORCATheory:
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label="ORCA", 
                  moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
-                 fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
+                 fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None):
         print_line_with_mainheader("ORCATheory initialization")
 
 
@@ -166,6 +166,14 @@ class ORCATheory:
         
         #Whether to keep a copy of last output (filename_last.out) or not
         self.keep_last_output=True
+
+        #NMF
+        self.NMF=NMF
+        if self.NMF is True:
+            if NMF_sigma == None:
+                print("NMF option requires setting NMF_sigma")
+                ashexit()
+            self.NMF_sigma=NMF_sigma
 
         #XDM: if True then we add !AIM to input
         self.xdm=False
@@ -419,14 +427,26 @@ end"""
 
         #TDDFT option
         #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
-        if self.TDDFT == True:
+        if self.TDDFT is True:
             if '%tddft' not in self.orcablocks:
-                self.orcablocks=self.orcablocks+"""
+                self.orcablocks=self.orcablocks+f"""
                 %tddft
-                nroots {}
-                IRoot {}
+                nroots {self.TDDFTroots}
+                IRoot {self.FollowRoot}
                 end
-                """.format(self.TDDFTroots, self.FollowRoot)
+                """
+        #NMF
+        if self.NMF is True:
+            print("NMF option is active. Will activate Fermi-smearing in ORCA input!")
+            NMF_smeartemp = self.NMF_sigma / ash.constants.R_gasconst
+            print(f"NMF_smeartemp = {NMF_smeartemp} calculated from NMF_sigma: {self.NMF_sigma}:")
+            self.orcablocks=self.orcablocks+f"""
+%scf
+fracocc true
+smeartemp {NMF_smeartemp}
+end
+            """
+
 
         #If 1st runcall, add this to inputfile
         if self.runcalls == 1:
@@ -575,6 +595,17 @@ end"""
             self.energy=ORCAfinalenergygrab(outfile)
             if self.printlevel >= 1:
                 print("ORCA energy:", self.energy)
+
+        #NMF
+        if self.NMF is True:
+            print("NMF option is active.")
+            occupations = np.array(SCF_FODocc_grab(outfile))
+            print("Fractional ccupations (Fermi distribution):", occupations)
+            print("Now also calculating correlation energy from the fractional occupation numbers")
+            print("Assuming Fermi distribution")
+            Ec = ash.functions.functions_elstructure.get_ec_entropy(occupations, self.NMF_sigma, method='fermi')
+            print("Ec:", Ec)
+            self.energy = self.energy + Ec
 
         #Grab possible properties
         #ICE-CI
@@ -2040,14 +2071,16 @@ def SCF_FODocc_grab(filename):
     occupations=[]
     with open(filename) as f:
         for line in f:
-            if occgrab==True:
-                if '  NO   OCC' not in line:
-                    if len(line) >5:
+            if occgrab is True:
+                if '***********' in line:
+                    return occupations
+                if ' SPIN DOWN' in line:
+                    occgrab=False
+                    return occupations
+                if len(line.split()) == 4:
+                    if '  NO   OCC' not in line:
                         occupations.append(float(line.split()[1]))
-                    if len(line) < 2 or ' SPIN DOWN' in line:
-                        occgrab=False
-                        return occupations
-            if 'SPIN UP ORBITALS' in line:
+            if 'SPIN UP ORBITALS' in line or 'ORBITAL ENERGIES' in line:
                 occgrab=True
     return occupations
 

@@ -3,6 +3,7 @@ import time
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
 import ash.modules.module_coords
 from ash.modules.module_results import ASH_Results
+from ash.functions.functions_elstructure import get_ec_entropy
 import os
 import sys
 import glob
@@ -1609,9 +1610,6 @@ class PySCFTheory:
             else:
                 vdw_energy=0.0
             
-
-
-
             #NMF
             if self.NMF is True:
                 print("NMF smearing active. Getting NMF energy")
@@ -2372,23 +2370,3 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
     result = ASH_Results(label="pyscf_CCSD_T_natorb_selection", energy=CC_energy, charge=fragment.charge, mult=fragment.mult)
     return result
 
-
-def get_ec_entropy(occ, sigma, method='fermi', alpha=0.6):
-    from scipy.special import erfinv
-    f = occ/2.0
-    f = f[(f>0) & (f<1)]
-    mask=f>0.5
-    f[mask] = 1.0-f[mask]
-    if method=='fermi':
-        print("Fermi entropy")
-        fc = f*np.log(f) + (1-f)*np.log(1-f)
-    elif method == 'gaussian':
-        print("Gaussian entropy")
-        fc = -np.exp(-(erfinv(1-f*2))**2)/2.0/np.sqrt(np.pi)
-    elif method == 'linear':
-        print("Linear entropy")
-        fc = -f+np.sqrt(2)*f**(3.0/2.0)*2.0/3.0
-    else:
-        raise ValueError('Not support', method)
-    Ec = 2.0*sigma*fc.sum()
-    return Ec
