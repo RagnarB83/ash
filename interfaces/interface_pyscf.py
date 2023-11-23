@@ -23,6 +23,7 @@ class PySCFTheory:
                   scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
+                  NMF=False, NMF_sigma=None, NMF_distribution=None,
                   BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
                   TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
@@ -49,7 +50,7 @@ class PySCFTheory:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
             ashexit()
         if basis is None and basis_file is None:
-            print("Error: You must provide basis or basis_file kewyrod . Basis set can a name (string) or dict (elements as keys)")
+            print("Error: You must provide basis or basis_file keyword . Basis set can a name (string) or dict (elements as keys)")
             print("basis_file should be a string of the filename containing basis set in NWChem format")
             ashexit()
         if functional is not None:
@@ -203,6 +204,11 @@ class PySCFTheory:
 
         #Fractional occupation/smearing
         self.fractional_occupation=fractional_occupation
+
+        #Non-aufbau mean-field (NMF)
+        self.NMF=NMF
+        self.NMF_distribution=NMF_distribution
+        self.NMF_sigma=NMF_sigma
 
         #SOSCF (Newton)
         self.soscf=soscf
@@ -1285,6 +1291,25 @@ class PySCFTheory:
                 print(f"Fractional occupation is on!")
             self.mf = pyscf.scf.addons.frac_occ(self.mf)
 
+        #Smearing
+        if self.NMF is True:
+            print("NMF smearing active. Importing pyscf_smearing module")
+            from pyscf.scf.addons import smearing_
+            print("Replacing mf object with smearing mf ")
+            #from pyscf import __config__
+            #SMEARING_METHOD = getattr(__config__, 'pbc_scf_addons_smearing_method', 'fermi')
+            #print("SMEARING_METHOD:", SMEARING_METHOD)
+            #exit()
+            if 'fermi' in self.NMF_distribution.lower() or self.NMF_distribution.lower() == 'fd':
+                smearing_keyword='fermi'
+            elif 'gauss' in self.NMF_distribution.lower():
+                smearing_keyword='gauss'
+            else:
+                print(f"Unknown smearing option ({self.NMF_distribution}). Exiting")
+                ashexit()
+            print("Using smearing_keyword:", smearing_keyword)
+            print("Sigma:", self.NMF_sigma)
+            mf = smearing_(self.mf, sigma=self.NMF_sigma, method=smearing_keyword)
         #Damping
         if self.damping != None:
             if self.printlevel >1:
@@ -1585,12 +1610,42 @@ class PySCFTheory:
                 vdw_energy=0.0
             
 
-            #Total energy is SCF energy + possible vdW energy
-            self.energy = self.mf.e_tot + vdw_energy
 
-        #finaldm=self.mf.make_rdm1()
-        #print("SCF done, dm", finaldm)
-        #print("finaldm shape", finaldm.shape)
+
+            #NMF
+            if self.NMF is True:
+                print("NMF smearing active. Getting NMF energy")
+                E_mf = self.mf.e_tot
+                print("Mean-field energy:", E_mf)
+                occ = self.mf.get_occ(mo_energy_kpts=self.mf.mo_energy)
+                print("occ:", occ)
+                print("Sigma:", self.NMF_sigma)
+                if 'fermi' in self.NMF_distribution.lower() or  self.NMF_distribution == 'FD':
+                    Ec = get_ec_entropy(occ, self.NMF_sigma, method='fermi')
+                elif self.NMF_distribution.lower() == 'gaussian' or self.NMF_distribution == 'G':
+                    Ec = get_ec_entropy(occ, self.NMF_sigma, method='gaussian')
+                #elif self.NMF_distribution == 'Linear' or self.NMF_distribution == 'L':
+                #    Ec = get_ec_entropy(occ, self.NMF_sigma, method='linear')
+                else:
+                    print("Unknown distribution")
+                    ashexit()
+                print("Correlation energy:", Ec)                
+                E_tot_NMF = E_mf + Ec
+                print("Total NMF energy:", E_tot_NMF)
+
+                #Setting final energy
+                #Total energy is SCF energy + possible vdW energy
+                self.energy = E_tot_NMF + vdw_energy
+            else:
+                #Regular
+                #Total energy is SCF energy + possible vdW energy
+                self.energy = self.mf.e_tot + vdw_energy
+
+
+
+
+
+
 
 
             #####################
@@ -2316,3 +2371,24 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
 
     result = ASH_Results(label="pyscf_CCSD_T_natorb_selection", energy=CC_energy, charge=fragment.charge, mult=fragment.mult)
     return result
+
+
+def get_ec_entropy(occ, sigma, method='fermi', alpha=0.6):
+    from scipy.special import erfinv
+    f = occ/2.0
+    f = f[(f>0) & (f<1)]
+    mask=f>0.5
+    f[mask] = 1.0-f[mask]
+    if method=='fermi':
+        print("Fermi entropy")
+        fc = f*np.log(f) + (1-f)*np.log(1-f)
+    elif method == 'gaussian':
+        print("Gaussian entropy")
+        fc = -np.exp(-(erfinv(1-f*2))**2)/2.0/np.sqrt(np.pi)
+    elif method == 'linear':
+        print("Linear entropy")
+        fc = -f+np.sqrt(2)*f**(3.0/2.0)*2.0/3.0
+    else:
+        raise ValueError('Not support', method)
+    Ec = 2.0*sigma*fc.sum()
+    return Ec

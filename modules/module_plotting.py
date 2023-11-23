@@ -288,7 +288,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 
     plt = load_matplotlib()
 
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+    conversionfactor = { 'a.u.': 1.0, 'Eh': 1.0, 'au': 1.0, 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
     coords=[]
