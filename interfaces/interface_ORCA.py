@@ -2904,7 +2904,8 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
         FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6, 
-        ROHF=False, ROHF_case=None, MP2_nat_step=False, MREOMtype="MR-EOM"):
+        ROHF=False, ROHF_case=None, MP2_nat_step=False, MREOMtype="MR-EOM",
+        NMF=False, NMF_sigma=None):
 
     print_line_with_mainheader("ORCA_orbital_setup")
     
@@ -3101,6 +3102,15 @@ end
                                  label='UHF-QRO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.qro"
         natoccgrab=UHF_natocc_grab
+    elif orbitals_option =="NMF":
+        print("Performing Non-AufBau Mean-Field calculation")
+        if NMF_sigma is None:
+            print("Error: For orbitals_option NMF, NMF_sigma must also be provided")
+            ashexit()
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {basis}  tightscf", NMF=True, NMF_sigma=NMF_sigma, numcores=numcores, 
+                                 label='NMF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.gbw"
+        natoccgrab=SCF_FODocc_grab
     elif orbitals_option =="ROHF":
         print("ROHF orbitals_option was chosen. ROHF calculation should already have been carried out.")
         print("Returning")
