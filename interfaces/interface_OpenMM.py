@@ -2196,7 +2196,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print("Updating coordinates in ASH fragment.")
     fragment.coords = newcoords
 
-    positions=openmmobject.topology,simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions()
+    positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions()
     write_pdbfile_openMM(openmmobject.topology, positions, 'frag-minimized.pdb')
     #with open('frag-minimized.pdb', 'w') as f:
     #    openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
