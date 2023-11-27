@@ -31,6 +31,8 @@ class ASH_Results:
     initial_geometry: np.array = None
     charge: int = None
     mult: int = None
+    #Possible unsorted information.
+    properties: dict = None
     #Frequency information
     hessian: np.array = None
     frequencies: list = None
@@ -40,6 +42,8 @@ class ASH_Results:
     depolarization_ratios: np.array = None
     vib_eigenvectors: np.array = None
     thermochemistry: dict = None
+    displacement_dipole_dictionary: dict = None
+    displacement_polarizability_dictionary: dict = None
     #Surface-scan job
     surfacepoints: dict = None
     #NEB-type job

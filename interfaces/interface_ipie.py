@@ -9,12 +9,13 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 from ash.functions.functions_parallel import check_OpenMPI
 
 class ipieTheory:
-    def __init__(self, pyscftheoryobject=None, filename='input.json', printlevel=2,
+    def __init__(self, pyscftheoryobject=None, filename='input.json', printlevel=2, label="ipie",
                 numcores=1, numblocks_skip=5, dt=0.005, nwalkers=800, nsteps=25, blocks=20,
                 frozencore=False, checkpointfilename='scf.chk', mcscf=False):
 
         self.theorynamelabel="ipie"
         self.theorytype="QM"
+        self.label=label
         self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
         

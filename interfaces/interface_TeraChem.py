@@ -10,12 +10,13 @@ import ash.settings_ash
 
 #TeraChem Theory object.
 class TeraChemTheory:
-    def __init__(self, terachemdir=None, filename='terachem', printlevel=2,
+    def __init__(self, terachemdir=None, filename='terachem', printlevel=2, label="TeraChem",
                 teracheminput=None, numcores=1):
 
         self.theorynamelabel="TeraChem"
         self.theorytype="QM"
         self.analytic_hessian=False
+        self.label=label
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         if teracheminput is None:

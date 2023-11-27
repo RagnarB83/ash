@@ -14,12 +14,13 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 #CP2K Theory object.
 class CP2KTheory:
-    def __init__(self, cp2kdir=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None,
+    def __init__(self, cp2kdir=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
                 cell_length=10, functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
                 method='QUICKSTEP', numcores=1, periodic_val=None):
 
         self.theorytype="QM"
         self.theorynamelabel="CP2K"
+        self.label=label
         self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 

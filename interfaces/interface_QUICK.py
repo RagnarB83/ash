@@ -9,12 +9,13 @@ import ash.settings_ash
 #QUICK Theory object.
 #TODO: Add pointcharges to input and grab PC gradients
 class QUICKTheory:
-    def __init__(self, quickdir=None, filename='quick', printlevel=2,
+    def __init__(self, quickdir=None, filename='quick', printlevel=2, label="QUICK",
                 quickinput=None, numcores=1, quickbinary="quick.cuda"):
 
         self.theorynamelabel="QUICK"
         self.theorytype="QM"
         self.analytic_hessian=False
+        self.label=label
         print_line_with_mainheader("QUICKTheory initialization")
 
         if quickinput is None:

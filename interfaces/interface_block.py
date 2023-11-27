@@ -27,16 +27,19 @@ class BlockTheory:
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
                 Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
-                FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False,
-                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None):
+                FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False,
+                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block"):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
         self.analytic_hessian=False
-        
+        self.label=label
         self.blockversion=blockversion
         exename="block2main"
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
+
+        #Store optional properties of Block run job in a dict
+        self.properties ={}
 
         #Check for PySCFTheory object 
         if pyscftheoryobject is None:
@@ -122,7 +125,7 @@ class BlockTheory:
         self.frozencore=frozencore
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
-
+        self.DMRG_DoRDM=DMRG_DoRDM
         #post-DMRG
         self.FIC_MRCI=FIC_MRCI
         self.SC_NEVPT2_Wick=SC_NEVPT2_Wick
@@ -267,8 +270,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 MP2nat_occupations, MP2nat_mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method='MP2', elems=elems)
                 self.setup_active_space(occupations=MP2nat_occupations)
-                self.setup_DMRG_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True
-                #self.SHCI_object_set_mos(mo_coeffs=MP2nat_mo_coefficients) #Sets the MO coeffs of mch object              
+                self.setup_DMRG_job(verbose=5, rdmoption=True) #Creates the self.mch CAS-CI/CASSCF object with RDM True         
                 self.DMRG_object_run(MP2nat_mo_coefficients) #Runs the self.mch object
 
                 #????
@@ -378,9 +380,9 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("macroiter:", self.macroiter)
 
         #Turn RDM creation on or off
-        #if rdmoption is False:
+        #if rdmoption is None:
         #    #Pick user-selected (default: False)
-        #    dordm=self.SHCI_DoRDM
+        #    dordm=self.DMRG_DoRDM
         #else:
         #    #Probably from initial-orbitals call (RDM True)
         #    dordm=rdmoption
@@ -404,7 +406,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.mch.canonicalization = True
             self.mch.natorb = True
         #Settings
-        #self.mch.fcisolver = self.shci.SHCI(self.pyscftheoryobject.mol)
         if self.block_parallelization == 'MPI':
             print("blocblock_parallelization_mpi is set to MPI")
             print("block2-mpi version needs to be installed for this to work")
@@ -432,6 +433,11 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         #Adding singlet embedding if requested
         if self.singlet_embedding is True:
             self.mch.fcisolver.block_extra_keyword= ["singlet_embedding"]
+
+        #RDM option: DONE ELSEWHERE
+        #self.mch.fcisolver.DoRDM = dordm
+        #if dordm is True:
+        #    dm1 = self.mch.fcisolver.make_rdm1(0, self.mch.ncas, self.mch.nelec)
 
         self.mch.verbose=verbose
         #Setting memory
@@ -494,6 +500,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
         module_init_time=time.time()
+        import pyscf
         if numcores == None:
             numcores = self.numcores
 
@@ -553,24 +560,49 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.FIC_MRCI is True:
             e_corr = self.DMRG_FIC_MRCISD()
         #DMRG-SC-NEVPT2
-        if self.SC_NEVPT2 is True:
+        elif self.SC_NEVPT2 is True:
             e_corr = self.DMRG_SC_NEVPT2()
         #DMRG-SC-NEVPT2 via Wick
-        if self.SC_NEVPT2_Wick is True:
+        elif self.SC_NEVPT2_Wick is True:
             e_corr = self.DMRG_SC_NEVPT2_Wick()
         #DMRG-SC-NEVPT2
-        if self.SC_NEVPT2 is True:
+        elif self.SC_NEVPT2 is True:
             e_corr = self.DMRG_SC_NEVPT2()
         #DMRG-IC-NEVPT2
-        if self.IC_NEVPT2 is True:
+        elif self.IC_NEVPT2 is True:
             e_corr = self.DMRG_IC_NEVPT2()
-
+        else:
+            e_corr=0.0
         #Total energy
         self.energy = dmrg_energy + e_corr
 
         #Print final energy
         print("Post-DMRG Correlation energy:", e_corr)
         print("Final total energy:", self.energy)
+        self.properties['energy'] = self.energy
+
+        #RDM and Natural orbitals
+        if self.DMRG_DoRDM is True:
+            print("DMRG DoRDM is True. Calculating RDM1 and creating DMRG natural orbitals")
+            rdm1 = self.mch.make_rdm1(ao_repr=True)
+            #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
+            #Natural orbitals
+            occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
+            print("DMRG natural orbital occupations:", occupations)
+            print("\nWriting natural orbitals to Moldenfile")
+            self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol, 
+                                                                mo_coefficients, occupations, label="DMRG_Final_nat_orbs")
+            #Dipole moment
+            print("Now doing dipole")
+            dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_DMRG_M_{self.maxM}")
+
+
+            #Setting properties for a possible future job
+            self.properties['rdm1'] = rdm1
+            self.properties['natural_occupations'] = occupations
+            self.properties['natural_orbitals'] = mo_coefficients
+            self.properties['dipole'] = dipole
+
 
         print("Block is finished")
         #Cleanup Block scratch stuff (big files)

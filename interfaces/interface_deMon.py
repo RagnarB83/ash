@@ -19,11 +19,12 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 #deMon2k Theory object.
 class deMon2kTheory:
-    def __init__(self, demondir=None, filename='deMon', binary_name='binary', printlevel=2, numcores=1, 
+    def __init__(self, demondir=None, filename='deMon', binary_name='binary', printlevel=2, numcores=1, label="deMon2k",
                 functional='PBE', scf_type='UKS', basis_name='cc-pVDZ', auxis_name='GEN-A3*', grid='MEDIUM'):
 
         self.theorytype="QM"
         self.theorynamelabel="deMon2k"
+        self.label=label
         self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 

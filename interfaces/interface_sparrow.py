@@ -9,12 +9,13 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 
 
 class SparrowTheory:
-    def __init__(self, sparrowdir=None, filename='sparrow', printlevel=2,
+    def __init__(self, sparrowdir=None, filename='sparrow', printlevel=2, label="Sparrow",
                 method=None, numcores=1):
 
         self.theorynamelabel="Sparrow"
         self.theorytype="QM"
         self.analytic_hessian=False
+        self.label=label
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         if method is None:

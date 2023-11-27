@@ -62,7 +62,7 @@ import ash.constants
 import ash.functions.functions_elstructure
 from ash.functions.functions_elstructure import read_cube, write_cube, write_cube_diff, diffdens_tool, create_cubefile_from_orbfile, diffdens_of_cubefiles,  \
     NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb, make_molden_file, \
-    diagonalize_DM_AO, diagonalize_DM, DM_AO_to_MO, DM_AO_to_MO, DM_MO_to_AO
+    diagonalize_DM_AO, diagonalize_DM, DM_AO_to_MO, DM_AO_to_MO, DM_MO_to_AO, select_space_from_occupations,select_indices_from_occupations
 
 #multiwfn interface
 import ash.interfaces.interface_multiwfn
@@ -79,12 +79,12 @@ from ash.modules.module_surface import calc_surface, calc_surface_fromXYZ, read_
 # QMcode interfaces
 from ash.interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, MolecularOrbitalGrab, \
         run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size, orca_frag_guess, orblocfind, ORCAfinalenergygrab, \
-        read_ORCA_json_file, create_ORCA_json_file,get_densities_from_ORCA_json,grab_ORCA_wfn
+        read_ORCA_json_file, create_ORCA_json_file,get_densities_from_ORCA_json,grab_ORCA_wfn,ORCA_orbital_setup
 import ash.interfaces.interface_ORCA
 
 from ash.interfaces.interface_Psi4 import Psi4Theory
 from ash.interfaces.interface_dalton import DaltonTheory
-from ash.interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction
+from ash.interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection
 from ash.interfaces.interface_ipie import ipieTheory
 from ash.interfaces.interface_dice import DiceTheory
 from ash.interfaces.interface_block import BlockTheory

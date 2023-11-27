@@ -1159,6 +1159,17 @@ def select_space_from_occupations(occlist, selection_thresholds=[1.98,0.02]):
     numorbitals=len(welloccorbs)
     return [numelectrons,numorbitals]
 
+# Similar to above but returns the first and last indices of space instead of el/orbs
+# # Determing active space from natorb thresholds
+def select_indices_from_occupations(occlist, selection_thresholds=[1.98,0.02]):
+    print("select_indices_from_occupations function")
+    print("selection_thresholds:", selection_thresholds)
+    nat_occs_for_thresholds=[i for i in occlist if i < selection_thresholds[0] and i > selection_thresholds[1]]
+    indices_for_thresholds=[i for i,j in enumerate(occlist) if j < selection_thresholds[0] and j > selection_thresholds[1]]
+    actlist = list(range(indices_for_thresholds[0],indices_for_thresholds[-1]+1))
+    return actlist
+
+
 # Interface to XDM postg program
 #https://github.com/aoterodelaroza/postg
 def xdm_run(wfxfile=None, postgdir=None,a1=None, a2=None,functional=None):
@@ -2250,3 +2261,24 @@ def general_pointcharge_gradient(qm_coords, qm_charges,mm_coords,mm_charges,dm, 
         #TODO: Check with_rinv_orgin thingng 
 
     return g
+
+#Get electron correlation energy as a function of occupation numbers, sigma and the chosen distribution
+def get_ec_entropy(occ, sigma, method='fermi', alpha=0.6):
+    from scipy.special import erfinv
+    f = occ/2.0
+    f = f[(f>0) & (f<1)]
+    mask=f>0.5
+    f[mask] = 1.0-f[mask]
+    if method=='fermi':
+        print("Fermi entropy")
+        fc = f*np.log(f) + (1-f)*np.log(1-f)
+    elif method == 'gaussian':
+        print("Gaussian entropy")
+        fc = -np.exp(-(erfinv(1-f*2))**2)/2.0/np.sqrt(np.pi)
+    elif method == 'linear':
+        print("Linear entropy")
+        fc = -f+np.sqrt(2)*f**(3.0/2.0)*2.0/3.0
+    else:
+        raise ValueError('Not support', method)
+    Ec = 2.0*sigma*fc.sum()
+    return Ec

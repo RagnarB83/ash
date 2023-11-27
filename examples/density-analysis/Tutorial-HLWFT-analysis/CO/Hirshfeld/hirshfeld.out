@@ -1,0 +1,468 @@
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+                                           ASH                                            
+                              A MULTISCALE MODELLING PROGRAM                              
+                                        Version: 0.9dev                                        
+                               Git commit version: Unknown                                
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+ASH path: /data-hdd/PROGRAMS/ASH-PROGRAM/ash
+Python version: 3.11.6
+Python interpreter: /homelocal/rb269145/miniforge3/envs/ASHv1/bin/python3
+
+ASH Settings after reading defaults and ~/ash_user_settings.ini : 
+See https://ash.readthedocs.io/en/latest/basics.html#ash-settings on how to change settings.
+	 debugflag :  False
+	 load_julia :  False
+	 julia_library :  pythoncall
+	 use_ANSI_color :  False
+	 print_logo :  False
+	 print_input :  True
+	 scale :  1.0
+	 tol :  0.1
+	 conndepth :  10
+	 connectivity_code :  julia
+	 nonbondedMM_code :  julia
+	 print_exit_footer :  True
+	 print_full_timings :  True
+
+Note: ASH can use ANSI escape sequences for displaying color. Use e.g. less -R to display
+To turn on/off escape sequences, set: 'use_ANSI_color = False' in
+~/ash_user_settings.ini
+
+Input script: /data-hdd/CALCDIR/rb269145/ASH-density-analysis/CO/Hirshfeld/hirshfeld.py
+================================================================================
+   > from ash import *
+   > 
+   > moldenfiles=glob.glob("*molden*")
+   > 
+   > for moldenfile in moldenfiles:
+   >     multiwfn_run(moldenfile, option='hirshfeld', grid=3, numcores=1)
+================================================================================ 
+
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: pySCF_CCSD_natorbs.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: pySCF_CCSD_natorbs.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: pySCF_CCSD_natorbs.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: pySCF_CCSD(T)_natorbs.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: pySCF_CCSD(T)_natorbs.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: pySCF_CCSD(T)_natorbs.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: CCSD-unrelax.mdci.nat.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: CCSD-unrelax.mdci.nat.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: CCSD-unrelax.mdci.nat.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: ICE_CI_mp2nat_tgen_1e-06.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: ICE_CI_mp2nat_tgen_1e-06.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: ICE_CI_mp2nat_tgen_1e-06.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: MP2-unrelax.mp2nat.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: MP2-unrelax.mp2nat.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: MP2-unrelax.mp2nat.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: MRCC_CCSDTQ.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: MRCC_CCSDTQ.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: MRCC_CCSDTQ.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: MP2-relax.mp2nat.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: MP2-relax.mp2nat.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: MP2-relax.mp2nat.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: CCSD-orbopt.mdci.nat.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: CCSD-orbopt.mdci.nat.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: CCSD-orbopt.mdci.nat.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: HF.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: HF.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: HF.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: MRCC_CCSDT.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: MRCC_CCSDT.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: MRCC_CCSDT.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: CCSD-lin.mdci.nat.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: CCSD-lin.mdci.nat.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: CCSD-lin.mdci.nat.molden.chg was created
+
+
+                            ########################                            
+                            #                      #                            
+                            #     multiwfn_run     #                            
+                            #                      #                            
+                            ########################                            
+
+Don't forget to to cite Multiwfn if you use it in your work:
+Tian Lu, Feiwu Chen, Multiwfn: A multifunctional wavefunction analyzer, J. Comput. Chem., 33, 580-592 (2012)
+http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
+    
+
+multiwfndir: None
+Molden file: SHCI_CCSD_T_natorbs_noPT_eps_1e-05.molden
+Option: hirshfeld
+Gridsetting: 3
+Numcores: 1
+Copying ASH Multiwfn settings.ini file to current directory
+ No multiwfndir argument passed to multiwfn_run. Attempting to find multiwfndir variable inside settings_ash 
+ Found no multiwfndir variable in settings_ash module either. 
+ Found Multiwfn in path. Setting multiwfndir to: /homelocal/rb269145/PROGRAMS/Multiwfn_3.8dev_bin_Linux_noGUI_jul2023 
+
+Reading Molden file by ASH: SHCI_CCSD_T_natorbs_noPT_eps_1e-05.molden
+The file contains 2 atoms and coordinates:
+C    0.00000    0.00000    0.00000
+O    0.00000    0.00000    1.12940
+Wrote Multiwfn inputfile to disk: mwfnoptions
+Now calling Multiwfn (using 1 cores)
+Multiwfn is done!
+
+option: hirshfeld
+Hirshfeld option was chosen.
+A file: SHCI_CCSD_T_natorbs_noPT_eps_1e-05.molden.chg was created
+
+
+--------------------------------------------------------------------------------
+                          Total timings of all modules                          
+--------------------------------------------------------------------------------
+
+To turn off timing output add to settings file: ~/ash_user_settings.ini
+print_full_timings = False   
+
+Modulename                                   Time (sec) Percentage of total     Times called
+----------------------------------------------------------------------------------------------------
+
+Sum of all moduletimes (flawed)                    0.00
+Total walltime                                     1.89     100.0
+
+ ------------------------------------------------------------------- 
+ ASH Total Walltime: 1.9 seconds, 0.0 minutes. 
+ ------------------------------------------------------------------- 

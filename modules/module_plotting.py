@@ -159,9 +159,17 @@ class ASH_plot():
     def invert_y_axis(self,subplot):
         self.axs[subplot].invert_yaxis()
     def addseries(self,subplot, surfacedictionary=None, x_list=None, y_list=None, x_labels=None, label='Series', color='blue', pointsize=40, 
-                    scatter=True, line=True, scatter_linewidth=2, line_linewidth=1, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
-                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False):
+                    scatter=True, line=True, bar=False, scatter_linewidth=2, line_linewidth=1, barwidth=None, barcolors=None, marker='o', legend=True, x_scaling=1.0,y_scaling=1.0,
+                    xticklabelrotation=80, x_scale_log=False, y_scale_log=False, colormap='viridis', 
+                    linestyle='-'):
+        import matplotlib.pyplot as plt
         print("Adding new series to ASH_plot object")
+
+        if bar is True:
+            if scatter is True or line is True:
+                print("Error: you can not add a bar together with scatter and line at the same time")
+                ashexit()
+
         self.addplotcount+=1
         curraxes=self.axs[subplot]
         
@@ -201,8 +209,22 @@ class ASH_plot():
                 label='_nolegend_'
             else:
                 legendlabel=label
-            curraxes.plot(x, y, linestyle='-', color=color, linewidth=line_linewidth, label=label)
-        
+            curraxes.plot(x, y, linestyle=linestyle, color=color, linewidth=line_linewidth, label=label)
+        if bar is True:
+            if barcolors is None:
+                print("No barcolors keyword supplied. Will color the bars according to colormap:", colormap)
+                #Scale data
+                denominator = max(y) - min(y)
+                scaled_data = [(datum-min(y))/denominator for datum in y]
+                barcolors = []
+                cmap = plt.get_cmap(colormap)
+                for decimal in scaled_data:
+                    barcolors.append(cmap(decimal))
+            if barwidth is None:
+                curraxes.bar(x, y, color=barcolors, label=label)
+            else:
+                curraxes.bar(x, y, width=barwidth, color=barcolors, label=label)
+
         #Add labels to x-axis if
         if x_labels is not None:
             print("Adding xticks labels using rotation parameter:", xticklabelrotation)
@@ -266,7 +288,7 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 
     plt = load_matplotlib()
 
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
+    conversionfactor = { 'a.u.': 1.0, 'Eh': 1.0, 'au': 1.0, 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638, 
                         'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
     coords=[]

@@ -13,14 +13,15 @@ CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG
 #CFour Theory object.
 class CFourTheory:
     def __init__(self, cfourdir=None, printlevel=2, cfouroptions=None, numcores=1,
-                 filename='cfourjob', specialbasis=None, ash_basisfile=None, basisfile=None, label=None,
-                 parallelization='MKL', frozen_core_settings='Auto', DBOC=False):
+                 filename='cfourjob', specialbasis=None, ash_basisfile=None, basisfile=None, label="CFour",
+                 parallelization='MKL', frozen_core_settings='Auto', DBOC=False, clean_cfour_files=True):
         
         self.theorynamelabel="CFour"
         self.analytic_hessian=True
         #Indicate that this is a QMtheory
         self.theorytype="QM"
         
+        self.label=label
         self.printlevel=printlevel
         self.numcores=numcores
         self.filename=filename
@@ -28,6 +29,7 @@ class CFourTheory:
         #Type of parallelization. Options: 'MKL' or 'MPI.
         #MPI not yet implemented.
         self.parallelization=parallelization
+        self.clean_cfour_files=clean_cfour_files
         
         #Default Cfour settings
         self.basis='SPECIAL' #this is default and preferred
@@ -470,7 +472,9 @@ HFSTABILITY={self.stabilityanalysis})\n\n""")
             self.S2=self.cfour_grab_spinexpect()
 
         #Full cleanup
-        self.cleanup()
+        if self.clean_cfour_files is True:
+            print("clean_cfour_files is True")
+            self.cleanup()
 
         print(BC.OKBLUE, BC.BOLD, "------------ENDING CFOUR INTERFACE-------------", BC.END)
         if Grad == True:

@@ -14,12 +14,13 @@ MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z',
 #MRCC Theory object.
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
-                mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label=None,
+                mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label="MRCC",
                 keep_orientation=True, frozen_core_settings='Auto'):
 
         self.theorynamelabel="MRCC"
         self.theorytype="QM"
         self.analytic_hessian=False
+        self.label=label
 
         print_line_with_mainheader("MRCCTheory initialization")
 
@@ -54,9 +55,10 @@ class MRCCTheory:
         self.parallelization=parallelization
         self.keep_orientation=keep_orientation
 
-        print("Warning: keep_orientation options is on (by default)! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
-        print("This is necessary for gradient calculations and also is you want the density for the original structure")
-        print("Do keep_orientation=False if you want MRCC to use symmetry and its own standard orientation")
+        if self.keep_orientation is True:
+            print("Warning: keep_orientation options is on (by default)! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
+            print("This is necessary for gradient calculations and also is you want the density for the original structure")
+            print("Do keep_orientation=False if you want MRCC to use symmetry and its own standard orientation")
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -229,6 +231,8 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
             print("keep_orientation is True. Turning off symmetry and doing dummy QM/MM calculation to preserve orientation")
             inpfile.write('symm=off\n')
             inpfile.write('qmmm=Amber\n')
+        else:
+            print("keep_orientation is False. MRCC will reorient the molecule and use symmetry")
 
         #If Grad true set density to first-order. Gives properties and gradient
         if Grad is True:

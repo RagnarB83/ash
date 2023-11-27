@@ -21,10 +21,10 @@ import ash.functions.functions_parallel
 #ORCA Theory object.
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
-                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label=None, 
+                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label="ORCA", 
                  moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
-                 fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None):
+                 fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None):
         print_line_with_mainheader("ORCATheory initialization")
 
 
@@ -166,6 +166,14 @@ class ORCATheory:
         
         #Whether to keep a copy of last output (filename_last.out) or not
         self.keep_last_output=True
+
+        #NMF
+        self.NMF=NMF
+        if self.NMF is True:
+            if NMF_sigma == None:
+                print("NMF option requires setting NMF_sigma")
+                ashexit()
+            self.NMF_sigma=NMF_sigma
 
         #XDM: if True then we add !AIM to input
         self.xdm=False
@@ -419,14 +427,26 @@ end"""
 
         #TDDFT option
         #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
-        if self.TDDFT == True:
+        if self.TDDFT is True:
             if '%tddft' not in self.orcablocks:
-                self.orcablocks=self.orcablocks+"""
+                self.orcablocks=self.orcablocks+f"""
                 %tddft
-                nroots {}
-                IRoot {}
+                nroots {self.TDDFTroots}
+                IRoot {self.FollowRoot}
                 end
-                """.format(self.TDDFTroots, self.FollowRoot)
+                """
+        #NMF
+        if self.NMF is True:
+            print("NMF option is active. Will activate Fermi-smearing in ORCA input!")
+            NMF_smeartemp = self.NMF_sigma / ash.constants.R_gasconst
+            print(f"NMF_smeartemp = {NMF_smeartemp} calculated from NMF_sigma: {self.NMF_sigma}:")
+            self.orcablocks=self.orcablocks+f"""
+%scf
+fracocc true
+smeartemp {NMF_smeartemp}
+end
+            """
+
 
         #If 1st runcall, add this to inputfile
         if self.runcalls == 1:
@@ -575,6 +595,17 @@ end"""
             self.energy=ORCAfinalenergygrab(outfile)
             if self.printlevel >= 1:
                 print("ORCA energy:", self.energy)
+
+        #NMF
+        if self.NMF is True:
+            print("NMF option is active.")
+            occupations = np.array(SCF_FODocc_grab(outfile))
+            print("Fractional ccupations (Fermi distribution):", occupations)
+            print("Now also calculating correlation energy from the fractional occupation numbers")
+            print("Assuming Fermi distribution")
+            Ec = ash.functions.functions_elstructure.get_ec_entropy(occupations, self.NMF_sigma, method='fermi')
+            print("Ec:", Ec)
+            self.energy = self.energy + Ec
 
         #Grab possible properties
         #ICE-CI
@@ -733,7 +764,7 @@ def run_orca_SP(list):
 # Run ORCA single-point job using ORCA parallelization. Will add pal-block if numcores >1.
 def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, check_for_errors=True, bind_to_core_option=True, ignore_ORCA_error=False):
     if numcores>1:
-        palstring='%pal nprocs {} end'.format(numcores)
+        palstring='%pal \nnprocs {}\nend'.format(numcores)
         with open(inpfile) as ifile:
             insert_line_into_file(inpfile, '!', palstring, Once=True )
     basename = inpfile.replace('.inp','')
@@ -2040,14 +2071,16 @@ def SCF_FODocc_grab(filename):
     occupations=[]
     with open(filename) as f:
         for line in f:
-            if occgrab==True:
-                if '  NO   OCC' not in line:
-                    if len(line) >5:
+            if occgrab is True:
+                if '***********' in line:
+                    return occupations
+                if ' SPIN DOWN' in line:
+                    occgrab=False
+                    return occupations
+                if len(line.split()) == 4:
+                    if '  NO   OCC' not in line:
                         occupations.append(float(line.split()[1]))
-                    if len(line) < 2 or ' SPIN DOWN' in line:
-                        occgrab=False
-                        return occupations
-            if 'SPIN UP ORBITALS' in line:
+            if 'SPIN UP ORBITALS' in line or 'ORBITAL ENERGIES' in line:
                 occgrab=True
     return occupations
 
@@ -2487,11 +2520,14 @@ def make_molden_file_ORCA(GBWfile, orcadir=None, printlevel=2):
     sp.call([orcadir+'/orca_2mkl', GBWfile_noext, '-molden'])
     moldenfile=GBWfile_noext+'.molden.input'
     print("Created molden file:", moldenfile)
+    os.rename(moldenfile,GBWfile_noext+'.molden')
+    print("Renaming to:", GBWfile_noext+'.molden')
+
     if renamefile is True:
         print("Removing copy of file:", newfile)
         os.remove(newfile)
 
-    return moldenfile
+    return GBWfile_noext+'.molden'
 
 
 
@@ -2859,3 +2895,409 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
     print("MO coeffs:", C)
 
     return DM_AO,C,S, AO_basis, AO_order
+
+
+#Function to prepare ORCA orbitals for another ORCA calculation
+#Mainly for getting natural orbitals 
+
+def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
+        MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
+        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
+        FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6, 
+        ROHF=False, ROHF_case=None, MP2_nat_step=False, MREOMtype="MR-EOM",
+        NMF=False, NMF_sigma=None):
+
+    print_line_with_mainheader("ORCA_orbital_setup")
+    
+
+    if fragment is None:
+        print("Error: No fragment provided to ORCA_orbital_setup.")
+        ashexit()
+
+    if basis is None:
+        print("Error: No basis keyword provided to ORCA_orbital_setup. This is necessary")
+        print("Note: you can additionally used basisblock string to provide additional basis options or override keyword")
+        ashexit()
+
+    if orbitals_option is None:
+        print("Error: No orbitals_option keyword provided to ORCA_orbital_setup. This is necessary")
+        print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
+        ashexit()
+
+    #Check charge/mult
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "bla", theory=None)
+
+    #ORBITALS_OPTIONS
+    #If ROHF only is requested we activate the ROHF procedure
+    if 'ROHF' in orbitals_option:
+        print("ROHF orbitals_option requested")
+        ROHF=True
+    if MP2_nat_step is True and MP2_density is None:
+            print("Error: MP2_density must be provided for MP2_nat_step")
+            print("Options: unrelaxed or relaxed")
+            ashexit()
+    if 'MP2' in orbitals_option:
+        print("MP2-type orbitals requested. This means that natural orbitals will be created from the chosen MP2 density")
+        if MP2_density is None:
+            print("Error: MP2_density must be provided")
+            print("Options: unrelaxed or relaxed")
+            ashexit()
+        print("MP2_density option:", MP2_density)
+    if 'CCSD' in orbitals_option:
+        MDCIkeyword="CCSD"
+        print("CCSD-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density ")
+        if MDCI_density is None:
+            print("Error: MDCI_density must be provided")
+            print("Options: linearized, unrelaxed or orbopt")
+            ashexit()
+        print("MDCI_density option:", MDCI_density)
+    if 'QCISD' in orbitals_option:
+        MDCIkeyword="QCISD"
+        print("QCISD-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density")
+        if MDCI_density is None:
+            print("Error: MDCI_density must be provided")
+            print("Options: linearized, unrelaxed or orbopt")
+            ashexit()
+        print("MDCI_density option:", MDCI_density)
+    if 'CEPA/1' in orbitals_option:
+        MDCIkeyword="CEPA/1"
+        print("CEPA/1-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density")
+        if MDCI_density is None:
+            print("Error: MDCI_density must be provided")
+            print("Options: linearized, unrelaxed or orbopt")
+            ashexit()
+        print("MDCI_density option:", MDCI_density)
+    if 'CPF/1' in orbitals_option:
+        MDCIkeyword="CPF/1"
+        print("CPF/1-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density")
+        if MDCI_density is None:
+            print("Error: MDCI_density must be provided")
+            print("Options: linearized, unrelaxed or orbopt")
+            ashexit()
+        print("MDCI_density option:", MDCI_density)
+    #CASSCF
+    if 'CASSCF' in orbitals_option:
+        print("CASSCF-type orbitals requested. This means that natural orbitals will be created from a CASSCF WF")
+        if CAS_nel is None or CAS_nel is None:
+            print("CASSCF natural orbitals required CAS_nel and CAS_norb keywords for CAS active space calculation")
+            ashexit()
+        if CASCI is True:
+            print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
+            extrainput = extrainput + " noiter"
+    #FOBO
+    if 'FOBO' in orbitals_option:
+        print("FOBO-type orbitals requested.")
+        if CASCI is True:
+            print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
+            extrainput = extrainput + " noiter"
+    if 'MR' in orbitals_option:
+        print("orbitals_option:", orbitals_option)
+        if 'SORCI' in orbitals_option:
+            MRCIkeyword="SORCI"
+        elif 'ACPF' in orbitals_option:
+            MRCIkeyword="MRACPF"
+        elif 'AQCC' in orbitals_option:
+            MRCIkeyword="MRAQCC"
+        elif 'DDCI1' in orbitals_option:
+            MRCIkeyword="MRDDCI1"
+        elif 'DDCI2'  in orbitals_option:
+            MRCIkeyword="MRDDCI2"
+        elif 'DDCI3'  in orbitals_option:
+            MRCIkeyword="MRDDCI3"
+        elif 'MRCI+Q'  in orbitals_option:
+            MRCIkeyword="MRCI+Q"
+        elif 'MREOM'  in orbitals_option:
+            MRCIkeyword=MREOMtype
+        else:
+            MRCIkeyword="MRCI"
+        print("MRCIkeyword:", MRCIkeyword)
+        print("MR-type orbitals requested. This means that natural orbitals will be created from the chosen MRCI_density")
+        if CAS_nel is None or CAS_nel is None:
+            print("MRCI natural orbitals required CAS_nel and CAS_norb keywords for CAS active space calculation")
+            ashexit()
+        if CASCI is True:
+            print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
+            extrainput = extrainput + " noiter"
+
+
+    #Always tarting from scratch, unless moreadfile is provided (will override)
+    autostart_option=False
+
+    ######################
+    #ROHF option for SCF
+    #######################
+    if ROHF is True:
+        print("ROHF is True. Will first run a ROHF calculation preparatory step")
+        print("Warning: ORCA will attempt an ROHF calculation while guessing what type of open-shell case you are dealing with")
+        print("If ORCA fails in this step you may have to provide ROHF-case manually via the ROHF_case keyword")
+        print("ROHF_case options: 'HighSpin' (typically what you want), 'CAHF', 'SAHF'  (see ORCA manual for details)")
+        #ROHF bug in ORCA, necessary for cc-basis sets in ORCA 5:
+        if ROHF_case == None:
+            rohfcase_line=""
+        else:
+            rohfcase_line=f"ROHF_case {ROHF_case}"
+        rohfblocks=f"""
+%shark
+usegeneralcontraction false
+partialgcflag 0
+end
+%scf
+{rohfcase_line}
+end
+"""
+        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf", orcablocks=rohfblocks, numcores=numcores, autostart=autostart_option,
+                                 label='ROHF', filename="ROHF", save_output_with_label=True, moreadfile=moreadfile)
+        Singlepoint(theory=rohf,fragment=fragment)
+        #Now SCF-step is done. Now adding noiter to extrainput and moreadfile
+        moreadfile=f"{rohf.filename}.gbw"
+        extrainput="noiter"
+        print("ROHF step is done. Now adding noiter to extrainput and moreadfile for next step")
+
+    #############################################################
+    #Possible initial MP2-nat step before final orbitals
+    ##############################################################
+    if MP2_nat_step is True:
+        print("MP2_nat_step is True. Will run an MP2-natural orbital calculation preparatory step")
+        print("MP2_density option:", MP2_density)
+        print("moreadfile:", moreadfile)
+        mp2blocks=f"""
+%mp2
+density {MP2_density}
+natorbs true
+end
+"""
+        mp2_prep = ash.ORCATheory(orcasimpleinput=f"! RI-MP2 {basis} {extrainput} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+                                 label='MP2prep', filename="MP2prep", save_output_with_label=True, moreadfile=moreadfile, autostart=autostart_option)
+        Singlepoint(theory=mp2_prep,fragment=fragment)
+        #Now MP2-step is done. Now adding noiter to extrainput and moreadfile
+        moreadfile=f"{mp2_prep.filename}.mp2nat"
+        extrainput="noiter"
+        print("MP2-prep step is done. Now adding noiter to extrainput and moreadfile for next step")
+
+
+    #############################################################
+    #FINAL ORBITALS
+    ##############################################################
+    alldone=False
+    #NOTE: HF, UHF-UNO and QRO not yet ready
+    if orbitals_option =="HF" or orbitals_option =="RHF" :
+        print("Performing HF orbital calculation")
+        exit()
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} HF {basis}  tightscf", numcores=numcores, 
+                                 label='RHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.gbw"
+        #Dummy occupations
+        natoccgrab=UHF_natocc_grab
+    elif orbitals_option =="UHF-UNO" or orbitals_option =="UHF" :
+        print("Performing UHF natural orbital calculation")
+        exit()
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis} normalprint UNO tightscf", numcores=numcores, 
+                                 label='UHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.unso"
+        natoccgrab=UHF_natocc_grab
+    elif orbitals_option =="UHF-QRO":
+        print("Performing UHF-QRO natural orbital calculation")
+        exit()
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores, 
+                                 label='UHF-QRO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.qro"
+        natoccgrab=UHF_natocc_grab
+    elif orbitals_option =="NMF":
+        print("Performing Non-AufBau Mean-Field calculation")
+        if NMF_sigma is None:
+            print("Error: For orbitals_option NMF, NMF_sigma must also be provided")
+            ashexit()
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {basis}  tightscf", NMF=True, NMF_sigma=NMF_sigma, numcores=numcores, 
+                                 label='NMF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.gbw"
+        natoccgrab=SCF_FODocc_grab
+    elif orbitals_option =="ROHF":
+        print("ROHF orbitals_option was chosen. ROHF calculation should already have been carried out.")
+        print("Returning")
+        alldone=True
+        mofile=f"{rohf.filename}.gbw"
+        natoccgrab=None
+    elif orbitals_option =="MP2" :
+        mp2blocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %mp2
+        natorbs true
+        density {MP2_density}
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+                                 label='MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mp2nat"
+        natoccgrab=MP2_natocc_grab
+    elif orbitals_option =="RI-MP2" :
+        mp2blocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %mp2
+        natorbs true
+        density {MP2_density}
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+                                 label='RIMP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mp2nat"
+        natoccgrab=MP2_natocc_grab
+    elif orbitals_option =="RI-SCS-MP2" :
+        mp2blocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %mp2
+        natorbs true
+        density {MP2_density}
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+                                 label='RI-SCS-MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mp2nat"
+        natoccgrab=MP2_natocc_grab
+    elif orbitals_option =="OO-RI-MP2" :
+        mp2blocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %mp2
+        natorbs true
+        density relaxed
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} OO-RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+                                 label='OO-RI-MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mp2nat"
+        natoccgrab=MP2_natocc_grab
+    elif orbitals_option =="CCSD" or orbitals_option =="QCISD" or orbitals_option =="CEPA/1" or orbitals_option =="CPF/1":
+        ccsdblocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %mdci
+        natorbs true
+        density {MDCI_density}
+        end
+        """
+        mdcilabel = MDCIkeyword.replace("/","") #To avoid / in CEPA/1 etc
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores, 
+                                 label=mdcilabel, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mdci.nat"
+        natoccgrab=CCSD_natocc_grab
+    elif 'CASSCF' in orbitals_option:
+        casscfblocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %casscf
+        nel {CAS_nel}
+        norb {CAS_norb}
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} CASSCF {basis} tightscf", orcablocks=casscfblocks, numcores=numcores, 
+                                 label='CASSCF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.gbw"
+        natoccgrab=CASSCF_natocc_grab
+    elif 'MR' in orbitals_option:
+        mrciblocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %casscf
+        nel {CAS_nel}
+        norb {CAS_norb}
+        end
+        %mrci
+        natorbs 2
+        tsel {MRCI_tsel}
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MRCIkeyword} {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores, 
+                                 label=MRCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.b0_s0.nat"
+        natoccgrab=None
+        print("Warning: can not get full natural occupations from MRCI+Q calculation")
+    elif 'FOBO' in orbitals_option:
+        #Defining a ROHF-type CASSCF
+        if CAS_nel is None or CAS_norb is None:
+            print("CAS_nel and CAS_norb not given. Guessing ROHF-type CASSCF based on multiplicity")
+            CAS_nel=mult-1
+            CAS_norb=mult-1
+        
+        if CAS_nel == 0:
+            print("Closed-shell system. Adding AllowRHF keyword")
+            extrainput="AllowRHF"
+        #FOBO_options
+        if FOBO_excitation_options is None:
+            FOBO_excitation_options = {'1h':1,'1p':1,'1h1p':1,'2h':0,'2h1p':1}
+            print("Using default FOBO_excitation_options:", FOBO_excitation_options)
+
+        mrciblocks=f"""
+%maxcore {memory}
+{basisblock}
+{extrablock}
+%casscf
+  nel {CAS_nel}
+  norb {CAS_norb}
+end
+
+%mrci
+newblock {mult} *
+   excitations none
+   refs cas({CAS_nel},{CAS_norb}) end
+   Flags[is]   {FOBO_excitation_options['1h']}
+   Flags[sa]   {FOBO_excitation_options['1p']}
+   Flags[ia]   {FOBO_excitation_options['1h1p']}
+   Flags[ijss] {FOBO_excitation_options['2h']}
+   Flags[ijsa] {FOBO_excitation_options['2h1p']}
+   nroots      1
+end
+AllSingles true
+PrintWF det
+natorbiters {MRCI_natorbiterations}
+natorbs 2
+tsel {MRCI_tsel}
+end
+"""
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput}  {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores, 
+                                 label='FOBO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.b0_s0.nat"
+        natoccgrab=None
+        print("Warning: can not get full natural occupations from MRCI+Q calculation")
+    else:
+        print("Error: orbitals_option not recognized")
+        ashexit()
+    
+    #Run natorb calculation unless everything is done
+    if alldone is False:
+        ash.Singlepoint(theory=natorbs, fragment=fragment, charge=charge, mult=mult)
+
+    #Print natural occupations if available
+    if natoccgrab is not None:
+        nat_occupations=natoccgrab(natorbs.filename+'.out')
+        print(f"{orbitals_option} Natorb. ccupations:", nat_occupations)
+        print("\nTable of natural occupation numbers")
+        print(f"Dashed lines indicated occupations within nmin={nmin} and nmax={nmax} window")
+        print("")
+        print("{:<9} {:6} ".format("Orbital", f"{orbitals_option}-nat-occ"))
+        print("----------------------------------------")
+        init_flag=False
+        final_flag=False
+        for index,(nocc) in enumerate(nat_occupations):
+            if init_flag is False and nocc<nmin:
+                print("-"*40)
+                init_flag=True
+            if final_flag is False and nocc<nmax:
+                print("-"*40)
+                final_flag=True
+            print(f"{index:<9} {nocc:9.4f}")
+    else:
+        nat_occupations=[]
+
+    print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", mofile)
+    print("Also returning natural occupations list:", nat_occupations)
+    return mofile, nat_occupations

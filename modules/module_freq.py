@@ -40,7 +40,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         print("Getting Hessian from theory object")
         hessian = theory.hessian
         #Diagonalize
-        frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
+        frequencies, nmodes, evectors, mode_order = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
                                                             TRmodenum=TRmodenum,projection=True)
         #Print out Freq output. Maybe print normal mode compositions here instead???
         printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
@@ -261,21 +261,27 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             theory.printlevel=printlevel
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
             displacement_grad_dictionary[stringlabel] = gradient
-            #Grabbing dipole moment for those theories
+            
+            #Grabbing dipole moment if available
             try:
-                displacement_dipole_dictionary[stringlabel] = theory.get_dipole_moment()
+                displacement_dm = theory.get_dipole_moment()
+                displacement_dipole_dictionary[stringlabel] = displacement_dm
             except:
                 pass
             #Grabbing polarizability tensor if requested
             if Raman is True:
                 try:
                     print("Getting polarizability tensor")
-                    displacement_polarizability_dictionary[stringlabel] = theory.get_polarizability_tensor()
+                    displacement_pol = theory.get_polarizability_tensor()
+                    #Checking if array is all zero (i.e. no polarizability information was found)
+                    if not np.any(displacement_pol):
+                        print("Warning: no polarizability information found")
+                    displacement_polarizability_dictionary[stringlabel] = displacement_pol
                 except:
                     print("Warning: Problem getting polarizability tensor from theory interface. Skipping")
                     pass
 
-    #TODO: Dipole moment grab for parallel mode
+    #TODO: Dipole moment/polarizability grab for parallel mode
     elif runmode == 'parallel':
 
         if isinstance(theory,ash.QMMMTheory):
@@ -294,6 +300,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #Gradient_dict is already correctly formatted
         displacement_grad_dictionary = gradient_dict
 
+        displacement_dipole_dictionary = result.displacement_dipole_dictionary
+        print("displacement_dipole_dictionary:",displacement_dipole_dictionary)
+        displacement_polarizability_dictionary = result.displacement_polarizability_dictionary
+        print("displacement_polarizability_dictionary:",displacement_polarizability_dictionary)
+
         #print("displacement_grad_dictionary:", displacement_grad_dictionary)
     else:
         print("Unknown runmode.")
@@ -301,6 +312,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     
     ############################################
     print("Displacement calculations done.")
+    #print("displacement_dipole_dictionary:", displacement_dipole_dictionary)
+    #print("displacement_grad_dictionary:", displacement_grad_dictionary)
+    #exit()
     if len(displacement_grad_dictionary) == 0:
         print("Missing gradients for displacement.")
         print("Something went wrong in Numfreq displacement calculations.")
@@ -326,7 +340,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #IR intensities if dipoles available
         if len(displacement_dipole_dictionary) > 0:
             original_dipole = np.array(displacement_dipole_dictionary['Originalgeo'])
-            print("original_dipole:",original_dipole)
+            #print("original_dipole:",original_dipole)
         #Raman if requested
         if Raman is True:
             if len(displacement_polarizability_dictionary) > 0:
@@ -353,9 +367,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 #IR
                 #IR intensities if dipoles available
                 if len(displacement_dipole_dictionary) > 0:
-                    disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
-                    dd_deriv = (disp_dipole - original_dipole)/displacement_bohr
-                    dipole_derivs[hessindex,:] = dd_deriv
+                    if len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
+                        disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
+                        dd_deriv = (disp_dipole - original_dipole)/displacement_bohr
+                        dipole_derivs[hessindex,:] = dd_deriv
                 #Raman if requested
                 if Raman is True:
                     if len(displacement_polarizability_dictionary) > 0:
@@ -393,12 +408,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 hessian[hessindex,:]=Hessrow
                 grad_pos_1d=0
                 grad_neg_1d=0
+
                 #IR intensities if dipoles available
                 if len(displacement_dipole_dictionary) > 0:
-                    disp_dipole_pos = np.array(displacement_dipole_dictionary[lookup_string_pos])
-                    disp_dipole_neg = np.array(displacement_dipole_dictionary[lookup_string_neg])
-                    dd_deriv = (disp_dipole_pos - disp_dipole_neg)/(2*displacement_bohr)
-                    dipole_derivs[hessindex,:] = dd_deriv
+                    if len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
+                        disp_dipole_pos = np.array(displacement_dipole_dictionary[lookup_string_pos])
+                        disp_dipole_neg = np.array(displacement_dipole_dictionary[lookup_string_neg])
+                        dd_deriv = (disp_dipole_pos - disp_dipole_neg)/(2*displacement_bohr)
+                        dipole_derivs[hessindex,:] = dd_deriv
+                #else:
+                #    print("No dipole information found. Skipping IR")
                 #Raman if requested
                 if Raman is True:
                     if len(displacement_polarizability_dictionary) > 0:
@@ -427,13 +446,14 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
 
-    frequencies, nmodes, evectors = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
+    frequencies, nmodes, evectors, mode_order = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
 
     #Evectors: eigenvectors of the mass-weighed Hessian
     #Normal modes: unweighted
 
     #IR intensities if dipoles available
     if len(displacement_dipole_dictionary) > 0:
+        dipole_derivs = dipole_derivs[mode_order]
         IR_intens_values = calc_IR_Intensities(hessmasses,evectors,dipole_derivs)
     else:
         IR_intens_values=None
@@ -441,11 +461,18 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Raman activities if polarizabilities available
     if Raman is True:
         print("Raman calculation active")
-        if len(displacement_polarizability_dictionary) > 0:
-            print("Polarizability derivatives are available.")
-            Raman_activities, depolarization_ratios = calc_Raman_activities(hessmasses,evectors,polarizability_derivs)
-        else:
+        print("displacement_polarizability_dictionary:", displacement_polarizability_dictionary)
+        if len(displacement_polarizability_dictionary) == 0:
+            print("No polarizability information found. Skipping Raman.")
             Raman_activities=None; depolarization_ratios=None
+        #elif not np.any(displacement_polarizability_dictionary["0_0_+"]):
+        #    print("Something wrong with polarizability information. Skipping Raman.")
+        #    Raman_activities=None; depolarization_ratios=None
+        else:
+            print("Polarizability derivatives are available.")
+            #Reordering just in case
+            polarizability_derivs = [polarizability_derivs[i] for i in mode_order]
+            Raman_activities, depolarization_ratios = calc_Raman_activities(hessmasses,evectors,polarizability_derivs)
     else:
         Raman_activities=None; depolarization_ratios=None
     blankline()
@@ -545,7 +572,9 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
             evectors = np.insert(evectors,0,[0.0]*evectors.shape[1],axis=0)
             nmodes = np.insert(nmodes,0,[0.0]*nmodes.shape[1],axis=0)
 
-        return vfreqs,nmodes,evectors
+        #Moder-order unchanged
+        mode_order = list(range(0,len(nmodes)))
+        return vfreqs,nmodes,evectors,mode_order
     else:
         print("No projection of rotational and translational modes will be done!")
         # Massweight Hessian
@@ -593,7 +622,7 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
         evectors = evectors[neworder]
         nmodes = nmodes[neworder]
 
-        return vfreqs,nmodes,evectors
+        return vfreqs,nmodes,evectors,neworder
 
 #Calculate IR intensities from masses, (mass-weighted) eigenvectors and dipole derivative matrix
 def calc_IR_Intensities(hessmasses,evectors,dipole_derivs):
@@ -1323,7 +1352,7 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
         TRmodenum=6
 
     print("Now diagonalizing full Hessian")
-    frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,fullhessian,usedfragment.masses,usedfragment.elems,TRmodenum=TRmodenum,projection=projection)
+    frequencies, normal_modes, evectors, mode_order = diagonalizeHessian(fragment.coords,fullhessian,usedfragment.masses,usedfragment.elems,TRmodenum=TRmodenum,projection=projection)
     print("Size:", fullhessian.size)
     print("Frequencies of full Hessian:", frequencies)
     write_hessian(fullhessian,hessfile="Finalfullhessian")
@@ -1368,10 +1397,10 @@ def isotope_change_Hessian(fragment=None, hessfile=None, hessian=None, elems=Non
 
     #Regular mass-weighted Hessian
     coords=fragment.coords
-    vfreqs1,nmodes1,evectors1 = diagonalizeHessian(coords,hessian, masses, elems,TRmodenum=TRmodenum,projection=projection)
+    vfreqs1,nmodes1,evectors1, mode_order1 = diagonalizeHessian(coords,hessian, masses, elems,TRmodenum=TRmodenum,projection=projection)
 
     #Mass- substituted
-    vfreqs2,nmodes2,evectors2 = diagonalizeHessian(coords,hessian, masses_mod, elems, TRmodenum=TRmodenum, projection=projection)
+    vfreqs2,nmodes2,evectors2,mode_order2 = diagonalizeHessian(coords,hessian, masses_mod, elems, TRmodenum=TRmodenum, projection=projection)
 
     print("masses:", masses)
     print("masses_mod:", masses)
@@ -1511,7 +1540,7 @@ def get_dominant_atoms_in_mode(mode,fragment=None, threshold=0.3, hessatoms=None
     else:
         TRmodenum=6
     #Diagonalize Hessian
-    frequencies, nmodes, evectors = diagonalizeHessian(fragment.coords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
+    frequencies, nmodes, evectors, mode_order = diagonalizeHessian(fragment.coords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
 
     #Get full list of atom contributions to mode
     normcomplist_for_mode = normalmodecomp_all(mode,fragment,evectors, hessatoms=hessatoms)
@@ -1881,7 +1910,8 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
 
 
 #Simple function to get Wigner distribution from geometry
-def wigner_distribution(fragment=None, hessian=None, temperature=300, num_samples=100,dirname="wigner",projection=True):
+def wigner_distribution(fragment=None, hessian=None, temperature=300, num_samples=100,dirname="wigner",projection=True, hessatoms=None,
+                        hessatoms_masses=None):
     print_line_with_mainheader("Wigner distribution")
 
     if fragment is None:
@@ -1894,16 +1924,75 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     else:
         TRmodenum=6
 
+    numatoms=fragment.numatoms
+    allatoms=list(range(0,numatoms))
+    fullelems = copy.deepcopy(fragment.elems)
+    print(f"Fragment contains {numatoms} atoms")
+
+    #Full Hessian
+    if hessatoms == None:
+        print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
+        projection=True
+        #Setting variables
+        used_coords=fragment.coords
+        used_elems=copy.deepcopy(fragment.elems)
+        used_atoms=allatoms
+        hessmasses=fragment.list_of_masses 
+    #Partial Hessian
+    else:
+        print("Hessatoms list provided. This is assumed to be a partial Hessian. Turning off rot+trans projection")
+        used_atoms=hessatoms
+        projection=False
+        #Making sure hessatoms list is sorted
+        used_atoms.sort()
+
+        #Grabbing coords and elems for Hessian atoms
+        used_elems=copy.deepcopy(fragment.elems)
+        used_elems = ash.modules.module_coords.get_partial_list(allatoms, used_atoms, used_elems)
+        used_coords = np.array([fragment.coords[i] for i in used_atoms])
+
+        #Use input masses if given, otherwise take from frament
+        if hessatoms_masses == None:
+            hessmasses = ash.modules.module_coords.get_partial_list(allatoms, used_atoms, fragment.list_of_masses)
+        else:
+            hessmasses=hessatoms_masses
+    
+    print("Printing hessatoms geometry...")
+    print("Hessatoms list:", hessatoms)
+    ash.modules.module_coords.print_coords_for_atoms(fragment.coords,fragment.elems,used_atoms)
+    print("Elements:", used_elems)
+    print("Masses used:", hessmasses)
+
+
     #Get or calculate normal_modes
     if hessian is not None:
-        print("Hessian provided")
+        print("\nHessian provided")
+        #Check Hessian
+        print("Hessian size:", hessian.size)
+        print("Hessian shape:", hessian.shape)
+        print("Fragment numatoms:", fragment.numatoms)
+        if hessian.shape[0] != len(hessatoms)*3:
+            print(f"Error: Hessian shape ({hessian.shape[0]}) does not match number of defined Hessian-atoms *3 ({len(used_atoms)*3})")
+            print("This likely means one of 2 things:")
+            print("1. You read in the wrong Hessian-file for this Fragment")
+            print("2. This is a partial Hessian (perhaps from a QM/MM job) and you did not specify the hessatoms")
+            ashexit()
+
         print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,hessian,fragment.masses,fragment.elems,
+        frequencies, normal_modes, evectors, mode_order = diagonalizeHessian(used_coords,hessian,hessmasses,used_elems,
                                                                  TRmodenum=TRmodenum,projection=projection)
     elif fragment.hessian is not None:
-        print("Hessian found inside Fragment")
+        print("\nHessian found inside Fragment")
+
+        if fragment.hessian.shape[0] != len(hessatoms)*3:
+            print(f"Error: Hessian shape ({hessian.shape[0]}) does not match number of defined Hessian-atoms *3 ({len(used_atoms)*3})")
+            print("This likely means one of 2 things:")
+            print("1. You read in the wrong Hessian-file for this Fragment")
+            print("2. This is a partial Hessian (perhaps from a QM/MM job) and you did not specify the hessatoms")
+            ashexit()
+
         print("Diagonalizing to get normal modes")
-        frequencies, normal_modes, evectors = diagonalizeHessian(fragment.coords,fragment.hessian,fragment.masses,fragment.elems,
+        frequencies, normal_modes, evectors,mode_order = diagonalizeHessian(used_coords,fragment.hessian,hessmasses,used_elems,
                                                                  TRmodenum=TRmodenum,projection=projection)
     else:
         print("You need to provide either hessian, a hessian as part of fragment")
@@ -1918,7 +2007,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     evectors_proj=evectors[TRmodenum:]
 
     #Converting coords to Bohr
-    coords_in_au = fragment.coords * ash.constants.ang2bohr
+    coords_in_au = used_coords * ash.constants.ang2bohr
     print("Calling wigner_sample")
 
     #Importing wigner_sample
@@ -1932,20 +2021,39 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     #Calling geometric 
     #frequency_analysis(coords_in_au, hessian, elem=fragment.elems, mass=fragment.masses, temperature=temperature, wigner=(num_samples,dirname))
     os.mkdir(dirname)
-    wigner_sample(coords_in_au, fragment.masses, fragment.elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, dirname, True)
+    wigner_sample(coords_in_au, hessmasses, used_elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, dirname, True)
 
+    print("Wigner sample call done!")
     #Grabbing all coordinates from wigner-dir into one list and create fragments
     final_coords=[]
+    final_coords_full=[]
     final_frags=[]
+    
+    #Coordinates for full fragment
+    full_coords = fragment.coords
+    
     for dir in sorted(os.listdir(dirname)):
+        #Grabbing coordinates for each displaced hessian-region geometry
         e,c = read_xyzfile(f"{dirname}/{dir}/coords.xyz",printlevel=0)
         final_coords.append((e,c))
-        newfrag = Fragment(coords=c, elems=e, charge=fragment.charge, mult=fragment.mult, printlevel=0)
+        
+        #Replacing hessian-region coordinates in full_coords with coords from currcoords
+        for used_i,curr_i in zip(used_atoms,c):
+            full_coords[used_i] = curr_i
+            full_current_coords = full_coords
+        final_coords_full.append((fullelems,full_current_coords))
+        
+        newfrag = Fragment(coords=full_current_coords, elems=fullelems, charge=fragment.charge, mult=fragment.mult, printlevel=0)
         final_frags.append(newfrag)
 
-    #Write multi-XYZ file (Used by PES module e.g.)
-    write_multi_xyz_file(final_coords,fragment.numatoms,filename="Wigner_traj.xyz")
+    #Write multi-XYZ file but for Hessian-region only
+    write_multi_xyz_file(final_coords,len(used_atoms),filename="Wigner_traj.xyz")
     print("Wrote file: Wigner_traj.xyz")
+    #Write multi-XYZ file for full fragment
+    write_multi_xyz_file(final_coords_full,numatoms,filename="Wigner_traj_full.xyz")
+    print("Wrote file: Wigner_traj_full.xyz")
+    
+    
     #Return list of ASH fragments 
     return final_frags
 
