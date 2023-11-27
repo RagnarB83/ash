@@ -2207,14 +2207,11 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 
     positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions()
     write_pdbfile_openMM(openmmobject.topology, positions, 'frag-minimized.pdb')
-    #with open('frag-minimized.pdb', 'w') as f:
-    #    openmm.app.pdbfile.PDBFile.writeHeader(openmmobject.topology, f)
-    #    openmm.app.pdbfile.PDBFile.writeModel(openmmobject.topology,simulation.context.getState(getPositions=True,
-    #                        enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
-    #    openmm.app.pdbfile.PDBFile.writeFooter(openmmobject.topology,f)
 
     print('All Done!')
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
+
+    return fragment
 
 #Convenient
 def print_systemsize(modeller):
