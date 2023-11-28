@@ -3808,7 +3808,9 @@ class OpenMM_MDclass:
         ########################################
         # Writing final frame to disk as PDB. 
         ########################################
-        with open(self.trajfilename+'.pdb', 'w') as f:
+        pdb_filename=self.trajfilename+"_lastframe.pdb"
+        print("Writing final frame to disk as PDB-file:", pdb_filename)
+        with open(pdb_filename, 'w') as f:
             openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
             openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology, 
                                                   self.state.getPositions(asNumpy=True).value_in_unit(
