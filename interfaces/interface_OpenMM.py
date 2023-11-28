@@ -3834,7 +3834,7 @@ class OpenMM_MDclass:
 #Note: dummyatomrestraints necessary for NPT simulation when constraining atoms in space
 def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.csv", 
                              numsteps_per_NPT=10000, max_NPT_cycles=10, pressure=1,
-                          volume_threshold=1.3, density_threshold=0.0012, temperature=300, timestep=0.001,
+                          volume_threshold=1.3, density_threshold=0.005, temperature=300, timestep=0.001,
                           traj_frequency=100, trajfilename='equilibration_NPT', trajectory_file_option='DCD', 
                           coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=False,
                           dummyatomrestraint=False, solute_indices=None, barostat_frequency=25):
@@ -4368,9 +4368,9 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
             print("Trying to load mdtraj for basic analysis of trajectory")
             try:
                 print("Imaging trajectory")
-                MDtraj_imagetraj(f"{MDcyclename}.dcd", f"{MDcyclename}.pdb")
+                MDtraj_imagetraj(f"{MDcyclename}.dcd", f"{MDcyclename}_lastframe.pdb")
                 print("\nRunning RMS Fluctuation analysis on trajectory")
-                MDtraj_RMSF(f"{MDcyclename}.dcd", f"{MDcyclename}.pdb", print_largest_values=True, 
+                MDtraj_RMSF(f"{MDcyclename}.dcd", f"{MDcyclename}_lastframe.pdb", print_largest_values=True, 
                     threshold=0.005, largest_values=10)
             except ImportError:
                 print("mdtraj library could not be imported. Skipping")
