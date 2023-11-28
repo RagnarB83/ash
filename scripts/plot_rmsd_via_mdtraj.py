@@ -9,22 +9,31 @@ trajfile=sys.argv[1]
 #The name of the PDB-file to use for topology
 pdbfile=sys.argv[2]
 
+
 #Loading using mdtraj
 system = mdtraj.load(pdbfile)
 traj = mdtraj.load(trajfile, top=system)
 
-#Calculating full RMSD
-rmsd_all= mdtraj.rmsd(traj, system, 0)
-#Defining heavy atoms
-heavy_atoms = [atom.index for atom in system.topology.atoms if atom.element.symbol != 'H']
-#RMSD for heavy atoms
-rmsd_heavy = mdtraj.rmsd(traj, system, 0, atom_indices=heavy_atoms)
+print(f"This trajectory contains {traj.n_frames} frames")
 
+#Calculating full RMSD (flawed) w.r.t. first frame
+rmsd_all= mdtraj.rmsd(traj, traj[0], 0)
+
+#Sub-system selection: Defining heavy atoms
+
+#Selection: All non-H atoms (also flawed because of solvent)
+heavy_atoms = [atom.index for atom in traj.topology.atoms if atom.element.symbol != 'H']
+
+#Selection: All non-H atoms in protein
+heavy_protein_atoms = traj.topology.select("protein and (element !=  H)")
+
+#RMSD for heavy protein atoms  w.r.t. first frame
+rmsd_heavy_protein = mdtraj.rmsd(traj, traj[0], 0, atom_indices=heavy_protein_atoms)
 
 #Plotting using ASH-plot (matplotlib)
-x_label="Time (ps)"
+x_label="Frames in trajectory"
 y_label="RMSD (nm)"
 filelabel="RMSD"
 eplot = ASH_plot(filelabel, num_subplots=1, x_axislabel=x_label, y_axislabel=y_label)
-eplot.addseries(0, x_list=traj.time, y_list=rmsd_heavy, label=y_label, color='blue', line=True, scatter=True)
+eplot.addseries(0, x_list=traj.time, y_list=rmsd_heavy_protein, label=y_label, color='blue', line=True, scatter=True)
 eplot.savefig(filelabel)
