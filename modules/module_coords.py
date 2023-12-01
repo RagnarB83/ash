@@ -3417,7 +3417,9 @@ def smiles_to_coords(smiles_string):
         print("smiles_to_coords requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
+    print("Reading SMILES by OpenBabel")
     mol = pybel.readstring("smi", smiles_string)
+    print("Guessing 3D coordinates (uses MMFF94 forcefield)")
     mol.make3D()
     b_mol = mol.OBMol
     atomnums = []
