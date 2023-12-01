@@ -175,6 +175,18 @@ class ORCATheory:
                 ashexit()
             self.NMF_sigma=NMF_sigma
 
+            print("NMF option is active. Will activate Fermi-smearing in ORCA input!")
+            NMF_smeartemp = self.NMF_sigma / ash.constants.R_gasconst
+            print(f"NMF_smeartemp = {NMF_smeartemp} calculated from NMF_sigma: {self.NMF_sigma}:")
+            self.orcablocks=self.orcablocks+f"""
+%scf
+fracocc true
+smeartemp {NMF_smeartemp}
+end
+            """
+
+
+
         #XDM: if True then we add !AIM to input
         self.xdm=False
         if xdm == True:
@@ -435,18 +447,6 @@ end"""
                 IRoot {self.FollowRoot}
                 end
                 """
-        #NMF
-        if self.NMF is True:
-            print("NMF option is active. Will activate Fermi-smearing in ORCA input!")
-            NMF_smeartemp = self.NMF_sigma / ash.constants.R_gasconst
-            print(f"NMF_smeartemp = {NMF_smeartemp} calculated from NMF_sigma: {self.NMF_sigma}:")
-            self.orcablocks=self.orcablocks+f"""
-%scf
-fracocc true
-smeartemp {NMF_smeartemp}
-end
-            """
-
 
         #If 1st runcall, add this to inputfile
         if self.runcalls == 1:
@@ -599,12 +599,16 @@ end
         #NMF
         if self.NMF is True:
             print("NMF option is active.")
+            E_NMF = self.energy
             occupations = np.array(SCF_FODocc_grab(outfile))
             print("Fractional ccupations (Fermi distribution):", occupations)
             print("Now also calculating correlation energy from the fractional occupation numbers")
             print("Assuming Fermi distribution")
             Ec = ash.functions.functions_elstructure.get_ec_entropy(occupations, self.NMF_sigma, method='fermi')
             print("Ec:", Ec)
+            self.properties["NMF_occupations"] = occupations
+            self.properties["E_NMF"] = E_NMF
+            self.properties["NMF_Ec"] = Ec
             self.energy = self.energy + Ec
 
         #Grab possible properties

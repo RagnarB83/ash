@@ -190,9 +190,10 @@ class ASH_plot():
             x=[];y=[]
             #Sorting keys dictionary before grabbing so that line-plot is correct
             for key in sorted(surfacedictionary.keys()):
-                x.append(key)
+                x.append(float(key))
                 y.append(surfacedictionary[key])
-
+            print("x:",x)
+            print("y:",y)
         #Optional scaling of x or y-values
         x = [i*x_scaling for i in x]
         y = [i*y_scaling for i in y]

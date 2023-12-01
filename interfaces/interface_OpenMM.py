@@ -2170,6 +2170,62 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     simulation = openmmobject.create_simulation()
     print("Simulation created.")
 
+    #############################################
+    #New in OpenMM 8.1: reporters for minimizer
+    #StateDataReporter
+    #############################################
+    if openmm.__version__ >= '8.1':
+        class Reporter(openmm.openmm.MinimizationReporter):
+            def report(self, iteration,x,grad,args):
+                self.get_forces(grad)
+                short=False
+
+                if short is True:
+                    #Possible short mode: not finished
+                    print(f"Iteration {iteration} ")
+                else:
+                    print(f"Iteration {iteration}")
+                    self.print_energy(args)
+                    self.print_forces()
+                    self.write_traj(x)
+                #Once maxiter reached
+                if iteration == maxiter-1:
+                    print("Max iterations reached. Now modifying restraints and restarting")
+                    return True
+
+                return False
+            def write_traj(self,x):
+                #Reshaping and converting to Angstrom
+                pos = 10*np.array(x).reshape(-1,3)
+                write_xyzfile(fragment.elems, pos, "OpenMMOpt_traj", printlevel=1, writemode='a')
+            def print_energy(self,args):
+                    system_energy = args["system energy"] /ash.constants.hartokj
+                    restraint_energy = args["restraint energy"] /ash.constants.hartokj
+                    restraint_strength = args["restraint strength"]
+                    max_constraint_error = args["max constraint error"]
+                    print("System energy:", system_energy)
+                    print("Restraint energy:", restraint_energy)
+                    #self.energy = self.state.getPotentialEnergy().value_in_unit_system(openmm.unit.md_unit_system) / ash.constants.hartokj
+                
+            def get_forces(self,grad):
+                #Reshaping
+                g = np.array(grad).reshape(-1,3) #To confirm 
+                #properg = np.array(state.getForces(asNumpy=True))
+                kjmolnm_to_atomic_factor = -49614.752589207
+                self.forces_init = g / kjmolnm_to_atomic_factor
+                self.rms_force = np.sqrt(sum(n * n for n in self.forces_init.flatten()) / len(forces_init.flatten()))
+                self.max_force = self.forces_init.max()
+            def print_forces(self):
+                print(f"RMS force (w restraints): {self.rms_force} Eh/Bohr")
+                print(f"Max force (w restraints): {self.max_force} Eh/Bohr")
+                print("")
+            def get_state(self):
+                print("")
+                self.state = simulation.context.getState(getEnergy=True, getForces=True,
+                                                                enforcePeriodicBox=enforcePeriodicBox)
+
+        reporter = Reporter()
+
     # Context: settings positions of simulation object
     print("Now adding coordinates")
     openmmobject.set_positions(fragment.coords,simulation)
@@ -2182,22 +2238,36 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     kjmolnm_to_atomic_factor = -49614.752589207
     forces_init = np.array(state.getForces(asNumpy=True)) / kjmolnm_to_atomic_factor
     rms_force = np.sqrt(sum(n * n for n in forces_init.flatten()) / len(forces_init.flatten()))
-    print("RMS force: {} Eh/Bohr".format(rms_force))
-    print("Max force component: {} Eh/Bohr".format(forces_init.max()))
+    print(f"Initial RMS force: {rms_force} Eh/Bohr (w/o restraints)")
+    print(f"Initial Max force: {forces_init.max()} Eh/Bohr (w/o restraints)")
     print("")
+    #####################################
     print("Starting minimization.")
-
-    simulation.minimizeEnergy(maxIterations=maxiter, tolerance=tolerance)
-    print("Minimization done.")
+    if openmm.__version__ >= '8.1':
+        print("OpenMM versions >= 8.1. Will use a reporter to output progress")
+        print("OpenMM_Opt trajectory will be written to: OpenMMOpt_traj.xyz")
+        #Removing possible old traj file
+        try:
+            os.remove("OpenMMOpt_traj.xyz")
+        except:
+            pass
+        simulation.minimizeEnergy(maxIterations=maxiter, tolerance=tolerance, reporter=reporter)
+        print("Minimization done.")
+        print("OpenMM_Opt trajectory was written to: OpenMMOpt_traj.xyz")
+    else:
+        simulation.minimizeEnergy(maxIterations=maxiter, tolerance=tolerance)
+        print("Minimization done.")
+    
+    #####################################
     print("")
     state = simulation.context.getState(getEnergy=True, getPositions=True, getForces=True,
                                                      enforcePeriodicBox=enforcePeriodicBox)
-    print("Potential energy is: {} Eh".format(
+    print("Final Potential energy is: {} Eh".format(
         state.getPotentialEnergy().value_in_unit_system(openmm.unit.md_unit_system) / ash.constants.hartokj))
     forces_final = np.array(state.getForces(asNumpy=True)) / kjmolnm_to_atomic_factor
     rms_force = np.sqrt(sum(n * n for n in forces_final.flatten()) / len(forces_final.flatten()))
-    print("RMS force: {} Eh/Bohr".format(rms_force))
-    print("Max force component: {} Eh/Bohr".format(forces_final.max()))
+    print(f"Final RMS force: {rms_force} Eh/Bohr (w/o restraints)")
+    print(f"Final Max force: {forces_final.max()} Eh/Bohr (w/o restraints)")
 
     # Get coordinates
     newcoords = state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
