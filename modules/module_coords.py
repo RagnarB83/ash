@@ -83,7 +83,7 @@ class Reaction:
 # ASH Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, grofile=None,
-                 amber_inpcrdfile=None, amber_prmtopfile=None,
+                 amber_inpcrdfile=None, amber_prmtopfile=None, smiles=None,
                  chemshellfile=None, coords=None, elems=None, connectivity=None, atom=None, diatomic=None, diatomic_bondlength=None,
                  bondlength=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
@@ -151,7 +151,6 @@ class Fragment:
                     ashexit()
                 else:
                     bondlength=diatomic_bondlength
-            
             self.elems=molformulatolist(diatomic)
             if len(self.elems) != 2:
                 print(f"Problem with molecular formula diatomic={diatomic} string!")
@@ -161,6 +160,8 @@ class Fragment:
         # If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol, conncalc=conncalc)
+        elif smiles is not None:
+            self.create_coords_from_smiles(smiles)
         # If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
             self.label = xyzfile.split('/')[-1].split('.')[0]
@@ -285,7 +286,6 @@ class Fragment:
             print("Charge: {} Mult: {}".format(self.charge, self.mult))
             print_line_with_subheader1_end()
     # Add coordinates from geometry string. Will replace.
-    # Todo: Needs more work as elems and coords may be lists or numpy arrays
     def add_coords_from_string(self, coordsstring, scale=None, tol=None, conncalc=False):
         if self.printlevel >= 2:
             print("Getting coordinates from string:", coordsstring)
@@ -307,7 +307,12 @@ class Fragment:
         #self.update_attributes()
         #if conncalc is True:
         #    self.calc_connectivity(scale=scale, tol=tol)
-
+    def create_coords_from_smiles(self, smiles):
+        print("Creating coordinates from SMILES string:", smiles)
+        elems, coords = smiles_to_coords(smiles)
+        self.elems = elems
+        self.coords = reformat_list_to_array(coords)
+        self.update_attributes()
     # Replace coordinates by providing elems and coords lists. Optional: recalculate connectivity
     def replace_coords(self, elems, coords, conn=False, scale=None, tol=None):
         if self.printlevel >= 2:
@@ -3402,4 +3407,24 @@ def pdb_to_smiles(fname: str) -> str:
     smi = mol.write(format="smi")
     return smi.split()[0].strip()
     
-    
+#Function to convert PDB-file to SMILES string
+def smiles_to_coords(smiles_string):
+    #OpenBabel
+    try:
+        from openbabel import pybel
+        from openbabel import openbabel
+    except ModuleNotFoundError:
+        print("smiles_to_coords requires OpenBabel library but it could not be imported")
+        print("You can install like this:    conda install --yes -c conda-forge openbabel")
+        ashexit()
+    mol = pybel.readstring("smi", smiles_string)
+    mol.make3D()
+    b_mol = mol.OBMol
+    atomnums = []
+    coords = []
+    for atom in openbabel.OBMolAtomIter(b_mol):
+        atomnums.append(atom.GetAtomicNum())
+        coords.append([atom.GetX(), atom.GetY(), atom.GetZ()])
+    elems = [reformat_element(atn, isatomnum=True) for atn in atomnums]
+    #frag = Fragment(elems=elems, coords=coords, charge=charge, mult=mult)
+    return elems, coords
