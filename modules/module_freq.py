@@ -15,7 +15,7 @@ from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
 #Analytical frequencies function. For ORCAtheory and CFourTheory
-def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=298.15, 
+def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, 
            pressure=1.0, QRRHO_omega_0=100):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
@@ -34,7 +34,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, numcores=1, temp=
         #Check charge/mult
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "AnFreq", theory=theory)
         #Do single-point theory run with Hessian=True
-        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True, numcores=numcores)
+        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True)
         
         #Grab Hessian from theory object
         print("Getting Hessian from theory object")
@@ -240,6 +240,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #TODO: Have serial use all_disp_fragments instead to be consistent with parallel
     if runmode == 'serial':
         print("Runmode: serial")
+        print("Only theory parallelization is active.")
+        print("Theory numcores attributes is set to:", theory.numcores)
         #Looping over geometries and running.
         #   key: AtomNCoordPDirectionm   where N=atomnumber, P=x,y,z and direction m: + or -
         #   value: gradient
@@ -259,7 +261,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
 
             theory.printlevel=printlevel
-            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, numcores=numcores, charge=charge, mult=mult)
+            energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, charge=charge, mult=mult)
             displacement_grad_dictionary[stringlabel] = gradient
             
             #Grabbing dipole moment if available

@@ -3430,3 +3430,35 @@ def smiles_to_coords(smiles_string):
     elems = [reformat_element(atn, isatomnum=True) for atn in atomnums]
     #frag = Fragment(elems=elems, coords=coords, charge=charge, mult=mult)
     return elems, coords
+
+#Function that adds R-group to an ASH fragment
+def swap_R_group(fragment=None, Rgroup=None, atomindex=None) -> Fragment:
+    if fragment is None or Rgroup is None or atomindex is None:
+        print("Error: add_R_group requires fragment (ASH fragment), Rgroup (string, e.g. 'Cl', 'OH', 'NO2', to be set")
+        print("and atomindex  (index of the atom to be swapped/replaced)")
+        ashexit()
+    #Look-up R-group
+    Rgroup_xyzfile=ashpath+"/databases/fragments/R-groups/"+f"{Rgroup}.xyz"
+    print("\nLooking up R-group xyzfile:", Rgroup_xyzfile)
+    if os.path.isfile(Rgroup_xyzfile) is False:
+        print(f"Error: R-group xyz-file {Rgroup}.xyz not found in ASH database at: {ashpath}/databases/fragments/R-groups")
+        print("Please add it to ASH database and try again")
+        ashexit()
+    
+    print("\nFragment: ", fragment)
+    print("Atom index to be swapped: ", atomindex)
+    labels = ['    WILL BE SWAPPED for R-group' if i == atomindex else '' for i in range(0,fragment.numatoms)]  
+    print()
+    print_coords_all(fragment.coords, fragment.elems, labels=labels, labels2=None)
+
+
+    #TODO
+    R_elems, R_coords = read_xyzfile(Rgroup_xyzfile)
+
+    newelems = fragment.elems + R_elems
+    newcoords = fragment.coords + R_coords
+
+    newfragment = Fragment(elems=newelems, coords=newcoords, charge=fragment.charge, mult=fragment.mult)
+
+    return newfragment
+    

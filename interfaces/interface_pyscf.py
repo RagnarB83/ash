@@ -21,11 +21,13 @@ import copy
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf",
-                  scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False, guess='minao',
+                  scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False, 
+                  guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk', 
+                  noautostart=False, autostart=True,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
-                  NMF=False, NMF_sigma=None, NMF_distribution=None,
-                  BS=False, HSmult=None,spinflipatom=None, atomstoflip=None,
+                  NMF=False, NMF_sigma=None, NMF_distribution=None, stability_analysis=False, 
+                  BS=False, HSmult=None, spinflipatom=None, atomstoflip=None,
                   TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
@@ -33,9 +35,9 @@ class PySCFTheory:
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False, cc_conv_tol_normt=1e-06, cc_conv_tol=1e-07,
                   MP2=False,MP2_DF=False,MP2_density=False, DFMP2_density_relaxed=False,
-                  CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, CASSCF_wfnsyms=None, active_space=None, stability_analysis=False, casscf_maxcycle=200,
+                  CAS=False, CASSCF=False, CASSCF_numstates=1, CASSCF_weights=None, CASSCF_mults=None, 
+                  CASSCF_wfnsyms=None, active_space=None, casscf_maxcycle=200,
                   frozen_virtuals=None, FNO=False, FNO_orbitals='MP2', FNO_thresh=None, x2c=False,
-                  moreadfile=None, write_chkfile_name='pyscf.chk', noautostart=False,
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
@@ -80,6 +82,9 @@ class PySCFTheory:
             
         #Store optional properties of pySCF run job in a dict
         self.properties ={}
+
+        #Setting meanfield object as None
+        self.mf = None
 
         #Printlevel
         self.printlevel=printlevel
@@ -127,6 +132,8 @@ class PySCFTheory:
         self.moreadfile=moreadfile
         self.write_chkfile_name=write_chkfile_name
         self.noautostart=noautostart
+        if autostart is False:
+            self.noautostart=True
 
         #CAS
         self.CAS=CAS
@@ -192,6 +199,9 @@ class PySCFTheory:
 
         #Guess orbitals (if None then default)
         self.guess=guess
+
+        #Input density matrix (overrides everything else)
+        self.dm=dm
 
         #Damping
         self.damping=damping
@@ -365,6 +375,16 @@ class PySCFTheory:
                 os.remove(f)
             except:
                 print("Error removing file", f)
+    def print_orbital_en_and_occ(self,mo_energies=None, mo_occ=None):
+        print("\nMO energies and occupations:\n")
+        header="  No.      OCC               E(Eh)               E(eV)"
+        if mo_energies is None:
+            mo_energies=self.mf.mo_energy
+            mo_occ=self.mf.mo_occ
+        print(header)
+        for i,(mo_en,mo_occ) in enumerate(zip(mo_energies, mo_occ)):
+            print(f"""{i:4d} {mo_occ:10.5f} {mo_en:20.10f} {mo_en*27.2114:20.10f}""")
+
     def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies=None, label="orbs"):
         from pyscf.tools import molden
         print("Writing orbitals to disk as Molden file")
@@ -496,18 +516,9 @@ class PySCFTheory:
         elif method == 'CCSD':
             print("Running CCSD natural orbital calculation")
             natocc,natorb,rdm1 = self.calculate_CCSD_natorbs(ccsd=None, mf=mf)
-            #ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
-            #ccsd.max_cycle=200
-            #ccsd.verbose=5
-            #ccsd.run()
-            #natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccsd)
         elif method == 'CCSD(T)':
             print("Running CCSD(T) natural orbital calculation")
             #No CCSD(T) object in pyscf. So manual approach. Slower algorithms
-            ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
-            ccsd.max_cycle=200
-            ccsd.verbose=5
-            ccsd.run()
             natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccsd=ccsd, mf=mf)
 
         with np.printoptions(precision=5, suppress=True):
@@ -521,13 +532,17 @@ class PySCFTheory:
         import pyscf.cc as pyscf_cc
         import pyscf.mcscf
         print("Running CCSD natural orbital calculation")
+        if mf == None:
+            mf = self.mf
         if ccsd == None:
             ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
             ccsd.max_cycle=200
             ccsd.verbose=5
             ccsd.run()
+        #Request rdm and natural orbitals
+        rdm = ccsd.make_rdm1(ao_repr=True)
         natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccsd)
-        return natocc,natorb,None
+        return natocc,natorb,rdm
     #Manual verbose protocol for calculating CCSD(T) natural orbitals using ccsd and mf objects
     def calculate_CCSD_T_natorbs(self,ccsd=None, mf=None):
         print("Running CCSD(T) natural orbital calculation")
@@ -538,6 +553,14 @@ class PySCFTheory:
         from pyscf.cc import uccsd_t_lambda
         from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
         from pyscf.cc import uccsd_t_rdm
+
+        if mf == None:
+            mf = self.mf
+        if ccsd == None:
+            ccsd = pyscf.cc.CCSD(mf, frozen=self.frozen_orbital_indices)
+            ccsd.max_cycle=200
+            ccsd.verbose=5
+            ccsd.run()
 
         eris = ccsd.ao2mo()
 
@@ -571,7 +594,7 @@ class PySCFTheory:
 
     #Population analysis, requiring mf and dm objects
     #Currently only Mulliken
-    def run_population_analysis(self, mf, unrestricted=True, dm=None, type='Mulliken', label=None, verbose=3):
+    def run_population_analysis(self, mf, unrestricted=False, dm=None, type='Mulliken', label=None, verbose=3):
         import pyscf
         print()
         if label==None:
@@ -671,7 +694,6 @@ class PySCFTheory:
                 print("File does not exist. Continuing!")
                 return False
             try:
-                print("here")
                 self.chkfileobject = pyscf.scf.chkfile.load(chkfile, 'scf')
                 #TODO: Check if orbitals read are correct
                 if len(self.chkfileobject["mo_occ"]) == 2:
@@ -681,38 +703,43 @@ class PySCFTheory:
                 else:
                     print("Reading restricted orbitals from checkpointfile")
                     #restricted
-                    sum_occ = sum(self.chkfileobject.mo_occ)
-                print("sum_occ:",sum_occ)
-                if self.num_electrons != sum_occ:
-                    print(f"Number of electrons in checkpointfile ({sum_occ}) does not match number of electrons in molecule ({self.num_electrons})")
-                    print("Ignoring MOs in chkfile and continuing")
-                    return False
+                    try: 
+                        sum_occ = sum(self.chkfileobject.mo_occ)
+                        if self.num_electrons != sum_occ:
+                            print(f"Number of electrons in checkpointfile ({sum_occ}) does not match number of electrons in molecule ({self.num_electrons})")
+                            print("Ignoring MOs in chkfile and continuing")
+                            return False
+                    except AttributeError:
+                        print("No occupations found in chkfile. Continuing")
+
                 return True
             except TypeError:
                 print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
                 print("Ignoring and continuing")
                 return False
 
-
-
-
     def setup_guess(self):
         print("Setting up orbital guess")
-        #MOREADFILE OPTION
-        if self.moreadfile != None:
+
+        #DM SPECIFIED
+        if self.dm is not None:
+        #Input DM matrix specified
+            print("DM found in pySCFTheory object. Using this for guess")
+            return self.dm
+        elif self.moreadfile != None:
             print("Moread: Trying to read SCF-orbitals from checkpointfile")
             self.read_chkfile(self.moreadfile)
             self.mf.__dict__.update(self.chkfileobject)
             dm = self.mf.make_rdm1()
             return dm
-        #MOREADFILE NOT SPECIFIED
+        #NOTHING SPECIFIED: so AUTOTART
         else:
+            print("Neither input dm or moreadfile was specified")
             #1.AUTOSTART (unless noautostart)
             if self.noautostart is False:
                 print(f"Autostart: Trying file: {self.filename+'.chk'}")
                 #AUTOSTART: FIRST CHECKING if CHKFILE with self.filename(pyscf.chk) exists
                 if self.read_chkfile(self.filename+'.chk') is True:
-                    #print("self.chkfileobject:", self.chkfileobject)
                     self.mf.__dict__.update(self.chkfileobject)
                     dm = self.mf.make_rdm1()
                     return dm
@@ -872,12 +899,15 @@ class PySCFTheory:
 
         return natocc, natorb, mp2_dm
 
-    def run_CC(self,mf, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
+    def run_CC(self,mf=None, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
         print("\nInside run_CC")
         import pyscf.scf
         import pyscf.dft
         import pyscf.cc as pyscf_cc
         import pyscf.mcscf
+
+        if mf is None:
+            mf = self.mf
 
         #CCSD-part as RCCSD or UCCSD
         print()
@@ -1078,101 +1108,29 @@ class PySCFTheory:
         polarizability = self.mf.Polarizability().polarizability()
         return polarizability
     # polarizability property now part of separate pyscf properties module
-    #General run function to distinguish  possible specialrun (disabled) and mainrun
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
-            charge=None, mult=None):
 
-        #if self.specialrun is True:
-            #Attempt at having special run method
-            #Create pyscf inputscript that defines mol object in script
-            #Writes things that should be run etc and then executes by launching separate process
-            #Not ready
-        #    ashexit()
-        #    energy=random.random()
-        #    grad=np.random.random([len(elems),3])
-        #    return energy, grad
-        #else:
-        return self.mainrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
-        elems=elems, Grad=Grad, PC=PC, numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
-        charge=charge, mult=mult)
 
-    #Main Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def mainrun(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
-            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
-            charge=None, mult=None,pyscf=None ):
-
-        module_init_time=time.time()
-        if self.printlevel >0:
-            print(BC.OKBLUE,BC.BOLD, "------------RUNNING PYSCF INTERFACE-------------", BC.END)
-            print("Object-label:", self.label)
-            print("Run-label:", label)
-
-        #Load pyscf
+    #Create mol object (self.mol) via method
+    def create_mol(self, qm_elems, current_coords, charge, mult):
+        print("Creating mol object")
         import pyscf
-        print("PySCF version:", pyscf.__version__)
-        #Set PySCF threads to numcores
-        pyscf.lib.num_threads(self.numcores)
-        print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
-        #Checking environment variables
-        try:
-            print("os.environ['OMP_NUM_THREADS']:", os.environ['OMP_NUM_THREADS'])
-            if os.environ['OMP_NUM_THREADS'] != '1':
-                print("Warning: Environment variable OMP_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
-        except:
-            pass
-        try:
-            print("os.environ['MKL_NUM_THREADS']:", os.environ['MKL_NUM_THREADS'])
-            if os.environ['MKL_NUM_THREADS'] != '1':
-                print("Warning: Environment variable MKL_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
-        except:
-            pass
 
-        
-
-        #Checking if charge and mult has been provided
-        if charge == None or mult == None:
-            print(BC.FAIL, "Error. charge and mult has not been defined for PYSCFTheory.run method", BC.END)
-            ashexit()
-
-        #If pe and potfile given as run argument
-        if pe is not False:
-            self.pe=pe
-        if potfile is not None:
-            self.potfile=potfile
-
-        #Coords provided to run
-        if current_coords is not None:
-            pass
-        else:
-            print("no current_coords")
-            ashexit()
-
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
-        if qm_elems is None:
-            if elems is None:
-                print("No elems provided")
-                ashexit()
-            else:
-                qm_elems = elems
-
-        #MOL OBJECT
         #Defining pyscf mol object and populating 
         self.mol = pyscf.gto.Mole()
+        
         #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
         self.mol.verbose = 3
+        
         coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
         self.mol.atom = coords_string
         self.mol.symmetry = self.symmetry
         self.mol.charge = charge
         self.mol.spin = mult-1
 
-        #Setting number of electrons for system (used by load_chkfile etc)
-        self.num_electrons  = int(ash.modules.module_coords.nucchargelist(elems) - charge)
-        print("Number of electrons:", self.num_electrons)
-        ########
-        # BASIS
-        ########
+    #Define basis in mol object
+    def define_basis(self,basis_string_from_file=None):
+        print("Defining basis set in mol object")
+        import pyscf
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
         #NOTE: Basis-file parsing not quite ready.
@@ -1189,7 +1147,7 @@ class PySCFTheory:
             #self.mol.basis = #{'H': gto.basis.read('basis/STO-2G.dat')
         else:
             self.mol.basis=self.basis
-        print(self.mol.basis)
+        print("Basis set:", self.mol.basis)
         #Optional setting magnetic moments 
         if self.magmom != None:
             print("Setting magnetic moments from user-input:", self.magmom)
@@ -1202,10 +1160,10 @@ class PySCFTheory:
         self.mol.build()
         ###########
 
-
-        ############################
-        # CREATE MF OBJECT
-        ############################
+    #Create mf object (self.mf) via method
+    def create_mf(self):
+        print("Creating pySCF mf object")
+        import pyscf
         #RKS v UKS v RHF v UHF v GHF v GKS
         #TODO: Dirac HF and KS also
         if self.scf_type == 'RKS':
@@ -1225,60 +1183,9 @@ class PySCFTheory:
         elif self.scf_type == 'GKS':
             self.mf = pyscf.scf.GKS(self.mol)
 
-        #GHF/GKS
-        if self.scf_type == 'GHF' or self.scf_type == 'GKS':
-            print("Collinear option in GHF/GKS is set to:", self.collinear_option)
-            self.mf.collinear = self.collinear_option
-            #mf._numint.spin_samples = 6
-            #Have true by default?
-            #TODO: Need to re-enable
-            #if self.GHF_complex is True:
-            #    print("GHF/GKS complex option True")
-            #    dm = self.mf.get_init_guess() + 0j
-            #    dm[0,:] += .1j
-            #    dm[:,0] -= .1j
-            #    scf_result = self.mf.kernel(dm0=dm)
-
-
-        #####################
-        # RELATIVITY
-        #####################
-        #Convert non-relativistic mf object to spin-free x2c if self.x2c is True
-        if self.x2c is True:
-            print("x2c is True. Changing SCF object to relativistic x2c Hamiltonian")
-            self.mf = self.mf.sfx2c1e()
-
-        ###########
-        # PRINTING
-        ############
-        #Verbosity of PySCF
-        self.mf.verbose = self.verbose_setting
-        
-        #Print to stdout or to file
-        if self.printsetting==True:
-            if self.printlevel >1:
-                print("Printing output to stdout...")
-            #np.set_printoptions(linewidth=500) TODO: not sure
-        else:
-            self.mf.stdout = open(self.filename+'.out', 'w')
-            if self.printlevel >0:
-                print(f"PySCF printing to: {self.filename}.out")
-
-        #####################
-        #DFT
-        #####################
-        if self.functional is not None:
-            #Setting functional
-            self.mf.xc = self.functional
-            #TODO: libxc vs. xcfun interface control here
-            #mf._numint.libxc = xcfun
-            #Grid setting
-            self.mf.grids.level = self.gridlevel 
-
-
-        ###################
-        #SCF CONVERGENCE
-        ###################
+    def set_mf_scfconv_options(self):
+        print("Modifying mf SCF options")
+        import pyscf
         #Direct SCF or conventional
         self.mf.direct_scf=self.direct_scf
         #Tolerance
@@ -1292,25 +1199,6 @@ class PySCFTheory:
                 print(f"Fractional occupation is on!")
             self.mf = pyscf.scf.addons.frac_occ(self.mf)
 
-        #Smearing
-        if self.NMF is True:
-            print("NMF smearing active. Importing pyscf_smearing module")
-            from pyscf.scf.addons import smearing_
-            print("Replacing mf object with smearing mf ")
-            #from pyscf import __config__
-            #SMEARING_METHOD = getattr(__config__, 'pbc_scf_addons_smearing_method', 'fermi')
-            #print("SMEARING_METHOD:", SMEARING_METHOD)
-            #exit()
-            if 'fermi' in self.NMF_distribution.lower() or self.NMF_distribution.lower() == 'fd':
-                smearing_keyword='fermi'
-            elif 'gauss' in self.NMF_distribution.lower():
-                smearing_keyword='gauss'
-            else:
-                print(f"Unknown smearing option ({self.NMF_distribution}). Exiting")
-                ashexit()
-            print("Using smearing_keyword:", smearing_keyword)
-            print("Sigma:", self.NMF_sigma)
-            mf = smearing_(self.mf, sigma=self.NMF_sigma, method=smearing_keyword)
         #Damping
         if self.damping != None:
             if self.printlevel >1:
@@ -1339,10 +1227,29 @@ class PySCFTheory:
                 print("SOSCF is True. Turning on in meanfield object")
             self.mf = self.mf.newton()
 
-        ##############
-        #DISPERSION
-        ##############
-        #Modifying self.mf object
+    def set_mf_smearing(self):
+        import pyscf.scf.addons
+        #Smearing
+        if self.NMF is True:
+            print("NMF smearing active. Importing pyscf_smearing module")
+            from pyscf.scf.addons import smearing_
+            print("Replacing mf object with smearing mf ")
+            #from pyscf import __config__
+            #SMEARING_METHOD = getattr(__config__, 'pbc_scf_addons_smearing_method', 'fermi')
+            #print("SMEARING_METHOD:", SMEARING_METHOD)
+            #exit()
+            if 'fermi' in self.NMF_distribution.lower() or self.NMF_distribution.lower() == 'fd':
+                smearing_keyword='fermi'
+            elif 'gauss' in self.NMF_distribution.lower():
+                smearing_keyword='gauss'
+            else:
+                print(f"Unknown smearing option ({self.NMF_distribution}). Exiting")
+                ashexit()
+            print("Using smearing_keyword:", smearing_keyword)
+            print("Sigma:", self.NMF_sigma)
+            self.mf = smearing_(self.mf, sigma=self.NMF_sigma, method=smearing_keyword)
+
+    def set_dispersion_options(self):
         if self.dispersion != None:
             print("Dispersion correction is active")
             try:
@@ -1384,10 +1291,7 @@ class PySCFTheory:
                 #self.mf.nlcgrids.atom_grid={'H': (50,194),'F': (50,194)}
                 #self.mf.nlcgrids.prune=dft.gen_grid.sg1_prune
 
-
-        ##############################
-        #DENSITY FITTING and SGX
-        ##############################
+    def set_DF_mf_options(self):
         #https://pyscf.org/user/df.html
         #ASH-default gives PySCF default :optimized JK auxbasis for family if it exists,
         # otherwise an even-tempered basis is generated
@@ -1412,31 +1316,65 @@ class PySCFTheory:
                 self.mf = self.mf.density_fit(self.auxbasis)
             else:
                 self.mf = self.mf.density_fit()
+        else:
+            print("No density fitting options in use")
 
-        ##############################
-        #FROZEN ORBITALS in CC
-        ##############################
-        if self.CC or self.MP2:
-            #Frozen-core settings
-            if self.frozen_core_setting == 'Auto':
-                self.determine_frozen_core(elems)
-            elif self.frozen_core_setting == None or self.frozen_core_setting == 'None':
-                print("Warning: No core-orbitals will be frozen in the CC/MP2 calculation.")
-                self.frozen_core_orbital_indices=None
-            else:
-                print("Manual user frozen core:", self.frozen_core_setting)
-                self.frozen_core_orbital_indices=self.frozen_core_setting
-            #Optional frozen virtuals also
-            if self.frozen_virtuals is not None:
-                print(f"Frozen virtuals option active. Will freeze orbitals {self.frozen_virtuals}.")
-                self.frozen_orbital_indices = self.frozen_core_orbital_indices + self.frozen_virtuals
-            else:
-                self.frozen_orbital_indices=self.frozen_core_orbital_indices
-            print("Final frozen-orbital list (core and virtuals):", self.frozen_orbital_indices)
+    def set_DFT_options(self):
+        if self.functional is not None:
+            #Setting functional
+            self.mf.xc = self.functional
+            #TODO: libxc vs. xcfun interface control here
+            #mf._numint.libxc = xcfun
+            #Grid setting
+            self.mf.grids.level = self.gridlevel 
 
-        ##############################
-        #EMBEDDING OPTIONS
-        ##############################
+    def set_printing_option_mf(self):
+        #Verbosity of pySCF mf
+        self.mf.verbose = self.verbose_setting
+        
+        #Print to stdout or to file
+        if self.printsetting is True:
+            if self.printlevel >1:
+                print("Printing output to stdout...")
+            #np.set_printoptions(linewidth=500) TODO: not sure
+        else:
+            self.mf.stdout = open(self.filename+'.out', 'w')
+            if self.printlevel >0:
+                print(f"PySCF printing to: {self.filename}.out")
+
+    def set_collinear_option(self):
+        print("Collinear option in GHF/GKS is set to:", self.collinear_option)
+        self.mf.collinear = self.collinear_option
+        #mf._numint.spin_samples = 6
+        #Have true by default?
+        #TODO: Need to re-enable
+        #if self.GHF_complex is True:
+        #    print("GHF/GKS complex option True")
+        #    dm = self.mf.get_init_guess() + 0j
+        #    dm[0,:] += .1j
+        #    dm[:,0] -= .1j
+        #    scf_result = self.mf.kernel(dm0=dm)
+
+    def set_frozen_core_settings(self, elems):
+        print("Setting frozen-core settings")
+        #Frozen-core settings
+        if self.frozen_core_setting == 'Auto':
+            self.determine_frozen_core(elems)
+        elif self.frozen_core_setting == None or self.frozen_core_setting == 'None':
+            print("Warning: No core-orbitals will be frozen in the CC/MP2 calculation.")
+            self.frozen_core_orbital_indices=None
+        else:
+            print("Manual user frozen core:", self.frozen_core_setting)
+            self.frozen_core_orbital_indices=self.frozen_core_setting
+        #Optional frozen virtuals also
+        if self.frozen_virtuals is not None:
+            print(f"Frozen virtuals option active. Will freeze orbitals {self.frozen_virtuals}.")
+            self.frozen_orbital_indices = self.frozen_core_orbital_indices + self.frozen_virtuals
+        else:
+            self.frozen_orbital_indices=self.frozen_core_orbital_indices
+        print("Final frozen-orbital list (core and virtuals):", self.frozen_orbital_indices)
+        return self.frozen_orbital_indices
+    def set_embedding_options(self, PC=False):
         #QM/MM electrostatic embedding
         if PC is True:
             import pyscf.qmmm
@@ -1445,7 +1383,7 @@ class PySCFTheory:
             self.mf = pyscf.qmmm.mm_charge(self.mf, current_MM_coords, MMcharges)
 
         #Polarizable embedding option
-        if self.pe==True:
+        if self.pe is True:
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
             try:
@@ -1459,6 +1397,269 @@ class PySCFTheory:
             # TODO: Adapt to RKS vs. UKS etc.
             self.mf = pyscf.solvent.PE(pyscf.scf.RKS(self.mol), self.potfile)
 
+    #Independent method to run SCF using previously defined mf object and possible input dm
+    def run_SCF(self,mf=None, dm=None, max_cycle=None):
+        module_init_time=time.time()
+        if mf is None:
+            print("No mf object provided. Using self.mf")
+            if self.mf is None:
+                print("No self.mf object defined. Exiting")
+                ashexit()
+            else:
+                mf=self.mf
+        if dm is None:
+            print("No dm provided.")
+
+        #Modify max-cycle in mf object if requested
+        if max_cycle is not None:
+            print("mf:", mf)
+            mf.max_cycle=max_cycle
+        print("Max cycle in mf object:", mf.max_cycle)
+        scf_result = mf.run(dm)
+
+        E_tot = scf_result.e_tot
+        print("E_tot:", E_tot)
+        if self.functional != None:
+            E_xc = scf_result.scf_summary["exc"]
+            E_dmf = E_tot - E_xc
+            print("E_dmf:", E_dmf)
+            print("E_xc:", E_xc)
+
+        #Setting number of orbitals as attribute of object
+        if len(self.mf.mo_occ) == 2:
+            self.num_orbs = len(self.mf.mo_occ[0]) # Unrestricted
+        else:
+            self.num_orbs = len(self.mf.mo_occ) # Restricted
+        print("Number of orbitals:", self.num_orbs)
+
+        #Calculating new dm and preserving it 
+        print("Calculating density matrix from converged MO's and storing as dm attribute of PySCFTheory object")
+        dm = mf.make_rdm1()
+        self.dm=dm
+
+        print_time_rel(module_init_time, modulename='pySCF run_SCF', moduleindex=2)
+        return scf_result
+
+
+    def density_potential_inversion(self, dm, lambda_par=8, method='ZMP', DF=True):
+        print("\ndensity_potential_inversion")
+        try:
+            from kspies import wy, zmp, util
+        except ModuleNotFoundError:
+            print("density_potential_inversion requires installation of kspies module")
+            print("See: https://github.com/ssnam92/KSPies")
+            print("Try: pip install kspies   and pip install opt-einsum")
+            ashexit()
+
+        #Density->Potential inversion by kspies
+        if method == 'ZMP':
+            print("Using ZMP method for density->potential inversion")
+            
+            if self.scf_type == "RKS" or self.scf_type == "RHF" :
+                print("SCF-type is restricted. Using RZMP")
+                zmp_a = zmp.RZMP(self.mol, dm)
+            else:
+                print("SCF-type is unrestricted. Using UZMP")
+                zmp_a = zmp.UZMP(self.mol, dm)
+            
+            #DF or not
+            zmp_a.with_df = DF
+            #Run ZMP
+            print("Running ZMP with lambda:", lambda_par)
+            zmp_a.zscf(lambda_par)
+
+            #Get final data
+            mo_coeff =  zmp_a.mo_coeff
+            mo_occ =  zmp_a.mo_occ
+            mo_energy =  zmp_a.mo_energy
+
+        elif method == 'WY':
+            if self.scf_type == "RKS" or self.scf_type == "RHF" :
+                mw = wy.RWY(self.mol, dm)
+            else:
+                mw = wy.UWY(self.mol, dm)
+            print("Running WY")
+            mw.run()
+            mw.info()            
+            #Get final data
+            mo_coeff =  mw.mo_coeff
+            mo_occ =  mw.mo_occ
+            mo_energy =  mw.mo_energy
+        else:
+            print("not ready yet")
+            ashexit()
+        
+        #Get final data
+        print()
+        #print("MO occupations:", mo_occ)
+        #print("MO energies:", mo_energy)
+        #print("MO coefficients:", mo_coeff)
+        print("MO properties after inversion")
+        self.print_orbital_en_and_occ(mo_energies=mo_energy, mo_occ=mo_occ)
+        print()
+
+        print("\n Now returning: mo_occ, mo_energy, mo_coeff")
+        #TODO: Return new mf object instead?
+        return mo_occ, mo_energy, mo_coeff
+
+    #General run function to distinguish  possible specialrun (disabled) and mainrun
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
+            charge=None, mult=None):
+
+        #Prepare for run (create mol object, mf object, modify mf object etc.)
+        #Does not execute SCF, CC or anything
+        self.prepare_run(current_coords=current_coords, current_MM_coords=current_MM_coords, 
+                         MMcharges=MMcharges, qm_elems=qm_elems, elems=elems, Grad=Grad, PC=PC, 
+                         numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
+                         charge=charge, mult=mult)
+        #Actual run
+        return self.actualrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
+        elems=elems, Grad=Grad, PC=PC, numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
+        charge=charge, mult=mult)
+
+    def prepare_run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
+            charge=None, mult=None):
+
+        module_init_time=time.time()
+        if self.printlevel >0:
+            print(BC.OKBLUE,BC.BOLD, "------------PREPARING PYSCF INTERFACE-------------", BC.END)
+            print("Object-label:", self.label)
+            print("Run-label:", label)
+
+        #Load pyscf
+        import pyscf
+        print("PySCF version:", pyscf.__version__)
+        
+        #Set PySCF threads to numcores
+        pyscf.lib.num_threads(self.numcores)
+        print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
+        #Checking environment variables
+        try:
+            print("os.environ['OMP_NUM_THREADS']:", os.environ['OMP_NUM_THREADS'])
+            if os.environ['OMP_NUM_THREADS'] != '1':
+                print("Warning: Environment variable OMP_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
+        except:
+            pass
+        try:
+            print("os.environ['MKL_NUM_THREADS']:", os.environ['MKL_NUM_THREADS'])
+            if os.environ['MKL_NUM_THREADS'] != '1':
+                print("Warning: Environment variable MKL_NUM_THREADS should be set to 1. PySCF may not run properly in parallel")
+        except:
+            pass
+
+        #Checking if charge and mult has been provided
+        if charge == None or mult == None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for PYSCFTheory.run method", BC.END)
+            ashexit()
+
+        #If pe and potfile given as run argument
+        if pe is not False:
+            self.pe=pe
+        if potfile is not None:
+            self.potfile=potfile
+
+        #Coords provided to run
+        if current_coords is not None:
+            pass
+        else:
+            print("no current_coords")
+            ashexit()
+
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
+
+
+        #Setting number of electrons for system (used by load_chkfile etc)
+        self.num_electrons  = int(ash.modules.module_coords.nucchargelist(elems) - charge)
+        print("Number of electrons:", self.num_electrons)
+        print()
+
+        #####################
+        #CREATE MOL OBJECT
+        #####################
+        self.create_mol(qm_elems, current_coords, charge, mult)
+
+        #####################
+        # BASIS
+        #####################
+
+        #TODO: basis_string_from_file option
+        self.define_basis(basis_string_from_file=None)
+ 
+        ############################
+        # CREATE MF OBJECT
+        ############################
+        self.create_mf() #Creates self.mf
+
+        #GHF/GKS
+        if self.scf_type == 'GHF' or self.scf_type == 'GKS':
+            self.set_collinear_option()
+
+        #####################
+        # RELATIVITY
+        #####################
+        #Convert non-relativistic mf object to spin-free x2c if self.x2c is True
+        if self.x2c is True:
+            print("x2c is True. Changing SCF object to relativistic x2c Hamiltonian")
+            self.mf = self.mf.sfx2c1e()
+
+        ###########
+        # PRINTING
+        ############
+        self.set_printing_option_mf()
+
+        #####################
+        #DFT
+        #####################
+        self.set_DFT_options()
+
+        ###################
+        #SCF CONVERGENCE
+        ###################
+        self.set_mf_scfconv_options()
+
+        ###################
+        #SMEARING
+        ###################
+        self.set_mf_smearing()
+        
+        ##############
+        #DISPERSION
+        ##############
+        self.set_dispersion_options()
+
+        ##############################
+        #DENSITY FITTING and SGX
+        ##############################
+        self.set_DF_mf_options()
+
+        ##############################
+        #FROZEN ORBITALS in CC
+        ##############################
+        if self.CC or self.MP2:
+            self.set_frozen_core_settings(elems)
+
+        ##############################
+        #EMBEDDING OPTIONS
+        ##############################
+        self.set_embedding_options(PC=PC)
+        print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
+
+
+    #Actual Run
+    #Assumes prepare_run has been executed
+    def actualrun(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
+            charge=None, mult=None,pyscf=None ):
+
+        module_init_time=time.time()
         #############################################################
         #RUNNING
         #############################################################
@@ -1486,7 +1687,8 @@ class PySCFTheory:
                 #HS: Changing spin to HS-spin (num unpaired els)
                 self.mol.spin = self.HSmult-1
                 #TODO: option to read in guess for HS here
-                scf_result = self.mf.run()
+                #scf_result = self.mf.run()
+                scf_result = self.run_SCF()
                 print("High-spin SCF energy:", scf_result.e_tot)
                 s2, spinmult = self.mf.spin_square()
                 print("UHF/UKS <S**2>:", s2)
@@ -1523,7 +1725,8 @@ class PySCFTheory:
                 print(f"\nStarting BS-SCF with spin multiplicity={mult}")
                 #BS
                 self.mol.spin = mult-1
-                scf_result = self.mf.run(dm)
+                #scf_result = self.mf.run(dm)
+                scf_result = self.run_SCF(dm=dm)
                 s2, spinmult = self.mf.spin_square()
                 print("BS SCF energy:", scf_result.e_tot)
 
@@ -1531,15 +1734,9 @@ class PySCFTheory:
             else:
                 #scf_result = self.mf.run()
                 #NOTE: dm needs to have been created here (regardless of the type of guess)
-                scf_result = self.mf.run(dm)
+                #scf_result = self.mf.run(dm)
+                scf_result = self.run_SCF(dm=dm)
                 print("SCF energy:", scf_result.e_tot)
-
-            #Setting number of orbitals as attribute of object
-            if len(self.mf.mo_occ) == 2:
-                self.num_orbs = len(self.mf.mo_occ[0]) # Unrestricted
-            else:
-                self.num_orbs = len(self.mf.mo_occ) # Restricted
-            print("Number of orbitals:", self.num_orbs)
 
             #Possible stability analysis
             self.run_stability_analysis()
@@ -1547,11 +1744,9 @@ class PySCFTheory:
             if self.printlevel >1:
                 print("SCF energy components:", self.mf.scf_summary)
 
-            #Occupation printing (relevant for fraction occ)
+            #Orbital and Occupation printing
             if self.printlevel >1:
-            #if self.fractional_occupation is True:
-                print("SCF occupations:")
-                print(self.mf.mo_occ)
+                self.print_orbital_en_and_occ()
 
             #Possible population analysis (if dm=None then taken from mf object)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
@@ -1638,12 +1833,6 @@ class PySCFTheory:
                 #Regular
                 #Total energy is SCF energy + possible vdW energy
                 self.energy = self.mf.e_tot + vdw_energy
-
-
-
-
-
-
 
 
             #####################
@@ -1832,17 +2021,6 @@ class PySCFTheory:
                 mytd.kernel()
                 mytd.analyze()
 
-                #NTO Analysis for state 1
-                print("NTO analysis for state 1")
-                if self.NTO is True:
-                    if type(self.NTO_states) != list:
-                        print("NTO_states must be a list")
-                        ashexit()
-                    print("Now doing NTO analysis for states:", self.NTO_states)
-                    for ntostate in self.NTO_states:
-                        print("NTO state:", ntostate)
-                        weights_1, nto_1 = mytd.get_nto(state=ntostate, verbose=4)
-
                 print("-"*40)
                 print("TDDFT RESULTS")
                 print("-"*40)
@@ -1863,6 +2041,22 @@ class PySCFTheory:
                 self.properties["TDDFT_transition_energies"] = mytd.e*27.211399
                 self.properties["TDDFT_transition_dipoles"] = t_dip
                 self.properties["TDDFT_oscillator strengths"] = osc_strengths_length
+
+                #NTO Analysis for state 1
+                
+                if self.NTO is True:
+                    print("\nNTO analysis for state 1")
+                    if type(self.NTO_states) != list:
+                        print("NTO_states must be a list")
+                        ashexit()
+                    print("Now doing NTO analysis for states:", self.NTO_states)
+                    print(f"See pySCF outputfile ({self.filename}.out) for the NTO analysis")
+                    from pyscf.tools import molden
+                    for ntostate in self.NTO_states:
+                        print("Doing NTO for state:", ntostate)
+                        NTO_weight, nto_bla = mytd.get_nto(state=ntostate, verbose=4)
+                        print("Writing")
+                        molden.from_mo(self.mol, f'nto-td-{ntostate}.molden', nto_bla)
 
             #####################
             #MP2
@@ -2161,14 +2355,14 @@ class PySCFTheory:
         print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point PySCF energy:", self.energy)
-            print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
+            print_time_rel(module_init_time, modulename='pySCF actualrun', moduleindex=2)
             if PC is True:
                 return self.energy, self.gradient, self.pcgrad
             else:
                 return self.energy, self.gradient
         else:
             print("Single-point PySCF energy:", self.energy)
-            print_time_rel(module_init_time, modulename='pySCF run', moduleindex=2)
+            print_time_rel(module_init_time, modulename='pySCF actualrun', moduleindex=2)
             return self.energy
 
 
