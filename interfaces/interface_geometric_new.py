@@ -288,44 +288,58 @@ class GeomeTRICOptimizerClass:
                     pass
 
         def hessian_option(self,fragment,actatoms,theory,charge,mult,modelhessian):
-            #Do xtB Hessian to get Hessian file if requestd
-            if self.hessian == "xtb":
-                print("xTB Hessian option requested")
-                #Calling xtb to get Hessian, written to disk. Returns name of Hessianfile
-                hessianfile = calc_hessian_xtb(fragment=fragment, actatoms=actatoms, numcores=theory.numcores, use_xtb_feature=True, charge=charge, mult=mult)
-                self.hessian="file:"+hessianfile
-            #NumFreq 1 and 2-point Hessians
-            elif self.hessian == "1point":
-                print("Requested Hessian from Numfreq 1-point approximation (running in serial)")
-                result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, runmode='serial', numcores=theory.numcores)
-                hessianfile="Hessian_from_theory"
-                shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
-                self.hessian='file:'+str(hessianfile)
-            elif self.hessian == "2point":
-                print("Requested Hessian from Numfreq 2-point approximation (running in serial)")
-                result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=2, runmode='serial', numcores=theory.numcores)
-                hessianfile="Hessian_from_theory"
-                shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
-                self.hessian='file:'+str(hessianfile)
-            elif self.hessian == "partial":
-                print("Partial Hessian option requested")
-                
-                if self.partial_hessian_atoms is None:
-                    print("hessian='partial' option requires setting the partial_hessian_atoms option. Exiting.")
-                    ashexit()
 
-                print("Now doing partial Hessian calculation using atoms:", self.partial_hessian_atoms)
-                #Note: hardcoding runmode='serial' for now
-                result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, hessatoms=self.partial_hessian_atoms, runmode='serial', numcores=1)
-                #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
-                #Large Hessian is the actatoms Hessian if actatoms provided
-                
-                combined_hessian = approximate_full_Hessian_from_smaller(fragment,result_freq.hessian, self.partial_hessian_atoms, large_atomindices=actatoms, restHessian=modelhessian)
-
-                #Write combined Hessian to disk
-                hessianfile="Hessian_from_partial"
-                write_hessian(combined_hessian,hessfile=hessianfile)
+            if type(self.hessian) == np.ndarray:
+                print("Hessian option provided is a Numpy array. Writing to disk.")
+                hessianfile="Hessian_np"
+                write_hessian(self.hessian,hessfile=hessianfile)
                 self.hessian="file:"+hessianfile
+                print("Hessian option to be used by geometric:", self.hessian)
+            elif type(self.hessian) == str:
+                print("Hessian option provided is a string")
+                #Do xtB Hessian to get Hessian file if requestd
+                if self.hessian == "xtb":
+                    print("xTB Hessian option requested")
+                    #Calling xtb to get Hessian, written to disk. Returns name of Hessianfile
+                    hessianfile = calc_hessian_xtb(fragment=fragment, actatoms=actatoms, numcores=theory.numcores, use_xtb_feature=True, charge=charge, mult=mult)
+                    self.hessian="file:"+hessianfile
+                #NumFreq 1 and 2-point Hessians
+                elif self.hessian == "1point":
+                    print("Requested Hessian from Numfreq 1-point approximation (running in serial)")
+                    result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, runmode='serial', numcores=theory.numcores)
+                    hessianfile="Hessian_from_theory"
+                    shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+                    self.hessian='file:'+str(hessianfile)
+                elif self.hessian == "2point":
+                    print("Requested Hessian from Numfreq 2-point approximation (running in serial)")
+                    result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=2, runmode='serial', numcores=theory.numcores)
+                    hessianfile="Hessian_from_theory"
+                    shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
+                    self.hessian='file:'+str(hessianfile)
+                elif self.hessian == "partial":
+                    print("Partial Hessian option requested")
+                    
+                    if self.partial_hessian_atoms is None:
+                        print("hessian='partial' option requires setting the partial_hessian_atoms option. Exiting.")
+                        ashexit()
+
+                    print("Now doing partial Hessian calculation using atoms:", self.partial_hessian_atoms)
+                    #Note: hardcoding runmode='serial' for now
+                    result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=1, hessatoms=self.partial_hessian_atoms, runmode='serial', numcores=1)
+                    #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
+                    #Large Hessian is the actatoms Hessian if actatoms provided
+                    
+                    combined_hessian = approximate_full_Hessian_from_smaller(fragment,result_freq.hessian, self.partial_hessian_atoms, large_atomindices=actatoms, restHessian=modelhessian)
+
+                    #Write combined Hessian to disk
+                    hessianfile="Hessian_from_partial"
+                    write_hessian(combined_hessian,hessfile=hessianfile)
+                    self.hessian="file:"+hessianfile
+            elif self.hessian == None:
+                print("No Hessian option provided.")
+            else:
+                print("Unknown Hessian option")
+                ashexit()
 
         #If using Active region then we write only those coordinates to disk (initialxyzfiletric)
         def setup_active_region_geometry(self,fragment):
