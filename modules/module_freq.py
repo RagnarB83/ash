@@ -172,6 +172,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     ash.modules.module_coords.print_coords_for_atoms(coords,elems,hessatoms)
     blankline()
 
+
     #Looping over each atom and each coordinate to create displaced geometries
     #Only displacing atom if in hessatoms list. i.e. possible partial Hessian
     list_of_displaced_geos=[]
@@ -314,6 +315,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     
     ############################################
     print("Displacement calculations done.")
+
     #print("displacement_dipole_dictionary:", displacement_dipole_dictionary)
     #print("displacement_grad_dictionary:", displacement_grad_dictionary)
     #exit()
@@ -329,7 +331,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Initializing dipole derivatives
     dipole_derivs = np.zeros((hesslength,3))
     polarizability_derivs = []  #array of 3x3 tensors
-    
+
     #Onepoint-formula Hessian
     if npoint == 1:
         print("Assembling the one-point Hessian")
@@ -440,14 +442,17 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     # Get partial matrix by deleting atoms not present in list.
     hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
     #Use input masses if given, otherwise take from frament
+    print("fragment.masses", fragment.masses)
+
     if hessatoms_masses == None:
         hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
         hessmasses=hessatoms_masses
+    
     hesscoords = [fragment.coords[i] for i in hessatoms]
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
-
+    
     frequencies, nmodes, evectors, mode_order = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
 
     #Evectors: eigenvectors of the mass-weighed Hessian
@@ -1274,7 +1279,8 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     #    capping_atom_hessian_indices=[]
 #NOTE: Trans+rot projection off right now
 def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindices,large_atomindices=None,restHessian='Almloef',projection=False):
-
+    print("approximate_full_Hessian_from_smaller")
+    print()
     write_hessian(hessian_small,hessfile="smallhessian")
 
     #If hessatoms provided then that is the size of the actual large Hessian
@@ -1308,6 +1314,7 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
     else:
         #Size of Hessian as big as fragment
         hess_size=fragment.numatoms*3
+        print("Hessian dimension", hess_size)
         #If Hessian is for full fragment then we use the input atomindices directly
         correct_small_atomindices=small_atomindices
         usedfragment=fragment
@@ -1315,7 +1322,7 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
     print("Initializing full size Hessian of dimension:", hess_size)
     fullhessian=np.zeros((hess_size,hess_size))
     print("Initial fullhessian:", fullhessian)
-    print("Size:", fullhessian.size)
+    print("Number of Hessian elements:", fullhessian.size)
     write_hessian(fullhessian,hessfile="initialfullhessian")
     #Making sure hessian_small is np array
     hessian_small = np.array(hessian_small)
@@ -1346,6 +1353,7 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
         for s_j, j in enumerate(athessindices):
             fullhessian[i,j] = hessian_small[s_i,s_j]
     print("Final fullhessian:", fullhessian)
+    write_hessian(fullhessian,hessfile="intermedfullhessian_after_small_update")
     #NOTE: Diagonalizing full Hessian just to see
     #Checking for linearity. Determines how many Trans+Rot modes 
     if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:

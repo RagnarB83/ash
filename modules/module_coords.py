@@ -2219,11 +2219,12 @@ def xyz2coord(inputfile):
 
 # Get partial list by deleting elements not present in provided list of indices.
 def get_partial_list(allatoms, partialatoms, l):
+    newlist = copy.copy(l) #Otherwise object may be updated
     otheratoms = listdiff(allatoms, partialatoms)
     otheratoms.reverse()
     for at in otheratoms:
-        del l[at]
-    return l
+        del newlist[at]
+    return newlist
 
 
 # Old function that used scipy to do distances and Hungarian.
