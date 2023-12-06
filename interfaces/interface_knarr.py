@@ -11,7 +11,7 @@ import ash
 import ash.constants as constants
 from ash.functions.functions_general import ashexit,print_time_rel,print_line_with_mainheader, BC,print_line_with_subheader1,print_line_with_subheader2
 from ash.modules.module_coords import check_charge_mult, write_xyzfile, get_conn_atoms_for_list
-from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from_smaller, calc_model_Hessian_ORCA, read_tangent, calc_hessian_xtb
+from ash.modules.module_freq import write_hessian, approximate_full_Hessian_from_smaller, calc_model_Hessian_ORCA, calc_hessian_xtb
 from ash.modules.module_results import ASH_Results
 
 #This makes Knarr part of python path
@@ -131,7 +131,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
     runmode_numfreq=runmode
     if hessian_for_TS == None:
-        print("Using default hessian_for_TS option")
+        print("Using default hessian_for_TS option: NumFreq with npoint=1")
         #If dualtheory we just do a Numfreq in regular mode
         if isinstance(theory,ash.DualTheory):
             print("Dualtheory active. Doing Numfreq using regular mode.")
@@ -156,7 +156,6 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             write_hessian(combined_hessian,hessfile=hessianfile)
             hessianoption='file:'+str(hessianfile)            
         else:
-            print("Doing Numfreq")
             result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode_numfreq, numcores=numcores)
             hessianfile="Hessian_from_theory"
             shutil.copyfile("Numfreq_dir/Hessian",hessianfile)
@@ -696,6 +695,28 @@ class KnarrCalculator:
     #Function that Knarr will use to signal convergence and set self.converged to True. Otherwise it is False
     def status(self,converged):
         self.converged=converged
+    
+    #Test: Print tangent info
+    def print_tangent_info(self,path):
+        #print("print_tangent_info:")
+        if self.tangent is not None:
+            numatoms=int(path.ndofIm/3)
+            HEI_num = max(self.energies_dict, key=self.energies_dict.get)
+            #print("HEI_num:", HEI_num)
+            #Create temporary HEI-fragment
+            HEI_image_coords_1d = path.GetCoords()[HEI_num * path.ndimIm : (HEI_num + 1) * path.ndimIm]
+            HEI_image_coords=np.reshape(HEI_image_coords_1d, (numatoms, 3))
+            HEI_fragment = ash.Fragment(coords=HEI_image_coords, elems=self.fragment1.elems, printlevel=0)
+            if self.ActiveRegion is False:
+                dominant_atoms_in_CI_tangent(self.tangent,self.fragment1,self.fragment2,HEI_fragment,
+                                        tsmode_tangent_threshold=0.1,ActiveRegion=self.ActiveRegion,actatoms=self.actatoms)
+            else:
+                #TODO: Has not been tested yet for Active Region
+                print("Tangent info not yet available for ActiveRegion NEB")
+        else:
+            print("No tangent yet available")
+
+
     def Compute(self,path, list_to_compute=None):
         if list_to_compute is None:
             return
@@ -1026,8 +1047,10 @@ class KnarrCalculator:
             if self.iterations >= 0:
                 self.write_Full_MEP_Path(path, list_to_compute, E)
         
-        #END OF COMPUTE HERE
+        #Tangent stuff
+        self.print_tangent_info(path)
 
+        #END OF COMPUTE HERE
 
     def write_Full_MEP_Path(self, path, list_to_compute, E):
         #Write out MEP for full coords in each iteration. Knarr writes out Active Part.
@@ -1124,3 +1147,41 @@ def RMSfunc(x):
     for v in x.reshape(1, x.size).flatten():
         rms +=v*v
     return np.sqrt((1.0 / float(x.size)) * rms)
+
+
+#Read tangent file
+def read_tangent(tangentfile):
+    tang=[]
+    with open(tangentfile) as f:
+        for line in f:
+            if len(line) > 10:
+                x=float(line.split()[1]);y=float(line.split()[2]);z=float(line.split()[3])
+                tang.append([x,y,z])
+    return np.array(tang)
+
+
+#Test function: Get dominant atoms in CI mode + connected atoms
+def dominant_atoms_in_CI_tangent(tangent,reactant,product,SP,tsmode_tangent_threshold=0.1,ActiveRegion=False,actatoms=None):
+    print(f"Dominant_atoms_in_CI_tangent (thresh={tsmode_tangent_threshold})")
+    TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
+
+    #Convert activeregion atom indices to full system indices
+    #print("Determining atoms contributing the most to TS mode")
+    if ActiveRegion is True:
+        #print("TSmodeatoms (active region):", TSmodeatoms)
+        TSmodeatoms = [actatoms[a] for a in TSmodeatoms]
+        #print("TSmodeatoms (full system):", TSmodeatoms)
+    #print("TSmodeatoms (full system):", TSmodeatoms)
+    #Now finding the atoms that TSmodeatoms are connected to, for both R, P and SP
+    #print("Now finding connected atoms to TSmode-atoms")
+    result_R = get_conn_atoms_for_list(fragment=reactant, atoms=TSmodeatoms)
+    #print("result_R:", result_R)
+    result_P = get_conn_atoms_for_list(fragment=product, atoms=TSmodeatoms)
+    #print("result_P:", result_P)
+    result_SP = get_conn_atoms_for_list(fragment=SP, atoms=TSmodeatoms)
+    #print("result_SP:", result_SP)
+    #Combining
+    Final_atoms = np.unique(result_R + result_P + result_SP).tolist()
+    print(f"Final TS-mode dominant atoms: {Final_atoms}")
+    print()
+    return Final_atoms

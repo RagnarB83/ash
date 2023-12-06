@@ -401,10 +401,17 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             print('%4ls %6s %8ls %5ls %8ls %8ls %8ls %8ls %8ls' %
                     ('it', 'dS', 'dE', 'CI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
             print(f"Thresholds:                {tol_rms_f:8.4f} {tol_max_f:8.4f} {tol_rms_fci:8.4f} {tol_max_fci:8.4f}")
-            print ("%4i %6.2lf %8.3lf %5li %8.4lf %8.4lf %8.4lf %8.4lf %8.4lf"
+            print ("%4i %6.2lf %8.3lf %5li %8.4lf %8.4lf %8.4lf %8.4lf %8.4lf @"
                    % (it, s[-1], 23.060541945329334*(path.GetEnergy()[ci] - Ereactant), ci, rmsf_noci,
                       maxf_noci, rmsf_ci, maxf_ci, np.max(abs(step))))
             print("-"*80)
+
+            #RB addition. Get tangent in every iteration and provide to calculator
+            tang = GetTangent(path.GetNDofIm(), path.GetNim(), path.GetR(), path.GetEnergy(),
+                          tangent_type, pbc=path.GetPBC(), cell=path.GetCell())
+            hei = np.argmax(path.GetEnergy()) #Finding CI
+            tang_2d_CI = np.reshape(tang[hei * path.GetNDofIm():(hei + 1) * path.GetNDofIm()],(int(path.ndofIm/3),3))
+            calculator.tangent = tang_2d_CI
         else:
             hei = np.argmax(path.GetEnergy())
             print("HEI: Highest energy image")
@@ -415,7 +422,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             print('%4ls %6s %10ls %5ls %9ls %9ls %9ls' %
                 ('it', 'dS', 'dE', 'HEI', 'RMSF', 'MaxF', 'step'))
             print(f"Switch-on CI:{tol_turn_on_ci:>36.4f}")
-            print ("%4i %6.2lf %10.6lf %5li %9.4lf  %9.4lf %9.4lf"
+            print ("%4i %6.2lf %10.6lf %5li %9.4lf  %9.4lf %9.4lf @"
                    % (it, s[-1], 23.060541945329334*(path.GetEnergy()[hei] - Ereactant), hei, rmsf, maxf, np.max(abs(step))))
             print("-"*70)
         PiecewiseCubicEnergyInterpolation(basename + ".interp", path.GetNim(), s, path.GetEnergy(), freal_paral, it)
@@ -669,6 +676,12 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                      path.GetConstraints()[CI * path.GetNDimIm():(CI + 1) * path.GetNDimIm()])
     else:
         print("NEB is not yet converged. Doing next NEB iteration")
+        #RB addition. Get tangent in every iteration
+        tang = GetTangent(path.GetNDofIm(), path.GetNim(), path.GetR(), path.GetEnergy(),
+                          tangent_type, pbc=path.GetPBC(), cell=path.GetCell())
+        #RB addition: Provide final tangent to calculator
+        tang_2d_CI = np.reshape(tang[CI * path.GetNDofIm():(CI + 1) * path.GetNDofIm()],(int(path.ndofIm/3),3))
+        calculator.tangent = tang_2d_CI
     if stop_neb:
         PrintMaxIter(maxiter)
         WritePath(basename + "_last_iter.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),

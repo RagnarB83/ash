@@ -283,7 +283,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                 final_result.energies.append(r.get()[1])
                 final_result.gradients.append(r.get()[2])
                 if len(r.get()[4]) > 0:
-                    print("Property dict found from Worker-par", r.get()[4])
+                    #print("Property dict found from Worker-par", r.get()[4])
                     property_dict[r.get()[0]] = r.get()[4]
                     #Dipole and polarizability
                     if 'dipole_moment' in r.get()[4]:

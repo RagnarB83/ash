@@ -285,6 +285,10 @@ class PySCFTheory:
         if self.losc is True:
             self.load_losc(loscpath)
 
+        #Number of orbitals and basis functions (only setup upon run)
+        self.num_basis_functions=None
+        self.num_orbs=None
+
         #Print the options
         print("SCF:", self.SCF)
         print("SCF-type:", self.scf_type)
@@ -724,15 +728,21 @@ class PySCFTheory:
         #DM SPECIFIED
         if self.dm is not None:
         #Input DM matrix specified
-            print("DM found in pySCFTheory object. Using this for guess")
+            print("DM found inside pySCFTheory object. Using this for guess")
+            if self.dm.shape[0] != self.num_basis_functions:
+                print(f"Warning: The density matrix shape {self.dm.shape} does not match number of basis functions ({self.num_basis_functions}).")
+                print("This density matrix can not be correct. Ignoring")
+                self.dm=None
+                return None
             return self.dm
+        #MOREADFILE
         elif self.moreadfile != None:
             print("Moread: Trying to read SCF-orbitals from checkpointfile")
             self.read_chkfile(self.moreadfile)
             self.mf.__dict__.update(self.chkfileobject)
             dm = self.mf.make_rdm1()
             return dm
-        #NOTHING SPECIFIED: so AUTOTART
+        #NOTHING SPECIFIED: so possible AUTOSTART
         else:
             print("Neither input dm or moreadfile was specified")
             #1.AUTOSTART (unless noautostart)
@@ -1127,6 +1137,7 @@ class PySCFTheory:
         self.mol.charge = charge
         self.mol.spin = mult-1
 
+
     #Define basis in mol object
     def define_basis(self,basis_string_from_file=None):
         print("Defining basis set in mol object")
@@ -1148,6 +1159,7 @@ class PySCFTheory:
         else:
             self.mol.basis=self.basis
         print("Basis set:", self.mol.basis)
+        
         #Optional setting magnetic moments 
         if self.magmom != None:
             print("Setting magnetic moments from user-input:", self.magmom)
@@ -1158,6 +1170,8 @@ class PySCFTheory:
         self.mol.max_memory = self.memory
         #BUILD mol object
         self.mol.build()
+        self.num_basis_functions=len(self.mol.ao_labels())
+        print("Number of basis functions:", self.num_basis_functions)
         ###########
 
     #Create mf object (self.mf) via method

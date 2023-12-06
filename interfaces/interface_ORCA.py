@@ -185,7 +185,16 @@ smeartemp {NMF_smeartemp}
 end
             """
 
-
+        #TDDFT option
+        #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
+        if self.TDDFT is True:
+            if '%tddft' not in self.orcablocks:
+                self.orcablocks=self.orcablocks+f"""
+%tddft
+nroots {self.TDDFTroots}
+IRoot {self.FollowRoot}
+end
+"""
 
         #XDM: if True then we add !AIM to input
         self.xdm=False
@@ -436,17 +445,6 @@ end"""
                     print_if_level("Autostart is False. ORCA will ignore any file present", self.printlevel,2)
                 else:
                     print_if_level("Autostart feature is active. ORCA will read GBW-file present.", self.printlevel,2)
-
-        #TDDFT option
-        #If gradient requested by Singlepoint(Grad=True) or Optimizer then TDDFT gradient is calculated instead
-        if self.TDDFT is True:
-            if '%tddft' not in self.orcablocks:
-                self.orcablocks=self.orcablocks+f"""
-                %tddft
-                nroots {self.TDDFTroots}
-                IRoot {self.FollowRoot}
-                end
-                """
 
         #If 1st runcall, add this to inputfile
         if self.runcalls == 1:

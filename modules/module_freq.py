@@ -1833,16 +1833,6 @@ def read_hessian(file):
     hessian = np.loadtxt(file)
     return hessian
 
-#Read tangent file
-def read_tangent(tangentfile):
-    tang=[]
-    with open(tangentfile) as f:
-        for line in f:
-            if len(line) > 10:
-                x=float(line.split()[1]);y=float(line.split()[2]);z=float(line.split()[3])
-                tang.append([x,y,z])
-    return np.array(tang)
-
 
 #Calculate Hessian in various ways.
 
