@@ -304,9 +304,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         displacement_grad_dictionary = gradient_dict
 
         displacement_dipole_dictionary = result.displacement_dipole_dictionary
-        print("displacement_dipole_dictionary:",displacement_dipole_dictionary)
+        #print("displacement_dipole_dictionary:",displacement_dipole_dictionary)
         displacement_polarizability_dictionary = result.displacement_polarizability_dictionary
-        print("displacement_polarizability_dictionary:",displacement_polarizability_dictionary)
+        #print("displacement_polarizability_dictionary:",displacement_polarizability_dictionary)
 
         #print("displacement_grad_dictionary:", displacement_grad_dictionary)
     else:

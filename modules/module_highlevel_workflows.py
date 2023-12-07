@@ -2507,7 +2507,7 @@ def make_ICE_theory(basis,tgen, tvar, numcores, nel=None, norb=None, nmin_nmax=F
     print("etol:", etol)
     print("moreadfile:", moreadfile)
     print()
-    icekeyword="noiter"
+    icekeyword=""
     mp2nat_option="false"
     moreadoption="";moreadblockoption=""
     #Setting basis keyword to nothing if basis set dict provided
@@ -2549,6 +2549,7 @@ tvar {tvar}
 useMP2nat {mp2nat_option}
 maxiter {maxiter}
 etol {etol}
+natorbs true
 end
 """
     icetheory = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, basis_per_element=basis_per_element, label=f'{label}ICE_tgen{tgen}_tvar_{tvar}', save_output_with_label=True)
@@ -2568,11 +2569,15 @@ def newAuto_ICE_CAS(fragment=None, basis="cc-pVDZ", basisblock="", moreadfile=No
         ashexit()
 
     if CASCI is True:
-        noiterkeyword="noiter"
+        print("Warning: CAS-CI is active. This means that no orbital-optimization is carried out.")
+        print("In order to get ICE-CI natural orbitals we don't use the noiter option but instead change the CASSCF convergence threshold so that only 1 iteration is carried out")
+        print("Otherwise the input orbitals are still present in the GBW file")
+        #noiterkeyword="noiter"
+        gtol=999999 #This is necessary
+        print("Setting gtol to:", gtol)
         label=f"ICE-CASCI"
     else:
         #Regular CASSCF
-        noiterkeyword=""
         label=f"ICE-CASSCF"
 
     #Determine CAS space based on thresholds
@@ -2618,7 +2623,7 @@ def newAuto_ICE_CAS(fragment=None, basis="cc-pVDZ", basisblock="", moreadfile=No
     end
     end
     """
-    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {noiterkeyword} {basis} tightscf", 
+    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {basis} tightscf", 
                                 orcablocks=casblocks, moreadfile=moreadfile, autostart=autostart, label=f"{label}", numcores=numcores)
 
     result_ICE = ash.Singlepoint(fragment=fragment, theory=ice_cas_CI, charge=charge,mult=mult)
@@ -2663,16 +2668,19 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
 
 
     if CASCI is True:
-        noiterkeyword="noiter"
+        print("Warning: CAS-CI is active. This means that no orbital-optimization is carried out.")
+        print("In order to get ICE-CI natural orbitals we don't use the noiter option but instead change the CASSCF convergence threshold so that only 1 iteration is carried out")
+        print("Otherwise the input orbitals are still present in the GBW file")
+        #noiterkeyword="noiter"
+        gtol=999999 #This is necessary
+        print("Setting gtol to:", gtol)
         label=f"ICE-CASCI"
     else:
         #Regular CASSCF
-        noiterkeyword=""
+        #noiterkeyword=""
         label=f"ICE-CASSCF"
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, "QM", fragment, "bla", theory=None)
-
-
 
     #Make MP2 natural orbitals
     mp2blocks=f"""
@@ -2786,7 +2794,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     end
     end
     """
-    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {noiterkeyword} {basis} tightscf", 
+    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF  {basis} tightscf", 
                                 orcablocks=casblocks, moreadfile=mofile, autostart=autostart, label=f"{label}", numcores=numcores)
 
     result_ICE = ash.Singlepoint(fragment=fragment, theory=ice_cas_CI, charge=charge,mult=mult)

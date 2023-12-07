@@ -2984,14 +2984,16 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             print("CASSCF natural orbitals required CAS_nel and CAS_norb keywords for CAS active space calculation")
             ashexit()
         if CASCI is True:
-            print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
-            extrainput = extrainput + " noiter"
+            print("Warning: CAS-CI is True. No CASSCF orbital optimization will be carried out.")
+            print("Warning: To get natural orbitals from CAS-CI calculation we modify gtol instead of using noiter")
+            gtol=9999999
     #FOBO
     if 'FOBO' in orbitals_option:
         print("FOBO-type orbitals requested.")
         if CASCI is True:
-            print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
-            extrainput = extrainput + " noiter"
+            print("Warning: CAS-CI is True. No CASSCF orbital optimization will be carried out.")
+            print("Warning: To get natural orbitals from CAS-CI calculation we modify gtol instead of using noiter")
+            gtol=9999999
     if 'MR' in orbitals_option:
         print("orbitals_option:", orbitals_option)
         if 'SORCI' in orbitals_option:
@@ -3018,8 +3020,9 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             print("MRCI natural orbitals required CAS_nel and CAS_norb keywords for CAS active space calculation")
             ashexit()
         if CASCI is True:
-            print("Warning: CAS-CI is True, noiter keyword will be added to ORCA-input. No CASSCF orbital optimization will be carried out.")
-            extrainput = extrainput + " noiter"
+            print("Warning: CAS-CI is True. No CASSCF orbital optimization will be carried out.")
+            print("Warning: To get natural orbitals from CAS-CI calculation we modify gtol instead of using noiter")
+            gtol=9999999
 
 
     #Always tarting from scratch, unless moreadfile is provided (will override)
@@ -3196,6 +3199,7 @@ end
         {basisblock}
         {extrablock}
         %casscf
+        gtol {gtol}
         nel {CAS_nel}
         norb {CAS_norb}
         end
@@ -3210,6 +3214,7 @@ end
         {basisblock}
         {extrablock}
         %casscf
+        gtol {gtol}
         nel {CAS_nel}
         norb {CAS_norb}
         end

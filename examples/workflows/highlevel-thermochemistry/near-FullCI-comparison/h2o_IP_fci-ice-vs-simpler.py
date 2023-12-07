@@ -60,6 +60,7 @@ for tgen in tgen_thresholds:
     nmax {ice_nmax}
     tgen {tgen}
     useMP2nat true
+    natorbs true
     end
     """
     ice = ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, label=f'ICE_{tgen}_', save_output_with_label=True)
