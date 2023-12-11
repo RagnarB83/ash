@@ -476,7 +476,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("SC_NEVPT2_Mcompression:", self.SC_NEVPT2_Mcompression)
         if self.SC_NEVPT2_Mcompression != None:
             print("Doing MPS compression")
-            result = pyscf.mrpt.NEVPT(self.mch).compress_approx(maxM=SC_NEVPT2_Mcompression).run()
+            result = pyscf.mrpt.NEVPT(self.mch).compress_approx(maxM=self.SC_NEVPT2_Mcompression).run()
         else:
             print("No MPS compression. Doing full 4PDM")
             result = pyscf.mrpt.NEVPT(self.mch).run()

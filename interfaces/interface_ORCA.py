@@ -2784,7 +2784,7 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
 
 #Using orca_2json to create JSON file from ORCA GBW file
 def create_ORCA_json_file(file, orcadir=None):
-
+    print("create_ORCA_json_file")
     orcadir = check_ORCA_location(orcadir)
     orcafile_basename = file.split('.')[0]
 
@@ -2812,6 +2812,7 @@ def create_ORCA_json_file(file, orcadir=None):
 #Parse ORCA json file
 #Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
 def read_ORCA_json_file(file):
+    print("read_ORCA_json_file")
     # Parsing of files
     import json
 
@@ -2901,7 +2902,6 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 
 #Function to prepare ORCA orbitals for another ORCA calculation
 #Mainly for getting natural orbitals 
-
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,

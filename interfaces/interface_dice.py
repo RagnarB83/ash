@@ -489,8 +489,8 @@ noio
             print("SHCI_active_all_but_core option is active")
             print("Will select all active space except the chosen number of core orbitals to skip")
             print("Warning untested...")
-            self.norb = len(occupations[SHCI_active_all_but_core:])
-            self.nelec = round(sum(occupations[SHCI_active_all_but_core:]))
+            self.norb = len(occupations[self.SHCI_active_all_but_core:])
+            self.nelec = round(sum(occupations[self.SHCI_active_all_but_core:]))
 
             print(f"Selected active space : CAS({self.nelec},{self.norb})")
 

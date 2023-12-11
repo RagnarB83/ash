@@ -1974,6 +1974,7 @@ def diagonalize_DM_AO(D, S):
     w, v = scipy.linalg.eigh(A, b=S)
     # Flip NOONs (and NOs) since they're in increasing order
     natocc = np.flip(w)
+    #print("NOs before flip:", v)
     natorb = np.flip(v, axis=1)
     print("Natural orbital coefficients:", natorb)
     print("Natural occupations:", natocc)
@@ -2015,7 +2016,7 @@ def make_molden_file(fragment, AO_basis, MO_coeffs, MO_energies=None, MO_occs=No
     print("WARNING: ORDER has only been checked for s,p,d and f")
     
     if AO_order is None:
-        print("Warning: no AO_order given. Will guess??")
+        print("Warning: no AO_order given. Don't know what to do")
         ashexit()
     else:
          print("AO_order_object given. Will use this to order AOs")
@@ -2090,6 +2091,7 @@ Molden file created by ASH (using orca format)
  Occup= {mo_occ}\n"""
         mostring+=moheader
         #Reorder according to AO_order_object
+        print("mostring:",mostring)
         mo_coeffs_reordered =  reorder_AOs_in_MO_ORCA_to_Molden(mo_coeffs,AO_order)
         for i,mo_coeff in enumerate(mo_coeffs_reordered):
             mostring+=f" {i+1}      {mo_coeff:15.12f}\n"
@@ -2123,6 +2125,10 @@ def reorder_AOs_in_MO_ORCA_to_Molden(coeffs,order):
     new_order = np.empty(len(order), dtype=object)
 
     for i,(c,o) in enumerate(zip(coeffs,order)):
+        print("i:",i)
+        print("c:",c)
+        print("o:",o)
+        #exit()
         if "pz" in o:
             new_coeffs[i+2] = c
             new_order[i+2] = o

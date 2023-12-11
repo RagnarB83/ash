@@ -133,25 +133,25 @@ class GeomeTRICOptimizerClass:
                 #default
                 if conv_criteria is None:
                     self.conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
-                            'convergence_dmax' : 4.0e-3 }
+                            'convergence_dmax' : 4.0e-3, 'convergence_cmax' : 1.0e-2 }
             elif convergence_setting == 'Chemshell':
                 self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
-                                'convergence_dmax' : 1.8e-3 }
+                                'convergence_dmax' : 1.8e-3, 'convergence_cmax' : 1.0e-2 }
             elif convergence_setting == 'ORCA_TIGHT':
                 self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-5, 'convergence_gmax' : 1.0e-4, 'convergence_drms' : 6.0e-4, 
-                            'convergence_dmax' : 1.0e-3 }
+                            'convergence_dmax' : 1.0e-3, 'convergence_cmax' : 1.0e-2 }
             elif convergence_setting == 'GAU':
                 self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
-                            'convergence_dmax' : 1.8e-3 }
+                            'convergence_dmax' : 1.8e-3, 'convergence_cmax' : 1.0e-2 }
             elif convergence_setting == 'GAU_TIGHT':
                 self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 1e-5, 'convergence_gmax' : 1.5e-5, 'convergence_drms' : 4.0e-5, 
-                                'convergence_dmax' : 6e-5 }
+                                'convergence_dmax' : 6e-5, 'convergence_cmax' : 1.0e-2  }
             elif convergence_setting == 'GAU_VERYTIGHT':
                 self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 1e-6, 'convergence_gmax' : 2e-6, 'convergence_drms' : 4.0e-6, 
-                                'convergence_dmax' : 6e-6 }        
+                                'convergence_dmax' : 6e-6, 'convergence_cmax' : 1.0e-2  }        
             elif convergence_setting == 'SuperLoose':
                         self.conv_criteria = { 'convergence_energy' : 1e-1, 'convergence_grms' : 1e-1, 'convergence_gmax' : 1e-1, 'convergence_drms' : 1e-1, 
-                            'convergence_dmax' : 1e-1 }
+                            'convergence_dmax' : 1e-1, 'convergence_cmax' : 1.0e-2  }
             else:
                 print("Unknown convergence setting. Exiting...")
                 ashexit()
@@ -533,6 +533,7 @@ class geomeTRICArgsObject:
         self.convergence_gmax = conv_criteria['convergence_gmax']
         self.convergence_drms = conv_criteria['convergence_drms']
         self.convergence_dmax = conv_criteria['convergence_dmax']
+        self.convergence_cmax = conv_criteria['convergence_cmax']
         self.prefix='geometric_OPTtraj'
         self.input='dummyinputname'
         self.constraints=constraintsfile
