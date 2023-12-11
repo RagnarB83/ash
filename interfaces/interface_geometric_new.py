@@ -105,6 +105,7 @@ class GeomeTRICOptimizerClass:
                 print("Number of active atoms:", len(self.actatoms))
             print("TS Optimization:", self.TSOpt)
             print("Hessian Option:", self.hessian)
+            print("Convergence criteria:", self.conv_criteria)
                     
         #Requires info on theory and fragment
         def print_atoms_output_setting(self,theory,fragment):
@@ -125,15 +126,26 @@ class GeomeTRICOptimizerClass:
                     #No act-region. Print all atoms
                     self.print_atoms_list=fragment.allatoms
 
-        def convergence_criteria(self,convergence_setting,conv_criteria):
+        def convergence_criteria(self,convergence_setting,userconv):
            ########################################
             #Dealing with convergence criteria
             ########################################
-            if convergence_setting is None or convergence_setting == 'ORCA':
-                #default
-                if conv_criteria is None:
-                    self.conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
+            if userconv != None:
+                print("Manual convergence criteria specified")
+                #Setting defaults first
+                self.conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
                             'convergence_dmax' : 4.0e-3, 'convergence_cmax' : 1.0e-2 }
+                #Then overriding with user selection
+                for conv_key in userconv:
+                    self.conv_criteria[conv_key] = userconv[conv_key]
+
+            elif convergence_setting == None and userconv == None:
+                print("No convergence settings by user. Using default criteria (same as ORCA)")
+                self.conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
+                        'convergence_dmax' : 4.0e-3, 'convergence_cmax' : 1.0e-2 }
+            elif convergence_setting == 'ORCA':
+                self.conv_criteria = {'convergence_energy' : 5e-6, 'convergence_grms' : 1e-4, 'convergence_gmax' : 3.0e-4, 'convergence_drms' : 2.0e-3, 
+                                'convergence_dmax' : 4.0e-3, 'convergence_cmax' : 1.0e-2 }
             elif convergence_setting == 'Chemshell':
                 self.conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
                                 'convergence_dmax' : 1.8e-3, 'convergence_cmax' : 1.0e-2 }
