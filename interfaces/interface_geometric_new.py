@@ -20,7 +20,7 @@ from ash.modules.module_results import ASH_Results
 #Wrapper function around GeomeTRICOptimizerClass
 #NOTE: theory and fragment given to Optimizer function but not part of Class initialization. Only passed to run method
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraints=None, 
-                       constrainvalue=False, maxiter=100, ActiveRegion=False, actatoms=None,
+                       constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
                        modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
     """
@@ -46,7 +46,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
 # Class for optimization. 
 class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, charge=None, mult=None, coordsystem='tric', 
-                     frozenatoms=None, maxiter=50, ActiveRegion=False, actatoms=None, 
+                     frozenatoms=None, maxiter=250, ActiveRegion=False, actatoms=None, 
                        convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
                        print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None, 
                        subfrctor=1, MM_PDB_traj_write=False, printlevel=2):

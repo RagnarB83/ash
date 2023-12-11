@@ -23,7 +23,7 @@ from ash.interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICO
 # TODO: Remove ORCATheory specific things
 
 def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='UNRELAXED', resultfile='surface_results.txt', 
-                 keepoutputfiles=True, keepmofiles=False,runmode='serial', coordsystem='dlc', maxiter=150, 
+                 keepoutputfiles=True, keepmofiles=False,runmode='serial', coordsystem='dlc', maxiter=250, 
                  extraconstraints=None, convergence_setting=None, conv_criteria=None,
                  numcores=1, ActiveRegion=False, actatoms=None, RC1_range=None, RC1_type=None, RC1_indices=None, 
                  RC2_range=None, RC2_type=None, RC2_indices=None):
@@ -509,7 +509,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 # Parallelization and MOREAD complete
 # TODO: Parallelization and Relaxed mode
 def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=None, mult=None, dimension=None, resultfile='surface_results.txt', scantype='UNRELAXED',runmode='serial',
-                         coordsystem='dlc', maxiter=150, extraconstraints=None, convergence_setting=None, conv_criteria=None,
+                         coordsystem='dlc', maxiter=250, extraconstraints=None, convergence_setting=None, conv_criteria=None,
                          numcores=None, RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True, 
                          keepmofiles=False,read_mofiles=False, mofilesdir=None):
     module_init_time=time.time()
