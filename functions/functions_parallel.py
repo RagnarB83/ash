@@ -387,6 +387,7 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         if printlevel >= 2:
             print("Label is float or int")
         #
+        labelstring=str(label).replace('.','_')
         #Label is float or int. 
         if mofilesdir != None:
             if printlevel >= 2:
