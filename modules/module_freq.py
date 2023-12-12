@@ -16,7 +16,7 @@ import ash.constants
 
 #Analytical frequencies function. For ORCAtheory and CFourTheory
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, 
-           pressure=1.0, QRRHO_omega_0=100):
+           pressure=1.0, QRHHO=True, QRRHO_omega_0=100):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
 
@@ -47,7 +47,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15,
         print("\n\n")
         print("Normal mode composition factors by element")
         printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms,TRmodenum=TRmodenum)
-        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRHHO=QRHHO, QRRHO_omega_0=QRRHO_omega_0)
 
         #Add Hessian to fragment and write to file
         fragment.hessian=hessian
@@ -73,7 +73,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15,
 #Numerical frequencies function
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', 
-        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO_omega_0=100, Raman=False):
+        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRHHO=True, QRRHO_omega_0=100, Raman=False):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     ################
@@ -496,9 +496,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Get and print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRHHO=QRHHO, QRRHO_omega_0=QRRHO_omega_0)
     else:
-        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRHHO=QRHHO, QRRHO_omega_0=QRRHO_omega_0)
 
     #Write Hessian to file
     write_hessian(hessian,hessfile="Hessian")
@@ -736,7 +736,7 @@ def old_printfreqs(vfreq,numatoms,TRmodenum=6):
         #print("type of vib", type(vib))
 
 #
-def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0, QRRHO=False, QRRHO_omega_0=100):
+def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0, QRRHO=True, QRRHO_omega_0=100):
     module_init_time=time.time()
     """[summary]
 
