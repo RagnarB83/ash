@@ -16,7 +16,7 @@ import ash.constants
 
 #Analytical frequencies function. For ORCAtheory and CFourTheory
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, 
-           pressure=1.0, QRHHO=True, QRRHO_omega_0=100):
+           pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
 
@@ -47,7 +47,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15,
         print("\n\n")
         print("Normal mode composition factors by element")
         printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms,TRmodenum=TRmodenum)
-        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRHHO=QRHHO, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO=QRRHO, QRRHO_omega_0=QRRHO_omega_0)
 
         #Add Hessian to fragment and write to file
         fragment.hessian=hessian
@@ -73,7 +73,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15,
 #Numerical frequencies function
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', 
-        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRHHO=True, QRRHO_omega_0=100, Raman=False):
+        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, Raman=False):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     ################
@@ -496,9 +496,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Get and print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRHHO=QRHHO, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO=QRRHO, QRRHO_method=QRRHO_method, QRRHO_omega_0=QRRHO_omega_0)
     else:
-        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRHHO=QRHHO, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO=QRRHO, QRRHO_method=QRRHO_method, QRRHO_omega_0=QRRHO_omega_0)
 
     #Write Hessian to file
     write_hessian(hessian,hessfile="Hessian")
@@ -736,7 +736,7 @@ def old_printfreqs(vfreq,numatoms,TRmodenum=6):
         #print("type of vib", type(vib))
 
 #
-def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0, QRRHO=True, QRRHO_omega_0=100):
+def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100):
     module_init_time=time.time()
     """[summary]
 
@@ -861,7 +861,14 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
 
         #Vibrational entropy via RRHO.
         if QRRHO is True:
-            TS_vib = S_vib_QRRHO(freqs,temp, omega_0=QRRHO_omega_0, I_av=I_av)
+            print("QRHHO is True. Doing quasi-RRHO for the vibrational entropy")
+            if QRRHO_method == 'Grimme':
+                TS_vib = S_vib_QRRHO_Grimme(freqs,temp, omega_0=QRRHO_omega_0, I_av=I_av)
+            elif QRRHO_method == 'Truhlar':
+                TS_vib = S_vib_QRRHO_Truhlar(freqs,temp, lowfreq_thresh=QRRHO_omega_0)
+            else:
+                print("Unknown QRRHO_method. Exiting.")
+                ashexit()
         else:
             TS_vib = S_vib(freqs,temp)
     else:
@@ -1796,12 +1803,31 @@ def S_vib(freqs,T):
         TS_vib_final=S_vib*T
     return TS_vib_final
 
+def S_vib_QRRHO_Truhlar(freqs,T,lowfreq_thresh=100):
+    print("Warning: Quasi-RRHO by Truhlar approximation active.")
+    print("This means that the vibrational entropy is calculated according to Truhlar-approach of raising low-energy vibrations to 100 cm-1")
+    print("Cite: R. F. Riberio et al. J. Phys. Chem. B, 115, 14556 (2011) ")
+    #Vibrational entropy via quasi-RRHO
+    TS_vib_final=0.0
+    #Looping over frequencies
+    for f in freqs:
+        if f < 100.0:
+            print(f"Warning: Frequency ({f}) is below low-freq threshold ({lowfreq_thresh}) cm-1. Setting to {lowfreq_thresh} cm-1")
+            f=100.0
+        #Vib. temp and TS_vib for freq f
+        vibtemp = (f*ash.constants.c*ash.constants.h_planck_hartreeseconds)/ash.constants.R_gasconst
+        print("vibtemp:", vibtemp)
+        TS_vib_f = T*(ash.constants.R_gasconst*(vibtemp/T)/(math.exp(vibtemp/T) - 1) - ash.constants.R_gasconst*math.log(1-math.exp(-1*vibtemp/T)))
+        TS_vib_final+=TS_vib_f
+        print("TS_vib_final:", TS_vib_final)
+
+    return TS_vib_final
+
 #Vibrational entropy by quasi-RRHO (Grimme)
-def S_vib_QRRHO(freqs,T,omega_0=100,I_av=None):
-    print("Quasi-RRHO approximation active.")
+def S_vib_QRRHO_Grimme(freqs,T,omega_0=100,I_av=None):
+    print("Warning: Quasi-RRHO approximation by Grimme active.")
+    print("This means that the vibrational entropy uses the Grimme-type interpolation formula")
     print("Cite: S. Grimme, Chem. Eur. J. 2012, 18, 9955-9964.")
-    #NOTE: Need to go through units, SI, kcal/mol and hartree
-    #exit()
     #Vibrational entropy via quasi-RRHO
     TS_vib_final=0.0
     #Looping over frequencies
@@ -1818,18 +1844,6 @@ def S_vib_QRRHO(freqs,T,omega_0=100,I_av=None):
         #Regular RRHO: TS_vib_final+=TS_vib_f
         TS_vib_final += w*TS_vib_f+(1-w)*TS_rot_f_au
     return TS_vib_final
-
-
-#Write Hessian to file
-#def write_hessian(hessian,hessfile="Hessian"):
-#    with open(hessfile, 'w') as hfile:
-#        #RB note: Skipping header to be compatible with geometric format
-#        #hfile.write(str(hesslength)+' '+str(hesslength)+'\n')
-#        for row in hessian:
-#            rowline=' '.join(map(str, row))
-#            hfile.write(str(rowline)+'\n')
-#        blankline()
-#        
 
 def write_hessian(hessian,hessfile="Hessian"):
     np.savetxt(hessfile, hessian)
