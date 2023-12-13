@@ -379,15 +379,28 @@ class PySCFTheory:
                 os.remove(f)
             except:
                 print("Error removing file", f)
-    def print_orbital_en_and_occ(self,mo_energies=None, mo_occ=None):
+    def print_orbital_en_and_occ(self,mo_energies=None, mo_occupations=None):
         print("\nMO energies and occupations:\n")
         header="  No.      OCC               E(Eh)               E(eV)"
         if mo_energies is None:
             mo_energies=self.mf.mo_energy
-            mo_occ=self.mf.mo_occ
-        print(header)
-        for i,(mo_en,mo_occ) in enumerate(zip(mo_energies, mo_occ)):
-            print(f"""{i:4d} {mo_occ:10.5f} {mo_en:20.10f} {mo_en*27.2114:20.10f}""")
+            mo_occupations=self.mf.mo_occ
+
+        #UHF/UKS
+        if mo_energies.ndim == 2:
+            print("ALPHA SET")
+            print(header)
+            for i,(mo_en_a,mo_occ_a) in enumerate(zip(mo_energies[0], mo_occupations[0])):
+                print(f"""{i:4d} {mo_occ_a:10.5f} {mo_en_a:20.10f} {mo_en_a*27.2114:20.10f}""")
+            print("\nBETA SET")
+            print(header)
+            for j,(mo_en_b,mo_occ_b) in enumerate(zip(mo_energies[1], mo_occupations[1])):
+                print(f"""{j:4d} {mo_occ_b:10.5f} {mo_en_b:20.10f} {mo_en_b*27.2114:20.10f}""")
+        #RHF/RKS:
+        else:
+            print(header)
+            for i,(mo_en_a,mo_occ_a) in enumerate(zip(mo_energies, mo_occupations)):
+                print(f"""{i:4d} {mo_occ_a:10.5f} {mo_en_a:20.10f} {mo_en_a*27.2114:20.10f}""")
 
     def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies=None, label="orbs"):
         from pyscf.tools import molden
@@ -1509,7 +1522,7 @@ class PySCFTheory:
         #print("MO energies:", mo_energy)
         #print("MO coefficients:", mo_coeff)
         print("MO properties after inversion")
-        self.print_orbital_en_and_occ(mo_energies=mo_energy, mo_occ=mo_occ)
+        self.print_orbital_en_and_occ(mo_energies=mo_energy, mo_occupations=mo_occ)
         print()
 
         print("\n Now returning: mo_occ, mo_energy, mo_coeff")
