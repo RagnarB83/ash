@@ -10,6 +10,7 @@ from ash.constants import ang2bohr, harkcal
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep,pygrep2
 from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
+from ash.interfaces.interface_pyscf import pySCF_read_MOs
 
 #Interface to Dice: SHCI, QMC (single-det or SHCI multi-det) and NEVPT2
 #TODO: fix nevpt2
@@ -438,18 +439,8 @@ noio
                                                                 elems=elems, numcores=self.numcores)
 
         else:
-            print("Will read MOs from checkpoint file:", self.moreadfile)
-            if '.chk' not in self.moreadfile:
-                print("Error: not a PySCF chkfile")
-                ashexit()
-            mo_coefficients = pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
-            occupations = pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_occ')
-            print("Chk-file occupations:", occupations)
-            print("Length of occupations array:", len(occupations))
-            if len(occupations) != totnumborb:
-                print("Occupations array length does NOT match length of MO coefficients in PySCF object")
-                print("Is basis different? Exiting")
-                ashexit()
+            print("Will read MOs from file:", self.moreadfile)
+            mo_coefficients, occupations = pySCF_read_MOs(self.moreadfile)
 
         #Check if occupations are sensible (may be nonsense if CCSD/CAS calc failed)
         if True in [i > 2.00001 for i in occupations]:

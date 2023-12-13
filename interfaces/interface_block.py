@@ -10,6 +10,7 @@ from ash.constants import ang2bohr, harkcal
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep,pygrep2,find_program
 from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
+from ash.interfaces.interface_pyscf import pySCF_read_MOs
 
 #Interface to Block: Block2 primarily via PySCF and also directly via FCIdump
 # Possibly later include Block 1.5 and Stackblock (currently no need)
@@ -298,19 +299,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         else:
             print("Will read MOs from file:", self.moreadfile)
-            if '.molden' in self.moreadfile:
-                print("Warning: This is a Molden file. Will try to read MOs from here but this may not work")
-                mol, mo_energy, mo_coefficients, occupations, irrep_labels, spins = pyscf.tools.molden.load(self.moreadfile)
-                occupations
-            elif '.chk'  in self.moreadfile:
-                mo_coefficients = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
-                occupations = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_occ')
-            print("Occupations:", occupations)
-            print("Length of occupations array:", len(occupations))
-            if len(occupations) != totnumborb:
-                print("Occupations array length does NOT match length of MO coefficients in PySCF object")
-                print("Is basis different? Exiting")
-                ashexit()
+            mo_coefficients, occupations = pySCF_read_MOs(self.moreadfile)
 
         #Check if occupations are sensible (may be nonsense if CCSD/CAS calc failed)
         if True in [i > 2.00001 for i in occupations]:
