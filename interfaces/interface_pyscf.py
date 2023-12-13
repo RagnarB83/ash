@@ -432,7 +432,8 @@ class PySCFTheory:
         with open(f'{label}.molden', 'w') as f1:
             molden.header(mol, f1)
             molden.orbital_coeff(mol, f1, mo_coeffs, ene=mo_energies, occ=occupations)
-    
+        return f'{label}.molden'
+
     #Write Cube files for a list of orbital indices
     def cubegen_orbital(self, mol, name, coeffs, nx=60,ny=60,nz=60):
         import pyscf.tools
@@ -2560,7 +2561,7 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
     if pyscftheoryobject.MP2 is True or pyscftheoryobject.CC is True:
         print("Error: pySCFTHeory object already has MP2 or CC turned on. This is not allowed for pyscf_natorb_CCSD_T_selection")
         print("The pySCFTheory object should only contain settings for an SCF mean-field object (basis set, scf_type, functional etc.)")
-        exit()
+        ashexit()
 
 
     #Use input PySCFTheory object for MF calculation and run
