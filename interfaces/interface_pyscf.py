@@ -14,7 +14,7 @@ import copy
 
 #Standalone function for reading either pySCF-CHK file or Molden file and returning MO coefficients and occupations
 #Used by pySCFTheory, DiceTheory and BlockTheory
-def pySCF_read_MOs(moreadfile,pyscfobject):
+def pySCF_read_MOs(moreadfile,mf):
     import pyscf
     print("Reading MOs from :", moreadfile)
     #Molden read
@@ -27,7 +27,7 @@ def pySCF_read_MOs(moreadfile,pyscfobject):
         occupations = pyscf.lib.chkfile.load(moreadfile, 'mcscf/mo_occ')
     print("Occupations:", occupations)
     print("Length of occupations array:", len(occupations))
-    if len(occupations) != pyscfobject.num_orbs:
+    if len(occupations) != mf.num_orbs:
         print("Occupations array length does NOT match length of MO coefficients in PySCF object")
         print("Is basis different? Exiting")
         ashexit()
@@ -773,7 +773,7 @@ class PySCFTheory:
         elif self.moreadfile != None:
             print("Moread: Trying to read SCF-orbitals from file")
             if '.molden' in self.moreadfile:
-                mo_coefficients, occupations = pySCF_read_MOs(self.moreadfile,self)
+                mo_coefficients, occupations = pySCF_read_MOs(self.moreadfile,self.mf)
                 self.mf.mo_occ = occupations
                 self.mf.mo_coeff = mo_coefficients
             else:
