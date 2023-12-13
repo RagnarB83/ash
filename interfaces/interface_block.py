@@ -246,6 +246,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC job
     def setup_initial_orbitals(self, elems):
         module_init_time=time.time()
+        import pyscf
         print("\n INITIAL ORBITAL OPTION")
         if len(self.pyscftheoryobject.mf.mo_occ) == 2:
             totnumborb=len(self.pyscftheoryobject.mf.mo_occ[0])
@@ -296,13 +297,15 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                                                                 elems=elems, numcores=self.numcores)
 
         else:
-            print("Will read MOs from checkpoint file:", self.moreadfile)
-            if '.chk' not in self.moreadfile:
-                print("Error: not a PySCF chkfile")
-                ashexit()
-            mo_coefficients = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
-            occupations = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_occ')
-            print("Chk-file occupations:", occupations)
+            print("Will read MOs from file:", self.moreadfile)
+            if '.molden' in self.moreadfile:
+                print("Warning: This is a Molden file. Will try to read MOs from here but this may not work")
+                mol, mo_energy, mo_coefficients, occupations, irrep_labels, spins = pyscf.tools.molden.load(self.moreadfile)
+                occupations
+            elif '.chk'  in self.moreadfile:
+                mo_coefficients = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
+                occupations = self.pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_occ')
+            print("Occupations:", occupations)
             print("Length of occupations array:", len(occupations))
             if len(occupations) != totnumborb:
                 print("Occupations array length does NOT match length of MO coefficients in PySCF object")

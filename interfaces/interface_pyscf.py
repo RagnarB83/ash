@@ -447,7 +447,7 @@ class PySCFTheory:
         #Determine frozen core from element list
         self.determine_frozen_core(elems)
         self.frozen_orbital_indices=self.frozen_core_orbital_indices
-        print("self.frozen_orbital_indices:", self.frozen_orbital_indices)
+        print("Frozen orbital indices:", self.frozen_orbital_indices)
         #Necessary for MP2 at least
         if self.frozen_orbital_indices == []:
             self.frozen_orbital_indices=None
