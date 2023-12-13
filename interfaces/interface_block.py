@@ -299,7 +299,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         else:
             print("Will read MOs from file:", self.moreadfile)
-            mo_coefficients, occupations = pySCF_read_MOs(self.moreadfile,self.pyscftheoryobject.mf)
+            mo_coefficients, occupations = pySCF_read_MOs(self.moreadfile,self.pyscftheoryobject)
 
         #Check if occupations are sensible (may be nonsense if CCSD/CAS calc failed)
         if True in [i > 2.00001 for i in occupations]:
