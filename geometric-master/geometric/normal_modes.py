@@ -739,7 +739,6 @@ def wigner_sample(coords, mass, elem, freqs_wavenumber, normal_modes, temperatur
     
     # Coordinates in the center-of-mass frame
     ctr_coors = coords - cxyz[np.newaxis, :]
-
     # how to test imaginary frequency
 
     sigma_x = []

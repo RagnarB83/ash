@@ -785,7 +785,8 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     if moltype != "atom":
         print("\nDoing rotatational analysis:")
         # Moments of inertia (amu A^2 ), eigenvalues
-        center = get_center(elems,coords)
+        center = get_center(coords,elems=elems)
+        
         rinertia = list(inertia(elems,coords,center))
         print("Moments of inertia (amu Å^2):", rinertia)
         #Changing units to m and kg
@@ -1147,23 +1148,20 @@ DUMMY NUMBERS BELOW
     outfile.close()
     print("Created dummy ORCA outputfile: ", hessfile+'_dummy.out')
     
-    
+#Center of mass
+def get_center(coords,masses=None,elems=None,printlevel=2):
+    if masses is None:
+        if elems is None:
+            print("Need to provide either masses or elems")
+            ashexit()   
+        if printlevel >= 2:
+            print("No masses provided. Using atom masses from ASH.")
+        masses = [ash.modules.module_coords.atommasses[ash.modules.module_coords.elematomnumbers[el.lower()]-1] for el in elems]
+    xcom = np.sum(masses * coords[:, 0]) / np.sum(masses)
+    ycom = np.sum(masses * coords[:, 1]) / np.sum(masses)
+    zcom = np.sum(masses * coords[:, 2]) / np.sum(masses)
+    return xcom, ycom, zcom
 
-#Center of mass, adapted from https://code.google.com/p/pistol/source/browse/trunk/Pistol/Thermo.py?r=4
-def get_center(elems,coords):
-    "compute center of mass"
-    xcom,ycom,zcom = 0,0,0
-    totmass = 0
-    for el,coord in zip(elems,coords):
-        mass = ash.modules.module_coords.atommasses[ash.modules.module_coords.elematomnumbers[el.lower()]-1]
-        xcom += float(mass)*float(coord[0])
-        ycom += float(mass)*float(coord[1])
-        zcom += float(mass)*float(coord[2])
-        totmass += float(mass)
-    xcom = xcom/totmass
-    ycom = ycom/totmass
-    zcom = zcom/totmass
-    return xcom,ycom,zcom
 
 def inertia(elems,coords,center):
     xcom=center[0]
@@ -1196,7 +1194,7 @@ def inertia(elems,coords,center):
 def calc_rotational_constants(frag, printlevel=2):
     coords=frag.coords
     elems=frag.elems
-    center = get_center(elems,coords)
+    center = get_center(coords,elems=elems)
     rinertia = list(inertia(elems,coords,center))
 
     #Converting from moments of inertia in amu A^2 to rotational constants in Ghz.
@@ -1909,7 +1907,8 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
         return True
     
     #Linear check via moments of inertia
-    center = get_center(elems,coords)
+    center = get_center(coords,elems=elems)
+    
     rinertia = list(inertia(elems,coords,center))
     #print("rinertia:", rinertia)
     #Checking if rinertia contains an almost zero-value
@@ -1974,6 +1973,13 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     print("Printing hessatoms geometry...")
     print("Hessatoms list:", hessatoms)
     ash.modules.module_coords.print_coords_for_atoms(fragment.coords,fragment.elems,used_atoms)
+    ash.modules.module_coords.write_xyzfile(used_elems, used_coords, "Init_geo")
+    print("Writing center of mass geometry to file: Init_geo_com.xyz")
+    #Center-of-mass geometry for inspection and for translation of coordinates later
+    com = np.array(get_center(used_coords,masses=hessmasses))
+    print("com:",com)
+    coords_com = convert_coords_to_com(used_coords, hessmasses)
+    ash.modules.module_coords.write_xyzfile(used_elems, coords_com, "Init_geo_com")
     print("Elements:", used_elems)
     print("Masses used:", hessmasses)
 
@@ -2021,6 +2027,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     evectors_proj=evectors[TRmodenum:]
 
     #Converting coords to Bohr
+
     coords_in_au = used_coords * ash.constants.ang2bohr
     print("Calling wigner_sample")
 
@@ -2038,6 +2045,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     wigner_sample(coords_in_au, hessmasses, used_elems, np.array(frequencies_proj), evectors_proj, temperature, num_samples, dirname, True)
 
     print("Wigner sample call done!")
+
     #Grabbing all coordinates from wigner-dir into one list and create fragments
     final_coords=[]
     final_coords_full=[]
@@ -2046,15 +2054,19 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     #Coordinates for full fragment
     full_coords = fragment.coords
     
+    #Going through results in wigner-dir
     for dir in sorted(os.listdir(dirname)):
         #Grabbing coordinates for each displaced hessian-region geometry
         e,c = read_xyzfile(f"{dirname}/{dir}/coords.xyz",printlevel=0)
-        final_coords.append((e,c))
+        #Note: wigner_sample returns all coordinates in com-frame so we have to translate back
+        #Translating coordinates from com to original geometry
+        c_trans = c + com
+        final_coords.append((e,c_trans))
         
         #Replacing hessian-region coordinates in full_coords with coords from currcoords
-        for used_i,curr_i in zip(used_atoms,c):
+        for used_i,curr_i in zip(used_atoms,c_trans):
             full_coords[used_i] = curr_i
-            full_current_coords = full_coords
+            full_current_coords = copy.copy(full_coords)
         final_coords_full.append((fullelems,full_current_coords))
         
         newfrag = Fragment(coords=full_current_coords, elems=fullelems, charge=fragment.charge, mult=fragment.mult, printlevel=0)
@@ -2249,3 +2261,13 @@ def calc_Raman_activities(hessmasses,evectors,polarizability_derivs):
     print("Calculated Raman activities for each normal mode:", raman_act)
     print("Calculated Raman depolarization ratios for each normal mode:", depol_ratio)
     return raman_act, depol_ratio
+
+#Convert coordinates to center of mass using inputmasses
+def convert_coords_to_com(coords,hessmasses):
+    #Get center of mass
+    com = get_center(coords,masses=hessmasses)
+
+    #Convert to center of mass
+    coords_com = coords - com
+
+    return coords_com
