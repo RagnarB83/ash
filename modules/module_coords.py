@@ -426,6 +426,7 @@ class Fragment:
         #if conncalc is True:
         #    self.calc_connectivity(scale=scale, tol=tol)
 
+
     # Read GROMACS coordinates file
     def read_grofile(self, filename, conncalc=False, scale=None, tol=None):
         if self.printlevel >= 2:
@@ -1842,6 +1843,7 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
     # TODO: Change coords to numpy array instead
     grabcoords = False
     numatoms = "unset"
+    box_dims=[]
     with open(inpcrdfile) as cfile:
 
         for i, line in enumerate(cfile):
@@ -1890,6 +1892,28 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
         print(BC.FAIL,f"Num coords ({len(coords)}) not equal to num elems ({len(elems)}). Parsing of Amber files: {prmtopfile} and {inpcrdfile} failed. BUG!", BC.END)
         ashexit()
     return elems, coords, box_dims
+
+#Write Amber crd file from either ASH fragment or PDB-file
+def write_amber_crdfile(fragment=None, pdbfile=None, output="amber.crd"):
+    print("\nwrite_amber_crdfile")
+    if fragment == None and pdbfile == None:
+        print("Need to provide either fragment or pdbfile")
+        ashexit()
+    if fragment != None:
+        elems = fragment.elems
+        coords = fragment.coords
+        numatoms = fragment.numatoms
+    elif pdbfile != None:
+        elems, coords = read_pdbfile(pdbfile)
+        numatoms = len(elems)
+    full_string=""
+    with open(output, 'w') as ofile:
+        ofile.write(f"{numatoms}\n")
+        for i,coord in enumerate(coords):
+            full_string+=f"{coord[0]:12.7f}{coord[1]:12.7f}{coord[2]:12.7f}"
+            if i % 2 != 0:
+                full_string+="\n"
+        ofile.write(full_string)
 
 
 # Write PDBfile proper
