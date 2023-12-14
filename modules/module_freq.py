@@ -1970,9 +1970,9 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
         else:
             hessmasses=hessatoms_masses
     
-    print("Printing hessatoms geometry...")
+    #print("Printing hessatoms geometry...")
     print("Hessatoms list:", hessatoms)
-    ash.modules.module_coords.print_coords_for_atoms(fragment.coords,fragment.elems,used_atoms)
+    #ash.modules.module_coords.print_coords_for_atoms(fragment.coords,fragment.elems,used_atoms)
     ash.modules.module_coords.write_xyzfile(used_elems, used_coords, "Init_geo")
     print("Writing center of mass geometry to file: Init_geo_com.xyz")
     #Center-of-mass geometry for inspection and for translation of coordinates later
