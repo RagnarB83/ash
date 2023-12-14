@@ -331,6 +331,7 @@ class OpenMMTheory:
             self.resids = [i.residue.index for i in self.prmtop.topology.atoms()]
             self.resnames = [i.residue.name for i in self.prmtop.topology.atoms()]
             self.mm_elements = [i.element.symbol for i in self.prmtop.topology.atoms()]
+            self.atomnames = [i.name for i in self.prmtop.topology.atoms()]
             #NOTE: OpenMM does not grab Amber atomtypes for some reason. Feature request
             #TODO: Grab more topology information
             # TODO: Define segmentnames, atomtypes, atomnames??
