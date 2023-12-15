@@ -4789,42 +4789,6 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
         eplot.savefig('MTD_CV1', imageformat=imageformat, dpi=dpi)
         return
 
-
-
-
-
-
-
-#Option 1: imshow
-#plt.clf()
-#colormap_option1='RdYlBu_r' 
-#option1fig,option1ax = matplotlib.pyplot.subplots()
-#print("option1fig:", option1fig)
-#print("option1ax:", option1ax)
-#print("cv1_conversionfactor*CV1_minvalue:", cv1_conversionfactor*CV1_minvalue)
-#print("cv1_conversionfactor*CV1_maxvalue:", cv1_conversionfactor*CV1_maxvalue)
-#print("cv2_conversionfactor*CV2_minvalue:", cv2_conversionfactor*CV2_minvalue)
-#print("cv2_conversionfactor*CV2_maxvalue:", cv2_conversionfactor*CV2_maxvalue)
-#option1ax.imshow(rel_free_energy, cmap=colormap_option1, extent=[cv1_conversionfactor*CV1_minvalue, cv1_conversionfactor*CV1_maxvalue, 
-#                                                                  cv2_conversionfactor*CV2_maxvalue, cv2_conversionfactor*CV2_minvalue],
-#                                                                )
-#option1fig.colorbar(option1ax)
-#option1ax.set_xlabel(f'CV1({CV1_unit_label})')
-#option1ax.set_ylabel(f'CV2({CV2_unit_label})')
-#option1fig.savefig('MTD_CV2_option1.png', format=imageformat, dpi=dpi)
-
-#ashexit()
-#Option 2: contour plot with gridlines
-#surfacedictionary={}
-#for i_x,x in enumerate(xvalues):
-#    for i_y,y in enumerate(yvalues):
-#        surfacedictionary[(x,y)] = rel_free_energy[i_x,i_y]
-#colormap_option2='RdYlBu_r' #inferno_r another option
-#print("Printing option2 plot")
-#ash.modules.module_plotting.contourplot(surfacedictionary, label='_MTD_option2',x_axislabel=f'CV1({CV1_unit_label})', y_axislabel=f'CV2 ({CV2_unit_label})', finalunit='kcal/mol', interpolation='Cubic', 
-#    interpolparameter=10, colormap=colormap_option2, dpi=200, imageformat='png', RelativeEnergy=False, numcontourlines=50,
-#    contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title="")
-
 # Get atom indices outside box according to centroid of box and boxlength
 def get_atoms_outside_box_old(allcoords,centroid,boxlength):
     #Box length
