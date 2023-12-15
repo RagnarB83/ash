@@ -285,6 +285,8 @@ end
         print(self.orcasimpleinput)
         print(self.extraline)
         print(self.orcablocks)
+        if self.propertyblock != None:
+            print(self.propertyblock)
         print("Charge: {}  Mult: {}".format(charge, mult))
 
         #TODO: Make more general
@@ -2212,6 +2214,20 @@ def ICE_WF_CFG_CI_size(filename):
     return num_genCFGs,num_selected_CFGs,num_after_SD_CFGs
 
 
+def grab_Mossbauer_parameters(filename,printlevel=2):
+    rho=None
+    deltaEQ=None
+    with open(filename) as f:
+        for line in f:
+            if ' Delta-EQ' in line:
+                deltaEQ=float(line.split()[-2])
+            if ' RHO(0)=' in line:
+                rho=float(line.split()[1])
+    if printlevel == 2:
+        print("Mossbauer parameters:")
+        print("DeltaEQ:", deltaEQ)
+        print("RHO(0):", rho)
+    return rho, deltaEQ
 
 def grab_EFG_from_ORCA_output(filename):
     occgrab=False
@@ -3308,3 +3324,4 @@ end
     print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", mofile)
     print("Also returning natural occupations list:", nat_occupations)
     return mofile, nat_occupations
+
