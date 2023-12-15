@@ -16,7 +16,8 @@ import ash.constants
 
 #Analytical frequencies function. For ORCAtheory and CFourTheory
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, 
-           pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100):
+           pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100,
+           scaling_factor=1.0):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
 
@@ -42,6 +43,8 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15,
         #Diagonalize
         frequencies, nmodes, evectors, mode_order = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
                                                             TRmodenum=TRmodenum,projection=True)
+        print("Now scaling frequencies by scaling factor:", scaling_factor)
+        frequencies = scaling_factor * frequencies
         #Print out Freq output. Maybe print normal mode compositions here instead???
         printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
         print("\n\n")
@@ -73,7 +76,8 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15,
 #Numerical frequencies function
 #ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial', 
-        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, Raman=False):
+        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, Raman=False,
+        scaling_factor=1.0):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     ################
@@ -453,10 +457,12 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
     
-    frequencies, nmodes, evectors, mode_order = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
-
     #Evectors: eigenvectors of the mass-weighed Hessian
     #Normal modes: unweighted
+    frequencies, nmodes, evectors, mode_order = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
+    print("Diagonalization of frequencies complete")
+    print("Now scaling frequencies by scaling factor:", scaling_factor)
+    frequencies = scaling_factor * frequencies
 
     #IR intensities if dipoles available
     if len(displacement_dipole_dictionary) > 0:
@@ -496,9 +502,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Get and print out thermochemistry
     if theory.__class__.__name__ == "QMMMTheory":
-        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO=QRRHO, QRRHO_method=QRRHO_method, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, 
+                                    QRRHO=QRRHO, QRRHO_method=QRRHO_method, QRRHO_omega_0=QRRHO_omega_0)
     else:
-        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO=QRRHO, QRRHO_method=QRRHO_method, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, 
+                                    QRRHO=QRRHO, QRRHO_method=QRRHO_method, QRRHO_omega_0=QRRHO_omega_0)
 
     #Write Hessian to file
     write_hessian(hessian,hessfile="Hessian")
