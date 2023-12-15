@@ -449,7 +449,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     else:
         hessmasses=hessatoms_masses
     
-    hesscoords = [fragment.coords[i] for i in hessatoms]
+    hesscoords = np.take(fragment.coords,hessatoms, axis=0)
     print("Elements:", hesselems)
     print("Masses used:", hessmasses)
     
@@ -507,12 +507,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Note: Passing hesscords here instead of coords. Change?
     ash.interfaces.interface_ORCA.write_ORCA_Hessfile(hessian, hesscoords, hesselems, hessmasses, hessatoms, "orcahessfile.hess")
     print("Wrote ORCA-style Hessian file: orcahessfile.hess")
-
     #Create dummy-ORCA file with frequencies and normal modes
     printdummyORCAfile(hesselems, hesscoords, frequencies, evectors, nmodes, "orcahessfile.hess")
     print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
     print("Can be used for visualization")
-
     blankline()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES END-------------", BC.END)
 
@@ -528,8 +526,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Return to ..
     os.chdir('..')
     print_time_rel(module_init_time, modulename='NumFreq', moduleindex=1)
-
-
 
     result = ASH_Results(label="Numfreq", hessian=hessian, vib_eigenvectors=evectors,
         frequencies=frequencies, Raman_activities=Raman_activities, depolarization_ratios=depolarization_ratios,
@@ -786,7 +782,6 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
         print("\nDoing rotatational analysis:")
         # Moments of inertia (amu A^2 ), eigenvalues
         center = get_center(coords,elems=elems)
-        
         rinertia = list(inertia(elems,coords,center))
         print("Moments of inertia (amu Å^2):", rinertia)
         #Changing units to m and kg
@@ -801,7 +796,6 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
         print("Rotational temperatures: {}, {}, {} K".format(rot_temps_x,rot_temps_y,rot_temps_z))
         #Rotational constants
         rotconstants = calc_rotational_constants(fragment, printlevel=1)
-        
         #Rotational energy and entropy
         if moltype == "atom":
             q_r=1.0
@@ -824,7 +818,6 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     else:
         E_rot=0.0
         TS_rot=0.0
-
     ###################
     #VIBRATIONAL PART
     ###################
@@ -859,7 +852,6 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
             sumb=sumb+v*(0.5+(1/(np.exp((v/temp) - 1))))
         E_vib=sumb*ash.constants.R_gasconst
         vibenergycorr=E_vib-zpve
-
         #Vibrational entropy via RRHO.
         if QRRHO is True:
             print("QRHHO is True. Doing quasi-RRHO for the vibrational entropy")
@@ -913,7 +905,6 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     Hcorr = E_vib + E_trans + E_rot + ash.constants.R_gasconst*temp
     TS_tot = TS_el + TS_trans + TS_rot + TS_vib
     Gcorr = Hcorr - TS_tot
-
 
     #######################
     #PRINTING
@@ -973,7 +964,6 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
     thermochemcalc_dict['Hcorr'] = Hcorr
     thermochemcalc_dict['Gcorr'] = Gcorr
     thermochemcalc_dict['TS_tot'] = TS_tot
-    
     print_time_rel(module_init_time, modulename='thermochemcalc', moduleindex=4)
     return thermochemcalc_dict
 
@@ -996,13 +986,11 @@ def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile):
 ---------------------------------
 CARTESIAN COORDINATES (ANGSTROEM)
 ---------------------------------"""
-
     #Checking for linearity here. 
     if detect_linear(coords=coords,elems=elems) == True:
         TRmodenum=5
     else:
         TRmodenum=6
-
     outfile = open(hessfile+'_dummy.out', 'w')
     outfile.write(orca_header+'\n')
     for el,coord in zip(elems,coords):
@@ -1039,7 +1027,6 @@ CARTESIAN COORDINATES (ANGSTROEM)
         outfile.write(line+'\n')
 
 
-
     normalmodeheader="""------------
 NORMAL MODES
 ------------
@@ -1066,7 +1053,6 @@ Thus, these vectors are normalized but *not* orthogonal"""
 
     if left > 0:
         chunks = chunks + 1
-
     for chunk in range(chunks):
         if chunk == chunks - 1:
             # If last chunk and cleft is exactly 0 then all 5 columns should be done
@@ -1144,7 +1130,6 @@ DUMMY NUMBERS BELOW
     for i in range(6,3*numatoms):
         d=str(i)+":"
         outfile.write(f"{d:>4s}   1606.67   0.009763   49.34  0.001896  ( 0.000000 -0.000000 -0.043546)\n")
-
     outfile.close()
     print("Created dummy ORCA outputfile: ", hessfile+'_dummy.out')
     
@@ -1905,10 +1890,8 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
     #Returning True if diatomic
     if numatoms == 2:
         return True
-    
     #Linear check via moments of inertia
     center = get_center(coords,elems=elems)
-    
     rinertia = list(inertia(elems,coords,center))
     #print("rinertia:", rinertia)
     #Checking if rinertia contains an almost zero-value
