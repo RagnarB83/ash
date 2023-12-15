@@ -1939,7 +1939,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
         print("Hessatoms list provided. This is assumed to be a partial Hessian. Turning off rot+trans projection")
         used_atoms=hessatoms
         projection=False
-        #Making sure hessatoms list is sorted
+        #Making sure the list is sorted
         used_atoms.sort()
 
         #Grabbing coords and elems for Hessian atoms
@@ -1954,7 +1954,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
             hessmasses=hessatoms_masses
     
     #print("Printing hessatoms geometry...")
-    print("Hessatoms list:", hessatoms)
+    print("Hessatoms list:", used_atoms)
     #ash.modules.module_coords.print_coords_for_atoms(fragment.coords,fragment.elems,used_atoms)
     ash.modules.module_coords.write_xyzfile(used_elems, used_coords, "Init_geo")
     print("Writing center of mass geometry to file: Init_geo_com.xyz")
@@ -1974,7 +1974,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
         print("Hessian size:", hessian.size)
         print("Hessian shape:", hessian.shape)
         print("Fragment numatoms:", fragment.numatoms)
-        if hessian.shape[0] != len(hessatoms)*3:
+        if hessian.shape[0] != len(used_atoms)*3:
             print(f"Error: Hessian shape ({hessian.shape[0]}) does not match number of defined Hessian-atoms *3 ({len(used_atoms)*3})")
             print("This likely means one of 2 things:")
             print("1. You read in the wrong Hessian-file for this Fragment")
@@ -1987,7 +1987,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
     elif fragment.hessian is not None:
         print("\nHessian found inside Fragment")
 
-        if fragment.hessian.shape[0] != len(hessatoms)*3:
+        if fragment.hessian.shape[0] != len(used_atoms)*3:
             print(f"Error: Hessian shape ({hessian.shape[0]}) does not match number of defined Hessian-atoms *3 ({len(used_atoms)*3})")
             print("This likely means one of 2 things:")
             print("1. You read in the wrong Hessian-file for this Fragment")
