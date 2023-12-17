@@ -469,13 +469,9 @@ class OpenMMTheory:
             # Topology from PDBfile annoyingly enough
             pdb = openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
-            # Todo: support multiple xml file here
-            # forcefield = simtk.openmm.app.ForceField('amber14-all.xml', 'amber14/tip3pfb.xml')
             self.forcefield = openmm.app.ForceField(*xmlfiles)
-
             #Defining some things. resids is used by actregiondefine
             self.resids = [i.residue.index for i in self.topology.atoms()]
-
 
         #IF PBC vectors provided then we need to set them in the topology (otherwise system creation does not work)
         if PBCvectors is not None:
@@ -595,7 +591,6 @@ class OpenMMTheory:
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
-
                 if PBCvectors is not None:
                     # pbcvectors_mod = PBCvectors
                     if self.printlevel > 0:
@@ -603,7 +598,6 @@ class OpenMMTheory:
                         print("Assuming list of lists or list of Vec3 objects.")
                         print("Assuming vectors in nanometers.")
                     self.system.setDefaultPeriodicBoxVectors(*PBCvectors)
-
                 a, b, c = self.system.getDefaultPeriodicBoxVectors()
                 if self.printlevel > 0:
                     print_line_with_subheader2("Periodic vectors:")
@@ -618,7 +612,6 @@ class OpenMMTheory:
                 # print("OpenMM Forces defined:", self.system.getForces())
                 if self.printlevel > 0:
                     print_line_with_subheader2("OpenMM Forces defined:")
-                
                 #Looping over forces
                 for force in self.system.getForces():
                     if self.printlevel > 0:
@@ -861,7 +854,7 @@ class OpenMMTheory:
         #update_simulation needs to be called instead by run
         #self.create_simulation()
 
-        print_time_rel(module_init_time, modulename="OpenMM object creation", currprintlevel=self.printlevel)
+        print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
 
     #Set numcores method: currently inactive. Included for completeness
     def set_numcores(self,numcores):
@@ -1240,6 +1233,7 @@ class OpenMMTheory:
     # https://github.com/openmm/openmm/issues/2124
     # https://github.com/openmm/openmm/issues/1696
     def addexceptions(self, atomlist):
+        print("atomlist:",atomlist)
         import openmm
         timeA = time.time()
         import itertools
@@ -1274,47 +1268,31 @@ class OpenMMTheory:
 
                         numexceptions += 1
             elif isinstance(force, openmm.CustomNonbondedForce):
+                # Only applies to system with CustomNonbondedForce: GROMACS-setup, CHARMM-from-XML
+                #Note: this code has been sped up quite a bit
                 print("Case CustomNonbondedforce. Adding Exclusion for kl pair.")
-                # NOTE: This step is unfortunately a bit slow (43 seconds for 28 atomlist in 71K system)
-                # Only applies to system with CustomNonbondedForce (e.g. GROMACS setup)
-                # TODO: look into speeding up
                 # Get list of all present exclusions first
+                #Using set of frozensets to get unique pairs
                 all_exclusions = [force.getExclusionParticles(exclindex) for exclindex in range(0,force.getNumExclusions()) ]
-                # Function 
-                def check_if_exclusion_present(all_exclusions,pair):
-                    for exclusion in all_exclusions:
-                        if set(exclusion) == set(pair):
-                            return True
-                    return False
+                existing_exclusions = {frozenset(excl) for excl in all_exclusions}
                 for k in atomlist:
                     for l in atomlist:
-                        if check_if_exclusion_present(all_exclusions,(k,l)) is False:
-                            all_exclusions.append([k,l])
+                        if not frozenset((k,l)) in existing_exclusions:
+                            existing_exclusions.add(frozenset([k,l]))
                             force.addExclusion(k, l)
                             numexclusions += 1
+                #total_exclusions = [force.getExclusionParticles(exclindex) for exclindex in range(0,force.getNumExclusions()) ]
+                #print("Number of after total exclusions:", len(total_exclusions))
         print("Number of exceptions (Nonbondedforce) added:", numexceptions)
         print("Number of exclusions (CustomNonbondedforce) added:", numexclusions)
         printdebug("self.system.getForces() ", self.system.getForces())
-        # Seems like updateParametersInContext does not reliably work here so we have to remake the simulation instead
-        # Might be bug (https://github.com/openmm/openmm/issues/2709). Revisit
-        # self.nonbonded_force.updateParametersInContext(self.simulation.context)
-        #self.create_simulation()
-        #self.update_simulation()
-
-        print_time_rel(timeA, modulename="add exception")
-
-    # Run: coords or framents can be given (usually coords). qmatoms in order to avoid QM-QM interactions (TODO)
-    # Probably best to do QM-QM exclusions etc. in a separate function though as we want run to be as simple as possible
-    # qmatoms list provided for generality of MM objects. Not used here for now
+        print_time_rel(timeA, modulename="add exceptions")
 
     def set_simulation_parameters(self, timestep=0.001, coupling_frequency=1, temperature=300, integrator='VerletIntegrator'):
         self.timestep=timestep
         self.coupling_frequency=coupling_frequency
         self.temperature=temperature
         self.integrator_name=integrator
-    # Create/update simulation from scratch or after system has been modified (force modification or even deletion)
-    #def create_simulation(self, timestep=0.001, integrator='VerletIntegrator', coupling_frequency=1,
-    #                      temperature=300):
 
     #Create integrator.
     def create_integrator(self):
@@ -1420,8 +1398,8 @@ class OpenMMTheory:
         # OpenMM energy components
         openmm_energy = dict()
         energycomp = self.getEnergyDecomposition(simulation.context)
-        # print("energycomp: ", energycomp)
-        # print("self.forcegroups:", self.forcegroups)
+        #print("energycomp: ", energycomp)
+        #print("self.forcegroups:", self.forcegroups)
         # print("len energycomp", len(energycomp))
         # print("openmm_energy: ", openmm_energy)
         print("")
@@ -1440,7 +1418,6 @@ class OpenMMTheory:
             elif 'HarmonicAngleForce' in str(type(comp[0])):
                 openmm_energy['Angle'] = comp[1]
             elif 'PeriodicTorsionForce' in str(type(comp[0])):
-                # print("Here")
                 openmm_energy['Dihedrals'] = comp[1]
             elif 'CustomTorsionForce' in str(type(comp[0])):
                 openmm_energy['Impropers'] = comp[1]
@@ -1448,6 +1425,10 @@ class OpenMMTheory:
                 openmm_energy['CMAP'] = comp[1]
             elif 'NonbondedForce' in str(type(comp[0])):
                 openmm_energy['Nonbonded'] = comp[1]
+            elif 'LennardJones' in str(type(comp[0])):
+                openmm_energy['LennardJones'] = comp[1]
+            elif 'LennardJones14' in str(type(comp[0])):
+                openmm_energy['LennardJones14'] = comp[1]
             elif 'CMMotionRemover' in str(type(comp[0])):
                 openmm_energy['CMM'] = comp[1]
             elif 'CustomBondForce' in str(type(comp[0])):
@@ -1564,7 +1545,7 @@ class OpenMMTheory:
             else:
                 ashexit()
 
-        print_time_rel(timeA, modulename="OpenMMTheory.run: constraints checking", currprintlevel=self.printlevel, currthreshold=2)
+        print_time_rel(timeA, modulename="OpenMMTheory.run: const-check", currprintlevel=self.printlevel, currthreshold=2)
         # Making sure coords is np array and not list-of-lists
         current_coords = np.array(current_coords)
         factor = -49614.752589207

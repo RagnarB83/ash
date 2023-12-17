@@ -241,6 +241,7 @@ class QMMMTheory:
             print()
             self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, conn_scale, 
                 conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
+            print("3a")
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
@@ -309,7 +310,7 @@ class QMMMTheory:
             #TODO: Remove option for no MM theory or keep this ??
             if self.embedding=="Elstat":
                 self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
-        print_time_rel(module_init_time, modulename='QM/MM object creation', moduleindex=2)
+        print_time_rel(module_init_time, modulename='QM/MM object creation', currprintlevel=self.printlevel, moduleindex=3)
     
     
     #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)

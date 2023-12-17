@@ -2557,7 +2557,9 @@ def distance_between_atoms(fragment=None, atom1=None, atom2=None):
     dist = distance(atom1_coords, atom2_coords)
     return dist
 
-
+#Function to determine the QM-MM boundary
+#Note: This function was dominating QMMMTheory creation (e.g. 9.67 s / 12.41 s => 78 % for 300K system)
+#Now sped up via get_connected_atoms_np. Silly 
 def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None, unusualboundary=False):
     timeA = time.time()
     print("Determining QM-MM boundary")
@@ -2584,12 +2586,13 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
             print("QMatom : {} in excludeboundaryatomlist: {}".format(qmatom, excludeboundaryatomlist))
             print("Skipping QM-MM boundary...")
             continue
-        connatoms = get_connected_atoms(coords, elems, scale, tol, qmatom)
+        #Note: get_connected_atoms very slow
+        #connatoms = get_connected_atoms(coords, elems, scale, tol, qmatom)
+        connatoms = get_connected_atoms_np(coords, elems, scale, tol, qmatom)
         # Find connected atoms that are not in QM-atoms
         boundaryatom = listdiff(connatoms, qmatoms)
 
         if len(boundaryatom) > 1:
-
             print(BC.FAIL,
                   "Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatom),
                   BC.END)
@@ -2617,8 +2620,8 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
                     ashexit()
             # Adding to dict
             qm_mm_boundary_dict[qmatom] = boundaryatom[0]
-    print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
-    #print_time_rel(timeA, modulename="get_boundary_atoms")
+    print("QM-MM boundary dictionary:", qm_mm_boundary_dict)
+    print_time_rel(timeA, modulename="get_boundary_atoms")
     return qm_mm_boundary_dict
 
 
