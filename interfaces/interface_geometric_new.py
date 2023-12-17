@@ -63,11 +63,18 @@ class GeomeTRICOptimizerClass:
             if frozenatoms==None:
                 frozenatoms=[]
 
+            if actatoms != None:
+                print("List of active atoms provided. Setting ActiveRegion to True")
+                ActiveRegion=True
+
             if ActiveRegion == True and coordsystem == "tric":
+                print("Warning: ActiveRegion True and coordsystem is TRIC.")
+                print("This requires translation")
                 #TODO: Look into this more
-                print("Activeregion true and coordsystem = tric are not compatible")
-                print("Switching to HDLC")
-                coordsystem='hdlc'
+                #print("Activeregion true and coordsystem = tric are not compatible")
+                #print("Switching to HDLC")
+                #coordsystem='hdlc'
+                #exit()
             
             #Defining some attributes
             self.maxiter=maxiter
@@ -385,6 +392,12 @@ class GeomeTRICOptimizerClass:
             #Cleanup of temp-files before we begin
             self.cleanup() #NOTE: This deletes constraintsfile
 
+            #EARLY EXITS:
+            #Check charge/mult
+            charge, mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "geomeTRICOptimizer", theory=theory)
+            fragment.charge=charge
+            fragment.mult=mult
+
             #################
             # CONSTRAINTS
             #################
@@ -411,20 +424,16 @@ class GeomeTRICOptimizerClass:
             print("\nConstraints: ", constraints)
             print("constrainvalue: ", constrainvalue)
 
-            #Constraints
+            #Getting specific constraints and writing to file
             bondconstraints, angleconstraints, dihedralconstraints = self.define_constraints(constraints)
             self.write_constraintsfile(self.frozenatoms,bondconstraints,constrainvalue,angleconstraints,
                                        dihedralconstraints)
             #################
-            #EARLY EXITS:
-            #Check charge/mult
-            charge, mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "geomeTRICOptimizer", theory=theory)
-            fragment.charge=charge
-            fragment.mult=mult
+
             
             #Check if atom and do Singlepoint instead if so
             if fragment.numatoms == 1:
-                print("System has 1 atoms.")
+                print("System contains 1 atom, optimization makes no sense.")
                 print("Doing single-point energy calculation instead")
                 result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                 return result.energy
@@ -471,6 +480,7 @@ class GeomeTRICOptimizerClass:
 
             print("Convergence criteria:", self.conv_criteria)
             print("Hessian option:", self.hessian)
+            print("Coordinate system:", self.coordsystem)
 
             if self.TSOpt == True:
                 print("Starting saddlepoint optimization")
