@@ -327,8 +327,8 @@ class NonBondedTheory:
                 self.MMGradient += self.Coulombchargegradient
             # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
             if LJ==True:
-                print("xx")
-                exit()
+                #print("xx")
+                #exit()
                 #LennardJones(coords, epsij, sigmaij, connectivity=[], qmatoms=[])
                 #self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
                 self.LJenergy,self.LJgradient = LennardJones(current_coords,self.epsij,self.sigmaij)

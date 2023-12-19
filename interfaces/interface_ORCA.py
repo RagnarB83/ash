@@ -346,7 +346,7 @@ end
         if current_coords is not None:
             pass
         else:
-            print("no current_coords")
+            print("Error:no current_coords")
             ashexit()
 
         #Checking if charge and mult has been provided

@@ -126,22 +126,35 @@ class Fragment:
         # Something perhaps only used by molcrys but defined here. Needed for print_system
         # Todo: revisit this
         self.fragmenttype_labels = []
-        # Here either providing coords, elems as lists. Possibly reading connectivity also
+        
+        # Here either providing coords, elems as lists.
+        ##############################
+        # NOW PROCESSING INPUT DATA
+        ##############################
+
+        #Lists of elements and coordinates provided
         if coords is not None:
-            # Adding coords as list of lists (or np.array). Conversion to numpy arrary
-            # self.coords=np.array([list(i) for i in coords])
+            # Adding coords as list of lists (or np.array). Conversion to numpy array
             self.coords = reformat_list_to_array(coords)
+            if elems is None:
+                print("Error: Coords list provided but no elems list. Exiting.")
+                ashexit()
+            if len(elems) != len(coords):
+                print("Error: Coords list and elems list have different lengths. Exiting.")
+                ashexit()
             self.elems = elems
             #self.update_attributes()
             # If connectivity passed
             if connectivity != None:
                 conncalc = False
                 self.connectivity = connectivity
+        #Defining an atom
         elif atom is not None:
             print("Creating Atom Fragment")
             self.elems=[atom]
             self.coords = reformat_list_to_array([[0.0,0.0,0.0]])
             #self.update_attributes()
+        #Defining a diatomic
         elif diatomic is not None:
             print("Creating Diatomic Fragment from formula and bondlength")
             if bondlength is None:
@@ -160,18 +173,22 @@ class Fragment:
         # If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol, conncalc=conncalc)
+        # If smiles given, create coords from it
         elif smiles is not None:
             self.create_coords_from_smiles(smiles)
         # If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
             self.label = xyzfile.split('/')[-1].split('.')[0]
             self.read_xyzfile(xyzfile, readchargemult=readchargemult, conncalc=conncalc)
+        #PDB-file
         elif pdbfile is not None:
             self.label = pdbfile.split('/')[-1].split('.')[0]
             self.read_pdbfile(pdbfile, conncalc=False, use_atomnames_as_elements=use_atomnames_as_elements)
+        #GROMACS GRO-file
         elif grofile is not None:
             self.label = grofile.split('/')[-1].split('.')[0]
             self.read_grofile(grofile, conncalc=False)
+        #Amber CRD file (requires prmtop file as well)
         elif amber_inpcrdfile is not None:
             self.label = amber_inpcrdfile.split('/')[-1].split('.')[0]
             print("Reading Amber INPCRD file")
@@ -179,9 +196,11 @@ class Fragment:
                 print("amber_prmtopfile argument must be provided as well!")
                 ashexit()
             self.read_amberfile(inpcrdfile=amber_inpcrdfile, prmtopfile=amber_prmtopfile, conncalc=conncalc)
+        #Chemshell-file (coordinates in Bohrs)
         elif chemshellfile is not None:
             self.label = chemshellfile.split('/')[-1].split('.')[0]
             self.read_chemshellfile(chemshellfile, conncalc=conncalc)
+        #ASH fragment file
         elif fragfile is not None:
             self.label = fragfile.split('/')[-1].split('.')[0]
             self.read_fragment_from_file(fragfile)
@@ -194,6 +213,7 @@ class Fragment:
             self.label = xyzfile.split('/')[-1].split('.')[0]
             #Always read charge/mult
             self.read_xyzfile(xyzfile, readchargemult=True, conncalc=conncalc)
+        #If all else fails, exit
         else:
             ashexit(errormessage="Fragment requires some kind of valid coordinates input!")
         # Label for fragment (string). Useful for distinguishing different fragments
@@ -2038,13 +2058,16 @@ def nucchargexyz(file):
 def nucchargelist(ellist):
     totnuccharge = 0
     els = []
+    warning_issued=False
     for e in ellist:
         try:
             atcharge = elematomnumbers[e.lower()]
         except KeyError:
-            print("Unknown element: '{}' found in element-list".format(e))
-            print("Check coordinate-file. Exiting.")
-            ashexit()
+            atcharge=0.0
+            if warning_issued is False:
+                print("Warning: Unknown element: '{}' found in element-list".format(e))
+                print("Could be dummy atom. Using nuccharge of 0.0")
+                warning_issued=True
         totnuccharge += atcharge
     return totnuccharge
 
@@ -2063,9 +2086,18 @@ def elemstonuccharges(ellist):
 # Calculate molecular mass from list of atoms
 def totmasslist(ellist):
     totmass = 0
+    warning_issued=False
     for e in ellist:
-        atcharge = int(elematomnumbers[e.lower()])
-        atmass = atommasses[atcharge - 1]
+        try:
+            atcharge = int(elematomnumbers[e.lower()])
+            atmass = atommasses[atcharge - 1]
+        except KeyError:
+            atmass = 0.0
+            if warning_issued is False:
+                print("Warning: Unknown element: '{}' found in element-list".format(e))
+                print("Could be dummy atom. Using mass of 0.0")
+                warning_issued=True
+
         totmass += atmass
     return totmass
 
@@ -2073,9 +2105,17 @@ def totmasslist(ellist):
 # Calculate list of masses from list of elements
 def list_of_masses(ellist):
     masses = []
+    warning_issued=False
     for e in ellist:
-        atcharge = int(elematomnumbers[e.lower()])
-        atmass = atommasses[atcharge - 1]
+        try:
+            atcharge = int(elematomnumbers[e.lower()])
+            atmass = atommasses[atcharge - 1]
+        except KeyError:
+            atmass = 0.0
+            if warning_issued is False:
+                print("Warning: Unknown element: '{}' found in element-list".format(e))
+                print("Could be dummy atom. Using mass of 0.0")
+                warning_issued=True
         masses.append(atmass)
     return masses
 

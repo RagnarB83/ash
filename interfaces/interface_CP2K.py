@@ -10,13 +10,16 @@ from ash.modules.module_coords import write_xyzfile, write_pdbfile
 from ash.functions.functions_parallel import check_OpenMPI
 
 #Reasonably flexible CP2K interface: CP2K input should be specified by cp2kinput multi-line string.
-#cp2k.psmp vs. cp2k.sopt vs cp2k.ssmp vs cp2k_shell.ssm
+#Executables: cp2k.psmp vs. cp2k.sopt vs cp2k.ssmp vs cp2k_shell.ssm
 
 #CP2K Theory object.
+#CP2K embedding options: coupling='COULOMB' (regular elstat-embed) or 'GAUSSIAN' (GEEP) or S-WAVE
+#periodic_type: 'XYZ' or 'NONE'
 class CP2KTheory:
     def __init__(self, cp2kdir=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
                 cell_length=10, functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
-                method='QUICKSTEP', numcores=1, periodic_val=None):
+                method='QUICKSTEP', numcores=1, periodic_val=None, periodic_type='XYZ',
+                coupling='COULOMB', GEEP_num_gauss=12):
 
         self.theorytype="QM"
         self.theorynamelabel="CP2K"
@@ -79,7 +82,8 @@ class CP2KTheory:
         self.numcores=numcores
         self.method=method
         self.periodic_val=periodic_val
-
+        self.coupling=coupling
+        self.GEEP_num_gauss=GEEP_num_gauss
 
     #Set numcores method
     def set_numcores(self,numcores):
@@ -124,6 +128,13 @@ class CP2KTheory:
         #Case: QM/MM CP2K job
         if PC is True:
             print("pc true")
+            if self.coupling == 'COULUMB':
+                print("Error: Coupling option is COULOMB (regular electrostatic embedding)")
+                print("This option is not compatible with CP2K GPW/GAPW option which is the main reason to use CP2K")
+                print("Set coupling to GAUSS or S-WAVE instead")
+                print("Exiting")
+                ashexit()
+
             #TODO: Let's write a dummy PSF-file that contains atom indices, names, masses and pointcharge values
             #TODO: Need also to read in coordinates (XYZ or PDB)
             #TODO: Then specify in CP2K input what atoms are QM and what are MM
@@ -134,25 +145,71 @@ class CP2KTheory:
             #write_xyzfile(qm_elems, current_coords, f"{self.filename}", printlevel=1)
             
 
+            #Created PDB-file
+            #print("len elems:", len(elems))
+            print("len qm_elems:", len(qm_elems))
+            print("len current_coords:", len(current_coords))
+            print("len current_coords:", len(current_coords))
+            print("len current_MM_coords:", len(current_MM_coords))
+            print("len MMcharges:", len(MMcharges))
+            #exit()
+
+            #Write dummy PDB-file for CP2K
+            #Warning: Special one for CP2K. Will contain QM-atoms,MM-atoms,link-atoms,dipole charges etc
+            pdbfile="dummy_cp2k.pdb"
+            #Create dummy fragment
+            #QM-atoms (with link-atoms) + MM-pointcharges (dipole charges etc)
+            dummy_elem_list = qm_elems + ['X']*len(MMcharges) 
+            #print("dummy_elem_list:", dummy_elem_list)
+            print("len dummy_elem_list:", len(dummy_elem_list))
+            dummy_coord_list = np.concatenate((current_coords,current_MM_coords),axis=0)
+            #print("dummy_coord_list:", dummy_coord_list)
+            print("len dummy_coord_list:", len(dummy_coord_list))
+            dummy_fragment = ash.Fragment(elems=dummy_elem_list, coords=dummy_coord_list)
+            dummy_atomnames=qm_elems + ['F']*len(MMcharges)
+            dummy_resnames=['QM']*len(qm_elems) +  ['MM']*len(MMcharges)  #Dummy residue names
+            dummy_residlabels =[1]*len(qm_elems) +  [2]*len(MMcharges)  #Dummy resid labels
+            
+            #Proper
+            dummy_charges = [0.0]*len(qm_elems) + MMcharges
+            #Testing. Doing this avoids CP2K blow-up so the problem is the charges
+            #dummy_charges = [0.0]*len(qm_elems) + [0.0]*len(MMcharges)  #Setting everything to zero for testing
+            
+            print("len dummy_atomnames:", len(dummy_atomnames))
+            print("len dummy_resnames:", len(dummy_resnames))
+            print("len dummy_residlabels:", len(dummy_residlabels))
+            print("dummy_fragment numatoms", dummy_fragment.numatoms)
+            print("len dummy_fragment coords", len(dummy_fragment.coords))
+            print("len dummy_fragment elems", len(dummy_fragment.elems))
+            write_pdbfile(dummy_fragment, outputname="dummy_cp2k", openmmobject=None, atomnames=dummy_atomnames, 
+                          resnames=dummy_resnames, residlabels=dummy_residlabels, segmentlabels=None, dummyname='DUM',
+                          charges_column=dummy_charges)
+            
 
             #3. Write CP2K QM/MM inputfile
-            coupling='COULOMB' #Regular elstat-embedding. Gaussian smearing also possible, see GEEP
+            #coupling='COULOMB' #Regular elstat-embedding. Gaussian smearing also possible, see GEEP
             #Dictionary with QM-atom indices (for full system), grouped by element
-            qm_kind_dict={'C':[1,2,3]}
-            write_CP2K_input(method='QMMM', jobname='ash', center_coords=True,
+            #qm_kind_dict={'C':[1,2,3]}
+            qm_kind_dict={}
+            for el in set(qm_elems):
+                #CP2K starts counting from 1 
+                qm_kind_dict[el]= [i+1 for i, x in enumerate(qm_elems) if x == el]
+            print("qm_kind_dict:",qm_kind_dict)
+            write_CP2K_input(method='QMMM', jobname='ash', center_coords=True, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
-                             functional=self.functional, restartfile=None,
+                             functional=self.functional, restartfile=None, mgrid_commensurate=True,
                              PCfile=None, Grad=Grad, filename='cp2k', charge=charge, mult=mult,
                              periodic_val=self.periodic_val, cell_length=self.cell_length, basis_file=self.basis_file, 
                              potential_file=self.potential_file,
-                             psolver=self.psolver, coupling=coupling, qm_kind_dict=qm_kind_dict,
+                             psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
+                             qm_kind_dict=qm_kind_dict,
                              pdbfile=pdbfile)
         else:
             #No QM/MM
             #Write xyz-file with coordinates
             write_xyzfile(qm_elems, current_coords, f"{self.filename}", printlevel=1)
             #Write simple CP2K input
-            write_CP2K_input(method=self.method, jobname='ash', center_coords=True,
+            write_CP2K_input(method=self.method, jobname='ash', center_coords=True, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              functional=self.functional, restartfile=None,
                              PCfile=None, Grad=Grad, filename='cp2k', charge=charge, mult=mult,
@@ -174,6 +231,9 @@ class CP2KTheory:
             if os.path.isfile("../POTENTIAL") is True:
                 print("Found file in parent dir. Copying to current dir:", os.getcwd())
                 shutil.copy(f"../POTENTIAL", f"./POTENTIAL")
+            else:
+                print("No file found in parent dir. Using GTHpotential file from ASH. Copying to dir as POTENTIAL")
+                shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cp2k/GTH_POTENTIALS', './POTENTIAL')
         #TODO: Need to support other basis sets (called something else than BASIS_MOLOPT)
         print("Checking if BASIS_MOLOPT file exists in current dir")
         if os.path.isfile("BASIS_MOLOPT") is True:
@@ -183,6 +243,9 @@ class CP2KTheory:
             if os.path.isfile("../BASIS_MOLOPT") is True:
                 print("Found file in parent dir. Copying to current dir:", os.getcwd())
                 shutil.copy(f"../BASIS_MOLOPT", f"./BASIS_MOLOPT")
+            else:
+                print("No file found in parent dir. Using basis set file from ASH. Copying to dir as BASIS_MOLOPT")
+                shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cp2k/BASIS_MOLOPT', './BASIS_MOLOPT')
 
         #Run CP2K
         run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores)
@@ -199,7 +262,7 @@ class CP2KTheory:
             #Grab PCgradient from separate file
             if PC is True:
                 print("not ready")
-
+                exit()
                 #self.pcgradient = grab_pcgradient_CP2K(f'{self.filename}.bqforce.dat',len(MMcharges))
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
                 return self.energy, self.gradient, self.pcgradient
@@ -224,13 +287,19 @@ def run_CP2K(cp2kdir,bin_name,filename,numcores=1):
             process = sp.run([cp2kdir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #Regular CP2K input
-def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
+def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True, qm_elems=None,
                     basis_dict=None, potential_dict=None, functional=None, restartfile=None,
                     PCfile=None, Grad=True, filename='cp2k', charge=None, mult=None,
-                    periodic_val=None, cell_length=10, basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
+                    periodic_val=None, mgrid_commensurate=False,
+                    periodic_type="XYZ", cell_length=10, basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
                     psolver='wavelet', 
-                    coupling='COULOMB', qm_kind_dict=None,
+                    coupling='COULOMB', GEEP_num_gauss=12,
+                    qm_kind_dict=None, mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21",
                     pdbfile=None):
+    #
+    first_atom=1
+    last_atom=len(qm_elems)
+    
     #Energy or Energy+gradient
     if Grad is True:
         jobdirective='ENERGY_FORCE'
@@ -282,10 +351,22 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
             inpfile.write(f'    WFN_RESTART_FILE_NAME {restartfile}\n')
         #POISSON
         inpfile.write(f'    &POISSON\n')
-        inpfile.write(f'      PERIODIC {periodic_val}\n')
+        inpfile.write(f'      PERIODIC {periodic_type}\n') #NOTE
         inpfile.write(f'      PSOLVER {psolver}\n')
         inpfile.write(f'    &END POISSON\n')
         #SCF
+
+        #MGRID
+        inpfile.write(f'    &MGRID\n')
+        inpfile.write(f'      COMMENSURATE {mgrid_commensurate}\n')
+        inpfile.write(f'    &END MGRID\n')
+
+        #PRINT stuff
+        inpfile.write(f'    &PRINT\n')
+        inpfile.write(f'      &MO\n')
+        inpfile.write(f'        EIGENVALUES .TRUE.\n')
+        inpfile.write(f'      &END MO\n')
+        inpfile.write(f'    &END PRINT\n')
 
         #XC
         inpfile.write(f'    &XC\n')
@@ -304,13 +385,19 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
             inpfile.write(f'      &END FORCEFIELD\n')
             inpfile.write(f'      &POISSON\n')            
             inpfile.write(f'        &EWALD\n')
-            inpfile.write(f'          EWALD_TYPE NONE\n')
+            inpfile.write(f'          EWALD_TYPE {mm_ewald_type}\n') 
+            #mm_ewald_type=None would turn off MM-MM periodic interactions
+            inpfile.write(f'          ALPHA {mm_ewald_alpha}\n')
+            inpfile.write(f'          GMAX {mm_ewald_gmax}\n')
             inpfile.write(f'        &END EWALD\n')
             inpfile.write(f'      &END POISSON\n') 
             inpfile.write(f'    &END MM\n')
             #QM/MM
             inpfile.write(f'    &QMMM\n')
             inpfile.write(f'      ECOUPL {coupling}\n')
+            if coupling == 'GAUSS':
+                inpfile.write(f'      USE_GEEP_LIB {GEEP_num_gauss}\n')
+                
             inpfile.write(f'      &CELL \n')
             inpfile.write(f'        ABC 25.0 25.0 25.0 \n')
             inpfile.write(f'      &END CELL\n')
@@ -330,7 +417,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
         #CELL BLOCK
         inpfile.write(f'    &CELL\n')
         inpfile.write(f'      ABC {cell_length} {cell_length} {cell_length}\n')
-        inpfile.write(f'      PERIODIC {periodic_val}\n')
+        inpfile.write(f'      PERIODIC {periodic_type}\n')
         inpfile.write(f'    &END CELL\n')
 
         #KIND: basis and potentail for each element
@@ -347,13 +434,13 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash', center_coords=True,
             inpfile.write(f'      &CENTER_COORDINATES\n')
             inpfile.write(f'      &END\n')
         if method == 'QMMM':
-            inpfile.write(f'      COORD_FILE_NAME {pdbfile}\n')
+            inpfile.write(f'      COORD_FILE_NAME {pdbfile}\n') #PDB-file of whole system with charges
             inpfile.write(f'      COORD_FILE_FORMAT PDB\n')
-            inpfile.write(f'      CHARGE_EXTENDED TRUE\n')
-            inpfile.write(f'      CONNECTIVITY OFF\n')
+            inpfile.write(f'      CHARGE_EXTENDED TRUE\n') #Read charges from col 81
+            inpfile.write(f'      CONNECTIVITY OFF\n') #No read or generate bonds 
             inpfile.write(f'      &GENERATE\n')
-            inpfile.write(f'           &ISOLATED_ATOMS\n')
-            inpfile.write(f'               LIST 1..26\n')
+            inpfile.write(f'           &ISOLATED_ATOMS\n') #Topology of isolated atoms
+            inpfile.write(f'               LIST {first_atom}..{last_atom}\n')
             inpfile.write(f'           &END\n')
             inpfile.write(f'      &END GENERATE\n')
         else:
@@ -396,7 +483,7 @@ def grab_gradient_CP2K(outfile,numatoms):
     return gradient
 
 
-#Grab PC gradient from NWchem written file
+#Grab PC gradient
 def grab_pcgradient_CP2K(pcgradfile,numpc):
     pc_gradient=np.zeros((numpc,3))
     pccount=0
@@ -411,12 +498,3 @@ def grab_pcgradient_CP2K(pcgradfile,numpc):
         print("Problem grabbing PC gradient from file:", pcgradfile)
         ashexit()
     return pc_gradient
-
-# Write PC-coords and charges in Å
-def create_CP2K_pcfile_general(coords,pchargelist,filename='cp2k'):
-    with open(filename+'.pc', 'w') as pcfile:
-        pcfile.write(str(len(pchargelist))+'\n')
-        pcfile.write('\n')
-        for p,c in zip(pchargelist,coords):
-            line = "{} {} {} {}".format(p, c[0], c[1], c[2])
-            pcfile.write(line+'\n')

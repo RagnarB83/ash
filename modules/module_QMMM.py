@@ -17,7 +17,7 @@ class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None, charges=None,
                  embedding="Elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
                  unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
-                qm_charge=None, qm_mult=None):
+                qm_charge=None, qm_mult=None, dipole_correction=True,):
         module_init_time=time.time()
         timeA=time.time()
         print_line_with_mainheader("QM/MM Theory")
@@ -141,6 +141,11 @@ class QMMMTheory:
         #Embedding type: mechanical, electrostatic etc.
         self.embedding=embedding
         print("Embedding:", self.embedding)
+
+        #Whether to do dipole correction or not
+        #Note: For regular electrostatic embedding this should be True
+        # Turn off for charge-shifting
+        self.dipole_correction=dipole_correction
 
         #if atomcharges are not passed to QMMMTheory object, get them from MMtheory (that should have been defined then)
         if charges is None:
@@ -712,14 +717,21 @@ class QMMMTheory:
             #print("After: self.pointcharges are: ", self.pointcharges)
             if self.printlevel > 1: print("Number of pointcharges defined for MM region: ", len(self.pointcharges))
             #Set 
-            self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
+            if self.dipole_correction is True:
+                print("Dipole correction is on. Adding dipole charges")
+                self.SetDipoleCharges() #Creates self.dipole_charges and self.dipole_coords
 
-            #Adding dipole charge coords to MM coords (given to QM code) and defining pointchargecoords
-            if self.printlevel > 1: print("Adding {} dipole charges to PC environment".format(len(self.dipole_charges)))
-            self.pointchargecoords=np.append(self.mmcoords,np.array(self.dipole_coords), axis=0)
-            #Adding dipole charges to MM charges list (given to QM code)
-            self.pointcharges=self.pointcharges+self.dipole_charges
-            if self.printlevel > 1: print("Number of pointcharges after dipole addition: ", len(self.pointcharges))
+                #Adding dipole charge coords to MM coords (given to QM code) and defining pointchargecoords
+                if self.printlevel > 1: print("Adding {} dipole charges to PC environment".format(len(self.dipole_charges)))
+                self.pointchargecoords=np.append(self.mmcoords,np.array(self.dipole_coords), axis=0)
+
+                #Adding dipole charges to MM charges list (given to QM code)
+                self.pointcharges=self.pointcharges+self.dipole_charges
+                if self.printlevel > 1: print("Number of pointcharges after dipole addition: ", len(self.pointcharges))
+            else:
+                print("Dipole correction is off. Not adding any dipole charges")
+                self.pointchargecoords = self.mmcoords
+                if self.printlevel > 1: print("Number of pointcharges: ", len(self.pointcharges))
         else:
             self.num_linkatoms=0
             #If no linkatoms then use original self.qmelems

@@ -2257,7 +2257,14 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print("Updating coordinates in ASH fragment.")
     fragment.coords = newcoords
 
-    positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions()
+    #Writing final PDB-file. If system is non-periodic (according to OpenMMTheory settings) then we set enforcePeriodicBox to False
+    #to avoid some strange geometry translation
+    if openmmobject.Periodic is True:
+        print(f"Writing final PDB file (enforcePeriodicBox={enforcePeriodicBox})")
+        positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions()
+    else:
+        print("Writing final PDB file (enforcePeriodicBox=False)")
+        positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=False).getPositions()
     write_pdbfile_openMM(openmmobject.topology, positions, 'frag-minimized.pdb')
 
     print('All Done!')

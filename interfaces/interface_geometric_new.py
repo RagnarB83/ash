@@ -26,7 +26,6 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
     """
     Wrapper function around GeomeTRICOptimizerClass
     """
-    #print_line_with_mainheader("geomeTRICOptimizer")
     timeA=time.time()
     #NOTE: Class does not take fragment and theory
     optimizer=GeomeTRICOptimizerClass(charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms, 
@@ -57,15 +56,13 @@ class GeomeTRICOptimizerClass:
             #Going through user options
             ###############################
 
-            #Active region and coordsystem
+            if actatoms != None:
+                print("List of active atoms provided. Setting ActiveRegion to True")
+                ActiveRegion=True
             if actatoms==None:
                 actatoms=[]
             if frozenatoms==None:
                 frozenatoms=[]
-
-            if actatoms != None:
-                print("List of active atoms provided. Setting ActiveRegion to True")
-                ActiveRegion=True
 
             if ActiveRegion == True and coordsystem == "tric":
                 print("Warning: ActiveRegion True and coordsystem is TRIC.")
