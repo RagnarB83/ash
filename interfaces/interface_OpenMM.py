@@ -2096,7 +2096,8 @@ def clean_up_constraints_list(fragment=None, constraints=None):
     return newconstraints
 
 
-def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePeriodicBox=True):
+def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePeriodicBox=True,
+               traj_frequency=100):
     import openmm
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Optimization")
@@ -2114,7 +2115,9 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 
     print("Number of atoms:", fragment.numatoms)
     print("Max iterations:", maxiter)
-    print("Energy tolerance:", tolerance)
+    print(f"Tolerance: {tolerance} kj/mol/nm:")
+    if openmm.__version__ >= '8.1':
+        print("Will write to trajectory every {} iterations".format(traj_frequency))
 
     print("OpenMM autoconstraints:", openmmobject.autoconstraints)
     print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
@@ -2159,6 +2162,16 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     if openmm.__version__ >= '8.1':
         class Reporter(openmm.openmm.MinimizationReporter):
             def report(self, iteration,x,grad,args):
+                try:
+                    self.totaliter
+                    #self.macroiter
+                except:
+                    self.totaliter=-1
+                    #self.macroiter=0    
+
+                # Counting total iterations
+                self.totaliter+=1
+                
                 self.get_forces(grad)
                 short=False
 
@@ -2166,20 +2179,28 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
                     #Possible short mode: not finished
                     print(f"Iteration {iteration} ")
                 else:
-                    print(f"Iteration {iteration}")
+                    #print("MACRO iteration:", self.macroiter)
+                    print("TOTAL iteration:", self.totaliter)
+                    print(f"Micro Iteration {iteration}")
                     self.print_energy(args)
                     self.print_forces()
-                    self.write_traj(x)
+                    self.write_traj(x,iteration)
                 #Once maxiter reached
                 if iteration == maxiter-1:
                     print("Max iterations reached. Now modifying restraints and restarting")
+                    #self.macroiter+=1
                     return True
 
                 return False
-            def write_traj(self,x):
-                #Reshaping and converting to Angstrom
-                pos = 10*np.array(x).reshape(-1,3)
-                write_xyzfile(fragment.elems, pos, "OpenMMOpt_traj", printlevel=1, writemode='a')
+            def write_traj(self,x,iteration):
+                if self.totaliter % traj_frequency == 0:
+                    print("-"*40)
+                    print("Now writing to trajectory file")
+                    print("-"*40)
+                    #exit()
+                    #Reshaping and converting to Angstrom
+                    pos = 10*np.array(x).reshape(-1,3)
+                    write_xyzfile(fragment.elems, pos, "OpenMMOpt_traj", printlevel=1, writemode='a')
             def print_energy(self,args):
                     system_energy = args["system energy"] /ash.constants.hartokj
                     restraint_energy = args["restraint energy"] /ash.constants.hartokj

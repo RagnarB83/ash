@@ -18,7 +18,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 class CP2KTheory:
     def __init__(self, cp2kdir=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
                 cell_length=10, functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
-                method='QUICKSTEP', numcores=1, periodic_val=None, periodic_type='XYZ',
+                method='QUICKSTEP', numcores=1, periodic_val=None, periodic_type='XYZ', center_coords=True,
                 coupling='COULOMB', GEEP_num_gauss=12):
 
         self.theorytype="QM"
@@ -79,6 +79,8 @@ class CP2KTheory:
         self.basis_file=basis_file
         self.potential_file=potential_file
         self.psolver=psolver
+        self.periodic_type=periodic_type
+        self.center_coords=center_coords
         self.numcores=numcores
         self.method=method
         self.periodic_val=periodic_val
@@ -186,6 +188,9 @@ class CP2KTheory:
                           charges_column=dummy_charges)
             
 
+            #NOTE: THINK!!
+            self.center_coords=True
+
             #3. Write CP2K QM/MM inputfile
             #coupling='COULOMB' #Regular elstat-embedding. Gaussian smearing also possible, see GEEP
             #Dictionary with QM-atom indices (for full system), grouped by element
@@ -195,12 +200,12 @@ class CP2KTheory:
                 #CP2K starts counting from 1 
                 qm_kind_dict[el]= [i+1 for i, x in enumerate(qm_elems) if x == el]
             print("qm_kind_dict:",qm_kind_dict)
-            write_CP2K_input(method='QMMM', jobname='ash', center_coords=True, qm_elems=qm_elems,
+            write_CP2K_input(method='QMMM', jobname='ash', center_coords=self.center_coords, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              functional=self.functional, restartfile=None, mgrid_commensurate=True,
                              PCfile=None, Grad=Grad, filename='cp2k', charge=charge, mult=mult,
                              periodic_val=self.periodic_val, cell_length=self.cell_length, basis_file=self.basis_file, 
-                             potential_file=self.potential_file,
+                             potential_file=self.potential_file, periodic_type=self.periodic_type,
                              psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
                              qm_kind_dict=qm_kind_dict,
                              pdbfile=pdbfile)
@@ -209,10 +214,11 @@ class CP2KTheory:
             #Write xyz-file with coordinates
             write_xyzfile(qm_elems, current_coords, f"{self.filename}", printlevel=1)
             #Write simple CP2K input
-            write_CP2K_input(method=self.method, jobname='ash', center_coords=True, qm_elems=qm_elems,
+            write_CP2K_input(method=self.method, jobname='ash', center_coords=self.center_coords, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              functional=self.functional, restartfile=None,
                              PCfile=None, Grad=Grad, filename='cp2k', charge=charge, mult=mult,
+                             periodic_type=self.periodic_type,
                              periodic_val=self.periodic_val, cell_length=self.cell_length, basis_file=self.basis_file, potential_file=self.potential_file,
                              psolver=self.psolver)
 
@@ -290,9 +296,9 @@ def run_CP2K(cp2kdir,bin_name,filename,numcores=1):
 def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True, qm_elems=None,
                     basis_dict=None, potential_dict=None, functional=None, restartfile=None,
                     PCfile=None, Grad=True, filename='cp2k', charge=None, mult=None,
-                    periodic_val=None, mgrid_commensurate=False,
+                    periodic_val=None, mgrid_commensurate=False, max_iter=50, scf_guess='RESTART',
                     periodic_type="XYZ", cell_length=10, basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
-                    psolver='wavelet', 
+                    psolver='wavelet',
                     coupling='COULOMB', GEEP_num_gauss=12,
                     qm_kind_dict=None, mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21",
                     pdbfile=None):
@@ -341,6 +347,11 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         #DFT
         ##########
         inpfile.write(f'  &DFT\n')
+        #Control GUESS
+        inpfile.write(f'    &SCF\n')
+        inpfile.write(f'      SCF_GUESS {scf_guess}\n')
+        inpfile.write(f'      MAX_SCF {max_iter}\n')
+        inpfile.write(f'    &END SCF\n')
         inpfile.write(f'    CHARGE {charge}\n')
         if mult > 1:
             inpfile.write(f'    UKS\n')
