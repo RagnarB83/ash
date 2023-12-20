@@ -55,6 +55,13 @@ class CP2KTheory:
             print("functional keyword is required")
             ashexit()
 
+        #NOTE: We still define a cell even though we may not be periodic
+        if PBC_cell_dimensions is None and PBC_vectors is None:
+            print("Error: PBC_cell_dimensions or PBC_vectors must be provided for periodic simulations")
+            ashexit()
+        if PBC_cell_dimensions is not None and PBC_vectors is not None:
+            print("Error: PBC_cell_dimensions and PBC_vectors can not both be provided")
+            ashexit()
         #PERIODIC logic
         if periodic is True:
             print("Periodic is True")
@@ -62,12 +69,6 @@ class CP2KTheory:
             print("PERIODIC_TYPE:", self.periodic_type)
             if psolver.upper() == 'MT':
                 print("Error: For periodic simulations the Poisson solver (psolver) can not be MT.")
-                ashexit()
-            if PBC_cell_dimensions is None and PBC_vectors is None:
-                print("Error: PBC_cell_dimensions or PBC_vectors must be provided for periodic simulations")
-                ashexit()
-            if PBC_cell_dimensions is not None and PBC_vectors is not None:
-                print("Error: PBC_cell_dimensions and PBC_vectors can not both be provided")
                 ashexit()
         else:
             print("Periodic is False")
@@ -188,14 +189,12 @@ class CP2KTheory:
 
         if self.periodic is True:
             print("Periodic CP2K calculation will be carried out")
-            if self.PBC_cell_dimensions is not None:
-                print("PBC_cell_dimensions:", self.PBC_cell_dimensions)
-            if self.PBC_vectors is not None:
-                print("PBC_vectors:", self.PBC_vectors)
-            
-            #QM-cell periodic or not
-            #NOTE: currently default to none
-            #self.qm_periodic_type=None
+        if self.PBC_cell_dimensions is not None:
+            print("PBC_cell_dimensions:", self.PBC_cell_dimensions)
+        if self.PBC_vectors is not None:
+            print("PBC_vectors:", self.PBC_vectors)
+        
+        print("QM periodic type:", self.qm_periodic_type)
 
         #Case: QM/MM CP2K job
         if PC is True:
