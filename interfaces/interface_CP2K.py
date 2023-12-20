@@ -88,10 +88,10 @@ class CP2KTheory:
             except:
                 print(BC.WARNING,"Found no cp2kdir variable in settings_ash module either.",BC.END)
                 try:
-                    print("Looking for cp2k.psmp")
-                    self.cp2kdir = os.path.dirname(shutil.which('cp2k.psmp'))
-                    print(BC.OKGREEN,"Found cp2k.psmp in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
-                    self.cp2k_bin_name='cp2k.psmp'
+                    print("Looking for cp2k.ssmp")
+                    self.cp2kdir = os.path.dirname(shutil.which('cp2k.ssmp'))
+                    print(BC.OKGREEN,"Found cp2k.ssmp in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
+                    self.cp2k_bin_name='cp2k.ssmp'
                 except:
                     try:
                         print("Looking for cp2k.sopt")
@@ -99,12 +99,18 @@ class CP2KTheory:
                         print(BC.OKGREEN,"Found cp2k.sopt in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
                         self.cp2k_bin_name='cp2k.sopt'
                     except:
-                        print(BC.FAIL,"Found no cp2k executable in PATH. Exiting... ", BC.END)
-                        ashexit()
+                        try:
+                            print("Looking for cp2k.psmp")
+                            self.cp2kdir = os.path.dirname(shutil.which('cp2k.psmp'))
+                            print(BC.OKGREEN,"Found cp2k.psmp in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
+                            self.cp2k_bin_name='cp2k.psmp'
+                        except:
+                            print(BC.FAIL,"Found no cp2k executable in PATH. Exiting... ", BC.END)
+                            ashexit()
         else:
             self.cp2kdir = cp2kdir
         
-
+        exit()
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
