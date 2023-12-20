@@ -110,7 +110,6 @@ class CP2KTheory:
         else:
             self.cp2kdir = cp2kdir
         
-        exit()
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
