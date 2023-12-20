@@ -105,8 +105,8 @@ class BigDFTTheory:
             except:
                 pass
 
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, printlevel=None,
-                elems=None, Grad=False, PC=False, numcores=None, label=None, charge=None, mult=None):
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            printlevel=None, elems=None, Grad=False, PC=False, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
 
         if MMcharges is None:

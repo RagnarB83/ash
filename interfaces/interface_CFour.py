@@ -294,7 +294,8 @@ class CFourTheory:
     def get_polarizability_tensor(self):
         return grab_polarizability_tensor(self.filename+'.out')
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, Hessian=False, DBOC=False,
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            Hessian=False, DBOC=False,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, charge=None, mult=None):
         module_init_time=time.time()
         if numcores == None:

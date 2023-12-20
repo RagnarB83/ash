@@ -74,7 +74,8 @@ class DaltonTheory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, qm_elems=None, Grad=False, numcores=None, pe=None, potfile='', restart=False, label=None, charge=None, mult=None ):
+    def run(self, current_coords=None, qm_elems=None, mm_elems=None, Grad=False, numcores=None, 
+            pe=None, potfile='', restart=False, label=None, charge=None, mult=None ):
         
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
         if pe is None:

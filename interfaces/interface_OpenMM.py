@@ -3402,7 +3402,7 @@ class OpenMM_MDclass:
 
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
-    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, metadyn_settings=None, 
+    def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, metadyn_settings=None, mm_elems=None,
             plumedinput=None, process_id=None, workerdir=None, restraints=None, restart=False):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")

@@ -2007,7 +2007,7 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
             #Optional charges column (used by CP2K)
             if charges_column != None:
                 charge=charges_column[count]
-                line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}{:>10.6f}".format(
+                line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s} {:>10.6f}".format(
                     'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
                     seg[0:3], el, charge)
             #Regular
@@ -3529,4 +3529,20 @@ def swap_R_group(fragment=None, Rgroup=None, atomindex=None) -> Fragment:
     newfragment = Fragment(elems=newelems, coords=newcoords, charge=fragment.charge, mult=fragment.mult)
 
     return newfragment
-    
+
+
+#Function that calculates box size of a molecule in a cubic box
+#with optional shift
+def cubic_box_size(coords, shift=0.0):
+    # max and min for x,y,z coords
+    max_values = np.max(coords, axis=0)
+    min_values = np.min(coords, axis=0)
+    #Differences for x,y,z
+    span_x = max_values[0] - min_values[0]
+    span_y = max_values[1] - min_values[1]
+    span_z = max_values[2] - min_values[2]
+    # Max span for each x,y,z
+    max_span = max(span_x, span_y, span_z)
+    #Optional shift
+    final_span = max_span + shift
+    return final_span

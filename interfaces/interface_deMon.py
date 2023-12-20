@@ -75,7 +75,7 @@ class deMon2kTheory:
         print(f"self.theorynamelabel cleanup not yet implemented.")
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
         module_init_time=time.time()

@@ -1557,7 +1557,7 @@ class PySCFTheory:
         return mo_occ, mo_energy, mo_coeff
 
     #General run function to distinguish  possible specialrun (disabled) and mainrun
-    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
             charge=None, mult=None):
 
