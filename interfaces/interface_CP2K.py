@@ -214,7 +214,8 @@ class CP2KTheory:
                 #Use cubic_box_size instead ?
                 if self.psolver == 'wavelet':
                     print("Poisson solver is wavelet. Making cubic box")
-                    qm_box_dims = cubic_box_size(current_coords)
+                    qm_cell = cubic_box_size(current_coords)
+                    qm_box_dims=[qm_cell,qm_cell,qm_cell]
                 else:
                     print("Poission solver not wavelet. Using non-cubic box")
                     qm_box_dims = bounding_box_dimensions(current_coords)
