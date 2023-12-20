@@ -210,7 +210,14 @@ class CP2KTheory:
             if self.qm_cell_dims is None:
                 print("Warning: QM-cell dimensions have not been set by user")
                 print("Now estimating QM-cell box dimensions from QM-coordinates.")
-                qm_box_dims = bounding_box_dimensions(current_coords)
+                #TODO: If doing non-periodic wavelet then we must have a cubic box.
+                #Use cubic_box_size instead ?
+                if self.psolver == 'wavelet':
+                    print("Poisson solver is wavelet. Making cubic box")
+                    qm_box_dims = cubic_box_size(current_coords)
+                else:
+                    print("Poission solver not wavelet. Using non-cubic box")
+                    qm_box_dims = bounding_box_dimensions(current_coords)
                 print(f"QM-box size (based on coords): {qm_box_dims} Angstrom")
                 print(f"Adding shift of {self.qm_cell_shift_par} Angstrom (qm_cell_shift_par keyword)")
                 qm_box_dims=np.around(qm_box_dims + self.qm_cell_shift_par,1)
