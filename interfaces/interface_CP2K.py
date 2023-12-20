@@ -6,7 +6,7 @@ import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import ash.settings_ash
-from ash.modules.module_coords import write_xyzfile, write_pdbfile,cubic_box_size
+from ash.modules.module_coords import write_xyzfile, write_pdbfile,cubic_box_size,bounding_box_dimensions
 from ash.functions.functions_parallel import check_OpenMPI
 
 #Dictionary of element radii for use with CP2K for GEEP embedding
@@ -31,7 +31,8 @@ element_radii_for_cp2k = {'H':0.44,'He':0.44,'Li':0.6,'Be':0.6,'B':0.78,'C':0.78
 # 'GPW' : only pseudopotential. Can be more efficient.
 class CP2KTheory:
     def __init__(self, cp2kdir=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
-                periodic=False, periodic_type='XYZ', cell_length=10, qm_cell_length=None, qm_cell_shift_par=2.0,
+                periodic=False, periodic_type='XYZ', qm_periodic_type=None,PBC_cell_dimensions=None, PBC_vectors=None,
+                qm_cell_dims=None, qm_cell_shift_par=2.0,
                 functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
                 basis_method='GAPW', ngrids=4, cutoff=450, rel_cutoff=50,
                 method='QUICKSTEP', numcores=1, center_coords=True, scf_convergence=1e-6,
@@ -61,6 +62,12 @@ class CP2KTheory:
             print("PERIODIC_TYPE:", self.periodic_type)
             if psolver.upper() == 'MT':
                 print("Error: For periodic simulations the Poisson solver (psolver) can not be MT.")
+                ashexit()
+            if PBC_cell_dimensions is None and PBC_vectors is None:
+                print("Error: PBC_cell_dimensions or PBC_vectors must be provided for periodic simulations")
+                ashexit()
+            if PBC_cell_dimensions is not None and PBC_vectors is not None:
+                print("Error: PBC_cell_dimensions and PBC_vectors can not both be provided")
                 ashexit()
         else:
             print("Periodic is False")
@@ -113,9 +120,13 @@ class CP2KTheory:
         self.potential_file=potential_file
 
         #Periodic options and cell
+        self.periodic=periodic
         self.psolver=psolver
-        self.cell_length=cell_length #Total cell length (full system including MM if QM/MM)
-        self.qm_cell_length=qm_cell_length # Optional QM-cell length (only if QM/MM)
+        self.qm_periodic_type=qm_periodic_type
+        #self.cell_length=cell_length #Total cell length (full system including MM if QM/MM)
+        self.PBC_cell_dimensions=PBC_cell_dimensions #Cell dimensions (only if PBC). For full system
+        self.PBC_vectors=PBC_vectors #Cell vectors (only if PBC)s. For full system
+        self.qm_cell_dims=qm_cell_dims # Optional QM-cell dims (only if QM/MM)
         self.qm_cell_shift_par=qm_cell_shift_par #Shift of QM-cell size if estimated from QM-coords
         self.functional=functional
         self.center_coords=center_coords
@@ -170,6 +181,17 @@ class CP2KTheory:
             else:
                 qm_elems = elems
 
+        if self.periodic is True:
+            print("Periodic CP2K calculation will be carried out")
+            if self.PBC_cell_dimensions is not None:
+                print("PBC_cell_dimensions:", self.PBC_cell_dimensions)
+            if self.PBC_vectors is not None:
+                print("PBC_vectors:", self.PBC_vectors)
+            
+            #QM-cell periodic or not
+            #NOTE: currently default to none
+            #self.qm_periodic_type=None
+
         #Case: QM/MM CP2K job
         if PC is True:
             print("PC true")
@@ -181,15 +203,15 @@ class CP2KTheory:
                 ashexit()
 
             #QM-CELL
-            if self.qm_cell_length is None:
-                print("Warning: QM-cell length has not been set by user")
-                print("Now estimating QM-cell length from QM-coordinates.")
-                qm_box_size = cubic_box_size(current_coords)
-                print(f"QM-box size (based on coords): {qm_box_size} Angstrom")
+            if self.qm_cell_dims is None:
+                print("Warning: QM-cell dimensions have not been set by user")
+                print("Now estimating QM-cell box dimensions from QM-coordinates.")
+                qm_box_dims = bounding_box_dimensions(current_coords)
+                print(f"QM-box size (based on coords): {qm_box_dims} Angstrom")
                 print(f"Adding shift of {self.qm_cell_shift_par} Angstrom (qm_cell_shift_par keyword)")
-                qm_box_size=round(qm_box_size+self.qm_cell_shift_par,1)
-                print(f"Setting QM-cell length to {qm_box_size} Angstrom")
-                self.qm_cell_length=qm_box_size
+                qm_box_dims=np.around(qm_box_dims + self.qm_cell_shift_par,1)
+                print(f"Setting QM-cell cubic box dimensions to {qm_box_dims} Angstrom")
+                self.qm_cell_dims=qm_box_dims
 
 
             #1.Write PDB coordinate file for whole system with MM charges
@@ -228,7 +250,10 @@ class CP2KTheory:
                              basis_method=self.basis_method,
                              functional=self.functional, restartfile=None, mgrid_commensurate=True,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
-                             cell_length=self.cell_length, qm_cell_length=self.qm_cell_length, basis_file=self.basis_file, 
+                             PBC_cell_dimensions=self.PBC_cell_dimensions, 
+                             PBC_vectors=self.PBC_vectors,
+                             qm_cell_dims=self.qm_cell_dims, qm_periodic_type=self.qm_periodic_type,
+                             basis_file=self.basis_file, 
                              potential_file=self.potential_file, periodic_type=self.periodic_type,
                              psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
                              qm_kind_dict=qm_kind_dict, mm_kind_list=mm_kind_list,
@@ -245,7 +270,8 @@ class CP2KTheory:
                              functional=self.functional, restartfile=None,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
                              periodic_type=self.periodic_type,
-                             cell_length=self.cell_length,
+                             PBC_cell_dimensions=self.PBC_cell_dimensions, 
+                             PBC_vectors=self.PBC_vectors,
                              basis_file=self.basis_file, potential_file=self.potential_file,
                              psolver=self.psolver)
 
@@ -323,7 +349,8 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     basis_dict=None, potential_dict=None, functional=None, restartfile=None,
                     Grad=True, filename='cp2k', charge=None, mult=None, basis_method='GAPW',
                     mgrid_commensurate=False, max_iter=50, scf_guess='RESTART', scf_convergence=1e-6,
-                    periodic_type="XYZ", cell_length=10, qm_cell_length=None, basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
+                    periodic_type="XYZ", PBC_cell_dimensions=None, PBC_vectors=None, 
+                    qm_cell_dims=None, qm_periodic_type=None,basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
                     psolver='wavelet',
                     ngrids=4, cutoff=450, rel_cutoff=50,
                     coupling='COULOMB', GEEP_num_gauss=12,
@@ -447,7 +474,8 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                 #inpfile.write(f'      NOCOMPATIBILITY\n')
             #QM-region cell
             inpfile.write(f'      &CELL \n')
-            inpfile.write(f'        ABC {qm_cell_length} {qm_cell_length} {qm_cell_length} \n')
+            inpfile.write(f'        ABC {qm_cell_dims[0]} {qm_cell_dims[1]} {qm_cell_dims[2]} \n')
+            inpfile.write(f'        PERIODIC {qm_periodic_type}  \n')
             inpfile.write(f'      &END CELL\n')
             #Write MM_KIND blocks
             #Necessary for GEEP. Radii used in embedding.
@@ -471,7 +499,13 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         #CELL BLOCK
         inpfile.write(f'    &CELL\n')
         #This should be the total system cell size
-        inpfile.write(f'      ABC {cell_length} {cell_length} {cell_length}\n')
+        if PBC_cell_dimensions != None:
+            inpfile.write(f'      ABC {PBC_cell_dimensions[0]} {PBC_cell_dimensions[1]} {PBC_cell_dimensions[2]}\n')
+            inpfile.write(f'      ALPHA_BETA_GAMMA {PBC_cell_dimensions[3]} {PBC_cell_dimensions[4]} {PBC_cell_dimensions[5]}\n')
+        elif PBC_vectors != None:
+            inpfile.write(f'      A {PBC_vectors[0][0]} {PBC_vectors[0][1]} {PBC_vectors[0][2]}\n')
+            inpfile.write(f'      B {PBC_vectors[1][0]} {PBC_vectors[1][1]} {PBC_vectors[1][2]}\n')
+            inpfile.write(f'      C {PBC_vectors[2][0]} {PBC_vectors[2][1]} {PBC_vectors[2][2]}\n')
         inpfile.write(f'      PERIODIC {periodic_type}\n')
         inpfile.write(f'    &END CELL\n')
 

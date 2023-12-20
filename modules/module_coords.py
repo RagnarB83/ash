@@ -3546,3 +3546,14 @@ def cubic_box_size(coords, shift=0.0):
     #Optional shift
     final_span = max_span + shift
     return final_span
+
+#More general
+def bounding_box_dimensions(coordinates,shift=0.0):
+    # Get max and min values for x, y, z coordinates
+    max_values = np.max(coordinates, axis=0)
+    min_values = np.min(coordinates, axis=0)
+    
+    # Calculate the differences along each axis to determine dimensions
+    dimensions = max_values - min_values
+    final_dims = dimensions + shift
+    return dimensions  # Return the dimensions of the bounding box
