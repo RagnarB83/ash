@@ -246,7 +246,6 @@ class QMMMTheory:
             print()
             self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, conn_scale, 
                 conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
-            print("3a")
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
@@ -727,12 +726,16 @@ class QMMMTheory:
 
                 #Adding dipole charges to MM charges list (given to QM code)
                 self.pointcharges=self.pointcharges+self.dipole_charges
+                #Using element H for dipole charges. Only matters for CP2K GEEP
+                mm_elems_for_qmprogram=self.mmelems + ['H']*len(self.dipole_charges)
                 if self.printlevel > 1: print("Number of pointcharges after dipole addition: ", len(self.pointcharges))
             else:
                 print("Dipole correction is off. Not adding any dipole charges")
                 self.pointchargecoords = self.mmcoords
+                mm_elems_for_qmprogram=self.mmelems
                 if self.printlevel > 1: print("Number of pointcharges: ", len(self.pointcharges))
         else:
+            mm_elems_for_qmprogram=self.mmelems
             self.num_linkatoms=0
             #If no linkatoms then use original self.qmelems
             current_qmelems = self.qmelems
@@ -782,7 +785,7 @@ class QMMMTheory:
                     QMenergy, QMgradient, PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
-                                                                                         qm_elems=current_qmelems, mm_elems=self.mmelems,
+                                                                                         qm_elems=current_qmelems, mm_elems=mm_elems_for_qmprogram,
                                                                                          charge=charge, mult=mult,
                                                                                          Grad=True, PC=True, numcores=numcores)
                     

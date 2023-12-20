@@ -223,6 +223,9 @@ class CP2KTheory:
             #Warning: Special PDB-file for CP2K. Will contain QM-atoms, MM-atoms,link-atoms,dipole charges etc
             #Create dummy fragment
             #QM-atoms (with link-atoms) + MM-pointcharges (dipole charges etc)
+                
+            #TODO: Unclear whether dipole-charges added by ASH will work at all for CP2K GEEP
+            #If not then we should detect this and exit and tell user to turn off in QMMMTheory
             dummy_elem_list = qm_elems + mm_elems
             dummy_coord_list = np.concatenate((current_coords,current_MM_coords),axis=0)
             dummy_fragment = ash.Fragment(elems=dummy_elem_list, coords=dummy_coord_list)
