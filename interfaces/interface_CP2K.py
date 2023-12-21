@@ -437,7 +437,9 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         inpfile.write(f'      PERIODIC {periodic_type}\n') #NOTE
         inpfile.write(f'      PSOLVER {psolver}\n')
         if psolver == 'wavelet':
-            inpfile.write(f'      SCF_TYPE {wavelet_scf_type}\n')
+            inpfile.write(f'      &WAVELET {psolver}\n')
+            inpfile.write(f'         SCF_TYPE {wavelet_scf_type}\n')
+            inpfile.write(f'      &END WAVELET {psolver}\n')
         inpfile.write(f'    &END POISSON\n')
         #QS
         inpfile.write(f'    &QS\n')
