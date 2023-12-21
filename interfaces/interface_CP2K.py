@@ -32,7 +32,7 @@ element_radii_for_cp2k = {'H':0.44,'He':0.44,'Li':0.6,'Be':0.6,'B':0.78,'C':0.78
 class CP2KTheory:
     def __init__(self, cp2kdir=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
                 periodic=False, periodic_type='XYZ', qm_periodic_type=None,PBC_cell_dimensions=None, PBC_vectors=None,
-                qm_cell_dims=None, qm_cell_shift_par=2.0,
+                qm_cell_dims=None, qm_cell_shift_par=2.0, wavelet_scf_type=40,
                 functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
                 basis_method='GAPW', ngrids=4, cutoff=450, rel_cutoff=50,
                 method='QUICKSTEP', numcores=1, center_coords=True, scf_convergence=1e-6,
@@ -128,6 +128,7 @@ class CP2KTheory:
         #Periodic options and cell
         self.periodic=periodic
         self.psolver=psolver
+        self.wavelet_scf_type=wavelet_scf_type
         self.qm_periodic_type=qm_periodic_type
         #self.cell_length=cell_length #Total cell length (full system including MM if QM/MM)
         self.PBC_cell_dimensions=PBC_cell_dimensions #Cell dimensions (only if PBC). For full system
@@ -262,7 +263,7 @@ class CP2KTheory:
 
             write_CP2K_input(method='QMMM', jobname='ash', center_coords=self.center_coords, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
-                             basis_method=self.basis_method,
+                             basis_method=self.basis_method, wavelet_scf_type=self.wavelet_scf_type,
                              functional=self.functional, restartfile=None, mgrid_commensurate=True,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
                              PBC_cell_dimensions=self.PBC_cell_dimensions, 
@@ -281,7 +282,7 @@ class CP2KTheory:
             #Write simple CP2K input
             write_CP2K_input(method=self.method, jobname='ash', center_coords=self.center_coords, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
-                             basis_method=self.basis_method,
+                             basis_method=self.basis_method, wavelet_scf_type=self.wavelet_scf_type,
                              functional=self.functional, restartfile=None,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
                              periodic_type=self.periodic_type,
@@ -366,7 +367,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     mgrid_commensurate=False, max_iter=50, scf_guess='RESTART', scf_convergence=1e-6,
                     periodic_type="XYZ", PBC_cell_dimensions=None, PBC_vectors=None, 
                     qm_cell_dims=None, qm_periodic_type=None,basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
-                    psolver='wavelet',
+                    psolver='wavelet', wavelet_scf_type=40,
                     ngrids=4, cutoff=450, rel_cutoff=50,
                     coupling='COULOMB', GEEP_num_gauss=12,
                     qm_kind_dict=None, mm_kind_list=None,
@@ -435,6 +436,8 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         inpfile.write(f'    &POISSON\n')
         inpfile.write(f'      PERIODIC {periodic_type}\n') #NOTE
         inpfile.write(f'      PSOLVER {psolver}\n')
+        if psolver == 'wavelet':
+            inpfile.write(f'      SCF_TYPE {wavelet_scf_type}\n')
         inpfile.write(f'    &END POISSON\n')
         #QS
         inpfile.write(f'    &QS\n')

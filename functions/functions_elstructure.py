@@ -2288,3 +2288,15 @@ def get_ec_entropy(occ, sigma, method='fermi', alpha=0.6):
         raise ValueError('Not support', method)
     Ec = 2.0*sigma*fc.sum()
     return Ec
+
+#Calculate entropy from occupation array
+#Assuming array of natural occupations (from 2.0 to 0.0)
+def get_entropy(occupations):
+    #Dividing by 2
+    occ_2 = np.array(occupations)/2
+    #Removing 0 and 1
+    occ_2 = occ_2[(occ_2>0) & (occ_2<1)]
+    S=0.0
+    for o in occ_2:
+        S+=(o*math.log(o)+(1-o)*math.log(1-o))
+    return S

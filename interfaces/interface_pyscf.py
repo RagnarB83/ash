@@ -3,7 +3,7 @@ import time
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
 import ash.modules.module_coords
 from ash.modules.module_results import ASH_Results
-from ash.functions.functions_elstructure import get_ec_entropy
+from ash.functions.functions_elstructure import get_ec_entropy,get_entropy
 import os
 import sys
 import glob
@@ -1862,20 +1862,43 @@ class PySCFTheory:
             #NMF
             if self.NMF is True:
                 print("NMF smearing active. Getting NMF energy")
+                print("Sigma:", self.NMF_sigma)
                 E_mf = self.mf.e_tot
                 print("Mean-field energy:", E_mf)
                 occ = self.mf.get_occ(mo_energy_kpts=self.mf.mo_energy)
                 print("occ:", occ)
-                print("Sigma:", self.NMF_sigma)
-                if 'fermi' in self.NMF_distribution.lower() or  self.NMF_distribution == 'FD':
-                    Ec = get_ec_entropy(occ, self.NMF_sigma, method='fermi')
-                elif self.NMF_distribution.lower() == 'gaussian' or self.NMF_distribution == 'G':
-                    Ec = get_ec_entropy(occ, self.NMF_sigma, method='gaussian')
-                #elif self.NMF_distribution == 'Linear' or self.NMF_distribution == 'L':
-                #    Ec = get_ec_entropy(occ, self.NMF_sigma, method='linear')
+
+                #NOTE: Not sure if this is correct yet
+                if self.scf_type == 'UHF' or self.scf_type == 'UKS':
+                    occ_a = occ[0]
+                    occ_b = occ[1]
+                    S_a = get_entropy(occ_a)
+                    S_b = get_entropy(occ_b)
+                    print("Total entropy alpha (FD):", S_a)
+                    print("Total entropy beta (FD):", S_b)
+
+                    if 'fermi' in self.NMF_distribution.lower() or  self.NMF_distribution == 'FD':
+                        Ec_a = get_ec_entropy(occ_a, self.NMF_sigma, method='fermi')
+                        Ec_b = get_ec_entropy(occ_a, self.NMF_sigma, method='fermi')
+                        Ec = Ec_a/2 + Ec_b/2
+                    elif self.NMF_distribution.lower() == 'gaussian' or self.NMF_distribution == 'G':
+                        Ec_a = get_ec_entropy(occ_a, self.NMF_sigma, method='gaussian')
+                        Ec_b = get_ec_entropy(occ_b, self.NMF_sigma, method='gaussian')
+                        Ec = Ec_a/2 + Ec_b/2
+                    else:
+                        print("Unknown distribution")
+                        ashexit()
                 else:
-                    print("Unknown distribution")
-                    ashexit()
+                    S = get_entropy(occ)
+                    print("Total entropy (FD):", S)
+                    print("Sigma:", self.NMF_sigma)
+                    if 'fermi' in self.NMF_distribution.lower() or  self.NMF_distribution == 'FD':
+                        Ec = get_ec_entropy(occ, self.NMF_sigma, method='fermi')
+                    elif self.NMF_distribution.lower() == 'gaussian' or self.NMF_distribution == 'G':
+                        Ec = get_ec_entropy(occ, self.NMF_sigma, method='gaussian')
+                    else:
+                        print("Unknown distribution")
+                        ashexit()
                 print("Correlation energy:", Ec)                
                 E_tot_NMF = E_mf + Ec
                 print("Total NMF energy:", E_tot_NMF)
