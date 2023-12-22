@@ -27,16 +27,20 @@ element_radii_for_cp2k = {'H':0.44,'He':0.44,'Li':0.6,'Be':0.6,'B':0.78,'C':0.78
 #For Periodic=True: 'PERIODIC', 'wavelet' or 'IMPLICIT'
 #For Periodic=False: 'MT' or 'wavelet' are good options
 
+#MT Solver (noPBC): Cell should be 2 as large as charge density. MT incompatible with GEEP and PBC
+#Wavelet Solver (noPBC or PBC): Cell can be smaller. Compatible with GEEP. Also PBC
+#Periodic Solver (only PBC): Cell can be smaller. Compatible with GEEP. Fast
+
 #Basis_method='GAPW' : all-electron or pseudopotential. More stable forces, might be more expensive. Not all features available
 # 'GPW' : only pseudopotential. Can be more efficient.
 class CP2KTheory:
     def __init__(self, cp2kdir=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
-                periodic=False, periodic_type='XYZ', qm_periodic_type=None,PBC_cell_dimensions=None, PBC_vectors=None,
-                qm_cell_dims=None, qm_cell_shift_par=2.0, wavelet_scf_type=40,
+                periodic=False, periodic_type='XYZ', qm_periodic_type=None,cell_dimensions=None, cell_vectors=None,
+                qm_cell_dims=None, qm_cell_shift_par=6.0, wavelet_scf_type=40,
                 functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
                 basis_method='GAPW', ngrids=4, cutoff=450, rel_cutoff=50,
                 method='QUICKSTEP', numcores=1, center_coords=True, scf_convergence=1e-6,
-                coupling='COULOMB', GEEP_num_gauss=6):
+                coupling='COULOMB', GEEP_num_gauss=6, MM_radius_scaling=1):
 
         self.theorytype="QM"
         self.theorynamelabel="CP2K"
@@ -56,11 +60,13 @@ class CP2KTheory:
             ashexit()
 
         #NOTE: We still define a cell even though we may not be periodic
-        if PBC_cell_dimensions is None and PBC_vectors is None:
-            print("Error: PBC_cell_dimensions or PBC_vectors must be provided for periodic simulations")
-            ashexit()
-        if PBC_cell_dimensions is not None and PBC_vectors is not None:
-            print("Error: PBC_cell_dimensions and PBC_vectors can not both be provided")
+        #If no cell provided: CONTINUE and guess cell size later
+        if cell_dimensions is None and cell_vectors is None:
+            print("Warning: Neither cell_dimensions or cell_vectors have been provided.")
+            print("This is not good but ASH will continue and try to guess the cell size from the QM-coordinates")
+        
+        if cell_dimensions is not None and cell_vectors is not None:
+            print("Error: cell_dimensions and cell_vectors can not both be provided")
             ashexit()
         #PERIODIC logic
         if periodic is True:
@@ -131,8 +137,8 @@ class CP2KTheory:
         self.wavelet_scf_type=wavelet_scf_type
         self.qm_periodic_type=qm_periodic_type
         #self.cell_length=cell_length #Total cell length (full system including MM if QM/MM)
-        self.PBC_cell_dimensions=PBC_cell_dimensions #Cell dimensions (only if PBC). For full system
-        self.PBC_vectors=PBC_vectors #Cell vectors (only if PBC)s. For full system
+        self.cell_dimensions=cell_dimensions #Cell dimensions. For full system
+        self.cell_vectors=cell_vectors #Cell vectors. For full system
         self.qm_cell_dims=qm_cell_dims # Optional QM-cell dims (only if QM/MM)
         self.qm_cell_shift_par=qm_cell_shift_par #Shift of QM-cell size if estimated from QM-coords
         self.functional=functional
@@ -147,6 +153,7 @@ class CP2KTheory:
         #QM/MM
         self.coupling=coupling
         self.GEEP_num_gauss=GEEP_num_gauss
+        self.MM_radius_scaling=MM_radius_scaling #Scale the MM radii by this factor
 
     #Set numcores method
     def set_numcores(self,numcores):
@@ -190,12 +197,10 @@ class CP2KTheory:
 
         if self.periodic is True:
             print("Periodic CP2K calculation will be carried out")
-        if self.PBC_cell_dimensions is not None:
-            print("PBC_cell_dimensions:", self.PBC_cell_dimensions)
-        if self.PBC_vectors is not None:
-            print("PBC_vectors:", self.PBC_vectors)
+
         
         print("QM periodic type:", self.qm_periodic_type)
+        print("Poisson solver", self.psolver)
 
         #Case: QM/MM CP2K job
         if PC is True:
@@ -206,13 +211,28 @@ class CP2KTheory:
                 print("Set coupling to GAUSS or S-WAVE instead")
                 print("Exiting")
                 ashexit()
+            elif self.coupling == 'GAUSS':
+                print("Using Gaussian GEEP embedding")
+                print("Number of Gaussians used:", self.GEEP_num_gauss)
+                print("Scaling MM radii by factor:", self.MM_radius_scaling)
+            else:
+                print("Unknown coupling option. Exiting")
+                ashexit()
+            #
+            if self.cell_dimensions is None and self.cell_vectors is None:
+                print("Error: cell_dimensions and cell_vectors have not been provided")
+                print("This is required for a QM/MM job. Exiting")
+                ashexit()
+            elif self.cell_dimensions is not None:
+                print("cell_dimensions:", self.cell_dimensions)
+            if self.cell_vectors is not None:
+                print("cell_vectors:", self.cell_vectors)
 
             #QM-CELL
             if self.qm_cell_dims is None:
-                print("Warning: QM-cell dimensions have not been set by user")
+                print("Warning: QM-cell box dimensions have not been set by user (qm_cell_dims keyword)")
                 print("Now estimating QM-cell box dimensions from QM-coordinates.")
-                #TODO: If doing non-periodic wavelet then we must have a cubic box.
-                #Use cubic_box_size instead ?
+                #If doing non-periodic wavelet then we must have a cubic box.
                 if self.psolver == 'wavelet':
                     print("Poisson solver is wavelet. Making cubic box")
                     qm_cell = cubic_box_size(current_coords)
@@ -220,74 +240,97 @@ class CP2KTheory:
                 else:
                     print("Poission solver not wavelet. Using non-cubic box")
                     qm_box_dims = bounding_box_dimensions(current_coords)
-                print(f"QM-box size (based on coords): {qm_box_dims} Angstrom")
+                print(f"QM-box size (based on QM-coords): {qm_box_dims} Angstrom")
                 print(f"Adding shift of {self.qm_cell_shift_par} Angstrom (qm_cell_shift_par keyword)")
                 qm_box_dims=np.around(qm_box_dims + self.qm_cell_shift_par,1)
                 print(f"Setting QM-cell cubic box dimensions to {qm_box_dims} Angstrom")
                 self.qm_cell_dims=qm_box_dims
 
-
-            #1.Write PDB coordinate file for whole system with MM charges
-            #Warning: Special PDB-file for CP2K. Will contain QM-atoms, MM-atoms,link-atoms,dipole charges etc
-            #Create dummy fragment
-            #QM-atoms (with link-atoms) + MM-pointcharges (dipole charges etc)
-                
-            #TODO: Unclear whether dipole-charges added by ASH will work at all for CP2K GEEP
-            #If not then we should detect this and exit and tell user to turn off in QMMMTheory
+            #1.Writing special XYZ-file coordinate-file (not PDB-file, coordinate precision is problematic)
+            #NOTE: Coordinates reordered: QM-coords first, then MM-coords
+            #Applies to elem-list also and charges-list
             dummy_elem_list = qm_elems + mm_elems
-            dummy_coord_list = np.concatenate((current_coords,current_MM_coords),axis=0)
-            dummy_fragment = ash.Fragment(elems=dummy_elem_list, coords=dummy_coord_list)
-            dummy_atomnames=qm_elems + mm_elems
-            dummy_resnames=['QM']*len(qm_elems) +  ['MM']*len(MMcharges)  #Dummy residue names
-            dummy_residlabels =[1]*len(qm_elems) +  [2]*len(MMcharges)  #Dummy resid labels
-            dummy_charges = [0.0]*len(qm_elems) + MMcharges
-            #Testing. Doing this avoids CP2K blow-up so the problem is the charges
-            #dummy_charges = [0.0]*len(qm_elems) + [0.0]*len(MMcharges)  #Setting everything to zero for testing
-            pdbfile="dummy_cp2k"
-            write_pdbfile(dummy_fragment, outputname=pdbfile, openmmobject=None, atomnames=dummy_atomnames, 
-                          resnames=dummy_resnames, residlabels=dummy_residlabels, segmentlabels=None, dummyname='DUM',
-                          charges_column=dummy_charges)
             
+            dummy_coords = np.concatenate((current_coords,current_MM_coords),axis=0)
+            dummy_charges = [0.0]*len(qm_elems) + MMcharges
+            system_xyzfile="system_cp2k"
+            write_xyzfile(dummy_elem_list, dummy_coords, f"{system_xyzfile}", printlevel=1)
 
-            #3. Write CP2K QM/MM inputfile
-            #coupling='COULOMB' #Regular elstat-embedding. Gaussian smearing also possible, see GEEP
+            #Telling CP2K which atoms are QM
             #Dictionary with QM-atom indices (for full system), grouped by element
             qm_kind_dict={}
             for el in set(qm_elems):
                 #CP2K starts counting from 1 
                 qm_kind_dict[el]= [i+1 for i, x in enumerate(qm_elems) if x == el]
             print("qm_kind_dict:",qm_kind_dict)
+            #MM-kind list
+            #NOTE: This controls Gaussian radii for GEEP. Currently using same parameters for element
+            #Could be made more flexible
             mm_kind_list = list(set(mm_elems))
             print("mm_kind_list:",mm_kind_list)
 
+            #TODO: Unclear whether dipole-charges added by ASH will work at all for CP2K GEEP
+            #If not then we should detect this and exit and tell user to turn off in QMMMTheory
 
+            #2. Write charges.inc file containing charge definitions
+            #File will be included in CP2K inputfile
+            with open("charges.inc", 'w') as incfile:
+                incfile.write(f"&CHARGES\n")
+                for d in dummy_charges:
+                    incfile.write(f"{d}\n")
+                incfile.write(f"&END CHARGES\n")
+
+
+            #3. Write CP2K QM/MM inputfile
             write_CP2K_input(method='QMMM', jobname='ash', center_coords=self.center_coords, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              basis_method=self.basis_method, wavelet_scf_type=self.wavelet_scf_type,
                              functional=self.functional, restartfile=None, mgrid_commensurate=True,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
-                             PBC_cell_dimensions=self.PBC_cell_dimensions, 
-                             PBC_vectors=self.PBC_vectors,
+                             coordfile=system_xyzfile, 
+                             cell_dimensions=self.cell_dimensions, 
+                             cell_vectors=self.cell_vectors,
                              qm_cell_dims=self.qm_cell_dims, qm_periodic_type=self.qm_periodic_type,
                              basis_file=self.basis_file, 
                              potential_file=self.potential_file, periodic_type=self.periodic_type,
                              psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
+                             MM_radius_scaling=self.MM_radius_scaling,
                              qm_kind_dict=qm_kind_dict, mm_kind_list=mm_kind_list,
-                             pdbfile=pdbfile+'.pdb', scf_convergence=self.scf_convergence, 
+                             scf_convergence=self.scf_convergence, 
                              ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff)
         else:
             #No QM/MM
+            #QM-CELL
+            if self.cell_dimensions is None:
+                print("Warning: cell dimensions have not been set by user")
+                print("Now estimating cell box dimensions from the system oordinates.")
+                if self.psolver == 'wavelet':
+                    print("Poisson solver is wavelet. Making cubic box")
+                    qm_cell = cubic_box_size(current_coords)
+                    qm_box_dims=np.array([qm_cell,qm_cell,qm_cell])
+                else:
+                    print("Poission solver not wavelet. Using non-cubic box")
+                    qm_box_dims = bounding_box_dimensions(current_coords)
+                print(f"Cell box size (based on coords): {qm_box_dims} Angstrom")
+                print(f"Adding shift of {self.qm_cell_shift_par} Angstrom (qm_cell_shift_par keyword)")
+                qm_box_dims=np.around(qm_box_dims + self.qm_cell_shift_par,1)
+                print(f"Setting Cell box dimensions to {qm_box_dims} Angstrom")
+                self.cell_dimensions=list(qm_box_dims)+[90.0,90.0,90.0]
+
             #Write xyz-file with coordinates
-            write_xyzfile(qm_elems, current_coords, f"{self.filename}", printlevel=1)
+            system_xyzfile="system_cp2k"
+            write_xyzfile(qm_elems, current_coords, f"{system_xyzfile}", printlevel=1)
+            
             #Write simple CP2K input
             write_CP2K_input(method=self.method, jobname='ash', center_coords=self.center_coords, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              basis_method=self.basis_method, wavelet_scf_type=self.wavelet_scf_type,
                              functional=self.functional, restartfile=None,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
+                             coordfile=system_xyzfile,
                              periodic_type=self.periodic_type,
-                             PBC_cell_dimensions=self.PBC_cell_dimensions, 
-                             PBC_vectors=self.PBC_vectors,
+                             cell_dimensions=self.cell_dimensions, 
+                             cell_vectors=self.cell_vectors,
                              basis_file=self.basis_file, potential_file=self.potential_file,
                              psolver=self.psolver)
 
@@ -334,11 +377,10 @@ class CP2KTheory:
         if Grad is True:
             #Grab gradient
             self.gradient = grab_gradient_CP2K(f'ash-{self.filename}-1_0.xyz',len(current_coords))
-            print("self.gradient:",self.gradient)
             #Grab PCgradient from file
             if PC is True:
                 self.pcgradient = grab_pcgradient_CP2K(f'ash-{self.filename}-1_0.xyz',len(MMcharges),len(current_coords))
-                print("self.pcgradient:", self.pcgradient)
+                print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
                 return self.energy, self.gradient, self.pcgradient
             else:
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
@@ -363,16 +405,17 @@ def run_CP2K(cp2kdir,bin_name,filename,numcores=1):
 #Regular CP2K input
 def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True, qm_elems=None,
                     basis_dict=None, potential_dict=None, functional=None, restartfile=None,
-                    Grad=True, filename='cp2k', charge=None, mult=None, basis_method='GAPW',
+                    Grad=True, filename='cp2k', system_coord_file_format="XYZ", 
+                    coordfile=None,
+                    charge=None, mult=None, basis_method='GAPW',
                     mgrid_commensurate=False, max_iter=50, scf_guess='RESTART', scf_convergence=1e-6,
-                    periodic_type="XYZ", PBC_cell_dimensions=None, PBC_vectors=None, 
+                    periodic_type="XYZ", cell_dimensions=None, cell_vectors=None, 
                     qm_cell_dims=None, qm_periodic_type=None,basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
                     psolver='wavelet', wavelet_scf_type=40,
                     ngrids=4, cutoff=450, rel_cutoff=50,
-                    coupling='COULOMB', GEEP_num_gauss=12,
+                    coupling='COULOMB', GEEP_num_gauss=12, MM_radius_scaling=1,
                     qm_kind_dict=None, mm_kind_list=None,
-                    mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21",
-                    pdbfile=None):
+                    mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21"):
     #
     first_atom=1
     last_atom=len(qm_elems)
@@ -475,6 +518,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             inpfile.write(f'    &MM\n')
             inpfile.write(f'      &FORCEFIELD\n')
             inpfile.write(f'        DO_NONBONDED FALSE\n')
+            inpfile.write(f'        @INCLUDE charges.inc\n') #including charges.inc file containing all system charges
             inpfile.write(f'      &END FORCEFIELD\n')
             inpfile.write(f'      &POISSON\n')            
             inpfile.write(f'        &EWALD\n')
@@ -501,7 +545,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             #Necessary for GEEP. Radii used in embedding.
             for mm_el in mm_kind_list:
                 inpfile.write(f'      &MM_KIND {mm_el}\n')
-                inpfile.write(f'          RADIUS {element_radii_for_cp2k[mm_el]}\n')
+                inpfile.write(f'          RADIUS {element_radii_for_cp2k[mm_el]*MM_radius_scaling}\n')
                 inpfile.write(f'      &END MM_KIND\n')
             #Write QM_KIND blocks
             for qm_el,indices in qm_kind_dict.items():
@@ -519,13 +563,13 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         #CELL BLOCK
         inpfile.write(f'    &CELL\n')
         #This should be the total system cell size
-        if PBC_cell_dimensions != None:
-            inpfile.write(f'      ABC {PBC_cell_dimensions[0]} {PBC_cell_dimensions[1]} {PBC_cell_dimensions[2]}\n')
-            inpfile.write(f'      ALPHA_BETA_GAMMA {PBC_cell_dimensions[3]} {PBC_cell_dimensions[4]} {PBC_cell_dimensions[5]}\n')
-        elif PBC_vectors != None:
-            inpfile.write(f'      A {PBC_vectors[0][0]} {PBC_vectors[0][1]} {PBC_vectors[0][2]}\n')
-            inpfile.write(f'      B {PBC_vectors[1][0]} {PBC_vectors[1][1]} {PBC_vectors[1][2]}\n')
-            inpfile.write(f'      C {PBC_vectors[2][0]} {PBC_vectors[2][1]} {PBC_vectors[2][2]}\n')
+        if cell_dimensions != None:
+            inpfile.write(f'      ABC {cell_dimensions[0]} {cell_dimensions[1]} {cell_dimensions[2]}\n')
+            inpfile.write(f'      ALPHA_BETA_GAMMA {cell_dimensions[3]} {cell_dimensions[4]} {cell_dimensions[5]}\n')
+        elif cell_vectors != None:
+            inpfile.write(f'      A {cell_vectors[0][0]} {cell_vectors[0][1]} {cell_vectors[0][2]}\n')
+            inpfile.write(f'      B {cell_vectors[1][0]} {cell_vectors[1][1]} {cell_vectors[1][2]}\n')
+            inpfile.write(f'      C {cell_vectors[2][0]} {cell_vectors[2][1]} {cell_vectors[2][2]}\n')
         inpfile.write(f'      PERIODIC {periodic_type}\n')
         inpfile.write(f'    &END CELL\n')
 
@@ -543,9 +587,9 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             inpfile.write(f'      &CENTER_COORDINATES\n')
             inpfile.write(f'      &END\n')
         if method == 'QMMM':
-            inpfile.write(f'      COORD_FILE_NAME {pdbfile}\n') #PDB-file of whole system with charges
-            inpfile.write(f'      COORD_FILE_FORMAT PDB\n')
-            inpfile.write(f'      CHARGE_EXTENDED TRUE\n') #Read charges from col 81
+            inpfile.write(f'      COORD_FILE_FORMAT {system_coord_file_format}\n') #File-format: XYZ or PDB (pdb is bad)
+            inpfile.write(f'      COORD_FILE_NAME {coordfile}.xyz\n') #Coord-file of whole system with charges (ideally XYZ)
+            #inpfile.write(f'      CHARGE_EXTENDED TRUE\n') #Read charges from col 81
             inpfile.write(f'      CONNECTIVITY OFF\n') #No read or generate bonds 
             inpfile.write(f'      &GENERATE\n')
             inpfile.write(f'           &ISOLATED_ATOMS\n') #Topology of isolated atoms
@@ -553,8 +597,8 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             inpfile.write(f'           &END\n')
             inpfile.write(f'      &END GENERATE\n')
         else:
-            inpfile.write(f'      COORD_FILE_FORMAT xyz\n')
-            inpfile.write(f'      COORD_FILE_NAME  ./{filename}.xyz\n')
+            inpfile.write(f'      COORD_FILE_FORMAT {system_coord_file_format}\n')
+            inpfile.write(f'      COORD_FILE_NAME  ./{coordfile}.xyz\n')
         inpfile.write(f'    &END TOPOLOGY\n')
         inpfile.write(f'  &END SUBSYS\n')
 
