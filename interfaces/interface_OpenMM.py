@@ -2089,7 +2089,7 @@ def clean_up_constraints_list(fragment=None, constraints=None):
         if len(con) == 3:
             newconstraints.append(con)
         elif len(con) == 2:
-            distance = distance_between_atoms(fragment=fragment, atom1=con[0], atom2=con[1])
+            distance = distance_between_atoms(fragment=fragment, atoms=[con[0],con[1]])
             print("Adding missing distance definition between atoms {} and {}: {:.4f}".format(con[0], con[1], distance))
             newcon = [con[0], con[1], distance]
             newconstraints.append(newcon)

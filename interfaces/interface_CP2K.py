@@ -9,8 +9,9 @@ import ash.settings_ash
 from ash.modules.module_coords import write_xyzfile, write_pdbfile,cubic_box_size,bounding_box_dimensions
 from ash.functions.functions_parallel import check_OpenMPI
 
-#Dictionary of element radii for use with CP2K for GEEP embedding
+#Dictionary of element radii in Angstrom for use with CP2K for GEEP embedding
 #Warning:Parameters for O, H, K and Cl found online. Rest are guestimates.
+#Note: Also seen 1.2 used for O
 element_radii_for_cp2k = {'H':0.44,'He':0.44,'Li':0.6,'Be':0.6,'B':0.78,'C':0.78,'N':0.78,'O':0.78,'F':0.78,'Ne':0.78,
                        'Na':1.58,'Mg':1.58,'Al':1.67,'Si':1.67,'P':1.67,'S':1.67,'Cl':1.67,'Ar':1.67,
                        'K':1.52,'Ca':1.6,'Sc':1.6,'Ti':1.6,'V':1.6,'Cr':1.6,'Mn':1.6,'Fe':1.6,'Co':1.6,
@@ -40,7 +41,7 @@ class CP2KTheory:
                 functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
                 basis_method='GAPW', ngrids=4, cutoff=450, rel_cutoff=50,
                 method='QUICKSTEP', numcores=1, center_coords=True, scf_convergence=1e-6,
-                coupling='COULOMB', GEEP_num_gauss=6, MM_radius_scaling=1):
+                coupling='COULOMB', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None):
 
         self.theorytype="QM"
         self.theorynamelabel="CP2K"
@@ -154,6 +155,7 @@ class CP2KTheory:
         self.coupling=coupling
         self.GEEP_num_gauss=GEEP_num_gauss
         self.MM_radius_scaling=MM_radius_scaling #Scale the MM radii by this factor
+        self.mm_radii=mm_radii #Optional dictionary of MM radii for GEEP. If not provided then element_radii_for_cp2k
 
     #Set numcores method
     def set_numcores(self,numcores):
@@ -294,7 +296,7 @@ class CP2KTheory:
                              basis_file=self.basis_file, 
                              potential_file=self.potential_file, periodic_type=self.periodic_type,
                              psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
-                             MM_radius_scaling=self.MM_radius_scaling,
+                             MM_radius_scaling=self.MM_radius_scaling, mm_radii=self.mm_radii,
                              qm_kind_dict=qm_kind_dict, mm_kind_list=mm_kind_list,
                              scf_convergence=self.scf_convergence, 
                              ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff)
@@ -413,9 +415,16 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     qm_cell_dims=None, qm_periodic_type=None,basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
                     psolver='wavelet', wavelet_scf_type=40,
                     ngrids=4, cutoff=450, rel_cutoff=50,
-                    coupling='COULOMB', GEEP_num_gauss=12, MM_radius_scaling=1,
+                    coupling='COULOMB', GEEP_num_gauss=12, MM_radius_scaling=1, mm_radii=None,
                     qm_kind_dict=None, mm_kind_list=None,
                     mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21"):
+    
+    if mm_radii == None:
+        print("No user MM radii provided. Will use default radii from internal dict (element_radii_for_cp2k):")
+        mm_radii=element_radii_for_cp2k
+        print("Radii will be scaled by factor:", MM_radius_scaling)
+    else:
+        print("User MM radii provided:", mm_radii)
     #
     first_atom=1
     last_atom=len(qm_elems)
@@ -544,8 +553,11 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             #Write MM_KIND blocks
             #Necessary for GEEP. Radii used in embedding.
             for mm_el in mm_kind_list:
+                print("Assuming MM radius for element:", mm_el, "of:", mm_radii[mm_el], "Angstrom")
+                print("MM-radius after scaling", mm_radii[mm_el]*MM_radius_scaling, "Angstrom")
+                #Note: CP2K converts this to Bohrs internally (printed as Bohrs in output)
                 inpfile.write(f'      &MM_KIND {mm_el}\n')
-                inpfile.write(f'          RADIUS {element_radii_for_cp2k[mm_el]*MM_radius_scaling}\n')
+                inpfile.write(f'          RADIUS {mm_radii[mm_el]*MM_radius_scaling}\n')
                 inpfile.write(f'      &END MM_KIND\n')
             #Write QM_KIND blocks
             for qm_el,indices in qm_kind_dict.items():

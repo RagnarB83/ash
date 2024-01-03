@@ -1154,6 +1154,7 @@ def write_coords_all(coords, elems, indices=None, labels=None, labels2=None, fil
     f.close()
 
 
+# Functions to get distance, angle, coordinates of fragment
 def distance(A, B):
     return sqrt(pow(A[0] - B[0], 2) + pow(A[1] - B[1], 2) + pow(A[2] - B[2], 2))  # fastest
     # return sum((v_i - u_i) ** 2 for v_i, u_i in zip(A, B)) ** 0.5 #slow
@@ -1169,6 +1170,55 @@ def distance(A, B):
     # return np.sqrt(np.power((A-B),2).sum()) #very slow
     # return sqrt(np.power((A - B), 2).sum())
     # return np.sum((A - B) ** 2)**0.5 #very slow
+
+def angle(A, B, C):
+    AB = A - B
+    CB = C - B
+    dot_product = np.dot(AB, CB)
+    # Calculate the magnitudes of the vectors
+    magnitude1 = np.linalg.norm(AB)
+    magnitude2 = np.linalg.norm(CB)
+    # Calculate the angle in radians
+    angle_rad = np.arccos(dot_product / (magnitude1 * magnitude2))
+    # Convert angle to degrees
+    angle_deg = np.degrees(angle_rad)
+    return angle_deg
+
+def dihedral(A, B, C, D):
+    # Calculate the vectors between adjacent atoms
+    v1 = B - A
+    v2 = C - B
+    v3 = D - C
+
+    # Calculate the cross products
+    n1 = np.cross(v1, v2)
+    n2 = np.cross(v2, v3)
+
+    # Calculate the dot product
+    dot = np.dot(n1, n2)
+    # Handle signs correctly
+    if dot < 0:
+        dihedral_angle = -1 * (np.arccos(dot / (np.linalg.norm(n1) * np.linalg.norm(n2))))
+    else:
+        dihedral_angle = np.arccos(dot / (np.linalg.norm(n1) * np.linalg.norm(n2)))
+
+    # Convert from radians to degrees
+    dihedral_angle = dihedral_angle * 180 / np.pi
+    return dihedral_angle
+
+#User-functions
+#atoms is a list of atom indices, 
+def distance_between_atoms(fragment=None, atoms=None):
+    dist = distance(fragment.coords[atoms[0]], fragment.coords[atoms[1]])
+    return dist
+
+def angle_between_atoms(fragment=None, atoms=None):
+    angle_deg = angle(fragment.coords[atoms[0]], fragment.coords[atoms[1]], fragment.coords[atoms[2]])
+    return angle_deg
+
+def dihedral_between_atoms(fragment=None, atoms=None):
+    dihed_deg = dihedral(fragment.coords[atoms[0]], fragment.coords[atoms[1]], fragment.coords[atoms[2]], fragment.coords[atoms[3]])
+    return dihed_deg
 
 
 # TODO: clean up
@@ -2590,12 +2640,6 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
     atomlist = np.unique(atomlist).tolist()
     return atomlist
 
-
-def distance_between_atoms(fragment=None, atom1=None, atom2=None):
-    atom1_coords = fragment.coords[atom1]
-    atom2_coords = fragment.coords[atom2]
-    dist = distance(atom1_coords, atom2_coords)
-    return dist
 
 #Function to determine the QM-MM boundary
 #Note: This function was dominating QMMMTheory creation (e.g. 9.67 s / 12.41 s => 78 % for 300K system)

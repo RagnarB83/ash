@@ -382,7 +382,7 @@ class QMMMTheory:
     def get_dipole_charge(self,delq,direction,mm1index,mm2index):
         #timeA=time.time()
         #Distance between MM1 and MM2
-        MM_distance = ash.modules.module_coords.distance_between_atoms(fragment=self.fragment, atom1=mm1index, atom2=mm2index)
+        MM_distance = ash.modules.module_coords.distance_between_atoms(fragment=self.fragment, atoms=[mm1index, mm2index])
         #Coordinates
         mm1coords=np.array(self.fragment.coords[mm1index])
         mm2coords=np.array(self.fragment.coords[mm2index])
