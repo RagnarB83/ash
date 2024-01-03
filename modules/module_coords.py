@@ -427,7 +427,11 @@ class Fragment:
     def print_coords(self):
         if self.printlevel >= 2:
             print("Defined coordinates (Å):")
-        print_coords_all(self.coords, self.elems)
+        #print_coords_all(self.coords, self.elems)
+        for i,(el, c) in enumerate(zip(self.elems, self.coords)):
+            line = " {:<4} {:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(i,el, c[0], c[1], c[2])
+            print(line)
+
 
     # Read Amber coordinate file? Needs to read both INPCRD and PRMTOP file. Bit messy
     def read_amberfile(self, inpcrdfile=None, prmtopfile=None, conncalc=False):
