@@ -17,9 +17,6 @@ element_radii_for_cp2k = {'H':0.44,'He':0.44,'Li':0.6,'Be':0.6,'B':0.78,'C':0.78
                        'K':1.52,'Ca':1.6,'Sc':1.6,'Ti':1.6,'V':1.6,'Cr':1.6,'Mn':1.6,'Fe':1.6,'Co':1.6,
                        'Ni':1.6,'Cu':1.6,'Zn':1.6,'Br':1.6, 'Mo':1.7}
  
-#Reasonably flexible CP2K interface: CP2K input should be specified by cp2kinput multi-line string.
-#Executables: cp2k.psmp vs. cp2k.sopt vs cp2k.ssmp vs cp2k_shell.ssm
-
 #CP2K Theory object.
 #CP2K embedding options: coupling='COULOMB' (regular elstat-embed) or 'GAUSSIAN' (GEEP) or S-WAVE
 #Periodic: True (periodic_type='XYZ) or False (periodic_type='NONE')
@@ -35,13 +32,13 @@ element_radii_for_cp2k = {'H':0.44,'He':0.44,'Li':0.6,'Be':0.6,'B':0.78,'C':0.78
 #Basis_method='GAPW' : all-electron or pseudopotential. More stable forces, might be more expensive. Not all features available
 # 'GPW' : only pseudopotential. Can be more efficient.
 class CP2KTheory:
-    def __init__(self, cp2kdir=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
+    def __init__(self, cp2kdir=None, cp2k_bin_name=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
                 periodic=False, periodic_type='XYZ', qm_periodic_type=None,cell_dimensions=None, cell_vectors=None,
                 qm_cell_dims=None, qm_cell_shift_par=6.0, wavelet_scf_type=40,
-                functional=None, psolver=None, potential_file='POTENTIAL', basis_file='BASIS_MOLOPT',
-                basis_method='GAPW', ngrids=4, cutoff=450, rel_cutoff=50,
+                functional=None, psolver='wavelet', potential_file='POTENTIAL', basis_file='BASIS',
+                basis_method='GAPW', ngrids=4, cutoff=250, rel_cutoff=60,
                 method='QUICKSTEP', numcores=1, center_coords=True, scf_convergence=1e-6,
-                coupling='COULOMB', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None):
+                coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None):
 
         self.theorytype="QM"
         self.theorynamelabel="CP2K"
@@ -73,7 +70,7 @@ class CP2KTheory:
         if periodic is True:
             print("Periodic is True")
             self.periodic_type=periodic_type
-            print("PERIODIC_TYPE:", self.periodic_type)
+            print("Periodic type:", self.periodic_type)
             if psolver.upper() == 'MT':
                 print("Error: For periodic simulations the Poisson solver (psolver) can not be MT.")
                 ashexit()
@@ -83,41 +80,24 @@ class CP2KTheory:
             print("PERIODIC_TYPE:", self.periodic_type)
 
 
+
+        #Finding CP2K dir and binaries
+        self.cp2kdir, self.cp2k_bin_name = find_cp2k(cp2kdir,cp2k_bin_name)
+
         #Checking OpenMPI
         if numcores != 1:
-            print(f"Parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version is available in your environment")
-            check_OpenMPI()
-        #Finding CP2K
-        if cp2kdir == None:
-            print(BC.WARNING, f"No cp2kdir argument passed to {self.theorynamelabel}Theory. Attempting to find cp2kdir variable inside settings_ash", BC.END)
-            try:
-                print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
-                self.cp2kdir=ash.settings_ash.settings_dict["cp2kdir"]
-            except:
-                print(BC.WARNING,"Found no cp2kdir variable in settings_ash module either.",BC.END)
-                try:
-                    print("Looking for cp2k.ssmp")
-                    self.cp2kdir = os.path.dirname(shutil.which('cp2k.ssmp'))
-                    print(BC.OKGREEN,"Found cp2k.ssmp in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
-                    self.cp2k_bin_name='cp2k.ssmp'
-                except:
-                    try:
-                        print("Looking for cp2k.sopt")
-                        self.cp2kdir = os.path.dirname(shutil.which('cp2k.sopt'))
-                        print(BC.OKGREEN,"Found cp2k.sopt in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
-                        self.cp2k_bin_name='cp2k.sopt'
-                    except:
-                        try:
-                            print("Looking for cp2k.psmp")
-                            self.cp2kdir = os.path.dirname(shutil.which('cp2k.psmp'))
-                            print(BC.OKGREEN,"Found cp2k.psmp in PATH. Setting cp2kdir to:", self.cp2kdir, BC.END)
-                            self.cp2k_bin_name='cp2k.psmp'
-                        except:
-                            print(BC.FAIL,"Found no cp2k executable in PATH. Exiting... ", BC.END)
-                            ashexit()
+            print(f"Parallel job requested with numcores: {numcores} .")
+            if 'popt' in cp2k_bin_name or 'psmp' in cp2k_bin_name:
+                self.paramethod='MPI'
+                #TODO: Control over MPI and OpenMP threads currently not done
+                print("CP2K executable contains popt or psmp ending. MPI parallelization will be used")
+                print("Make sure that the correct OpenMPI version is available in your environment")
+                check_OpenMPI()
+            else:
+                print("CP2K executable is not cp2k.popt or cp2k.psmp. Will use OpenMP threading")
+                self.paramethod='OpenMP'
         else:
-            self.cp2kdir = cp2kdir
-        
+            self.paramethod=None
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
@@ -240,7 +220,7 @@ class CP2KTheory:
                     qm_cell = cubic_box_size(current_coords)
                     qm_box_dims=np.array([qm_cell,qm_cell,qm_cell])
                 else:
-                    print("Poission solver not wavelet. Using non-cubic box")
+                    print("Poisson solver not wavelet. Using non-cubic box")
                     qm_box_dims = bounding_box_dimensions(current_coords)
                 print(f"QM-box size (based on QM-coords): {qm_box_dims} Angstrom")
                 print(f"Adding shift of {self.qm_cell_shift_par} Angstrom (qm_cell_shift_par keyword)")
@@ -354,21 +334,20 @@ class CP2KTheory:
             else:
                 print("No file found in parent dir. Using GTHpotential file from ASH. Copying to dir as POTENTIAL")
                 shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cp2k/GTH_POTENTIALS', './POTENTIAL')
-        #TODO: Need to support other basis sets (called something else than BASIS_MOLOPT)
-        print("Checking if BASIS_MOLOPT file exists in current dir")
-        if os.path.isfile("BASIS_MOLOPT") is True:
+        print("Checking if BASIS file exists in current dir")
+        if os.path.isfile("BASIS") is True:
             print(f"File exists in current directory: {os.getcwd()}")
         else:
             print("No file found. Trying parent dir")
-            if os.path.isfile("../BASIS_MOLOPT") is True:
+            if os.path.isfile("../BASIS") is True:
                 print("Found file in parent dir. Copying to current dir:", os.getcwd())
-                shutil.copy(f"../BASIS_MOLOPT", f"./BASIS_MOLOPT")
+                shutil.copy(f"../BASIS", f"./BASIS")
             else:
-                print("No file found in parent dir. Using basis set file from ASH. Copying to dir as BASIS_MOLOPT")
-                shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cp2k/BASIS_MOLOPT', './BASIS_MOLOPT')
+                print("No file found in parent dir. Using basis set file from ASH. Copying to dir as BASIS")
+                shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cp2k/BASIS_MOLOPT', './BASIS')
 
         #Run CP2K
-        run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores)
+        run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores,paramethod=self.paramethod)
 
         #Grab energy
         self.energy=grab_energy_cp2k(self.filename+'.out',method=self.method)
@@ -397,11 +376,20 @@ class CP2KTheory:
 # Independent CP2K functions
 ################################
 
-def run_CP2K(cp2kdir,bin_name,filename,numcores=1):
+def run_CP2K(cp2kdir,bin_name,filename,numcores=1, paramethod='MPI'):
     with open(filename+'.out', 'w') as ofile:
         if numcores >1:
-            process = sp.run(["mpirun", "--bind-to", "none", f"-np", f"{str(numcores)}", f"{cp2kdir}/{bin_name}", f"{filename}.inp"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            if paramethod == 'MPI':
+                print(f"Launching MPI-parallel CP2K using {numcores} MPI processes")
+                process = sp.run(["mpirun", "--bind-to", "none", f"-np", f"{str(numcores)}", f"{cp2kdir}/{bin_name}", f"{filename}.inp"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            else:
+                #OpenMP
+                print(f"Launching OpenMP parallel CP2K using {numcores} OpenMP threads")
+                os.environ["OMP_NUM_THREADS"] = str(numcores)
+                process = sp.run([cp2kdir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
         else:
+            #Serial
+            print("Launching serial CP2K")
             process = sp.run([cp2kdir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #Regular CP2K input
@@ -412,19 +400,19 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     charge=None, mult=None, basis_method='GAPW',
                     mgrid_commensurate=False, max_iter=50, scf_guess='RESTART', scf_convergence=1e-6,
                     periodic_type="XYZ", cell_dimensions=None, cell_vectors=None, 
-                    qm_cell_dims=None, qm_periodic_type=None,basis_file='BASIS_MOLOPT', potential_file='POTENTIAL',
+                    qm_cell_dims=None, qm_periodic_type=None,basis_file='BASIS', potential_file='POTENTIAL',
                     psolver='wavelet', wavelet_scf_type=40,
-                    ngrids=4, cutoff=450, rel_cutoff=50,
-                    coupling='COULOMB', GEEP_num_gauss=12, MM_radius_scaling=1, mm_radii=None,
+                    ngrids=4, cutoff=250, rel_cutoff=60,
+                    coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
                     qm_kind_dict=None, mm_kind_list=None,
                     mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21"):
-    
-    if mm_radii == None:
-        print("No user MM radii provided. Will use default radii from internal dict (element_radii_for_cp2k):")
-        mm_radii=element_radii_for_cp2k
-        print("Radii will be scaled by factor:", MM_radius_scaling)
-    else:
-        print("User MM radii provided:", mm_radii)
+    if method == 'QMMM':
+        if mm_radii == None:
+            print("No user MM radii provided. Will use default radii from internal dict (element_radii_for_cp2k):")
+            mm_radii=element_radii_for_cp2k
+            print("Radii will be scaled by factor:", MM_radius_scaling)
+        else:
+            print("User MM radii provided:", mm_radii)
     #
     first_atom=1
     last_atom=len(qm_elems)
@@ -671,3 +659,53 @@ def grab_pcgradient_CP2K(pcgradfile,numpc,numatoms):
             #Beginning atomcount
             if ' # Atom   Kind   Element' in line:
                 atomgrab=True
+
+
+def find_cp2k(cp2kdir, cp2k_bin_name):
+    #List of binaries to search for in this order unless specified
+    cp2k_binaries=["cp2k.psmp", "cp2k.popt", "cp2k.ssmp","cp2k.sopt"]  
+    if cp2kdir == None:
+        #No cp2kdir
+        print(BC.WARNING, f"No cp2kdir argument passed to CP2KTheory. Attempting to find cp2kdir variable inside settings_ash", BC.END)
+        try:
+            print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+            cp2kdir=ash.settings_ash.settings_dict["cp2kdir"]
+            print("Found cp2kdir variable in settings_ash module:", cp2kdir)
+        except:
+            print(BC.WARNING,"Found no cp2kdir variable in settings_ash module either.",BC.END)
+            print("Now searching for binary in path")
+            if cp2k_bin_name == None:
+                print(f"cp2k_bin_name variable not set. Will search for multiple binaries in PATH, using this order: {cp2k_binaries}")
+            else:
+                print("cp2k_bin_name variable set:", cp2k_bin_name)
+                print(f"Searching for {cp2k_bin_name} in dir")
+                cp2k_binaries=[cp2k_bin_name]
+
+            for bin in cp2k_binaries:
+                if shutil.which(bin) is not None:
+                    print(BC.OKGREEN,"Found cp2k binary:", bin, BC.END)
+                    cp2k_bin_name=bin
+                    cp2kdir = os.path.dirname(shutil.which(bin))
+                    return cp2kdir, cp2k_bin_name 
+    #If cp2kdir provided or found above
+    if cp2kdir != None:
+        #cp2kdir provided. Searching
+        print("cp2kdir found:", cp2kdir)
+        if cp2k_bin_name == None:
+            print("cp2k_bin_name variable not set. Will search for multiple binaries in dir")
+            print("Using this order: ", cp2k_binaries)
+        else:
+            print("cp2k_bin_name variable set:", cp2k_bin_name)
+            print(f"Searching for {cp2k_bin_name} in dir")
+            cp2k_binaries=[cp2k_bin_name]
+        #Searching for binaries in dir
+        for bin in cp2k_binaries:
+            if os.path.isfile(cp2kdir+'/'+bin) is True:
+                print(BC.OKGREEN,"Found cp2k binary:", bin, BC.END)
+                cp2k_bin_name=bin
+                return cp2kdir, cp2k_bin_name
+
+    print("Error: Unsuccessful at finding cp2k binaries and/or directory")
+    print("Note: Make sure the cp2k binaries are in your PATH and named correctly")
+    ashexit()
+    return
