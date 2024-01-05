@@ -856,6 +856,17 @@ class OpenMMTheory:
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
 
+    #Get PBC vectors from topology of openmm object. Convenient in a script
+    def get_PBC_vectors(self):
+        import openmm
+        #Get PBC vectors
+        vectors_nm=list(self.topology.getPeriodicBoxVectors())
+        a=list(vectors_nm[0].value_in_unit(openmm.unit.angstrom))
+        b=list(vectors_nm[1].value_in_unit(openmm.unit.angstrom))
+        c=list(vectors_nm[2].value_in_unit(openmm.unit.angstrom))
+        #Return List of lists
+        return [a,b,c]
+
     #Set numcores method: currently inactive. Included for completeness
     def set_numcores(self,numcores):
         self.numcores=numcores
