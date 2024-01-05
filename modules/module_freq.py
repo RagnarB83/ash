@@ -446,7 +446,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     # Get partial matrix by deleting atoms not present in list.
     hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
     #Use input masses if given, otherwise take from frament
-    print("fragment.masses", fragment.masses)
 
     if hessatoms_masses == None:
         hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
@@ -462,7 +461,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     frequencies, nmodes, evectors, mode_order = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
     print("Diagonalization of frequencies complete")
     print("Now scaling frequencies by scaling factor:", scaling_factor)
-    frequencies = scaling_factor * frequencies
+    frequencies = scaling_factor * np.array(frequencies)
 
     #IR intensities if dipoles available
     if len(displacement_dipole_dictionary) > 0:

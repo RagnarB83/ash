@@ -37,7 +37,8 @@ class CP2KTheory:
                 qm_cell_dims=None, qm_cell_shift_par=6.0, wavelet_scf_type=40,
                 functional=None, psolver='wavelet', potential_file='POTENTIAL', basis_file='BASIS',
                 basis_method='GAPW', ngrids=4, cutoff=250, rel_cutoff=60,
-                method='QUICKSTEP', numcores=1, center_coords=True, scf_convergence=1e-6,
+                method='QUICKSTEP', numcores=1, parallelization='OMP', mixed_mpi_procs=None, mixed_omp_threads=None,
+                center_coords=True, scf_convergence=1e-6,
                 coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None):
 
         self.theorytype="QM"
@@ -79,29 +80,54 @@ class CP2KTheory:
             self.periodic_type='NONE'
             print("PERIODIC_TYPE:", self.periodic_type)
 
-
+        #Parallelization
+        self.numcores=numcores
+        #Type of parallelization strategy. 'OMP','MPI','Mixed'
+        self.parallelization=parallelization
+        self.mixed_mpi_procs=mixed_mpi_procs #Mixed only: 
+        self.mixed_omp_threads=mixed_omp_threads #Mixed only:
 
         #Finding CP2K dir and binaries
         self.cp2kdir, self.cp2k_bin_name = find_cp2k(cp2kdir,cp2k_bin_name)
 
         #Checking OpenMPI
-        if numcores != 1:
-            print(f"Parallel job requested with numcores: {numcores} .")
-            if 'popt' in cp2k_bin_name or 'psmp' in cp2k_bin_name:
-                self.paramethod='MPI'
-                #TODO: Control over MPI and OpenMP threads currently not done
-                print("CP2K executable contains popt or psmp ending. MPI parallelization will be used")
+        if self.numcores != 1:
+            print(f"Parallel job requested with numcores: {self.numcores}")
+            print(f"Parallelization strategy: {self.parallelization}")
+            if parallelization == 'Mixed':
+                if self.mixed_mpi_procs is None or self.mixed_omp_threads is None:
+                    print("Error: mixed_mpi_procs and mixed_omp_threads keywords must be provided for Mixed parallelization")
+                    ashexit()
+                if 'psmp' not in self.cp2k_bin_name:
+                    print("Error: Mixed parallelization only possible with cp2k.psmp")
+                    ashexit()
+                print("Mixed parallelization requested. Will use", self.mixed_mpi_procs, "MPI processes and", self.mixed_omp_threads, "OpenMP threads")
+            elif parallelization == 'OMP':
+                if 'ssmp' not in self.cp2k_bin_name:
+                    if 'psmp' not in self.cp2k_bin_name:
+                        print("Error: OMP parallelization requires either ssmp or psmp binary")
+                        ashexit()
+                print(f"OpenMP parallelization requested. 1 CP2K process will be launched with {numcores} OpenMP threads")
+            elif parallelization == 'MPI':
+                if 'popt' not in self.cp2k_bin_name:
+                    if 'psmp' not in self.cp2k_bin_name:
+                        print("Error: MPI parallelization requires either popt or psmp binary")
+                        ashexit()
+                print("MPI parallelization requested. Will use", self.numcores, "MPI processes")
                 print("Make sure that the correct OpenMPI version is available in your environment")
                 check_OpenMPI()
             else:
-                print("CP2K executable is not cp2k.popt or cp2k.psmp. Will use OpenMP threading")
-                self.paramethod='OpenMP'
+                print("Unknown parallelization choice")
+                ashexit()
         else:
-            self.paramethod=None
+            print("Numcores=1. No parallelization of CP2K requested")
+            self.parallelization=None
+        
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
-        self.numcores=numcores
+
+
         
         #Methods
         self.method=method #Can be QUICKSTEP or QMMM
@@ -279,7 +305,7 @@ class CP2KTheory:
                              MM_radius_scaling=self.MM_radius_scaling, mm_radii=self.mm_radii,
                              qm_kind_dict=qm_kind_dict, mm_kind_list=mm_kind_list,
                              scf_convergence=self.scf_convergence, 
-                             ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff)
+                             ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel)
         else:
             #No QM/MM
             #QM-CELL
@@ -314,7 +340,7 @@ class CP2KTheory:
                              cell_dimensions=self.cell_dimensions, 
                              cell_vectors=self.cell_vectors,
                              basis_file=self.basis_file, potential_file=self.potential_file,
-                             psolver=self.psolver)
+                             psolver=self.psolver, printlevel=self.printlevel)
 
         #Delete old forces file if present
         try:
@@ -346,8 +372,16 @@ class CP2KTheory:
                 print("No file found in parent dir. Using basis set file from ASH. Copying to dir as BASIS")
                 shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cp2k/BASIS_MOLOPT', './BASIS')
 
+        #Timing for Run-prep
+        print_time_rel(module_init_time, modulename=f'CP2K run-prep', moduleindex=2)
+
         #Run CP2K
-        run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores,paramethod=self.paramethod)
+        if self.parallelization == 'Mixed':
+            run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores,paramethod=self.parallelization,
+                     mixed_mpi_procs=self.mixed_mpi_procs, mixed_omp_threads=self.mixed_omp_threads)
+        else:
+            run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores,paramethod=self.parallelization)
+
 
         #Grab energy
         self.energy=grab_energy_cp2k(self.filename+'.out',method=self.method)
@@ -376,20 +410,36 @@ class CP2KTheory:
 # Independent CP2K functions
 ################################
 
-def run_CP2K(cp2kdir,bin_name,filename,numcores=1, paramethod='MPI'):
+def run_CP2K(cp2kdir,bin_name,filename,numcores=1, paramethod='MPI', mixed_omp_threads=None, mixed_mpi_procs=None):
     with open(filename+'.out', 'w') as ofile:
         if numcores >1:
+            print("paramethod:", paramethod)
             if paramethod == 'MPI':
+                #MPI-parallel setting OMP_NUM_THREDS to 1
                 print(f"Launching MPI-parallel CP2K using {numcores} MPI processes")
+                os.environ["OMP_NUM_THREADS"] = str(1)
                 process = sp.run(["mpirun", "--bind-to", "none", f"-np", f"{str(numcores)}", f"{cp2kdir}/{bin_name}", f"{filename}.inp"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-            else:
-                #OpenMP
+            elif paramethod == 'OMP':
+                #OpenMP-parallel, no-MPI
                 print(f"Launching OpenMP parallel CP2K using {numcores} OpenMP threads")
                 os.environ["OMP_NUM_THREADS"] = str(numcores)
                 process = sp.run([cp2kdir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            elif paramethod == 'Mixed':
+                #Mixed MPI and OpenMP-parallel
+                print(f"Launching Mixed MPI/OpenMP parallel CP2K using {numcores} cores in total")
+                print(f"Will use {mixed_mpi_procs} MPI processes and {mixed_omp_threads} OpenMP threads per process for a total of {mixed_mpi_procs*mixed_omp_threads} cores")
+                if mixed_mpi_procs*mixed_omp_threads != numcores:
+                    print(f"Error: mixed_mpi_procs*mixed_omp_threads={mixed_mpi_procs}*{mixed_omp_threads} is not equal to numcores={numcores}")
+                    ashexit()
+                os.environ["OMP_NUM_THREADS"] = str(mixed_omp_threads)
+                process = sp.run(["mpirun", "--bind-to", "none", f"-np", f"{str(mixed_mpi_procs)}", f"{cp2kdir}/{bin_name}", f"{filename}.inp"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            else:
+                print("Unknown parallelization method")
+                ashexit()
         else:
-            #Serial
+            #Serial: No MPI, setting OMP_NUM_THREDS to 1
             print("Launching serial CP2K")
+            os.environ["OMP_NUM_THREADS"] = str(1)
             process = sp.run([cp2kdir + f'/{bin_name}', filename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 #Regular CP2K input
@@ -405,10 +455,10 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     ngrids=4, cutoff=250, rel_cutoff=60,
                     coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
                     qm_kind_dict=None, mm_kind_list=None,
-                    mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21"):
+                    mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21", printlevel=2):
     if method == 'QMMM':
         if mm_radii == None:
-            print("No user MM radii provided. Will use default radii from internal dict (element_radii_for_cp2k):")
+            print("No user MM radii provided. Will use default radii from internal dict (element_radii_for_cp2k).")
             mm_radii=element_radii_for_cp2k
             print("Radii will be scaled by factor:", MM_radius_scaling)
         else:
@@ -541,8 +591,9 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             #Write MM_KIND blocks
             #Necessary for GEEP. Radii used in embedding.
             for mm_el in mm_kind_list:
-                print("Assuming MM radius for element:", mm_el, "of:", mm_radii[mm_el], "Angstrom")
-                print("MM-radius after scaling", mm_radii[mm_el]*MM_radius_scaling, "Angstrom")
+                if printlevel >2:
+                    print("Assuming MM radius for element:", mm_el, "of:", mm_radii[mm_el], "Angstrom")
+                    print("MM-radius after scaling", mm_radii[mm_el]*MM_radius_scaling, "Angstrom")
                 #Note: CP2K converts this to Bohrs internally (printed as Bohrs in output)
                 inpfile.write(f'      &MM_KIND {mm_el}\n')
                 inpfile.write(f'          RADIUS {mm_radii[mm_el]*MM_radius_scaling}\n')
