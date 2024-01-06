@@ -40,8 +40,8 @@ class CP2KTheory:
                 method='QUICKSTEP', numcores=1, parallelization='OMP', mixed_mpi_procs=None, mixed_omp_threads=None,
                 center_coords=True, scf_maxiter=200, scf_convergence=1e-6, eps_default=1e-10,
                 coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
-                OT=False, OT_minimizer='DIIS', OT_preconditioner='FULL_SINGLE_INVERSE', 
-                OT_linesearch='3PNT', outer_SCF=False, outer_SCF_optimizer='DIIS'):
+                OT=False, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL', 
+                OT_linesearch='3PNT', outer_SCF=False, outer_SCF_optimizer='DIIS', OT_energy_gap=0.08):
 
         self.theorytype="QM"
         self.theorynamelabel="CP2K"
@@ -160,6 +160,7 @@ class CP2KTheory:
         self.OT_linesearch=OT_linesearch
         self.outer_SCF=outer_SCF
         self.outer_SCF_optimizer=outer_SCF_optimizer
+        self.OT_energy_gap=OT_energy_gap
 
         #Grid stuff
         self.ngrids=ngrids
@@ -319,7 +320,7 @@ class CP2KTheory:
                              scf_convergence=self.scf_convergence, eps_default=self.eps_default, scf_maxiter=self.scf_maxiter,
                              ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel,
                              OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
-                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer)
+                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer, OT_energy_gap=self.OT_energy_gap)
         else:
             #No QM/MM
             #QM-CELL
@@ -357,7 +358,7 @@ class CP2KTheory:
                              basis_file=self.basis_file, potential_file=self.potential_file,
                              psolver=self.psolver, printlevel=self.printlevel,
                              OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
-                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer)
+                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer, OT_energy_gap=self.OT_energy_gap)
 
         #Delete old forces file if present
         try:
@@ -473,8 +474,8 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
                     qm_kind_dict=None, mm_kind_list=None,
                     mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21", printlevel=2,
-                    OT=False, OT_minimizer='DIIS', OT_preconditioner='FULL_SINGLE_INVERSE', OT_linesearch='3PNT',
-                    outer_SCF=False, outer_SCF_optimizer='DIIS'):
+                    OT=False, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL', OT_linesearch='3PNT',
+                    outer_SCF=False, outer_SCF_optimizer='DIIS', OT_energy_gap=0.08):
     if method == 'QMMM':
         if mm_radii == None:
             print("No user MM radii provided. Will use default radii from internal dict (element_radii_for_cp2k).")
@@ -540,8 +541,9 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             #Warning default OT settings here are supposedly expensive
             inpfile.write(f'      &OT \n')
             inpfile.write(f'            MINIMIZER {OT_minimizer}\n') #DIIS or CG
-            inpfile.write(f'            PRECONDITIONER {OT_preconditioner}\n') # FULL_SINGLE_INVERSE
-            inpfile.write(f'            LINESEARCH {OT_linesearch}\n') #3PNT
+            inpfile.write(f'            PRECONDITIONER {OT_preconditioner}\n') # FULL_SINGLE_INVERSE or FULL_KINETIC
+            inpfile.write(f'            LINESEARCH {OT_linesearch}\n') #NONE, 2PNT, 3PNT, GOLD
+            inpfile.write(f'            ENERGY_GAP {OT_energy_gap}\n') #0.08 (default), 0.001, 0.002
             inpfile.write(f'      &END OT\n')
         inpfile.write(f'    &END SCF\n')
         inpfile.write(f'    CHARGE {charge}\n')
