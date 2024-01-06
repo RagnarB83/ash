@@ -39,7 +39,9 @@ class CP2KTheory:
                 basis_method='GAPW', ngrids=4, cutoff=250, rel_cutoff=60,
                 method='QUICKSTEP', numcores=1, parallelization='OMP', mixed_mpi_procs=None, mixed_omp_threads=None,
                 center_coords=True, scf_maxiter=200, scf_convergence=1e-6, eps_default=1e-10,
-                coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None):
+                coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
+                OT=False, OT_minimizer='DIIS', OT_preconditioner='FULL_SINGLE_INVERSE', 
+                OT_linesearch='3PNT', outer_SCF=False, outer_SCF_optimizer='DIIS'):
 
         self.theorytype="QM"
         self.theorynamelabel="CP2K"
@@ -150,6 +152,14 @@ class CP2KTheory:
         self.qm_cell_shift_par=qm_cell_shift_par #Shift of QM-cell size if estimated from QM-coords
         self.functional=functional
         self.center_coords=center_coords
+
+        #SCF onvergence stuff
+        self.OT=OT
+        self.OT_minimizer=OT_minimizer
+        self.OT_preconditioner=OT_preconditioner
+        self.OT_linesearch=OT_linesearch
+        self.outer_SCF=outer_SCF
+        self.outer_SCF_optimizer=outer_SCF_optimizer
 
         #Grid stuff
         self.ngrids=ngrids
@@ -307,7 +317,9 @@ class CP2KTheory:
                              MM_radius_scaling=self.MM_radius_scaling, mm_radii=self.mm_radii,
                              qm_kind_dict=qm_kind_dict, mm_kind_list=mm_kind_list,
                              scf_convergence=self.scf_convergence, eps_default=self.eps_default, scf_maxiter=self.scf_maxiter,
-                             ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel)
+                             ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel,
+                             OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
+                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer)
         else:
             #No QM/MM
             #QM-CELL
@@ -343,7 +355,9 @@ class CP2KTheory:
                              cell_dimensions=self.cell_dimensions, 
                              cell_vectors=self.cell_vectors,
                              basis_file=self.basis_file, potential_file=self.potential_file,
-                             psolver=self.psolver, printlevel=self.printlevel)
+                             psolver=self.psolver, printlevel=self.printlevel,
+                             OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
+                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer)
 
         #Delete old forces file if present
         try:
@@ -458,7 +472,9 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     ngrids=4, cutoff=250, rel_cutoff=60,
                     coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
                     qm_kind_dict=None, mm_kind_list=None,
-                    mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21", printlevel=2):
+                    mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21", printlevel=2,
+                    OT=False, OT_minimizer='DIIS', OT_preconditioner='FULL_SINGLE_INVERSE', OT_linesearch='3PNT',
+                    outer_SCF=False, outer_SCF_optimizer='DIIS'):
     if method == 'QMMM':
         if mm_radii == None:
             print("No user MM radii provided. Will use default radii from internal dict (element_radii_for_cp2k).")
@@ -516,6 +532,17 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         inpfile.write(f'      SCF_GUESS {scf_guess}\n')
         inpfile.write(f'      MAX_SCF {scf_maxiter}\n')
         inpfile.write(f'      EPS_SCF {scf_convergence}\n')
+        if outer_SCF is True:
+            inpfile.write(f'      &OUTER_SCF\n')
+            inpfile.write(f'            OPTIMIZER {outer_SCF_optimizer}\n')
+            inpfile.write(f'      &END OUTER_SCF\n')
+        if OT is True:
+            #Warning default OT settings here are supposedly expensive
+            inpfile.write(f'      &OT \n')
+            inpfile.write(f'            MINIMIZER {OT_minimizer}\n') #DIIS or CG
+            inpfile.write(f'            PRECONDITIONER {OT_preconditioner}\n') # FULL_SINGLE_INVERSE
+            inpfile.write(f'            LINESEARCH {OT_linesearch}\n') #3PNT
+            inpfile.write(f'      &END OT\n')
         inpfile.write(f'    &END SCF\n')
         inpfile.write(f'    CHARGE {charge}\n')
         if mult > 1:
