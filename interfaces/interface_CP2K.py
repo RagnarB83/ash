@@ -38,7 +38,7 @@ class CP2KTheory:
                 functional=None, psolver='wavelet', potential_file='POTENTIAL', basis_file='BASIS',
                 basis_method='GAPW', ngrids=4, cutoff=250, rel_cutoff=60,
                 method='QUICKSTEP', numcores=1, parallelization='OMP', mixed_mpi_procs=None, mixed_omp_threads=None,
-                center_coords=True, scf_convergence=1e-6, eps_default=1e-10,
+                center_coords=True, scf_maxiter=200, scf_convergence=1e-6, eps_default=1e-10,
                 coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None):
 
         self.theorytype="QM"
@@ -156,6 +156,7 @@ class CP2KTheory:
         self.cutoff=cutoff
         self.rel_cutoff=rel_cutoff
         self.scf_convergence=scf_convergence
+        self.scf_maxiter=scf_maxiter
         self.eps_default=eps_default
 
         #QM/MM
@@ -305,7 +306,7 @@ class CP2KTheory:
                              psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
                              MM_radius_scaling=self.MM_radius_scaling, mm_radii=self.mm_radii,
                              qm_kind_dict=qm_kind_dict, mm_kind_list=mm_kind_list,
-                             scf_convergence=self.scf_convergence, eps_default=self.eps_default,
+                             scf_convergence=self.scf_convergence, eps_default=self.eps_default, scf_maxiter=self.scf_maxiter,
                              ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel)
         else:
             #No QM/MM
@@ -336,7 +337,8 @@ class CP2KTheory:
                              basis_method=self.basis_method, wavelet_scf_type=self.wavelet_scf_type,
                              functional=self.functional, restartfile=None,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
-                             coordfile=system_xyzfile, scf_convergence=self.scf_convergence, eps_default=self.eps_default, 
+                             coordfile=system_xyzfile, scf_convergence=self.scf_convergence, eps_default=self.eps_default,
+                             scf_maxiter=self.scf_maxiter, 
                              periodic_type=self.periodic_type,
                              cell_dimensions=self.cell_dimensions, 
                              cell_vectors=self.cell_vectors,
@@ -449,7 +451,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     Grad=True, filename='cp2k', system_coord_file_format="XYZ", 
                     coordfile=None,
                     charge=None, mult=None, basis_method='GAPW',
-                    mgrid_commensurate=False, max_iter=50, scf_guess='RESTART', scf_convergence=1e-6, eps_default=1e-10,
+                    mgrid_commensurate=False, scf_maxiter=200, scf_guess='RESTART', scf_convergence=1e-6, eps_default=1e-10,
                     periodic_type="XYZ", cell_dimensions=None, cell_vectors=None, 
                     qm_cell_dims=None, qm_periodic_type=None,basis_file='BASIS', potential_file='POTENTIAL',
                     psolver='wavelet', wavelet_scf_type=40,
@@ -512,7 +514,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         #SCF: Control GUESS etc
         inpfile.write(f'    &SCF\n')
         inpfile.write(f'      SCF_GUESS {scf_guess}\n')
-        inpfile.write(f'      MAX_SCF {max_iter}\n')
+        inpfile.write(f'      MAX_SCF {scf_maxiter}\n')
         inpfile.write(f'      EPS_SCF {scf_convergence}\n')
         inpfile.write(f'    &END SCF\n')
         inpfile.write(f'    CHARGE {charge}\n')
