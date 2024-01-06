@@ -12,27 +12,6 @@ from functools import reduce
 import random
 import copy
 
-#Standalone function for reading either pySCF-CHK file or Molden file and returning MO coefficients and occupations
-#Used by pySCFTheory, DiceTheory and BlockTheory
-def pySCF_read_MOs(moreadfile,pyscfobject):
-    import pyscf
-    print("Reading MOs from :", moreadfile)
-    #Molden read
-    if '.molden' in moreadfile:
-        print("Warning: This is a Molden file. Will try to read MOs from here but this may not work")
-        mol, mo_energy, mo_coefficients, occupations, irrep_labels, spins = pyscf.tools.molden.load(moreadfile)
-    #Checkpoint file
-    elif '.chk'  in moreadfile:
-        mo_coefficients = pyscf.lib.chkfile.load(moreadfile, 'mcscf/mo_coeff')
-        occupations = pyscf.lib.chkfile.load(moreadfile, 'mcscf/mo_occ')
-    print("Occupations:", occupations)
-    print("Length of occupations array:", len(occupations))
-    if len(occupations) != pyscfobject.num_orbs:
-        print("Occupations array length does NOT match length of MO coefficients in PySCF object")
-        print("Is basis different? Exiting")
-        ashexit()
-    return mo_coefficients, occupations
-
 #PySCF Theory object.
 #TODO: Somehow support reading in user mf object ?
 #TODO: PE: Polarizable embedding (CPPE). Revisit
@@ -668,6 +647,7 @@ class PySCFTheory:
             print("Total entropy beta (FD):", S_b)
 
             if 'fermi' in self.NMF_distribution.lower() or  self.NMF_distribution == 'FD':
+                print("Fermi entropy")
                 Ec_a = get_ec_entropy(occ_a, self.NMF_sigma, method='fermi')
                 Ec_b = get_ec_entropy(occ_a, self.NMF_sigma, method='fermi')
                 Ec = Ec_a/2 + Ec_b/2
@@ -2713,3 +2693,23 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
     result = ASH_Results(label="pyscf_CCSD_T_natorb_selection", energy=CC_energy, charge=fragment.charge, mult=fragment.mult)
     return result
 
+#Standalone function for reading either pySCF-CHK file or Molden file and returning MO coefficients and occupations
+#Used by pySCFTheory, DiceTheory and BlockTheory
+def pySCF_read_MOs(moreadfile,pyscfobject):
+    import pyscf
+    print("Reading MOs from :", moreadfile)
+    #Molden read
+    if '.molden' in moreadfile:
+        print("Warning: This is a Molden file. Will try to read MOs from here but this may not work")
+        mol, mo_energy, mo_coefficients, occupations, irrep_labels, spins = pyscf.tools.molden.load(moreadfile)
+    #Checkpoint file
+    elif '.chk'  in moreadfile:
+        mo_coefficients = pyscf.lib.chkfile.load(moreadfile, 'mcscf/mo_coeff')
+        occupations = pyscf.lib.chkfile.load(moreadfile, 'mcscf/mo_occ')
+    print("Occupations:", occupations)
+    print("Length of occupations array:", len(occupations))
+    if len(occupations) != pyscfobject.num_orbs:
+        print("Occupations array length does NOT match length of MO coefficients in PySCF object")
+        print("Is basis different? Exiting")
+        ashexit()
+    return mo_coefficients, occupations

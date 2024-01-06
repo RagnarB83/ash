@@ -2276,13 +2276,10 @@ def get_ec_entropy(occ, sigma, method='fermi', alpha=0.6):
     mask=f>0.5
     f[mask] = 1.0-f[mask]
     if method=='fermi':
-        print("Fermi entropy")
         fc = f*np.log(f) + (1-f)*np.log(1-f)
     elif method == 'gaussian':
-        print("Gaussian entropy")
         fc = -np.exp(-(erfinv(1-f*2))**2)/2.0/np.sqrt(np.pi)
     elif method == 'linear':
-        print("Linear entropy")
         fc = -f+np.sqrt(2)*f**(3.0/2.0)*2.0/3.0
     else:
         raise ValueError('Not support', method)
