@@ -48,7 +48,7 @@ class PySCFTheory:
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   NMF=False, NMF_sigma=None, NMF_distribution=None, stability_analysis=False, 
-                  BS=False, HSmult=None, spinflipatom=None, atomstoflip=None,
+                  BS=False, HSmult=None, atomstoflip=None,
                   TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
@@ -69,6 +69,9 @@ class PySCFTheory:
         self.analytic_hessian=False
 
         print_line_with_mainheader("PySCFTheory initialization")
+
+        #EARLY EXITS
+
         #Exit early if no SCF-type
         if scf_type is None:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
@@ -88,6 +91,23 @@ class PySCFTheory:
         else:
             if scf_type == 'RKS' or scf_type == 'UKS':
                 print("Error: RKS/UKS chosen but no functional. Exiting")
+                ashexit()
+        if NMF is True:
+            if NMF_distribution is None:
+                print("NMF requires NMF_distribution keyword. Exiting")
+                ashexit()
+            if NMF_sigma is None:
+                print("NMF requires NMF_sigma keyword. Exiting")
+                ashexit()
+        if BS is True:
+            if atomstoflip is None:
+                print("Error: BS is True but atomstoflip is not set. This is required. Exiting")
+                ashexit()
+            if scf_type == 'RHF' or scf_type == 'RKS':
+                print("SCF-type has to be unrestricted for BS. Exiting")
+                ashexit()
+            if HSmult is None:
+                print("Error: BS is True but HSmult is not set. This is required. Exiting")
                 ashexit()
         if CC is True and CCmethod is None:
             print("Error: Need to choose CCmethod, e.g. 'CCSD', 'CCSD(T)")
@@ -197,8 +217,7 @@ class PySCFTheory:
         #BS
         self.BS=BS
         self.HSmult=HSmult
-        self.spinflipatom=spinflipatom #temporary
-        self.atomstoflip=atomstoflip #Not active
+        self.atomstoflip=atomstoflip
 
         #GHF/GKS options
         self.GHF_complex = GHF_complex #Complex or not
@@ -631,6 +650,50 @@ class PySCFTheory:
 
         return natocc,natorb,rdm1
 
+    def run_NMF_step(self):
+        print("NMF smearing active. Getting NMF energy")
+        print("Sigma:", self.NMF_sigma)
+        E_mf = self.mf.e_tot
+        print("Mean-field energy:", E_mf)
+        occ = self.mf.get_occ(mo_energy_kpts=self.mf.mo_energy)
+        print("occ:", occ)
+
+        #NOTE: Not sure if this is correct yet
+        if self.scf_type == 'UHF' or self.scf_type == 'UKS':
+            occ_a = occ[0]
+            occ_b = occ[1]
+            S_a = get_entropy(occ_a)
+            S_b = get_entropy(occ_b)
+            print("Total entropy alpha (FD):", S_a)
+            print("Total entropy beta (FD):", S_b)
+
+            if 'fermi' in self.NMF_distribution.lower() or  self.NMF_distribution == 'FD':
+                Ec_a = get_ec_entropy(occ_a, self.NMF_sigma, method='fermi')
+                Ec_b = get_ec_entropy(occ_a, self.NMF_sigma, method='fermi')
+                Ec = Ec_a/2 + Ec_b/2
+            elif self.NMF_distribution.lower() == 'gaussian' or self.NMF_distribution == 'G':
+                Ec_a = get_ec_entropy(occ_a, self.NMF_sigma, method='gaussian')
+                Ec_b = get_ec_entropy(occ_b, self.NMF_sigma, method='gaussian')
+                Ec = Ec_a/2 + Ec_b/2
+            else:
+                print("Unknown distribution")
+                ashexit()
+        else:
+            S = get_entropy(occ)
+            print("Total entropy (FD):", S)
+            print("Sigma:", self.NMF_sigma)
+            if 'fermi' in self.NMF_distribution.lower() or  self.NMF_distribution == 'FD':
+                Ec = get_ec_entropy(occ, self.NMF_sigma, method='fermi')
+            elif self.NMF_distribution.lower() == 'gaussian' or self.NMF_distribution == 'G':
+                Ec = get_ec_entropy(occ, self.NMF_sigma, method='gaussian')
+            else:
+                print("Unknown distribution")
+                ashexit()
+        print("Correlation energy:", Ec)                
+        E_tot_NMF = E_mf + Ec
+        print("Total NMF energy:", E_tot_NMF)
+        return E_tot_NMF
+
     #Population analysis, requiring mf and dm objects
     #Currently only Mulliken
     def run_population_analysis(self, mf, unrestricted=False, dm=None, type='Mulliken', label=None, verbose=3):
@@ -899,6 +962,7 @@ class PySCFTheory:
         return MP2_energy, mp2_object
     
     def run_MP2_density(self, mp2object, MP2_DF=None, DFMP2_density_relaxed=None):
+        print("\nInside run_MP2_density")
         import pyscf.mcscf
         if self.scf_type == "RKS" or self.scf_type == "RHF" :
             unrestricted=False
@@ -948,6 +1012,439 @@ class PySCFTheory:
         self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
 
         return natocc, natorb, mp2_dm
+
+    def run_CAS(self,elems=None):
+        print("\nInside run_CAS")
+        import pyscf.mcscf
+
+        ##############################################
+        #First run SCF
+        # required even though orbitals are not used
+        ##############################################
+        scf_result = self.mf.run()
+
+
+        ############################
+        # INITIAL ORBITALS
+        # and active space selection
+        ############################
+        #Initial orbitals for CAS-CI or CASSCF
+        #Checking for AVAS; DMET_CAS and Chkfile options. Otherwise MP2 natural orbitals.
+        print("Checking for CAS initial orbital options.")
+        if self.AVAS is True:
+            from pyscf.mcscf import avas
+            print("AVAS automatic CAS option chosen")
+            norb_cas, nel_cas, orbitals = avas.avas(self.mf, self.CAS_AO_labels)
+            print(f"AVAS determined an active space of: CAS({nel_cas},{norb_cas})")
+        elif self.DMET_CAS is True:
+            from pyscf.mcscf import dmet_cas
+            print("DMET_CAS automatic CAS option chosen")
+            norb_cas, nel_cas, orbitals = dmet_cas.guess_cas(self.mf, self.mf.make_rdm1(), self.CAS_AO_labels)
+            print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
+        elif self.APC is True:
+            from pyscf.mcscf import apc
+            print("APC automatic CAS option chosen")
+            #entropies = np.random.choice(np.arange(len(self.mf.mo_occ)),len(self.mf.mo_occ),replace=False)
+            #chooser = apc.Chooser(self.mf.mo_coeff,self.mf.mo_occ,entropies,max_size=self.apc_max_size)
+            #norb_cas, nel_cas, orbitals, active_idx = chooser.kernel()
+            myapc = apc.APC(self.mf,max_size=self.apc_max_size)
+            norb_cas,nel_cas,orbitals = myapc.kernel()
+            print("norb_cas:", norb_cas)
+            print("nel_cas:", nel_cas)
+            print("orbitals:", orbitals)
+            #print("active_idx:", active_idx)
+        elif self.moreadfile != None:
+            print("moreadfile option was specified")
+            print("This means that SCF-orbitals are ignored and we will read MO coefficients from chkfile:", self.moreadfile)
+            orbitals = pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
+            norb_cas=self.active_space[1]
+            nel_cas=self.active_space[0]
+            print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
+        else:
+            #TODO: Have this be a keyword option also instead of just else-default ?
+            print("Neither AVAS, DMET_CAS or moreadfile options chosen.")
+            print("Will now calculate MP2 natural orbitals to use as input in CAS job")
+            natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
+            print("Initial orbitals setup done")
+            print()
+            print("Now checking if cas_nmin/cas_nmax keyword were specified")
+            if self.cas_nmin != None and self.cas_nmax != None:
+                print(f"Active space will be determined from MP2 natorbs. NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
+                print("Note: Use active_space keyword if you want to select active space manually instead")
+                # Determing active space from natorb thresholds
+                nat_occs_for_thresholds=[i for i in natocc if i < self.cas_nmin and i > self.cas_nmax]
+                norb_cas = len(nat_occs_for_thresholds)
+                nel_cas = round(sum(nat_occs_for_thresholds))
+                print(f"To get this same active space in another calculation you can also do: active_space=[{nel_cas},{norb_cas}]")
+            else:
+                print("Using active_space keyword information")
+                norb_cas=self.active_space[1]
+                nel_cas=self.active_space[0]
+            print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
+
+        print(f"Now running CAS job with active space of {nel_cas} electrons in {norb_cas} orbitals")
+        ########################
+        # CASSCF (orbital opt)
+        ########################
+
+        ##################
+        # prepare CASSCF
+        ##################
+        if self.CASSCF is True:
+            print("Doing CASSCF (orbital optimization)")
+            if self.mcpdft is True:
+                from pyscf import mcpdft, mcdcft
+                #old: casscf = pyscf.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+                casscf = mcpdft.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+            else:
+                #Regular CASSCF
+                casscf = pyscf.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
+            casscf.max_cycle_macro=self.casscf_maxcycle
+            casscf.verbose=self.verbose_setting
+            #Writing of checkpointfile
+            if self.write_chkfile_name != None:
+                casscf.chkfile = self.write_chkfile_name
+            else:
+                casscf.chkfile = "casscf.chk"
+            if self.printlevel >1:
+                print("Will write checkpointfile:", casscf.chkfile )
+
+            #CASSCF starting from AVAS/DMET_CAS/MP2 natural orbitals
+            #Making sure that we only feed in one set of orbitals into CAS (CC is OK with alpha and beta)
+            if type(orbitals) == list:
+                if len(orbitals) == 2:
+                    # Assuming list of [alphorbs-array,betaorbs-array]
+                    orbitals = orbitals[0]
+                else:
+                    print("Something wrong with orbitals:", orbitals)
+                    print("Exiting")
+                    ashexit()
+            ################################
+            #CASSCF MULTIPLE STATES or not
+            ################################
+            if self.CASSCF_totnumstates > 1:
+                print(f"\nMultiple CASSCF states option chosen")
+                print("Creating state-average CASSCF object")
+                if self.CASSCF_weights == None:
+                    print("No CASSCF weights chosen (CASSCF_weights keyword)")
+                    print("Settings equal weights for states")
+                    weights = [1/self.CASSCF_totnumstates for i in range(self.CASSCF_totnumstates)]
+                    print("Weights:", weights)
+                #Different spin multiplicities for each state
+                if self.CASSCF_mults != None:
+                    print("CASSCF_mults keyword was specified")
+                    print("Using this to set multiplicity for each state")
+                    print("Total number of states:", self.CASSCF_totnumstates)
+                    solvers=[]
+                    print("Creating multiple FCI solvers")
+                    #Disabling for now
+                    #if self.CASSCF_wfnsyms == None:
+                    #    print("No CASSCF_wfnsyms set. Assuming no symmetry and setting all to A")
+                    #    self.CASSCF_wfnsyms=['A' for i in self.CASSCF_mults ]
+                    for mult,nstates_per_mult in zip(self.CASSCF_mults,self.CASSCF_numstates):
+                        #Creating new solver
+                        print(f"Creating new solver for mult={mult} with {nstates_per_mult} states")
+                        solver = pyscf.fci.FCI(self.mol)
+                        #solver.wfnsym= wfnsym
+                        #solver.orbsym= None
+                        solver.nroots = nstates_per_mult
+                        solver.spin = mult-1
+                        solvers.append(solver)
+                    print("Solvers:", solvers)
+                    casscf = pyscf.mcscf.state_average_mix_(casscf, solvers, weights)
+                #Or not:
+                else:
+                    casscf = pyscf.mcscf.state_average_(casscf, weights)
+                #TODO: Check whether input orbitals can be used with this
+            else:
+                print("Single-state CASSCF calculation")
+            ##############################
+            #RUN MC-PDFT CASSCF
+            ##############################
+            if self.mcpdft is True:
+                #Do the CASSCF calculation with on-top functional
+                print("Now running MC-PDFT with on-top functional")
+                mcpdft_result = casscf.run(orbitals, natorb=True)
+                #mc1 = mcdcft.CASSCF (mf, 'cBLYP', 4, 4).run ()
+                #print("Now running cBLYP on top")
+                #mc1 = mcdcft.CASSCF (self.mf, 'cBLYP', norb_cas, nel_cas).run ()
+                #print("mc1:", mc1)
+                print("E(CASSCF):", mcpdft_result.e_mcscf)
+                print(f"Eot({self.mcpdft_functional}):", mcpdft_result.e_ot)
+                print("E(tot, MC-PDFT):", mcpdft_result.e_tot)
+                print("E(ci):", mcpdft_result.e_cas)
+                print("")
+                #casscf.compute_pdft_energy_()
+                #Optional recompute with different on-top functional
+                #e_tot, e_ot, e_states = casscf.compute_pdft_energy_(otxc='tBLYP')
+                self.energy=mcpdft_result.e_tot
+            ##############################
+            #RUN regular CASSCF
+            ##############################
+            else:
+                #Regular CASSCF
+                print("Running CASSCF object")
+                print(casscf.__dict__)
+                print("CASSCF FCI solver:", casscf.fcisolver.__dict__)
+                casscf_result = casscf.run(orbitals, natorb=True)
+                print("casscf_result:", casscf_result)
+                e_tot = casscf_result.e_tot
+                e_cas = casscf_result.e_cas
+                print("e_tot:", e_tot)
+                print("e_cas:", e_cas)
+                self.energy = e_tot
+            print("CASSCF run done\n")
+        ##############################
+        #RUN CAS-CI
+        ##############################
+        else:
+            print("Doing CAS-CI (no orbital optimization)")
+            if self.mcpdft is True:
+                print("mcpdft is True")
+                casci= pyscf.mcpdft_l.CASCI (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
+                casci.verbose=self.verbose_setting
+                mcpdft_result = casci.run()
+                print("E(CASSCF):", mcpdft_result.e_mcscf)
+                print(f"Eot({self.mcpdft_functional}):", mcpdft_result.e_ot)
+                print("E(tot, MC-PDFT):", mcpdft_result.e_tot)
+                print("E(ci):", mcpdft_result.e_cas)
+                print("")
+                self.energy = mcpdft_result.e_tot
+                print("CAS-CI run done\n")
+            else:
+                #Regular CAS-CI
+                casci = pyscf.mcscf.CASCI(self.mf, norb_cas, nel_cas)
+                casci.verbose=self.verbose_setting
+                #CAS-CI from chosen orbitals above
+                e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(orbitals)
+                print("e_tot:", e_tot)
+                print("e_cas:", e_cas)
+                self.energy = e_tot
+                print("CAS-CI run done\n")
+
+    def run_MOM(self):
+        print("\nMaximum Overlap Method calculation is ON!")
+        import pyscf
+        # Change 1-dimension occupation number list into 2-dimension occupation number
+        # list like the pattern in unrestircted calculation
+        mo0 = copy.copy(self.mf.mo_coeff)
+        occ = copy.copy(self.mf.mo_occ)
+
+        if self.scf_type == 'UHF' or self.scf_type == 'UKS':
+            print("UHF/UKS MOM calculation")
+            print("Previous SCF MO occupations are:")
+            print("Alpha:", occ[0].tolist())
+            print("Beta:", occ[1].tolist())
+
+            #The chosen spin manifold
+            spinmanifold = self.mom_spinmanifold
+
+            #Finding HOMO index
+            HOMOnum = list(occ[spinmanifold]).index(0.0)-1
+
+            #Defining the occupied orbital index to excite from (default HOMO). if mom_occindex is -1 and HOMO is 54 then used_occ_index = 54 + (-1) = 53
+            used_occ_index = HOMOnum + self.mom_occindex
+
+            #Finding LUMO index
+            LUMOnum = HOMOnum + self.mom_virtindex
+
+
+            print(f"HOMO (spinmanifold:{spinmanifold}) index:", HOMOnum)
+            print(f"OCC MO index (spinmanifold:{spinmanifold}) to excite from:", used_occ_index)
+            print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
+            print("Spin manifold:", self.mom_spinmanifold)
+            print("Modifying guess")
+            # Assign initial occupation pattern
+            occ[spinmanifold][used_occ_index]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
+            occ[spinmanifold][LUMOnum]=1	 # it is still a singlet state
+
+            # New SCF caculation
+            if self.scf_type == 'UKS':
+                MOMSCF = pyscf.scf.UKS(self.mol)
+                MOMSCF.xc = self.functional
+            elif self.scf_type == 'UHF':
+                MOMSCF = pyscf.scf.UHF(self.mol)
+
+            # Construct new dnesity matrix with new occpuation pattern
+            dm_u = MOMSCF.make_rdm1(mo0, occ)
+            # Apply mom occupation principle
+            MOMSCF = pyscf.scf.addons.mom_occ(MOMSCF, mo0, occ)
+            # Start new SCF with new density matrix
+            print("Starting new SCF with modified MO guess")
+            MOMSCF.scf(dm_u)
+
+            #delta-SCF transition energy
+            trans_energy = (MOMSCF.e_tot - self.mf.e_tot)*27.211
+            print()
+            print("-"*40)
+            print("DELTA-SCF RESULTS")
+            print("-"*40)
+            
+            print()
+            print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
+            print(f"Excited-state SCF energy {MOMSCF.e_tot} Eh")
+            print()
+            print(f"delta-SCF transition energy {trans_energy} eV")
+            print()
+            print('Alpha electron occupation pattern of ground state : %s' %(self.mf.mo_occ[0].tolist()))
+            print('Beta electron occupation pattern of ground state : %s' %(self.mf.mo_occ[1].tolist()))
+            print()
+            print('Alpha electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[0].tolist()))
+            print('Beta electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[1].tolist()))
+
+        elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS' or self.scf_type == 'RHF' or self.scf_type == 'RKS':
+            print("ROHF/ROKS MOM calculation")
+
+            #Defining the index of the HOMO    
+            HOMOnum = list(occ).index(0.0)-1
+            #Defining the occupied orbital index to excite from (default HOMO). if mom_occindex is -1 and HOMO is 54 then used_occ_index = 54 + (-1) = 53
+            used_occ_index = HOMOnum + self.mom_occindex
+            
+            #Defining the virtual orbital index to excite into(default LUMO)
+            LUMOnum = HOMOnum + self.mom_virtindex
+            spinmanifold = self.mom_spinmanifold
+            print("Previous SCF MO occupations are:", occ.tolist())
+            print("HOMO index:", HOMOnum)
+            print("Occupied MO index to excite from", used_occ_index)
+            print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
+            print("Spin manifold:", self.mom_spinmanifold)
+            print("Modifying guess")
+            setocc = np.zeros((2, occ.size))
+            setocc[:, occ==2] = 1
+
+            # Assigned initial occupation pattern
+            setocc[0][used_occ_index] = 0    # this excited state is originated from OCCMO(alpha) -> LUMO(alpha)
+            setocc[0][LUMOnum] = 1    # it is still a singlet state
+            ro_occ = setocc[0][:] + setocc[1][:]    # excited occupation pattern within RO style
+            print("setocc:",setocc)
+            print("ro_occ:",ro_occ)
+            # New ROKS/ROHF SCF calculation
+            if self.scf_type == 'ROHF' or self.scf_type == 'RHF':
+                MOMSCF = pyscf.scf.ROHF(self.mol)
+            elif self.scf_type == 'ROKS' or self.scf_type == 'RKS':
+                MOMSCF = pyscf.scf.ROKS(self.mol)
+                MOMSCF.xc = self.functional
+
+            # Construct new density matrix with new occpuation pattern
+            dm_ro = MOMSCF.make_rdm1(mo0, ro_occ)
+            # Apply mom occupation principle
+            MOMSCF = pyscf.scf.addons.mom_occ(MOMSCF, mo0, setocc)
+            # Start new SCF with new density matrix
+            print("Starting new SCF with modified MO guess")
+            MOMSCF.scf(dm_ro)
+
+            #delta-SCF transition energy in eV
+            trans_energy = (MOMSCF.e_tot - self.mf.e_tot)*27.211
+            print()
+            print("-"*40)
+            print("DELTA-SCF RESULTS")
+            print("-"*40)
+            print()
+            print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
+            print(f"Excited-state SCF energy {MOMSCF.e_tot} Eh")
+            print()
+            print(f"delta-SCF transition energy {trans_energy} eV")
+            print()
+            print('Electron occupation pattern of ground state : %s' %(self.mf.mo_occ.tolist()))
+            print('Electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ.tolist()))
+        else:
+            print("Unknown scf-type for MOM")
+            ashexit()
+        
+        #delta-SCF results
+        self.properties["Transition_energy"] = trans_energy
+
+        #Overlap
+        # Calculate overlap between two determiant <I|F>
+        #S,X = pyscf.scf.uhf.det_ovlp(self.mf.mo_coeff,MOMSCF.mo_coeff,self.mf.mo_occ,MOMSCF.mo_occ,self.mf.get_ovlp())
+        #print("overlap:", S)
+        #print("X:", X)
+
+        #Transition density matrix
+        #D_21 = MOMSCF.mo_coeff* adjugate(s)*self.mf.mo_occ * self.mf.mo_coeff
+        #D_21 = reduce(np.dot, (MOMSCF.mo_coeff, np.transpose(S),np.transpose(self.mf.mo_coeff)))
+        #D_21 = MOMSCF.mo_coeff* np.transpose(S)*self.mf.mo_coeff
+        #print("D_21:",D_21)
+
+        #charges = self.mol.atom_charges()
+        #coords = self.mol.atom_coords()
+        #nuc_charge_center = np.einsum('z,zx->x', charges, coords) / charges.sum()
+        #print("nuc_charge_center:",nuc_charge_center)
+        #self.mol.set_common_orig_(nuc_charge_center)
+        #dip_ints = self.mol.intor('cint1e_r_sph', comp=3)
+        #print("dip_ints:",dip_ints)
+        #transition_dipoles = np.einsum('xij,ji->x', dip_ints, D_21)
+        #print("transition_dipoles:",transition_dipoles)
+        #https://github.com/pyscf/pyscf/blob/master/examples/scf/51-elecoup_mom.py
+    def run_TDDFT(self):
+        print("\nInside run_TDDFT")
+        import pyscf.tddft
+        print(f"Now running TDDFT (Num states: {self.tddft_numstates})")
+        mytd = pyscf.tddft.TDDFT(self.mf)
+        mytd.nstates = self.tddft_numstates
+        mytd.kernel()
+        mytd.analyze()
+
+        print("-"*40)
+        print("TDDFT RESULTS")
+        print("-"*40)
+        #print("TDDFT transition energies (Eh):", mytd.e)
+        print("TDDFT transition energies (eV):", mytd.e*27.211399)
+
+        # Transition dipoles
+        t_dip = mytd.transition_dipole()
+        print("Transition dipoles:", t_dip)
+
+        # Oscillator strengths
+        osc_strengths_length = mytd.oscillator_strength(gauge='length')
+        osc_strengths_vel = mytd.oscillator_strength(gauge='velocity')
+        print("Oscillator strengths (length):", osc_strengths_length)
+        print("Oscillator strengths (velocity):", osc_strengths_vel)
+
+        #Storing in properties object
+        self.properties["TDDFT_transition_energies"] = mytd.e*27.211399
+        self.properties["TDDFT_transition_dipoles"] = t_dip
+        self.properties["TDDFT_oscillator strengths"] = osc_strengths_length
+
+        #NTO Analysis for state 1
+        
+        if self.NTO is True:
+            print("\nNTO analysis for state 1")
+            if type(self.NTO_states) != list:
+                print("NTO_states must be a list")
+                ashexit()
+            print("Now doing NTO analysis for states:", self.NTO_states)
+            print(f"See pySCF outputfile ({self.filename}.out) for the NTO analysis")
+            from pyscf.tools import molden
+            for ntostate in self.NTO_states:
+                print("Doing NTO for state:", ntostate)
+                NTO_weight, nto_bla = mytd.get_nto(state=ntostate, verbose=4)
+                print("Writing Molden-file:", f'nto-td-{ntostate}.molden')
+                molden.from_mo(self.mol, f'nto-td-{ntostate}.molden', nto_bla)
+
+    #Set up frozen natural orbitals
+    def setup_FNO(self,elems=None):
+        print("FNO is True")
+        if self.FNO_orbitals =='MP2':
+            print("MP2 natural orbitals on!")
+            print("Will calculate MP2 natural orbitals to use as input in CC job")
+            natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
+        elif self.FNO_orbitals =='CCSD':
+            print("CCSD natural orbitals on!")
+            print("Will calculate CCSD natural orbitals to use as input in CC job")
+            natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='CCSD', elems=elems)
+        
+        #Optional natorb truncation if FNO_thresh is chosen
+        if self.FNO_thresh is not None:
+            print("FNO thresh option chosen:", self.FNO_thresh)
+            num_small_virtorbs=len([i for i in natocc if i < self.FNO_thresh])
+            print("Num. virtual orbitals below threshold:", num_small_virtorbs)
+            #List of frozen orbitals
+            virt_frozen= [self.num_scf_orbitals_alpha-i for i in range(1,num_small_virtorbs+1)][::-1]
+            print("List of frozen virtuals:", virt_frozen)            
+            print("List of frozen virtuals:", virt_frozen)            
+            self.frozen_orbital_indices = self.frozen_orbital_indices + virt_frozen
+        return mo_coefficients
 
     def run_CC(self,mf=None, frozen_orbital_indices=None, CCmethod='CCSD(T)', CC_direct=False, mo_coefficients=None):
         print("\nInside run_CC")
@@ -1086,6 +1583,7 @@ class PySCFTheory:
         return energy, ccobject
     
     def run_CC_density(self,ccobject,mf):
+        print("\nInside run_CC_density")
         import pyscf.mcscf
 
         print(type(ccobject))
@@ -1451,8 +1949,64 @@ class PySCFTheory:
             # TODO: Adapt to RKS vs. UKS etc.
             self.mf = pyscf.solvent.PE(pyscf.scf.RKS(self.mol), self.potfile)
 
+    def run_BS_SCF(self, mult=None, dm=None):
+        print("\nBroken-symmetry SCF procedure")
+        print(f"First converging HS mult={self.HSmult} solution")
+        #HS: Changing spin to HS-spin (num unpaired els)
+        self.mol.spin = self.HSmult-1
+
+        scf_result = self.run_SCF(dm=dm)
+        print("High-spin SCF energy:", scf_result.e_tot)
+        s2, spinmult = self.mf.spin_square()
+        print("UHF/UKS <S**2>:", s2)
+        print("UHF/UKS spinmult:", spinmult)
+
+        print(f"\nHS-calculation complete. Now flipping atoms")
+        # Flip by spinflipatom string. Example: Flip the local spin of the atom ('0 Fe' in ao_labels)
+        #https://pyscf.org/pyscf_api_docs/pyscf.gto.html
+        #Note: search_ao_label can take either string or list of strings
+        #if self.spinflipatom != None:
+        #    print("Spinflipatom option:", self.spinflipatom)
+        #    #Here finding first atom of element:, e.g. '0 Fe'
+        #    orbindices = self.mol.search_ao_label(self.spinflipatom)
+        #    print("orbindices:", orbindices)
+        #    orbliststoflip=[orbindices]
+        
+        # flip by list of atom indices
+        if self.atomstoflip != None:
+            print("Atomstoflip option:", self.atomstoflip)
+            #Converting atom indices to the spinflipatom syntax above
+            spinflipatom = [f"{i} {self.mol.atom_symbol(i)}" for i in self.atomstoflip]
+            print("spinflipatom:", spinflipatom)
+            orbindices = self.mol.search_ao_label(spinflipatom)
+            print("Orbital indices to flip:", orbindices)
+            orbliststoflip=[orbindices]
+        else:
+            print("atomstoflip has not been set. Exiting")
+            ashexit()
+        
+        #Get alpha and beta density matrices
+        dma, dmb = self.mf.make_rdm1()
+        #Loop over orbliststoflip to flip all atoms
+        for idx_at in orbliststoflip:
+            dma_at = dma[idx_at.reshape(-1,1),idx_at].copy()
+            dmb_at = dmb[idx_at.reshape(-1,1),idx_at].copy()
+            dma[idx_at.reshape(-1,1),idx_at] = dmb_at
+            dmb[idx_at.reshape(-1,1),idx_at] = dma_at
+        dm = [dma, dmb]
+        print(f"\nStarting BS-SCF with spin multiplicity={mult}")
+        #BS
+        self.mol.spin = mult-1
+        #scf_result = self.mf.run(dm)
+        scf_result = self.run_SCF(dm=dm)
+        s2, spinmult = self.mf.spin_square()
+        print("BS SCF energy:", scf_result.e_tot)
+
+        return scf_result
+
     #Independent method to run SCF using previously defined mf object and possible input dm
     def run_SCF(self,mf=None, dm=None, max_cycle=None):
+        print("\nInside run_SCF")
         module_init_time=time.time()
         if mf is None:
             print("No mf object provided. Using self.mf")
@@ -1734,55 +2288,13 @@ class PySCFTheory:
             if self.printlevel >1:
                 print(f"Will write checkpointfile: {self.mf.chkfile}")
 
+
+            ###############
+            # RUN SCF
+            #################
             #BS via 2-step HS-SCF and then spin-flip BS:
             if self.BS is True:
-                print("\nBroken-symmetry SCF procedure")
-                print(f"First converging HS mult={self.HSmult} solution")
-                #HS: Changing spin to HS-spin (num unpaired els)
-                self.mol.spin = self.HSmult-1
-                #TODO: option to read in guess for HS here
-                #scf_result = self.mf.run()
-                scf_result = self.run_SCF()
-                print("High-spin SCF energy:", scf_result.e_tot)
-                s2, spinmult = self.mf.spin_square()
-                print("UHF/UKS <S**2>:", s2)
-                print("UHF/UKS spinmult:", spinmult)
-
-                print(f"\nHS-calculation complete. Now flipping atoms")
-                # Either flip by spinflipatom string. Example: Flip the local spin of the atom ('0 Fe' in ao_labels)
-                #https://pyscf.org/pyscf_api_docs/pyscf.gto.html
-                if self.spinflipatom != None:
-                    print("Spinflipatom option:", self.spinflipatom)
-                    #Here finding first atom of element:, e.g. '0 Fe'
-                    orbindices = self.mol.search_ao_label(self.spinflipatom)
-                    print("orbindices:", orbindices)
-                    orbliststoflip=[orbindices]
-                # Or flip by list of atom indices
-                elif self.atomstoflip != None:
-                    #TODO: Need to enable atomstoflip option here
-                    #Need to convert into orbitalstoflip list
-                    print("atomstoflip option not yet ready")
-                    print("Use spinflipatom option instead!")
-                    ashexit()
-                    orbliststoflip=[]
-                
-                #Get alpha and beta density matrices
-                dma, dmb = self.mf.make_rdm1()
-                #Loop over orbliststoflip to flip all atoms
-                for idx_at in orbliststoflip:
-                    print("idx_at:", idx_at)
-                    dma_at = dma[idx_at.reshape(-1,1),idx_at].copy()
-                    dmb_at = dmb[idx_at.reshape(-1,1),idx_at].copy()
-                    dma[idx_at.reshape(-1,1),idx_at] = dmb_at
-                    dmb[idx_at.reshape(-1,1),idx_at] = dma_at
-                dm = [dma, dmb]
-                print(f"\nStarting BS-SCF with spin multiplicity={mult}")
-                #BS
-                self.mol.spin = mult-1
-                #scf_result = self.mf.run(dm)
-                scf_result = self.run_SCF(dm=dm)
-                s2, spinmult = self.mf.spin_square()
-                print("BS SCF energy:", scf_result.e_tot)
+                scf_result = self.run_BS_SCF(mult=mult,dm=dm)
 
             #Regular single-step SCF:
             else:
@@ -1804,17 +2316,17 @@ class PySCFTheory:
 
             #Possible population analysis (if dm=None then taken from mf object)
             if self.scf_type == 'RHF' or self.scf_type == 'RKS':
-                num_scf_orbitals_alpha=len(scf_result.mo_occ)
+                self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
                 if self.printlevel >1:
-                    print("Total num. orbitals:", num_scf_orbitals_alpha)
+                    print("Total num. orbitals:", self.num_scf_orbitals_alpha)
                 if self.printlevel >1:
                     self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             elif self.scf_type == 'GHF' or self.scf_type == 'GKS':
-                num_scf_orbitals_alpha=len(scf_result.mo_occ)
+                self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
                 print("GHF/GKS job")
                 print("scf_result:", scf_result)
                 if self.printlevel >1:
-                    print("Total num. orbitals:", num_scf_orbitals_alpha)
+                    print("Total num. orbitals:", self.num_scf_orbitals_alpha)
                 if self.printlevel >1:
                     self.mf.canonicalize(self.mf.mo_coeff, self.mf.mo_occ)
                     self.mf.analyze()
@@ -1825,23 +2337,25 @@ class PySCFTheory:
                     print("GHF/GKS spinmult:", spinmult)
             elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS':
                 #NOTE: not checked
-                num_scf_orbitals_alpha=len(scf_result.mo_occ)
+                self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
                 if self.printlevel >1:
-                    print("Total num. orbitals:", num_scf_orbitals_alpha)
+                    print("Total num. orbitals:", self.num_scf_orbitals_alpha)
                 if self.printlevel >1:
                     self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             else:
                 #UHF/UKS
-                num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
+                self.num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
                 if self.printlevel >1:
-                    print("Total num. orbitals:", num_scf_orbitals_alpha)
+                    print("Total num. orbitals:", self.num_scf_orbitals_alpha)
                 if self.printlevel >1:
                     self.run_population_analysis(self.mf, dm=None, unrestricted=True, type='Mulliken', label='SCF')
                 s2, spinmult = self.mf.spin_square()
                 print("UHF/UKS <S**2>:", s2)
                 print(f"UHF/UKS spinmult: {spinmult}\n")
+            
             print("SCF Dipole moment:")
             self.get_dipole_moment()
+
             #Dispersion correction
             if self.dispersion != None:
                 if self.dispersion == "D3" or self.dispersion == "D4":
@@ -1861,49 +2375,7 @@ class PySCFTheory:
             
             #NMF
             if self.NMF is True:
-                print("NMF smearing active. Getting NMF energy")
-                print("Sigma:", self.NMF_sigma)
-                E_mf = self.mf.e_tot
-                print("Mean-field energy:", E_mf)
-                occ = self.mf.get_occ(mo_energy_kpts=self.mf.mo_energy)
-                print("occ:", occ)
-
-                #NOTE: Not sure if this is correct yet
-                if self.scf_type == 'UHF' or self.scf_type == 'UKS':
-                    occ_a = occ[0]
-                    occ_b = occ[1]
-                    S_a = get_entropy(occ_a)
-                    S_b = get_entropy(occ_b)
-                    print("Total entropy alpha (FD):", S_a)
-                    print("Total entropy beta (FD):", S_b)
-
-                    if 'fermi' in self.NMF_distribution.lower() or  self.NMF_distribution == 'FD':
-                        Ec_a = get_ec_entropy(occ_a, self.NMF_sigma, method='fermi')
-                        Ec_b = get_ec_entropy(occ_a, self.NMF_sigma, method='fermi')
-                        Ec = Ec_a/2 + Ec_b/2
-                    elif self.NMF_distribution.lower() == 'gaussian' or self.NMF_distribution == 'G':
-                        Ec_a = get_ec_entropy(occ_a, self.NMF_sigma, method='gaussian')
-                        Ec_b = get_ec_entropy(occ_b, self.NMF_sigma, method='gaussian')
-                        Ec = Ec_a/2 + Ec_b/2
-                    else:
-                        print("Unknown distribution")
-                        ashexit()
-                else:
-                    S = get_entropy(occ)
-                    print("Total entropy (FD):", S)
-                    print("Sigma:", self.NMF_sigma)
-                    if 'fermi' in self.NMF_distribution.lower() or  self.NMF_distribution == 'FD':
-                        Ec = get_ec_entropy(occ, self.NMF_sigma, method='fermi')
-                    elif self.NMF_distribution.lower() == 'gaussian' or self.NMF_distribution == 'G':
-                        Ec = get_ec_entropy(occ, self.NMF_sigma, method='gaussian')
-                    else:
-                        print("Unknown distribution")
-                        ashexit()
-                print("Correlation energy:", Ec)                
-                E_tot_NMF = E_mf + Ec
-                print("Total NMF energy:", E_tot_NMF)
-
-                #Setting final energy
+                E_tot_NMF = self.run_NMF_step()
                 #Total energy is SCF energy + possible vdW energy
                 self.energy = E_tot_NMF + vdw_energy
             else:
@@ -1921,167 +2393,13 @@ class PySCFTheory:
         #########################################################
         # POST-SCF CALCULATIONS
         #########################################################
-
         if self.postSCF is True:
             print("postSCF is True")
-
             #####################
             #MOM
             #####################
             if self.mom is True:
-                print("\nMaximum Overlap Method calculation is ON!")
-
-                # Change 1-dimension occupation number list into 2-dimension occupation number
-                # list like the pattern in unrestircted calculation
-                mo0 = copy.copy(self.mf.mo_coeff)
-                occ = copy.copy(self.mf.mo_occ)
-
-                if self.scf_type == 'UHF' or self.scf_type == 'UKS':
-                    print("UHF/UKS MOM calculation")
-                    print("Previous SCF MO occupations are:")
-                    print("Alpha:", occ[0].tolist())
-                    print("Beta:", occ[1].tolist())
-
-                    #The chosen spin manifold
-                    spinmanifold = self.mom_spinmanifold
-
-                    #Finding HOMO index
-                    HOMOnum = list(occ[spinmanifold]).index(0.0)-1
-
-                    #Defining the occupied orbital index to excite from (default HOMO). if mom_occindex is -1 and HOMO is 54 then used_occ_index = 54 + (-1) = 53
-                    used_occ_index = HOMOnum + self.mom_occindex
-
-                    #Finding LUMO index
-                    LUMOnum = HOMOnum + self.mom_virtindex
-
-
-                    print(f"HOMO (spinmanifold:{spinmanifold}) index:", HOMOnum)
-                    print(f"OCC MO index (spinmanifold:{spinmanifold}) to excite from:", used_occ_index)
-                    print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
-                    print("Spin manifold:", self.mom_spinmanifold)
-                    print("Modifying guess")
-                    # Assign initial occupation pattern
-                    occ[spinmanifold][used_occ_index]=0	 # this excited state is originated from HOMO(alpha) -> LUMO(alpha)
-                    occ[spinmanifold][LUMOnum]=1	 # it is still a singlet state
-
-                    # New SCF caculation
-                    if self.scf_type == 'UKS':
-                        MOMSCF = pyscf.scf.UKS(self.mol)
-                        MOMSCF.xc = self.functional
-                    elif self.scf_type == 'UHF':
-                        MOMSCF = pyscf.scf.UHF(self.mol)
-
-                    # Construct new dnesity matrix with new occpuation pattern
-                    dm_u = MOMSCF.make_rdm1(mo0, occ)
-                    # Apply mom occupation principle
-                    MOMSCF = pyscf.scf.addons.mom_occ(MOMSCF, mo0, occ)
-                    # Start new SCF with new density matrix
-                    print("Starting new SCF with modified MO guess")
-                    MOMSCF.scf(dm_u)
-
-                    #delta-SCF transition energy
-                    trans_energy = (MOMSCF.e_tot - self.mf.e_tot)*27.211
-                    print()
-                    print("-"*40)
-                    print("DELTA-SCF RESULTS")
-                    print("-"*40)
-                    
-                    print()
-                    print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
-                    print(f"Excited-state SCF energy {MOMSCF.e_tot} Eh")
-                    print()
-                    print(f"delta-SCF transition energy {trans_energy} eV")
-                    print()
-                    print('Alpha electron occupation pattern of ground state : %s' %(self.mf.mo_occ[0].tolist()))
-                    print('Beta electron occupation pattern of ground state : %s' %(self.mf.mo_occ[1].tolist()))
-                    print()
-                    print('Alpha electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[0].tolist()))
-                    print('Beta electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ[1].tolist()))
-
-                elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS' or self.scf_type == 'RHF' or self.scf_type == 'RKS':
-                    print("ROHF/ROKS MOM calculation")
-
-                    #Defining the index of the HOMO    
-                    HOMOnum = list(occ).index(0.0)-1
-                    #Defining the occupied orbital index to excite from (default HOMO). if mom_occindex is -1 and HOMO is 54 then used_occ_index = 54 + (-1) = 53
-                    used_occ_index = HOMOnum + self.mom_occindex
-                    
-                    #Defining the virtual orbital index to excite into(default LUMO)
-                    LUMOnum = HOMOnum + self.mom_virtindex
-                    spinmanifold = self.mom_spinmanifold
-                    print("Previous SCF MO occupations are:", occ.tolist())
-                    print("HOMO index:", HOMOnum)
-                    print("Occupied MO index to excite from", used_occ_index)
-                    print(f"LUMO index to excite into: {LUMOnum} (LUMO+{self.mom_virtindex-1})")
-                    print("Spin manifold:", self.mom_spinmanifold)
-                    print("Modifying guess")
-                    setocc = np.zeros((2, occ.size))
-                    setocc[:, occ==2] = 1
-
-                    # Assigned initial occupation pattern
-                    setocc[0][used_occ_index] = 0    # this excited state is originated from OCCMO(alpha) -> LUMO(alpha)
-                    setocc[0][LUMOnum] = 1    # it is still a singlet state
-                    ro_occ = setocc[0][:] + setocc[1][:]    # excited occupation pattern within RO style
-                    print("setocc:",setocc)
-                    print("ro_occ:",ro_occ)
-                    # New ROKS/ROHF SCF calculation
-                    if self.scf_type == 'ROHF' or self.scf_type == 'RHF':
-                        MOMSCF = pyscf.scf.ROHF(self.mol)
-                    elif self.scf_type == 'ROKS' or self.scf_type == 'RKS':
-                        MOMSCF = pyscf.scf.ROKS(self.mol)
-                        MOMSCF.xc = self.functional
-
-                    # Construct new density matrix with new occpuation pattern
-                    dm_ro = MOMSCF.make_rdm1(mo0, ro_occ)
-                    # Apply mom occupation principle
-                    MOMSCF = pyscf.scf.addons.mom_occ(MOMSCF, mo0, setocc)
-                    # Start new SCF with new density matrix
-                    print("Starting new SCF with modified MO guess")
-                    MOMSCF.scf(dm_ro)
-
-                    #delta-SCF transition energy in eV
-                    trans_energy = (MOMSCF.e_tot - self.mf.e_tot)*27.211
-                    print()
-                    print("-"*40)
-                    print("DELTA-SCF RESULTS")
-                    print("-"*40)
-                    print()
-                    print(f"Ground-state SCF energy {self.mf.e_tot} Eh")
-                    print(f"Excited-state SCF energy {MOMSCF.e_tot} Eh")
-                    print()
-                    print(f"delta-SCF transition energy {trans_energy} eV")
-                    print()
-                    print('Electron occupation pattern of ground state : %s' %(self.mf.mo_occ.tolist()))
-                    print('Electron occupation pattern of excited state : %s' %(MOMSCF.mo_occ.tolist()))
-                else:
-                    print("Unknown scf-type for MOM")
-                    ashexit()
-                
-                #delta-SCF results
-                self.properties["Transition_energy"] = trans_energy
-
-                #Overlap
-                # Calculate overlap between two determiant <I|F>
-                #S,X = pyscf.scf.uhf.det_ovlp(self.mf.mo_coeff,MOMSCF.mo_coeff,self.mf.mo_occ,MOMSCF.mo_occ,self.mf.get_ovlp())
-                #print("overlap:", S)
-                #print("X:", X)
-
-                #Transition density matrix
-                #D_21 = MOMSCF.mo_coeff* adjugate(s)*self.mf.mo_occ * self.mf.mo_coeff
-                #D_21 = reduce(np.dot, (MOMSCF.mo_coeff, np.transpose(S),np.transpose(self.mf.mo_coeff)))
-                #D_21 = MOMSCF.mo_coeff* np.transpose(S)*self.mf.mo_coeff
-                #print("D_21:",D_21)
-
-                #charges = self.mol.atom_charges()
-                #coords = self.mol.atom_coords()
-                #nuc_charge_center = np.einsum('z,zx->x', charges, coords) / charges.sum()
-                #print("nuc_charge_center:",nuc_charge_center)
-                #self.mol.set_common_orig_(nuc_charge_center)
-                #dip_ints = self.mol.intor('cint1e_r_sph', comp=3)
-                #print("dip_ints:",dip_ints)
-                #transition_dipoles = np.einsum('xij,ji->x', dip_ints, D_21)
-                #print("transition_dipoles:",transition_dipoles)
-                #https://github.com/pyscf/pyscf/blob/master/examples/scf/51-elecoup_mom.py
+                self.run_MOM()
             #####################
             #TDDFT
             #####################
@@ -2091,50 +2409,7 @@ class PySCFTheory:
             # TODO: Get density matrix and cube-file per state
             # TODO: Nuclear gradient
             if self.TDDFT is True:
-                import pyscf.tddft
-                print(f"Now running TDDFT (Num states: {self.tddft_numstates})")
-                mytd = pyscf.tddft.TDDFT(self.mf)
-                mytd.nstates = self.tddft_numstates
-                mytd.kernel()
-                mytd.analyze()
-
-                print("-"*40)
-                print("TDDFT RESULTS")
-                print("-"*40)
-                #print("TDDFT transition energies (Eh):", mytd.e)
-                print("TDDFT transition energies (eV):", mytd.e*27.211399)
-
-                # Transition dipoles
-                t_dip = mytd.transition_dipole()
-                print("Transition dipoles:", t_dip)
-
-                # Oscillator strengths
-                osc_strengths_length = mytd.oscillator_strength(gauge='length')
-                osc_strengths_vel = mytd.oscillator_strength(gauge='velocity')
-                print("Oscillator strengths (length):", osc_strengths_length)
-                print("Oscillator strengths (velocity):", osc_strengths_vel)
-
-                #Storing in properties object
-                self.properties["TDDFT_transition_energies"] = mytd.e*27.211399
-                self.properties["TDDFT_transition_dipoles"] = t_dip
-                self.properties["TDDFT_oscillator strengths"] = osc_strengths_length
-
-                #NTO Analysis for state 1
-                
-                if self.NTO is True:
-                    print("\nNTO analysis for state 1")
-                    if type(self.NTO_states) != list:
-                        print("NTO_states must be a list")
-                        ashexit()
-                    print("Now doing NTO analysis for states:", self.NTO_states)
-                    print(f"See pySCF outputfile ({self.filename}.out) for the NTO analysis")
-                    from pyscf.tools import molden
-                    for ntostate in self.NTO_states:
-                        print("Doing NTO for state:", ntostate)
-                        NTO_weight, nto_bla = mytd.get_nto(state=ntostate, verbose=4)
-                        print("Writing")
-                        molden.from_mo(self.mol, f'nto-td-{ntostate}.molden', nto_bla)
-
+                self.run_TDDFT()
             #####################
             #MP2
             #####################
@@ -2145,7 +2420,6 @@ class PySCFTheory:
 
                 if self.MP2_density is True:
                     self.run_MP2_density(mp2object, MP2_DF=self.MP2_DF, DFMP2_density_relaxed=self.DFMP2_density_relaxed)
-
             #####################
             #COUPLED CLUSTER
             #####################
@@ -2159,225 +2433,23 @@ class PySCFTheory:
                 #NOTE: this is not entirely correct since occupied orbitals are natural orbitals rather than frozen HF orbitals as in the original method
                 #Not sure how much it matters
                 if self.FNO is True:
-                    print("FNO is True")
-                    if self.FNO_orbitals =='MP2':
-                        print("MP2 natural orbitals on!")
-                        print("Will calculate MP2 natural orbitals to use as input in CC job")
-                        natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
-                    elif self.FNO_orbitals =='CCSD':
-                        print("CCSD natural orbitals on!")
-                        print("Will calculate CCSD natural orbitals to use as input in CC job")
-                        natocc, mo_coefficients = self.calculate_natural_orbitals(self.mol,self.mf, method='CCSD', elems=elems)
-                    
-                    #Optional natorb truncation if FNO_thresh is chosen
-                    if self.FNO_thresh is not None:
-                        print("FNO thresh option chosen:", self.FNO_thresh)
-                        num_small_virtorbs=len([i for i in natocc if i < self.FNO_thresh])
-                        print("Num. virtual orbitals below threshold:", num_small_virtorbs)
-                        #List of frozen orbitals
-                        virt_frozen= [num_scf_orbitals_alpha-i for i in range(1,num_small_virtorbs+1)][::-1]
-                        print("List of frozen virtuals:", virt_frozen)            
-                        print("List of frozen virtuals:", virt_frozen)            
-                        self.frozen_orbital_indices = self.frozen_orbital_indices + virt_frozen
-            
-                #Calling CC method
+                    mo_coefficients = self.setup_FNO(elems=elems)
+                #Calling CC run function
                 self. CC_energy,self.ccobject = self.run_CC(self.mf,frozen_orbital_indices=self.frozen_orbital_indices, CCmethod=self.CCmethod, 
                             CC_direct=self.CC_direct, mo_coefficients=mo_coefficients)
                 self.energy = self.CC_energy
-
+                #Calling CC density-run function
                 if self.CC_density is True:
                     self.run_CC_density(self.ccobject,self.mf)
-                    
             #####################
             #CAS-CI and CASSCF
             #####################
             if self.CAS is True:
                 print("CAS run is on!")
-                import pyscf.mcscf
-                #First run SCF
-                scf_result = self.mf.run()
-                
-                #Initial orbitals for CAS-CI or CASSCF
-                #Checking for AVAS; DMET_CAS and Chkfile options. Otherwise MP2 natural orbitals.
-                print("Checking for CAS initial orbital options.")
-                if self.AVAS is True:
-                    from pyscf.mcscf import avas
-                    print("AVAS automatic CAS option chosen")
-                    norb_cas, nel_cas, orbitals = avas.avas(self.mf, self.CAS_AO_labels)
-                    print(f"AVAS determined an active space of: CAS({nel_cas},{norb_cas})")
-                elif self.DMET_CAS is True:
-                    from pyscf.mcscf import dmet_cas
-                    print("DMET_CAS automatic CAS option chosen")
-                    norb_cas, nel_cas, orbitals = dmet_cas.guess_cas(self.mf, self.mf.make_rdm1(), self.CAS_AO_labels)
-                    print(f"DMET_CAS determined an active space of: CAS({nel_cas},{norb_cas})")
-                elif self.APC is True:
-                    from pyscf.mcscf import apc
-                    print("APC automatic CAS option chosen")
-                    #entropies = np.random.choice(np.arange(len(self.mf.mo_occ)),len(self.mf.mo_occ),replace=False)
-                    #chooser = apc.Chooser(self.mf.mo_coeff,self.mf.mo_occ,entropies,max_size=self.apc_max_size)
-                    #norb_cas, nel_cas, orbitals, active_idx = chooser.kernel()
-                    myapc = apc.APC(self.mf,max_size=self.apc_max_size)
-                    norb_cas,nel_cas,orbitals = myapc.kernel()
-                    print("norb_cas:", norb_cas)
-                    print("nel_cas:", nel_cas)
-                    print("orbitals:", orbitals)
-                    #print("active_idx:", active_idx)
-                elif self.moreadfile != None:
-                    print("moreadfile option was specified")
-                    print("This means that SCF-orbitals are ignored and we will read MO coefficients from chkfile:", self.moreadfile)
-                    orbitals = pyscf.lib.chkfile.load(self.moreadfile, 'mcscf/mo_coeff')
-                    norb_cas=self.active_space[1]
-                    nel_cas=self.active_space[0]
-                    print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
-                else:
-                    #TODO: Have this be a keyword option also instead of just else-default ?
-                    print("Neither AVAS, DMET_CAS or moreadfile options chosen.")
-                    print("Will now calculate MP2 natural orbitals to use as input in CAS job")
-                    natocc, orbitals = self.calculate_natural_orbitals(self.mol,self.mf, method='MP2', elems=elems)
-                    print("Initial orbitals setup done")
-                    print()
-                    print("Now checking if cas_nmin/cas_nmax keyword were specified")
-                    if self.cas_nmin != None and self.cas_nmax != None:
-                        print(f"Active space will be determined from MP2 natorbs. NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
-                        print("Note: Use active_space keyword if you want to select active space manually instead")
-                        # Determing active space from natorb thresholds
-                        nat_occs_for_thresholds=[i for i in natocc if i < self.cas_nmin and i > self.cas_nmax]
-                        norb_cas = len(nat_occs_for_thresholds)
-                        nel_cas = round(sum(nat_occs_for_thresholds))
-                        print(f"To get this same active space in another calculation you can also do: active_space=[{nel_cas},{norb_cas}]")
-                    else:
-                        print("Using active_space keyword information")
-                        norb_cas=self.active_space[1]
-                        nel_cas=self.active_space[0]
-                    print(f"CAS active space chosen to be: CAS({nel_cas},{norb_cas})")
-
-                print(f"Now running CAS job with active space of {nel_cas} electrons in {norb_cas} orbitals")
-                if self.CASSCF is True:
-                    print("Doing CASSCF (orbital optimization)")
-                    if self.mcpdft is True:
-                        from pyscf import mcpdft, mcdcft
-                        #old: casscf = pyscf.mcpdft_l.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
-                        casscf = mcpdft.CASSCF (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
-                    else:
-                        #Regular CASSCF
-                        casscf = pyscf.mcscf.CASSCF(self.mf, norb_cas, nel_cas)
-                    casscf.max_cycle_macro=self.casscf_maxcycle
-                    casscf.verbose=self.verbose_setting
-                    #Writing of checkpointfile
-                    if self.write_chkfile_name != None:
-                        casscf.chkfile = self.write_chkfile_name
-                    else:
-                        casscf.chkfile = "casscf.chk"
-                    if self.printlevel >1:
-                        print("Will write checkpointfile:", casscf.chkfile )
-
-                    #CASSCF starting from AVAS/DMET_CAS/MP2 natural orbitals
-                    #Making sure that we only feed in one set of orbitals into CAS (CC is OK with alpha and beta)
-                    if type(orbitals) == list:
-                        if len(orbitals) == 2:
-                            # Assuming list of [alphorbs-array,betaorbs-array]
-                            orbitals = orbitals[0]
-                        else:
-                            print("Something wrong with orbitals:", orbitals)
-                            print("Exiting")
-                            ashexit()
-                    
-                    #MULTIPLE STATES or not
-                    if self.CASSCF_totnumstates > 1:
-                        print(f"\nMultiple CASSCF states option chosen")
-                        print("Creating state-average CASSCF object")
-                        if self.CASSCF_weights == None:
-                            print("No CASSCF weights chosen (CASSCF_weights keyword)")
-                            print("Settings equal weights for states")
-                            weights = [1/self.CASSCF_totnumstates for i in range(self.CASSCF_totnumstates)]
-                            print("Weights:", weights)
-                        #Different spin multiplicities for each state
-                        if self.CASSCF_mults != None:
-                            print("CASSCF_mults keyword was specified")
-                            print("Using this to set multiplicity for each state")
-                            print("Total number of states:", self.CASSCF_totnumstates)
-                            solvers=[]
-                            print("Creating multiple FCI solvers")
-                            #Disabling for now
-                            #if self.CASSCF_wfnsyms == None:
-                            #    print("No CASSCF_wfnsyms set. Assuming no symmetry and setting all to A")
-                            #    self.CASSCF_wfnsyms=['A' for i in self.CASSCF_mults ]
-                            for mult,nstates_per_mult in zip(self.CASSCF_mults,self.CASSCF_numstates):
-                                #Creating new solver
-                                print(f"Creating new solver for mult={mult} with {nstates_per_mult} states")
-                                solver = pyscf.fci.FCI(self.mol)
-                                #solver.wfnsym= wfnsym
-                                #solver.orbsym= None
-                                solver.nroots = nstates_per_mult
-                                solver.spin = mult-1
-                                solvers.append(solver)
-                            print("Solvers:", solvers)
-                            casscf = pyscf.mcscf.state_average_mix_(casscf, solvers, weights)
-                        #Or not:
-                        else:
-                            casscf = pyscf.mcscf.state_average_(casscf, weights)
-                        #TODO: Check whether input orbitals can be used with this
-                    else:
-                        print("Single-state CASSCF calculation")
-                    #RUN MC-PDFT or regular CASSCF
-                    if self.mcpdft is True:
-                        #Do the CASSCF calculation with on-top functional
-                        print("Now running MC-PDFT with on-top functional")
-                        mcpdft_result = casscf.run(orbitals, natorb=True)
-                        #mc1 = mcdcft.CASSCF (mf, 'cBLYP', 4, 4).run ()
-                        #print("Now running cBLYP on top")
-                        #mc1 = mcdcft.CASSCF (self.mf, 'cBLYP', norb_cas, nel_cas).run ()
-                        #print("mc1:", mc1)
-                        print("E(CASSCF):", mcpdft_result.e_mcscf)
-                        print(f"Eot({self.mcpdft_functional}):", mcpdft_result.e_ot)
-                        print("E(tot, MC-PDFT):", mcpdft_result.e_tot)
-                        print("E(ci):", mcpdft_result.e_cas)
-                        print("")
-                        #casscf.compute_pdft_energy_()
-                        #Optional recompute with different on-top functional
-                        #e_tot, e_ot, e_states = casscf.compute_pdft_energy_(otxc='tBLYP')
-                        self.energy=mcpdft_result.e_tot
-                    else:
-                        #Regular CASSCF
-                        print("Running CASSCF object")
-                        print(casscf.__dict__)
-                        print("CASSCF FCI solver:", casscf.fcisolver.__dict__)
-                        casscf_result = casscf.run(orbitals, natorb=True)
-                        print("casscf_result:", casscf_result)
-                        e_tot = casscf_result.e_tot
-                        e_cas = casscf_result.e_cas
-                        print("e_tot:", e_tot)
-                        print("e_cas:", e_cas)
-                        self.energy = e_tot
-                    print("CASSCF run done\n")
-                else:
-                    print("Doing CAS-CI (no orbital optimization)")
-                    if self.mcpdft is True:
-                        print("mcpdft is True")
-                        casci= pyscf.mcpdft_l.CASCI (self.mf, self.mcpdft_functional, norb_cas, nel_cas)
-                        casci.verbose=self.verbose_setting
-                        mcpdft_result = casci.run()
-                        print("E(CASSCF):", mcpdft_result.e_mcscf)
-                        print(f"Eot({self.mcpdft_functional}):", mcpdft_result.e_ot)
-                        print("E(tot, MC-PDFT):", mcpdft_result.e_tot)
-                        print("E(ci):", mcpdft_result.e_cas)
-                        print("")
-                        self.energy = mcpdft_result.e_tot
-                        print("CAS-CI run done\n")
-                    else:
-                        #Regular CAS-CI
-                        casci = pyscf.mcscf.CASCI(self.mf, norb_cas, nel_cas)
-                        casci.verbose=self.verbose_setting
-                        #CAS-CI from chosen orbitals above
-                        e_tot, e_cas, fcivec, mo, mo_energy = casci.kernel(orbitals)
-                        print("e_tot:", e_tot)
-                        print("e_cas:", e_cas)
-                        self.energy = e_tot
-                        print("CAS-CI run done\n")
+                self.run_CAS(elems=elems)
         else:
             if self.printlevel >1:
                 print("No post-SCF job.")
-
 
         ##############
         #GRADIENT
