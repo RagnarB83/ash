@@ -14,8 +14,8 @@ fragment=Fragment(pdbfile=pdbfile)
 omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialresidue.xml"], pdbfile=pdbfile, periodic=True,
             platform='CPU', numcores=numcores, autoconstraints='HBonds', constraints=bondconstraints, rigidwater=True)
 
-#MM minimization for 100 steps
-OpenMM_Opt(fragment=fragment, theory=omm, maxiter=100, tolerance=1)
+#MM minimization to get rid the worst contacts
+OpenMM_Opt(fragment=fragment, theory=omm, maxiter=100, tolerance=1000)
 
 #Classical MD simulation for 5 ps
 OpenMM_MD(fragment=fragment, theory=omm, timestep=0.001, simulation_time=5, traj_frequency=10, temperature=300,

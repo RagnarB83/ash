@@ -14,8 +14,8 @@ fragment=Fragment(pdbfile=pdbfile)
 omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialresidue.xml"], pdbfile=pdbfile, periodic=True,
             platform='CPU', numcores=numcores, autoconstraints='HBonds', constraints=bondconstraints, rigidwater=True)
 
-#MM minimization for 100 steps
-OpenMM_Opt(fragment=fragment, theory=omm, maxiter=100, tolerance=1)
+#MM minimization to get rid the worst contacts
+OpenMM_Opt(fragment=fragment, theory=omm, maxiter=100, tolerance=1000)
 
 #NPT simulation until density and volume converges
 OpenMM_box_relaxation(fragment=fragment, theory=omm, datafilename="nptsim.csv", numsteps_per_NPT=10000,

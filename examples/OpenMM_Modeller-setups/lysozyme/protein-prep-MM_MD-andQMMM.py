@@ -14,8 +14,8 @@ openmmobject, ashfragment = OpenMM_Modeller(pdbfile=pdbfile, forcefield='CHARMM3
 #Alternatively: openmmobject can be recreated like this:
 #openmmobject = OpenMMTheory(xmlfiles=[charmm36.xml, charmm36/water.xml], pdbfile="finalsystem.pdb", periodic=True)
 
-#MM minimization for 100 steps
-OpenMM_Opt(fragment=ashfragment, theory=openmmobject, maxiter=100, tolerance=1)
+#MM minimization to get rid the worst contacts
+OpenMM_Opt(fragment=ashfragment, theory=openmmobject, maxiter=100, tolerance=1000)
 
 #Classical MD simulation for 10 ps
 #OpenMM_MD(fragment=ashfragment, theory=openmmobject, timestep=0.001, simulation_time=10, traj_frequency=100, temperature=300,
