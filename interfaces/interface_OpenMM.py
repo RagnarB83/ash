@@ -2590,23 +2590,28 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         print("Actual solvent file:", waterxmlfile)
         if solvent_boxdims is not None:
             print("Solvent boxdimension provided: {} Å".format(solvent_boxdims))
-            modeller.addSolvent(forcefield_obj, neutralize=False, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
-                                                                solvent_boxdims[2]) * openmm_unit.angstrom)
+            print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
+            modeller.addSolvent(forcefield_obj, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
+                                                                solvent_boxdims[2]) * openmm_unit.angstrom,
+                                                                neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
+                                                                ionicStrength=ionicstrength * openmm_unit.molar)
         else:
             print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
-            modeller.addSolvent(forcefield_obj, neutralize=False, padding=solvent_padding * openmm_unit.angstrom, model=modeller_solvent_name)
-        write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent.pdb")
-        print_systemsize(modeller)
+            print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
+            modeller.addSolvent(forcefield_obj, padding=solvent_padding * openmm_unit.angstrom, model=modeller_solvent_name,
+                                neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
+                                ionicStrength=ionicstrength * openmm_unit.molar)
+        write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent_ions.pdb")
 
         # Ions
-        print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
-        modeller.addSolvent(forcefield_obj, neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
-            ionicStrength=ionicstrength * openmm_unit.molar)
-        write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterions.pdb")
-        
+        #NOTE: Had to remove separate ion-add step due to OpenMM 8.1 change
+        #print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
+        #modeller.addSolvent(forcefield_obj, neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype, 
+        #    ionicStrength=ionicstrength * openmm_unit.molar)
+        #write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterions.pdb")
         print_systemsize(modeller)
         # Create ASH fragment and write to disk
-        fragment = Fragment(pdbfile="system_afterions.pdb")
+        fragment = Fragment(pdbfile="system_aftersolvent_ions.pdb")
     
     write_pdbfile_openMM(modeller.topology, modeller.positions, "finalsystem.pdb")
     fragment.print_system(filename="finalsystem.ygg")
