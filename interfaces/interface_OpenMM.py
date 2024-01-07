@@ -2108,7 +2108,7 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 
 
 def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePeriodicBox=True,
-               traj_frequency=100, use_reporter=False):
+               traj_frequency=100, use_reporter=True):
     import openmm
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Optimization")
