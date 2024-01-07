@@ -2108,7 +2108,7 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 
 
 def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePeriodicBox=True,
-               traj_frequency=100, reporter=False):
+               traj_frequency=100, use_reporter=False):
     import openmm
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Optimization")
@@ -2170,7 +2170,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     #New in OpenMM 8.1: reporters for minimizer
     #StateDataReporter
     #############################################
-    if openmm.__version__ >= '8.1' and reporter is True:
+    if openmm.__version__ >= '8.1' and use_reporter is True:
         class Reporter(openmm.openmm.MinimizationReporter):
             def report(self, iteration,x,grad,args):
                 try:
@@ -2257,7 +2257,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print("")
     #####################################
     print("Starting minimization.")
-    if openmm.__version__ >= '8.1' and reporter is True:
+    if openmm.__version__ >= '8.1' and use_reporter is True:
         print("OpenMM versions >= 8.1. Will use a reporter to output progress")
         print("OpenMM_Opt trajectory will be written to: OpenMMOpt_traj.xyz")
         #Removing possible old traj file
