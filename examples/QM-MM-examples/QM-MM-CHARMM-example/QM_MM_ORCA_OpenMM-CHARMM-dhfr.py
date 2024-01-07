@@ -31,7 +31,7 @@ orcaobject = ORCATheory(orcasimpleinput=ORCAinpline,
 
 #act and qmatoms lists. Defines QM-region (atoms described by QM) and Active-region (atoms allowed to move)
 #IMPORTANT: atom indices begin at 0.
-#Here selecting the side-chain of threonine
+#Here selecting the side-chain of threonine-38
 qmatoms = [569,570,571,572,573,574,575,576]
 actatoms = qmatoms
 
