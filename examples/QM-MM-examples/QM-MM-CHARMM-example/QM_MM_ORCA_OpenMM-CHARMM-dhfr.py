@@ -7,9 +7,11 @@ forcefielddir="./"
 psffile=forcefielddir+"step3_pbcsetup.psf"
 topfile=forcefielddir+"top_all36_prot.rtf"
 prmfile=forcefielddir+"par_all36_prot.prm"
-xyzfile=forcefielddir+"coordinates.xyz"
+xyzfile=forcefielddir+"lysozyme_solvated.xyz"
+pdbfile=forcefielddir+"lysozyme_solvated.pdb"
 
-#Read coordinates from XYZ-file
+#Read coordinates from either XYZ-file or PDB-file
+#frag = Fragment(pdbfile=pdbfile)
 frag = Fragment(xyzfile=xyzfile)
 
 #Creating OpenMM object
