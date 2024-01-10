@@ -230,7 +230,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             calclabel="Atom: {} Coord: {} Direction: {}".format(str(atom_disp),str(crd),str(drection))
             stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
         #Create fragment
-        frag=ash.Fragment(coords=dispgeo, elems=elems,label=stringlabel, printlevel=printlevel, charge=charge, mult=mult)
+        frag=ash.Fragment(coords=dispgeo, elems=elems,label=stringlabel, printlevel=0, charge=charge, mult=mult)
         all_disp_fragments.append(frag)
         list_of_labels.append(calclabel)
         
