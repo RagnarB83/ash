@@ -335,7 +335,7 @@ class OpenMMTheory:
                     print("Using built-in OpenMM routines to read Amber files.")
                 # Note: Only new-style Amber7 prmtop files work
                 #If PBC vectors provided and new OpenMM version
-                if float(openmm.__version__) >= 8.0:
+                if float(openmm.__version__) >= 8.1:
                     if PBCvectors is None:
                         temp_pbc_vecs=None
                     else:
