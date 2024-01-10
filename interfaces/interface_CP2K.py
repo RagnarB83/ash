@@ -299,11 +299,10 @@ class CP2KTheory:
 
             #2. Write charges.inc file containing charge definitions
             #File will be included in CP2K inputfile
+            charge_lines = [f"{d}\n" for d in dummy_charges]
+            all_charges_lines=["&CHARGES\n"] + charge_lines + ["&END CHARGES\n"]
             with open("charges.inc", 'w') as incfile:
-                incfile.write(f"&CHARGES\n")
-                for d in dummy_charges:
-                    incfile.write(f"{d}\n")
-                incfile.write(f"&END CHARGES\n")
+                incfile.writelines(all_charges_lines)
 
             print_time_rel(module_init_time, modulename=f'CP2K run-prep4c', moduleindex=2)
             #3. Write CP2K QM/MM inputfile
