@@ -873,6 +873,16 @@ class OpenMMTheory:
                 print("Amber-prmtop getIfBox:", self.forcefield._prmtop.getIfBox())
                 self.forcefield._prmtop._raw_data['POINTERS'][27] = 1
                 print("Amber-prmtop getIfBox:", self.forcefield._prmtop.getIfBox())
+                if float(openmm.__version__) < 8.0:
+                    print("Warning: Amber prmtop file detected and OpenMM version < 8.0")
+                    print("Warning: Will assume cubic box and set PBC vectors in a hacky way")
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"] =np.array([0.0,0.0,0.0,0.0])
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][0] = 90.0
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][1] = PBCvectors[0][0]
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = PBCvectors[1][1]
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = PBCvectors[2][2]
+
+
         elif periodic_cell_dimensions is not None:
             print("\nPBC cell dimensions provided by user:", periodic_cell_dimensions)
             #print("Setting PBC vectors in topology")
@@ -883,6 +893,14 @@ class OpenMMTheory:
                                  openmm.unit.Quantity(value=periodic_cell_dimensions[4],unit=openmm.unit.degree),
                                  openmm.unit.Quantity(value=periodic_cell_dimensions[5],unit=openmm.unit.degree)]
             print("Topology PBC dimensions set:", self.topology.getUnitCellDimensions())
+            #Openmm 7 and Amber problem only: Delete this at some point
+            if self.topology.getUnitCellDimensions() is None:
+                print("Warning: problems with unitcell dimensions setting.")
+                print("Warning: Will assume cubic box and set PBC vectors instead")
+                self.topology.setPeriodicBoxVectors([[periodic_cell_dimensions[0],0,0],
+                                                    [0,periodic_cell_dimensions[1],0],
+                                                    [0,0,periodic_cell_dimensions[2]]]*openmm.unit.angstrom)
+            print("PeriodicBoxVectors: ", self.topology.getPeriodicBoxVectors())
             #Setting PBC forcefield object
             print("Setting PBC box in forcefield object")
             self.forcefield.box=[openmm.unit.Quantity(value=periodic_cell_dimensions[0],unit=openmm.unit.angstrom),
@@ -915,6 +933,16 @@ class OpenMMTheory:
                 #PBCvectors will be grabbed from topology above
                 #Happens if no IFBOX defined in prmtop file but we still want periodicity
                 self.forcefield._prmtop._raw_data['POINTERS'][27] = 1
+
+                if float(openmm.__version__) < 8.0:
+                    print("Warning: Amber prmtop file detected and OpenMM version < 8.0")
+                    print("Warning: Will assume cubic box and set PBC vectors in a hacky way")
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"] =np.array([0.0,0.0,0.0,0.0])
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][0] = 90.0
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][1] = periodic_cell_dimensions[0]
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = periodic_cell_dimensions[1]
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = periodic_cell_dimensions[2]
+
 
 
     #Get PBC vectors from topology of openmm object. Convenient in a script
