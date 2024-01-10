@@ -56,11 +56,12 @@ class OpenMMTheory:
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None, label="OpenMM",
                  GROMACSfiles=False, gromacstopfile=None, grofile=None, gromacstopdir=None, 
                  Amberfiles=False, amberprmtopfile=None, properties=None,
-                 cluster_fragment=None, ASH_FF_file=None, PBCvectors=None,
+                 cluster_fragment=None, ASH_FF_file=None, 
                  nonbondedMethod_noPBC='NoCutoff', nonbonded_cutoff_noPBC=20,
                  xmlfiles=None, pdbfile=None, use_parmed=False, xmlsystemfile=None,
                  do_energy_decomposition=False,
-                 periodic=False, charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
+                 periodic=False, periodic_cell_dimensions=None, PBCvectors=None,
+                 charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
                  periodic_nonbonded_cutoff=12,  dispersion_correction=True,
                  nonbondedMethod_PBC='PME',
                  switching_function_distance=10.0,
@@ -92,6 +93,12 @@ class OpenMMTheory:
             raise ImportError(
                 "OpenMMTheory requires installing the OpenMM library. Try: conda install -c conda-forge openmm  \
                 Also see http://docs.openmm.org/latest/userguide/application.html")
+
+        #Early exits
+        #TODO: To be removed
+        if charmm_periodic_cell_dimensions is not None:
+            print("charmm_periodic_cell_dimensions is deprecated. Use periodic_cell_dimensions instead")
+            ashexit()
 
         # OpenMM variables
         # print(BC.WARNING, BC.BOLD, "------------Defining OpenMM object-------------", BC.END)
@@ -237,11 +244,13 @@ class OpenMMTheory:
                 print("Reading CHARMM files.")
             self.psffile = psffile
             if use_parmed is True:
+                import parmed
                 if self.printlevel > 0:
                     print("Using Parmed.")
                 self.psf = parmed.charmm.CharmmPsfFile(psffile)
                 #Permissive True means less restrictive about atomtypes
-                self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile, permissive=True)
+                #Removed , permissive=True, no longer in parmed
+                self.params = parmed.charmm.CharmmParameterSet(charmmtopfile, charmmprmfile)
                 # Grab resnames from psf-object. Different for parmed object
                 # Note: OpenMM uses 0-indexing
                 self.resnames = [self.psf.atoms[i].residue.name for i in range(0, len(self.psf.atoms))]
@@ -276,6 +285,7 @@ class OpenMMTheory:
                 print("Reading Gromacs files.")
             # Reading grofile, not for coordinates but for periodic vectors
             if use_parmed is True:
+                import parmed
                 if self.printlevel > 0:
                     print("Using Parmed.")
                     print("GROMACS top dir:", gromacstopdir)
@@ -316,6 +326,7 @@ class OpenMMTheory:
                 print("WARNING: Only new-style Amber7 prmtop-file will work.")
                 print("WARNING: Will take periodic boundary conditions from prmtop file.")
             if use_parmed is True:
+                import parmed
                 if self.printlevel > 0:
                     print("Using Parmed to read Amber files.")
                 self.prmtop = parmed.load_file(amberprmtopfile)
@@ -323,8 +334,25 @@ class OpenMMTheory:
                 if self.printlevel > 0:
                     print("Using built-in OpenMM routines to read Amber files.")
                 # Note: Only new-style Amber7 prmtop files work
-                self.prmtop = openmm.app.AmberPrmtopFile(amberprmtopfile)
+                #If PBC vectors provided
+                if PBCvectors is None:
+                    temp_pbc_vecs=None
+                else:
+                    temp_pbc_vecs=PBCvectors*openmm.unit.angstrom #Adding units
+                #If cell dims provided instead
+                if periodic_cell_dimensions is None:
+                    temp_pbc_cell_value=None
+                else:
+                    #This works despite specifying Angstrom units for all cell dimensions
+                    temp_pbc_cell_value=periodic_cell_dimensions*openmm.unit.angstrom
+                #Providing PBC data upon prmtop object creaction (avoids some hazzles)
+                #PBC data is further handled later
+                self.prmtop = openmm.app.AmberPrmtopFile(amberprmtopfile, 
+                                                         periodicBoxVectors=temp_pbc_vecs, 
+                                                         unitCellDimensions=temp_pbc_cell_value)
+
             self.topology = self.prmtop.topology
+            print("Amber PBC vectors read:", self.topology.getPeriodicBoxVectors())
             self.forcefield = self.prmtop
 
             #List of resids, resnames and mm_elements. Used by actregiondefine
@@ -334,7 +362,7 @@ class OpenMMTheory:
             self.atomnames = [i.name for i in self.prmtop.topology.atoms()]
             #NOTE: OpenMM does not grab Amber atomtypes for some reason. Feature request
             #TODO: Grab more topology information
-            # TODO: Define segmentnames, atomtypes, atomnames??
+            # TODO: Define segmentnames, atomtypes,
 
 
         elif topoforce is True:
@@ -473,15 +501,6 @@ class OpenMMTheory:
             #Defining some things. resids is used by actregiondefine
             self.resids = [i.residue.index for i in self.topology.atoms()]
 
-        #IF PBC vectors provided then we need to set them in the topology (otherwise system creation does not work)
-        if PBCvectors is not None:
-            print("PBC vectors provided by user.")
-            print("Setting PBC vectors of topology")
-            self.topology.setPeriodicBoxVectors(*PBCvectors*openmm.unit.angstroms)
-            print("PBC vectors set:")
-            print(self.topology.getPeriodicBoxVectors())
-
-
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
         if self.system is None:
             # Periodic or non-periodic ystem
@@ -489,7 +508,10 @@ class OpenMMTheory:
                 if self.printlevel > 0:
                     print("System is periodic.")
                     print_line_with_subheader1("Setting up periodicity.")
-
+                    #Inspect and set PBC in self.topology and self.forcefield
+                    #Necessary for system creation with periodics (otherwise failure)
+                    self.set_periodics_before_system_creation(PBCvectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed)
+                
                 #Nonbonded method to use for PBC
                 if self.nonbondedMethod_PBC == 'PME':
                     nonb_method_PBC=openmm.app.PME
@@ -519,45 +541,6 @@ class OpenMMTheory:
                 if CHARMMfiles is True:
                     if self.printlevel > 0:
                         print("Using CHARMM files.")
-
-                    if charmm_periodic_cell_dimensions is None:
-                        print(
-                            "Error: When using CHARMMfiles and 'Periodic=True', 'charmm_periodic_cell_dimensions' "
-                            "keyword needs to be supplied.")
-                        print(
-                            "Example: charmm_periodic_cell_dimensions= [200, 200, 200, 90, 90, 90]  in Angstrom and "
-                            "degrees")
-                        ashexit()
-                    self.charmm_periodic_cell_dimensions = charmm_periodic_cell_dimensions
-                    if self.printlevel > 0:
-                        print("Periodic cell dimensions:", charmm_periodic_cell_dimensions)
-                    self.a = charmm_periodic_cell_dimensions[0] * openmm.unit.angstroms
-                    self.b = charmm_periodic_cell_dimensions[1] * openmm.unit.angstroms
-                    self.c = charmm_periodic_cell_dimensions[2] * openmm.unit.angstroms
-                    if use_parmed is True:
-                        self.forcefield.box = [self.a, self.b, self.c, charmm_periodic_cell_dimensions[3],
-                                               charmm_periodic_cell_dimensions[4], charmm_periodic_cell_dimensions[5]]
-                        # print("Set box vectors:", self.forcefield.box)
-                        if self.printlevel > 0:
-                            print_line_with_subheader2("Set box vectors:")
-                            print("a:", self.a)
-                            print("b:", self.b)
-                            print("c:", self.c)
-                            print("alpha:", charmm_periodic_cell_dimensions[3])
-                            print("beta:", charmm_periodic_cell_dimensions[4])
-                            print("gamma:", charmm_periodic_cell_dimensions[5])
-                    else:
-                        self.forcefield.setBox(self.a, self.b, self.c,
-                                               alpha=openmm.unit.Quantity(value=charmm_periodic_cell_dimensions[3],
-                                                                        unit=openmm.unit.degree),
-                                               beta=openmm.unit.Quantity(value=charmm_periodic_cell_dimensions[3],
-                                                                       unit=openmm.unit.degree),
-                                               gamma=openmm.unit.Quantity(value=charmm_periodic_cell_dimensions[3],
-                                                                        unit=openmm.unit.degree))
-                        if self.printlevel > 0:
-                            print("Set box vectors:", self.forcefield.box_vectors)
-
-
                     self.system = self.forcefield.createSystem(self.params, nonbondedMethod=nonb_method_PBC,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
@@ -576,7 +559,7 @@ class OpenMMTheory:
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
                 elif Amberfiles is True:
-                    # NOTE: Amber-interface has read PBC info from prmtop file already
+                    # NOTE: PBC information should be in forcefield object already
                     self.system = self.forcefield.createSystem(nonbondedMethod=nonb_method_PBC,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
@@ -591,23 +574,26 @@ class OpenMMTheory:
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
-                if PBCvectors is not None:
+                
+                #FINAL PBC CHECK
+                #if PBCvectors is not None:
+                #    print("here")
+                    #NOTE: No longer setting PBC vectors in system here.
                     # pbcvectors_mod = PBCvectors
-                    if self.printlevel > 0:
-                        print("Setting PBC vectors by user request.")
-                        print("Assuming list of lists or list of Vec3 objects.")
-                        print("Assuming vectors in nanometers.")
-                    self.system.setDefaultPeriodicBoxVectors(*PBCvectors)
+                    #if self.printlevel > 0:
+                    #    print("Setting PBC vectors of system by user request.")
+                    #    print("Assuming list of lists with units Angstrom")
+                    #pbcvecs=np.array(PBCvectors)*0.1
+                    #self.system.setDefaultPeriodicBoxVectors(*pbcvecs)
+
+                #FINAL PRINTING OF SYSTEM PBC VECTORS
                 a, b, c = self.system.getDefaultPeriodicBoxVectors()
                 if self.printlevel > 0:
                     print_line_with_subheader2("Periodic vectors:")
                     print(a)
                     print(b)
                     print(c)
-                # print("Periodic vectors:", self.system.getDefaultPeriodicBoxVectors())
-                print("")
-                
-                
+
                 # Force modification here
                 # print("OpenMM Forces defined:", self.system.getForces())
                 if self.printlevel > 0:
@@ -855,6 +841,79 @@ class OpenMMTheory:
         #self.create_simulation()
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
+
+    #Function that handles periodicity in forcefield objects (for Amber, CHARMM). TODO: Test GROMACS and XML
+    def set_periodics_before_system_creation(self,PBCvectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
+        import openmm
+        if use_parmed is True:
+            import parmed
+        print("Inspecting periodicity input before system creation")
+        
+        #IF PBC vectors provided then we need to set them in the topology (otherwise system creation does not work)
+        if PBCvectors is not None:
+            print("\nPBC vectors provided by user (in Angstrom):", PBCvectors)
+            print("Setting PBC vectors in topology object")
+            self.topology.setPeriodicBoxVectors(PBCvectors*openmm.unit.angstroms)
+            print("Topology PBC vectors set:", self.topology.getPeriodicBoxVectors())
+            #Setting PBC forcefield object
+            print("Setting PBC box vectors in forcefield object")
+            if CHARMMfiles is True:
+                self.forcefield.box_vectors = PBCvectors*openmm.unit.angstrom
+                print("PBC box vectors set:", self.forcefield.box_vectors)
+            elif Amberfiles is True and use_parmed is True:
+                #Necessary for parmed object to define box_vectors in forcefield object
+                self.forcefield.box_vectors = PBCvectors*openmm.unit.angstrom
+                print("PBC box vectors set:", self.forcefield.box_vectors)
+            elif Amberfiles is True and use_parmed is False:
+                #Not necessary to define box_vectors (grabbed from topology above) but we have to make sure PBC is on
+                #Happens if no IFBOX defined in prmtop file but we still want periodicity
+                #Hacky fix below
+                print("Amber-prmtop getIfBox:", self.forcefield._prmtop.getIfBox())
+                self.forcefield._prmtop._raw_data['POINTERS'][27] = 1
+                print("Amber-prmtop getIfBox:", self.forcefield._prmtop.getIfBox())
+        elif periodic_cell_dimensions is not None:
+            print("\nPBC cell dimensions provided by user:", periodic_cell_dimensions)
+            #print("Setting PBC vectors in topology")
+            self.topology.setUnitCellDimensions=[openmm.unit.Quantity(value=periodic_cell_dimensions[0],unit=openmm.unit.angstrom),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[1],unit=openmm.unit.angstrom),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[2],unit=openmm.unit.angstrom),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[3],unit=openmm.unit.degree),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[4],unit=openmm.unit.degree),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[5],unit=openmm.unit.degree)]
+            print("Topology PBC dimensions set:", self.topology.getUnitCellDimensions())
+            #Setting PBC forcefield object
+            print("Setting PBC box in forcefield object")
+            self.forcefield.box=[openmm.unit.Quantity(value=periodic_cell_dimensions[0],unit=openmm.unit.angstrom),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[1],unit=openmm.unit.angstrom),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[2],unit=openmm.unit.angstrom),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[3],unit=openmm.unit.degree),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[4],unit=openmm.unit.degree),
+                                 openmm.unit.Quantity(value=periodic_cell_dimensions[5],unit=openmm.unit.degree)]
+            print("PBC box set:", self.forcefield.box)
+            #Automatically set:
+            #print("Set box vectors:", self.forcefield.box_vectors)
+            #CHARMM without parmed: need to use setBox in forcefield (actually psf) object
+            if CHARMMfiles is True and use_parmed is False:
+                    self.forcefield.setBox(openmm.unit.Quantity(value=periodic_cell_dimensions[0],unit=openmm.unit.angstrom),
+                                           openmm.unit.Quantity(value=periodic_cell_dimensions[1],unit=openmm.unit.angstrom),
+                                           openmm.unit.Quantity(value=periodic_cell_dimensions[2],unit=openmm.unit.angstrom),
+                                           alpha=openmm.unit.Quantity(value=periodic_cell_dimensions[3],unit=openmm.unit.degree),
+                                           beta=openmm.unit.Quantity(value=periodic_cell_dimensions[4],unit=openmm.unit.degree),
+                                           gamma=openmm.unit.Quantity(value=periodic_cell_dimensions[5],unit=openmm.unit.degree))
+                    print("PBC box set:", self.forcefield.box)
+                    #Automatically set:
+                    print("Set box vectors:", self.forcefield.box_vectors)
+            if CHARMMfiles is True and use_parmed is True:
+                pass
+            elif Amberfiles is True and use_parmed is True:
+                pass
+            elif Amberfiles is True and use_parmed is False:
+                print("Amber ff getIfBox", self.forcefield._prmtop.getIfBox())
+                #Hacky thing to make sure PBC is on for Amber.
+                #PBCvectors will be grabbed from topology above
+                #Happens if no IFBOX defined in prmtop file but we still want periodicity
+                self.forcefield._prmtop._raw_data['POINTERS'][27] = 1
+
 
     #Get PBC vectors from topology of openmm object. Convenient in a script
     def get_PBC_vectors(self):

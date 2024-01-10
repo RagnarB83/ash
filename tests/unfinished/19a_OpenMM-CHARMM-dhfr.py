@@ -14,7 +14,7 @@ frag = Fragment(xyzfile=xyzfile, conncalc=False)
 #No long-range dispersion used
 #Nonbonded cutoff: 12 Å, switching function: 10 Å
 openmmobject = OpenMMTheory(psffile=psffile, CHARMMfiles=True, charmmtopfile=topfile,
-    charmmprmfile=prmfile, periodic=True, charmm_periodic_cell_dimensions=[80, 80, 80, 90, 90, 90], do_energy_decomposition=True,
+    charmmprmfile=prmfile, periodic=True, periodic_cell_dimensions=[80, 80, 80, 90, 90, 90], do_energy_decomposition=True,
     applyconstraints=False, dispersion_correction=False, periodic_nonbonded_cutoff=12, switching_function_distance=10,
     PMEparameters=[1.0/0.34, 90, 90, 90], use_parmed=False)
 
