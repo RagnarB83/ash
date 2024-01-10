@@ -224,6 +224,7 @@ class CP2KTheory:
         print("QM periodic type:", self.qm_periodic_type)
         print("Poisson solver", self.psolver)
 
+        print_time_rel(module_init_time, modulename=f'CP2K run-prep1', moduleindex=2)
         #Case: QM/MM CP2K job
         if PC is True:
             print("PC true")
@@ -250,6 +251,7 @@ class CP2KTheory:
             if self.cell_vectors is not None:
                 print("cell_vectors:", self.cell_vectors)
 
+            print_time_rel(module_init_time, modulename=f'CP2K run-prep2', moduleindex=2)
             #QM-CELL
             if self.qm_cell_dims is None:
                 print("Warning: QM-cell box dimensions have not been set by user (qm_cell_dims keyword)")
@@ -276,8 +278,9 @@ class CP2KTheory:
             dummy_coords = np.concatenate((current_coords,current_MM_coords),axis=0)
             dummy_charges = [0.0]*len(qm_elems) + MMcharges
             system_xyzfile="system_cp2k"
+            print_time_rel(module_init_time, modulename=f'CP2K run-prep3a', moduleindex=2)
             write_xyzfile(dummy_elem_list, dummy_coords, f"{system_xyzfile}", printlevel=1)
-
+            print_time_rel(module_init_time, modulename=f'CP2K run-prep3b', moduleindex=2)
             #Telling CP2K which atoms are QM
             #Dictionary with QM-atom indices (for full system), grouped by element
             qm_kind_dict={}
@@ -302,7 +305,7 @@ class CP2KTheory:
                     incfile.write(f"{d}\n")
                 incfile.write(f"&END CHARGES\n")
 
-
+            print_time_rel(module_init_time, modulename=f'CP2K run-prep4c', moduleindex=2)
             #3. Write CP2K QM/MM inputfile
             write_CP2K_input(method='QMMM', jobname='ash', center_coords=self.center_coords, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
@@ -367,7 +370,7 @@ class CP2KTheory:
             os.remove(f'ash-{self.filename}-1_0.xyz')
         except:
             pass
-
+        print_time_rel(module_init_time, modulename=f'CP2K run-prep5', moduleindex=2)
         #Check for BASIS and POTENTIAL FILES before calling
         print("Checking if POTENTIAL file exists in current dir")
         if os.path.isfile("POTENTIAL") is True:
@@ -391,7 +394,7 @@ class CP2KTheory:
             else:
                 print("No file found in parent dir. Using basis set file from ASH. Copying to dir as BASIS")
                 shutil.copyfile(ash.settings_ash.ashpath+'/basis-sets/cp2k/BASIS_MOLOPT', './BASIS')
-
+        print_time_rel(module_init_time, modulename=f'CP2K run-prep6', moduleindex=2)
         #Timing for Run-prep
         print_time_rel(module_init_time, modulename=f'CP2K run-prep', moduleindex=2)
 

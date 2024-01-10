@@ -335,6 +335,12 @@ class OpenMMTheory:
                     print("Using built-in OpenMM routines to read Amber files.")
                 # Note: Only new-style Amber7 prmtop files work
                 #If PBC vectors provided and new OpenMM version
+                #Note Jan 2024: Amber prmtop files sometimes have PBC vectors (ready by OpenMM parser), this is deprecated behaviour though it seems
+                #Generally recommended instead to get PBC info from inpcrd files that we typically don't use
+                #Hence we need to override that info anyway
+                #OpenMM 8.1 allows us to do this easily by constructor, older versions requires hacky workarounds
+                # (see set_periodics_before_system_creation for those hacks)
+                #Note: https://github.com/openmm/openmm/issues/4078
                 if float(openmm.__version__) >= 8.1:
                     if PBCvectors is None:
                         temp_pbc_vecs=None

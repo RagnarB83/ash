@@ -1659,16 +1659,17 @@ def print_coordinates(atoms, V, title=""):
 
 
 # Write XYZfile provided list of elements and list of list of coords and filename
+#Fast version
 def write_xyzfile(elems, coords, name, printlevel=2, writemode='w'):
+    print("here")
+    #Adding headerlines to list
+    all_lines=[str(len(elems)) + '\n',"title" + '\n']
+    for el, c in zip(elems, coords):
+        all_lines.append("{:4} {:16.12f} {:16.12f} {:16.12f}\n".format(el, c[0], c[1], c[2]))
     with open(name + '.xyz', writemode) as ofile:
-        ofile.write(str(len(elems)) + '\n')
-        ofile.write("title" + '\n')
-        for el, c in zip(elems, coords):
-            line = "{:4} {:16.12f} {:16.12f} {:16.12f}".format(el, c[0], c[1], c[2])
-            ofile.write(line + '\n')
+        ofile.writelines(all_lines)
     if printlevel >= 2:
         print("Wrote XYZ file: ", name + '.xyz')
-
 
 # Function that reads XYZ-file with multiple files, splits and return list of coordinates
 # Created for splitting crest_conformers.xyz but may also be used for MD traj.
