@@ -873,7 +873,7 @@ class OpenMMTheory:
                 print("Amber-prmtop getIfBox:", self.forcefield._prmtop.getIfBox())
                 self.forcefield._prmtop._raw_data['POINTERS'][27] = 1
                 print("Amber-prmtop getIfBox:", self.forcefield._prmtop.getIfBox())
-                if float(openmm.__version__) < 8.0:
+                if float(openmm.__version__) < 8.1:
                     print("Warning: Amber prmtop file detected and OpenMM version < 8.0")
                     print("Warning: Will assume cubic box and set PBC vectors in a hacky way")
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"] =np.array([0.0,0.0,0.0,0.0])
@@ -934,8 +934,8 @@ class OpenMMTheory:
                 #Happens if no IFBOX defined in prmtop file but we still want periodicity
                 self.forcefield._prmtop._raw_data['POINTERS'][27] = 1
 
-                if float(openmm.__version__) < 8.0:
-                    print("Warning: Amber prmtop file detected and OpenMM version < 8.0")
+                if float(openmm.__version__) < 8.1:
+                    print("Warning: Amber prmtop file detected and OpenMM version < 8.1")
                     print("Warning: Will assume cubic box and set PBC vectors in a hacky way")
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"] =np.array([0.0,0.0,0.0,0.0])
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][0] = 90.0
