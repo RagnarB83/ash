@@ -334,23 +334,25 @@ class OpenMMTheory:
                 if self.printlevel > 0:
                     print("Using built-in OpenMM routines to read Amber files.")
                 # Note: Only new-style Amber7 prmtop files work
-                #If PBC vectors provided
-                if PBCvectors is None:
-                    temp_pbc_vecs=None
+                #If PBC vectors provided and new OpenMM version
+                if float(openmm.__version__) >= 8.0:
+                    if PBCvectors is None:
+                        temp_pbc_vecs=None
+                    else:
+                        temp_pbc_vecs=PBCvectors*openmm.unit.angstrom #Adding units
+                    #If cell dims provided instead
+                    if periodic_cell_dimensions is None:
+                        temp_pbc_cell_value=None
+                    else:
+                        #This works despite specifying Angstrom units for all cell dimensions
+                        temp_pbc_cell_value=periodic_cell_dimensions*openmm.unit.angstrom
+                    #Providing PBC data upon prmtop object creaction (avoids some hazzles)
+                    #PBC data is further handled later
+                    self.prmtop = openmm.app.AmberPrmtopFile(amberprmtopfile, 
+                                                            periodicBoxVectors=temp_pbc_vecs, 
+                                                            unitCellDimensions=temp_pbc_cell_value)
                 else:
-                    temp_pbc_vecs=PBCvectors*openmm.unit.angstrom #Adding units
-                #If cell dims provided instead
-                if periodic_cell_dimensions is None:
-                    temp_pbc_cell_value=None
-                else:
-                    #This works despite specifying Angstrom units for all cell dimensions
-                    temp_pbc_cell_value=periodic_cell_dimensions*openmm.unit.angstrom
-                #Providing PBC data upon prmtop object creaction (avoids some hazzles)
-                #PBC data is further handled later
-                self.prmtop = openmm.app.AmberPrmtopFile(amberprmtopfile, 
-                                                         periodicBoxVectors=temp_pbc_vecs, 
-                                                         unitCellDimensions=temp_pbc_cell_value)
-
+                    self.prmtop = openmm.app.AmberPrmtopFile(amberprmtopfile)
             self.topology = self.prmtop.topology
             print("Amber PBC vectors read:", self.topology.getPeriodicBoxVectors())
             self.forcefield = self.prmtop
@@ -2186,7 +2188,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print("Number of atoms:", fragment.numatoms)
     print("Max iterations:", maxiter)
     print(f"Tolerance: {tolerance} kj/mol/nm:")
-    if openmm.__version__ >= '8.1':
+    if float(openmm.__version__) >= 8.1:
         print("Will write to trajectory every {} iterations".format(traj_frequency))
 
     print("OpenMM autoconstraints:", openmmobject.autoconstraints)
@@ -2229,7 +2231,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     #New in OpenMM 8.1: reporters for minimizer
     #StateDataReporter
     #############################################
-    if openmm.__version__ >= '8.1' and use_reporter is True:
+    if float(openmm.__version__ ) >= 8.1 and use_reporter is True:
         class Reporter(openmm.openmm.MinimizationReporter):
             def report(self, iteration,x,grad,args):
                 try:
@@ -2316,7 +2318,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print("")
     #####################################
     print("Starting minimization.")
-    if openmm.__version__ >= '8.1' and use_reporter is True:
+    if float(openmm.__version__) >= 8.1 and use_reporter is True:
         print("OpenMM versions >= 8.1. Will use a reporter to output progress")
         print("OpenMM_Opt trajectory will be written to: OpenMMOpt_traj.xyz")
         #Removing possible old traj file
