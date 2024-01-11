@@ -41,7 +41,7 @@ class CP2KTheory:
                 center_coords=True, scf_maxiter=50, outer_scf_maxiter=10, scf_convergence=1e-6, eps_default=1e-10,
                 coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
                 OT=True, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL', 
-                OT_linesearch='3PNT', outer_SCF=True, outer_SCF_optimizer='DIIS', OT_energy_gap=0.08):
+                OT_linesearch='3PNT', outer_SCF=True, outer_SCF_optimizer='SD', OT_energy_gap=0.08):
 
         self.theorytype="QM"
         self.theorynamelabel="CP2K"
