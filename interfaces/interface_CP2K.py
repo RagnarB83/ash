@@ -217,9 +217,16 @@ class CP2KTheory:
             else:
                 qm_elems = elems
 
+        #PERIODIC and QM/MM
         if self.periodic is True:
             print("Periodic CP2K calculation will be carried out")
-
+            if PC is True:
+                print("QM/MM is on")
+                #Periodic True and QM/MM: Need to check qm_periodic_type
+                if self.qm_periodic_type is None:
+                    print("Periodic and QM/MM is both on but qm_periodic_type is None")
+                    print("Setting qm_periodic_type to XYZ (sets periodicity in QM-cell)")
+                    self.qm_periodic_type='XYZ'
         
         print("QM periodic type:", self.qm_periodic_type)
         print("Poisson solver", self.psolver)
@@ -603,13 +610,15 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             #MM
             inpfile.write(f'    &MM\n')
             inpfile.write(f'      &FORCEFIELD\n')
-            inpfile.write(f'        DO_NONBONDED FALSE\n')
+            inpfile.write(f'        DO_ELECTROSTATICS FALSE\n') #This turns off CP2K PC-PC interactions (not QM-PC)
+            inpfile.write(f'        DO_NONBONDED FALSE\n') #This turns off CP2K LJ interactions
             inpfile.write(f'        @INCLUDE charges.inc\n') #including charges.inc file containing all system charges
             inpfile.write(f'      &END FORCEFIELD\n')
+            #NOTE: POISSSON and EWALD section below is necessary even though we turn off MM-MM interactions
+            #mm_ewald_type=None would turn off MM-MM periodic interactions
             inpfile.write(f'      &POISSON\n')            
             inpfile.write(f'        &EWALD\n')
             inpfile.write(f'          EWALD_TYPE {mm_ewald_type}\n') 
-            #mm_ewald_type=None would turn off MM-MM periodic interactions
             inpfile.write(f'          ALPHA {mm_ewald_alpha}\n')
             inpfile.write(f'          GMAX {mm_ewald_gmax}\n')
             inpfile.write(f'        &END EWALD\n')
