@@ -2705,7 +2705,72 @@ def pySCF_read_MOs(moreadfile,pyscfobject):
         ashexit()
     return mo_coefficients, occupations
 
-#Standalone density-potential inversion function
+#Standalone density-potential inversion functions
+def KS_inversion_n2v(pyscftheoryobj, dm, method='PDECO', numcores=1, opt_max_iter=200,
+                     guide_components="fermi_amaldi", gtol=1e-6):
+    time_init=time.time()
+    print("\nKS_inversion_n2v")
+    try:
+        import n2v
+        import gbasis
+        import pylibxc2
+    except ModuleNotFoundError:
+        print("ModuleNotFoundError:")
+        print("KS_inversion_n2v requires installation of n2v module and additional packages")
+        print("See https://github.com/wasserman-group/n2v for details")
+        print("""\n#Install pylibxc2
+pip install pylibxc2""")
+        print("""\n#Install gbasis:
+git clone https://github.com/theochem/gbasis.git
+cd gbasis
+pip install .""")
+        print("""\n#Install n2v
+git clone https://github.com/wasserman-group/n2v.git
+cd n2v
+pip install .
+""")
+        ashexit()
+
+    basis="cc-pVDZ"
+    pbs="cc-pVQZ"
+
+
+    # Extract data for n2v. 
+    da, db = mf.make_rdm1()/2, mf.make_rdm1()/2
+    ca, cb = mf.mo_coeff[:,:mol.nelec[0]], mf.mo_coeff[:, :mol.nelec[1]]
+    ea, eb = mf.mo_energy, mf.mo_energy
+
+    # Initialize inverter object. 
+    inv = n2v.Inverter( engine='pyscf' )
+
+    inv.set_system(pyscftheoryobj.mol, basis, pbs=pbs )
+    inv.Dt = [da, db]
+    inv.ct = [ca, cb]
+    inv.et = [ea, eb]
+
+    # Inverter with PDECO method, guide potention v0=Fermi-Amaldi
+    inv.v_pbs = np.zeros_like(inv.v_pbs)
+    inv.invert(method, opt_max_iter=opt_max_iter, guide_components=guide_components, gtol=gtol)
+
+
+    #For visualization
+    # Build Grid
+    inv.eng.grid.build_rectangular((1001,1,1))
+    x = inv.eng.grid.x
+    #vrest
+    vrest = inv.eng.grid.to_grid(inv.v_pbs, grid='rectangular')
+    # Get Hartree and Fermi-Amaldi potentials
+    vH = inv.eng.grid.hartree(density=da+db, grid='rectangular')
+    vFA = (1-1/(inv.nalpha + inv.nbeta)) * vH
+
+    # Build Vxc
+    vxc = vFA + vrest - vH
+
+
+    return vxc
+
+
+
 #Takes pyscfheoryobject and DM as input, solves the inversion problem and returns MO coefficients, occupations,energies and new DM
 def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trust-exact', numcores=1,
                                 ZMP_lambda=128, ZMP_levelshift=True, ZMP_cycles=400, DF=True):
@@ -2718,7 +2783,7 @@ def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trus
             print("See: https://github.com/ssnam92/KSPies")
             print("Try: pip install kspies   and pip install opt-einsum")
             ashexit()
-
+        print("Current OMP_NUM_THREADS:", os.environ['OMP_NUM_THREADS'])
         print("Setting OMP_NUM_THREADS to:", numcores)
         os.environ['OMP_NUM_THREADS'] = str(numcores)   
 
