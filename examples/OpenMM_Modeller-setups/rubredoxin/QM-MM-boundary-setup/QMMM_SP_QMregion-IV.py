@@ -1,10 +1,17 @@
 from ash import *
 
+#QM/MM single-point calculation to demonstrate different QM-regions
+#
+#QM-I: Fe and 4 S atoms only: 5 QM-atoms + 4 linkatoms
+#QM-II: Fe and 4 SCH2 group only: 17 QM-atoms + 4 linkatoms
+#QM-III (bad): QM-II + C_alpha and H_alpha of Cys-6 backbone. ASH will not allow this
+#QM-IV: QM-II + CH(alpha) and NH of Cys-6 backbone + CO of Val-5 backbone
+ 
 #Define number of cores variable
-numcores=4
+numcores=1
 
-#Fe(SCH2)4 indices (inspect system_aftersolvent.pdb file to get indices)
-qmatoms=[93,94,95,96,133,134,135,136,564,565,566,567,604,605,606,607,755]
+#QM-IV:
+qmatoms= [93,94,95,96,133,134,135,136,564,565,566,567,604,605,606,607,755,89,90,87,88,75,76]
 
 #Defining fragment containing coordinates (can be read from XYZ-file, ASH fragment, PDB-file)
 lastpdbfile="trajectory_lastframe.pdb"
@@ -17,11 +24,8 @@ omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "./specialres
 #QM theory: r2SCAN-3c DFT-composite method using ORCA
 orca = ORCATheory(orcasimpleinput="! r2SCAN-3c tightscf", numcores=1)
 #QM/MM theory
-qmmm = QMMMTheory(qm_theory=orca, mm_theory=omm, fragment=fragment,
+qmmm = QMMMTheory(qm_theory=orca, mm_theory=omm, fragment=fragment, qm_charge=-1, qm_mult=6,
         embedding="Elstat", qmatoms=qmatoms, printlevel=1)
 
-# QM/MM geometry optimization
-#Defining active region as QM-region
-actatoms=qmatoms
-Optimizer(fragment=fragment, theory=qmmm, ActiveRegion=True, actatoms=actatoms, maxiter=200,
-        charge=-1, mult=6)
+#Simple single-point calculation
+Singlepoint(theory=qmmm, fragment=fragment)

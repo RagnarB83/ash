@@ -7,7 +7,7 @@ numcores=3
 qmatoms=[93,94,95,96,133,134,135,136,564,565,566,567,604,605,606,607,755]
 
 #Defining fragment containing coordinates (can be read from XYZ-file, ASH fragment, PDB-file)
-lastpdbfile="final_MDfrag_laststep_imaged.pdb"
+lastpdbfile="trajectory_lastframe.pdb"
 fragment=Fragment(pdbfile=lastpdbfile)
 
 #Creating new OpenMM object from OpenMM XML files (built-in CHARMM36 and a user-defined one)

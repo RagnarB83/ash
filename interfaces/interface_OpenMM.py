@@ -89,6 +89,9 @@ class OpenMMTheory:
             import openmm.unit
             if self.printlevel > 0:
                 print("Imported OpenMM library version:", openmm.__version__)
+                if float(openmm.__version__) < 8.0:
+                    print("Warning: OpenMM version < 8.1. OpenMM 8.1 or higher is recommended")
+                    print("Some features may not work as intended in older versions")
         except ImportError:
             raise ImportError(
                 "OpenMMTheory requires installing the OpenMM library. Try: conda install -c conda-forge openmm  \

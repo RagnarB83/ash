@@ -25,8 +25,8 @@ class PySCFTheory:
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk', 
                   noautostart=False, autostart=True,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
-                  fractional_occupation=False, scf_maxiter=50, direct_scf=True, GHF_complex=False, collinear_option='mcol',
-                  NMF=False, NMF_sigma=None, NMF_distribution=None, stability_analysis=False, 
+                  fractional_occupation=False, scf_maxiter=50, scf_noiter=False, direct_scf=True, GHF_complex=False, collinear_option='mcol',
+                  NMF=False, NMF_sigma=None, NMF_distribution='FD', stability_analysis=False, 
                   BS=False, HSmult=None, atomstoflip=None,
                   TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
@@ -213,8 +213,13 @@ class PySCFTheory:
         self.mom_virtindex=mom_virtindex # The relative virtual orbital index to excite into. Default 1 (LUMO). Choose 2 for LUMO+1 etc.
         self.mom_occindex=mom_occindex #The relative occupied orbital index to excite from. Default 0 (HOMO). Choose -1 for HOMO-1 etc.
         self.mom_spinmanifold=mom_spinmanifold #The spin-manifold (0: alpha or 1: beta) to excited electron in. Default: 0 (alpha)
+        
         #SCF max iterations
-        self.scf_maxiter=scf_maxiter
+        if scf_noiter is True:
+            print("SCF noiter keyword is True. Setting SCF maxiter to 0")
+            self.scf_maxiter=0
+        else:
+            self.scf_maxiter=scf_maxiter
 
         #Guess orbitals (if None then default)
         self.guess=guess
@@ -807,12 +812,28 @@ class PySCFTheory:
         if self.dm is not None:
         #Input DM matrix specified
             print("DM found inside pySCFTheory object. Using this for guess")
-            if self.dm.shape[0] != self.num_basis_functions:
-                print(f"Warning: The density matrix shape {self.dm.shape} does not match number of basis functions ({self.num_basis_functions}).")
-                print("This density matrix can not be correct. Ignoring")
-                self.dm=None
-                return None
+            print("Num. basis functions:", self.num_basis_functions)
+            #print("self.dm.shape:", self.dm.shape)
+            #print("self.dm.shape[0]:", self.dm.shape[0])
+            if self.scf_type == 'RHF' or self.scf_type == 'RKS' or self.scf_type == 'GHF' or self.scf_type == 'GKS':
+                if self.dm.shape[0] != self.num_basis_functions:
+                    print(f"Warning: The density matrix shape {self.dm.shape} does not match number of basis functions ({self.num_basis_functions}).")
+                    print("This density matrix can not be correct. Ignoring")
+                    self.dm=None
+                    return None
+            else:
+                #UHF/UKS etc
+                print("Num basis functions:", self.num_basis_functions)
+                print("DM shape:", self.dm[0].shape) #DM is a tuple for unrestricted
+                if self.dm[0].shape[0] != self.num_basis_functions:
+                    if self.dm[0].shape[0]*2 != self.num_basis_functions:
+                        print(f"Warning: The density matrix shape {self.dm.shape} does not match number of basis functions ({self.num_basis_functions}).")
+                        print("This density matrix can not be correct. Ignoring")
+                        self.dm=None
+                    return None
             return self.dm
+
+
         #MOREADFILE
         elif self.moreadfile != None:
             print("Moread: Trying to read SCF-orbitals from file")
@@ -909,6 +930,11 @@ class PySCFTheory:
         print("\nInside run_MP2")
         import pyscf.mp
         print("Frozen orbital indices:",frozen_orbital_indices)
+
+        #If no frozen-orbs (e.g. H2) then set frozen_orbital_indices to None
+        if len(frozen_orbital_indices) == 0:
+            frozen_orbital_indices=None
+
         if self.scf_type == "RKS" or self.scf_type == "RHF" :
             print("Using restricted MP2 code")
             unrestricted=False
@@ -968,6 +994,11 @@ class PySCFTheory:
                 print("Calculating unrelaxed DF-MP2 density")
                 mp2_dm = mp2object.make_rdm1_unrelaxed(ao_repr=True) #Unrelaxed
                 density_type='DFMP2-unrelaxed'
+
+
+        #Preserving new DM
+        print("MP2 density matrix stored as dm attribute of PySCFTheory object")
+        self.dm = mp2_dm
 
         print("Mulliken analysis for MP2 density matrix")
         self.run_population_analysis(self.mf, unrestricted=unrestricted, dm=mp2_dm, type='Mulliken', label=density_type)
@@ -1443,6 +1474,11 @@ class PySCFTheory:
         print("Total number of orbitals:", self.num_orbs) #Should have been set when mf.run was called
         print("Number of active orbitals:", self.num_orbs - len(frozen_orbital_indices))
         print()
+
+        #If no frozen-orbs (e.g. H2) then set frozen_orbital_indices to None
+        if len(frozen_orbital_indices) == 0:
+            frozen_orbital_indices=None
+
         #Check mo_coefficients in case we have to do unrestricted CC (list of 2 MOCoeff ndarrays required)
         if mo_coefficients is not None:
             print("Input orbitals found for run_CC")
@@ -1562,11 +1598,16 @@ class PySCFTheory:
     
         return energy, ccobject
     
-    def run_CC_density(self,ccobject,mf):
+    def run_CC_density(self,ccobject=None,mf=None):
         print("\nInside run_CC_density")
         import pyscf.mcscf
-
-        print(type(ccobject))
+        if ccobject is None:
+            print("No CC object provided. Using self.ccobject")
+            ccobject = self.ccobject
+        if mf is None:
+            print("No mf object provided. Using self.mf")
+            mf = self.mf
+        #Check R vs U
         if type(ccobject) == pyscf.cc.uccsd.UCCSD:
             unrestricted=True
         elif type(ccobject) == pyscf.cc.ccsd.CCSD:
@@ -1578,12 +1619,14 @@ class PySCFTheory:
         print("\nCC density option is active")
         print(f"Now calculating {self.CCmethod} density matrix and natural orbitals")
         if self.CCmethod == 'CCSD':
+            rdm1 = ccobject.make_rdm1(ao_repr=True)
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
-            self.get_dipole_moment(dm=ccobject.make_rdm1(ao_repr=True), label="CCSD")
+            self.get_dipole_moment(dm=rdm1, label="CCSD")
         elif self.CCmethod == 'BCCD':
+            rdm1 = ccobject.make_rdm1(ao_repr=True)
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
             #Dipole moment
-            self.get_dipole_moment(dm=ccobject.make_rdm1(ao_repr=True), label="BCCD")
+            self.get_dipole_moment(dm=rdm1, label="BCCD")
         elif self.CCmethod == 'CCSD(T)':
             natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccobject,mf)
             print("Mulliken analysis for CCSD(T) density matrix")
@@ -1595,6 +1638,13 @@ class PySCFTheory:
             print("Mulliken analysis for BCCD(T) density matrix")
             self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='BCCD(T)')
             dipole = self.get_dipole_moment(dm=rdm1, label="BCCD(T)")
+
+
+        #Preserving new DM
+        print("Coupled cluster density matrix stored as dm attribute of PySCFTheory object")
+        print("rdm1:", rdm1)
+        #print("rdm1[0] shape", rdm1[0].shape)
+        self.dm = rdm1
 
         #Printing occupations
         print(f"\n{self.CCmethod} natural orbital occupations:")
@@ -1609,7 +1659,8 @@ class PySCFTheory:
         print(f"Writing {self.CCmethod} natural orbitals to Moldenfile: {molden_name}.molden")
         self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
 
-        return
+        return natocc, natorb, rdm1
+    
     #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
     def get_dipole_moment(self, dm=None, label=None):
         print("get_dipole_moment function:")
@@ -1997,14 +2048,16 @@ class PySCFTheory:
                 mf=self.mf
         if dm is None:
             print("No dm provided.")
-
+        else:
+            print("DM provided. Will be used")
         #Modify max-cycle in mf object if requested
         if max_cycle is not None:
             print("mf:", mf)
             mf.max_cycle=max_cycle
         print("Max cycle in mf object:", mf.max_cycle)
+        print("Running SCF")
         scf_result = mf.run(dm)
-
+        print("SCF done!")
         E_tot = scf_result.e_tot
         print("E_tot:", E_tot)
         if self.functional != None:
@@ -2028,68 +2081,6 @@ class PySCFTheory:
         print_time_rel(module_init_time, modulename='pySCF run_SCF', moduleindex=2)
         return scf_result
 
-
-    def density_potential_inversion(self, dm, lambda_par=8, method='ZMP', DF=True):
-        print("\ndensity_potential_inversion")
-        try:
-            from kspies import wy, zmp, util
-        except ModuleNotFoundError:
-            print("density_potential_inversion requires installation of kspies module")
-            print("See: https://github.com/ssnam92/KSPies")
-            print("Try: pip install kspies   and pip install opt-einsum")
-            ashexit()
-
-        #Density->Potential inversion by kspies
-        if method == 'ZMP':
-            print("Using ZMP method for density->potential inversion")
-            
-            if self.scf_type == "RKS" or self.scf_type == "RHF" :
-                print("SCF-type is restricted. Using RZMP")
-                zmp_a = zmp.RZMP(self.mol, dm)
-            else:
-                print("SCF-type is unrestricted. Using UZMP")
-                zmp_a = zmp.UZMP(self.mol, dm)
-            
-            #DF or not
-            zmp_a.with_df = DF
-            #Run ZMP
-            print("Running ZMP with lambda:", lambda_par)
-            zmp_a.zscf(lambda_par)
-
-            #Get final data
-            mo_coeff =  zmp_a.mo_coeff
-            mo_occ =  zmp_a.mo_occ
-            mo_energy =  zmp_a.mo_energy
-
-        elif method == 'WY':
-            if self.scf_type == "RKS" or self.scf_type == "RHF" :
-                mw = wy.RWY(self.mol, dm)
-            else:
-                mw = wy.UWY(self.mol, dm)
-            print("Running WY")
-            mw.run()
-            mw.info()            
-            #Get final data
-            mo_coeff =  mw.mo_coeff
-            mo_occ =  mw.mo_occ
-            mo_energy =  mw.mo_energy
-        else:
-            print("not ready yet")
-            ashexit()
-        
-        #Get final data
-        print()
-        #print("MO occupations:", mo_occ)
-        #print("MO energies:", mo_energy)
-        #print("MO coefficients:", mo_coeff)
-        print("MO properties after inversion")
-        self.print_orbital_en_and_occ(mo_energies=mo_energy, mo_occupations=mo_occ)
-        print()
-
-        print("\n Now returning: mo_occ, mo_energy, mo_coeff")
-        #TODO: Return new mf object instead?
-        return mo_occ, mo_energy, mo_coeff
-
     #General run function to distinguish  possible specialrun (disabled) and mainrun
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
@@ -2097,10 +2088,10 @@ class PySCFTheory:
 
         #Prepare for run (create mol object, mf object, modify mf object etc.)
         #Does not execute SCF, CC or anything
-        self.prepare_run(current_coords=current_coords, current_MM_coords=current_MM_coords, 
-                         MMcharges=MMcharges, qm_elems=qm_elems, elems=elems, Grad=Grad, PC=PC, 
-                         numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
-                         charge=charge, mult=mult)
+        self.prepare_run(current_coords=current_coords, elems=elems, charge=charge, mult=mult,
+                         current_MM_coords=current_MM_coords, 
+                         MMcharges=MMcharges, qm_elems=qm_elems, Grad=Grad, PC=PC, 
+                         numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label)
         #Actual run
         return self.actualrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
         elems=elems, Grad=Grad, PC=PC, numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
@@ -2713,3 +2704,205 @@ def pySCF_read_MOs(moreadfile,pyscfobject):
         print("Is basis different? Exiting")
         ashexit()
     return mo_coefficients, occupations
+
+#Standalone density-potential inversion function
+#Takes pyscfheoryobject and DM as input, solves the inversion problem and returns MO coefficients, occupations,energies and new DM
+def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trust-exact',
+                                ZMP_lambda=128, ZMP_levelshift=True, ZMP_cycles=400, DF=True):
+        time_init=time.time()
+        print("\ndensity_potential_inversion")
+        try:
+            from kspies import wy, zmp, util
+        except ModuleNotFoundError:
+            print("density_potential_inversion requires installation of kspies module")
+            print("See: https://github.com/ssnam92/KSPies")
+            print("Try: pip install kspies   and pip install opt-einsum")
+            ashexit()
+
+        #TODO: Check dimensions of dm
+        if pyscftheoryobj.scf_type == "RKS" or pyscftheoryobj.scf_type == "RHF" :
+            print("Case: RHF/RKS. Checking dm")
+            print("dm:", dm)
+            print("dm.shape:", dm.shape)
+        else:
+            print("Case: unrestricted (UHF/UKS).")
+            print("dm:", dm)
+            if type(dm) is tuple:
+                print("dm alpha shape:", dm[0].shape)
+            else:
+                print("dm shape:", dm.shape)
+
+        #Density->Potential inversion by kspies
+        if method == 'ZMP':
+            print("Using ZMP method for density->potential inversion")
+            if pyscftheoryobj.scf_type == "RKS" or pyscftheoryobj.scf_type == "RHF" :
+                print("SCF-type is restricted. Using RZMP")
+
+                #Checking 
+
+                zmp_a = zmp.RZMP(pyscftheoryobj.mol, dm)
+            else:
+                print("SCF-type is unrestricted. Using UZMP")
+                zmp_a = zmp.UZMP(pyscftheoryobj.mol, dm)
+            
+            #DF or not
+            zmp_a.with_df = DF
+            #Run ZMP
+            print("Running ZMP with lambda:", ZMP_lambda)
+            #Max cycle option
+            zmp_a.max_cycle=ZMP_cycles
+            print("ZMP Max cycles:", zmp_a.max_cycle)
+            print("zmp_a.level_shift:", zmp_a.level_shift)
+
+            if ZMP_levelshift is True:
+                print("ZMP_levelshift True. Now running increasing lambda iterations with levelshifting")
+                zmp_a.diis_space = 30
+                zmp_a.conv_tol_dm = 1e-10
+                zmp_a.conv_tol_diis = 1e-7
+
+                for l in [ ZMP_lambda/8, ZMP_lambda/4, ZMP_lambda/2, ZMP_lambda]:
+                    print("Lambda:", l)
+                    print("Levelshift (lambda*0.1):", l*0.1)
+                    zmp_a.level_shift = l*0.1
+                    zmp_a.zscf(l)
+                print("Now turning levelshift off")
+                zmp_a.level_shift = 0.
+            print("Running ZSCF (without levelshift)")
+            zmp_a.zscf(ZMP_lambda)
+
+            #Get final data
+            mo_coeff =  zmp_a.mo_coeff
+            mo_occ =  zmp_a.mo_occ
+            mo_energy =  zmp_a.mo_energy
+            final_dm =  zmp_a.dm #not sure
+            converged =  bool(zmp_a.converged) #converged or not. converting from np.bool to bool
+            if converged is False:
+                print("Error: ZMP failed to converge. Exiting")
+                print("Probably best to enable ZMP_levelshift ")
+                ashexit()
+            else:
+                print("ZMP converged successfully!")
+
+        elif method == 'WY':
+            print("Using WY method for density->potential inversion")
+            if pyscftheoryobj.scf_type == "RKS" or pyscftheoryobj.scf_type == "RHF" :
+                mw = wy.RWY(pyscftheoryobj.mol, dm)
+            else:
+                mw = wy.UWY(pyscftheoryobj.mol, dm)
+
+            #Possible optimizer switch: trust-exact, bfgs, cg
+            #When trust-exact fails (large basis etc) switch to bfgs or cg
+            mw.method=WY_method
+            print("WY minimizer", mw.method)
+            #exit()
+            #mw.method = 'bfgs'
+            print("Running WY")
+            mw.run()
+            mw.info()            
+            #Get final data
+            mo_coeff =  mw.mo_coeff
+            mo_occ =  mw.mo_occ
+            mo_energy =  mw.mo_energy
+            final_dm =  mw.dm #not sure
+            converged =  bool(mw.converged) #converged or not. converting from np.bool to bool
+            if converged is False:
+                print("Error: WY failed to converge. Exiting")
+                print("You might try changing WY optimization method (WY_method keyword) to bfgs or cg")
+                ashexit()
+            else:
+                print("WY converged successfully!")
+        else:
+            print("not ready yet")
+            ashexit()
+        
+        #Get final data
+        print("\nMO properties after inversion")
+        pyscftheoryobj.print_orbital_en_and_occ(mo_energies=mo_energy, mo_occupations=mo_occ)
+        print()
+
+        print("\n Now returning: mo_occ, mo_energy, mo_coeff, final_dm")
+        print_time_rel(time_init, modulename='density_potential_inversion', moduleindex=2)
+        return mo_occ, mo_energy, mo_coeff,final_dm
+
+#Function for evaluating functional error (FE) and density error(DE) from 2 pySCFTheory objects
+#ref: Reference energy or density
+#FE  = E_DFA[n_ref] - E_exact[n_ref]
+#DE  = E_DFA[n_DFA] - E_DFA[n_ref]
+#DFA_obj: pyscf object for DFA
+#DFA_obj: DFA density matrix
+#DFA_DM: Reference density matrix
+#REF_E: Reference energy
+def DFA_error_analysis(fragment=None, DFA_obj=None, REF_obj=None, DFA_DM=None, REF_DM=None, REF_E=None, DFA_E=None,
+                            inversion_method='WY', WY_method='trust-exact',
+                            ZMP_lambda=128, ZMP_levelshift=True, ZMP_cycles=400, DF=True):
+    print_line_with_mainheader("DFA_error_analysis")
+
+    if fragment is None:
+        print("Error: No fragment provided to DFA_error_analysis")
+        ashexit()
+    if DFA_obj is None:
+        print("Error: No DFA_obj provided to DFA_error_analysis")
+        ashexit()
+    if REF_obj is None:
+        print("Error: No REF_obj provided to DFA_error_analysis")
+        ashexit()
+    if DFA_DM is None:
+        print("Warning: No DFA_DM matric provided to DFA_error_analysis")
+        print("Now doing single-point calculation using DFA_obj to get DM")
+        dfa_result = ash.Singlepoint = ash.Singlepoint(fragment=fragment, theory=DFA_obj)
+        DFA_DM = DFA_obj.dm
+        DFA_E = dfa_result.energy
+    if REF_DM is None:
+        print("Warning: No REF_DM matric provided to DFA_error_analysis")
+        print("Now doing single-point calculation using REF_obj to get REF_DM")
+        ref_result = ash.Singlepoint = ash.Singlepoint(fragment=fragment, theory=REF_obj)
+        REF_DM = REF_obj.dm
+    
+    if REF_E is None:
+        print("Warning: No REF_E (Reference energy) provided to DFA_error_analysis")
+        print("Trying to see if we can get it from REF_obj")
+        try:
+            REF_E = ref_result.energy
+        except:
+            print("Not possible. Please provide REF_E")
+            ashexit()
+
+
+    print("DFA_obj:", DFA_obj)
+    print("REF_obj:", REF_obj)
+    print("DFA_DM:", DFA_DM)
+    print("REF_DM:", REF_DM)
+    print("REF_E:", REF_E)
+
+
+    #Density potential inversion to get reference potential from reference density
+    mo_occ, mo_energy, mo_coeff,ref_DM_inv = density_potential_inversion(REF_obj, REF_DM, method=inversion_method,
+                                                                         WY_method=WY_method,
+                                                ZMP_lambda=ZMP_lambda, ZMP_levelshift=ZMP_levelshift, ZMP_cycles=ZMP_cycles, DF=DF)
+
+    #E_DFA[n_ref]
+    print("Now running E_DFA using reference density")
+    #Not using run_SCF anymore as we may have post-SCF contributions
+    DFA_obj.dm=ref_DM_inv
+    DFA_obj.scf_maxiter=0
+    res = ash.Singlepoint(theory=DFA_obj, fragment=fragment)
+    #scf_result_1 = DFA_obj.run_SCF(dm=ref_DM_inv, max_cycle=0)
+    E_DFA_nref=res.energy
+    print("E_DFA_nref:", E_DFA_nref)
+    #E_DFA[n_DFA]
+    #Disabled run because we may have post-SCF contributions
+    #print("Now running E_DFA using DFA density")
+    E_DFA_nDFA=DFA_E
+    #scf_result_2 = DFA_obj.run_SCF(dm=DFA_DM)
+    #E_DFA_nDFA=scf_result_2.e_tot
+    #print("E_DFA_nDFA:", E_DFA_nDFA)
+
+    FE = E_DFA_nref - REF_E
+    print(f"FE: {FE} Eh")
+
+    DE = E_DFA_nDFA - E_DFA_nref
+    print(f"DE: {DE} Eh")
+
+    return FE, DE
+
+

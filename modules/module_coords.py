@@ -1659,14 +1659,18 @@ def print_coordinates(atoms, V, title=""):
 
 
 # Write XYZfile provided list of elements and list of list of coords and filename
-#Fast version
+#Fast version. Note: list comprehension is bottleneck, unclear how to make this faster though
 def write_xyzfile(elems, coords, name, printlevel=2, writemode='w'):
+    #timestampA = time.time()
     #Adding headerlines to list
     header=[str(len(elems)) + '\n',"title" + '\n']
+    #print("TimeA:", time.time() - timestampA)
     atomlines = [f"{el:4} {c[0]:16.12f} {c[1]:16.12f} {c[2]:16.12f}\n" for el, c in zip(elems, coords)]
+    #print("TimeB:", time.time() - timestampA)
     with open(name + '.xyz', writemode) as ofile:
         ofile.writelines(header)
         ofile.writelines(atomlines)
+    #print("TimeC:", time.time() - timestampA)
     if printlevel >= 2:
         print("Wrote XYZ file: ", name + '.xyz')
 
