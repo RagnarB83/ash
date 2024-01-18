@@ -2707,7 +2707,7 @@ def pySCF_read_MOs(moreadfile,pyscfobject):
 
 #Standalone density-potential inversion function
 #Takes pyscfheoryobject and DM as input, solves the inversion problem and returns MO coefficients, occupations,energies and new DM
-def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trust-exact',
+def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trust-exact', numcores=1,
                                 ZMP_lambda=128, ZMP_levelshift=True, ZMP_cycles=400, DF=True):
         time_init=time.time()
         print("\ndensity_potential_inversion")
@@ -2719,7 +2719,9 @@ def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trus
             print("Try: pip install kspies   and pip install opt-einsum")
             ashexit()
 
-        #TODO: Check dimensions of dm
+        print("Setting OMP_NUM_THREADS to:", numcores)
+        os.environ['OMP_NUM_THREADS'] = str(numcores)   
+
         if pyscftheoryobj.scf_type == "RKS" or pyscftheoryobj.scf_type == "RHF" :
             print("Case: RHF/RKS. Checking dm")
             print("dm:", dm)
@@ -2739,7 +2741,6 @@ def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trus
                 print("SCF-type is restricted. Using RZMP")
 
                 #Checking 
-
                 zmp_a = zmp.RZMP(pyscftheoryobj.mol, dm)
             else:
                 print("SCF-type is unrestricted. Using UZMP")
@@ -2821,6 +2822,11 @@ def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trus
         print()
 
         print("\n Now returning: mo_occ, mo_energy, mo_coeff, final_dm")
+
+        #Resetting OMP_NUM_THREADS (can mess with pySCF)
+        os.environ['OMP_NUM_THREADS'] = 1
+
+
         print_time_rel(time_init, modulename='density_potential_inversion', moduleindex=2)
         return mo_occ, mo_energy, mo_coeff,final_dm
 
@@ -2833,7 +2839,7 @@ def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trus
 #DFA_DM: Reference density matrix
 #REF_E: Reference energy
 def DFA_error_analysis(fragment=None, DFA_obj=None, REF_obj=None, DFA_DM=None, REF_DM=None, REF_E=None, DFA_E=None,
-                            inversion_method='WY', WY_method='trust-exact',
+                            inversion_method='WY', WY_method='trust-exact', numcores=1,
                             ZMP_lambda=128, ZMP_levelshift=True, ZMP_cycles=400, DF=True):
     print_line_with_mainheader("DFA_error_analysis")
 
@@ -2877,7 +2883,7 @@ def DFA_error_analysis(fragment=None, DFA_obj=None, REF_obj=None, DFA_DM=None, R
 
     #Density potential inversion to get reference potential from reference density
     mo_occ, mo_energy, mo_coeff,ref_DM_inv = density_potential_inversion(REF_obj, REF_DM, method=inversion_method,
-                                                                         WY_method=WY_method,
+                                                                         WY_method=WY_method, numcores=numcores,
                                                 ZMP_lambda=ZMP_lambda, ZMP_levelshift=ZMP_levelshift, ZMP_cycles=ZMP_cycles, DF=DF)
 
     #E_DFA[n_ref]
