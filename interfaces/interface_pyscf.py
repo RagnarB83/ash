@@ -2824,7 +2824,7 @@ def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trus
         print("\n Now returning: mo_occ, mo_energy, mo_coeff, final_dm")
 
         #Resetting OMP_NUM_THREADS (can mess with pySCF)
-        os.environ['OMP_NUM_THREADS'] = 1
+        os.environ['OMP_NUM_THREADS'] = str(1)
 
 
         print_time_rel(time_init, modulename='density_potential_inversion', moduleindex=2)
