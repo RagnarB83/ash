@@ -103,6 +103,7 @@ class MLatomTheory:
                     print("Make sure executable sparrow is in your environment")
                     print("See https://github.com/qcscine/sparrow. Possible installation  via: conda install scine-sparrow-python")
                     print("Also make sure dftd4 (https://github.com/dftd4/dftd4) is in your environment. Possible installation  via:  conda install dftd4")
+                    print("Warning: sparrow lacks AIQMx gradient (for ODM2 part), only energies available."")
                     try:
                         sparrowdir = os.path.dirname(shutil.which('sparrow'))
                         os.environ['sparrowbin'] = sparrowdir+"/sparrow"
@@ -125,6 +126,10 @@ class MLatomTheory:
                 print("An ANI type method was selected")
                 print("This requires TorchANI and pytorch")
                 print("Note: ANI parameters will be downloaded automatically if needed")
+            elif 'ODM' in self.method:
+                print("A ODMx type semi-empirical method was selected. This requires MNDO")
+            elif 'OM' in self.method:
+                print("A OMx type semi-empirical method was selected. This requires MNDO")
             else:
                 print(f"Either an invalid  {self.method} or unknown method (to MLatomTheory interface) was selected. Exiting.")
                 ashexit()
@@ -152,8 +157,6 @@ class MLatomTheory:
             print("QM program:", self.qm_program)
             print("Creating model")
             model = ml.models.methods(method=self.method, qm_program=self.qm_program) 
-
-            print("model:", model)
         else:
             print("No method was defined yet.")
             ashexit()        
@@ -182,7 +185,6 @@ class MLatomTheory:
                 self.energy = molecule.energy
                 self.gradient = molecule.get_energy_gradients()
                 print("Single-point MLatom energy:", self.energy)
-                print("Gradient:", self.gradient)
 
                 print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
                 return self.energy,self.gradient
