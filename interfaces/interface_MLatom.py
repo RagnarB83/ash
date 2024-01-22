@@ -103,7 +103,7 @@ class MLatomTheory:
                     print("Make sure executable sparrow is in your environment")
                     print("See https://github.com/qcscine/sparrow. Possible installation  via: conda install scine-sparrow-python")
                     print("Also make sure dftd4 (https://github.com/dftd4/dftd4) is in your environment. Possible installation  via:  conda install dftd4")
-                    print("Warning: sparrow lacks AIQMx gradient (for ODM2 part), only energies available."")
+                    print("Warning: sparrow lacks AIQMx gradient (for ODM2 part), only energies available.")
                     try:
                         sparrowdir = os.path.dirname(shutil.which('sparrow'))
                         os.environ['sparrowbin'] = sparrowdir+"/sparrow"
