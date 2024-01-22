@@ -1,11 +1,10 @@
 import numpy as np
 import time
 import os
-import shutil
 
 import ash.constants
 from ash.functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC
-from ash.modules.module_coords import print_coords_all,write_xyzfile
+from ash.modules.module_coords import write_xyzfile
 from ash.modules.module_coords import check_charge_mult
 #import ash
 
@@ -223,9 +222,9 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='', 
             print("disabled")
             ashexit()
             #Identity matrix
-            Hess_approx=np.identity(3*len(current_coords))
+            #Hess_approx=np.identity(3*len(current_coords))
             #TODO: Not active
-            current_coords = newton_raphson(current_coords, Grad, Hess_approx)
+            #current_coords = newton_raphson(current_coords, Grad, Hess_approx)
         elif optimizer=='KNARR-LBFGS':
             if step == 1 or reset_opt:
                 if reset_opt == True:
@@ -439,18 +438,16 @@ def BernyOpt(theory,fragment, charge=None, mult=None):
                          "or manually from Github (https://github.com/jhrmnn/pyberny)", BC.END)
         ashexit(code=9)
     print("See: https://github.com/jhrmnn/pyberny")
-    elems=fragment.elems
-    coords=fragment.coords
     #Options: Berny(ethanol, steprms=0.01, stepmax=0.05, maxsteps=5)
     optimizer = Berny(geomlib.Geometry(fragment.elems,fragment.coords))
     for geom in optimizer:
         # get energy and gradients for geom
-        E, Grad = theory.run(current_coords=geom.coords, elems=elems, Grad=True, charge=charge, mult=mult)
+        E, Grad = theory.run(current_coords=geom.coords, elems=fragment.elems, Grad=True, charge=charge, mult=mult)
         optimizer.send((E,Grad))
     print("BernyOpt Geometry optimization converged!")
     #Updating energy and coordinates of ASH fragment before ending
     fragment.set_energy(E)
     print("Final optimized energy:",  fragment.energy)
-    fragment.replace_coords(elems,geom.coords)
+    fragment.replace_coords(fragment.elems,geom.coords)
     blankline()
 

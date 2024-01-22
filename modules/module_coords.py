@@ -1,5 +1,4 @@
 import math
-
 sqrt = math.sqrt
 pow = math.pow
 import copy
@@ -11,7 +10,7 @@ import subprocess as sp
 from collections import defaultdict
 
 from ash.functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, pygrep2, load_julia_interface
+    print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, load_julia_interface
 #from ash.modules.module_singlepoint import ReactionEnergy
 import ash.dictionaries_lists
 import ash.settings_ash
@@ -2816,44 +2815,6 @@ def cellbasis(angles, edges):
     edges.append(1.0)
     return basis * edges  # numpy.array multiplication!
 
-
-# Cut N-radius cluster from (extended) box from chosen atomindex
-# TODO: Add option to use center-of-mass, centroid, multiple indices etc.
-# NOTE: Deprecated????
-def cut_cluster(coords=None, elems=None, radius=None, center_atomindex=None):
-    print("Now cutting spherical cluster with radius {} Å from box.".format(radius))
-    ashexit()
-    # Getting coordinates of atom to center cluster on
-    # origin=np.array([coords[center_atomindex]])
-    # comparecoords = np.tile(origin, (len(coords), 1))
-
-    # Get all distances in one go
-    # distances = einsum_mat(coords, comparecoords)
-
-    # Get connectivity of whole thing
-    # connectivity=[]
-
-    # atomlist=[]
-    ##Keep only atoms with distances from within R of center_atomindex 
-    # for count in range(len(coords)):
-    #    if distances[count] < radius:
-    #        #Look up connected members
-    #        for q in connectivity:
-    #            #print("q:", q)
-    #            if count in q:
-    #                wholemol=q
-    #                #print("wholemol", wholemol)
-    #                break
-    #        for i in wholemol:
-    #            atomlist.append(i)
-
-    # clustercoords=[coords[i] for i in atomlist]
-    clustercoords = np.take(coords, atomlist, axis=0)
-    clusterelems = [elems[i] for i in atomlist]
-
-    return clustercoords, clusterelems
-
-
 # Create a molecular cluster from a periodix box based on radius and chosen atom(s)
 
 def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cellparameters=None):
@@ -2886,7 +2847,6 @@ def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cell
 
 
 # Set up constraints
-
 def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
     print("set_up_MMwater_bondconstraints")
     print("Assuming oxygen atom type is: ", oxygentype)

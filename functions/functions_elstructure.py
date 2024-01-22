@@ -99,7 +99,7 @@ def calc_cm5(atomicNumbers, coords, hirschfeldcharges):
     Bkk = np.exp(-_alpha * (np.subtract(distances,RzSum)), out=np.zeros_like(distances), where=distances!=0)
     assert (np.diagonal(Bkk) == 0).all()
 
-    Dz = _Dz[atomicNumbers]
+#    Dz = _Dz[atomicNumbers]
 #    Tkk = np.tile(Dz,(len(Dz),1))
 #    Tkk = np.subtract(Tkk, np.transpose(Tkk))
     Tkk = np.zeros(shape=Bkk.shape)
@@ -139,9 +139,6 @@ def calc_cm5(atomicNumbers, coords, hirschfeldcharges):
     product = np.multiply(Tkk, Bkk)
     assert (np.diagonal(product) == 0).all()
     result = np.sum(product,axis=1)
-    #print("hirschfeldcharges:", hirschfeldcharges)
-    #print("result:", result)
-    #print(type(result))
     return np.array(hirschfeldcharges) + result
 
 
@@ -163,7 +160,6 @@ def read_cube (cubefile):
     count = 0
     grabpoints = False
     grab_deset_id=False #Whether to grab line with DSET_IDs or not
-    d = []
     vals=[]
     elems=[]
     coords=[]
@@ -171,8 +167,6 @@ def read_cube (cubefile):
     numatoms=0
     for line in a:
         count += 1
-        words = line.split()
-        numwords=len(words)
         if count == 2:
             description=line
         #Grabbing origin
@@ -186,7 +180,7 @@ def read_cube (cubefile):
             orgx=float(line.split()[1])
             orgy=float(line.split()[2])
             orgz=float(line.split()[3])
-            rlowx=orgx;rlowy=orgy;rlowz=orgz
+            rlowx=orgx; rlowy=orgy; rlowz=orgz
         if count == 4:
             nx=int(line.split()[0])
             dx=float(line.split()[1])
@@ -204,7 +198,7 @@ def read_cube (cubefile):
             coords.append(coord)
             coords_ang.append(coord_ang)
         # reading gridpoints
-        if grabpoints == True:
+        if grabpoints is True:
             b = line.rstrip('\n').replace('  ', ' ').replace('  ', ' ').split(' ')
             b=list(filter(None, b))
             c =[float(i) for i in b]
@@ -215,13 +209,13 @@ def read_cube (cubefile):
         if grab_deset_id is True and count == 7+numatoms:
             DSET_IDS_1 = int(line.split()[0])
             DSET_IDS_2 = int(line.split()[1])
-        if (count >= 6+numatoms and grabpoints==False and grab_deset_id is False):
+        if (count >= 6+numatoms and grabpoints is False and grab_deset_id is False):
             #Setting grabpoints to True for next line
             grabpoints = True
-        if (count >= 7+numatoms and grabpoints==False):
+        if (count >= 7+numatoms and grabpoints is False):
             #Now setting grabpoints to True for grabbing next
             grabpoints = True
-    if LargePrint==True:
+    if LargePrint is True:
         print("Number of orb/density points:", len(vals))
     finaldict={'rlowx':rlowx,'dx':dx,'nx':nx,'orgx':orgx,'rlowy':rlowy,'dy':dy,'ny':ny,'orgy':orgy,'rlowz':rlowz,'dz':dz,'nz':nz,'orgz':orgz,'elems':elems,
         'coords':coords,'coords_ang':coords_ang,'numatoms':numatoms,'filebase':filebase,'vals':vals}
@@ -448,13 +442,12 @@ def create_density_from_orb (cubefile, denswrite=True, LargePrint=True):
     except IndexError:
         print("error")
         quit()
-    if denswrite==True:
+    if denswrite is True:
         #Write orbital density cube file
         output = open(filebase+'-dens.cube', "w")
     #Read cube file and get all data. Square values
     count = 0
     X = False
-    d = []
     densvals = []
     orbvals=[]
     elems=[]
@@ -467,7 +460,7 @@ def create_density_from_orb (cubefile, denswrite=True, LargePrint=True):
         numwords=len(words)
         #Grabbing origin
         if count < 3:
-            if denswrite==True:
+            if denswrite is True:
                 output.write(line)
         if count == 3:
             numatoms=abs(int(line.split()[0]))
@@ -475,22 +468,22 @@ def create_density_from_orb (cubefile, denswrite=True, LargePrint=True):
             orgy=float(line.split()[2])
             orgz=float(line.split()[3])
             rlowx=orgx;rlowy=orgy;rlowz=orgz
-            if denswrite==True:
+            if denswrite is True:
                 output.write(line)
         if count == 4:
             nx=int(line.split()[0])
             dx=float(line.split()[1])
-            if denswrite==True:
+            if denswrite is True:
                 output.write(line)
         if count == 5:
             ny=int(line.split()[0])
             dy=float(line.split()[2])
-            if denswrite==True:
+            if denswrite is True:
                 output.write(line)
         if count == 6:
             nz=int(line.split()[0])
             dz=float(line.split()[3])
-            if denswrite==True:
+            if denswrite is True:
                 output.write(line)
         #Grabbing molecular coordinates
         if count > 6 and count <= 6+numatoms:
@@ -499,10 +492,10 @@ def create_density_from_orb (cubefile, denswrite=True, LargePrint=True):
             coord_ang=[bohrang*float(line.split()[2]),bohrang*float(line.split()[3]),bohrang*float(line.split()[4])]
             coords.append(coord)
             coords_ang.append(coord_ang)
-            if denswrite==True:
+            if denswrite is True:
                 output.write(line)
         # reading gridpoints
-        if X == True:
+        if X is True:
             b = line.rstrip('\n').replace('  ', ' ').replace('  ', ' ').split(' ')
             b=list(filter(None, b))
             c =[float(i) for i in b]
@@ -514,9 +507,9 @@ def create_density_from_orb (cubefile, denswrite=True, LargePrint=True):
             dbq = [float('%.5e' % i) for i in c]
             orbvals.append(dbq)
         # when to begin reading gridpoints
-        if (count > 6 and numwords == 2 and X==False):
+        if (count > 6 and numwords == 2 and X is False):
             X = True
-            if denswrite==True:
+            if denswrite is True:
                 output.write(line)
 
     # Go through orb and dens list and print out density file
@@ -526,7 +519,7 @@ def create_density_from_orb (cubefile, denswrite=True, LargePrint=True):
         columns = ["%13s" % cell for cell in line]
         for val in columns:
             alldensvalues.append(float(val))
-        if denswrite==True:
+        if denswrite is True:
             linep=' '.join( columns)
             output.write(linep+'\n')
 
@@ -534,7 +527,7 @@ def create_density_from_orb (cubefile, denswrite=True, LargePrint=True):
         dolumns = ["%13s" % cell for cell in line]
         for oval in dolumns:
             allorbvalues.append(float(oval))
-    if denswrite==True:
+    if denswrite is True:
         output.close()
         print("Wrote orbital density file as:", filebase+'-dens.cube')
         print("")
@@ -939,7 +932,7 @@ end"""
         jobfile.write(jline+'\n')
 
     jobfile.close()
-    if os.path.isfile("molecule"+'.molden.output') == False:
+    if os.path.isfile("molecule"+'.molden.output') is False:
         sp.call(chargemol)
     else:
         print("Skipping Chargemol step. Output file exists")
@@ -969,7 +962,7 @@ end"""
     ddeccharges=[]
     with open(chargefile) as chfile:
         for line in chfile:
-            if grabcharge==True:
+            if grabcharge is True:
                 ddeccharges.append(float(line.split()[5]))
                 if int(line.split()[0]) == numatoms:
                     grabcharge=False
@@ -1238,10 +1231,10 @@ def difference_density_ORCA(fragment_A=None, fragment_B=None, theory_A=None, the
     if fragment_A.charge == None or fragment_B.charge == None:
         print("You must provide charge/multiplicity information in all fragments")
         ashexit()
-    if theory_A == None or theory_A.__class__.__name__ != "ORCATheory":
+    if theory_A is None or theory_A.__class__.__name__ != "ORCATheory":
         print("theory_A: You must provide an ORCATheory level")
         ashexit()
-    if theory_B == None or theory_B.__class__.__name__ != "ORCATheory":
+    if theory_B is None or theory_B.__class__.__name__ != "ORCATheory":
         print("theory_B: You must provide an ORCATheory level")
         ashexit()
 
@@ -1290,7 +1283,7 @@ def NOCV_density_ORCA(fragment_AB=None, fragment_A=None, fragment_B=None, theory
     if fragment_AB is None or fragment_A is None or fragment_B is None:
         print("You need to provide an ASH fragment")
         ashexit()
-    if fragment_AB.charge == None or fragment_A.charge == None or fragment_B.charge == None:
+    if fragment_AB.charge is None or fragment_A.charge is None or fragment_B.charge is None:
         print("You must provide charge/multiplicity information to all fragments")
         ashexit()
     if theory == None or theory.__class__.__name__ != "ORCATheory":
@@ -1670,6 +1663,8 @@ def read_Fock_matrix_from_ORCA(file):
     grabB=False
     foundbeta=False
     i_counter=0
+    Fock_matrix_a=None;Fock_matrix_b=None
+    Bcounter=None; Acounter=None
     with open(file) as f:
         for line in f:
             if 'Number of basis functions                   ...' in line:
@@ -2189,6 +2184,7 @@ def read_molden_file(moldenfile):
     grab_atoms=False
     elems=[]
     coords=[]
+    coord_scaling=1.0
     with open(moldenfile) as f:
         for line in f:
             if grab_atoms:

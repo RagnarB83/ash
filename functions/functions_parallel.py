@@ -1,12 +1,11 @@
 import copy
 import subprocess as sp
 import os
-import sys
 import time
 import shutil
 
 #import ash
-from ash.functions.functions_general import ashexit, BC,blankline,print_line_with_mainheader,print_line_with_subheader1
+from ash.functions.functions_general import ashexit, BC,print_line_with_mainheader,print_line_with_subheader1
 from ash.modules.module_coords import check_charge_mult, Fragment, read_xyzfile
 from ash.modules.module_results import ASH_Results
 from ash.modules.module_QMMM import QMMMTheory
@@ -122,16 +121,16 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
         print(BC.WARNING, "Warning: Output from Job_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
     
     #Early exits
-    if fragments == None and fragmentfiles == None:
+    if fragments is None and fragmentfiles is None:
         print(BC.FAIL,"Job_parallel requires a list of ASH fragments or a list of fragmentfilenames",BC.END)
         ashexit()
-    if theories == None or numcores == None :
+    if theories is None or numcores is None :
         print("theories:", theories)
         print("numcores:", numcores)
         print(BC.FAIL,"Job_parallel requires a theory object and a numcores value",BC.END)
         ashexit()
     #Fragment objects passed or name of fragmentfiles
-    if fragments != None:
+    if fragments is not None:
         if printlevel >= 2:
             print("Number of fragments:", len(fragments))
     else:

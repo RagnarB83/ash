@@ -295,7 +295,7 @@ def create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, snapshots
             ashexit()
         # Create ORCA inputfile containing solute coordinates and point to pointchargefile containing solvent coordinates and charges
         inpname_AB = fragfile.split('.')[0] + '_StateAB'+identifier
-        if bulkcorr==True:
+        if bulkcorr is True:
             create_orca_pcfile_solv(name+identifier, mmregion_elems, mmregion_coords, solventunitcharges, bulkcorr)
             create_orca_inputVIEcomp_pc(name+identifier, inpname_AB, qmregion_elems, qmregion_coords, orcasimpleinput, orcablockinput,
                                     solvsphere.ChargeA, solvsphere.MultA, solvsphere.ChargeB, solvsphere.MultB, solvsphere.soluteatomsA, '')

@@ -1,8 +1,6 @@
 import time
 
-from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
-import ash.modules.module_coords
-from ash.modules.module_results import ASH_Results
+from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader
 import numpy as np
 import os
 import shutil
@@ -10,7 +8,7 @@ import shutil
 ##########################
 #MLatom Theory interface
 ##########################
-#NOTE: we only intend to support ML functionality in MLatom (not basic QM methods)
+#NOTE: we only intend to support mostly ML functionality in MLatom (not all basic QM methods)
 
 #MLatom has 3 types of models:
 #1) methods: these are pre-trained or at least standalone electronic structure methods
@@ -26,11 +24,12 @@ import shutil
 # AIQMx methods require either MNDO or Sparrow as QM-program. Also dftd4.
    #Sparrow lacks AIQMx gradient (for ODM2 part), only energies available.
 
+#ASH will likely only support running ML models, not training them
 
 
 class MLatomTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="mlatom", filename="sdf",
-                 method=None, ml_model=None, qm_program=None):
+                 method=None, ml_model=None, model_file=None, qm_program=None, ml_program=None):
         module_init_time=time.time()
         self.theorynamelabel="MLatom"
         self.theorytype="QM"
@@ -71,6 +70,8 @@ class MLatomTheory:
         #'ANI-1ccx', 'ANI-1x', 'ANI-1x-D4', 'ANI-2x', 'ANI-2x-D4'
         self.method=method
         self.qm_program=qm_program
+        self.ml_program=ml_program
+        self.ml_model=ml_model
         print("Checking if method or ml_model was selected")
         print("Method:", self.method)
         #############
@@ -112,7 +113,45 @@ class MLatomTheory:
         #############
         #ML_MODEL
         #############
-        #TODO
+        if self.ml_model is not None:
+            print("ml_model was selected:", ml_model)
+            print("model_file:", model_file)
+            print("ml_program:", ml_program)
+
+
+            #KREG
+            #ml_program is either MLatomF or KREG_API
+            if ml_model.lower() == 'kreg':
+                print("KREG selected")
+                if ml_program is None:
+                    print("ml_program keyword was not set and is required for KREG. Exiting.")
+                    ashexit()
+                self.model = ml.models.kreg(model_file=model_file, ml_program=ml_program)
+            elif ml_model.lower() == 'ani':
+                print("ANI selected")
+                self.model = ml.models.ani(model_file=model_file)
+            elif ml_model.lower() == 'dpmd':
+                print("DMPD selected")
+                print("not ready")
+                exit()
+                #self.model = ml.models.dpmd(model_file=model_file, DeePMDdir)
+            elif ml_model.lower() =='gap':
+                print("GAP selected")
+                print("not ready")
+                ashexit()
+                #self.model = ml.models.gap(model_file=model_file, ml_program=ml_program)
+            elif ml_model.lower() =='physnet':
+                print("Physnet selected")
+                print("not ready")
+                ashexit()
+                #self.model = ml.models.physnet(model_file=model_file, ml_program=ml_program)
+            elif ml_model.lower() =='sgdml':
+                print("SGDML selected")
+                print("not ready")
+                ashexit()
+                #self.model = ml.models.sgdml(model_file=model_file, ml_program=ml_program)
+            
+            print("MLatomTheory model created:", self.model)
 
         #Initialization done
         print_time_rel(module_init_time, modulename='MLatom creation', moduleindex=2)
@@ -167,25 +206,30 @@ class MLatomTheory:
 
         #mlatom.models
         #Comp chem models, 3 types: methods (used as is), ml_model (requires training), model_tree_node (composite)
-        if self.method != None:
+        if self.method is not None:
             print("A method was selected: ", self.method)
             print("QM program:", self.qm_program)
             print("Creating model")
             model = ml.models.methods(method=self.method, qm_program=self.qm_program) 
+
+            #Create dftd4.json file before running if required
+            if 'AIQM' in self.method:
+                print("An AIQMx method was selected")
+                #NOTE: dftd4 interface of MLatom has a bug for current dftd4 release
+                if 'AIQM1@DFT*' in self.method:
+                    print("AIQM1@DFT* method was selected, no disp. correction needed")
+                elif 'AIQM1@DFT' in self.method:
+                    print("AIQM1@DFT method was selected. Disp. correction needed")
+                elif 'AIQM1' in self.method:
+                    print("AIQM1 method was selected. Disp. correction needed")
+
+        elif self.ml_model is not None:
+            print("A ml_model was selected: ", self.ml_model)
+            model = self.model
         else:
-            print("No method was defined yet.")
+            print("No method or ml-model was defined yet.")
             ashexit()        
 
-        #Create dftd4.json file before running if required
-        if 'AIQM' in self.method:
-            print("An AIQMx method was selected")
-            #NOTE: dftd4 interface of MLatom has a bug for current dftd4 release
-            if 'AIQM1@DFT*' in self.method:
-                print("AIQM1@DFT* method was selected, no disp. correction needed")
-            elif 'AIQM1@DFT' in self.method:
-                print("AIQM1@DFT method was selected. Disp. correction needed")
-            elif 'AIQM1' in self.method:
-                print("AIQM1 method was selected. Disp. correction needed")
 
         #Run
         if PC is True:
@@ -193,7 +237,9 @@ class MLatomTheory:
             #Note: MNDO should support PCs, not sure about sparrow
             ashexit()
         else:
+            
             if Grad is True:
+                print("Running MLatom Energy + Gradient calculation")
                 model.predict(molecule=molecule,calculate_energy=True,
                             calculate_energy_gradients=True,
                             calculate_hessian=False)
@@ -205,6 +251,7 @@ class MLatomTheory:
                 return self.energy,self.gradient
 
             else:
+                print("Running MLatom Energy calculation")
                 model.predict(molecule=molecule, calculate_energy=True)
                 self.energy = molecule.energy
                 print("Single-point MLatom energy:", self.energy)
