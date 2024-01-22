@@ -85,11 +85,11 @@ class MLatomTheory:
                     print("Make sure executable mndo is in your environment")
                     print("See https://mndo.kofo.mpg.de about MNDO licenses")
                     try:
-                        mndodir = os.path.dirname(shutil.which('mndo99'))
-                        os.environ['mndobin'] = mndodir+"/mndo99"
-                        print("Found mndo99 executable in:", mndodir)
+                        mndodir = os.path.dirname(shutil.which('mndo2020'))
+                        os.environ['mndobin'] = mndodir+"/mndo2020"
+                        print("Found mndo2020 executable in:", mndodir)
                     except TypeError:
-                        print("Found no mndo99 executable in your environment. Exiting.")
+                        print("Found no mndo2020 executable in your environment. Exiting.")
                         ashexit()
                 elif self.qm_program == 'sparrow':
                     print("QM program is sparrow")
@@ -147,7 +147,6 @@ class MLatomTheory:
             model = ml.models.methods(method=self.method, qm_program=self.qm_program) 
 
             print("model:", model)
-            print("model type:", type(model))  
         else:
             print("No method was defined yet.")
             ashexit()        
