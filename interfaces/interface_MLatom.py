@@ -91,6 +91,13 @@ class MLatomTheory:
                     except TypeError:
                         print("Found no mndo2020 executable in your environment. Exiting.")
                         ashexit()
+                    try:
+                        dftd4dir = os.path.dirname(shutil.which('dftd4'))
+                        os.environ['dftd4bin'] = dftd4dir+"/dftd4"
+                        print("Found dftd4 executable in:", dftd4dir)
+                    except TypeError:
+                        print("Found no dftd4 executable in your environment. Exiting.")
+                        ashexit()
                 elif self.qm_program == 'sparrow':
                     print("QM program is sparrow")
                     print("Make sure executable sparrow is in your environment")
