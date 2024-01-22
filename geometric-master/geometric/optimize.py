@@ -39,14 +39,12 @@ import os
 import sys
 import time
 import traceback
-import pkg_resources
 from copy import deepcopy
 from datetime import datetime
 
 import numpy as np
 from numpy.linalg import multi_dot
 
-import geometric
 from .info import print_logo, print_citation
 from .internal import CartesianCoordinates, PrimitiveInternalCoordinates, DelocalizedInternalCoordinates
 from .ic_tools import check_internal_grad, check_internal_hess, write_displacements
@@ -54,8 +52,9 @@ from .normal_modes import calc_cartesian_hessian, frequency_analysis
 from .step import brent_wiki, Froot, calc_drms_dmax, get_cartesian_norm, get_delta_prime, trust_step, force_positive_definite, update_hessian
 from .prepare import get_molecule_engine, parse_constraints
 from .params import OptParams, parse_optimizer_args
-from .nifty import row, col, flat, bohr2ang, ang2bohr, logger, bak, createWorkQueue
+from .nifty import row, col, flat, bohr2ang, ang2bohr, logger, bak, createWorkQueue, destroyWorkQueue, printcool_dictionary
 from .errors import InputError, HessianExit, EngineError, GeomOptNotConvergedError, GeomOptStructureError, LinearTorsionError
+from .config import config_dir
 
 class Optimizer(object):
     def __init__(self, coords, molecule, IC, engine, dirname, params, print_info=True):
@@ -169,6 +168,9 @@ class Optimizer(object):
             logger.info("> Constraints are requested. The following criterion is added:\n")
             logger.info(">  Max Constraint Violation (in Angstroms/degrees) < %.2e \n" % self.params.Convergence_cmax)
 
+        if params.Converge_maxiter:
+            logger.info(">  Converge-on-maxiter set: Will exit with success if maximum number of iterations (%i) is reached.\n" % params.maxiter)
+
         logger.info("> === End Optimization Info ===\n")
         
     def get_cartesian_norm(self, dy, verbose=None):
@@ -216,7 +218,7 @@ class Optimizer(object):
                 raise ValueError("Cannot continue a constrained optimization; please implement constrained optimization in Cartesian coordinates")
             IC1 = CartesianCoordinates(newmol)
         else:
-            IC1 = self.IC.__class__(newmol, connect=self.IC.connect, addcart=self.IC.addcart, build=False, conmethod=self.IC.conmethod)
+            IC1 = self.IC.__class__(newmol, connect=self.IC.connect, addcart=self.IC.addcart, build=False, conmethod=self.IC.conmethod, rigid=self.IC.rigid)
             if self.IC.haveConstraints(): IC1.getConstraints_from(self.IC)
         # Check for differences
         changed = (IC1 != self.IC)
@@ -245,7 +247,23 @@ class Optimizer(object):
 
     def calcGradNorm(self):
         gradxc = self.IC.calcGradProj(self.X, self.gradx) if self.IC.haveConstraints() else self.gradx.copy()
-        atomgrad = np.sqrt(np.sum((gradxc.reshape(-1,3))**2, axis=1))
+        if self.IC.rigid:
+            mol = deepcopy(self.molecule)
+            mol.xyzs = [self.X.reshape(-1, 3)*bohr2ang]
+            mol.qm_grads = [gradxc.reshape(-1,3)]
+            atomgrad = []
+            # print("Net forces / torques:")
+            netfrcs = []
+            torques = []
+            for i, frag in enumerate(self.IC.frags):
+                frag_mol = mol.atom_select(frag)
+                netfrc, torque = frag_mol.calc_netforce_torque(mass=True)
+                netfrcs.append(netfrc[0])
+                torques.append(torque[0])
+                # print("Frag %i: % 9.3e % 9.3e % 9.3e ; % 9.3e % 9.3e % 9.3e" % (i, *netfrc[0], *torque[0]))
+            atomgrad = np.sqrt(np.sum((np.array(netfrcs + torques).reshape(-1,3))**2, axis=1))
+        else:
+            atomgrad = np.sqrt(np.sum((gradxc.reshape(-1,3))**2, axis=1))
         rms_gradient = np.sqrt(np.mean(atomgrad**2))
         max_gradient = np.max(atomgrad)
         return rms_gradient, max_gradient
@@ -295,6 +313,10 @@ class Optimizer(object):
             spcalc['gradient'] = qm_grads_proj
         self.E = spcalc['energy']
         self.gradx = spcalc['gradient']
+        # gx = self.gradx.reshape(-1, 3)
+        # for i in range(gx.shape[0]):
+        #     print("% 10.6f % 10.6f % 10.6f" % (gx[i, 0], gx[i, 1], gx[i, 2]))
+        # sys.exit()
         # Calculate Hessian at the first step, or at each step if desired
         if self.params.hessian == 'each' or self.recalcHess:
             # Hx is assumed to be the Cartesian Hessian at the current step.
@@ -310,7 +332,7 @@ class Optimizer(object):
                     delattr(self, 'Hx')
                 self.recalcHess = False
         elif self.Iteration == 0:
-            if self.params.hessian in ['first', 'stop', 'first+last']:
+            if self.params.hessian in ['first', 'stop', 'first+last'] and not hasattr(self.params, 'hess_data'):
                 self.Hx0 = calc_cartesian_hessian(self.X, self.molecule, self.engine, self.dirname, read_data=True, verbose=self.params.verbose)
                 logger.info(">> Initial Cartesian Hessian Eigenvalues\n")
                 self.SortedEigenvalues(self.Hx0)
@@ -321,7 +343,8 @@ class Optimizer(object):
                     logger.info("Cartesian Hessian is stored in %s/hessian/hessian.txt.\n" % self.dirname)
                     raise HessianExit
                     # sys.exit(0)
-            elif hasattr(self.params, 'hess_data') and self.Iteration == 0:
+            elif hasattr(self.params, 'hess_data'):
+                logger.info(">> Using Hessian data provided via params...\n")
                 self.Hx0 = self.params.hess_data.copy()
                 logger.info(">> Initial Cartesian Hessian Eigenvalues\n")
                 self.SortedEigenvalues(self.Hx0)
@@ -329,6 +352,14 @@ class Optimizer(object):
                     self.frequency_analysis(self.Hx0, 'first', False)
                 if self.Hx0.shape != (self.X.shape[0], self.X.shape[0]):
                     raise IOError('hess_data passed in via OptParams does not have the right shape')
+            if self.params.maxiter == 0:
+                logger.info("Maximum iterations reached (%i); increase --maxiter for more\n" % self.params.maxiter)
+                if self.params.Converge_maxiter:
+                    logger.info("Exiting normally because --converge maxiter was set.\n")
+                    self.state = OPT_STATE.CONVERGED
+                else:
+                    self.state = OPT_STATE.FAILED
+
             # self.Hx = self.Hx0.copy()
         # Add new Cartesian coordinates, energies, and gradients to history
         if self.viz_rotations:
@@ -566,13 +597,19 @@ class Optimizer(object):
         if Converged_energy and Converged_grms and Converged_drms and Converged_gmax and Converged_dmax and self.conSatisfied:
             self.SortedEigenvalues(self.H)
             logger.info("Converged! =D\n")
+            if self.trust < min(1.2e-3, params.Convergence_drms):
+                logger.info("*_* Trust radius is lower than RMS displacement convergence criterion; please check gradient accuracy. *_*\n")
             self.state = OPT_STATE.CONVERGED
             return
 
-        if self.Iteration > params.maxiter:
+        if self.Iteration >= params.maxiter:
             self.SortedEigenvalues(self.H)
             logger.info("Maximum iterations reached (%i); increase --maxiter for more\n" % params.maxiter)
-            self.state = OPT_STATE.FAILED
+            if params.Converge_maxiter:
+                logger.info("Exiting normally because --converge maxiter was set.\n")
+                self.state = OPT_STATE.CONVERGED
+            else:
+                self.state = OPT_STATE.FAILED
             return
 
         if params.qccnv and Converged_grms and (Converged_drms or Converged_energy) and self.conSatisfied:
@@ -593,6 +630,10 @@ class Optimizer(object):
         prev_trust = self.trust
         # logger.info(" Check force/torque: rmsd = %.5f rmsd_noalign = %.5f ratio = %.5f\n" %
         #             (rms_displacement, rms_displacement_noalign, rms_displacement_noalign / rms_displacement))
+        # LPW 2023-05-24: Hack for caterpillar. Enable via CLI later.
+        # if step_state in (StepState.Okay, StepState.Poor, StepState.Reject) and params.transition:
+        #     logger.info("LPW: Recalculating Hessian\n")
+        #     self.recalcHess = True
         if step_state in (StepState.Poor, StepState.Reject):
             new_trust = max(params.tmin, min(self.trust, self.cnorm)/2)
             # if (Converged_grms or Converged_gmax) or (params.molcnv and Converged_molpro_gmax):
@@ -789,8 +830,7 @@ def run_optimizer(**kwargs):
     # This behavior may be changed by editing the log.ini file.
     # Output will only be written to log files after the 'logConfig' line is called!
     if kwargs.get('logIni') is None:
-        import geometric.optimize
-        logIni = pkg_resources.resource_filename(geometric.optimize.__name__, 'config/log.ini')
+        logIni = os.path.join(config_dir, 'log.ini')
     else:
         logIni = kwargs.get('logIni')
     logfilename = kwargs.get('prefix')
@@ -800,7 +840,7 @@ def run_optimizer(**kwargs):
     # Get calculation prefix and temporary directory name
     arg_prefix = kwargs.get('prefix', None) #prefix for output file and temporary directory
     prefix = arg_prefix if arg_prefix is not None else os.path.splitext(inputf)[0]
-    logfilename = prefix + ".log"
+    logfilename = rf"{prefix}.log"
     # Create a backup if the log file already exists
     backed_up = bak(logfilename)
     import logging.config
@@ -811,11 +851,23 @@ def run_optimizer(**kwargs):
 
     import geometric
     logger.info('geometric-optimize called with the following command line:\n')
-    logger.info(' '.join(sys.argv)+'\n')
+    argv_print = []
+    # When geometric-optimize is called on the command line with an argument such as 
+    # --ase-kwargs='{"method":"GFN2-xTB"}'
+    # the shell strips away the single quotes resulting in printing out
+    # --ase-kwargs={"method":"GFN2-xTB"}
+    # making the copy-pasted command invalid.
+    # This is a dirty hack to put the single quotes back.
+    for arg in sys.argv:
+        arg = arg.replace('\'{','{').replace('{','\'{')
+        arg = arg.replace('}\'','}').replace('}','}\'')
+        argv_print.append(arg)
+    logger.info(' '.join(argv_print)+'\n')
     print_logo(logger)
     now = datetime.now()
     logger.info('-=# \x1b[1;94m geomeTRIC started. Version: %s \x1b[0m #=-\n' % (geometric.__version__))
     logger.info('Current date and time: %s\n' % now.strftime("%Y-%m-%d %H:%M:%S"))
+    printcool_dictionary(kwargs, 'Arguments passed to driver run_optimizer():')
     
     if backed_up:
         logger.info('Backed up existing log file: %s -> %s\n' % (logfilename, os.path.basename(backed_up)))
@@ -844,7 +896,9 @@ def run_optimizer(**kwargs):
     coords = M.xyzs[0].flatten() * ang2bohr
 
     # Read in the constraints
-    constraints = kwargs.get('constraints', None) #Constraint input file (optional)
+    constraints = kwargs.get('constraints', None) # Constraint input file (optional)
+    conmethod = kwargs.get('conmethod', 0) # Constraint algorithm - 0, original; 1, alternative
+    rigid = kwargs.get('rigid', False) # Whether to keep molecules rigid during optimization (TRIC only)
 
     if constraints is not None:
         Cons, CVals = parse_constraints(M, open(constraints).read())
@@ -890,7 +944,7 @@ def run_optimizer(**kwargs):
         logger.info("Bonds will be generated from interatomic distances less than %.2f times sum of covalent radii\n" % M.top_settings['Fac'])
 
     IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons, cvals=CVals[0] if CVals is not None else None,
-                    conmethod=params.conmethod)
+                    conmethod=conmethod, rigid=rigid)
     
     #========================================#
     #| End internal coordinate system setup |#
@@ -946,7 +1000,7 @@ def run_optimizer(**kwargs):
         for ic, CVal in enumerate(CVals):
             if len(CVals) > 1:
                 logger.info("---=== Scan %i/%i : Constrained Optimization ===---\n" % (ic+1, len(CVals)))
-            IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons, cvals=CVal, conmethod=params.conmethod)
+            IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons, cvals=CVal, conmethod=conmethod, rigid=rigid)
             IC.printConstraints(coords, thre=-1)
             if len(CVals) > 1:
                 params.xyzout = prefix+"_scan-%03i.xyz" % (ic+1)
@@ -975,6 +1029,8 @@ def run_optimizer(**kwargs):
             if params.qdata is not None: Mfinal.write('qdata-final.txt')
     print_citation(logger)
     logger.info("Time elapsed since start of run_optimizer: %.3f seconds\n" % (time.time()-t0))
+    if kwargs.get('port', 0):
+        destroyWorkQueue()
     return progress
 
 def main(): # pragma: no cover

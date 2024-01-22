@@ -96,7 +96,6 @@ def build_F(x, y, r=np.array([0.0, 0.0, 0.0, 0.0])):
         Regularization, introduces a term in the quadratic form that drives the solution
         toward the direction of r.  Intended to lift degeneracies in the case of linear molecules.
     """
-    # print("build_F : r = ", r)
     R = build_correlation(x, y)
     F = np.zeros((4,4),dtype=float)
     R11 = R[0,0]
@@ -263,7 +262,7 @@ def calc_rmsd(x, y, r=np.array([0.0, 0.0, 0.0, 0.0])):
     rmsd = np.sqrt((np.sum(x**2) + np.sum(y**2) - 2*lmax)/N)
     return rmsd
 
-def is_linear(x, y, thre=0.01):
+def is_linear(x, y, thre=0.01): # pragma: no cover
     """
     Returns True if molecule is linear 
     (largest eigenvalue almost equivalent to second largest)
@@ -338,7 +337,7 @@ def get_rot(x, y, r=np.array([0.0, 0.0, 0.0, 0.0])):
     return U
 
 
-def get_R_der(x, y):
+def get_R_der(x, y, fdcheck=False):
     """
     Calculate the derivatives of the correlation matrix with respect
     to the Cartesian coordinates.
@@ -367,10 +366,10 @@ def get_R_der(x, y):
                 for j in range(3):
                     if i == w:
                         ADiffR[u, w, i, j] = y[u, j]
-    fdcheck = False
     if fdcheck:
         h = 1e-4
         R0 = build_correlation(x, y)
+        FDiffR = np.zeros_like(ADiffR)
         for u in range(x.shape[0]):
             for w in range(3):
                 x[u, w] += h
@@ -378,11 +377,13 @@ def get_R_der(x, y):
                 x[u, w] -= 2*h
                 RMinus = build_correlation(x, y)
                 x[u, w] += h
-                FDiffR = (RPlus-RMinus)/(2*h)
-                logger.info("%i %i %12.6f\n" % (u, w, np.max(np.abs(ADiffR[u, w]-FDiffR))))
-    return ADiffR
+                FDiffR[u, w] = (RPlus-RMinus)/(2*h)
+                logger.info("%i %i %12.6f\n" % (u, w, np.max(np.abs(ADiffR[u, w]-FDiffR[u, w]))))
+        return FDiffR
+    else:
+        return ADiffR
 
-def get_F_der(x, y):
+def get_F_der(x, y, fdcheck=False):
     """
     Calculate the derivatives of the F-matrix with respect
     to the Cartesian coordinates.
@@ -432,10 +433,10 @@ def get_F_der(x, y):
             dF[u,w,3,1] = dR13 + dR31
             dF[u,w,3,2] = dR23 + dR32
             dF[u,w,3,3] = dR33 - dR22 - dR11
-    fdcheck = False
     if fdcheck:
         h = 1e-4
         F0 = build_F(x, y)
+        FDiffF = np.zeros_like(dF)
         for u in range(x.shape[0]):
             for w in range(3):
                 x[u, w] += h
@@ -443,9 +444,11 @@ def get_F_der(x, y):
                 x[u, w] -= 2*h
                 FMinus = build_F(x, y)
                 x[u, w] += h
-                FDiffF = (FPlus-FMinus)/(2*h)
-                logger.info("%i %i %12.6f\n" % (u, w, np.max(np.abs(dF[u, w]-FDiffF))))
-    return dF
+                FDiffF[u, w] = (FPlus-FMinus)/(2*h)
+                logger.info("%i %i %12.6f\n" % (u, w, np.max(np.abs(dF[u, w]-FDiffF[u, w]))))
+        return FDiffF
+    else:
+        return dF
 
 def get_q_der(x, y, second=False, fdcheck=False, use_loops=False, r=np.array([0.0, 0.0, 0.0, 0.0])):
     """
@@ -476,6 +479,7 @@ def get_q_der(x, y, second=False, fdcheck=False, use_loops=False, r=np.array([0.
         First four dimensions are (n_atoms, 3, n_atoms, 3), the variables being differentiated
         Fifth dimension is 4, the elements of the quaternion second derivatives with respect to atom u, dimension w, atom a, dimension b
     """
+
     x = x - np.mean(x,axis=0)
     y = y - np.mean(y,axis=0)
     q, l = get_quat(x, y, eig=True, r=r)
@@ -789,8 +793,8 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False, r=np.arra
                 fac_, _ = calc_fac_dfac(q_[0])
                 return fac_*q_[1:]
             for p in range(4):
-                for r in range(4):
-                    if p == r:
+                for s in range(4):
+                    if p == s:
                         FDiffV2 = V0.copy()
                         q[p] -= h
                         FDiffV2 -= 2*V_(q)
@@ -800,18 +804,18 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False, r=np.arra
                     else:
                         FDiffV2 = V0.copy()
                         q[p] -= h
-                        q[r] -= h
+                        q[s] -= h
                         FDiffV2 += V_(q)
-                        q[r] += h
+                        q[s] += h
                         FDiffV2 -= V_(q)
-                        q[r] -= h
+                        q[s] -= h
                         q[p] += h
                         FDiffV2 -= V_(q)
-                        q[r] += h
+                        q[s] += h
                     FDiffV2 /= h**2
-                    maxerr = np.max(np.abs(dvdq2[p, r]-FDiffV2))
+                    maxerr = np.max(np.abs(dvdq2[p, s]-FDiffV2))
                     if maxerr > 1e-7:
-                        logger.info("q %3i %3i : maxerr = %.3e %s\n" % (p, r, maxerr, 'X' if maxerr > 1e-5 else ''))
+                        logger.info("q %3i %3i : maxerr = %.3e %s\n" % (p, s, maxerr, 'X' if maxerr > 1e-5 else ''))
                     # logger.info("q %3i %3i : analytic %s numerical %s maxerr = %.3e %s" % (i, j, str(dvdq2[i, j]), str(FDiffV2), maxerr, 'X' if maxerr > 1e-4 else ''))
                 
     # Dimensionality: Number of atoms, number of dimensions (3), number of elements in q (4)
@@ -835,8 +839,8 @@ def get_expmap_der(x, y, second=False, fdcheck=False, use_loops=False, r=np.arra
                 for u in range(x.shape[0]):
                     for w in range(3):
                         for i in range(3):
-                            for r in range(4):
-                                dvdqx[p, u, w, i] += dvdq2[p, r, i] * dqdx[u, w, r]
+                            for j in range(4):
+                                dvdqx[p, u, w, i] += dvdq2[p, j, i] * dqdx[u, w, j]
             for u in range(x.shape[0]):
                 for w in range(3):
                     for a in range(x.shape[0]):

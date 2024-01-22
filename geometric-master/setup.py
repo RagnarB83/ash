@@ -1,8 +1,6 @@
-import versioneer
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+import versioneer
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -12,6 +10,7 @@ setup(
     description='Geometry optimization for quantum chemistry',
     url='https://github.com/leeping/geomeTRIC',
     author='Lee-Ping Wang, Chenchen Song',
+    author_email='leeping@ucdavis.edu',
     packages=find_packages(),
     package_data={'': ['*.ini']},
     include_package_data=True,
@@ -19,11 +18,14 @@ setup(
     long_description_content_type="text/markdown",
     entry_points={'console_scripts': [
         'geometric-optimize = geometric.optimize:main',
+        'run-ase = geometric.ase_engine:main',
+	    'geometric-neb = geometric.neb:main',
     ]},
     install_requires=[
         'numpy>=1.11',
         'networkx',
         'six',
+        'scipy',
     ],
     tests_require=[
         'pytest',

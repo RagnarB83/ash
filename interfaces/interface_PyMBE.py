@@ -1,10 +1,8 @@
 import subprocess as sp
 import os
-import shutil
 import time
 import re
 import pprint
-import json
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 
@@ -27,8 +25,8 @@ class PyMBETheory:
         if pymbedir == None:
             print(BC.WARNING, "No pymbedir argument passed to PyMBETheory. Attempting to find pymbedir variable inside settings_ash", BC.END)
             try:
-                print("settings_ash.settings_dict:", settings_ash.settings_dict)
-                self.pymbedir=settings_ash.settings_dict["pymbedir"]
+                print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+                self.pymbedir=ash.settings_ash.settings_dict["pymbedir"]
             except:
                 print(BC.WARNING,"Found no pymbedir variable in settings_ash module either.",BC.END)
                 ashexit()
@@ -234,7 +232,7 @@ def grab_results_pymbe():
                     final_dict["labels"].append('ref')
                     final_dict["tot_energies"].append(float(line.split()[2]))
                     final_dict["corr_energies"].append(float(line.split()[4]))
-                if re.match("          [0-9]      \|",line) is not None:
+                if re.match(r"          [0-9]      \|",line) is not None:
                     final_dict["labels"].append(line.split()[0])
                     final_dict["tot_energies"].append(float(line.split()[2]))
                     final_dict["corr_energies"].append(float(line.split()[4]))

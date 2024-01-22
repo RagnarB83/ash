@@ -46,14 +46,14 @@ Internal coordinate (IC) system to be used. Valid values for this argument are:
 - ``prim`` : Primitive (a.k.a. redundant) internal coordinates.  Distances, angles, and dihedral angles are used to span the whole system.  The number of ICs can exceed the number of degrees of freedom.
 - ``dlc`` : Delocalized internal coordinates.  Same as ``prim`` but a set of non-redundant linear combinations of "delocalized" internal coordinates is formed by diagonalizing the G matrix and keeping only the eigenvectors with non-zero eigenvalues.  The default for native optimization codes in several quantum chemistry programs.
 - ``hdlc`` : Hybrid delocalized internal coordinates.  Distances, angles, and dihedral angles are used to span individual molecules in the system, Cartesian coordinates for all atoms are added, then delocalized internal coordinates are formed.
-- ``tric`` (**default**) : Translation-rotation internal coordinates.  Distances, angles, and dihedral angle¯s are used to span individual molecules in the system, three translation and three rotation coordinates are added for each molecule, then delocalized internal coordinates are formed.
+- ``tric`` (**default, recommended**) : Translation-rotation internal coordinates.  Distances, angles, and dihedral angle¯s are used to span individual molecules in the system, three translation and three rotation coordinates are added for each molecule, then delocalized internal coordinates are formed.
 - ``tric-p`` : A primitive (redundant) version of translation-rotation internal coordinates where the delocalization step is not applied.
 
 ....
 
 ``--engine [tera]``
 
-The "engine" is the software to be used for computing energies and gradients. Also see :ref:`Engines <engines>`.
+The "engine" is the software to be used for computing energies and gradients, which needs to be installed separately. Also see :ref:`Engines <engines>`.
 
 - ``tera`` (**default**) : Use TeraChem. Provide a TeraChem input file. A .xyz coordinate file must also be present (name should match the ``coords`` option in the input file).
 - ``qchem`` : Use Q-Chem. Provide a Q-Chem input file with Cartesian coordinates.
@@ -61,6 +61,9 @@ The "engine" is the software to be used for computing energies and gradients. Al
 - ``psi4`` : Use Psi4. Provide a Psi4 input file with Cartesian coordinates.
 - ``gaussian`` : Use Gaussian (version 09 or 16). Provide a Gaussian job file with Cartesian coordinates.
 - ``openmm`` : Use OpenMM. Provide an OpenMM force field or system ``.xml`` file and a PDB file using ``--pdb`` for the initial structure and topology.
+- ``ase`` : Use ASE. Also requires the ``--ase-class`` and ``--ase-kwargs`` options to be specified.
+- ``quick`` : Use QUICK. Provide a QUICK input file with Cartesian coordinates.
+- ``cfour`` : Use CFOUR. Provide a CFOUR input file with Cartesian coordinates. A Python script is provided to convert Z-matrix input prior to running the optimization.
 - ``gmx`` : Use Gromacs (experimental). Provide a Gromacs ``.gro`` file. A topology file ``topol.top`` and run parameters ``shot.mdp`` are required, with those exact names.
 
 ``--nt [1]``
@@ -77,11 +80,18 @@ These options are used if you're requesting something other than the default ene
 
 ``--transition [yes/no]``
 
-Provide ``yes`` to optimize a transition state (first order saddle point). 
+Provide ``yes`` to optimize a transition state (first order saddle point).
 This option changes the behavior of the optimization algorithm and convergence criteria.
 Also, a numerical Hessian will be computed at the start of the optimization (not the end) unless otherwise specified.
 
-    Note: Transition state optimizations are notorious for requiring an initial guess in order to arrive at the desired structure, so it is recommended to start with a high-quality initial guess from constraint scanning or other approaches.    
+    Note: Transition state optimizations are notorious for requiring an initial guess in order to arrive at the desired structure, so it is recommended to start with a high-quality initial guess from constraint scanning or other approaches.
+
+....
+
+``--rigid [yes/no]``
+
+Provide ``yes`` to keep molecules / fragments rigid during the optimization.
+See :ref:`Constraints <constraints>` for more details.
 
 ....
 
@@ -98,7 +108,7 @@ The objective function is defined following `Levine et al. <https://pubs.acs.org
 Presently only TeraChem and Q-Chem have been tested, but this presumably works with other QC engines as well.
 This option slightly changes the behavior of the optimization algorithm, in particular the lower bound on step size for rejecting a bad step is reduced from ``1e-2`` to ``1e-4``.
 
-Additionally, ``--meci engine`` specifies that the engine itself computes the penalty constrained objective function, which means from geomeTRIC's perspective it is similar to an energy minimization, 
+Additionally, ``--meci engine`` specifies that the engine itself computes the penalty constrained objective function, which means from geomeTRIC's perspective it is similar to an energy minimization,
 except for the change in threshold mentioned above.
 
 The parameters to the MECI penalty function are specified using ``--meci_sigma`` (a multiplicative scaling) and ``--meci_alpha`` (a width parameter).
@@ -107,7 +117,7 @@ Setting ``--meci_alpha`` to ``1.0e-3`` often results in convergence of the energ
 
 ....
 
-Additionally, a frequency analysis / harmonic free energy calculation may be specified without any optimization 
+Additionally, a frequency analysis / harmonic free energy calculation may be specified without any optimization
 by providing ``--hessian stop`` (see below).
 
 Hessian options
@@ -121,7 +131,7 @@ These options control the calculation of Hessian (force constant) matrices and d
 
 Specify whether and when to compute the Hessian matrix for optimization and/or frequency analysis.
 The Hessian data will be written to a text file in NumPy format under ``[prefix].tmp/hessian/hessian.txt``.
-The ``<prefix.tmp>/hessian`` folder contains a coordinate file corresponding to the Hessian matrix; 
+The ``<prefix.tmp>/hessian`` folder contains a coordinate file corresponding to the Hessian matrix;
 if the coordinates at run time matches the existing coordinate file, the Hessian will be read from file instead.
 
 Currently, Hessian matrices are computed by geomeTRIC by numerical central difference of the gradient, requiring 1+6*N(atoms) total calculations.
@@ -149,7 +159,7 @@ Possible values to pass to this argument are:
 
 ``--port [9876]``
 
-Provide a port number for the Work Queue distributed computing server.  
+Provide a port number for the Work Queue distributed computing server.
 This is only used for distributing gradient calculations in numerical Hessian calculations.
 This number can range up to 65535, and a number in the high 4-digit range is acceptable.
 Do not use privileged port numbers (less than 1024).
@@ -199,7 +209,7 @@ This section controls various aspects of the optimization algorithm.
 
 ``--maxiter [300]``
 
-This sets the maximum number of optimization steps.  
+This sets the maximum number of optimization steps.
 Most calculations should converge well within 100 steps, so 300 is a safe upper limit for most jobs.
 If convergence fails after 300 steps, then it might be worth taking a close look at the inputs, or if all else fails, contacting the developers.
 
@@ -216,7 +226,7 @@ geomeTRIC uses five convergence criteria, using the same values as Gaussian:
 - The RMS displacement from the previous step (default ``1.2e-3``)
 - The maximum displacement from the previous step (default ``1.8e-3``)
 
-geomeTRIC computes these quantities by taking the norm on each atom 
+geomeTRIC computes these quantities by taking the norm on each atom
 then calculating the RMS/maximum values using the atomic values.
 Convergence is reached when all five variables drop below the criteria.
 
@@ -225,6 +235,11 @@ To set one or more convergence criteria individually, provide one or more pairs 
 
 Hard-coded sets of convergence criteria can also be specified by providing ``--converge set SET_NAME``
 where ``set`` must be entered exactly and ``SET_NAME`` is one of the entries in the following table:
+
+Additionally, the special word ``maxiter`` may be provided as one of the values in this list, which will
+enable the optimization to return a success status when the maximum number of iterations is reached.
+This can be used in workflows where a small number of steps is needed to relax large forces.
+Set the maximum number of iterations separately with ``--maxiter``.
 
 +----------------------+----------------+--------------+--------------+--------------+--------------+
 | Set name             | Energy         | Grad RMS     | Grad Max     | Disp RMS     | Disp Max     |
@@ -244,8 +259,8 @@ where ``set`` must be entered exactly and ``SET_NAME`` is one of the entries in 
 | ``GAU_VERYTIGHT``    | ``1.0e-6``     | ``1.0e-6``   | ``2.0e-6``   | ``4.0e-6``   | ``6.0e-6``   |
 +----------------------+----------------+--------------+--------------+--------------+--------------+
 
-    Note 1: The user is responsible for setting the SCF / CASSCF / other convergence thresholds 
-    sufficiently tight in the engine, especially when tighter than default convergence criteria are used.  
+    Note 1: The user is responsible for setting the SCF / CASSCF / other convergence thresholds
+    sufficiently tight in the engine, especially when tighter than default convergence criteria are used.
     Otherwise, the energy may jump around erratically instead of reaching convergence.
 
     Note 2: For the case of constrained optimizations, an additional condition is that constrained degrees of freedom
@@ -286,8 +301,8 @@ If tested widely enough, setting a threshold of 0.1 may become the default behav
 
 ``--conmethod [0]``
 
-Provide a value of ``1`` to use an alternative way of building the delocalized internal coordinates that satisfies constraints more rapidly, but may be less stable.
-Use only if the default method fails for constrained optimizations.
+Provide a value of ``1`` to use an alternative way of building the delocalized internal coordinates that satisfies constraints more rapidly.
+Use for rigid optimizations, or if the default method fails for constrained optimizations.
 
 ....
 
@@ -377,9 +392,9 @@ Activating this option will generate a ForceBalance-readable ``qdata.txt`` file 
 
 ``--logINI [log.ini]``
 
-Provide a custom ``log.ini`` file to customize the logger.  
+Provide a custom ``log.ini`` file to customize the logger.
 This is most useful when using geomeTRIC in ways other than the command line.
-Examples are provided in the source distribution under ``<root>/geometric/config/[log.ini, logJson.ini, logTest.ini]``.
+Examples are provided in the source distribution under ``<root>/geometric/config/[log.ini, logJson.ini]``.
 
 ....
 
@@ -416,6 +431,25 @@ Provide a Q-Chem scratch folder containing temporary files (e.g. initial molecul
 ``--qccnv [yes]``
 
 Use Q-Chem style convergence criteria; convergence is reached if the RMS gradient and *either RMS displacement or energy change* falls below the threhsold.
+
+....
+
+``--ase-class [string]``
+
+Specify the calculator class to import and use for ASE engine. This needs to be in your python environment, and hence
+importable. Under the hood, ``importlib`` is used to import it by name if it exists. eg. ``ase.calculators.lj.LennardJones``
+This can be pointing to any class that is a subclass of ``ase.calculators.calculator.Calculator``.
+
+....
+
+``--ase-kwargs [JSON string]``
+
+Specify the keyword arguments for the calculator's initialisation. This is interpreted as a JSON string,
+becoming a dictionary that is passed in at construction of the calculator.
+
+Be mindful of quoting, since JSON uses ``"`` for strings, so it it convenient to pack the command line option into
+single quotes ``'``. For example: ``--ase-kwargs='{"param_filename":"path/to/file.xml"}'``.
+
 
 Debugging options
 -----------------

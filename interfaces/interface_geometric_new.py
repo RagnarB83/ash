@@ -454,12 +454,14 @@ class GeomeTRICOptimizerClass:
             ######################
             #CALLING LIBRARY
             ######################
+            import geometric
             try:
                 import geometric
-            except:
+            except Exception as e:
                 blankline()
                 print(BC.FAIL,"Problem importing geomeTRIC module!", BC.END)
                 print(BC.WARNING,"Either install geomeTRIC using pip:\n conda install geometric\n or \n pip install geometric\n or manually from Github (https://github.com/leeping/geomeTRIC)", BC.END)
+                print("Actual error message:", e)
                 ashexit(code=9)
 
             #Read geometry from XYZ-file into geomeTRIC Molecule object

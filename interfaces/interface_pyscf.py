@@ -2709,7 +2709,7 @@ def pySCF_read_MOs(moreadfile,pyscfobject):
 def KS_inversion_n2v(pyscftheoryobj, dm, method='PDECO', numcores=1, opt_max_iter=200,
                      guide_components="fermi_amaldi", gtol=1e-6):
     time_init=time.time()
-    print("\nKS_inversion_n2v")
+    print("\nKS_inversion_kspies: KS density_potential_inversion via n2v")
     try:
         import n2v
         import gbasis
@@ -2769,131 +2769,300 @@ pip install .
 
     return vxc
 
-
-
 #Takes pyscfheoryobject and DM as input, solves the inversion problem and returns MO coefficients, occupations,energies and new DM
-def density_potential_inversion(pyscftheoryobj, dm, method='WY', WY_method='trust-exact', numcores=1,
-                                ZMP_lambda=128, ZMP_levelshift=True, ZMP_cycles=400, DF=True):
-        time_init=time.time()
-        print("\ndensity_potential_inversion")
-        try:
-            from kspies import wy, zmp, util
-        except ModuleNotFoundError:
-            print("density_potential_inversion requires installation of kspies module")
-            print("See: https://github.com/ssnam92/KSPies")
-            print("Try: pip install kspies   and pip install opt-einsum")
-            ashexit()
+def KS_inversion_kspies(pyscftheoryobj, dm, numcores=1, 
+                        method='WY', WY_method='trust-exact', pbas=None,
+                        ZMP_lambda=128, ZMP_levelshift=True, ZMP_LS_scaling=8,
+                        ZMP_cycles=400, guide='faxc',
+                        DF=True, vxc_method = 'eval_vh',
+                        plot_vxc=False, vxc_coords=None, chosen_axes=None,
+                        xlimit=None, ylimit=None,
+                        x_axis_in_Bohr=False, plot_all_lambdas=True, plot_format='png'):
+    time_init=time.time()
+    print("\nKS_inversion_kspies: KS density_potential_inversion via kspies")
+    try:
+        #
+        import kspies
+        from kspies import wy, zmp, util
+    except ModuleNotFoundError:
+        print("density_potential_inversion requires installation of kspies module")
+        print("See: https://github.com/ssnam92/KSPies")
+        print("Try: pip install kspies   and pip install opt-einsum")
+        ashexit()
+    import pyscf
+    try:
         print("Current OMP_NUM_THREADS:", os.environ['OMP_NUM_THREADS'])
-        print("Setting OMP_NUM_THREADS to:", numcores)
-        os.environ['OMP_NUM_THREADS'] = str(numcores)   
+    except:
+        pass
+    print("Setting OMP_NUM_THREADS to:", numcores)
+    os.environ['OMP_NUM_THREADS'] = str(numcores)   
+
+    if pyscftheoryobj.scf_type == "RKS" or pyscftheoryobj.scf_type == "RHF" :
+        print("Case: RHF/RKS. Checking dm")
+        print("dm:", dm)
+        print("dm.shape:", dm.shape)
+    else:
+        print("Case: unrestricted (UHF/UKS).")
+        print("dm:", dm)
+        if type(dm) is tuple:
+            print("dm alpha shape:", dm[0].shape)
+        else:
+            print("dm shape:", dm.shape)
+
+    #If plotting Vxc
+    if plot_vxc is True:
+        import matplotlib.pyplot as plt
+        print("plot_vxc is True. Setting up grid")
+        print("Input coordinate grid in Angstrom. Now converting to Bohrs for kspies")
+        vxc_coords = np.array(vxc_coords) #Angstrom 
+        coords_bohr = np.array(vxc_coords)*1.88972612546 #Bohrs
+        print("coords_bohr:", coords_bohr)
+
+        plotdim=1
+        axdict={'x':0,'y':1,'z':2}
+        if chosen_axes is None:
+            print("Error: chosen_axes is None. Not allowed. Exiting ")
+            ashexit()
+        elif type(chosen_axes) == int:
+            print(f"chosen_axes: {chosen_axes} is integer. Assuming index (0 for x, 1 for y, 2 for z)")
+            ax=chosen_axes
+            print("ax:", ax)
+        elif type(chosen_axes) == str:
+            print(f"chosen_axes: {chosen_axes} is string. Assuming label (x, y, z)")
+            ax=axdict[chosen_axes]
+            print("ax:", ax)
+        elif type(chosen_axes) == list:
+            if len(chosen_axes)==2:
+                print("2 axes provided. A 2D plot is requested")
+                if type(chosen_axes[0]) == str:
+                    ax1 = axdict[chosen_axes[0]]
+                    ax2 = axdict[chosen_axes[1]]
+                else:
+                    ax1 = chosen_axes[0]
+                    ax2 = chosen_axes[1]
+            elif len(chosen_axes) == 1:
+                print("1 axis provided as list. A 1D plot is requested")
+                if type(chosen_axes[0]) == str:
+                    ax = axdict[chosen_axes[0]]
+                else:
+                    ax = chosen_axes[0]
+        else:
+            print("Something is wrong")
+            exit()
+        if plotdim == 1:
+            print("plotdim: 1")
+            if x_axis_in_Bohr is True:
+                print("X-axis in Bohr")
+                x_values = coords_bohr[:, ax] #in Bohr
+                coord_unit="a.u"
+            else:
+                x_values = vxc_coords[:, ax] #in Angstrom
+                coord_unit="Å"
+            #Empty vxc array
+            vxc_values_series = []
+            labels_series = []
+        else:
+            print("plotdim: 2")
+            print("not ready")
+            #TODO
+            ashexit()
+
+    #Using eval_vh for vxc
+    def run_eval_vh(pyscftheoryobj, kspiesobj,coords_bohr, dm,l=0):
+        dmxc = l*kspiesobj.dm-(l+1./pyscftheoryobj.mol.nelectron)*dm
+        vxc = kspies.util.eval_vh(pyscftheoryobj.mol, coords_bohr,dmxc)
+        return vxc
+
+
+    #Density->Potential inversion by kspies
+    if method == 'ZMP':
+        print("Using ZMP method for density->potential inversion")
+        if pyscftheoryobj.scf_type == "RKS" or pyscftheoryobj.scf_type == "RHF" :
+            print("SCF-type is restricted. Using RZMP")
+
+            #Checking 
+            zmp_a = zmp.RZMP(pyscftheoryobj.mol, dm)
+        else:
+            print("SCF-type is unrestricted. Using UZMP")
+            zmp_a = zmp.UZMP(pyscftheoryobj.mol, dm)
+        
+        #DF or not
+        zmp_a.with_df = DF
+
+        #Guiding potential
+        #Note: None or faxc are good options. Artifacts seen with PBE and B3LYP for H2 example
+        zmp_a.guide = guide
+        print("ZMP Guiding potential:", zmp_a.guide)
+        #Run ZMP
+        print("Running ZMP with lambda:", ZMP_lambda)
+        #Max cycle option
+        zmp_a.max_cycle=ZMP_cycles
+        print("ZMP Max cycles:", zmp_a.max_cycle)
+        print("zmp_a.level_shift:", zmp_a.level_shift)
+
+        if ZMP_levelshift is True:
+            print("ZMP_levelshift True. Now running increasing lambda iterations with levelshifting")
+            zmp_a.diis_space = 30
+            zmp_a.conv_tol_dm = 1e-10
+            zmp_a.conv_tol_diis = 1e-7
+
+            for l in [ ZMP_lambda/8, ZMP_lambda/4, ZMP_lambda/2, ZMP_lambda]:
+            #for l in [ZMP_lambda/(ZMP_LS_scaling*ZMP_LS_scaling), ZMP_lambda/ZMP_LS_scaling,ZMP_lambda]:
+                print("Lambda:", l)
+                print("Levelshift (lambda*0.1):", l*0.1)
+                zmp_a.level_shift = l*0.1
+                zmp_a.zscf(l)
+
+                if plot_vxc is True and plot_all_lambdas is True:
+                    #dmxc = l*zmp_a.dm-(l+1./pyscftheoryobj.mol.nelectron)*dm
+                    #vxc = kspies.util.eval_vh(pyscftheoryobj.mol, coords_bohr,dmxc)
+                    if vxc_method == 'eval_vh':
+                        vxc = run_eval_vh(pyscftheoryobj, zmp_a,coords_bohr, dm,l=l)
+                        vxc_values_series.append(vxc)
+                        labels_series.append(r'$\lambda$='+str(int(l)))
+                    else:
+                        print("not ready")
+
+            print("Now turning levelshift off")
+            zmp_a.level_shift = 0.
+        print("Running ZSCF (without levelshift)")
+        zmp_a.zscf(ZMP_lambda)
+
+        if plot_vxc is True:
+            #dmxc = l*zmp_a.dm-(l+1./pyscftheoryobj.mol.nelectron)*dm
+            #vxc = kspies.util.eval_vh(pyscftheoryobj.mol, coords_bohr,dmxc)
+            if vxc_method == 'eval_vh':
+                vxc = run_eval_vh(pyscftheoryobj, zmp_a,coords_bohr, dm,l=ZMP_lambda)
+                vxc_values_series.append(vxc)
+                labels_series.append(r'$\lambda$='+str(l)+' (final)')
+            else:
+                print("not ready")
+        #Get final data
+        mo_coeff =  zmp_a.mo_coeff
+        mo_occ =  zmp_a.mo_occ
+        mo_energy =  zmp_a.mo_energy
+        final_dm =  zmp_a.dm #not sure
+        #P = zmp_a.make_rdm1()
+        #print("P:", P)
+        #print("final_dm:", final_dm)
+        #print(f"Expectation value: {pyscftheoryobj.mf.energy_tot(P)} Eh")
+        print(f"Expectation value: {pyscftheoryobj.mf.energy_tot(final_dm)} Eh")
+
+        converged =  bool(zmp_a.converged) #converged or not. converting from np.bool to bool
+        if converged is False:
+            print("Error: ZMP failed to converge. Exiting")
+            print("Probably best to enable or modify ZMP_levelshift ")
+            ashexit()
+        else:
+            print("ZMP converged successfully!")
+
+    elif method == 'WY':
+        print("Using WY method for density->potential inversion")
+
+        #Optional different potential basis in WY method
+        if pbas is None:
+            print("No pbas set. Using same pbas as in pyscftheoryobj")
+            pbas = pyscftheoryobj.mol.basis
+        else:
+            print("pbas keyword set:", pbas)
+
 
         if pyscftheoryobj.scf_type == "RKS" or pyscftheoryobj.scf_type == "RHF" :
-            print("Case: RHF/RKS. Checking dm")
-            print("dm:", dm)
-            print("dm.shape:", dm.shape)
+            mw = wy.RWY(pyscftheoryobj.mol, dm, pbas=pbas)
         else:
-            print("Case: unrestricted (UHF/UKS).")
-            print("dm:", dm)
-            if type(dm) is tuple:
-                print("dm alpha shape:", dm[0].shape)
+            mw = wy.UWY(pyscftheoryobj.mol, dm, pbas=pbas)
+
+        #Possible optimizer switch: trust-exact, bfgs, cg
+        #When trust-exact fails (large basis etc) switch to bfgs or cg
+        mw.method=WY_method
+        print("WY minimizer", mw.method)
+        print("Guiding potential:", mw.guide)
+        #exit()
+        #mw.method = 'bfgs'
+        #mw.pbas=pbas
+        print("WY pbas:", mw.pbas)
+        print("Running WY")
+        mw.run()
+        mw.info()       
+
+        if plot_vxc is True:
+            print("dsdfds")
+            #Guiding potential
+            if vxc_method == 'eval_vh':
+                vxc = run_eval_vh(pyscftheoryobj, mw,coords_bohr, dm,l=0)
+                vxc_values_series.append(vxc)
+                labels_series.append(r'WY'+' (final)')
             else:
-                print("dm shape:", dm.shape)
+                print("other ")
+                print("Changing guiding potential to PBE")
+                mw.guide = 'pbe'
+                mw.tol = 1e-7
+                ao2 = pyscf.dft.numint.eval_ao(mw.pmol, coords_bohr) #potential basis values on grid
+                vg = kspies.util.eval_vxc(pyscftheoryobj.mol, dm, mw.guide, 
+                                          coords_bohr, delta=1e-8) #guiding potential on grid
+                
+                #Regularized WY
+                for eta in [1e-2, 1e-3, 1e-4, 1e-5, 1e-6]:
+                    mw.reg = eta
+                    mw.run()
+                    vC = np.einsum('t,rt->r', mw.b, ao2)
+                    mw.info()
+                    vxc_values_series.append(vg+vC)
+                    labels_series.append(r'$\eta$='+str(eta))
 
-        #Density->Potential inversion by kspies
-        if method == 'ZMP':
-            print("Using ZMP method for density->potential inversion")
-            if pyscftheoryobj.scf_type == "RKS" or pyscftheoryobj.scf_type == "RHF" :
-                print("SCF-type is restricted. Using RZMP")
-
-                #Checking 
-                zmp_a = zmp.RZMP(pyscftheoryobj.mol, dm)
-            else:
-                print("SCF-type is unrestricted. Using UZMP")
-                zmp_a = zmp.UZMP(pyscftheoryobj.mol, dm)
-            
-            #DF or not
-            zmp_a.with_df = DF
-            #Run ZMP
-            print("Running ZMP with lambda:", ZMP_lambda)
-            #Max cycle option
-            zmp_a.max_cycle=ZMP_cycles
-            print("ZMP Max cycles:", zmp_a.max_cycle)
-            print("zmp_a.level_shift:", zmp_a.level_shift)
-
-            if ZMP_levelshift is True:
-                print("ZMP_levelshift True. Now running increasing lambda iterations with levelshifting")
-                zmp_a.diis_space = 30
-                zmp_a.conv_tol_dm = 1e-10
-                zmp_a.conv_tol_diis = 1e-7
-
-                for l in [ ZMP_lambda/8, ZMP_lambda/4, ZMP_lambda/2, ZMP_lambda]:
-                    print("Lambda:", l)
-                    print("Levelshift (lambda*0.1):", l*0.1)
-                    zmp_a.level_shift = l*0.1
-                    zmp_a.zscf(l)
-                print("Now turning levelshift off")
-                zmp_a.level_shift = 0.
-            print("Running ZSCF (without levelshift)")
-            zmp_a.zscf(ZMP_lambda)
-
-            #Get final data
-            mo_coeff =  zmp_a.mo_coeff
-            mo_occ =  zmp_a.mo_occ
-            mo_energy =  zmp_a.mo_energy
-            final_dm =  zmp_a.dm #not sure
-            converged =  bool(zmp_a.converged) #converged or not. converting from np.bool to bool
-            if converged is False:
-                print("Error: ZMP failed to converge. Exiting")
-                print("Probably best to enable ZMP_levelshift ")
-                ashexit()
-            else:
-                print("ZMP converged successfully!")
-
-        elif method == 'WY':
-            print("Using WY method for density->potential inversion")
-            if pyscftheoryobj.scf_type == "RKS" or pyscftheoryobj.scf_type == "RHF" :
-                mw = wy.RWY(pyscftheoryobj.mol, dm)
-            else:
-                mw = wy.UWY(pyscftheoryobj.mol, dm)
-
-            #Possible optimizer switch: trust-exact, bfgs, cg
-            #When trust-exact fails (large basis etc) switch to bfgs or cg
-            mw.method=WY_method
-            print("WY minimizer", mw.method)
-            #exit()
-            #mw.method = 'bfgs'
-            print("Running WY")
-            mw.run()
-            mw.info()            
-            #Get final data
-            mo_coeff =  mw.mo_coeff
-            mo_occ =  mw.mo_occ
-            mo_energy =  mw.mo_energy
-            final_dm =  mw.dm #not sure
-            converged =  bool(mw.converged) #converged or not. converting from np.bool to bool
-            if converged is False:
-                print("Error: WY failed to converge. Exiting")
-                print("You might try changing WY optimization method (WY_method keyword) to bfgs or cg")
-                ashexit()
-            else:
-                print("WY converged successfully!")
-        else:
-            print("not ready yet")
-            ashexit()
-        
         #Get final data
-        print("\nMO properties after inversion")
-        pyscftheoryobj.print_orbital_en_and_occ(mo_energies=mo_energy, mo_occupations=mo_occ)
-        print()
+        mo_coeff =  mw.mo_coeff
+        mo_occ =  mw.mo_occ
+        mo_energy =  mw.mo_energy
+        final_dm =  mw.dm #not sure
+        converged =  bool(mw.converged) #converged or not. converting from np.bool to bool
+        if converged is False:
+            print("Error: WY failed to converge. Exiting")
+            print("You might try changing WY optimization method (WY_method keyword) to bfgs or cg")
+            ashexit()
+        else:
+            print("WY converged successfully!")
+    else:
+        print("not ready yet")
+        ashexit()
 
-        print("\n Now returning: mo_occ, mo_energy, mo_coeff, final_dm")
-
-        #Resetting OMP_NUM_THREADS (can mess with pySCF)
-        os.environ['OMP_NUM_THREADS'] = str(1)
 
 
-        print_time_rel(time_init, modulename='density_potential_inversion', moduleindex=2)
-        return mo_occ, mo_energy, mo_coeff,final_dm
+    #FINAL plotting
+    if plot_vxc is True:
+        print("Now plotting vxc")
+        for vxc,label in zip(vxc_values_series, labels_series):
+            plt.plot(x_values, vxc, label = label)
+
+
+        #plt.legend=True
+        plt.legend(shadow=True, fontsize='small') 
+        #plt.figure(figsize=(3,4))
+        plt.xlabel(f"x ({coord_unit})")
+        plt.ylabel("vxc(r)")
+        if xlimit != None:
+            plt.xlim(*xlimit)
+        if ylimit != None:
+            plt.ylim(*ylimit)
+        
+        print(f"Saving figure vxc_{method}.{plot_format}")
+        plt.savefig(f"vxc_{method}.{plot_format}")
+
+    #Get final data
+    print("\nMO properties after inversion")
+    pyscftheoryobj.print_orbital_en_and_occ(mo_energies=mo_energy, mo_occupations=mo_occ)
+    print()
+
+    print("\n Now returning: mo_occ, mo_energy, mo_coeff, final_dm")
+
+    #Resetting OMP_NUM_THREADS (can mess with pySCF)
+    os.environ['OMP_NUM_THREADS'] = str(1)
+
+
+    print_time_rel(time_init, modulename='density_potential_inversion', moduleindex=2)
+    return mo_occ, mo_energy, mo_coeff,final_dm
+
+
 
 #Function for evaluating functional error (FE) and density error(DE) from 2 pySCFTheory objects
 #ref: Reference energy or density
@@ -2947,7 +3116,7 @@ def DFA_error_analysis(fragment=None, DFA_obj=None, REF_obj=None, DFA_DM=None, R
 
 
     #Density potential inversion to get reference potential from reference density
-    mo_occ, mo_energy, mo_coeff,ref_DM_inv = density_potential_inversion(REF_obj, REF_DM, method=inversion_method,
+    mo_occ, mo_energy, mo_coeff,ref_DM_inv = KS_inversion_kspies(REF_obj, REF_DM, method=inversion_method,
                                                                          WY_method=WY_method, numcores=numcores,
                                                 ZMP_lambda=ZMP_lambda, ZMP_levelshift=ZMP_levelshift, ZMP_cycles=ZMP_cycles, DF=DF)
 

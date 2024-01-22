@@ -103,7 +103,7 @@ class ORCATheory:
 
         #Setting numcores of object
         #NOTE: nprocs is deprecated but kept on for a bit
-        if nprocs==None:
+        if nprocs is None:
             self.numcores=numcores
         else:
             self.numcores=nprocs
@@ -116,7 +116,7 @@ class ORCATheory:
 
         
         #Adding NoAutostart keyword to extraline if requested
-        if self.autostart == False:
+        if self.autostart is False:
             self.extraline=extraline+"\n! Noautostart"
         else:
             self.extraline=extraline
@@ -1359,6 +1359,7 @@ def masselemgrab(hessfile):
 def grabcoordsfromhessfile(hessfile):
     #Grab coordinates from hessfile
     numatomgrab=False
+    numatoms=None
     cartgrab=False
     elements=[]
     coords=[]
@@ -1848,6 +1849,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
     coordgrab=False
     charges=[]
     BS=False #if broken-symmetry job
+    column=None
     #if
     if len(pygrep2("WARNING: Broken symmetry calculations", outputfile)):
         BS=True
@@ -2586,7 +2588,7 @@ def grab_coordinates_from_ORCA_output(filename):
                     c_x=float(line.split()[1]); c_y=float(line.split()[2]); c_z=float(line.split()[3])
                     coords.append([c_x, c_y, c_z])
                 elif len(line) < 10:
-       	       	    grab=False
+                    grab=False
             if 'CARTESIAN COORDINATES (ANGSTROEM)' in line:
                 if opt is True:
                     if opt_converged is True:

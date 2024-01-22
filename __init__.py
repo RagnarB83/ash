@@ -25,7 +25,6 @@ ashpath = os.path.dirname(ash.__file__)
 #Add local geometric dir to syspath
 sys.path.insert(0, ashpath+"/geometric-master")
 
-
 from ash.functions.functions_general import blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
     printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit
 
@@ -84,7 +83,8 @@ import ash.interfaces.interface_ORCA
 
 from ash.interfaces.interface_Psi4 import Psi4Theory
 from ash.interfaces.interface_dalton import DaltonTheory
-from ash.interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,density_potential_inversion,DFA_error_analysis
+from ash.interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,KS_inversion_kspies,DFA_error_analysis
+density_potential_inversion=KS_inversion_kspies #Temporary
 from ash.interfaces.interface_ipie import ipieTheory
 from ash.interfaces.interface_dice import DiceTheory
 from ash.interfaces.interface_block import BlockTheory
@@ -101,6 +101,7 @@ from ash.interfaces.interface_ccpy import ccpyTheory
 from ash.interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
 from ash.interfaces.interface_xtb import xTBTheory
 from ash.interfaces.interface_PyMBE import PyMBETheory
+from ash.interfaces.interface_MLatom import MLatomTheory
 
 # MM: external and internal
 from ash.interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \

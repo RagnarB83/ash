@@ -20,7 +20,7 @@ def test_dlc_openmm_water3(localizer):
     The coordinate system will break down and have to be rebuilt.
     """
     progress = geometric.optimize.run_optimizer(engine='openmm', pdb=os.path.join(datad,'water3.pdb'), coordsys='dlc', input='tip3p.xml',
-                                                converge=['gmax', '1.0e-5'])
+                                                converge=['gmax', '1.0e-5'], check=50)
     # The results here are in Angstrom
     #
     ref = np.array([[ 1.19172917, -1.71174316,  0.79961878],
@@ -32,9 +32,20 @@ def test_dlc_openmm_water3(localizer):
                     [ 1.64949098,  0.96407596,  0.43451244],
                     [ 0.91641967,  0.91098247,  1.07801098],
                     [ 1.78727054,  1.90697627,  0.33206132]])
+    ref2 = np.array([[ 1.1796623138, -0.5763082611,  2.6287313986],
+                      [ 1.8408256870, -0.6439920617,  3.3192521500],
+                      [ 1.6866358814, -0.2467449638,  1.8614821902],
+                      [-0.6384595560, -0.3497121778,  0.5926212927],
+                      [-0.1874172922, -0.5079454084,  1.4445756378],
+                      [-1.5481880366, -0.5898234501,  0.7750473262],
+                      [ 1.9848076315,  0.3129935893,  0.1662994405],
+                      [ 2.2333382906,  0.6208575275, -0.7066204606],
+                      [ 1.0267950805,  0.1416752061,  0.0816110247]])
+
     e_ref = -0.0289248308
     xdiff = (progress.xyzs[-1] - ref).flatten()
     rmsd, maxd = geometric.optimize.calc_drms_dmax(progress.xyzs[-1], ref, align=True)
+    rmsd2, maxd2 = geometric.optimize.calc_drms_dmax(progress.xyzs[-1], ref2, align=True)    
     print("RMS / Max displacement from reference:", rmsd, maxd)
     # This test is a bit stochastic and doesn't converge to the same minimized geometry every time.
     # Check that the energy is 0.01 a.u. above reference. Not really the qm_energy, this is a misnomer
@@ -42,8 +53,24 @@ def test_dlc_openmm_water3(localizer):
     # Check that the optimization converged in less than 300 steps
     assert len(progress) < 300
     # Check that the geometry matches the reference to within 0.03 RMS 0.05 max displacement
-    assert rmsd < 0.03
-    assert maxd < 0.05
+    assert ((rmsd < 0.03 and maxd < 0.05) or (rmsd2 < 0.03 and maxd2 < 0.05))
+
+@addons.using_openmm
+def test_dlc_openmm_water12(localizer):
+    """
+    Optimize the geometry of twelve water molecules using DLC. 
+    The coordinate system is expected to break down and the optimizer should skip the optimization step
+    after rebuilding the coordinate system.
+    """
+    progress = geometric.optimize.run_optimizer(engine='openmm', pdb=os.path.join(datad,'water12.pdb'), 
+                                                coordsys='dlc', input='tip3p.xml', maxiter=20, converge=['maxiter'])
+
+    have_skip_step = False
+    for line in open('tip3p.log').readlines():
+        if 'Skipping optimization step' in line:
+            have_skip_step = True
+    assert have_skip_step
+
 
 @addons.using_openmm
 def test_tric_openmm_water6(localizer):
@@ -102,6 +129,88 @@ def test_tric_openmm_water6(localizer):
     # Check that the geometry matches the reference
     assert rmsd < 0.03
     assert maxd < 0.05
+
+@addons.using_openmm
+def test_tric_openmm_water6_rigid(localizer):
+    """
+    Optimize the geometry of six water molecules using translation-rotation internal coordinates.
+    Keep monomers rigid during optimization.
+    """
+    M = geometric.molecule.Molecule(os.path.join(datad,'water6.pdb'))
+    IC = geometric.internal.PrimitiveInternalCoordinates(M, connect=False, addcart=False)
+    dists = [i for i in IC.Internals if type(i) is geometric.internal.Distance]
+    angs = [i for i in IC.Internals if type(i) is geometric.internal.Angle]
+    
+    progress = geometric.optimize.run_optimizer(engine='openmm', pdb=os.path.join(datad,'water6.pdb'), input='tip3p.xml', rigid=True)
+    
+    dist_pdb = np.array([i.value(M.xyzs[0].flatten()*geometric.nifty.ang2bohr) for i in dists])
+    dist_pdb *= geometric.nifty.bohr2ang
+    ang_pdb = np.array([i.value(M.xyzs[0].flatten()*geometric.nifty.ang2bohr) for i in angs])
+    ang_pdb *= 180/np.pi
+
+    dist_opt = np.array([i.value(progress.xyzs[-1].flatten()*geometric.nifty.ang2bohr) for i in dists])
+    dist_opt *= geometric.nifty.bohr2ang
+    ang_opt = np.array([i.value(progress.xyzs[-1].flatten()*geometric.nifty.ang2bohr) for i in angs])
+    ang_opt *= 180/np.pi
+
+    assert len(dists) == 12
+    assert len(angs) == 6
+    # The distances and angles from the PDB file might be a bit off due to finite precision of the format
+    assert np.allclose(dist_pdb, 0.9572, atol=1e-3)
+    assert np.allclose(ang_pdb, 104.52, atol=1e-1)
+    # The optimization should keep the variation of distances and angles to a minimum
+    # print(dist_pdb)
+    # print(dist_opt)
+    # print(dist_pdb-dist_opt)
+    # print(ang_pdb)
+    # print(ang_opt)
+    # print(ang_pdb-ang_opt)
+    assert np.allclose(dist_pdb, dist_opt, atol=1e-5)
+    assert np.allclose(ang_pdb, ang_opt, atol=1e-3)
+    # Check that the optimization converged in less than 100 steps
+    assert len(progress) < 100
+
+@pytest.mark.parametrize("conmethod,enforce", [(0, 0.1), (1, 0.0)])
+@addons.using_openmm
+def test_tric_openmm_water2_rigid_centroid(localizer, conmethod, enforce):
+    """
+    Optimize the geometry of two water molecules with a centroid distance
+    constraint.
+    """
+    M = geometric.molecule.Molecule(os.path.join(datad,'water2.pdb'))
+    IC = geometric.internal.PrimitiveInternalCoordinates(M, connect=False, addcart=False)
+    dists = [i for i in IC.Internals if type(i) is geometric.internal.Distance]
+    angs = [i for i in IC.Internals if type(i) is geometric.internal.Angle]
+    
+    progress = geometric.optimize.run_optimizer(engine='openmm', pdb=os.path.join(datad,'water2.pdb'), input='tip3p.xml', 
+                                                constraints=os.path.join(datad, 'water2_centroid.txt'), conmethod=conmethod, enforce=enforce, rigid=True)
+    
+    dist_pdb = np.array([i.value(M.xyzs[0].flatten()*geometric.nifty.ang2bohr) for i in dists])
+    dist_pdb *= geometric.nifty.bohr2ang
+    ang_pdb = np.array([i.value(M.xyzs[0].flatten()*geometric.nifty.ang2bohr) for i in angs])
+    ang_pdb *= 180/np.pi
+
+    dist_opt = np.array([i.value(progress.xyzs[-1].flatten()*geometric.nifty.ang2bohr) for i in dists])
+    dist_opt *= geometric.nifty.bohr2ang
+    ang_opt = np.array([i.value(progress.xyzs[-1].flatten()*geometric.nifty.ang2bohr) for i in angs])
+    ang_opt *= 180/np.pi
+
+
+    assert len(dists) == 4
+    assert len(angs) == 2
+    # The distances and angles from the PDB file might be a bit off due to finite precision of the format
+    assert np.allclose(dist_pdb, 0.9572, atol=1e-3)
+    assert np.allclose(ang_pdb, 104.52, atol=1e-1)
+    # The optimization should keep the variation of distances and angles to a minimum
+    assert np.allclose(dist_pdb, dist_opt, atol=1e-5)
+    assert np.allclose(ang_pdb, ang_opt, atol=1e-3)
+    # Check that the optimization converged in less than 100 steps
+    assert len(progress) < 100
+    # Check that constraints were satisfied
+    scan_final = geometric.molecule.Molecule('scan-final.xyz')
+    oodists = np.array([geometric.internal.CentroidDistance([0, 1, 2], [3, 4, 5]).value(scan_final.xyzs[i].flatten()) for i in range(3)])
+    assert np.allclose(oodists, np.array([2.8, 3, 3.2]), atol=1e-5)
+    
 
 @addons.using_openmm
 def test_openmm_ala_scan(localizer):

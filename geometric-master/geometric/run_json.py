@@ -35,19 +35,21 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #!/usr/bin/env python
 
+import os
 import copy
 import geometric
 import json
 import traceback
-import pkg_resources
+import tempfile
+import numpy as np
 
 try:
     from cStringIO import StringIO      # Python 2
 except ImportError:
     from io import StringIO
 
-import logging
 from .nifty import logger, RawStreamHandler, commadash
+from geometric.config import config_dir
 
 
 def parse_input_json_dict(in_json_dict):
@@ -186,10 +188,10 @@ def make_constraints_string(constraints_dict):
 
 
 def geometric_run_json(in_json_dict):
-    """ Take a input dictionary loaded from json, and return an output dictionary for json """
+    """ Take an input dictionary loaded from json, and return an output dictionary for json """
 
     # Default logger configuration (prevents extra newline from being printed)
-    logIni = pkg_resources.resource_filename(geometric.optimize.__name__, 'config/logJson.ini')
+    logIni = os.path.join(config_dir, 'logJson.ini')
     import logging.config
     logging.config.fileConfig(logIni,disable_existing_loggers=False)
 
@@ -198,6 +200,7 @@ def geometric_run_json(in_json_dict):
     logger.addHandler(log_stream)
 
     input_opts = parse_input_json_dict(in_json_dict)
+    hess = input_opts.pop('hessian', None)
     M, engine = geometric.optimize.get_molecule_engine(**input_opts)
 
     # Get initial coordinates in bohr
@@ -207,6 +210,7 @@ def geometric_run_json(in_json_dict):
     constraints_dict = input_opts.get('constraints', {})
     if "scan" in constraints_dict:
         raise KeyError("The constraint 'scan' keyword is not yet supported by the JSON interface")
+    rigid = input_opts.get('rigid', False) # Whether to keep molecules rigid during optimization (TRIC only)
 
     constraints_string = make_constraints_string(constraints_dict)
     Cons, CVals = None, None
@@ -230,6 +234,7 @@ def geometric_run_json(in_json_dict):
         connect=connect,
         addcart=addcart,
         constraints=Cons,
+        rigid=rigid,
         cvals=CVals[0] if CVals is not None else None)
 
     # Print out information about the coordinate system
@@ -241,12 +246,18 @@ def geometric_run_json(in_json_dict):
     logger.info("\n")
 
     params = geometric.optimize.OptParams(**input_opts)
+    dirname = tempfile.mkdtemp()
+
+    if hess is not None:
+        n = len(coords)
+        params.hess_data = np.array(hess).reshape(n, n)
 
     try:
         # Run the optimization
         if Cons is None:
             # Run a standard geometry optimization
-            geometric.optimize.Optimize(coords, M, IC, engine, None, params)
+            params.xyzout = "qce_optim.xyz"
+            geometric.optimize.Optimize(coords, M, IC, engine, dirname, params)
         else:
             # Run a constrained geometry optimization
             if isinstance(IC, (geometric.internal.CartesianCoordinates,
@@ -255,9 +266,9 @@ def geometric_run_json(in_json_dict):
             for ic, CVal in enumerate(CVals):
                 if len(CVals) > 1:
                     logger.info("---=== Scan %i/%i : Constrained Optimization ===---\n" % (ic + 1, len(CVals)))
-                IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons, cvals=CVal)
+                IC = CoordClass(M, build=True, connect=connect, addcart=addcart, constraints=Cons, cvals=CVal, rigid=rigid)
                 IC.printConstraints(coords, thre=-1)
-                geometric.optimize.Optimize(coords, M, IC, engine, None, params, print_info = (ic==0))
+                geometric.optimize.Optimize(coords, M, IC, engine, dirname, params, print_info = (ic==0))
 
         out_json_dict = get_output_json_dict(in_json_dict, engine.schema_traj)
         out_json_dict["success"] = True

@@ -33,6 +33,12 @@ Different engines have different features available.  Here is a simple summary:
 +-------------+--------------+-----------------+---------+---------------+------------+
 | Custom      | No           | No              | No      | No            | No         |
 +-------------+--------------+-----------------+---------+---------------+------------+
+| ASE         | No           | Yes             | No      | No            | No         |
++-------------+--------------+-----------------+---------+---------------+------------+
+| QUICK       | No           | No              | No      | No            | No         |
++-------------+--------------+-----------------+---------+---------------+------------+
+| CFOUR       | No           | Yes             | No      | Untested      | No         |
++-------------+--------------+-----------------+---------+---------------+------------+
 
 In what follows, all examples can be found in the ``[root]/examples/`` folder of the source distribution.
 
@@ -41,8 +47,8 @@ TeraChem
 
 Selected using ``--engine tera``.  This is also the default if ``--engine`` is not provided.
 
-Make sure `TeraChem <https://www.petachem.com/>`_ is installed and 
-the ``$TeraChem`` environment variable is properly set (it should be the folder that 
+Make sure `TeraChem <https://www.petachem.com/>`_ is installed and
+the ``$TeraChem`` environment variable is properly set (it should be the folder that
 contains the ``terachem`` executable under ``bin/``).
 Versions 1.9 and above are supported (possibly earlier, but not guaranteed).
 
@@ -69,7 +75,7 @@ Q-Chem
 
 Selected using ``--engine qchem``.
 
-Make sure `Q-Chem <https://www.q-chem.com/>`_ is installed and 
+Make sure `Q-Chem <https://www.q-chem.com/>`_ is installed and
 environment variables are properly set.
 Versions 4.4 and above are supported (possibly earlier, but not guaranteed).
 The input file should contain the molecular structure in Cartesian coordinates.
@@ -107,7 +113,7 @@ Molpro
 
 Selected using ``--engine molpro``.
 
-Make sure `Molpro <https://www.molpro.net/>`_ is installed and 
+Make sure `Molpro <https://www.molpro.net/>`_ is installed and
 environment variables are properly set.
 Versions 2015.1 and above are supported (possibly earlier, but not guaranteed).
 The input file should contain the molecular structure in Cartesian coordinates.
@@ -124,7 +130,7 @@ Gaussian
 
 Selected using ``--engine gaussian``.
 
-Make sure `Gaussian <https://gaussian.com/>`_ is installed and 
+Make sure `Gaussian <https://gaussian.com/>`_ is installed and
 environment variables are properly set.
 Gaussian versions 09 and 16 are supported.
 The input file should contain the molecular structure in Cartesian coordinates.
@@ -147,10 +153,10 @@ Versions 7.1 and above are supported (possibly earlier, but not guaranteed).
 You will need a ``.pdb`` file containing the structure and topology, and either a force field ``.xml`` or system ``.xml`` file (geomeTRIC will autodetect the type).
 (If you provide the name of a force field ``.xml`` file that is not in the current folder but is in the search path of OpenMM, that also works.))
 
-The engine contains an OpenMM Simulation object which is created using the topology information in the ``.pdb`` file and a parameterized system; 
+The engine contains an OpenMM Simulation object which is created using the topology information in the ``.pdb`` file and a parameterized system;
 the latter is either created from the force field ``.xml`` file, or read in from the system ``.xml`` file.
 
-Because this is an MM engine, optimizing conical intersections is not recommended.  
+Because this is an MM engine, optimizing conical intersections is not recommended.
 There is also no way to set the number of threads, as the engine is hard-coded to use the Reference platform.
 
     Note: geomeTRIC's internal routines are currently not efficient for systems containing more than a few hundred atoms,
@@ -159,7 +165,7 @@ There is also no way to set the number of threads, as the engine is hard-coded t
 Gromacs
 -------
 
-Selected using ``--engine gromacs``.  
+Selected using ``--engine gromacs``.
 
 Make sure `Gromacs <https://www.gromacs.org>`_ is installed and environment variables are properly set.
 This engine also requires `ForceBalance <https://www.github.com/leeping/forcebalance>`_ to be installed.
@@ -190,3 +196,63 @@ This is yet another way for quantum chemistry programs to work with geomeTRIC, c
 Basically any class that defines a method to calculate the energy and gradient given the coordinates (all in atomic units) can be used to optimize the geometry.
 
 The custom engine cannot be used via geomeTRIC's command line, but an example for how to code one up is provided in ``<root>/geometric/tests/test_customengine.py``.
+
+ASE Engine
+----------
+
+This is a wrapper engine for any `ASE <https://gitlab.com/ase/ase/>`_-compatible calculator to be used for geometry
+optimisation. The calculator needs to be importable in your Python environment, as well as ASE installed.
+Nb. this means that not only the calculators in the main ASE repo, but any calculator from other projects
+that is subclassed from ASE can be used, eg. `XTB <https://github.com/grimme-lab/xtb-python>`_,
+`GAP (with quippy) <https://github.com/libatoms/quip>`_.
+
+Usage:
+
+* Selected using ``--engine ase``
+* Set the class of your calculator with ``--ase-class``, eg. ``--ase-class=xtb.ase.calculator.XTB``, ``--ase-class=quippy.potential.Potential``
+* Set any initialisation keyword arguments for the calculator class with ``--ase-kwargs``, where the given argument is parsed as a JSON string. Note, this requires correct quoting, eg. ``--ase-kwargs='{"method":"GFN2-xTB"}'``.
+* The charge and spin multiplicity for the XTB calculator can be set by passing ``charge`` and ``mult`` key-value pairs into ``ase-kwargs`` as: ``--ase-kwargs='{"method":"GFN2-xTB", "charge":0, "mult":1}'``.  
+* (New in upcoming v1.1 release): Work Queue support for ASE engine.
+
+QUICK
+-----
+
+This is an interface to the QUICK GPU-accelerated electronic structure software.  Selected using ``--engine quick``.  
+Make sure input files use the `.qkin` file extension.
+
+Make sure `QUICK <https://github.com/merzlab/QUICK/>`_ is installed and
+environment variables are properly set.
+The input file should contain the molecular structure in Cartesian coordinates.
+
+The QUICK installation may have multiple executables depending on whether QUICK was
+compiled with / without CUDA and/or MPI support.
+geomeTRIC will use the "most optimized" QUICK executable if available, in order of
+``quick.cuda.MPI``, ``quick.cuda``, ``quick.MPI`` and finally ``quick``.
+If you wish to use a lower-priority executable, remove the higher-priority ones from your path.
+
+An example is provided in the ``[root]/examples/1-simple-examples/water2_quick`` folder.
+
+CFOUR
+-----
+
+This is an interface to the CFOUR electronic structure software.  Selected using ``--engine cfour``.  
+
+Make sure `CFOUR <https://cfour.uni-mainz.de/cfour/>`_ is installed and
+environment variables are properly set.
+
+CFOUR typically expects the input file (``ZMAT``) to contain Z-matrix input for the
+molecular structure, but geomeTRIC requires Cartesian coordinates.
+To perform the conversion, run the script ``[root]/tools/convert-cfour-zmat.py``
+in a folder that contains your ZMAT input file.
+This script will run CFOUR's ``xjoda`` utility to perform the conversion 
+and create a new ``ZMAT`` file containing Cartesian coordinates (dummy atoms excepted).
+The original file will be moved to ``ZMAT.orig``.
+
+When calling CFOUR, geomeTRIC automatically adds the keywords
+``COORD=CARTESIAN,SYMMETRY=OFF,DERIV_LEV=1,PRINT=1`` to the job specification in order
+to obtain a Cartesian gradient in the global frame. Make sure that your input file 
+does not contain any options that conflict with these, and also do not include anything 
+else in the input file that modifies the program behavior such as ``%grid``.
+
+An example is provided in the ``[root]/examples/1-simple-examples/water1_cfour`` folder.
+
