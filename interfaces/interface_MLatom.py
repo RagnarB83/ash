@@ -73,53 +73,15 @@ class MLatomTheory:
         self.qm_program=qm_program
         print("Checking if method or ml_model was selected")
         print("Method:", self.method)
-        print("QM program:", self.qm_program)
-
+        #############
+        #METHOD
+        #############
         if self.method is not None:
             if 'AIQM' in self.method :    
                 print("An AIQMx method was selected")
                 print("Warning: this requires setting qm_program keyword as either mndo or sparrow.")
                 print("Also dftd4 D4-dispersion program")
-                if self.qm_program == 'mndo':
-                    print("QM program is mndo")
-                    print("Make sure executable mndo is in your environment")
-                    print("See https://mndo.kofo.mpg.de about MNDO licenses")
-                    try:
-                        mndodir = os.path.dirname(shutil.which('mndo2020'))
-                        os.environ['mndobin'] = mndodir+"/mndo2020"
-                        print("Found mndo2020 executable in:", mndodir)
-                    except TypeError:
-                        print("Found no mndo2020 executable in your environment. Exiting.")
-                        ashexit()
-                    try:
-                        dftd4dir = os.path.dirname(shutil.which('dftd4'))
-                        os.environ['dftd4bin'] = dftd4dir+"/dftd4"
-                        print("Found dftd4 executable in:", dftd4dir)
-                    except TypeError:
-                        print("Found no dftd4 executable in your environment. Exiting.")
-                        ashexit()
-                elif self.qm_program == 'sparrow':
-                    print("QM program is sparrow")
-                    print("Make sure executable sparrow is in your environment")
-                    print("See https://github.com/qcscine/sparrow. Possible installation  via: conda install scine-sparrow-python")
-                    print("Also make sure dftd4 (https://github.com/dftd4/dftd4) is in your environment. Possible installation  via:  conda install dftd4")
-                    print("Warning: sparrow lacks AIQMx gradient (for ODM2 part), only energies available.")
-                    try:
-                        sparrowdir = os.path.dirname(shutil.which('sparrow'))
-                        os.environ['sparrowbin'] = sparrowdir+"/sparrow"
-                        print("Found sparrow executable in:", sparrowdir)
-                    except TypeError:
-                        print("Found no sparrow executable in your environment. Exiting.")
-                        ashexit()
-                    try:
-                        dftd4dir = os.path.dirname(shutil.which('dftd4'))
-                        os.environ['dftd4bin'] = dftd4dir+"/dftd4"
-                        print("Found dftd4 executable in:", dftd4dir)
-                    except TypeError:
-                        print("Found no dftd4 executable in your environment. Exiting.")
-                        ashexit()
-                    
-                else:
+                if self.qm_program != "mndo" or self.qm_program != "sparrow":
                     print("QM program keyword is neither mndo or sparrow. Not allowed, exiting.")
                     ashexit()
             elif 'ANI' in self.method:
@@ -134,7 +96,60 @@ class MLatomTheory:
                 print(f"Either an invalid  {self.method} or unknown method (to MLatomTheory interface) was selected. Exiting.")
                 ashexit()
 
+        print("QM program:", self.qm_program)
+
+        #############
+        #QM-PROGRAM
+        #############
+        if self.qm_program == 'mndo':
+            self.setup_mndo()
+            self.setup_dftd4()
+
+        elif self.qm_program == 'sparrow':
+            self.setup_sparrow()
+            self.setup_dftd4()
+    
+        #############
+        #ML_MODEL
+        #############
+        #TODO
+
+        #Initialization done
         print_time_rel(module_init_time, modulename='MLatom creation', moduleindex=2)
+
+    def setup_mndo(self):
+        print("QM program is mndo")
+        print("Make sure executable mndo is in your environment")
+        print("See https://mndo.kofo.mpg.de about MNDO licenses")
+        try:
+            mndodir = os.path.dirname(shutil.which('mndo2020'))
+            os.environ['mndobin'] = mndodir+"/mndo2020"
+            print("Found mndo2020 executable in:", mndodir)
+        except TypeError:
+            print("Found no mndo2020 executable in your environment. Exiting.")
+            ashexit()
+    def setup_dftd4(self):
+        print("DFTD4 needed. Making sure executable dftd4 is in your environment")
+        try:
+            dftd4dir = os.path.dirname(shutil.which('dftd4'))
+            os.environ['dftd4bin'] = dftd4dir+"/dftd4"
+            print("Found dftd4 executable in:", dftd4dir)
+        except TypeError:
+            print("Found no dftd4 executable in your environment. Exiting.")
+            ashexit()
+    def setup_sparrow(self):
+        print("QM program is sparrow")
+        print("Make sure executable sparrow is in your environment")
+        print("See https://github.com/qcscine/sparrow. Possible installation  via: conda install scine-sparrow-python")
+        print("Also make sure dftd4 (https://github.com/dftd4/dftd4) is in your environment. Possible installation  via:  conda install dftd4")
+        print("Warning: sparrow lacks AIQMx gradient (for ODM2 part), only energies available.")
+        try:
+            sparrowdir = os.path.dirname(shutil.which('sparrow'))
+            os.environ['sparrowbin'] = sparrowdir+"/sparrow"
+            print("Found sparrow executable in:", sparrowdir)
+        except TypeError:
+            print("Found no sparrow executable in your environment. Exiting.")
+            ashexit()
 
     #General run function
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
