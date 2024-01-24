@@ -1,3 +1,7 @@
+#WARNING: PROBABLY OUTDATED SCRIPT
+#KEPT ONLY FOR REFERENCE
+#SEE https://ash.readthedocs.io/en/latest/setup.html FOR LATEST INSTALLATION INSTRUCTIONS
+exit
 echo "Searching for python3 in PATH"
 path_to_python3_exe=$(which python3)
 path_to_julia_exe=$(which julia)

@@ -21,20 +21,16 @@ print("ashpath:", ashpath)
 # ASH modules
 ###############
 #import ash
-print("here")
 # Adding modules,interfaces directories to sys.path
-print("sys.path:", sys.path)
 sys.path.insert(0, ashpath)
 #ashpath = os.path.dirname(ash.__file__)
-print("sys.path:", sys.path)
+print("Sys path:", sys.path)
 #Add local geometric dir to syspath
 #sys.path.insert(0, ashpath+"/geometric-master")
 
 from .functions.functions_general import blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
     printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit
 
-print("sd")
-blankline()
 #Results dataclass 
 from .modules.module_results import ASH_Results
 
@@ -50,7 +46,6 @@ from .modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to
 import ash.modules.module_singlepoint
 from .modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheory, ScriptTheory, Singlepoint_fragments,\
      Singlepoint_theories, Singlepoint_fragments_and_theories, Singlepoint_reaction
-
 
 
 # Parallel
