@@ -1,0 +1,26 @@
+[project]
+name = "ash"
+version = "0.95"
+description = "ASH is a multiscale, multitheory modelling program"
+authors = [
+  {name = "R. Bjornsson", email = "ragnar.bjornsson@gmail.com" }
+]
+readme = "README.md"
+#Some problem with 3.12 (jan 2024)
+requires-python = ">= 3.7, < 3.12"
+#geometric and numpy main dependencies
+dependencies = [
+    'geometric >=1.0.1', 
+    'numpy',
+]
+#optional dependencies
+
+[build-system]
+requires = ["setuptools >=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ['ash*', 'ash.external', 'ash.functions','ash.interfaces','ash.knarr','ash.modules','ash.tests']
+
+[tool.setuptools.package-data]
+"*" = ["*.*"] #

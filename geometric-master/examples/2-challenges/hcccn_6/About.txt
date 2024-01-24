@@ -1,2 +1,0 @@
-Six HCCCN (cyanoacetylene) molecules, a rather harder test case
-for linear molecules.

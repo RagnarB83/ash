@@ -1,3 +1,0 @@
-$set
-dihedral 1 4 5 11 0.0
-dihedral 4 5 11 10 0.0

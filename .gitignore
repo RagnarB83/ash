@@ -18,3 +18,5 @@ set_environment_ash.sh
 .env
 modules/__pycache__
 TODO
+ash.egg-info
+build

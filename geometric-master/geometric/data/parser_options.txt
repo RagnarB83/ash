@@ -1,3 +1,0 @@
-$options
-radii O 0.5
-epsilon 1e-6

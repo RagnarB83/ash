@@ -1,6 +1,7 @@
 #The conda/PyPi PACKAGES that ASH may use
 #Run the lines for the packages you want within the conda environment. Make sure the correct conda environment is active
 #Requirements
+#Note: mamba is a faster alternative to conda
 conda install python
 conda install -c conda-forge geometric
 conda install -c conda-forge openmm
@@ -27,7 +28,7 @@ conda install -c psi4 psi4
 pip3 install juliacall
 
 #PyJulia interface (not recommended). Alternative to PythonCall/JuliaCall
-pip3 install julia
+#pip3 install julia
 
 #Optional pip packages(MD)
 pip3 install plumed
