@@ -1,39 +1,40 @@
 #The conda/PyPi PACKAGES that ASH may use
 #Run the lines for the packages you want within the conda environment. Make sure the correct conda environment is active
 #Requirements
-conda install python
-conda install -c conda-forge geometric
-conda install -c conda-forge openmm
-conda install -c conda-forge julia
-conda install -c conda-forge xtb
+#Note: mamba is a faster alternative to conda but both work
+mamba install -c conda-forge openmm
+mamba install -c conda-forge julia
+mamba install -c conda-forge xtb
 
-#Optional: for extra MM and MD functionality
-conda install -c conda-forge pdbfixer
-conda install -c conda-forge plumed
-conda install -c conda-forge parmed
-conda install -c conda-forge mdanalysis
-conda install -c conda-forge ase 
+#Optional: only for extra MM and MD functionality
+mamba install -c conda-forge pdbfixer
+mamba install -c conda-forge plumed
+mamba install -c conda-forge parmed
+mamba install -c conda-forge mdanalysis
+mamba install -c conda-forge ase 
 
-#Optional: for plotting
-conda install -c conda-forge scipy
-conda install -c conda-forge matplotlib 
+#Optional: only for plotting
+mamba install -c conda-forge scipy
+mamba install -c conda-forge matplotlib 
 
 #Optional QM program packages
-conda install -c psi4 psi4 
+mamba install -c psi4 psi4 
 
-#Required pip packages (make sure which pip points to conda environment)
+############################
+#Required PyPi packages
+# WARNING: make sure the correct python interpreter (of the conda/mamba environment) is loaded
 
 #PythonCall/Julicall interface (recommened)
-pip3 install juliacall
+python -m pip install juliacall
 
 #PyJulia interface (not recommended). Alternative to PythonCall/JuliaCall
-pip3 install julia
+#pip3 install julia
 
 #Optional pip packages(MD)
-pip3 install plumed
-pip3 install mdtraj #may not be needed anymore
+python -m pip  install plumed
+python -m pip  install mdtraj #may not be needed anymore
 
 #Other optional pip packages
-pip3 install pyscf
-pip3 install pyframe
+python -m pip  install pyscf
+python -m pip  install pyframe
 

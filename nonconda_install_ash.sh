@@ -1,8 +1,13 @@
 #!/bin/bash
 
+#WARNING: PROBABLY OUTDATED SCRIPT
+#KEPT ONLY FOR REFERENCE
+#SEE https://ash.readthedocs.io/en/latest/setup.html FOR LATEST INSTALLATION INSTRUCTIONS
+exit
 ################################################
 #AUTO-INSTALLATION SCRIPT FOR ASH
 #this avoids manual setup of Python, Julia etc.
+#THIS SCRIPT IS PROBABLY OUTDATED. USE AT OWN RISK
 ################################################
 #__________________
 #Settings
