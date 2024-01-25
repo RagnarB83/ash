@@ -1,0 +1,10 @@
+name: conda env for ASH
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - xtb
+  - pip:
+    - geometric
