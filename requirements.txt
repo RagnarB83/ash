@@ -1,0 +1,2 @@
+numpy==1.25.0
+geometric==1.0.1
