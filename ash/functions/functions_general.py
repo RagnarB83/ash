@@ -37,6 +37,36 @@ else:
         BOLD = ''
         UNDERLINE = ''
 
+#Create ASH environment shell-file in home-dir
+#Simple shell script to active ASH environment for future calcs
+def create_ash_env_file():
+    ash_dir=ash.ashpath
+    path_to_python3_dir=os.path.dirname(sys.executable)
+    #Create set_environment_ash.sh file
+    ash_multiline_string=f"""
+#!/bin/bash
+
+#
+ulimit -s unlimited
+ASHPATH={ash_dir}
+python3path={path_to_python3_dir}
+#PYTHONPATH for finding ASH not recommended. commented out
+#export PYTHONPATH=$ASHPATH:\$ASHPATH/ash/lib:$PYTHONPATH
+export PATH=$python3path:$ASHPATH:$JULIAPATH:$PATH
+export LD_LIBRARY_PATH=$ASHPATH/ash/lib:$LD_LIBRARY_PATH
+
+echo " Sourced ASH environment file!"
+echo "Importing ASH within Python should now work!"
+"""
+    with open(f"{os.path.expanduser('~')}/set_environment_ash.sh", "w") as f:
+        f.write(ash_multiline_string)
+    print("Created file:   set_environment_ash.sh      in your home-directory.")
+    print("Sourcing this file will activate ASH for your current shell session:")
+    print("source ~/set_environment_ash.sh")
+    print("You can add this line in your ~/.bashrc (or ~/.bash_profile or ~/.zshrc) or job-submission script")
+
+
+
 # Julia load interface
 # TODO: Avoid reloading
 julia_loaded = False

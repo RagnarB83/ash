@@ -1,40 +1,59 @@
 #The conda/PyPi PACKAGES that ASH may use
-#Run the lines for the packages you want within the conda environment. Make sure the correct conda environment is active
-#Requirements
-#Note: mamba is a faster alternative to conda but both work
-mamba install -c conda-forge openmm
-mamba install -c conda-forge julia
-mamba install -c conda-forge xtb
+#Run the lines for the packages you want within the conda/mamba environment. Make sure the correct conda environment is active
+#Note: mamba is usually a faster alternative to conda (use the one you have installed or prefer)
 
-#Optional: only for extra MM and MD functionality
-mamba install -c conda-forge pdbfixer
-mamba install -c conda-forge plumed
-mamba install -c conda-forge parmed
-mamba install -c conda-forge mdanalysis
-mamba install -c conda-forge ase 
+####################################
+# CRITICAL PACKAGES
+# (should already been installed)
+####################################
+#mamba install python
+#mamba install numpy
+#pip install geometric
+#pip install packaging
+#pip install pytest
 
-#Optional: only for plotting
+####################################
+# RECOMMENDED PACKAGES:
+####################################
+
+#OpenMM (all MM and MD functionality in ASH)
+mamba install -c conda-forge openmm # 745MB
+#xTB: semiempirical program
+mamba install -c conda-forge xtb # 8MB
+# pdbfixer: Needed for MM of biomolecules
+mamba install -c conda-forge pdbfixer # 0.5 MB
+#pySCF: Good QM program
+python -m pip  install pyscf # 50 MB
+#mdtraj: Needed for basic MD trajectory analysis
+mamba install -c conda-forge mdtraj  # 8 MB
+
+#Optional:  required for plotting in ASH
 mamba install -c conda-forge scipy
-mamba install -c conda-forge matplotlib 
+mamba install -c conda-forge matplotlib # 203 MB
+
+####################################
+# RARELY NEEDED PACKAGES:
+####################################
+
+#Optional: only for some special MM and MD functionality in ASH
+mamba install -c conda-forge parmed # 36 MB
+mamba install -c conda-forge plumed # 10 MB
+
+# Julia installation and Julia-Python interface
+#Only needed for molecular crystal QM/MM
+mamba install -c conda-forge julia # 146MB
+python -m pip install juliacall # 0.1 MB
 
 #Optional QM program packages
+#Psi4 
 mamba install -c psi4 psi4 
 
-############################
-#Required PyPi packages
-# WARNING: make sure the correct python interpreter (of the conda/mamba environment) is loaded
-
-#PythonCall/Julicall interface (recommened)
-python -m pip install juliacall
-
-#PyJulia interface (not recommended). Alternative to PythonCall/JuliaCall
-#pip3 install julia
-
-#Optional pip packages(MD)
-python -m pip  install plumed
-python -m pip  install mdtraj #may not be needed anymore
-
-#Other optional pip packages
-python -m pip  install pyscf
-python -m pip  install pyframe
-
+####################################
+# VERY RARELY NEEDED PACKAGES:
+####################################
+#Mdanalysis (alternative to mdtraj)
+mamba install -c conda-forge mdanalysis # 38 MB
+#ASE: Atomic simulation environment (if using ASH-ASE interface)
+mamba install -c conda-forge ase  # 2 MB
+#PyFrame for Fragment-based Multiscale Embedding
+python -m pip  install pyframe # 0.2 MB
