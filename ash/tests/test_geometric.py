@@ -10,10 +10,10 @@ def test_geometric_dummy():
     #Defining fragment
     H2Ofragment=Fragment(coordsstring=coords,charge=0,mult=1)
 
-    #Defining dummy theory
-    zerotheorycalc = ZeroTheory()
+    #Defining xTB theory
+    zerotheorycalc = xTBTheory()
 
-    #Optimize with dummy theory
+    #Optimize with xTB theory
     result = Optimizer(fragment=H2Ofragment, theory=zerotheorycalc)
 
     if result.energy == 0.0:
