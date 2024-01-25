@@ -7,7 +7,7 @@ H       -1.377626260      0.759337000     -1.144156718
 H       -1.377626260     -0.759337000     -1.144156718
 """
 #Defining fragment
-H2Ofragment=Fragment(coordsstring=coords)
+H2Ofragment=Fragment(coordsstring=coords,charge=0, mult=1)
 
 #Defining dummy theory
 zerotheorycalc = ZeroTheory()

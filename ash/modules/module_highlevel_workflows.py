@@ -3560,7 +3560,7 @@ class ORCA_MRCI_CBS_Theory:
 
         #CHECKS to exit early 
         if elements == None:
-            print(BC.FAIL, "\ORCA_MRCI_CBS_Theory requires a list of elements to be given in order to set up basis sets", BC.END)
+            print(BC.FAIL, "\nORCA_MRCI_CBS_Theory requires a list of elements to be given in order to set up basis sets", BC.END)
             print("Example: ORCA_MRCI_CBS_Theory(elements=['C','Fe','S','H','Mo'], basisfamily='def2',cardinals=[2,3], ...")
             print("Should be a list containing all elements that a fragment might contain")
             ashexit()
