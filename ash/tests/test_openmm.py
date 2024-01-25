@@ -19,11 +19,12 @@ def test_openmm_basic():
 #Read raw PDB-file, fix using pdbfixer, setup using Modeller and optimize
 def test_openmm_modeller():
 
+    numcores=2
     pdbfile=f"{ashpath}/tests/pdbfiles/1aki.pdb"
 
     #Setting up new system, adding hydrogens, solvent, ions and defining forcefield, topology
     openmmobject, ashfragment = OpenMM_Modeller(pdbfile=pdbfile, forcefield='CHARMM36', watermodel="tip3p", pH=7.0,
-        solvent_padding=10.0, ionicstrength=0.1, platform='OpenCL')
+        solvent_padding=10.0, ionicstrength=0.1, platform='CPU', numcores=numcores)
 
     #MM minimization to get rid the worst contacts
     OpenMM_Opt(fragment=ashfragment, theory=openmmobject, maxiter=100, tolerance=1000)

@@ -8,6 +8,7 @@ dependencies:
   - pip
   - openmm
   - pdbfixer
+  - mdtraj
   - numpy
   - xtb
   - xtb-python
