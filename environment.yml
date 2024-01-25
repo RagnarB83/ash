@@ -1,10 +1,18 @@
-name: conda env for ASH
+name: conda environment for ASH
+#Only conda-forge allowed for now
 channels:
   - conda-forge
+#Some basic easy-to-install packages for ASH 
 dependencies:
   - python=3.10
   - pip
+  - openmm
+  - pdbfixer
+  - mdtraj
   - numpy
   - xtb
+  - xtb-python
+  - typing_extensions
   - pip:
     - geometric
+    - pyscf

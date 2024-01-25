@@ -2159,7 +2159,7 @@ class PySCFTheory:
 
 
         #Setting number of electrons for system (used by load_chkfile etc)
-        self.num_electrons  = int(ash.modules.module_coords.nucchargelist(elems) - charge)
+        self.num_electrons  = int(ash.modules.module_coords.nucchargelist(qm_elems) - charge)
         print("Number of electrons:", self.num_electrons)
         print()
 
@@ -2226,7 +2226,7 @@ class PySCFTheory:
         #FROZEN ORBITALS in CC
         ##############################
         if self.CC or self.MP2:
-            self.set_frozen_core_settings(elems)
+            self.set_frozen_core_settings(qm_elems)
 
         ##############################
         #EMBEDDING OPTIONS
@@ -2407,7 +2407,7 @@ class PySCFTheory:
                 #NOTE: this is not entirely correct since occupied orbitals are natural orbitals rather than frozen HF orbitals as in the original method
                 #Not sure how much it matters
                 if self.FNO is True:
-                    mo_coefficients = self.setup_FNO(elems=elems)
+                    mo_coefficients = self.setup_FNO(elems=qm_elems)
                 #Calling CC run function
                 self. CC_energy,self.ccobject = self.run_CC(self.mf,frozen_orbital_indices=self.frozen_orbital_indices, CCmethod=self.CCmethod, 
                             CC_direct=self.CC_direct, mo_coefficients=mo_coefficients)
@@ -2420,7 +2420,7 @@ class PySCFTheory:
             #####################
             if self.CAS is True:
                 print("CAS run is on!")
-                self.run_CAS(elems=elems)
+                self.run_CAS(elems=qm_elems)
         else:
             if self.printlevel >1:
                 print("No post-SCF job.")

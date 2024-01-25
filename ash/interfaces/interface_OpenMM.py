@@ -87,9 +87,10 @@ class OpenMMTheory:
             import openmm
             import openmm.app
             import openmm.unit
+            from packaging import version
             if self.printlevel > 0:
                 print("Imported OpenMM library version:", openmm.__version__)
-                if float(openmm.__version__) < 8.0:
+                if version.parse(openmm.__version__) < version.parse("8.1"):
                     print("Warning: OpenMM version < 8.1. OpenMM 8.1 or higher is recommended")
                     print("Some features may not work as intended in older versions")
         except ImportError:
@@ -344,7 +345,10 @@ class OpenMMTheory:
                 #OpenMM 8.1 allows us to do this easily by constructor, older versions requires hacky workarounds
                 # (see set_periodics_before_system_creation for those hacks)
                 #Note: https://github.com/openmm/openmm/issues/4078
-                if float(openmm.__version__) >= 8.1:
+                from packaging import version
+                #if float(openmm.__version__) >= 8.1:
+                if version.parse(openmm.__version__) >= version.parse("8.1"):
+
                     if PBCvectors is None:
                         temp_pbc_vecs=None
                     else:
@@ -856,6 +860,7 @@ class OpenMMTheory:
     #Function that handles periodicity in forcefield objects (for Amber, CHARMM). TODO: Test GROMACS and XML
     def set_periodics_before_system_creation(self,PBCvectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
         import openmm
+        from packaging import version
         if use_parmed is True:
             import parmed
         print("Inspecting periodicity input before system creation")
@@ -882,7 +887,8 @@ class OpenMMTheory:
                 print("Amber-prmtop getIfBox:", self.forcefield._prmtop.getIfBox())
                 self.forcefield._prmtop._raw_data['POINTERS'][27] = 1
                 print("Amber-prmtop getIfBox:", self.forcefield._prmtop.getIfBox())
-                if float(openmm.__version__) < 8.1:
+                
+                if version.parse(openmm.__version__) < version.parse("8.1"):
                     print("Warning: Amber prmtop file detected and OpenMM version < 8.0")
                     print("Warning: Will assume cubic box and set PBC vectors in a hacky way")
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"] =np.array([0.0,0.0,0.0,0.0])
@@ -943,7 +949,7 @@ class OpenMMTheory:
                 #Happens if no IFBOX defined in prmtop file but we still want periodicity
                 self.forcefield._prmtop._raw_data['POINTERS'][27] = 1
 
-                if float(openmm.__version__) < 8.1:
+                if version.parse(openmm.__version__) < version.parse("8.1"):
                     print("Warning: Amber prmtop file detected and OpenMM version < 8.1")
                     print("Warning: Will assume cubic box and set PBC vectors in a hacky way")
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"] =np.array([0.0,0.0,0.0,0.0])
@@ -2209,6 +2215,7 @@ def clean_up_constraints_list(fragment=None, constraints=None):
 def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePeriodicBox=True,
                traj_frequency=100, use_reporter=True):
     import openmm
+    from packaging import version
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Optimization")
 
@@ -2226,7 +2233,8 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print("Number of atoms:", fragment.numatoms)
     print("Max iterations:", maxiter)
     print(f"Tolerance: {tolerance} kj/mol/nm:")
-    if float(openmm.__version__) >= 8.1:
+    #if float(openmm.__version__) >= 8.1:
+    if version.parse(openmm.__version__) >= version.parse("8.1"):
         print("Will write to trajectory every {} iterations".format(traj_frequency))
 
     print("OpenMM autoconstraints:", openmmobject.autoconstraints)
@@ -2269,7 +2277,8 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     #New in OpenMM 8.1: reporters for minimizer
     #StateDataReporter
     #############################################
-    if float(openmm.__version__ ) >= 8.1 and use_reporter is True:
+    #if float(openmm.__version__ ) >= 8.1 and use_reporter is True:
+    if version.parse(openmm.__version__) >= version.parse("8.1") and use_reporter is True:
         class Reporter(openmm.openmm.MinimizationReporter):
             def report(self, iteration,x,grad,args):
                 try:
@@ -2356,7 +2365,9 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print("")
     #####################################
     print("Starting minimization.")
-    if float(openmm.__version__) >= 8.1 and use_reporter is True:
+    #if float(openmm.__version__) >= 8.1 and use_reporter is True:
+    if version.parse(openmm.__version__) >= version.parse("8.1") and use_reporter is True:
+    
         print("OpenMM versions >= 8.1. Will use a reporter to output progress")
         print("OpenMM_Opt trajectory will be written to: OpenMMOpt_traj.xyz")
         #Removing possible old traj file
