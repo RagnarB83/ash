@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    #- uses: actions/checkout@v3
+    - uses: actions/checkout@v3
     #- name: Set up Python 3.10
     #  uses: actions/setup-python@v3
     #  with:
@@ -36,18 +36,17 @@ jobs:
         mamba install numpy
         mamba install xtb
     - name: Test mamba installed things work
-      run: |
-        mamba list
-        #which xtb
-        #which python
-        #echo "PATH: $PATH"
-        #echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+      run: mamba list
+      shell: which xtb
+      shell: which python
+      shell: echo  "PATH: $PATH"
+      shell: echo  "LD_LIBRARY_PATH: $PATH"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install flake8 pytest
         #TODO: make xtb requirement?
-        mamba install xtb
+        #mamba install xtb
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - name: Lint with flake8
       run: |
