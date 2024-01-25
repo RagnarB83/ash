@@ -7,7 +7,7 @@ import multiprocessing as mp
 import ash.constants
 from ash.functions.functions_general import ashexit, print_line_with_mainheader, print_time_rel, printdebug
 from ash.modules.module_singlepoint import Singlepoint
-from ash.interfaces.interface_safires import attach_safires_to_ASE
+#from ash.interfaces.interface_safires import attach_safires_to_ASE
 from ash.modules.module_coords import check_charge_mult
 
 #Interface to limited parts of ASE
@@ -288,9 +288,9 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     dyn.attach(write_traj, interval=traj_frequency)
 
     #SAFIRES: attach SAFIRES object to ASE dyn
-    if safires == True:
-        attach_safires_to_ASE(atoms=atoms, dyn=dyn, safires_solvent_atomsnum=safires_solvent_atomsnum, 
-                                  safires_solute=safires_solute, safires_inner_region=safires_inner_region )
+    #if safires == True:
+    #    attach_safires_to_ASE(atoms=atoms, dyn=dyn, safires_solvent_atomsnum=safires_solvent_atomsnum, 
+    #                              safires_solute=safires_solute, safires_inner_region=safires_inner_region )
         
     print("")
     print("")
