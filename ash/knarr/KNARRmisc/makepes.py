@@ -27,16 +27,16 @@ def MullerBrownSurf(fname, list_of_points=None, list_of_arrays=None):
                 list_of_arrays=list_of_arrays, list_of_points=list_of_points)
     return None
 
-def HenkelmanSurf(fname, list_of_points=None, list_of_arrays=None):
-    F = Henkelman
-    #fname = "mb"
-    xbound = [0.0, 2.0]
-    ybound = [-.5, .5]
-    cbound = [-2.0, 7]
-    PlotSurface(fname, workerfunc=F, xbound=xbound, ybound=ybound,
-                cbound=cbound, npts=200, filled = False,
-                list_of_arrays=list_of_arrays, list_of_points=list_of_points)
-    return None
+# def HenkelmanSurf(fname, list_of_points=None, list_of_arrays=None):
+#     F = Henkelman
+#     #fname = "mb"
+#     xbound = [0.0, 2.0]
+#     ybound = [-.5, .5]
+#     cbound = [-2.0, 7]
+#     PlotSurface(fname, workerfunc=F, xbound=xbound, ybound=ybound,
+#                 cbound=cbound, npts=200, filled = False,
+#                 list_of_arrays=list_of_arrays, list_of_points=list_of_points)
+#     return None
 
 def MullerBrownSurfGauss(fname, list_of_points=None, list_of_arrays=None):
     F = MullerBrownGaussWorker

@@ -522,14 +522,14 @@ class PySCFTheory:
             exit()
             #TODO: FCI https://github.com/pyscf/pyscf/blob/master/examples/fci/14-density_matrix.py
             # FCI solver
-            cisolver = pyscf.fci.FCI(mol, myhf.mo_coeff)
-            e, fcivec = cisolver.kernel()
+            #cisolver = pyscf.fci.FCI(mol, myhf.mo_coeff)
+            #e, fcivec = cisolver.kernel()
             # Spin-traced 1-particle density matrix
-            norb = myhf.mo_coeff.shape[1]
+            #norb = myhf.mo_coeff.shape[1]
             # 6 alpha electrons, 4 beta electrons because spin = nelec_a-nelec_b = 2
-            nelec_a = 6
-            nelec_b = 4
-            dm1 = cisolver.make_rdm1(fcivec, norb, (nelec_a,nelec_b))
+            #elec_a = 6
+            #nelec_b = 4
+            #dm1 = cisolver.make_rdm1(fcivec, norb, (nelec_a,nelec_b))
         elif method == 'AVAS-CASSCF':
             print("Doing AVAS and then CASSCF to get natural orbitals")
             from pyscf.mcscf import avas
@@ -561,7 +561,7 @@ class PySCFTheory:
         elif method == 'CCSD(T)':
             print("Running CCSD(T) natural orbital calculation")
             #No CCSD(T) object in pyscf. So manual approach. Slower algorithms
-            natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccsd=ccsd, mf=mf)
+            natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccsd=None, mf=mf)
 
         with np.printoptions(precision=5, suppress=True):
             print(f"{method} natural orbital occupations:", natocc)
@@ -574,9 +574,9 @@ class PySCFTheory:
         import pyscf.cc as pyscf_cc
         import pyscf.mcscf
         print("Running CCSD natural orbital calculation")
-        if mf == None:
+        if mf is None:
             mf = self.mf
-        if ccsd == None:
+        if ccsd is None:
             ccsd = pyscf_cc.CCSD(mf, frozen=self.frozen_orbital_indices)
             ccsd.max_cycle=200
             ccsd.verbose=5
@@ -596,9 +596,9 @@ class PySCFTheory:
         from pyscf.cc import ccsd_t_rdm_slow as ccsd_t_rdm
         from pyscf.cc import uccsd_t_rdm
 
-        if mf == None:
+        if mf is None:
             mf = self.mf
-        if ccsd == None:
+        if ccsd is None:
             ccsd = pyscf.cc.CCSD(mf, frozen=self.frozen_orbital_indices)
             ccsd.max_cycle=200
             ccsd.verbose=5
@@ -1387,6 +1387,8 @@ class PySCFTheory:
         #transition_dipoles = np.einsum('xij,ji->x', dip_ints, D_21)
         #print("transition_dipoles:",transition_dipoles)
         #https://github.com/pyscf/pyscf/blob/master/examples/scf/51-elecoup_mom.py
+
+        return MOMSCF
     def run_TDDFT(self):
         print("\nInside run_TDDFT")
         import pyscf.tddft
@@ -1832,7 +1834,7 @@ class PySCFTheory:
             print("Sigma:", self.NMF_sigma)
             self.mf = smearing_(self.mf, sigma=self.NMF_sigma, method=smearing_keyword)
 
-    def set_dispersion_options(self):
+    def set_dispersion_options(self, Grad=False):
         if self.dispersion != None:
             print("Dispersion correction is active")
             try:
@@ -1850,12 +1852,12 @@ class PySCFTheory:
             if self.dispersion == 'D3':
                 print("D3 correction on")
                 from vdw import to_dftd3, WithDFTD3
-                Dispersion=WithDFTD3
+                self.D3_D4_Disp_object=WithDFTD3
                 #self.mf = to_dftd3(self.mf, do_grad=Grad)
             if self.dispersion == 'D4':
                 print("D4 correction on")
                 from vdw import to_dftd4,WithDFTD4
-                Dispersion=WithDFTD4
+                self.D3_D4_Disp_object=WithDFTD4
                 #self.mf = to_dftd4(self.mf, do_grad=Grad)
             elif self.dispersion == 'TS':
                 print("TS correction on")
@@ -1957,13 +1959,14 @@ class PySCFTheory:
             self.frozen_orbital_indices=self.frozen_core_orbital_indices
         print("Final frozen-orbital list (core and virtuals):", self.frozen_orbital_indices)
         return self.frozen_orbital_indices
-    def set_embedding_options(self, PC=False):
+    
+    def set_embedding_options(self, PC=False, MM_coords=None, MMcharges=None):
         #QM/MM electrostatic embedding
         if PC is True:
             import pyscf.qmmm
             # QM/MM pointcharge embedding
             print("PC True. Adding pointcharges")
-            self.mf = pyscf.qmmm.mm_charge(self.mf, current_MM_coords, MMcharges)
+            self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
 
         #Polarizable embedding option
         if self.pe is True:
@@ -2212,7 +2215,7 @@ class PySCFTheory:
         ##############
         #DISPERSION
         ##############
-        self.set_dispersion_options()
+        self.set_dispersion_options(Grad=Grad)
 
         ##############################
         #DENSITY FITTING and SGX
@@ -2228,7 +2231,7 @@ class PySCFTheory:
         ##############################
         #EMBEDDING OPTIONS
         ##############################
-        self.set_embedding_options(PC=PC)
+        self.set_embedding_options(PC=PC,MM_coords=current_MM_coords, MMcharges=MMcharges)
         print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
 
 
@@ -2330,7 +2333,7 @@ class PySCFTheory:
             #Dispersion correction
             if self.dispersion != None:
                 if self.dispersion == "D3" or self.dispersion == "D4":
-                    with_vdw = Dispersion(self.mol, xc=self.functional)
+                    with_vdw = self.D3_D4_Disp_object(self.mol, xc=self.functional)
                     vdw_energy = with_vdw.eng
                     vdw_gradient = with_vdw.grad
                     print(f"{self.dispersion} dispersion energy is: {vdw_energy}")
@@ -2370,7 +2373,7 @@ class PySCFTheory:
             #MOM
             #####################
             if self.mom is True:
-                self.run_MOM()
+                MOMSCFobj = self.run_MOM()
             #####################
             #TDDFT
             #####################
@@ -2436,7 +2439,7 @@ class PySCFTheory:
                 if self.mom is True:
                     if self.printlevel >1:
                         print("Calculating SCF-MOM gradient")                    
-                    self.gradient = MOMSCF.nuc_grad_method().kernel()
+                    self.gradient = MOMSCFobj.nuc_grad_method().kernel()
                     if self.printlevel >1:
                         print("MOM-SCF Gradient calculation done")
                 else:
@@ -2736,9 +2739,9 @@ pip install .
 
 
     # Extract data for n2v. 
-    da, db = mf.make_rdm1()/2, mf.make_rdm1()/2
-    ca, cb = mf.mo_coeff[:,:mol.nelec[0]], mf.mo_coeff[:, :mol.nelec[1]]
-    ea, eb = mf.mo_energy, mf.mo_energy
+    da, db = pyscftheoryobj.mf.make_rdm1()/2, pyscftheoryobj.mf.make_rdm1()/2
+    ca, cb = pyscftheoryobj.mf.mo_coeff[:,:pyscftheoryobj.mol.nelec[0]], pyscftheoryobj.mf.mo_coeff[:, :pyscftheoryobj.mol.nelec[1]]
+    ea, eb = pyscftheoryobj.mf.mo_energy, pyscftheoryobj.mf.mo_energy
 
     # Initialize inverter object. 
     inv = n2v.Inverter( engine='pyscf' )

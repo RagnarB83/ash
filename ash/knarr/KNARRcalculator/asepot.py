@@ -58,7 +58,7 @@ def ASEWorker(template, ndim, rxyz,
 
     # Compute energy and forces
     energy = ase_system.get_potential_energy()
-    #print 'energy:'+str(energy)
+    #print('energy:'+str(energy))
     forces = ase_system.get_forces()
     forces = Convert3To1(ndim, forces)
     return forces, energy

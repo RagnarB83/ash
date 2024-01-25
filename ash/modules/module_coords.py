@@ -2847,25 +2847,25 @@ def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cell
 
 
 # Set up constraints
-def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
-    print("set_up_MMwater_bondconstraints")
-    print("Assuming oxygen atom type is: ", oxygentype)
-    print("Change with keyword arguement: oxygentype='XX")
-    ashexit()
-    # Go over actatoms and check if oxygen-water type
+# def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
+#     print("set_up_MMwater_bondconstraints")
+#     print("Assuming oxygen atom type is: ", oxygentype)
+#     print("Change with keyword arguement: oxygentype='XX")
+#     ashexit()
+#     # Go over actatoms and check if oxygen-water type
 
-    # Shift nested list by number e.g. shift([[1,2],[100,101]], -1)  gives : [[0,1],[99,100]]
-    # TODO: generalize
-    def shift_nested(ll, par):
-        new = []
-        for l in ll:
-            new.append([l[0] + par, l[1] + par])
-        return new
+#     # Shift nested list by number e.g. shift([[1,2],[100,101]], -1)  gives : [[0,1],[99,100]]
+#     # TODO: generalize
+#     def shift_nested(ll, par):
+#         new = []
+#         for l in ll:
+#             new.append([l[0] + par, l[1] + par])
+#         return new
 
-    bondconslist = shift_nested(bondlist, -1)
-    constraints = {'bond': bondconslist}
+#     bondconslist = shift_nested(bondlist, -1)
+#     constraints = {'bond': bondconslist}
 
-    return constraints
+#     return constraints
 
 
 # Function to update list of atomindices after deletion of a list of atom indices (used in remove_atoms functions below)

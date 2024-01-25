@@ -401,7 +401,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             print('%4ls %6s %8ls %5ls %8ls %8ls %8ls %8ls %8ls' %
                     ('it', 'dS', 'dE', 'CI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
             print(f"Thresholds:                {tol_rms_f:8.4f} {tol_max_f:8.4f} {tol_rms_fci:8.4f} {tol_max_fci:8.4f}")
-            print ("%4i %6.2lf %8.3lf %5li %8.4lf %8.4lf %8.4lf %8.4lf %8.4lf @"
+            print("%4i %6.2lf %8.3lf %5li %8.4lf %8.4lf %8.4lf %8.4lf %8.4lf @"
                    % (it, s[-1], 23.060541945329334*(path.GetEnergy()[ci] - Ereactant), ci, rmsf_noci,
                       maxf_noci, rmsf_ci, maxf_ci, np.max(abs(step))))
             print("-"*80)
@@ -422,7 +422,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             print('%4ls %6s %10ls %5ls %9ls %9ls %9ls' %
                 ('it', 'dS', 'dE', 'HEI', 'RMSF', 'MaxF', 'step'))
             print(f"Switch-on CI:{tol_turn_on_ci:>36.4f}")
-            print ("%4i %6.2lf %10.6lf %5li %9.4lf  %9.4lf %9.4lf @"
+            print("%4i %6.2lf %10.6lf %5li %9.4lf  %9.4lf %9.4lf @"
                    % (it, s[-1], 23.060541945329334*(path.GetEnergy()[hei] - Ereactant), hei, rmsf, maxf, np.max(abs(step))))
             print("-"*70)
         PiecewiseCubicEnergyInterpolation(basename + ".interp", path.GetNim(), s, path.GetEnergy(), freal_paral, it)
@@ -478,7 +478,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                     if restart_on_ci:
                         reset_opt = True
                     #print(f"maxf:{maxf} < tol_turn_on_ci:{tol_turn_on_ci}")
-                    print ('        Starting climbing image as image %i.\n' % ci),
+                    print('        Starting climbing image as image %i.\n' % ci),
 
                     # print CI header here.
                     # print '%6s %4s %2s %10s %8s %13s %5s %11s  %11s %11s %13s' \

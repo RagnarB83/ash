@@ -1367,7 +1367,7 @@ class MRCC_CC_CBS_Theory:
                 self.ECPflag=True
                 self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
         #Adding auxiliary basis
-        self.basis1_block=self.basis1_block+finalauxbasis
+        #self.basis1_block=self.basis1_block+finalauxbasis
         self.basis1_block=self.basis1_block+"\nend"
         self.blocks1= self.blocks +self.basis1_block
         if self.singlebasis is False:
@@ -1377,12 +1377,12 @@ class MRCC_CC_CBS_Theory:
                 if bas_ecp[1] != None:
                     self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
             #Adding auxiliary basis
-            self.basis2_block=self.basis2_block+finalauxbasis
+            #self.basis2_block=self.basis2_block+finalauxbasis
             self.basis2_block=self.basis2_block+"\nend"
             self.blocks2= self.blocks +self.basis2_block
 
         #MOdifying self.blocks to add finalauxbasis. Used by CVSR only
-        self.blocks=self.blocks+"%basis {} end".format(finalauxbasis)
+        #self.blocks=self.blocks+"%basis {} end".format(finalauxbasis)
 
 
         ###################
@@ -1575,15 +1575,15 @@ class MRCC_CC_CBS_Theory:
             print("corr_energies :", corr_energies)
         
         #BASIS SET EXTRAPOLATION
-            E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, 
-                alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
+            #E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, 
+            #    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
             #Separate CCSD and (T) CBS energies
-            E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, 
-                alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
+            #E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, 
+            #    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
 
             #BASIS SET EXTRAPOLATION of SCF and full correlation energies
-            E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, 
-                alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
+            #E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, 
+            #    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
 
         ############################################################
         #Core-correlation + scalar relativistic as joint correction

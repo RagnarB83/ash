@@ -710,7 +710,7 @@ class OpenMMTheory:
                     # Create CustomNonbonded force
                     for i, force in enumerate(self.system.getForces()):
                         if isinstance(force, openmm.NonbondedForce):
-                            custom_nonbonded_force, custom_bond_force = create_cnb(self.system.getForces()[i])
+                            custom_nonbonded_force, custom_bond_force = create_cnb(self.system.getForces()[i],self.system.getNumParticles())
                     print("1custom_nonbonded_force:", custom_nonbonded_force)
                     print("num exclusions in customnonb:", custom_nonbonded_force.getNumExclusions())
                     print("num 14 exceptions in custom_bond_force:", custom_bond_force.getNumBonds())
@@ -1056,6 +1056,7 @@ class OpenMMTheory:
     #For umbrella sampling e.g
     def add_custom_torsion_force(self,i,j,k,l,forceconstant):
         import openmm
+        import math
         print(f"Adding custom torsion force for atoms: {i}, {j}, {k}, {l}  with forceconstant={forceconstant}")
         torsion_force = openmm.CustomTorsionForce("0.5*K*dtheta^2; dtheta = min(diff, 2*Pi-diff); diff = abs(theta - theta0)")
         torsion_force.addGlobalParameter("Pi", math.pi)
@@ -1065,7 +1066,7 @@ class OpenMMTheory:
         #bond_force = openmm.HarmonicBondForce()
         #bond_force.addBond(i,j,0.0,forceconstant)
         torsion_force.addTorsion(i, j, k, l)
-        bond_force.setUsesPeriodicBoundaryConditions(True)
+        torsion_force.setUsesPeriodicBoundaryConditions(True)
         self.system.addForce(torsion_force)
     # This is custom externa force that restrains group of atoms to center of system
     def add_center_force(self, center_coords=None, atomindices=None, forceconstant=1.0):
@@ -2097,7 +2098,7 @@ class OpenMMTheory:
 # 2. Go through the 1-4 interactions and not exclude but scale somehow manually. But maybe we can't do that in
 # CustomNonbonded Force?
 # Presumably not but maybe can add a special force object just for 1-4 interactions. We
-def create_cnb(original_nbforce):
+def create_cnb(original_nbforce,system_numparticles):
     import openmm
     """Creates a CustomNonbondedForce object that mimics the original nonbonded force
     and also a Custombondforce to handle 14 exceptions
@@ -2123,7 +2124,7 @@ def create_cnb(original_nbforce):
     # custom_nonbonded_force.setUseSwitchingFunction(True)
     # custom_nonbonded_force.setSwitchingDistance(99999)
     print('Adding particles to custom force.')
-    for index in range(self.system.getNumParticles()):
+    for index in range(systen_numparticles):
         [charge, sigma, epsilon] = original_nbforce.getParticleParameters(index)
         custom_nonbonded_force.addParticle([charge, sigma, epsilon])
     # For CustomNonbondedForce we need (unlike NonbondedForce) to create exclusions that correspond to the automatic
@@ -4449,9 +4450,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
 
         print("Not ready yet")
         exit()
-        md.add_funnel_restraint(host_indices, guest_indices,
-            k_xy=funnel_parameters[k_xy], z_cc=funnel_parameters[z_cc], alpha=funnel_parameters[alpha], 
-            R_cylinder=funnel_parameters[R_cylinder], force_group=funnel_parameters[force_group])
+        #md.add_funnel_restraint(host_indices, guest_indices,
+        #    k_xy=funnel_parameters[k_xy], z_cc=funnel_parameters[z_cc], alpha=funnel_parameters[alpha], 
+        #    R_cylinder=funnel_parameters[R_cylinder], force_group=funnel_parameters[force_group])
 
     #Calling md.run with either native option active or false
     print("Now starting metadynamics simulation")

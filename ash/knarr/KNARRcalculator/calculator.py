@@ -79,21 +79,21 @@ class Calculator(object):
             self.template_file = None
             self.template = None
 
-        elif self.name.upper() == "ASEPOT":
+        # elif self.name.upper() == "ASEPOT":
 
-            try:
-                import ase
-            except:
-                raise ImportError("Unable to import ASE")
+        #     try:
+        #         import ase
+        #     except:
+        #         raise ImportError("Unable to import ASE")
 
-            self.path_to_calculator = os.getcwd()
-            self.program = ASEPot
-            self.programhess = None
-            self.gradient = True
-            self.hessian = False
-            self.pbc = True
-            self.template_file = None
-            self.template = None
+        #     self.path_to_calculator = os.getcwd()
+        #     self.program = ASEPot
+        #     self.programhess = None
+        #     self.gradient = True
+        #     self.hessian = False
+        #     self.pbc = True
+        #     self.template_file = None
+        #     self.template = None
 
         elif self.name.upper() == "IDPP":
             self.path_to_calculator = os.getcwd()

@@ -339,7 +339,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             print(BC.WARNING,f"The NEB images will run in parallel by Python multiprocessing (using {numcores} cores) while each image E+Grad calculation is parallelized as well ({theory.numcores} per image)", BC.END)
             print(BC.WARNING,f"Make sure that you have {numcores} x {theory.numcores} = {numcores*theory.numcores} CPU cores available to this ASH job on the computing node", BC.END)
     elif runmode == 'serial' and numcores == 1:
-        print (BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
+        print(BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
         print("theory:", theory)
         print("theory.numcors:", theory.numcores)
         if theory.numcores > 1:

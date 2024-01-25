@@ -80,7 +80,7 @@ def MAIN(current_job):
     # =============================================================
     # Set environmental variables
     # =============================================================
-    print 'Initializing KNARR:'
+    print('Initializing KNARR:')
     # READ MAIN PARAMETERS (settings = 0)
     sett = KNARRsettings.settings_types["MAIN"]
     main_control = FetchSettings(sett, settings_list, settings_line_ind, full_input)
@@ -124,7 +124,7 @@ def MAIN(current_job):
                                  pbc=main_control["PBC"], twodee=main_control["TWO_DEE_SYSTEM"])
     react.SetOutputFile(main_control["OUTPUT_NAME"])
     try:
-        print int(main_control["GLOBAL_DOF"])
+        print(int(main_control["GLOBAL_DOF"]))
         react.SetGlobalDof(int(main_control["GLOBAL_DOF"]))
     except:
         raise RuntimeError("Bad global DOF")

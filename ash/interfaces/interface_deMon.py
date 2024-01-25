@@ -188,7 +188,7 @@ def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type
     
     guess=False
     #Check if deMon.rst file exists. If so then we read MOs from it
-    if os.isfile(f"{self.filename}.rst") is True:
+    if os.isfile(f"{filename}.rst") is True:
         guess=True
     #deMon2k
     with open(f"{filename}.inp", 'w') as inpfile:

@@ -5,6 +5,7 @@ import re
 import pprint
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+import ash.settings_ash
 
 #PyMBE Theory object.
 class PyMBETheory:

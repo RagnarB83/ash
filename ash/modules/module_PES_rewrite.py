@@ -1098,7 +1098,7 @@ end
         print(BC.OKBLUE,"SF_TDDFT-calculated ion states:", self.numionstates-1, BC.ENDC)
 
         #Run Initial-State SCF
-        self.run_SCF_InitState(fragment,theory)
+        self.run_SCF_InitState(fragment,self.theory)
 
         #Creating new theory object
         theory = copy.copy(self.theory)
@@ -2269,17 +2269,17 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
       print(infos)
       print(header)
       if infos['NOA']!=header[1]-header[0]+1:
-        print('Number of orbitals in %s not consistent' % filename)
+        print(f'Number of orbitals in {cisfilename} and {logfile} not consistent')
         ashexit()
       if infos['NVA']!=header[3]-header[2]+1:
-        print('Number of orbitals in %s not consistent' % filename)
+        print(f'Number of orbitals in {cisfilename} and {logfile} not consistent')
         ashexit()
       if not restr:
         if infos['NOB']!=header[5]-header[4]+1:
-          print('Number of orbitals in %s not consistent' % filename)
+          print(f'Number of orbitals in {cisfilename} and {logfile} not consistent')
           ashexit()
         if infos['NVB']!=header[7]-header[6]+1:
-          print('Number of orbitals in %s not consistent' % filename)
+          print(f'Number of orbitals in {cisfilename} and {logfile} not consistent')
           ashexit()
       if no_tda:
         nstates_onfile=nvec/2
@@ -2577,7 +2577,10 @@ def casscf_state_energies_grab(file):
     Finished=False
     grab=False
     mult_dict={}
-    state_energies=[];Energy=0.0
+    state_energies=[]
+    Energy=0.0
+    roots=None
+    mult=None
     with open(file) as f:
         for line in f:
             #Stop grabbing lines once we have reached end of table
@@ -2652,6 +2655,7 @@ def MRCI_SOC_grab(file):
     soc_states_list = []
     soc_states_spin_dict={}
     soc_states_ms_dict={}
+    minE=None
     with open(file) as f:
         for line in f:
             if 'Center of electronic charge' in line:
@@ -2713,6 +2717,8 @@ def mrci_state_energies_grab(file,SORCI=False, SOC=False):
     state_energies=[];Energy=0.0
     string='STATE '
     prev_grabbed_blockinfo=False
+    current_roots=None
+    currentmult=None
     with open(file) as f:
         for line in f:
             #print("line:", line)
@@ -2800,6 +2806,8 @@ def grab_dets_from_CASSCF_output(file):
     list_of_states=[]
     detgrab=False
     grabrange=False
+    state=None
+    mult=None
     with open(file) as f:
         for line in f:
             #print("line:", line)
@@ -2983,6 +2991,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
     grabrange=False
     dummycount=0
     bull=False
+    state=None
     with open(file) as f:
         for line in f:
             if 'Program Version 4' in line:

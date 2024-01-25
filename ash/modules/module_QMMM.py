@@ -1116,12 +1116,12 @@ def microiter_QM_MM_OPT_v1(theory=None, fragment=None, chargemodel=None, qmregio
     
     ashexit()
     #1. Calculate single-point QM/MM job and get charges. Maybe get gradient to judge convergence ?
-    energy=Singlepoint(theory=theory,fragment=fragment)
+    energy=ash.Singlepoint(theory=theory,fragment=fragment)
     #grab charges
     #update charges
     #2. Change active region so that only MM atoms are in active region
     conv_criteria="something"
-    sdf=geomeTRICOptimizer(theory=theory,fragment=fragment, coordsystem='hdlc', maxiter=50, ActiveRegion=False, actatoms=[], 
+    sdf=ash.Optimizer(theory=theory,fragment=fragment, coordsystem='hdlc', maxiter=50, ActiveRegion=False, actatoms=[], 
                            convergence_setting=None, conv_criteria=conv_criteria)
     #3. QM/MM single-point with new charges?
     #3b. Or do geometric job until a certain threshold and then do MM again??
@@ -1132,60 +1132,60 @@ def microiter_QM_MM_OPT_v2(theory=None, fragment=None, maxiter=500, qmregion=Non
     sdf="dsds"
     ashexit()
 #xtb instead of charges
-def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=None, activeregion=None, bufferregion=None,xtbdir=None,xtbmethod='GFN2-xTB', charge=None, mult=None):
-    ashexit()
-    #Make copy of orig theory
-    orig_theory=copy.deepcopy(theory)
-    # TODO: If BS-spinflipping, use Hsmult instead of regular mul6
-    xtbtheory=xTBTheory(xtbdir=None, charge=charge, mult=mult, xtbmethod=xtbmethod, 
-                        runmode='inputfile', numcores=1, printlevel=2)
-    ll_theory=copy.deepcopy(theory)
-    ll_theory.qm_theory=xtbtheory
-    #Convergence criteria
-    loose_conv_criteria = { 'convergence_energy' : 1e-1, 'convergence_grms' : 1e-1, 'convergence_gmax' : 1e-1, 'convergence_drms' : 1e-1, 
-                     'convergence_dmax' : 1e-1 }
-    final_conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
-                        'convergence_dmax' : 1.8e-3 }
+# def microiter_QM_MM_OPT_v3(theory=None, fragment=None, maxiter=500, qmregion=None, activeregion=None, bufferregion=None,xtbdir=None,xtbmethod='GFN2-xTB', charge=None, mult=None):
+#     ashexit()
+#     #Make copy of orig theory
+#     orig_theory=copy.deepcopy(theory)
+#     # TODO: If BS-spinflipping, use Hsmult instead of regular mul6
+#     xtbtheory=ash.xTBTheory(xtbdir=None, charge=charge, mult=mult, xtbmethod=xtbmethod, 
+#                         runmode='inputfile', numcores=1, printlevel=2)
+#     ll_theory=copy.deepcopy(theory)
+#     ll_theory.qm_theory=xtbtheory
+#     #Convergence criteria
+#     loose_conv_criteria = { 'convergence_energy' : 1e-1, 'convergence_grms' : 1e-1, 'convergence_gmax' : 1e-1, 'convergence_drms' : 1e-1, 
+#                      'convergence_dmax' : 1e-1 }
+#     final_conv_criteria = {'convergence_energy' : 1e-6, 'convergence_grms' : 3e-4, 'convergence_gmax' : 4.5e-4, 'convergence_drms' : 1.2e-3, 
+#                         'convergence_dmax' : 1.8e-3 }
 
     
-    #Remove QM-region from actregion, optimize everything else.
-    act_original=copy.deepcopy(act)
-    for i in qmatoms:
-        activeregion.remove(i)
+#     #Remove QM-region from actregion, optimize everything else.
+#     act_original=copy.deepcopy(act)
+#     for i in qmatoms:
+#         activeregion.remove(i)
         
         
-    for macroiteration in range(0,maxiter):
-        oldHLenergy=Hlenergy
-        print("oldHLenergy:", oldHLenergy)
-        #New Macro-iteration step
-        HLenergy,HLgrad=Singlepoint(theory=orig_theory,fragment=fragment,Grad=True, charge=charge, mult=mult)
-        print("HLenergy:", HLenergy)
-        #Check if HLgrad matches convergence critera for gradient?
-        if macroiteration > 0:
-            #Test step acceptance
-            if HLenergy > oldHLenergy:
-                #Reject step. Reduce step size, use old geo, not sure how
-                pass
-            if RMS_Hlgrad < final_conv_criteria['convergence_grms'] and MaxHLgrad < final_conv_criteria['convergence_gmax']:
-                print("Converged.")
-                return
-            #Make step using Hlgrad
+#     for macroiteration in range(0,maxiter):
+#         oldHLenergy=Hlenergy
+#         print("oldHLenergy:", oldHLenergy)
+#         #New Macro-iteration step
+#         HLenergy,HLgrad=Singlepoint(theory=orig_theory,fragment=fragment,Grad=True, charge=charge, mult=mult)
+#         print("HLenergy:", HLenergy)
+#         #Check if HLgrad matches convergence critera for gradient?
+#         if macroiteration > 0:
+#             #Test step acceptance
+#             if HLenergy > oldHLenergy:
+#                 #Reject step. Reduce step size, use old geo, not sure how
+#                 pass
+#             if RMS_Hlgrad < final_conv_criteria['convergence_grms'] and MaxHLgrad < final_conv_criteria['convergence_gmax']:
+#                 print("Converged.")
+#                 return
+#             #Make step using Hlgrad
             
-        LLenergy,LLgrad=Singlepoint(theory=ll_theory,fragment=fragment,Grad=True, charge=charge, mult=mult)
-        #Compare gradient, calculate G0 correction
+#         LLenergy,LLgrad=Singlepoint(theory=ll_theory,fragment=fragment,Grad=True, charge=charge, mult=mult)
+#         #Compare gradient, calculate G0 correction
 
-        print("Now starting low-level theory QM/MM microtierative optimization")
-        print("activeregion:", activeregion)
-        print("ll_theory qm theory:", ll_theory.qm_theory)
-        bla=geomeTRICOptimizer(theory=ll_theory,fragment=fragment, coordsystem='hdlc', maxiter=200, ActiveRegion=True, actatoms=activeregion, 
-                            conv_criteria=loose_conv_criteria, charge=charge, mult=mult)
-        print("Now starting finallevel theory QM/MM microtierative optimization")
-        print("act_original:", act_original)
-        print("orig_theory qm theory:", orig_theory.qm_theory)
-        final=geomeTRICOptimizer(theory=orig_theory,fragment=fragment, coordsystem='hdlc', maxiter=200, ActiveRegion=True, actatoms=act_original, 
-                            conv_criteria=final_conv_criteria, charge=charge, mult=mult)
-        print("Micro-iterative QM/MM opt complete !")
-    return final
+#         print("Now starting low-level theory QM/MM microtierative optimization")
+#         print("activeregion:", activeregion)
+#         print("ll_theory qm theory:", ll_theory.qm_theory)
+#         bla=geomeTRICOptimizer(theory=ll_theory,fragment=fragment, coordsystem='hdlc', maxiter=200, ActiveRegion=True, actatoms=activeregion, 
+#                             conv_criteria=loose_conv_criteria, charge=charge, mult=mult)
+#         print("Now starting finallevel theory QM/MM microtierative optimization")
+#         print("act_original:", act_original)
+#         print("orig_theory qm theory:", orig_theory.qm_theory)
+#         final=geomeTRICOptimizer(theory=orig_theory,fragment=fragment, coordsystem='hdlc', maxiter=200, ActiveRegion=True, actatoms=act_original, 
+#                             conv_criteria=final_conv_criteria, charge=charge, mult=mult)
+#         print("Micro-iterative QM/MM opt complete !")
+#     return final
     
 
 #This projects the linkatom force onto the respective QM atom and MM atom
