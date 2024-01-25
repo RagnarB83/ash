@@ -1085,54 +1085,54 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
 
 
 #NOTE: not ready
-def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=None, BS_flip_options=None, charge=None, mult=None):
+# def BrokenSymmetryCalculator(theory=None, fragment=None, Opt=False, flip_atoms=None, BS_flip_options=None, charge=None, mult=None):
 
-    ashexit()
-    if theory == None or fragment == None or flip_atoms == None or BS_flip_options==None:
-        print("Please set theory, fragment, flip_atoms and BS_flip_options keywords")
-        exit()
+#     ashexit()
+#     if theory == None or fragment == None or flip_atoms == None or BS_flip_options==None:
+#         print("Please set theory, fragment, flip_atoms and BS_flip_options keywords")
+#         exit()
 
-    #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BrokenSymmetryCalculator", theory=theory)
+#     #Check charge/mult
+#     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "BrokenSymmetryCalculator", theory=theory)
 
-    #Getting full-system atom numbers for each BS-flip
-    atomstoflip=[flip_atoms[i-1] for i in BSflip]
-    #orcaobject = ORCATheory(orcadir=orcadir, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
-    #                    brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, nprocs=numcores, extrabasisatoms=extrabasisatoms,
-    #                    extrabasis="ZORA-def2-TZVP")
-
-
-    #Looping over BS-flips
-    for BSflip in BS_flip_options:
-        calclabel=f'mult{mult}_BSflip {"_".join(map(str,BSflip))}'
-
-        #Making a copy of ORCAobject (otherwise BS-flip won't work)
-        orcacalc = copy.copy(orcaobject)
-
-        # QM/MM OBJECT
-        #qmmmobject_trunc = QMMMTheory(qm_theory=orcacalc, mm_theory=openmmobject, fragment=frag, embedding="Elstat", qmatoms=qmatoms, printlevel=2,
-        #    TruncatedPC=True, TruncPCRadius=55, TruncatedPC_recalc_iter=50)
-
-        # QM/MM with no TruncPC approximation. No BS, will read previous orbital file
-        #qmmmobject_notrunc = QMMMTheory(qm_theory=orcacalc, mm_theory=openmmobject, fragment=frag, embedding="Elstat", qmatoms=qmatoms, printlevel=2)
+#     #Getting full-system atom numbers for each BS-flip
+#     atomstoflip=[flip_atoms[i-1] for i in BSflip]
+#     #orcaobject = ORCATheory(orcadir=orcadir, orcasimpleinput=ORCAinpline, orcablocks=ORCAblocklines,
+#     #                    brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, nprocs=numcores, extrabasisatoms=extrabasisatoms,
+#     #                    extrabasis="ZORA-def2-TZVP")
 
 
-        #OPT with TruncPC approximation
-        geomeTRICOptimizer(theory=theory, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc', charge=charge, mult=mult)
+#     #Looping over BS-flips
+#     for BSflip in BS_flip_options:
+#         calclabel=f'mult{mult}_BSflip {"_".join(map(str,BSflip))}'
 
-        #Preserve geometry
-        os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_truncopt.xyz')
+#         #Making a copy of ORCAobject (otherwise BS-flip won't work)
+#         orcacalc = copy.copy(orcaobject)
 
-        #Opt without TruncPC approximation
-        geomeTRICOptimizer(theory=qmmmobject_notrunc, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc', charge=charge, mult=mult)
+#         # QM/MM OBJECT
+#         #qmmmobject_trunc = QMMMTheory(qm_theory=orcacalc, mm_theory=openmmobject, fragment=frag, embedding="Elstat", qmatoms=qmatoms, printlevel=2,
+#         #    TruncatedPC=True, TruncPCRadius=55, TruncatedPC_recalc_iter=50)
 
-        #Preserve geometry and ORCA output
-        os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_notrunc.xyz')
-        os.rename('orca.out', f'orca_{calclabel}_notrunc.out')
-        os.rename('orca.gbw', f'orca_{calclabel}_notrunc.gbw')
+#         # QM/MM with no TruncPC approximation. No BS, will read previous orbital file
+#         #qmmmobject_notrunc = QMMMTheory(qm_theory=orcacalc, mm_theory=openmmobject, fragment=frag, embedding="Elstat", qmatoms=qmatoms, printlevel=2)
 
-        #create final pdb file
-        write_pdbfile(frag, outputname=f'Fragment_BSflip_{calclabel}_notrunc',openmmobject=openmmobject)
+
+#         #OPT with TruncPC approximation
+#         geomeTRICOptimizer(theory=theory, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc', charge=charge, mult=mult)
+
+#         #Preserve geometry
+#         os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_truncopt.xyz')
+
+#         #Opt without TruncPC approximation
+#         geomeTRICOptimizer(theory=qmmmobject_notrunc, fragment=frag, ActiveRegion=True, actatoms=actatoms, maxiter=500, coordsystem='hdlc', charge=charge, mult=mult)
+
+#         #Preserve geometry and ORCA output
+#         os.rename('Fragment-optimized.xyz', f'Fragment_{calclabel}_notrunc.xyz')
+#         os.rename('orca.out', f'orca_{calclabel}_notrunc.out')
+#         os.rename('orca.gbw', f'orca_{calclabel}_notrunc.gbw')
+
+#         #create final pdb file
+#         write_pdbfile(frag, outputname=f'Fragment_BSflip_{calclabel}_notrunc',openmmobject=openmmobject)
 
 
 #From total atomization energy (either 0 K or 298 K) calculate enthalpy of formation
@@ -1559,7 +1559,7 @@ def TDDFT_vib_ave(theory=None,trajectory=None, plot_range=[0,10],broadening=0.1,
     print("Plot range:", plot_range)
     print("Broadening:", broadening)
     print("Points:", points)
-    print ("Image format:", imageformat)
+    print("Image format:", imageformat)
     print("DPI:", dpi)
 
     if isinstance(theory,ash.ORCATheory) is False:

@@ -344,13 +344,13 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 energy = result.energy
                 #grab_Mossbauer_from_ORCA_output(theory.filename)
 
-            elif property == 'NMR':
-                ashexit()
-                Proptype='NMR'
-                theory.propertyblock="\n%eprnmr\nnuclei = all {} {fgrad}\n".format(property_element)
+            # elif property == 'NMR':
+            #     ashexit()
+            #     Proptype='NMR'
+            #     theory.propertyblock="\n%eprnmr\nnuclei = all {} {fgrad}\n".format(property_element)
 
-                result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
-                energy = result.energy
+            #     result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
+            #     energy = result.energy
                 #grab_NMRshielding_from_ORCA_output(theory.filename)
             else:
                 print("Unrecognized property")

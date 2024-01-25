@@ -244,7 +244,7 @@ def IDPP_OPT(path, max_iter=3000, spring_const=10.0, time_step=0.01,
         rmsf = RMS(path.GetNDof(), freal_perp)
         maxf = np.max(abs(freal_perp))
         hei = np.argmax(path.GetEnergy())
-        print ("%4i %6.2lf  % 6.6lf %3li  %8.4lf  %8.4lf %8.4lf"
+        print("%4i %6.2lf  % 6.6lf %3li  %8.4lf  %8.4lf %8.4lf"
                % (it, s[-1], path.GetEnergy()[hei] - Ereactant, hei, rmsf, maxf, np.max(abs(step))))
         PiecewiseCubicEnergyInterpolation(basename + ".interp", path.GetNim(), s, path.GetEnergy(), freal_paral, it)
         if (tol_max_f > maxf and tol_rms_f > rmsf):

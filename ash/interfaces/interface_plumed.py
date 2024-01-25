@@ -210,16 +210,16 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         print("Running plumed to sum hills...")
         print("")
         #RUN PLUMED_ASH OBJECT function
-        if CV1_grid_limits == None:
+        if CV1_grid_limits is None:
             call_plumed_sum_hills(path_to_plumed,"HILLS.ALL",CVnum)
         else:
             #Changing input unit from Angstrom to nm or degree to radian
             if CVnum == 1:
-                call_plumed_sum_hills(path_to_plumed,'HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits_unit[0]/ CV1_scaling], maxg=[CV1_grid_limits_unit[1]/ CV1_scaling])
+                call_plumed_sum_hills(path_to_plumed,'HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling])
             elif CVnum == 2:
                 #Changing input unit from Angstrom to nm or degree to radian
-                call_plumed_sum_hills(path_to_plumed,'HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits_unit[0]/ CV1_scaling,CV2_grid_limits_unit[0]/ CV2_scaling],
-                     maxg=[CV1_grid_limits_unit[1]/ CV1_scaling,CV2_grid_limits_unit[1]/ CV2_scaling])
+                call_plumed_sum_hills(path_to_plumed,'HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling,CV2_grid_limits[0]/ CV2_scaling],
+                     maxg=[CV1_grid_limits[1]/ CV1_scaling,CV2_grid_limits[1]/ CV2_scaling])
 
     else:
         print("Calling call_plumed_sum_hills")

@@ -169,7 +169,7 @@ def LanczosMMF(calculator, atoms, opttype=0, tol_max_force=0.026,
 
     eigvalue, omega, l_it = GetMinimumModeLanczos(calculator, atoms, omega,
                                                   l_maxiter=l_maxiter, l_fdstep=l_fdstep, l_tol=l_tol)
-    print '\nStarting Lanczos minimum-mode following:'
+    print('\nStarting Lanczos minimum-mode following:')
     print(' %3ls %9ls   %9ls %8ls  %8ls   %8ls' % ('it', 'Energy', 'dEnergy', 'RMSF', 'MAXF', '|step|'))
 
     print('Initial eigenvalue: % 6.4f' % (eigvalue))
@@ -199,7 +199,7 @@ def LanczosMMF(calculator, atoms, opttype=0, tol_max_force=0.026,
             eigvalue, omega, l_it = GetMinimumModeLanczos(calculator, atoms, omega,
                                                           l_maxiter=l_maxiter, l_fdstep=l_fdstep, l_tol=l_tol)
             if KNARRsettings.printlevel > 0:
-                print '    Lanczos converged in %i iterations with an eigenvalue of % 6.4f' % (l_it, eigvalue)
+                print('    Lanczos converged in %i iterations with an eigenvalue of % 6.4f' % (l_it, eigvalue))
 
         feff = ComputeEffectiveMMFForce(atoms.GetF(), eigvalue, omega)
 
@@ -208,7 +208,7 @@ def LanczosMMF(calculator, atoms, opttype=0, tol_max_force=0.026,
         # ==========================
         if converged == 0 and eigvalue < 0.0 and it > 0:
             PrintConverged(it, atoms.GetFC())
-            print 'Last iteration:'
+            print('Last iteration:')
             print('%3li %4.6lf %4.6lf %4.6lf %4.6lf %4.4lf' %
                   (it, atoms.GetEnergy(), deltaE, rms_force, max_force, np.linalg.norm(step)))
             break
@@ -313,7 +313,7 @@ def NewtonMethod(calculator, atoms, compute_hessian_every=1,
     #raise RuntimeError("Not ready")
     basename = atoms.GetOutputFile()
     reset_opt = False
-    print '\nStarting Newton-Raphson saddle point search:'
+    print('\nStarting Newton-Raphson saddle point search:')
     print(' %3ls %9ls   %9ls %8ls  %8ls   %8ls' % ('it', 'Energy', 'dEnergy', 'RMSF', 'MAXF', '|step|'))
     for it in range(maxiter):
 
@@ -334,7 +334,7 @@ def NewtonMethod(calculator, atoms, compute_hessian_every=1,
 
         if converged == 0 and it > 0:
             PrintConverged(it, atoms.GetFC())
-            print 'Last iteration:'
+            print('Last iteration:')
             print('%3li %4.6lf %4.6lf %4.6lf %4.6lf %4.4lf' %
                   (it, atoms.GetEnergy(), deltaE, rms_force, max_force, np.linalg.norm(step)))
             break

@@ -61,7 +61,7 @@ def DoOpt(atoms, calculator, optimizer):
     was_scaled = False
     fire_param = GetFIREParam(time_step)
 
-    print '\nStarting structural optimization:'
+    print('\nStarting structural optimization:')
     print(' %3ls %9ls   %9ls %8ls  %8ls   %8ls' % ('it', 'Energy', 'dEnergy', 'RMSF', 'MAXF', '|step|'))
     for it in range(maxiter):
         calculator.Compute(atoms)
@@ -83,7 +83,7 @@ def DoOpt(atoms, calculator, optimizer):
         # ==========================
         if converged == 0 and it > 0:
             PrintConverged(it, atoms.GetFC())
-            print 'Last iteration:'
+            print('Last iteration:')
             print('%3li %4.6lf %4.6lf %4.6lf %4.6lf %4.4lf' %
                   (it, atoms.GetEnergy(), deltaE, rms_force, max_force, np.linalg.norm(step)))
             break

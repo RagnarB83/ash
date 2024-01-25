@@ -33,8 +33,8 @@ def ezFCF_run(input_file="ezFCF.xml", output_file="ezFCF.out"):
     #python3 make_xml.py bla.xml h2o.out h2o-ip.out
 
     #Create input file
-    with open(input_file, "w") as inp:
-        inp.write(xmldata)
+    #with open(input_file, "w") as inp:
+    #    inp.write(xmldata)
     
     #Create masses file
 

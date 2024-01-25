@@ -174,8 +174,8 @@ def DoDynamics(atoms, calculator, parameters):
                 a = np.floor(currPos[i + 0])
                 b = np.floor(newPos[i + 0])
                 if a != b:
-                    print 'Found a TST jump in %i steps and after %12.8f time units' % (step, simulated_time)
-                    print 'Need to stop execution!!!'
+                    print('Found a TST jump in %i steps and after %12.8f time units' % (step, simulated_time))
+                    print('Need to stop execution!!!')
                     PrintJobDone('Dynamics job', time.time() - start_t)
                     return atoms
                 
@@ -186,7 +186,7 @@ def DoDynamics(atoms, calculator, parameters):
                 a = np.floor(currPos[i + 0])
                 b = np.floor(newPos[i + 0])
                 if a != b:
-                    print 'Found a TST jump in %i steps and after %12.8f time units' % (step, simulated_time)
+                    print('Found a TST jump in %i steps and after %12.8f time units' % (step, simulated_time))
                     TSTcounter += 1
                     possibleJump = True
                     jumpTime = 0.0
@@ -194,7 +194,7 @@ def DoDynamics(atoms, calculator, parameters):
 
             if possibleJump:
                 if jumpTime > criticalTime:
-                    print 'Checking if thermal jump occurred:',
+                    print('Checking if thermal jump occurred:')
                     for i in range(0, atoms.GetNDim(), 3):
                         if newPos[i+0] < 0.0 or newPos[i+0] > 1.0:
                             jumpOccurred = True
@@ -205,14 +205,14 @@ def DoDynamics(atoms, calculator, parameters):
                     # Check if jumpOccure
                     if jumpOccurred:
                         # Terminate execution.
-                        print 'Yes! (Found a thermal jump) Stopping execution.'
+                        print('Yes! (Found a thermal jump) Stopping execution.')
                         thermalCounter += 1
                         with open("reynir.out","w") as f:
                             f.write('%i %i %i %12.8f %12.8f\n' % (step, TSTcounter, thermalCounter, simulated_time, np.mean(keepT)))
                         PrintJobDone('Dynamics job', time.time() - start_t)
                         return atoms
                     else:
-                        print 'No'
+                        print('No')
                         possibleJump = False
 
                 else:
@@ -226,9 +226,9 @@ def DoDynamics(atoms, calculator, parameters):
         temp = GetTemperature(atoms.GetNDof(), Ekin, istwodee=atoms.IsTwoDee())
         keepT.append(temp)
         if (step % 20) == 0:
-            print '%i %6.2lf     % 6.4lf     % 6.4lf     % 6.4lf    %6.4lf' % (step,
+            print('%i %6.2lf     % 6.4lf     % 6.4lf     % 6.4lf    %6.4lf' % (step,
                                                                                simulated_time, atoms.GetEnergy(), Ekin,
-                                                                               atoms.GetEnergy() + Ekin, temp)
+                                                                               atoms.GetEnergy() + Ekin, temp))
         f.write('%6.2lf     % 6.4lf     % 6.4lf     % 6.4lf    %6.4lf \n' % (
             simulated_time, atoms.GetEnergy(), Ekin, atoms.GetEnergy() + Ekin, temp))
 

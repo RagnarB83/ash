@@ -75,7 +75,7 @@ def PrintCredit():
     print('I would like to thank: ')
     print('          H. Jonsson, R. Bjornsson, B.O. Birgirsson, O-P Koistinen')
     print('for significant contributions to KNARR and its development')
-    print ('')
+    print('')
     return None
 
 

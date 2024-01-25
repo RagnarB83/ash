@@ -4,7 +4,7 @@ import glob
 
 import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC,print_time_rel
-import ash.modules.module_coords
+from ash.modules.modules_coords import elemstonuccharges
 
 class DaltonTheory:
     def __init__(self, daltondir=None, filename='dalton', printlevel=2, 
@@ -74,7 +74,7 @@ class DaltonTheory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, qm_elems=None, mm_elems=None, Grad=False, numcores=None, 
+    def run(self, current_coords=None, qm_elems=None, elems=None, mm_elems=None, Grad=False, numcores=None, 
             pe=None, potfile='', restart=False, label=None, charge=None, mult=None ):
         
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
@@ -124,7 +124,7 @@ class DaltonTheory:
             molfile.write('------------------------\n')
             molfile.write('AtomTypes={} NoSymmetry Angstrom Charge={}\n'.format(len(uniq_elems),charge))
             for uniqel in uniq_elems:
-                nuccharge=float(module_coords.elemstonuccharges([uniqel])[0])
+                nuccharge=float(elemstonuccharges([uniqel])[0])
                 num_elem=qm_elems.count(uniqel)
                 molfile.write('Charge={} Atoms={}\n'.format(nuccharge,num_elem))
                 for el,coord in zip(qm_elems,current_coords):

@@ -182,7 +182,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
     # GRAB OUTPUT #
     ###################################
     blankline()
-    AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy=grab_energies_output_ORCA(snapshotinpfiles)
+    AllsnapsABenergy, AsnapsABenergy, BsnapsABenergy=ash.functions.functions_solv.grab_energies_output_ORCA(snapshotinpfiles)
     blankline()
     print("AllsnapsABenergy:", AllsnapsABenergy)
     print("AsnapsABenergy:", AsnapsABenergy)
@@ -301,7 +301,7 @@ def solvshell ( orcadir='', NumCores='', calctype='', orcasimpleinput_LL='',
         run_inputfiles_in_parallel(orcadir, bulkinpfiles, NumCores)
 
         #GRAB output
-        Bulk_Allrepsnaps_ABenergy, Bulk_Arepsnaps_ABenergy, Bulk_Brepsnaps_ABenergy=grab_energies_output_ORCA(bulkinpfiles)
+        Bulk_Allrepsnaps_ABenergy, Bulk_Arepsnaps_ABenergy, Bulk_Brepsnaps_ABenergy=ash.functions.functions_solv.grab_energies_output_ORCA(bulkinpfiles)
         blankline()
         #Get bulk correction per snapshot
         #print("Bulk_Allrepsnaps_ABenergy:", Bulk_Allrepsnaps_ABenergy)
@@ -823,7 +823,7 @@ def LRPolsnapshotcalc(args):
 
     # Get elems and coords from each Chemshell frament file
     # Todo: Change to XYZ-file read-in instead (if snapfiles have been converted)
-    elems, coords = read_fragfile_xyz(snapshot)
+    elems, coords = ash.functions.functions_solv.read_fragfile_xyz(snapshot)
     # create Ash fragment
     snap_frag = ash.Fragment(elems=elems, coords=coords)
     # QM and PE regions

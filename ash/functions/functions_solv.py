@@ -5,9 +5,9 @@ import numpy as np
 
 from ash.interfaces.interface_ORCA import checkORCAfinished,finalenergiesgrab,create_orca_inputVIEcomp_pc,create_orca_inputVIEcomp_gas,create_orca_inputVIE_pc
 import ash.constants
-from ash.interfaces.interface_xtb import xtbfinalenergygrab,xtbVIPgrab
+from ash.interfaces.interface_xtb import xtbfinalenergygrab,xtbVIPgrab, create_xtb_pcfile_general
 from ash.functions.functions_general import ashexit, listdiff,blankline, BC
-from ash.modules.module_coords import get_molecule_members_loop,read_chemshellfragfile_xyz
+from ash.modules.module_coords import get_molecule_members_loop,read_chemshellfragfile_xyz,distance,write_xyzfile
 
 def TestModerunAB():
     snapslist = ['60000', '60400', '60800', '61200', '61600', '62000']
@@ -23,7 +23,7 @@ def TestModerunA():
     snapshotsA = ['snapA-60000', 'snapA-60400', 'snapA-60800', 'snapA-61200', 'snapA-61600', 'snapA-62000']
     snapshots = ['snapA-60000', 'snapA-60400', 'snapA-60800', 'snapA-61200', 'snapA-61600', 'snapA-62000']
     print("Test mode True. Only running snapshots (for A ):", snapslist)
-    return snapslist, snapshotsA, snapshotss
+    return snapslist, snapshotsA, snapshots
 
 def exit_solvshell():
     print("Solvshell exited ")
@@ -222,7 +222,8 @@ def print_solvshell_footer():
 
 
 def create_AB_inputfiles_xtb(solute_atoms, solvent_atoms, solvsphere, snapshots,
-                                     solventunitcharges, identifier,shell=None):
+                                     solventunitcharges, identifier,shell=None,
+                                     scale=1.0, tol=0.1):
     xtb_xyzfiles = []
     for fragfile in snapshots:
         name = fragfile.split('.')[0]
@@ -239,7 +240,7 @@ def create_AB_inputfiles_xtb(solute_atoms, solvent_atoms, solvsphere, snapshots,
             #TODO: Look into get_solvshell more regarding speed.
             #TODO: Both lists vs. numpy array. And the recursion depth
             #Run this in parallel ???
-            solvshell=get_solvshell(solvsphere, elems,coords,shell,solute_elems,solute_coords,settings_solvation.scale,settings_solvation.tol)
+            solvshell=get_solvshell(solvsphere, elems,coords,shell,solute_elems,solute_coords,scale,tol)
             qmatoms=qmatoms+solvshell
             mmatoms=listdiff(allatoms,qmatoms)
             secondsB = time.time()
@@ -255,7 +256,7 @@ def create_AB_inputfiles_xtb(solute_atoms, solvent_atoms, solvsphere, snapshots,
             ashexit()
         # Create XYZ file containing solute coordinates and point to pointchargefile containing solvent coordinates and charges
         #Possible: Write charge and mult to XYZ file header
-        create_xtb_pcfile(name+identifier, mmregion_elems, mmregion_coords, solventunitcharges)
+        create_xtb_pcfile_general(name+identifier, mmregion_elems, mmregion_coords, solventunitcharges)
         write_xyzfile(qmregion_elems, qmregion_coords, name+identifier)
         xtb_xyzfiles.append(name+identifier + '.xyz')
     return xtb_xyzfiles
@@ -263,7 +264,8 @@ def create_AB_inputfiles_xtb(solute_atoms, solvent_atoms, solvsphere, snapshots,
 
 #Create ORCA inputfiles where state A and B (e.g. VIE calc) are calculated in same job using $new_job
 def create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, snapshots, orcasimpleinput,
-                              orcablockinput, solventunitcharges, identifier,shell=None, bulkcorr=False, solvbasis=''):
+                              orcablockinput, solventunitcharges, identifier,shell=None, bulkcorr=False, solvbasis='',
+                              scale=1.0, tol=0.1):
     snaphotinpfiles = []
     for fragfile in snapshots:
         name = fragfile.split('.')[0]
@@ -279,7 +281,7 @@ def create_AB_inputfiles_ORCA(solute_atoms, solvent_atoms, solvsphere, snapshots
             solute_coords =[coords[i] for i in solute_atoms]
             #TODO: Look into solvshell more regarding speed.
             #TODO: Both lists vs. numpy array. And the recursion depth
-            solvshell=get_solvshell(solvsphere, elems,coords,shell,solute_elems,solute_coords,settings_solvation.scale,settings_solvation.tol)
+            solvshell=get_solvshell(solvsphere, elems,coords,shell,solute_elems,solute_coords,scale,tol)
             qmatoms=qmatoms+solvshell
             mmatoms=listdiff(allatoms,qmatoms)
             secondsB = time.time()
@@ -515,18 +517,20 @@ def print_redox_output_state(state, solvsphere, orca_LL, orca_HL, snapshots, ave
 #Create ORCA pointcharge file based on provided list of elems and coords (MM region elems and coords) and charges for solvent unit.
 #Assuming elems and coords list are in regular order, e.g. for TIP3P waters: O H H O H H etc.
 #Used in Solvshell program. Assumes TIP3P waters.
-def create_orca_pcfile_solv(name,elems,coords,solventunitcharges,bulkcorr=False):
+def create_orca_pcfile_solv(name,elems,coords,solventunitcharges,bulkcorr=False,
+                            bulksphere_pathtofile='None', bulksphere_numatoms=0):
+    #Previously settings_solvation.bulksphere.numatoms
     #Creating list of pointcharges based on solventunitcharges and number of elements provided
     pchargelist=solventunitcharges*int(len(elems)/len(solventunitcharges))
     if bulkcorr==True:
         #print("Bulk Correction is On. Modifying Pointcharge file.")
         with open(name+'.pc', 'w') as pcfile:
-            pcfile.write(str(len(elems)+settings_solvation.bulksphere.numatoms)+'\n')
+            pcfile.write(str(len(elems)+bulksphere_numatoms)+'\n')
             for p,c in zip(pchargelist,coords):
                 line = "{} {} {} {}".format(p, c[0], c[1], c[2])
                 pcfile.write(line+'\n')
             #Adding pointcharges from hollow bulk sphere
-            with open(settings_solvation.bulksphere.pathtofile) as bfile:
+            with open(bulksphere_pathtofile) as bfile:
                 for line in bfile:
                     pcfile.write(line)
     else:

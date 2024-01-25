@@ -40,7 +40,7 @@ def DoFreq(atoms, calculator, freq):
         raise NotImplementedError("Frequency calculations of chains are not ready. Skipping calculation,")
 
     calculator.Compute(atoms)
-    print 'Energy: %12.8f eV' % atoms.GetEnergy()
+    print('Energy: %12.8f eV' % atoms.GetEnergy())
     calculator.Compute(atoms, computeHessian=True)
     H = atoms.GetHessian()
 
@@ -72,9 +72,9 @@ def DoFreq(atoms, calculator, freq):
 
     print("\nVibr. freq:")
     for i in range(len(eig)):
-        print 'eig:% 4li % 6.4lf (% 6.4lf cm-1)' % (
-            i + 1, eig[i], np.sqrt(np.abs(eig[i])) / (2 * np.pi * KNARRsettings.time_unit * KNARRsettings.c))
-    print ''
+        print('eig:% 4li % 6.4lf (% 6.4lf cm-1)' % (
+            i + 1, eig[i], np.sqrt(np.abs(eig[i])) / (2 * np.pi * KNARRsettings.time_unit * KNARRsettings.c)))
+    print('')
 
     # ---------------------------------------------------------------------------------
     # Print all vibr. modes?
@@ -84,7 +84,7 @@ def DoFreq(atoms, calculator, freq):
     if not os.path.isdir(mode_dir):
         os.mkdir(mode_dir)
     else:
-        print 'Removing directory tree: %s\n' % mode_dir
+        print('Removing directory tree: %s\n' % mode_dir)
         shutil.rmtree(mode_dir)
         os.mkdir(mode_dir)
 
