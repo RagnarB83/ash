@@ -1876,7 +1876,7 @@ class PySCFTheory:
                 #self.mf.nlcgrids.atom_grid={'H': (50,194),'F': (50,194)}
                 #self.mf.nlcgrids.prune=dft.gen_grid.sg1_prune
 
-    def set_DF_mf_options(self):
+    def set_DF_mf_options(self,Grad=False):
         #https://pyscf.org/user/df.html
         #ASH-default gives PySCF default :optimized JK auxbasis for family if it exists,
         # otherwise an even-tempered basis is generated
@@ -2220,7 +2220,7 @@ class PySCFTheory:
         ##############################
         #DENSITY FITTING and SGX
         ##############################
-        self.set_DF_mf_options()
+        self.set_DF_mf_options(Grad=Grad)
 
         ##############################
         #FROZEN ORBITALS in CC

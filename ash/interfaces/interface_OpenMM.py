@@ -2124,7 +2124,7 @@ def create_cnb(original_nbforce,system_numparticles):
     # custom_nonbonded_force.setUseSwitchingFunction(True)
     # custom_nonbonded_force.setSwitchingDistance(99999)
     print('Adding particles to custom force.')
-    for index in range(systen_numparticles):
+    for index in range(system_numparticles):
         [charge, sigma, epsilon] = original_nbforce.getParticleParameters(index)
         custom_nonbonded_force.addParticle([charge, sigma, epsilon])
     # For CustomNonbondedForce we need (unlike NonbondedForce) to create exclusions that correspond to the automatic
