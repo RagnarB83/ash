@@ -38,10 +38,10 @@ jobs:
     - name: Test mamba installed things work
       run: |
         mamba list
-        which xtb
-        which python
-        echo "PATH: $PATH"
-        echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
+        #which xtb
+        #which python
+        #echo "PATH: $PATH"
+        #echo "LD_LIBRARY_PATH: $LD_LIBRARY_PATH"
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
