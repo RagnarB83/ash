@@ -7,6 +7,7 @@ from functools import wraps
 import math
 import shutil
 import re
+import atexit
 
 import ash.settings_ash
 from ash import ashpath
@@ -55,16 +56,19 @@ python3path={path_to_python3_dir}
 export PATH=$python3path:$ASHPATH:$JULIAPATH:$PATH
 export LD_LIBRARY_PATH=$ASHPATH/ash/lib:$LD_LIBRARY_PATH
 
-echo " Sourced ASH environment file!"
+echo "Sourced ASH environment file!"
 echo "Importing ASH within Python should now work!"
+echo "ASH is located in $ASHPATH"
+echo "The Python interpreter that you should be using is located in $python3path"
 """
     with open(f"{os.path.expanduser('~')}/set_environment_ash.sh", "w") as f:
         f.write(ash_multiline_string)
     print("Created file:   set_environment_ash.sh      in your home-directory.")
-    print("Sourcing this file will activate ASH for your current shell session:")
+    print("Sourcing this file (in your shell) will activate ASH for future shell sessions:")
     print("source ~/set_environment_ash.sh")
-    print("You can add this line in your ~/.bashrc (or ~/.bash_profile or ~/.zshrc) or job-submission script")
-
+    print()
+    print("You can add this line to your ~/.bashrc (or ~/.bash_profile or ~/.zshrc) and job-submission script")
+    exit()
 
 
 # Julia load interface
