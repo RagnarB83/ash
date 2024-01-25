@@ -4,7 +4,7 @@ import glob
 
 import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC,print_time_rel
-from ash.modules.modules_coords import elemstonuccharges
+from ash.modules.module_coords import elemstonuccharges
 
 class DaltonTheory:
     def __init__(self, daltondir=None, filename='dalton', printlevel=2, 

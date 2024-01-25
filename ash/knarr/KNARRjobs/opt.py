@@ -63,6 +63,7 @@ def DoOpt(atoms, calculator, optimizer):
 
     print('\nStarting structural optimization:')
     print(' %3ls %9ls   %9ls %8ls  %8ls   %8ls' % ('it', 'Energy', 'dEnergy', 'RMSF', 'MAXF', '|step|'))
+    step=None
     for it in range(maxiter):
         calculator.Compute(atoms)
         WriteSingleImageTraj('minimization.xyz', atoms.GetNDim(), atoms.GetCoords(),

@@ -149,7 +149,8 @@ def UpdateSettings(job, start_read, listi):
                 if keyw in parameters:
                     # convert to correct format
                     val = convert(val)
-                    if isinstance(val, basestring):
+                    #RB: changed basestring to str Py2toPY3 thing
+                    if isinstance(val, str):
                         val = convert_bool(val)
                     parameters[keyw] = val  # change value of kw
                 else:

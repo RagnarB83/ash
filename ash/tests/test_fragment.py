@@ -20,7 +20,7 @@ def test_fragread():
     HCl_frag_np=Fragment(elems=elems2,coords=coords2)
     ##############################
     #From XYZ file
-    HI_frag = Fragment(xyzfile="xyzfiles/hi.xyz")
+    HI_frag = Fragment(xyzfile=f"{ashpath}/tests/xyzfiles/hi.xyz")
     #######################################
     #New frag from fragcoords directly
     HF_frag2=Fragment(coordsstring=fragcoords)
@@ -69,7 +69,7 @@ def test_read_pdb():
     #Define global system settings ( scale, tol and conndepth keywords for connectivity)
 
     #PDB read in
-    PDB_frag = Fragment(pdbfile="pdbfiles/1aki.pdb", conncalc=False)
+    PDB_frag = Fragment(pdbfile=f"{ashpath}/tests/pdbfiles/1aki.pdb", conncalc=False)
     print("PDB_frag:", PDB_frag)
     #print("PDB frag dict", PDB_frag.__dict__)
     print(PDB_frag.numatoms)

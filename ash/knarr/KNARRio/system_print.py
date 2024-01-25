@@ -20,9 +20,9 @@ def GetDate():
 def PrintLogo():
     print("               K N A R R       ")
     print("                ___|__         ")
-    print("                \-\-\-\        ")
+    print("                \\-\\-\\-\\        ")
     print("                /_/_/_/   p>   ")
-    print("            (\_____|_____/)    ")
+    print("            (\\_____|_____/)    ")
     print("           ~~~~/ / / / /~~~    ")
     print("           ~~~~~~~~~~~~~~~~    ")
     print("                               ")

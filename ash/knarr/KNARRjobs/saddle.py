@@ -179,6 +179,7 @@ def LanczosMMF(calculator, atoms, opttype=0, tol_max_force=0.026,
     if l_it >= l_maxiter - 1:
         print('** Warning: Lanczos reached maximum number of iterations')
 
+    step=None
     for it in range(maxiter):
 
         calculator.Compute(atoms)
@@ -315,6 +316,7 @@ def NewtonMethod(calculator, atoms, compute_hessian_every=1,
     reset_opt = False
     print('\nStarting Newton-Raphson saddle point search:')
     print(' %3ls %9ls   %9ls %8ls  %8ls   %8ls' % ('it', 'Energy', 'dEnergy', 'RMSF', 'MAXF', '|step|'))
+    step=None
     for it in range(maxiter):
 
         calculator.Compute(atoms)
