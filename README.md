@@ -1,3 +1,7 @@
+**master:**
+![example workflow](https://github.com/RagnarB83/ash/actions/workflows/python-app-conda.yml/badge.svg)
+**NEW:**
+![example branch parameter](https://github.com/RagnarB83/ash/actions/workflows/python-app-conda.yml/badge.svg?branch=NEW)
 
 <img src="ash-simple-logo-letterbig.png" alt="drawing" width="300" align="right"/>
 

@@ -1,2 +1,0 @@
-numpy==1.26
-geometric==1.0.1
