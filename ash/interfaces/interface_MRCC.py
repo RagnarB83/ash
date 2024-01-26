@@ -8,7 +8,7 @@ import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep
 from ash.interfaces.interface_multiwfn import write_multiwfn_input_option
 
-MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z', 'ADZ':'aug-cc-pVDZ', 'ATZ':'aug-cc-pVTZ', 'AQZ':'aug-cc-pVQZ', 
+MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z', 'ADZ':'aug-cc-pVDZ', 'ATZ':'aug-cc-pVTZ', 'AQZ':'aug-cc-pVQZ',
             'A5Z':'aug-cc-pV5Z'}
 
 #MRCC Theory object.
@@ -301,7 +301,7 @@ def grab_gradient_mrcc(file,numatoms):
 #MRCC HLC correction on fragment. Either provide MRCCTheory object or use default settings
 # Calculates HLC - CCSD(T) correction, e.g. CCSDT - CCSD(T) energy
 #Either use fragment or provide coords and elems
-def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None, mult=None, theory=None, method='CCSDT', basis='TZ', 
+def run_MRCC_HLC_correction(coords=None, elems=None, fragment=None, charge=None, mult=None, theory=None, method='CCSDT', basis='TZ',
                             ref='RHF', openshell=False, numcores=1):
     init_time=time.time()
     if fragment is None:
@@ -382,7 +382,7 @@ def grab_MRCC_pointcharge_gradient(file,charges):
                     charge = charges[pccount]
                     pc_grad[pccount,0] = -1*charge*float(line.split()[0])
                     pc_grad[pccount,1] = -1*charge*float(line.split()[1])
-                    pc_grad[pccount,2] = -1*charge*float(line.split()[2])   
+                    pc_grad[pccount,2] = -1*charge*float(line.split()[2])
                     pccount+=1
             if ' Electric field at MM atoms' in line:
                 grab=True
@@ -401,7 +401,7 @@ def grab_MRCC_PC_self_energy(file):
     return pc_self_energy
 
 
-#Function to create a correct correlated WF Molden file from a MRCC Molden file, 
+#Function to create a correct correlated WF Molden file from a MRCC Molden file,
 def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfile=None, multiwfndir=None, printlevel=2):
     print("convert_MRCC_Molden_file")
 

@@ -10,10 +10,10 @@ ASH is a Python-based computational chemistry and QM/MM environment for molecula
 Interfaces to popular QM codes: ORCA, xTB, PySCF, MRCC, Psi4, Dalton, CFour, TeraChem, QUICK. Interface to the OpenMM library for MM and MD algorithms. Interfaces to specialized codes like Block, Dice and ipie for DMRG, SHCI and AFQMC calculations.
 Excellent environment for writing simple or complex computational chemistry workflows.
 
-**In case of problems:** 
+**In case of problems:**
 Please open an issue on Github and we will try to fix any problems as soon as possible.
 
-**Installation:** 
+**Installation:**
 See https://ash.readthedocs.io/en/latest/setup.html for detailed installation instructions.
 A proper ASH installation should be done in a conda/mamba environment.
 

@@ -75,7 +75,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
-        interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, restart_file=None, TS_guess_file=None, mofilesdir=None, 
+        interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, restart_file=None, TS_guess_file=None, mofilesdir=None,
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
         hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1):
 
@@ -107,7 +107,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     #CI-NEB step
     NEB_results = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
             conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
-            tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores, 
+            tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores,
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
             interpolation=interpolation, idpp_maxiter=idpp_maxiter, idpp_springconst=idpp_springconst,
             restart_file=restart_file, TS_guess_file=TS_guess_file, mofilesdir=mofilesdir)
@@ -115,7 +115,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     SP = NEB_results.saddlepoint_fragment
     #Dictionary of images
     energies_dict = NEB_results.MEP_energies_dict
-    
+
     if SP == None:
         print("NEB-CI job failed. Exiting NEBTS.")
         return None
@@ -127,7 +127,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     #SETTING UP INITIAL HESSIAN
     ##############################
     #Hessianfile should be a simple text file with 1 row per line, values space-separated and no header.
-    #Default: 
+    #Default:
 
     runmode_numfreq=runmode
     if hessian_for_TS == None:
@@ -144,17 +144,17 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             #NOTE: More sensible default than below
             #NOTE: This is different from partial approach below. Need to change
             print("QM/MM Theory is recognized. Doing by default partial Hessian using whole QM-region")
-            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode_numfreq, 
+            result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode_numfreq,
                                     numcores=numcores, hessatoms=theory.qmatoms)
 
             #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
             #Large Hessian is the actatoms Hessian if actatoms provided
-            combined_hessian = approximate_full_Hessian_from_smaller(SP,result_freq.hessian,theory.qmatoms, 
+            combined_hessian = approximate_full_Hessian_from_smaller(SP,result_freq.hessian,theory.qmatoms,
                                                                      large_atomindices=actatoms, restHessian=modelhessian)
             #Write combined Hessian to disk
             hessianfile="Hessian_from_partial"
             write_hessian(combined_hessian,hessfile=hessianfile)
-            hessianoption='file:'+str(hessianfile)            
+            hessianoption='file:'+str(hessianfile)
         else:
             result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=1, runmode=runmode_numfreq, numcores=numcores)
             hessianfile="Hessian_from_theory"
@@ -201,9 +201,9 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
             hessianfile="Hessian_from_ORCA_model"
         #Write Hessian to file
         write_hessian(hessian,hessfile=hessianfile)
-        #Creating string 
+        #Creating string
         hessianoption='file:'+str(hessianfile)
-    #Finding atoms that contribute the most to saddlepoint mode according to CI-NEB. 
+    #Finding atoms that contribute the most to saddlepoint mode according to CI-NEB.
     # Add connecting atoms and erform partial Hessian optimization
     elif hessian_for_TS == 'partial':
         print("hessian_for_TS option: partial")
@@ -234,7 +234,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
         print("This corresponds to atoms contributing to the TS-mode and connected atoms")
         #TODO: Option to run this in parallel ?
-        #Or just enable theory parallelization 
+        #Or just enable theory parallelization
         result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=Final_partial_hessatoms, runmode=runmode, numcores=numcores)
 
         #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
@@ -244,7 +244,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         #Write combined Hessian to disk
         hessianfile="Hessian_from_partial"
         write_hessian(combined_hessian,hessfile=hessianfile)
-        #Creating string 
+        #Creating string
         hessianoption='file:'+str(hessianfile)
     else:
         print("Unknown hessian_for_TS option")
@@ -258,9 +258,9 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     print(f"Changing number of cores of Theory object from {theory.numcores} to {cores_for_TSopt} cores ")
     theory.set_numcores(cores_for_TSopt)
 
-    ash.Optimizer(theory=theory, fragment=SP, TSOpt=True, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter, 
-                ActiveRegion=ActiveRegion, actatoms=actatoms, convergence_setting=OptTS_convergence_setting, 
-                conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list, 
+    ash.Optimizer(theory=theory, fragment=SP, TSOpt=True, charge=charge, mult=mult, coordsystem=OptTS_coordsystem, maxiter=OptTS_maxiter,
+                ActiveRegion=ActiveRegion, actatoms=actatoms, convergence_setting=OptTS_convergence_setting,
+                conv_criteria=OptTS_conv_criteria, print_atoms_list=OptTS_print_atoms_list,
                 hessian=hessianoption, subfrctor=subfrctor)
 
     #TODO: Test if Optimizer converged or not. Currently there would be an error from geometric.
@@ -302,7 +302,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     #Changing numcores back in case theory is reused
     theory.set_numcores(original_theory_numcores)
     print_time_rel(module_init_time, modulename='NEB-TS run', moduleindex=1)
-    
+
     #Returning result object
     result = ASH_Results(label="NEBTS calc", energy=SP.energy, geometry=SP.coords,
         saddlepoint_fragment=SP, charge=charge, mult=mult, MEP_energies_dict=energies_dict,
@@ -356,7 +356,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
     #Number of total images that Knarr wants. images input referring to intermediate images is now consistent with ORCA
     total_num_images=images+2
-    
+
 
     #Zero-valued constraints list. We probably won't use constraints for now
     constr = np.zeros(shape=(numatoms * 3, 1))
@@ -507,8 +507,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         rp, ndim, nim, symb = ReadTraj(restart_file)
         path = InitializePathObject(nim, react)
         path.SetCoords(rp)
-    
-    
+
+
     print("Starting NEB")
     #Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
     print("NEB printlevel is:", printlevel)
@@ -523,7 +523,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     #############################
     # CALLING NEB
     #############################
-    
+
     if IDPPonly == True:
         print("IDPPonly option will do one NEB iteration on the IDPP path and then stop NEB part")
         optimizer["MAX_ITER"] = 1
@@ -655,7 +655,7 @@ def coords_to_Knarr(coords):
 #Wrapper around ASH object passed onto Knarr
 class KnarrCalculator:
     def __init__(self,theory,fragment1,fragment2,runmode='serial',printlevel=None, ActiveRegion=False, actatoms=None, numcores=1,
-                 full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False, charge=None, mult=None, 
+                 full_fragment_reactant=None, full_fragment_product=None, numimages=None, FreeEnd=False, charge=None, mult=None,
                  mofilesdir=None):
         self.numcores=numcores
         self.FreeEnd=FreeEnd
@@ -681,7 +681,7 @@ class KnarrCalculator:
         self.full_coords_images_dict={}
         self.energies_dict={}
         self.gradient_dict={} #Keeps track of gradients for each image. Should only be active-space gradients
-        self.converged=False 
+        self.converged=False
         #Activating ORCA flag if theory or QM-region theory
         self.ORCAused = False
         if isinstance(self.theory, ash.ORCATheory):
@@ -695,7 +695,7 @@ class KnarrCalculator:
     #Function that Knarr will use to signal convergence and set self.converged to True. Otherwise it is False
     def status(self,converged):
         self.converged=converged
-    
+
     #Test: Print tangent info
     def print_tangent_info(self,path):
         #print("print_tangent_info:")
@@ -740,13 +740,13 @@ class KnarrCalculator:
             for image_number in list_to_compute:
                 print("\nComputing image: ", image_number)
 
-                #Creating dir 
+                #Creating dir
                 try:
                     os.mkdir(f"image_{image_number}")
                 except FileExistsError:
                     pass
                 os.chdir(f"image_{image_number}")
-                
+
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
 
@@ -765,7 +765,7 @@ class KnarrCalculator:
                             else:
                                 if self.printlevel >= 1:
                                     print(f"File {path_to_imagefile} does NOT exist. Continuing.")
-                
+
                 #Handling GBW files for ORCATheory and QMMMTheory (if using ORCA)
                 if self.ORCAused == True:
                     if self.printlevel >= 1:
@@ -776,7 +776,7 @@ class KnarrCalculator:
                             print(f"File: {current_image_file} exists.")
                         if isinstance(self.theory,ash.QMMMTheory):
                             print(f"Copying {current_image_file} to {self.theory.qm_theory.filename}.gbw to be used.")
-                            shutil.copyfile(current_image_file,self.theory.qm_theory.filename+".gbw")                        
+                            shutil.copyfile(current_image_file,self.theory.qm_theory.filename+".gbw")
                         else:
                             print(f"Copying {current_image_file} to {self.theory.filename}.gbw to be used.")
                             shutil.copyfile(current_image_file,self.theory.filename+".gbw")
@@ -855,7 +855,7 @@ class KnarrCalculator:
                                                                 elems=self.full_fragment_reactant.elems, Grad=True, label="image_"+str(image_number))
 
                     if self.ORCAused == True:
-                        
+
                         if isinstance(self.theory,ash.QMMMTheory):
                             if self.printlevel >= 1:
                                 print(f"ORCA run done. Copying {self.theory.qm_theory.filename}.gbw to {current_image_file} for next time")
@@ -881,7 +881,7 @@ class KnarrCalculator:
 
                     En_image, Grad_image = self.theory.run(current_coords=image_coords, elems=self.fragment1.elems, Grad=True, charge=self.charge, mult=self.mult,
                         label="image_"+str(image_number))
-                    
+
                     if self.ORCAused == True:
                         if self.printlevel >= 1:
                             print(f"ORCA run done. Copying {self.theory.filename}.gbw to {current_image_file} for next time")
@@ -889,12 +889,12 @@ class KnarrCalculator:
                             shutil.copyfile(self.theory.qm_theory.filename+".gbw",current_image_file)
                         else:
                             shutil.copyfile(self.theory.filename+".gbw",current_image_file)
-                    
+
                     #Keeping track of energies for each image in a dict
                     self.energies_dict[image_number] = En_image
                     #Keeping track of  gradients for each image in a dict
                     self.gradient_dict[image_number]=Grad_image
-                
+
                 counter += 1
                 #Energies array for all images
                 En_eV=En_image*constants.hartoeV
@@ -913,7 +913,7 @@ class KnarrCalculator:
             print("")
 
             all_image_fragments=[] #List of ASH fragments that will be passed onto Singlepoint_parallel
-            
+
             #Looping over images, creating fragments
             for image_number in list_to_compute:
                 counter += 1
@@ -982,7 +982,7 @@ class KnarrCalculator:
             #   Maybe launch Singlepoint_parallel with a simple ScriptTheory that only executes a runscript.py and grabs E+G from
             # files that are created
             #else:
-            result_par = ash.Job_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores, 
+            result_par = ash.Job_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores,
                 allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
             en_dict = result_par.energies_dict
             #Now looping over gradients present (done to avoid overwriting frozen-image gradients)
@@ -1024,7 +1024,7 @@ class KnarrCalculator:
         print("NEB iteration calculations done\n")
 
         #Printing table of images
-        print("Overview of images")        
+        print("Overview of images")
         header=f"Image  Energy(Eh)  dE(kcal/mol)  State     RMSF(eV/Ang)    MaxF(eV/Ang)"
         print(header)
         print("-"*75)
@@ -1046,7 +1046,7 @@ class KnarrCalculator:
         if self.ActiveRegion is True:
             if self.iterations >= 0:
                 self.write_Full_MEP_Path(path, list_to_compute, E)
-        
+
         #Tangent stuff
         self.print_tangent_info(path)
 
@@ -1088,7 +1088,7 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
     if neb_settings["CLIMBING"] is True:
 
         if write_tangent is True:
-            #Writing tangent to disk 
+            #Writing tangent to disk
             write_xyzfile(reactant.elems, calculator.tangent, "CItangent", printlevel=2, writemode='w')
 
         if ActiveRegion == True:
@@ -1113,7 +1113,7 @@ def prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actat
                 full_saddleimage_coords[act_i] = curr_i
 
             #Creating new ASH fragment for Full Saddle-point geometry
-            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems, 
+            Saddlepoint_fragment = ash.Fragment(coords=full_saddleimage_coords, elems=reactant.elems,
                                                     connectivity=reactant.connectivity, charge=charge, mult=mult)
             Saddlepoint_fragment.set_energy(saddle_energy)
             #Adding atomtypes and charges if present.

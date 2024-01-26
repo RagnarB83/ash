@@ -11,7 +11,7 @@ import numpy as np
 #Can also convert atomic-number (isatomnum flag)
 def reformat_element(elem,isatomnum=False):
     if isatomnum is True:
-        el_correct=element_dict_atnum[elem].symbol    
+        el_correct=element_dict_atnum[elem].symbol
     else:
         try:
             el_correct=element_dict_atname[elem.lower()].symbol
@@ -26,7 +26,7 @@ class Element:
         #Fine-structure constant (2018 CODATA recommended value)
         self.name = None
         self.symbol = symbol
-        self.atomnumber=atomnumber  
+        self.atomnumber=atomnumber
 
 element_dict_atname = {'h':Element('hydrogen', 'H', 1), 'he':Element('helium', 'He', 2), 'li':Element('lithium', 'Li', 3),
 'be':Element('beryllium', 'Be', 4), 'b':Element('boron', 'B', 5), 'c':Element('carbon', 'C', 6), 'n':Element('nitrogen', 'N', 7),
@@ -157,7 +157,7 @@ def write_xyzfile(elems,coords,name,printlevel=2):
             ofile.write(line+'\n')
     if printlevel >= 2:
         print("Wrote XYZ file:", name+'.xyz')
-        
+
 #Standalone fragment-editing script for Ash
 
 #Reads in Ash fragment file and atomslist file and output XYZ coordinate file that can be visualized in e.g. Chemcraft and edited

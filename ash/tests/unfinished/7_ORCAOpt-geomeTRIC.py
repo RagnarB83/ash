@@ -15,7 +15,7 @@ F 0.0 0.0 1.0
 #Add coordinates to fragment
 HF_frag=Fragment(coordsstring=fragcoords)
 
-ORCAcalc = ORCATheory(orcadir=orcadir, fragment=HF_frag, charge=0, mult=1, 
+ORCAcalc = ORCATheory(orcadir=orcadir, fragment=HF_frag, charge=0, mult=1,
                                 orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
 
 

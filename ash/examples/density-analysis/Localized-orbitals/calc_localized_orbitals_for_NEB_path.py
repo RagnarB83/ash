@@ -22,7 +22,7 @@ end
 """
 theory = ORCATheory(orcasimpleinput="! r2scan-3c tightscf", orcablocks=blocks)
 
-#Looping over fragments created and running ORCA localization and creating Cube files 
+#Looping over fragments created and running ORCA localization and creating Cube files
 for i,frag in enumerate(frags):
     j=i+1 #Here using 1-based indexing
     print("Now doing fragment number", j)
@@ -37,4 +37,4 @@ for i,frag in enumerate(frags):
         run_orca_plot("orca.loc", "mo", gridvalue=80, mo_operator=0, mo_number=MONUMBER)
         os.rename(f"orca.mo{MONUMBER}a.cube", f"orcaloccalc{j}_mo{MONUMBER}.cube") #Renaming cube file
 
-    os.rename("orca.loc", f"orcaloccalc{j}.loc") #Renaming loc file 
+    os.rename("orca.loc", f"orcaloccalc{j}.loc") #Renaming loc file

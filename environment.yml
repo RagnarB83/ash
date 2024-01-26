@@ -2,7 +2,7 @@ name: conda environment for ASH
 #Only conda-forge allowed for now
 channels:
   - conda-forge
-#Some basic easy-to-install packages for ASH 
+#Some basic easy-to-install packages for ASH
 dependencies:
   - python=3.10
   - pip

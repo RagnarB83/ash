@@ -943,4 +943,3 @@ def LRPolsnapshotcalc(args):
 
     #Returning list of snapshotname and energies for both regions
     return [snapshot, PolEmbedEnergyAB_LR1, PolEmbedEnergyAB_LR2]
-

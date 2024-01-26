@@ -27,4 +27,3 @@ Optimizer(theory=ORCAcalc,fragment=Reactant)
 freqresult = NumFreq(Reactant, ORCAcalc, npoint=1, numcores=1, runmode='serial')
 
 print("freqresult:", freqresult)
-

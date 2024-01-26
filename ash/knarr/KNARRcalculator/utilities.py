@@ -60,7 +60,7 @@ def ReadEONTemplateFile(fname):
             if 'potential' in line.lower() and '=' in line.lower():
                 found_pot = True
                 template = line.split('=')[1]
-                
+
     if not found_pot:
         raise IOError("Bad EON template file")
 

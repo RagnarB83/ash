@@ -21,7 +21,7 @@ class SparrowTheory:
         if method is None:
             print(f"{self.theorynamelabel}Theory requires a method keyword")
             ashexit()
-        
+
         try:
             import scine_utilities as su
             import scine_sparrow as scine_sparrow
@@ -49,7 +49,7 @@ class SparrowTheory:
     def Hessian(self, fragment=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
         #Check charge/mult
         charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Opt", theory=self)
-        
+
         self.run (current_coords=fragment.coords, qm_elems=fragment.elems,
             Grad=True, Hessian=True, numcores=numcores, label=label,
             charge=charge, mult=mult)

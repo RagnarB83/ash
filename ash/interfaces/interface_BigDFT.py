@@ -24,7 +24,7 @@ class BigDFTTheory:
         self.analytic_hessian=False
         #Printlevel
         self.printlevel=printlevel
-        
+
         #Label to distinguish different objects
         self.label=label
 
@@ -32,8 +32,8 @@ class BigDFTTheory:
         self.numcores=numcores
         self.filename=filename
         self.maxiter=maxiter
-        
-        
+
+
         print_line_with_mainheader("BigDFT INTERFACE")
 
         #Parallelization for both library and inputfile runmode
@@ -47,7 +47,7 @@ class BigDFTTheory:
 
         #???
         #reload(calc)
-        #Specifying 
+        #Specifying
         if threads == 1 and mpiprocs == 1 and numcores == 1:
             print(f"Threads: {threads} MPIprocs:{mpiprocs} and numcores:{numcores}")
             print("Using the default of 1 OMP thread")
@@ -80,7 +80,7 @@ class BigDFTTheory:
         self.inp.set_hgrid(hgrid)
         #self.inp.set_rmult([3.5,9.0])
         self.inp.set_xc(functional)
-        
+
         self.inp["perf"]={}
 
         if use_gpu is True:
@@ -98,7 +98,7 @@ class BigDFTTheory:
         if self.printlevel >= 2:
             print("Cleaning up old BigDFT files")
         files= []
-        
+
         for file in files:
             try:
                 os.remove(file)
@@ -131,7 +131,7 @@ class BigDFTTheory:
         #Checking if charge and mult has been provided and sensible
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for BigDFTTheory.run method", BC.END)
-            ashexit()   
+            ashexit()
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:

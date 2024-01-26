@@ -36,7 +36,7 @@ Singlepoint(theory=MP2_ur, fragment=CO)
 mfile = make_molden_file_ORCA(f"{MP2_ur.filename}.mp2nat")
 #MP2 relaxed
 Singlepoint(theory=MP2_r, fragment=CO)
-mfile = make_molden_file_ORCA(f"{MP2_r.filename}.mp2nat")        
+mfile = make_molden_file_ORCA(f"{MP2_r.filename}.mp2nat")
 #OO-MP2
 Singlepoint(theory=OOMP2, fragment=CO)
 mfile = make_molden_file_ORCA(f"{OOMP2.filename}.mp2nat")

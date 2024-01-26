@@ -73,7 +73,7 @@ class Atom(object):
 
     def GetFreeMass(self):
         return self.GetMass()[self.GetMoveableAtoms()]
-    
+
     def ComputeMass(self):
         ind = 0
         mass = np.zeros(shape=(self.ndim, 1))

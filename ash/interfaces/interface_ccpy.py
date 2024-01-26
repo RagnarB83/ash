@@ -25,10 +25,10 @@ class ccpyTheory:
         self.theorynamelabel="ccpy"
         self.theorytype="QM"
         self.analytic_hessian=False
-        
+
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-        #Check for PySCFTheory object 
+        #Check for PySCFTheory object
         if pyscftheoryobject is None:
             print("Error: No pyscftheoryobject was provided. This is required")
             ashexit()
@@ -46,7 +46,7 @@ class ccpyTheory:
         self.numcores=numcores
         #
         self.method=method # Options: 'CCSD', 'CCSDT', CCPQ
-        self.adaptive=adaptive #Adaptive CC(P;Q) or not 
+        self.adaptive=adaptive #Adaptive CC(P;Q) or not
         self.percentages=percentages #What triples percentages to loop through
 
         self.pyscftheoryobject=pyscftheoryobject
@@ -62,7 +62,7 @@ class ccpyTheory:
         if adaptive is True and self.percentages is None:
             print("Error. Adaptive is True but no percentages provided")
             print("Setting percentages list to: [1.0]")
-            self.percentages=[1.0]            
+            self.percentages=[1.0]
 
         #Print stuff
         print("Printlevel:", self.printlevel)
@@ -82,7 +82,7 @@ class ccpyTheory:
 
     def determine_frozen_core(self,elems):
         print("Determining frozen core based on system list of elements")
-        #Main elements 
+        #Main elements
         FC_elems={'H':0,'He':0,'Li':0,'Be':0,'B':2,'C':2,'N':2,'O':2,'F':2,'Ne':2,
         'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
         'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,'Co':10,'Ni':10,'Cu':10,'Zn':10,
@@ -185,7 +185,7 @@ class ccpyTheory:
                 total_corr_energy=driver.correlation_energy
             elif self.method.lower() == "ccsdt1":
                 driver.run_cc(method=self.method)
-                total_corr_energy=driver.correlation_energy            
+                total_corr_energy=driver.correlation_energy
             elif self.method.lower() == "ccsdt":
                 driver.run_cc(method=self.method)
                 total_corr_energy=driver.correlation_energy
@@ -221,9 +221,9 @@ class ccpyTheory:
                 total_corr_energy = CCSD_corr_energy + HOC_energy
             elif 'eom' in self.method.lower():
                 driver.run_eomcc(method=self.method.lower(), state_index=1)
-            
+
             reference_energy = driver.system.reference_energy
-            
+
             #driver.run_hbar(method="ccsd")
             #driver.run_guess(method="cis", multiplicity=1, nroot=10)
             #driver.run_eomcc(method="eomccsd", state_index=selected_states[1:])
@@ -250,5 +250,3 @@ class ccpyTheory:
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel}Theory run', moduleindex=2)
         return self.energy
-
-

@@ -13,7 +13,6 @@ wB97XV = ORCATheory(orcasimpleinput="! wB97X-V cc-pVDZ verytightscf", numcores=n
 for theory in [HF,r2SCAN,BLYP,B3LYP,BHLYP,wB97XV]:
     #
     Singlepoint(theory=theory, fragment=CO)
-    
+
     # Make Moldenfile
     mfile = make_molden_file_ORCA(theory.filename+'.gbw')
-        

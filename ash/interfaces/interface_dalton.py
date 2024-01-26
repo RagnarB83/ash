@@ -7,8 +7,8 @@ from ash.functions.functions_general import ashexit, BC,print_time_rel
 from ash.modules.module_coords import elemstonuccharges
 
 class DaltonTheory:
-    def __init__(self, daltondir=None, filename='dalton', printlevel=2, 
-                numcores=1, pe=False, potfile='', label="Dalton", dalton_input=None, 
+    def __init__(self, daltondir=None, filename='dalton', printlevel=2,
+                numcores=1, pe=False, potfile='', label="Dalton", dalton_input=None,
                 basis_name=None, basis_dir=None):
 
         self.theorytype="QM"
@@ -44,12 +44,12 @@ class DaltonTheory:
         self.printlevel=printlevel
         #Setting numcores of object
         self.numcores=numcores
-        
+
         #Setting energy to 0.0 for now
         self.energy=0.0
-        
+
         self.pe=pe
-        
+
         print("Note: Dalton assumes mult=1 for even electrons and mult=2 for odd electrons.")
         if self.printlevel >=2:
             print("")
@@ -74,13 +74,13 @@ class DaltonTheory:
         except:
             pass
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, qm_elems=None, elems=None, mm_elems=None, Grad=False, numcores=None, 
+    def run(self, current_coords=None, qm_elems=None, elems=None, mm_elems=None, Grad=False, numcores=None,
             pe=None, potfile='', restart=False, label=None, charge=None, mult=None ):
-        
+
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DALTON INTERFACE-------------", BC.END)
         if pe is None:
             pe=self.pe
-        
+
         print("pe: ", pe)
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for DaltonTheory.run", BC.END)
@@ -113,10 +113,10 @@ class DaltonTheory:
                 if 'DALTON' in substring:
                     if pe is True:
                         dalfile.write(".PEQM\n")
-                
+
         #Write the ugly MOLECULE.INP
         uniq_elems=set(qm_elems)
-        
+
         with open("MOLECULE.INP",'w') as molfile:
             molfile.write('BASIS\n')
             molfile.write('{}\n'.format(self.basis_name))
@@ -130,14 +130,14 @@ class DaltonTheory:
                 for el,coord in zip(qm_elems,current_coords):
                     if el == uniqel:
                         molfile.write('{}    {} {} {}\n'.format(el,coord[0],coord[1],coord[2]))
-        
+
         #POTENTIAL FILE
         #Renaming potfile as POTENTIAL.INP
         os.rename(potfile,'POTENTIAL.INP')
         print("Rename potential file {} as POTENTIAL.INP".format(potfile))
-        
+
         print("Charge: {}  Mult: {}".format(charge, mult))
-        
+
         print("Launching Dalton")
         print("daltondir:", self.daltondir)
         if self.basis_dir is None:
@@ -149,11 +149,11 @@ class DaltonTheory:
             os.environ['BASDIR'] = self.basis_dir
         def run_dalton_serial(daltondir):
             with open(self.filename+'.out', 'w') as ofile:
-                
+
                 process = sp.run([daltondir + '/dalton.x'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-            
+
         run_dalton_serial(self.daltondir)
-        
+
         #Grab final energy
         #TODO: Support more than DFT energies
         #ALSO: Grab excitation energies etc
@@ -161,7 +161,7 @@ class DaltonTheory:
             for line in outfile:
                 if 'Final DFT energy:' in line:
                     self.energy=float(line.split()[-1])
-        
+
         if self.energy==0.0:
             print("Problem. Energy not found in output:", self.filename+'.out')
             ashexit()

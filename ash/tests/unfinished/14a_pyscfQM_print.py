@@ -20,7 +20,7 @@ pyscffunctional='b3lyp'
 #PySCF basis. Can be string or dict object (elem-specific info)
 pyscfbasis='def2-QZVP'
 
-PySCFTheorycalculation = PySCFTheory(fragment=HF_frag, charge=0, mult=1, numcores=2, 
+PySCFTheorycalculation = PySCFTheory(fragment=HF_frag, charge=0, mult=1, numcores=2,
     pyscfbasis=pyscfbasis, pyscffunctional=pyscffunctional, printsetting=True)
 
 #Simple Energy SP calc
@@ -34,7 +34,7 @@ print(PySCFTheorycalculation.__dict__)
 print(PySCFTheorycalculation.energy)
 print(PySCFTheorycalculation.gradient)
 
-#Clean 
+#Clean
 PySCFTheorycalculation.cleanup()
 
 sys.exit(0)

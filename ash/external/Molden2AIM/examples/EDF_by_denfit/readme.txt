@@ -16,4 +16,3 @@ This example shows how to generate EDF for atomic core densities.
 4. Do fitting by denfit. An input file should be prepared (Re68.dat in this example).
 
    denfit.exe < Re68.dat > results.txt
-

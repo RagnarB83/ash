@@ -16,7 +16,7 @@
 # can be derived by optimising highly contracted family basis sets, including diffuse exponents, on molecular systems.
 # Typically, these basis sets outperform split valence basis sets of similar size. For small gas-phase systems (including QMMM)
 # or large systems (thousands of atoms) their cost is moderate, whereas the diffuse nature of the basis set increases the computational
-# for medium size condensed phase systems. 
+# for medium size condensed phase systems.
 #
 # This file contains the molecularly optimised basis sets for the elements H , C , N , O , F , Si , P , S , Cl
 # as discussed in the paper (SZV-MOLOPT-GTH, DZVP-MOLOPT-GTH, TZVP-MOLOPT-GTH, TZV2P-MOLOPT-GTH, TZV2PX-MOLOPT-GTH).

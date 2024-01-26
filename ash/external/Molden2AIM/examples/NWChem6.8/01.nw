@@ -14,9 +14,8 @@ dft
 end
 
 property
- moldenfile 
+ moldenfile
  molden_norm none
 end
 
 task scf property
-

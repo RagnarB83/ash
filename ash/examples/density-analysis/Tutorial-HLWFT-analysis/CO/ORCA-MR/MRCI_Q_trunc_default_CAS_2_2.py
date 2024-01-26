@@ -21,4 +21,3 @@ Singlepoint(theory=MRCI_2_2_tsel_def, fragment=CO)
 
 #Making Molden file from MRCI natural orbital file (note special name)
 mfile = make_molden_file_ORCA(f"{MRCI_2_2_tsel_def.filename}.b0_s0.nat")
-

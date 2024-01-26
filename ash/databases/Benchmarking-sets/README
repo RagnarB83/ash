@@ -23,7 +23,7 @@ The Reference_data.txt contains information about the reactions in the following
 - Other # lines are convenient comment-lines but are not read by ASH.
 - Each numbered line defines a reaction. The ASCII-string words in the line point to XYZ-files in the same dir
   while the integers indicate the stoichiometry of the reaction (negative number: reactant, positive number: product).
-  The last floating point number is always the reference value (e.g. experimental value) in the unit indicated in the #TESTSET_INFO line. 
+  The last floating point number is always the reference value (e.g. experimental value) in the unit indicated in the #TESTSET_INFO line.
 
 #IMPORTANT: species/file-names have to contain an alphabetic character (not only integer)
 #IMPORTANT: The reference value has to be a floating point, not an integer (add .0 to number)
@@ -56,4 +56,3 @@ corrections.txt Example
 3 0.009
 4 0.010
 5 0.010
-

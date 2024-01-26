@@ -14,7 +14,7 @@ from ash.functions.functions_general import ashexit
 
 
 # #ASE-ASH-SAFIRES wrapper
-# def attach_safires_to_ASE(atoms=None, dyn=None, safires_solvent_atomsnum=3, 
+# def attach_safires_to_ASE(atoms=None, dyn=None, safires_solvent_atomsnum=3,
 #                             safires_solute=None, safires_inner_region=None ):
 #     if safires_solute == None or safires_inner_region == None:
 #         print("Safires requires safires_solute and safires_inner_region lists to be defined")
@@ -27,7 +27,7 @@ from ash.functions.functions_general import ashexit
 #     #from ase.md.safires import SAFIRES
 #     #Until then:
 #     #from ash.interfaces.interface_safires import SAFIRES
-    
+
 #     #Setting up Safires
 #     safires = SAFIRES(atoms=atoms,
 #                         mdobject=dyn,
@@ -65,10 +65,10 @@ from ash.functions.functions_general import ashexit
 #     ------------
 #     0.1.1:
 #         2021-10-06
-#         Replacing print by parprint.    
-    
-#     0.1.0: 
-#         2021-09-06 
+#         Replacing print by parprint.
+
+#     0.1.0:
+#         2021-09-06
 #         Initial release.
 
 #     DESCRIPTION
@@ -149,7 +149,7 @@ from ash.functions.functions_general import ashexit
 #     - currently fix_com is required to be False for Langevin.
 #       that shouldn't be the case.
 #     """
-    
+
 #     def __init__(self, atoms, mdobject, natoms,
 #                  logfile="safires.log", debug=False,
 #                  barometer=False, surface=False, reflective=False):
@@ -189,7 +189,7 @@ from ash.functions.functions_general import ashexit
 #             inner and outer region. SAFIRES requires that all
 #             inner and outer region particles are indistinguishable
 #             as the main premise (see publication).
-        
+
 #         self.reflective --
 #             switches to an implementation of SAFIRES that performs
 #             reflections at the boundary (no momentum exchange!)
@@ -302,7 +302,7 @@ from ash.functions.functions_general import ashexit
 
 #         # keep track of how many atoms are in the solute
 #         # or periodic surface model
-#         self.nsol = len([atom.index for atom in self.atoms 
+#         self.nsol = len([atom.index for atom in self.atoms
 #                        if atom.tag == 0])
 
 #         # if Langevin MD is using 'fix_com', we need to turn that off,
@@ -311,12 +311,12 @@ from ash.functions.functions_general import ashexit
 #         if hasattr(self.mdobject, "fix_com"):
 #             if self.mdobject.fix_com:
 #                 self.mdobject.fix_com = False
-        
+
 #         if hasattr(self.mdobject, "fixcm"):
 #             # old / deprecated version of fix_com; might remove soon
 #             if self.mdobject.fixcm:
 #                 self.mdobject.fixcm = False
-        
+
 #         # setup output logfiles
 #         if self.logfile is not None:
 #             self.log = open(self.logfile, "w+")
@@ -371,7 +371,7 @@ from ash.functions.functions_general import ashexit
 #         write("crashed_atoms.traj", [self.atoms, self.previous_atoms],
 #               format="traj")
 #         return
-    
+
 #     def normalize(self, x):
 #         """Return normalized 3D vector x."""
 #         return x / np.linalg.norm(x)
@@ -456,7 +456,7 @@ from ash.functions.functions_general import ashexit
 #             m_inner = com_atoms[inner_idx].mass
 #             v_inner = com_atoms[inner_idx].momentum / m_inner
 #             f_inner = forces[inner_idx] / m_inner
-            
+
 #             # if molecules are used, which are reduced to
 #             # pseudoparticles with properties centered on their COM,
 #             # we need to re-expand the pseudoparticle indices into the
@@ -483,7 +483,7 @@ from ash.functions.functions_general import ashexit
 #             if hasattr(self.mdobject, "fr"):
 #                 # if it is a Langevin-based simulation
 #                 fr = self.mdobject.fr
-                
+
 #                 mod = self.natoms
 #                 if mod > 1:
 #                     # we need to remove the constraints again
@@ -491,7 +491,7 @@ from ash.functions.functions_general import ashexit
 #                     # for example is present in the atoms object
 #                     self.constraints = self.atoms.constraints.copy()
 #                     self.atoms.constraints = []
-                    
+
 #                     # if inner/outer particles are molecules
 #                     m_outer_list = [math.sqrt(xm) for xm in
 #                                     self.atoms[outer_real:outer_real + mod]
@@ -513,10 +513,10 @@ from ash.functions.functions_general import ashexit
 #                                  / m_inner)
 #                     sig_outer = math.sqrt(2 * self.mdobject.temp * fr)
 #                     sig_inner = math.sqrt(2 * self.mdobject.temp * fr)
-                
+
 #                     # re-apply the constraints
 #                     self.atoms.constraints = self.constraints.copy()
-                
+
 #                 else:
 #                     # if inner/outer particles are monoatomic
 #                     xi_outer = self.mdobject.xi[outer_real]
@@ -822,13 +822,13 @@ from ash.functions.functions_general import ashexit
 #         com_atoms.pbc = atoms.pbc
 #         com_atoms.cell = atoms.cell
 #         mod = self.natoms
-                
+
 #         # need to make sure constraints are off
 #         # get_com method breaks GPAW fast FixBondLength
 #         # constraints (-> for rigid H2O)
 #         self.constraints = atoms.constraints.copy()
 #         atoms.constraints = []
-        
+
 #         # calculate cumulative properties for solute / surface
 #         # (solute is always the first entry)
 #         idx_sol = [atom.index for atom in atoms if atom.tag == 0]
@@ -845,7 +845,7 @@ from ash.functions.functions_general import ashexit
 #         tmp.set_tags([tag])
 #         forces = [frc]
 #         com_atoms += tmp
-        
+
 #         # calculate cumulative properties for all inner/outer
 #         # region particles. for monoatomic inner/outer particles,
 #         # a 1:1 copy is created.
@@ -859,7 +859,7 @@ from ash.functions.functions_general import ashexit
 #                     tag = atoms[i].tag
 #                     frc = np.sum(atoms.calc.results['forces'][i:i + mod], axis=0)
 #                     sym = atoms[i].symbol
-            
+
 #                     # create a new atom
 #                     tmp = Atoms(sym)
 #                     tmp.set_positions([com])
@@ -867,7 +867,7 @@ from ash.functions.functions_general import ashexit
 #                     tmp.set_masses([M])
 #                     tmp.set_tags([tag])
 #                     forces.append(frc)
-                    
+
 #                     # append to new atoms object
 #                     com_atoms += tmp
 
@@ -882,13 +882,13 @@ from ash.functions.functions_general import ashexit
 #         # on the pseudoparticle com_atoms object, which does
 #         # not have constraints
 #         atoms.constraints = self.constraints.copy()
-        
+
 #         # calculate absolute distances and distance vectors between
 #         # COM of solute and all inner and outer region particles
 #         # (respect PBCs in distance calculations)
-#         r, d = find_mic([atom.position for atom in com_atoms] - sol_com, 
+#         r, d = find_mic([atom.position for atom in com_atoms] - sol_com,
 #                        com_atoms.cell, com_atoms.pbc)
-        
+
 #         # list all particles in the inner region
 #         inner_mols = [(atom.index, d[atom.index])
 #                       for atom in com_atoms if atom.tag == 1]
@@ -1227,7 +1227,7 @@ from ash.functions.functions_general import ashexit
 #             # rotate velocity of outer region particle
 #             v_outer = np.dot(self.rotation_matrix(axis, theta),
 #                              v_outer)
-            
+
 #             # Perform mass-weighted exchange of normal components of
 #             # velocitiy, force (, and random forces if Langevin).
 #             # i.e. elastic collision
@@ -1235,11 +1235,11 @@ from ash.functions.functions_general import ashexit
 #                 self.debuglog("   -> hard wall reflection\n")
 #                 n = self.normalize(r_inner)
 #                 if np.dot(v_inner, n) > 0:
-#                     dV_inner = -2 * np.dot(np.dot(v_inner, n), n) 
+#                     dV_inner = -2 * np.dot(np.dot(v_inner, n), n)
 #                 else:
 #                     dV_inner = np.array([0., 0., 0.])
 #                 if np.dot(v_outer, n) < 0:
-#                     dV_outer = -2 * np.dot(np.dot(v_outer, n), n) 
+#                     dV_outer = -2 * np.dot(np.dot(v_outer, n), n)
 #                 else:
 #                     dV_outer = np.array([0., 0., 0.])
 #                 self.debuglog("   dV_inner = {:s}\n"
@@ -1285,9 +1285,9 @@ from ash.functions.functions_general import ashexit
 #             for i in range(self.natoms):
 #                 # redistribute the velocity change normal
 #                 # component to individual atoms
-#                 outer_actual = (self.nsol + (outer_reflect - 1) 
+#                 outer_actual = (self.nsol + (outer_reflect - 1)
 #                                 * self.natoms + i)
-#                 inner_actual = (self.nsol + (inner_reflect - 1) 
+#                 inner_actual = (self.nsol + (inner_reflect - 1)
 #                                 * self.natoms + i)
 #                 self.atoms[outer_actual].momentum += (
 #                         dV_outer * self.atoms[outer_actual].mass)
@@ -1400,7 +1400,7 @@ from ash.functions.functions_general import ashexit
 #             # back to incase of boundary events in the next iteration
 #             self.previous_boundary_idx = boundary_idx
 #             self.previous_atoms.positions = self.atoms.positions.copy()
-#             self.previous_atoms.set_momenta(self.atoms.get_momenta(), 
+#             self.previous_atoms.set_momenta(self.atoms.get_momenta(),
 #                                             apply_constraint=False)
 #             self.previous_atoms.calc.results['forces'] = (
 #                 self.atoms.calc.results['forces'].copy())

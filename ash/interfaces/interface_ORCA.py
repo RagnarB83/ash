@@ -21,7 +21,7 @@ import ash.functions.functions_parallel
 #ORCA Theory object.
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
-                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label="ORCA", 
+                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label="ORCA",
                  moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None):
@@ -107,20 +107,20 @@ class ORCATheory:
             self.numcores=numcores
         else:
             self.numcores=nprocs
-        
+
         #Property block. Added after coordinates unless None
         self.propertyblock=propertyblock
 
         #Store optional properties of ORCA run job in a dict
         self.properties ={}
 
-        
+
         #Adding NoAutostart keyword to extraline if requested
         if self.autostart is False:
             self.extraline=extraline+"\n! Noautostart"
         else:
             self.extraline=extraline
-        
+
         #Inputfile definitions
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
@@ -152,7 +152,7 @@ class ORCATheory:
         else:
             self.extrabasisatoms=[]
             self.extrabasis=""
-        
+
         #Used in the case of counterpoise calculations
         self.ghostatoms = [] #Adds ":" in front of element in coordinate block. Have basis functions and grid points
         self.dummyatoms = [] #Adds DA instead of element. No real atom
@@ -163,7 +163,7 @@ class ORCATheory:
         # self.qmatoms need to be set for Flipspin to work for QM/MM job.
         #Overwritten by QMMMtheory, used in Flip-spin
         self.qmatoms=[]
-        
+
         #Whether to keep a copy of last output (filename_last.out) or not
         self.keep_last_output=True
 
@@ -260,7 +260,7 @@ end
         else:
             print("Fragment provided to Opt")
 
-        
+
         current_coords=fragment.coords
         elems=fragment.elems
         #Check charge/mult
@@ -293,7 +293,7 @@ end
         create_orca_input_plain(self.filename, elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                 charge, mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
         print(BC.OKGREEN, f"ORCA Calculation started using {numcores} CPU cores", BC.END)
-        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option, 
+        run_orca_SP_ORCApar(self.orcadir, self.filename + '.inp', numcores=numcores, bind_to_core_option=self.bind_to_core_option,
                             ignore_ORCA_error=self.ignore_ORCA_error)
         print(BC.OKGREEN, "ORCA Calculation done.", BC.END)
 
@@ -307,7 +307,7 @@ end
                 #Grab optimized coordinates from filename.xyz
                 opt_elems,opt_coords = ash.modules.module_coords.read_xyzfile(self.filename+'.xyz')
                 print(opt_coords)
-                
+
                 fragment.replace_coords(fragment.elems,opt_coords)
             else:
                 print("ORCA optimization failed to converge. Check ORCA output")
@@ -326,7 +326,7 @@ end
         #Printing internal coordinate table
         ash.modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='ORCA Opt-run', moduleindex=2)
-        return 
+        return
     #Method to grab dipole moment from an ORCA outputfile (assumes run has been executed)
     def get_dipole_moment(self):
         return grab_dipole_moment(self.filename+'.out')
@@ -387,10 +387,10 @@ end
             qmatomstoflip=self.atomstoflip
             qmatoms_extrabasis=self.extrabasisatoms
             fragment_indices=self.fragment_indices
-        
+
         if numcores==None:
             numcores=self.numcores
-        
+
         #Basis set definition per element from input dict
         if self.basis_per_element != None:
             basisstring=""
@@ -398,7 +398,7 @@ end
                 basisstring += f"newgto {el} \"{b}\" end\n"
             basisblock=f"""
 %basis
-{basisstring} 
+{basisstring}
 end"""
             self.orcablocks = self.orcablocks + basisblock
 
@@ -506,7 +506,7 @@ end"""
             if self.brokensym == True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         charge,mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
-                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock, 
+                                     atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
                                      ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms,
                                      fragment_indices=fragment_indices)
             else:
@@ -529,8 +529,8 @@ end"""
         outfile=self.filename+'.out'
         engradfile=self.filename+'.engrad'
         pcgradfile=self.filename+'.pcgrad'
-        
-        #Checking if finished. 
+
+        #Checking if finished.
         if self.ignore_ORCA_error is False:
             ORCAfinished,numiterations = checkORCAfinished(outfile)
             #Check if ORCA finished or not. Exiting if so
@@ -552,7 +552,7 @@ end"""
                 print("ORCA Flipspin calculation done. Now turning off brokensym in ORCA object for possible future calculations")
             self.brokensym=False
 
-        #Now that we have possibly run a ORCA job with moreadfile we now turn the moreadfile option off as we probably want to use the 
+        #Now that we have possibly run a ORCA job with moreadfile we now turn the moreadfile option off as we probably want to use the
         if self.moreadfile != None:
             print("First ORCATheory calculation finished.")
             #Now either keeping moreadfile or removing it. Default: removing
@@ -791,7 +791,7 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, c
             print("Subprocess error! Exception message:", e)
 
 
-            #We get an exception if 
+            #We get an exception if
             print(BC.FAIL,"ASH encountered a problem when running ORCA. Something went wrong, most likely ORCA ran into an error.",BC.END)
             print(BC.FAIL,f"Please check the ORCA outputfile: {basename+'.out'} for error messages", BC.END)
             print()
@@ -818,7 +818,7 @@ def grab_ORCA_warnings(filename):
 
     warnings=[]
     #Lines that are not useful warnings
-    ignore_lines=['                       Please study these wa','                                        WARNINGS', 
+    ignore_lines=['                       Please study these wa','                                        WARNINGS',
         'Warning: in a DFT calculation', 'WARNING: Old DensityContainer', 'WARNING: your system is open-shell' ]
     for warn in warning_lines:
         false_positive = any(warn.startswith(ign) for ign in ignore_lines)
@@ -842,7 +842,7 @@ def grab_ORCA_errors(filename):
 
     errors=[]
     #Lines that are not errors
-    ignore_lines=['   Iter.        energy            ||Error||_2',' WARNING: the maximum gradient error','           *** ORCA-CIS/TD-DFT FINISHED WITHOUT ERROR','   Startup', '   DIIS-Error',' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors', 
+    ignore_lines=['   Iter.        energy            ||Error||_2',' WARNING: the maximum gradient error','           *** ORCA-CIS/TD-DFT FINISHED WITHOUT ERROR','   Startup', '   DIIS-Error',' DIIS', 'sum of PNO error', '  Last DIIS Error', '    DIIS-Error', ' Sum of total truncation errors',
         '  Sum of total UMP2 truncation', ]
     for err in error_lines:
         false_positive = any(err.startswith(ign) for ign in ignore_lines)
@@ -1052,12 +1052,12 @@ def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
                 #F12 has a basis set correction for HF energy
                 if 'Corrected 0th order energy                 ...' in line:
                     HF_energy=float(line.split()[-1])
-                    edict['HF'] = HF_energy             
-            else:    
+                    edict['HF'] = HF_energy
+            else:
                 if 'E(0)                                       ...' in line:
                     HF_energy=float(line.split()[-1])
                     edict['HF'] = HF_energy
-                    
+
 
             if DLPNO is True:
                 if F12 is True:
@@ -1065,7 +1065,7 @@ def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
                         edict['full_corr'] = CCSDcorr_energy
-                else:    
+                else:
                     if 'E(CORR)(corrected)                         ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
@@ -1076,12 +1076,12 @@ def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
                         edict['full_corr'] = CCSDcorr_energy
-                else:        
+                else:
                     if 'E(CORR)                                    ...' in line:
                         CCSDcorr_energy=float(line.split()[-1])
                         edict['CCSD_corr'] = CCSDcorr_energy
                         edict['full_corr'] = CCSDcorr_energy
-                        
+
 
             if DLPNO is True:
                 if 'Triples Correction (T)                     ...' in line:
@@ -1105,7 +1105,7 @@ def xesgrab(file):
     #
     intensities=[]
     xesgrab=False
-    
+
     with open(file) as f:
         for line in f:
             if xesgrab==True:
@@ -1309,7 +1309,7 @@ def MolecularOrbitalGrab(file):
                 endvirt=line.split()[1]
             if 'NO   OCC          E(Eh)            E(eV)' in line:
                 occorbsgrab=True
-    
+
     if hftyp != "RHF":
         Openshell=True
     else:
@@ -1424,7 +1424,7 @@ def write_ORCA_Hessfile(hessian, coords, elems, masses, hessatoms,outputname):
     orcahessfile.write("# The atoms: label  mass x y z (in bohrs)\n")
     orcahessfile.write("$atoms\n")
     orcahessfile.write(str(len(elems))+"\n")
-    
+
 
     #Write coordinates and masses to Orca Hessian file
     #print("hessatoms", hessatoms)
@@ -1462,7 +1462,7 @@ def read_ORCA_Hessian(hessfile):
     hessian = Hessgrab(hessfile)
     elems,coords = grabcoordsfromhessfile(hessfile)
     masses, elems, numatoms = masselemgrab(hessfile)
-    
+
     return hessian, elems, coords, masses
 
 
@@ -1669,7 +1669,7 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Create PC-embedded ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, 
+                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None,
                          moreadfile=None, propertyblock=None, fragment_indices=None):
     if extrabasisatoms is None:
         extrabasisatoms=[]
@@ -1708,7 +1708,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
                 fragmentindex= search_list_of_lists_for_index(i,fragment_indices)
                 #To prevent linkatoms:
                 if fragmentindex != None:
-                    orcafile.write('{} {} {} {} \n'.format(f"{el}({fragmentindex+1})", c[0], c[1], c[2]))                
+                    orcafile.write('{} {} {} {} \n'.format(f"{el}({fragmentindex+1})", c[0], c[1], c[2]))
             else:
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
         orcafile.write('*\n')
@@ -1717,7 +1717,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
-                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None, propertyblock=None, 
+                            HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None, propertyblock=None,
                             ghostatoms=None, dummyatoms=None,fragment_indices=None):
     if extrabasisatoms == None:
         extrabasisatoms=[]
@@ -1965,7 +1965,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
     else:
         print("Unknown chargemodel. Exiting...")
         ashexit()
-    
+
     #If BS then we have grabbed charges for both high-spin and BS solution
     if BS is True:
         print("Broken-symmetry job detected. Only taking BS-state populations")
@@ -1976,7 +1976,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
 
 # Wrapper around interactive orca_plot
 # Todo: add TDDFT difference density, natural orbitals, MDCI spin density?
-def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=False, 
+def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=False,
     densityfilename=None, individual_file=False, mo_operator=0, mo_number=None,):
     print("Running run_orca_plot")
     orcadir = check_ORCA_location(orcadir)
@@ -2010,10 +2010,10 @@ def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=
             print("specify_density: True. Picking density filename:", densityfilename)
             #Choosing e.g. MRCI density
             p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n10\n11\n\n', encoding='ascii')  
+                input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n10\n11\n\n', encoding='ascii')
         else:
             p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                       input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\ny\n10\n11\n\n', encoding='ascii')       
+                       input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\ny\n10\n11\n\n', encoding='ascii')
     elif option=='mo':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
                        input=f'5\n7\n4\n{gridvalue}\n3\n{mo_operator}\n2\n{mo_number}\n10\n11\n\n', encoding='ascii')
@@ -2023,7 +2023,7 @@ def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=
                        input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n10\n11\n\n', encoding='ascii')
 
     #print(p.returncode)
-    
+
 #Grab IPs from an EOM-IP calculation and also largest singles amplitudes. Approximation to Dyson norm.
 def grabEOMIPs(file):
     IPs=[]
@@ -2045,7 +2045,7 @@ def grabEOMIPs(file):
             if 'Percentage singles' in line:
                 #Find dominant singles
                 #print("state_amplitudes:", state_amplitudes)
-                
+
                 #if no singles amplitude found then more complicated transition. set to 0.0
                 if len(state_amplitudes) >0:
                     largest=abs(max(state_amplitudes, key=abs))
@@ -2245,7 +2245,7 @@ def grab_EFG_from_ORCA_output(filename):
 def counterpoise_calculation_ORCA(fragments=None, theory=None, monomer1_indices=None, monomer2_indices=None, charge=None, mult=None):
     print_line_with_mainheader("COUNTERPOISE CORRECTION JOB")
     print("\n Boys-Bernardi counterpoise correction\n")
-    
+
     if theory == None and fragments == None:
         print("theory and list of ASH fragments required")
         ashexit()
@@ -2317,7 +2317,7 @@ H    2.453295744  -1.445998564  -1.389381355
 
     #Initial cleanup
     theory.cleanup()
-    
+
     #Run dimer
     print("\nRunning dimer calculation")
     dimer_result=Singlepoint(theory=theory,fragment=dimer)
@@ -2333,7 +2333,7 @@ H    2.453295744  -1.445998564  -1.389381355
     monomer2_energy = monomer2_result.energy
     theory.cleanup()
     print("\nUncorrected binding energy: {} kcal/mol".format((dimer_energy - monomer1_energy-monomer2_energy)*ash.constants.hartokcal))
-    
+
     #Monomer calcs at dimer geometry
     print("\nRunning monomers at dimer geometry via dummy atoms")
     theory.dummyatoms=monomer1_indices
@@ -2488,7 +2488,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
         o.write("! ExtOpt Opt\n")
         o.write("\n")
         o.write("*xyzfile {} {} {}\n".format(charge,mult,xyzfile))
-    
+
     #Call ORCA to do geometry optimization
     with open(basename+'.out', 'w') as ofile:
         process = sp.run(['orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
@@ -2520,7 +2520,7 @@ def make_molden_file_ORCA(GBWfile, orcadir=None, printlevel=2):
     #Check for ORCA dir
     orcadir = check_ORCA_location(orcadir)
 
-    print("Inputfile:", GBWfile) 
+    print("Inputfile:", GBWfile)
     #GBWfile should be ORCA file. Can be SCF GBW (.gbw) or natural orbital WF file (.nat)
     renamefile=False
     #Renaming file if GBW extension as orca_mkl needs it
@@ -2623,7 +2623,7 @@ def orca_frag_guess(fragment=None, theory=None, A_indices=None, B_indices=None, 
     if theory == None or theory.__class__.__name__ != "ORCATheory":
         print("You must provide an ORCATheory level")
         ashexit()
-    
+
     #Creating copies of theory object provided
     calc_AB = copy.copy(theory); calc_AB.filename="calcAB"
     calc_A = copy.copy(theory); calc_A.filename="calcA"
@@ -2919,16 +2919,16 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 
 
 #Function to prepare ORCA orbitals for another ORCA calculation
-#Mainly for getting natural orbitals 
+#Mainly for getting natural orbitals
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
-        MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None, 
+        MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None,
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
-        FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6, 
+        FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6,
         ROHF=False, ROHF_case=None, MP2_nat_step=False, MREOMtype="MR-EOM",
         NMF=False, NMF_sigma=None):
 
     print_line_with_mainheader("ORCA_orbital_setup")
-    
+
 
     if fragment is None:
         print("Error: No fragment provided to ORCA_orbital_setup.")
@@ -3089,7 +3089,7 @@ density {MP2_density}
 natorbs true
 end
 """
-        mp2_prep = ash.ORCATheory(orcasimpleinput=f"! RI-MP2 {basis} {extrainput} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+        mp2_prep = ash.ORCATheory(orcasimpleinput=f"! RI-MP2 {basis} {extrainput} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores,
                                  label='MP2prep', filename="MP2prep", save_output_with_label=True, moreadfile=moreadfile, autostart=autostart_option)
         Singlepoint(theory=mp2_prep,fragment=fragment)
         #Now MP2-step is done. Now adding noiter to extrainput and moreadfile
@@ -3106,7 +3106,7 @@ end
     if orbitals_option =="HF" or orbitals_option =="RHF" :
         print("Performing HF orbital calculation")
         exit()
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} HF {basis}  tightscf", numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} HF {basis}  tightscf", numcores=numcores,
                                  label='RHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.gbw"
         #Dummy occupations
@@ -3114,14 +3114,14 @@ end
     elif orbitals_option =="UHF-UNO" or orbitals_option =="UHF" :
         print("Performing UHF natural orbital calculation")
         exit()
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis} normalprint UNO tightscf", numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis} normalprint UNO tightscf", numcores=numcores,
                                  label='UHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.unso"
         natoccgrab=UHF_natocc_grab
     elif orbitals_option =="UHF-QRO":
         print("Performing UHF-QRO natural orbital calculation")
         exit()
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores,
                                  label='UHF-QRO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.qro"
         natoccgrab=UHF_natocc_grab
@@ -3130,7 +3130,7 @@ end
         if NMF_sigma is None:
             print("Error: For orbitals_option NMF, NMF_sigma must also be provided")
             ashexit()
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {basis}  tightscf", NMF=True, NMF_sigma=NMF_sigma, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {basis}  tightscf", NMF=True, NMF_sigma=NMF_sigma, numcores=numcores,
                                  label='NMF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.gbw"
         natoccgrab=SCF_FODocc_grab
@@ -3150,7 +3150,7 @@ end
         density {MP2_density}
         end
         """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores,
                                  label='MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
@@ -3164,7 +3164,7 @@ end
         density {MP2_density}
         end
         """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores,
                                  label='RIMP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
@@ -3178,7 +3178,7 @@ end
         density {MP2_density}
         end
         """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} RI-SCS-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores,
                                  label='RI-SCS-MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
@@ -3192,7 +3192,7 @@ end
         density relaxed
         end
         """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} OO-RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} OO-RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores,
                                  label='OO-RI-MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
@@ -3207,7 +3207,7 @@ end
         end
         """
         mdcilabel = MDCIkeyword.replace("/","") #To avoid / in CEPA/1 etc
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores,
                                  label=mdcilabel, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mdci.nat"
         natoccgrab=CCSD_natocc_grab
@@ -3222,7 +3222,7 @@ end
         norb {CAS_norb}
         end
         """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} CASSCF {basis} tightscf", orcablocks=casscfblocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} CASSCF {basis} tightscf", orcablocks=casscfblocks, numcores=numcores,
                                  label='CASSCF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.gbw"
         natoccgrab=CASSCF_natocc_grab
@@ -3241,7 +3241,7 @@ end
         tsel {MRCI_tsel}
         end
         """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MRCIkeyword} {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MRCIkeyword} {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores,
                                  label=MRCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.b0_s0.nat"
         natoccgrab=None
@@ -3252,7 +3252,7 @@ end
             print("CAS_nel and CAS_norb not given. Guessing ROHF-type CASSCF based on multiplicity")
             CAS_nel=mult-1
             CAS_norb=mult-1
-        
+
         if CAS_nel == 0:
             print("Closed-shell system. Adding AllowRHF keyword")
             extrainput="AllowRHF"
@@ -3288,7 +3288,7 @@ natorbs 2
 tsel {MRCI_tsel}
 end
 """
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput}  {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput}  {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores,
                                  label='FOBO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.b0_s0.nat"
         natoccgrab=None
@@ -3296,7 +3296,7 @@ end
     else:
         print("Error: orbitals_option not recognized")
         ashexit()
-    
+
     #Run natorb calculation unless everything is done
     if alldone is False:
         ash.Singlepoint(theory=natorbs, fragment=fragment, charge=charge, mult=mult)
@@ -3326,4 +3326,3 @@ end
     print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", mofile)
     print("Also returning natural occupations list:", nat_occupations)
     return mofile, nat_occupations
-

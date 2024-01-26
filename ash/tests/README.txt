@@ -12,6 +12,3 @@ when inside directory or pytest test_XXX.py  to run specific test.
 1.Create file name "test_XXXX.py"
 2. Create function named "test_YYY()"
 3. Use assert statements to check for consistencies
-
-
-

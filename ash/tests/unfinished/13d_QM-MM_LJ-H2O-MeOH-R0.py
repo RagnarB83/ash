@@ -35,7 +35,7 @@ frag.print_system("h2o_MeOH.ygg")
 timestampA=time.time()
 #QM and MM. qmatoms list passed to MMpart because of LJ pair-potentials
 ORCAQMpart = ORCATheory(orcadir=orcadir, charge=0, mult=1, orcasimpleinput=orcasimpleinput, orcablocks=orcablocks)
-MMpart = NonBondedTheory(charges = atomcharges, atomtypes=atomtypes, forcefield=MM_forcefield, 
+MMpart = NonBondedTheory(charges = atomcharges, atomtypes=atomtypes, forcefield=MM_forcefield,
     LJcombrule='geometric', codeversion='py')
 QMMM_calc = QMMMTheory(fragment=frag, qm_theory=ORCAQMpart, mm_theory=MMpart, qmatoms=qmatoms, charges=atomcharges,
                                        embedding='Elstat')

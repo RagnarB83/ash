@@ -252,7 +252,7 @@ CEL1 CTL2 CTL3   32.00     112.20   ! 1-butene; from propene, yin,adm jr., 12/95
 HAL2 CTL2 CEL1   45.00     111.50   ! 1-butene; from propene, yin,adm jr., 12/95
 HAL3 CTL3 CEL1   42.00     111.50   ! 2-butene, yin,adm jr., 12/95
 CEL1 CTL2 CEL1   30.0      114.0    ! 1,4-dipentene, adm jr., 2/00
- 
+
 DIHEDRALS
 !
 !V(dihedral) = Kchi(1 + cos(n(chi) - delta))
@@ -344,9 +344,9 @@ CTL2 CTL2 CTL2 CL       0.317   3   180.00 ! propyl ester, 6/07
 CTL2 CTL2 CTL2 CL       0.557   2     0.00 ! propyl ester, 6/07
 CTL2 CTL2 CTL2 CL       0.753   1     0.00 ! propyl ester, 6/07
 OSL  CTL2 CTL1 OSL     -0.429   4    60.00 ! glycerol, 8/08
-OSL  CTL2 CTL1 OSL      0.614   3     0.00 ! glycerol, 8/08 
-OSL  CTL2 CTL1 OSL     -0.115   2    60.00 ! glycerol, 8/08 
-OSL  CTL2 CTL1 OSL      0.703   1   180.00 ! glycerol, 8/08 
+OSL  CTL2 CTL1 OSL      0.614   3     0.00 ! glycerol, 8/08
+OSL  CTL2 CTL1 OSL     -0.115   2    60.00 ! glycerol, 8/08
+OSL  CTL2 CTL1 OSL      0.703   1   180.00 ! glycerol, 8/08
 OSLP CTL2 CTL1 OSL      0.000   4     0.00 ! Fit to QM, theta2, 07/08 jbk
 OSLP CTL2 CTL1 OSL      0.607   3   180.00 ! Fit to QM, theta2, 07/08 jbk
 OSLP CTL2 CTL1 OSL      0.254   2    60.00 ! Fit to QM, theta2, 07/08 jbk
@@ -367,8 +367,8 @@ CL   OSL  CTL1 CTL3     0.000   4     0.00 ! glycerol, beta1 6/07
 CL   OSL  CTL1 CTL3     0.150   3   180.00 ! glycerol, beta1 6/07
 CL   OSL  CTL1 CTL3     1.453   2   180.00 ! glycerol, beta1 6/07
 CL   OSL  CTL1 CTL3     0.837   1   180.00 ! glycerol, beta1 6/07
-CL   OSL  CTL2 CTL1     0.267   3   180.00 ! glycerol, gamma1 6/07 
-CL   OSL  CTL2 CTL1     0.173   2     0.00 ! glycerol, gamma1 6/07 
+CL   OSL  CTL2 CTL1     0.267   3   180.00 ! glycerol, gamma1 6/07
+CL   OSL  CTL2 CTL1     0.173   2     0.00 ! glycerol, gamma1 6/07
 CL   OSL  CTL2 CTL1     0.781   1   180.00 ! glycerol, gamma1 6/07
 X    CTL2 NTL  X        0.26    3     0.00 ! tetramethylammonium
 X    CTL5 NTL  X        0.23    3     0.00 ! tetramethylammonium
@@ -494,7 +494,7 @@ HL       0.0       -0.046     0.7    ! polar H on NC4+
 HEL1     0.0       -0.031     1.25   ! alkene, yin,adm jr., 12/95
 HEL2     0.0       -0.026     1.26   ! alkene, yin,adm jr., 12/95
 !
-CL       0.0       -0.0700    2.00   ! methyl acetate update             
+CL       0.0       -0.0700    2.00   ! methyl acetate update
 CCL      0.0       -0.0700    2.00   ! for POPS
 CTL1     0.0       -0.0200    2.275 0.0 -0.01 1.9 ! alkane, 3/92
 CTL2     0.0       -0.0560    2.010 0.0 -0.01 1.9 ! alkane, 4/98, yin, adm jr.

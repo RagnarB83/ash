@@ -42,4 +42,3 @@ cube_data2 = read_cube(f"{label2}.eldens.cube")
 
 #Write out difference density as a Cubefile
 write_cube_diff(cube_data1, cube_data2, "diffence_density")
-

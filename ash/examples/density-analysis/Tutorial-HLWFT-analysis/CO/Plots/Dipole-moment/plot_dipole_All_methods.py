@@ -39,7 +39,7 @@ dipole_moments= list(dipole_dict.values())
 #Note: using Z-component
 
 dplot = ASH_plot("Dipole moment", num_subplots=1, x_axislabel="", y_axislabel='Dipole-mom (A.U.)', )
-dplot.addseries(0, x_list=list(range(0,len(dipole_moments))), x_labels=method_labels, y_list=dipole_moments, 
+dplot.addseries(0, x_list=list(range(0,len(dipole_moments))), x_labels=method_labels, y_list=dipole_moments,
     label='Dipole', line=False, scatter=False, bar=True)
 
 #Save figure

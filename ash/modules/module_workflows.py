@@ -43,7 +43,7 @@ class ProjectResults():
 
 
 #Provide crest/xtb info, MLtheory object (e.g. ORCA), HLtheory object (e.g. ORCA)
-def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None, 
+def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLtheory=None,
                          HLtheory=None, numcores=1, charge=None, mult=None, crestoptions=None,
                          optimizer_maxiter=200):
     """[summary]
@@ -69,7 +69,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
 
     #1. Calling crest
     #call_crest(fragment=molecule, xtbmethod='GFN2-xTB', crestdir=crestdir, charge=charge, mult=mult, solvent='H2O', energywindow=6 )
-    list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir, 
+    list_conformer_frags, xtb_energies = ash.interfaces.interface_crest.call_crest(fragment=fragment, xtbmethod=xtbmethod, crestdir=crestdir,
                                                                                    charge=charge, mult=mult, numcores=numcores, extraoptions=crestoptions)
 
     #2. Grab low-lying conformers from crest_conformers.xyz as list of ASH fragments.
@@ -91,7 +91,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     for index,conformer in enumerate(list_conformer_frags):
         print("")
         print("Performing ML Geometry Optimization for Conformer ", index)
-        ash.interfaces.interface_geometric_new.geomeTRICOptimizer(fragment=conformer, theory=MLtheory, 
+        ash.interfaces.interface_geometric_new.geomeTRICOptimizer(fragment=conformer, theory=MLtheory,
                                                         coordsystem='tric', charge=charge, mult=mult, maxiter=optimizer_maxiter)
         ML_energies.append(conformer.energy)
         #Saving ASH fragment and XYZ file for each ML-optimized conformer
@@ -148,7 +148,7 @@ def confsampler_protocol(fragment=None, crestdir=None, xtbmethod='GFN2-xTB', MLt
     print("")
     print("Confsamplerprotocol done!")
     print_time_rel(module_init_time, modulename='Confsamplerprotocol', moduleindex=0)
-    
+
 
 # opt+freq+HL protocol for single species
 def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, numcores=None, memory=5000,
@@ -157,7 +157,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     print(BC.WARNING, BC.BOLD, "------------THERMOCHEM PROTOCOL (single-species)-------------", BC.END)
     #Check charge/mult
     #charge,mult = check_charge_mult(charge, mult, Opt_theory.theorytype, fragment, "thermochemprotocol_single", theory=Opt_theory)
-    
+
     #DFT Opt+Freq  and Single-point High-level workflow
     #Only Opt+Freq for molecules, not atoms
     print("-------------------------------------------------------------------------")
@@ -170,7 +170,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
             print("-------------------------------------------------------------------------")
             print("THERMOCHEM PROTOCOL-single: Step 2. Frequency calculation")
             print("-------------------------------------------------------------------------")
-            
+
             #Checking analyticHessian compatible with Theory
             if analyticHessian is True:
                 if Opt_theory.analytic_hessian is True:
@@ -182,11 +182,11 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
             if analyticHessian == True:
                 print("Analytic Hessian calculation")
                 freq_result = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores, charge=charge, mult=mult)
-                thermochem = freq_result.thermochemistry              
+                thermochem = freq_result.thermochemistry
             else:
                 print("Numerical Hessian calculation")
                 freq_result = ash.NumFreq(fragment=fragment, theory=Opt_theory, npoint=2, runmode='serial', charge=charge, mult=mult)
-                thermochem = freq_result.thermochemistry     
+                thermochem = freq_result.thermochemistry
         else:
             print("Opt_theory is set to None. Skipping optimization and frequency calculation.\n")
             #If Opt_theory == None => No Opt, no freq
@@ -194,7 +194,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     else:
         #Setting thermoproperties for atom
         thermochem = thermochemcalc([],[0],fragment, fragment.mult, temp=temp,pressure=pressure)
-        
+
     print("-------------------------------------------------------------------------")
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
@@ -246,13 +246,13 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
     print("")
     FinalEnergies_el = []; FinalEnergies_zpve = []; FinalEnthalpies = []; FinalFreeEnergies = []; list_of_dicts = []; ZPVE_Energies=[]
     Hcorr_Energies = []; Gcorr_Energies = []
-    
+
     #Looping over species in fraglist
     for species in fraglist:
         #Get energy and components for species
         FinalE, componentsdict, thermochem = thermochemprotocol_single(fragment=species, Opt_theory=Opt_theory, SP_theory=SP_theory, numcores=numcores, memory=memory,
                        analyticHessian=analyticHessian, temp=temp, pressure=pressure, charge=species.charge, mult=species.mult)
-        
+
         print("FinalE:", FinalE)
         print("componentsdict", componentsdict)
         print("thermochem", thermochem)
@@ -268,7 +268,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
         ZPVE_Energies.append(ZPVE)
         Hcorr_Energies.append(Hcorr)
         Gcorr_Energies.append(Gcorr)
-        
+
     print("")
     print("")
     #Final reaction energy and components dictionary
@@ -337,7 +337,7 @@ def thermochemprotocol_reaction(Opt_theory=None, SP_theory=None, reaction=None, 
 
     return finaldict
 
-def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=None, charge=None, mult=None, 
+def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=None, charge=None, mult=None,
     initial_orbitals='MP2', functional='TPSS', smeartemp=5000, tgen=1e-1, selection_thresholds=[1.999,0.001],
     numcores=1, memory=9000, extrablocks=None):
 
@@ -534,7 +534,7 @@ def auto_active_space(fragment=None, orcadir=None, basis="def2-SVP", scalar_rel=
 #Assuming XYZ-files have charge,mult info in header, or if single global charge,mult, apply that
 #NOTE: Maybe change to opt_theory and SP_theory. If both are set: then first Opt using opt_theory then HL-SP using SP_theory.
 #If only opt_theory set then second SP step skipped, if only SP_theory set then we skip the first Opt-step
-# TODO: Add parallelization. Requires some rewriting 
+# TODO: Add parallelization. Requires some rewriting
 def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=False, charge=None, mult=None, xtb_preopt=False ):
     print_line_with_mainheader("calc_xyzfiles function")
 
@@ -597,7 +597,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
                 #Run direct xtb optimization. This will update fragment.
                 xtbcalc.Opt(fragment=fragment, charge=fragment.charge, mult=fragment.mult)
                 xtbcalc.cleanup()
-            
+
             #Now doing actual OPT
             optenergy = ash.interfaces.interface_geometric_new.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
             theory.cleanup()
@@ -624,7 +624,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
             result_reg = ash.Singlepoint(theory=theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
             energy = result_reg.energy
             theory.cleanup()
-        
+
         energies.append(energy)
         print("Energy of file {} : {} Eh".format(fragment.label, energy))
         print("")
@@ -639,7 +639,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     print("-"*70)
     for xyzfile, frag, e in zip(filenames, fragments,energies):
         print("{:30} {:>7} {:>7} {:>20.10f}".format(xyzfile,frag.charge, frag.mult, e))
-    
+
     if Opt is True:
         print("\n\nXYZ-files with optimized coordinates can be found in:", finalxyzdir)
 
@@ -647,27 +647,27 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
 
 
 def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=True,
-                                def2_family=True, cc_family=True, aug_cc_family=False, 
+                                def2_family=True, cc_family=True, aug_cc_family=False,
                                 F12_family=True, DLPNO=False, extrapolation=True, highest_cardinal=6):
     """Function to perform high-level CCSD(T) calculations for a reaction with associated plots.
        Performs CCSD(T) with cc and def2 basis sets, CCSD(T)-F12 and CCSD(T)/CBS extrapolations
 
     Args:
-        reaction (ASH Reaction): ASH Reaction object. 
+        reaction (ASH Reaction): ASH Reaction object.
         numcores (int, optional): [description]. Defaults to 1.
         memory (int, optional): [description]. Defaults to 7000.
         def2_family (bool, optional): [description]. Defaults to True.
         cc_family (bool, optional): [description]. Defaults to True.
         F12_family (bool, optional): [description]. Defaults to True.
         highest_cardinal (int, optional): [description]. Defaults to 5.
-        plot (Boolean): whether to plot the results or not (requires Matplotlib). Defaults to True. 
+        plot (Boolean): whether to plot the results or not (requires Matplotlib). Defaults to True.
     """
     elements_involved=[]
 
     if reaction is None:
         print("Error: No ASH reaction object given")
         ashexit()
-    
+
     fraglist=reaction.fragments
     stoichiometry=reaction.stoichiometry
     reactionlabel=reaction.label
@@ -1028,7 +1028,7 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
             if eplot.working is False:
                 print("ASH_plot not working. Exiting")
                 ashexit()
-            
+
             if cc_family is True:
                 eplot.addseries(0, x_list=CCSDT_cc_bases_proj.cardinals, y_list=CCSDT_cc_bases_proj.species_energies_dict[specieslabel], label='cc-pVnZ', color='blue')
             if aug_cc_family is True:
@@ -1042,7 +1042,7 @@ def Reaction_Highlevel_Analysis(reaction=None, numcores=1, memory=7000, plot=Tru
                 eplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][1]], label='CBS-cc-34', line=False, marker='x', color='green')
                 if aug_cc_family is True:
                     eplot.addseries(0, x_list=[2.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][0]], label='CBS-aug-cc-23', line=False,  marker='x', color='brown')
-                    eplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][1]], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen') 
+                    eplot.addseries(0, x_list=[3.5], y_list=[CCSDTextrapaugcc_proj.species_energies_dict[specieslabel][1]], label='CBS-aug-cc-34', line=False, marker='x', color='lightgreen')
                 if highest_cardinal > 4:
                     eplot.addseries(0, x_list=[4.5], y_list=[CCSDTextrap_proj.species_energies_dict[specieslabel][2]], label='CBS-cc-45', line=False, marker='x', color='black')
                     if aug_cc_family is True:
@@ -1142,7 +1142,7 @@ def FormationEnthalpy(TAE, fragments, stoichiometry, RT=False, deltaHF_atoms_dic
     deltaHF_atoms_exp_298K={'H':52.10277247, 'C':171.33914913957935, 'N':112.916348, 'O':59.56716061, 'F':18.96845124, 'Si':108.71414913957935, 'Cl':28.97418738, 'Br':26.73398662}
     print("\nFormationEnthalpy function")
     print("RT is:", RT)
-    
+
     if RT is True:
         print("Assuming T=298.15 K. Using atomic experimental enthalpies of formation at 298.15 K.")
         print("deltaHF_atoms_exp_298K:", deltaHF_atoms_exp_298K)
@@ -1183,7 +1183,7 @@ def FormationEnthalpy(TAE, fragments, stoichiometry, RT=False, deltaHF_atoms_dic
 
 #Finding non-Aufbau configurations via STEP levelshifting. Using either orbital occupation ordering for finding states or TDDFT
 #TODO: extra_multiplicities.
-def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, spinset=[0], stability_analysis_GS=False, TDDFT=False, epsilon=0.1, maxiter=500, 
+def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, spinset=[0], stability_analysis_GS=False, TDDFT=False, epsilon=0.1, maxiter=500,
     manual_levelshift=None):
 
     print_line_with_mainheader("AutoNonAufbau")
@@ -1230,7 +1230,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
         print("Doing TDDFT on top as well")
         blocks_with_ttddft=theory.orcablocks+f"%tddft nroots {totalnumstates} end"
         theory.orcablocks=blocks_with_ttddft
-    
+
     #If stability_analysis_GS is True then do on GroundState
     if stability_analysis_GS == True:
         theory.orcablocks=theory.orcablocks+"%scf stabperform true end"
@@ -1318,7 +1318,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
                     virt_index=lumo_number_beta+v
                     cfg=NonAufbauState(fragment.charge, fragment.mult, s, homo_number_beta, occ_index, virt_index, mo_dict["occ_beta"], mo_dict["unocc_beta"])
                 calculated_states.append((s_ind,cfg))
-                s_ind+=1       
+                s_ind+=1
 
     print("Calculated_states (index,spinset):", calculated_states)
 
@@ -1375,7 +1375,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
             #Defining MO rotation line for first pair
             print(f"Will rotate occupied orbitals: {orbpair_occ_A} and virtual orbital: {orbpair_unocc_A} in spin manifold {spinvar_A}")
             rotatelineA=f"rotate {{{orbpair_occ_A},{orbpair_unocc_A},90,{spinvar_A},{spinvar_A}}} end"
-            
+
             #List of of occorbs
             occ_orb_list=[orbpair_occ_A]
             unocc_orb_list=[orbpair_unocc_A]
@@ -1398,7 +1398,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
                 spinvar_list.append(spinvar_B)
             else:
                 rotatelineB=""
-            
+
 
             #NOTE: Need to define HOMO-LUMO gap here for levelshift
             print("NOT READY")
@@ -1466,7 +1466,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
 
         #excited_state_energies.append(E_ES)
         #Adding all info to dict
-        states_dict[state_index] = [E_ES,occ_orb_list,unocc_orb_list,spinvar_list,homo_lumo_gap,lshift, cfg.mult, theory.filename+f'ES_SCF{state_index}_mult{cfg.mult}_spinset{cfg.spinset}.gbw' ] 
+        states_dict[state_index] = [E_ES,occ_orb_list,unocc_orb_list,spinvar_list,homo_lumo_gap,lshift, cfg.mult, theory.filename+f'ES_SCF{state_index}_mult{cfg.mult}_spinset{cfg.spinset}.gbw' ]
 
     #Collecting energies
     print()
@@ -1492,7 +1492,7 @@ def AutoNonAufbau(fragment=None, theory=None, num_occ_orbs=1, num_virt_orbs=3, s
         print(f"Excited-state SCF Levelshift chosen: {states_dict[state_index][5]}")
         print("-"*5)
 
-        #Only keep states that did not fall back to GS. 
+        #Only keep states that did not fall back to GS.
         # Currently keeping states with identical energy as they could be a member of a degenerate state.
         if (states_dict[state_index][0]-E_GS)*27.211399 > 0.04:
             final_state_dict[uniquestatecount] = states_dict[state_index]
@@ -1588,5 +1588,5 @@ def TDDFT_vib_ave(theory=None,trajectory=None, plot_range=[0,10],broadening=0.1,
 
     # Plot spectrum (applies broadening to every stick)
     plot_Spectrum(xvalues=all_trans_energies, yvalues=all_trans_intensities, plotname='TDDFT',
-        range=plot_range, unit='eV', broadening=broadening, points=points, imageformat=imageformat, dpi=dpi, 
+        range=plot_range, unit='eV', broadening=broadening, points=points, imageformat=imageformat, dpi=dpi,
         matplotlib=True, CSV=True, color='blue', plot_sticks=True)

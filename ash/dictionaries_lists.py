@@ -16,7 +16,7 @@ eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11
 # Used by: module_coords: conv_atomtypes_elems and read_gromacsfile. Also in read_pdbfile when atomnames option is active
 # Added MW as atomtype for M-site. Problem for QM-code
 atomtypes_dict = {'H': 'H', 'HA': 'H', 'HB': 'H', 'HW': 'H', 'HH': 'H', 'HN': 'H', 'HD': 'H', 'HZ': 'H', 'HG': 'H',
-                  'HE': 'H', 'HT': 'H', 'H1': 'H', 'H2': 'H', 'H3': 'H', 'HT1': 'H', 'HT2': 'H', 'HT3': 'H', 
+                  'HE': 'H', 'HT': 'H', 'H1': 'H', 'H2': 'H', 'H3': 'H', 'HT1': 'H', 'HT2': 'H', 'HT3': 'H',
                   'HN1': 'H', 'HN2': 'H',
                   'HB1': 'H', 'HB2': 'H', 'HG1': 'H', 'HG2': 'H', 'HG11': 'H', 'HG12': 'H', 'HG13': 'H', 'HG21': 'H',
                   'HG22': 'H', 'HG23': 'H', 'HH11': 'H', 'HH12': 'H', 'HH21': 'H', 'HH22': 'H', 'HD11': 'H',
@@ -37,7 +37,7 @@ atomtypes_dict = {'H': 'H', 'HA': 'H', 'HB': 'H', 'HW': 'H', 'HH': 'H', 'HN': 'H
                   'CZ3': 'C', 'CZ2': 'C', 'CX': 'C', 'CBC': 'C', 'CAC': 'C', 'CDC': 'C', 'C1':'C', 'C2':'C', 'CT':'C', 'C4':'C',
                   'C12':'C', 'C52':'C', 'C22':'C', 'C32':'C', 'C42':'C', 'C62':'C', 'C13':'C', 'C53':'C', 'C23':'C', 'C33':'C',
                   'C43':'C', 'C63':'C',
-                  'S': 'S', 'SD': 'S', 'SG': 'S', 'S1': 'S', 'S2': 'S', 'S3': 'S', 'S4': 'S', 'S5': 'S', 'S6': 'S', 
+                  'S': 'S', 'SD': 'S', 'SG': 'S', 'S1': 'S', 'S2': 'S', 'S3': 'S', 'S4': 'S', 'S5': 'S', 'S6': 'S',
                   'S7': 'S', 'S8': 'S', 'S9': 'S',
                   'O': 'O', 'OE': 'O', 'OG': 'O', 'OH': 'O', 'OW': 'O', 'OT': 'O', 'OD': 'O', 'OP': 'O', 'OE1': 'O', 'O2':'O',
                   'OE2': 'O', 'OD1': 'O', 'OD2': 'O', 'OG1': 'O', 'OT1': 'O', 'OH2': 'O', 'OXT': 'O', 'O1':'O', 'O5':'O',
@@ -53,7 +53,7 @@ atomtypes_dict = {'H': 'H', 'HA': 'H', 'HB': 'H', 'HW': 'H', 'HH': 'H', 'HN': 'H
                   'MW': 'M'}
 
 
-# Element class 
+# Element class
 class Element:
     def __init__(self, name, symbol, atomnumber):
         # Fine-structure constant (2018 CODATA recommended value)

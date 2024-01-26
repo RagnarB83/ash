@@ -26,7 +26,7 @@ class SpinProjectionTheory:
         self.reuseorbs=reuseorbs
         #This is an inputfilename that may be set externally (Singlepoint_par)
         self.filename="X"
-        
+
         #This is the exception where charge/mult is part of the theory
         self.charge_1=charge_1
         self.charge_2=charge_2
@@ -47,7 +47,7 @@ class SpinProjectionTheory:
             print("Unknown option")
             ashexit()
 
-    
+
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None, charge=None, mult=None ):
         module_init_time=time.time()
@@ -62,7 +62,7 @@ class SpinProjectionTheory:
         #theory2 will read MOs from theory1 by default
         if self.reuseorbs is True:
             self.theory2.moreadfile=self.theory1.filename+".gbw"
-        
+
         #RUNNING both theories
         HSenergy = self.theory1.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad, charge=self.charge_1, mult=self.mult_1)
         BSenergy = self.theory2.run(current_coords=current_coords, elems=elems, PC=PC, numcores=numcores, Grad=Grad, charge=self.charge_2, mult=self.mult_2)
@@ -103,7 +103,7 @@ class SpinProjectionTheory:
         else:
             print("System is FERROMAGNETIC")
         print("")
-        
+
         #Calculate J using the HS/BS energies and either spin-expectation values or total spin
         if self.jobtype == "Yamaguchi":
             J=ash.functions.functions_elstructure.Jcoupling_Yamaguchi(HSenergy,BSenergy,HS_S2,BS_S2)
@@ -124,12 +124,10 @@ class SpinProjectionTheory:
         Jmultiple_HSLS=Jspinmultiple_HS-Jspinmultiple_LS
         print("Jmultiple_HSLS:", Jmultiple_HSLS)
         print("{}J : {}".format(Jmultiple_HSLS,Jmultiple_HSLS*J))
-        
+
         #Final energy of LS state by using J-multiple and energy of HS state
         E_proj=HSenergy+Jmultiple_HSLS*J
         print("Projected energy of state S={} (label: {}) state : {}".format(self.Spin_LS,label,E_proj))
         finalE=E_proj
         print_time_rel(module_init_time, modulename='SpinProjectionTheory run')
         return finalE
-    
-

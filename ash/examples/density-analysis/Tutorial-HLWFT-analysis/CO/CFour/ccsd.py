@@ -24,4 +24,3 @@ Singlepoint(theory=cfourcalc, fragment=frag)
 
 #Convert CFour Molden file,MOLDEN_NAT, to Multiwfn-compatible file
 convert_CFour_Molden_file("MOLDEN_NAT")
-

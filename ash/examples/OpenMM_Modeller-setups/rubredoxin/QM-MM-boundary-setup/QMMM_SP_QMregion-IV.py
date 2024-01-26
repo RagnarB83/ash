@@ -6,7 +6,7 @@ from ash import *
 #QM-II: Fe and 4 SCH2 group only: 17 QM-atoms + 4 linkatoms
 #QM-III (bad): QM-II + C_alpha and H_alpha of Cys-6 backbone. ASH will not allow this
 #QM-IV: QM-II + CH(alpha) and NH of Cys-6 backbone + CO of Val-5 backbone
- 
+
 #Define number of cores variable
 numcores=1
 

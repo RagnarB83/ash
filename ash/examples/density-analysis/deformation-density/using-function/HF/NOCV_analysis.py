@@ -16,4 +16,3 @@ calc = ORCATheory(orcasimpleinput="! UKS BP86 def2-SVP", orcablocks="")
 
 # Call NOCV_density_ORCA but with NOCV=False, only deformation density calculated
 NOCV_density_ORCA(fragment_AB=fragment_AB, fragment_A=fragment_A, fragment_B=fragment_B, theory=calc, NOCV=True)
-
