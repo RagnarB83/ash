@@ -46,7 +46,7 @@ def cell_extend_frag_withcenter(cellvectors, coords,elems):
 
 
 #Take extended_cell coordinates, check if clashing atoms with oldcell-coordinates
-#Delete clashing coordinates in extended part of extendecell coords. 
+#Delete clashing coordinates in extended part of extendecell coords.
 def delete_clashing_atoms(extendedcell,oldcell,extendedelems,oldelems):
     oldcell=np.array(oldcell)
     #Number of decimals to compare
@@ -58,7 +58,7 @@ def delete_clashing_atoms(extendedcell,oldcell,extendedelems,oldelems):
         result, = np.where(np.all( oldcell.round(decimals=decimal)== extendedcell[i].round(decimals=decimal), axis=1))
         if result.size >0:
             deletionlist.append(i)
-    
+
     #Delete all rows in deletionlist and get final cell
     newcell = np.delete(extendedcell,deletionlist,0)
 
@@ -67,7 +67,7 @@ def delete_clashing_atoms(extendedcell,oldcell,extendedelems,oldelems):
     for index,el in enumerate(extendedelems):
         if index not in deletionlist:
             newelems.append(el)
-        
+
     assert len(newcell) == len(newelems), "something went wrong in delete_clashing_atoms"
     return newcell,newelems
 
@@ -101,13 +101,13 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
 
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     ash.modules.module_coords.write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-beforedel")
-    
+
     #Delete duplicate entries. May happen if atoms are right on boundary
     temp_extended_coords, temp_extended_elems = delete_clashing_atoms(temp_extended_coords,orthogcoords,temp_extended_elems,elems)
-    
+
     # Write XYZ-file with orthogonal coordinates for 3x3xcell
     ash.modules.module_coords.write_xyzfile(temp_extended_elems, temp_extended_coords, "temp_cell_extended_coords-afterdel")
-    
+
     #write XTL file for 3x3x3 cell
     #Todo: fix.
     # Need to give write_xtl fractional coords for new cell. Requires o
@@ -121,8 +121,8 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
     print("Systemlist length:", len(systemlist))
     unassigned = []
     unassigned_formulas = []
-    
-    #Function that checks whether fragment in cell/cluster is the same as defined by user. 
+
+    #Function that checks whether fragment in cell/cluster is the same as defined by user.
     #Metrics: Nuclear charge, Mass, or both.
     #TODO: Need to find even better metric. Something that takes connectivity into account?
     def same_fragment(fragtype=None, nuccharge=None, mass=None, formula=None):
@@ -149,9 +149,9 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
             if abs(mass - fragtype.mass) <0.1 :
                 printdebug("mass {} is equal to fragtyp.mass {} ".format(mass, fragtype.mass))
                 return True
-            
-    
-    
+
+
+
     for i in range(len(elems)):
 
         printdebug("i : ", i)
@@ -629,8 +629,8 @@ def read_ciffile(file):
                         x_coord=float(line.split()[xcolumn].split('(')[0])
                         y_coord=float(line.split()[ycolumn].split('(')[0])
                         z_coord=float(line.split()[zcolumn].split('(')[0])
-                        coords.append([x_coord, y_coord, z_coord])                        
-                        
+                        coords.append([x_coord, y_coord, z_coord])
+
                         #Disabled since reading atomsitecolumns option should be more robust
                         #Disabling since not always elems in column
                         secondcol=line.split()[1]
@@ -867,7 +867,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     origin=np.array([0.0,0.0,0.0])
     comparecoords = np.tile(origin, (len(extended_coords), 1))
     print("Now cutting spherical cluster with radius {} Å from super-cell".format(sphereradius))
-    # Einsum is slightly faster than bare_numpy_mat. 
+    # Einsum is slightly faster than bare_numpy_mat.
     # All atom-distances compared to origin in one go
     distances = ash.modules.module_coords.einsum_mat(extended_coords, comparecoords)
     for count in range(len(extended_coords)):
@@ -884,7 +884,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
 
     #Find duplicate coordinates (atoms on top of each other). Add index to deletion list. Happens if atoms have coordinates right on box boundary
     #List of Bools, duplicates are True
-    #NOTE: Problem, way too slow 
+    #NOTE: Problem, way too slow
     print("Starting filter duplicate. This step is currently slow. To be fixed")
     timestampA=time.time()
     dupls=np.array(filter_duplicate(extended_coords))
@@ -1004,16 +1004,16 @@ def reordercluster(fragment,fragmenttype,code_version='py'):
     #print("fragmenttype:", fragmenttype)
     fraglists=fragmenttype.clusterfraglist
     #fraglists=[[956, 964, 972, 980, 988, 1004, 7644]]
-    
-    
-    
+
+
+
     print("Before reorder")
     #print(fraglists)
     #exit()
     if len(fraglists) == 0:
         print(BC.FAIL, "Fragment lists for fragment-type are empty. Makes no sense (too small cluster radius?!). Exiting...", BC.END)
         ashexit()
-    
+
     timestampA=time.time()
     if code_version=='julia':
         print("Calling reorder_cluster_julia")
@@ -1116,9 +1116,9 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         gasfrag=ash.Fragment(coords=fragcoords,elems=fragelems)
 
         print("Defined gasfrag:", gasfrag)
-        
 
-        
+
+
         #print(gasfrag.__dict__)
         #Creating ORCA theory object with fragment
 
@@ -1154,7 +1154,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
                                             calcdir="DDEC_fragment"+str(id), gbwfile=ORCASPcalculation.filename+'.gbw')
 
             print("atomcharges:", atomcharges)
-            
+
             #Adding molmoms and voldict to fragmentobject
             fragmentobject.molmoms=molmoms
             fragmentobject.voldict=voldict
@@ -1171,7 +1171,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
 
         #Updating charges inside mainfrag/counterfrag object
         fragmentobject.add_charges(atomcharges)
-        
+
 
         #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA fragmentobject add charges', moduleindex=4)
         currtime = time.time()
@@ -1262,11 +1262,11 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
         #Adding atomtypes to Cluster object
         Cluster.atomtypes=atomtypelist
-        
+
         #Adding atomtypes to fragmentobjects
         for fragmentobject in fragmentobjects:
             fragmentobject.atomtypelist = ["UFF_{}".format(el) for el in fragmentobject.Atoms]
-        
+
         #Create ASH forcefield file by looking up UFF parameters
         with open('Cluster_forcefield.ff', 'w') as forcefile:
             forcefile.write('#UFF Lennard-Jones parameters (R0 in Angstrom and eps in kcal/mol) \n')
@@ -1281,7 +1281,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         print("")
         UFFdict_Hzero=copy.deepcopy(UFFdict)
         UFFdict_Hzero['H'] = [LJHparameters[0], LJHparameters[1]]
-        
+
         #print("UFF parameters:", UFFdict)
         for fragmentobject in fragmentobjects:
             #fragmentobject.Elements
@@ -1293,11 +1293,11 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
         #Adding atomtypes to Cluster object
         Cluster.atomtypes=atomtypelist
         atomtypelist_uniq = np.unique(atomtypelist).tolist()
-        
+
         #Adding atomtypes to fragmentobjects
         for fragmentobject in fragmentobjects:
             fragmentobject.atomtypelist = ["UFF_{}".format(el) for el in fragmentobject.Atoms]
-        
+
         #Create ASH forcefield file by looking up UFF parameters
         with open('Cluster_forcefield.ff', 'w') as forcefile:
             forcefile.write('#UFF Lennard-Jones parameters (R0 in Angstrom and eps in kcal/mol) \n')
@@ -1305,7 +1305,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
                 #Getting just element-par for UFFdict lookup
                 atomtype_el=atomtype.replace('UFF_','')
                 forcefile.write('LennardJones_i_R0 {}  {:12.6f}   {:12.6f}\n'.format(atomtype, UFFdict_Hzero[atomtype_el][0],UFFdict_Hzero[atomtype_el][1]))
-    
+
     elif shortrangemodel=='DDEC3' or shortrangemodel=='DDEC6':
         print("Deriving DDEC Lennard-Jones parameters")
         print("DDEC model :", shortrangemodel)
@@ -1319,12 +1319,12 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
             print("fragmentobject Atoms:", fragmentobject.Atoms)
             print("fragmentobject molmoms:", fragmentobject.molmoms)
             print("fragmentobject voldict:", fragmentobject.voldict)
-            
+
             #If molmoms and voldict not already calculated (could be if chargemodel is DDEC)
             if len(fragmentobject.molmoms) == 0:
                 print("No molmoms available. Calculating.")
-                
-                #Using last mainfrag GBW-file (from SC-QM/MM)       
+
+                #Using last mainfrag GBW-file (from SC-QM/MM)
                 if fragindex==0:
                     #gbwfile=mainfrag_gbwfile
                     #Trying to use gas fragment instead. Non-polarized electron density
@@ -1333,7 +1333,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
                 else:
                     #Use GBWfile created by gasfragcalc_ORCA (non-polarized)
                     gbwfile="fragment{}.gbw".format(fragindex)
-                
+
                 print("Using GBW file: ", gbwfile)
                 DDECcharges, fragmentobject.molmoms, fragmentobject.voldict = DDEC_calc(elems=fragmentobject.Atoms, theory=QMtheory,
                                                         numcores=numcores, DDECmodel=shortrangemodel,
@@ -1374,7 +1374,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
 
     #Create full atomtypelist to be added to Cluster object
     #atomtypelist = [item for frag in fragmentobjects for item in frag.atomtypelist]
-    #print("atomtypelist:", atomtypelist)        
+    #print("atomtypelist:", atomtypelist)
     full_list=[None]*Cluster.numatoms
     #print("full_list:", full_list)
     for fragmentobject in fragmentobjects:

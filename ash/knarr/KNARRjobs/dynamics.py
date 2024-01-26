@@ -178,8 +178,8 @@ def DoDynamics(atoms, calculator, parameters):
                     print('Need to stop execution!!!')
                     PrintJobDone('Dynamics job', time.time() - start_t)
                     return atoms
-                
-                    
+
+
         # if exit on jump is activated then
         if exitIfJump:
             for i in range(0, atoms.GetNDim(), 3):

@@ -10,7 +10,7 @@ from ash.modules.module_coords import check_charge_mult, Fragment
 import ash.settings_ash
 
 #Very simple crest interface
-def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1, 
+def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1,
                constrained_atoms=None, forceconstant_constraint=0.5, extraoptions=None):
     print_line_with_subheader1("call_crest")
     module_init_time=time.time()
@@ -41,15 +41,15 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
     if constrained_atoms != None:
         allatoms=range(0,fragment.numatoms)
         unconstrained=listdiff(allatoms,constrained_atoms)
-                        
+
         constrained_crest=[i+1 for i in constrained_atoms]
         unconstrained_crest=[j+1 for j in unconstrained]
-        
+
         #Get ranges. List of tuples
         constrained_ranges=int_ranges(constrained_crest)
         unconstrained_ranges=int_ranges(unconstrained_crest)
-        
-        
+
+
         print("Creating .xcontrol file for constraints")
         with open(".xcontrol","w") as constrainfile:
             constrainfile.write("$constrain\n")
@@ -82,10 +82,10 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
     #Extra options or empty. string with extra crest keyword flags
     if extraoptions == None:
         extraoptions=""
-    
+
     #Run
     print("Now calling CREST")
-    process = sp.run([crestdir + '/crest', 'initial.xyz','-T', str(numcores),  '-gfn' + str(xtbflag), 
+    process = sp.run([crestdir + '/crest', 'initial.xyz','-T', str(numcores),  '-gfn' + str(xtbflag),
                       '-ewin', str(energywindow),  str(charge), solventstring, extraoptions,
                     '-chrg', str(charge), '-uhf', str(mult - 1)])
 
@@ -140,7 +140,7 @@ def call_crest_entropy(fragment=None, crestdir=None, charge=None, mult=None, num
     outputfile="crest-ash.out"
     logfile = open(outputfile, 'w')
     #Using POpen and piping like this we can write to stdout and a logfile
-    process = sp.Popen([crestdir + '/crest', 'initial.xyz', '--entropy', '-T', str(numcores), '-chrg', str(charge), '-uhf', str(mult-1)], 
+    process = sp.Popen([crestdir + '/crest', 'initial.xyz', '--entropy', '-T', str(numcores), '-chrg', str(charge), '-uhf', str(mult-1)],
         stdout=sp.PIPE, stderr=sp.STDOUT, universal_newlines=True)
     for line in process.stdout:
         sys.stdout.write(line)
@@ -180,7 +180,7 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
     list_xtb_energies=[]
     all_elems, all_coords, all_titles = split_multimolxyzfile(conf_file,writexyz=True,return_fragments=False)
     print("Found {} Crest conformers".format(len(all_elems)))
-    
+
     #Getting energies from title lines
     for i in all_titles:
         en=float(i)

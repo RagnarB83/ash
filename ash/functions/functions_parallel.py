@@ -62,7 +62,7 @@ def import_mp(version='multiprocessing'):
 
 
 #########################################
-#Job_parallel: General PARALLEL function. 
+#Job_parallel: General PARALLEL function.
 #########################################
 #Used for standalone SP calculations, NumFreq, surfacescans and NEB
 #Can also be used for optimization and relaxed scans by providing Opt keyword or optimizer object
@@ -74,7 +74,7 @@ def import_mp(version='multiprocessing'):
 #The latter uses dill serialization and should be more reliable
 
 #Used to be Singlepoint_parallel. Default behaviour is single-point
-def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None, 
+def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None,
                          allow_theory_parallelization=False, Grad=False, printlevel=2, copytheory=False,
                          version='multiprocessing', Opt=False, optimizer=None):
     '''
@@ -106,7 +106,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     else:
         print("Job_parallel: No Opt. This is a Singlepoint_parallel job")
         optimizer=None
-    
+
     if printlevel >= 2:
         print("Number of CPU cores available: ", numcores)
 
@@ -119,7 +119,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
         print("Running single-point calculations in parallel")
         print("Mofilesdir:", mofilesdir)
         print(BC.WARNING, "Warning: Output from Job_parallel will be erratic due to simultaneous output from multiple workers", BC.END)
-    
+
     #Early exits
     if fragments is None and fragmentfiles is None:
         print(BC.FAIL,"Job_parallel requires a list of ASH fragments or a list of fragmentfilenames",BC.END)
@@ -141,7 +141,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     else:
         fragmentfiles=[]
 
-    
+
     ###############################
     # Multiprocessing Pool setup
     ###############################
@@ -150,7 +150,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     mp, Pool = import_mp(version=version)
 
     #Function to handle exception of child processes
-    def Terminate_Pool_processes(message): 
+    def Terminate_Pool_processes(message):
         print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
         print(BC.FAIL,"Exception message:", message, BC.END)
         pool.terminate()
@@ -199,7 +199,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                 if printlevel >= 2:
                     print("fragment:", fragment)
                 results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir, version=version,
-                                                                      event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
+                                                                      event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer),
                     error_callback=Terminate_Pool_processes))
         #Passing list of fragment files
         elif len(fragmentfiles) > 0:
@@ -209,7 +209,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                 if printlevel >= 2:
                     print("fragmentfile:", fragmentfile)
                 results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir, version=version,
-                                                                      event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
+                                                                      event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer),
                     error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
@@ -221,7 +221,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
             if printlevel >= 2:
                 print("theory:", theory)
             results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragment=fragment,label=fragment.label,mofilesdir=mofilesdir, version=version,
-                                                                  event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
+                                                                  event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer),
                 error_callback=Terminate_Pool_processes))
     # Case: Multiple theories, 1 fragmentfile
     elif len(fragmentfiles) == 1:
@@ -232,7 +232,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
             if printlevel >= 2:
                 print("theory:", theory)
             results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir, version=version,
-                                                                  event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer), 
+                                                                  event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer),
                 error_callback=Terminate_Pool_processes))
     else:
         print("Multiple theories and multiple fragments provided.")
@@ -289,7 +289,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                         dipole_dict[r.get()[0]] = r.get()[4]['dipole_moment']
                     if 'polarizability' in r.get()[4]:
                         polarizability_dict[r.get()[0]] = r.get()[4]['polarizability']
-                
+
         final_result.gradients_dict = gradient_dict
         final_result.properties = property_dict
         #Dipole and polarizability
@@ -319,9 +319,9 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
 #Worker_par for both Singlepoint-type and Opt-type jobs
 #NOTE: Version intended for apply_async
 #TODO: This function contains 2 many QM-code specifics. Needs to be generalized (QM-specifics moved to QMtheory class)
-def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None, 
+def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None,
                mult=None, Grad=False, printlevel=2, copytheory=False, optimizer=None, version='multiprocessing'):
-    #Should not be necessary to import 
+    #Should not be necessary to import
     #import multiprocess as mp
     #from multiprocess.pool import Pool
     #Check charge/mult.
@@ -349,7 +349,7 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         fragment=Fragment(fragfile=fragmentfile)
 
     ###############################
-    # Labels distinguishing jobs 
+    # Labels distinguishing jobs
     ###############################
     #Making label flexible. Can be tuple but inputfilename is converted to string below
     if printlevel >= 2:
@@ -387,7 +387,7 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
             print("Label is float or int")
         #
         labelstring=str(label).replace('.','_')
-        #Label is float or int. 
+        #Label is float or int.
         if mofilesdir != None:
             if printlevel >= 2:
                 print("Mofilesdir option.")
@@ -458,7 +458,7 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
 
     if printlevel >= 2:
         print("Energy: ", energy)
-    
+
     # Now adding total energy to fragment.
     #NOTE: Add to theory also?
     fragment.energy = energy
@@ -482,7 +482,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     print_line_with_subheader1("Simple_parallel function")
     if printlevel >= 2:
         print("Number of CPU cores available: ", numcores)
-    
+
     if parameter_dict == None:
         parameter_dict={}
 
@@ -498,7 +498,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
     event = manager.Event()
 
     #Function to handle exception of child processes
-    def Terminate_Pool_processes(message): 
+    def Terminate_Pool_processes(message):
         print(BC.FAIL,"Terminating Pool processes due to exception", BC.END)
         print(BC.FAIL,"Exception message:", message, BC.END)
         pool.terminate()
@@ -519,7 +519,7 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
 
             except:
                 pass
-        #Default 0 
+        #Default 0
         #parameter_dict["workerdir"] = f"Pooljob_0"
     #Collecting results in a list of tuples from each process
     results=[]
@@ -537,9 +537,9 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
         if separate_dirs is True:
             parameter_dict_new["workerdir"] = f"Pooljob_{process}"
         print("parameter_dict_new:", parameter_dict_new)
-        #Calling apply_async. 
+        #Calling apply_async.
         results.append((process,pool.apply_async(jobfunction, kwds=parameter_dict_new, error_callback=Terminate_Pool_processes)))
-    
+
     #CLOSING POOL
     pool.close()
     pool.join()
@@ -568,5 +568,3 @@ def Simple_parallel(jobfunction=None, parameter_dict=None, separate_dirs=False, 
         results_dict[pr] = res.get()
     print("Returning result of Simple_parallel as dict:", results_dict)
     return results_dict
-
-

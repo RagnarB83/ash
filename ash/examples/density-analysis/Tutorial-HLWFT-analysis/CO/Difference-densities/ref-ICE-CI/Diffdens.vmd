@@ -510,7 +510,7 @@ mol rename top CCSD-lin.mdci.nat_ICE_CI_mp2nat_tgen_1e-06_diff_density.cube
 set topmol [molinfo top]
 mol top $topmol
 unset topmol
-        
+
 proc vmdrestoremycolors {} {
 set colorcmds {
   {color Display {Background} white}
@@ -521,4 +521,3 @@ foreach colcmd $colorcmds {
 }
 }
 vmdrestoremycolors
-    

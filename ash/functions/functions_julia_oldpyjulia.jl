@@ -19,7 +19,7 @@ function testJuliafunction(d)
     #println("Converted d:", d_conv)
     #println("Type:", typeof(d_conv))
     #println("juld [dss]", juld["dss"])
-    return 
+    return
 end
 
 ########################################################################################################################
@@ -504,7 +504,7 @@ function reorder_hungarian_julia(p_atoms, q_atoms, p_coord, q_coord)
 
         A_coord = view(p_coord,p_atom_idx,:)
         B_coord = view(q_coord,q_atom_idx,:)
-        
+
         resultview = hungarian_julia(A_coord, B_coord)
         view_reorder[p_atom_idx] = q_atom_idx[resultview]
     end

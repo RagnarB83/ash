@@ -26,6 +26,6 @@ else:
     print("Success!")
     sys.exit(0)
 
-# REFERENCE value: -20.0354357, 
+# REFERENCE value: -20.0354357,
 # xtb version 6.1, 6.2.3 and 6.4.0 are correct
 # xtb version 6.3 etc. are bad

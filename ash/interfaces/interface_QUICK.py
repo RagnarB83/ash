@@ -90,11 +90,11 @@ class QUICKTheory:
         #Grab energy and gradient
         if Grad==True:
             if PC is True:
-                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True, 
+                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True,
                         pc_coords=current_MM_coords,pc_values=MMcharges,filename=self.filename)
             else:
                 write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=True,filename=self.filename)
-            
+
             #Run QUICK
             run_quick(self.quickdir,self.filename+'.in',quickbinary=self.quickbinary)
 
@@ -105,7 +105,7 @@ class QUICKTheory:
                 self.gradient,self.pcgradient = grab_gradient_quick(self.filename+'.out',len(current_coords))
         else:
             if PC is True:
-                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=False, 
+                write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=False,
                         pc_coords=current_MM_coords,pc_values=MMcharges,filename=self.filename)
             else:
                 write_quick_input(self.quickinput,charge,mult,qm_elems,current_coords,Grad=False)
@@ -127,7 +127,7 @@ class QUICKTheory:
             return self.energy
 
 def run_quick(quickdir,filename, quickbinary="quick.cuda"):
-    #stdout=ofile, stderr=ofile, 
+    #stdout=ofile, stderr=ofile,
     process = sp.run([quickdir + '/' + quickbinary,filename], check=True, universal_newlines=True)
 
 #functional,basis,charge,mult,elems,coords,cutoff=1e-8,Grad=True

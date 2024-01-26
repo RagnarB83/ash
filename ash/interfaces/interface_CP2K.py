@@ -16,7 +16,7 @@ element_radii_for_cp2k = {'H':0.44,'He':0.44,'Li':0.6,'Be':0.6,'B':0.78,'C':0.78
                        'Na':1.58,'Mg':1.58,'Al':1.67,'Si':1.67,'P':1.67,'S':1.67,'Cl':1.67,'Ar':1.67,
                        'K':1.52,'Ca':1.6,'Sc':1.6,'Ti':1.6,'V':1.6,'Cr':1.6,'Mn':1.6,'Fe':1.6,'Co':1.6,
                        'Ni':1.6,'Cu':1.6,'Zn':1.6,'Br':1.6, 'Mo':1.7}
- 
+
 #CP2K Theory object.
 #CP2K embedding options: coupling='COULOMB' (regular elstat-embed) or 'GAUSSIAN' (GEEP) or S-WAVE
 #Periodic: True (periodic_type='XYZ) or False (periodic_type='NONE')
@@ -40,7 +40,7 @@ class CP2KTheory:
                 method='QUICKSTEP', numcores=1, parallelization='OMP', mixed_mpi_procs=None, mixed_omp_threads=None,
                 center_coords=True, scf_maxiter=50, outer_scf_maxiter=10, scf_convergence=1e-6, eps_default=1e-10,
                 coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
-                OT=True, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL', 
+                OT=True, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL',
                 OT_linesearch='3PNT', outer_SCF=True, outer_SCF_optimizer='SD', OT_energy_gap=0.08):
 
         self.theorytype="QM"
@@ -65,7 +65,7 @@ class CP2KTheory:
         if cell_dimensions is None and cell_vectors is None:
             print("Warning: Neither cell_dimensions or cell_vectors have been provided.")
             print("This is not good but ASH will continue and try to guess the cell size from the QM-coordinates")
-        
+
         if cell_dimensions is not None and cell_vectors is not None:
             print("Error: cell_dimensions and cell_vectors can not both be provided")
             ashexit()
@@ -86,7 +86,7 @@ class CP2KTheory:
         self.numcores=numcores
         #Type of parallelization strategy. 'OMP','MPI','Mixed'
         self.parallelization=parallelization
-        self.mixed_mpi_procs=mixed_mpi_procs #Mixed only: 
+        self.mixed_mpi_procs=mixed_mpi_procs #Mixed only:
         self.mixed_omp_threads=mixed_omp_threads #Mixed only:
 
         #Finding CP2K dir and binaries
@@ -124,13 +124,13 @@ class CP2KTheory:
         else:
             print("Numcores=1. No parallelization of CP2K requested")
             self.parallelization=None
-        
+
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
 
 
-        
+
         #Methods
         self.method=method #Can be QUICKSTEP or QMMM
         self.basis_method = basis_method #GAPW or GPW
@@ -227,7 +227,7 @@ class CP2KTheory:
                     print("Periodic and QM/MM is both on but qm_periodic_type is None")
                     print("Setting qm_periodic_type to XYZ (sets periodicity in QM-cell)")
                     self.qm_periodic_type='XYZ'
-        
+
         print("QM periodic type:", self.qm_periodic_type)
         print("Poisson solver", self.psolver)
 
@@ -281,7 +281,7 @@ class CP2KTheory:
             #NOTE: Coordinates reordered: QM-coords first, then MM-coords
             #Applies to elem-list also and charges-list
             dummy_elem_list = qm_elems + mm_elems
-            
+
             dummy_coords = np.concatenate((current_coords,current_MM_coords),axis=0)
             dummy_charges = [0.0]*len(qm_elems) + MMcharges
             system_xyzfile="system_cp2k"
@@ -292,7 +292,7 @@ class CP2KTheory:
             #Dictionary with QM-atom indices (for full system), grouped by element
             qm_kind_dict={}
             for el in set(qm_elems):
-                #CP2K starts counting from 1 
+                #CP2K starts counting from 1
                 qm_kind_dict[el]= [i+1 for i, x in enumerate(qm_elems) if x == el]
             print("qm_kind_dict:",qm_kind_dict)
             #MM-kind list
@@ -318,16 +318,16 @@ class CP2KTheory:
                              basis_method=self.basis_method, wavelet_scf_type=self.wavelet_scf_type,
                              functional=self.functional, restartfile=None, mgrid_commensurate=True,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
-                             coordfile=system_xyzfile, 
-                             cell_dimensions=self.cell_dimensions, 
+                             coordfile=system_xyzfile,
+                             cell_dimensions=self.cell_dimensions,
                              cell_vectors=self.cell_vectors,
                              qm_cell_dims=self.qm_cell_dims, qm_periodic_type=self.qm_periodic_type,
-                             basis_file=self.basis_file, 
+                             basis_file=self.basis_file,
                              potential_file=self.potential_file, periodic_type=self.periodic_type,
                              psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
                              MM_radius_scaling=self.MM_radius_scaling, mm_radii=self.mm_radii,
                              qm_kind_dict=qm_kind_dict, mm_kind_list=mm_kind_list,
-                             scf_convergence=self.scf_convergence, eps_default=self.eps_default, 
+                             scf_convergence=self.scf_convergence, eps_default=self.eps_default,
                              scf_maxiter=self.scf_maxiter, outer_scf_maxiter=self.outer_scf_maxiter,
                              ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel,
                              OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
@@ -354,7 +354,7 @@ class CP2KTheory:
             #Write xyz-file with coordinates
             system_xyzfile="system_cp2k"
             write_xyzfile(qm_elems, current_coords, f"{system_xyzfile}", printlevel=1)
-            
+
             #Write simple CP2K input
             write_CP2K_input(method=self.method, jobname='ash', center_coords=self.center_coords, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
@@ -364,7 +364,7 @@ class CP2KTheory:
                              coordfile=system_xyzfile, scf_convergence=self.scf_convergence, eps_default=self.eps_default,
                              scf_maxiter=self.scf_maxiter, outer_scf_maxiter=self.outer_scf_maxiter,
                              periodic_type=self.periodic_type,
-                             cell_dimensions=self.cell_dimensions, 
+                             cell_dimensions=self.cell_dimensions,
                              cell_vectors=self.cell_vectors,
                              basis_file=self.basis_file, potential_file=self.potential_file,
                              psolver=self.psolver, printlevel=self.printlevel,
@@ -416,7 +416,7 @@ class CP2KTheory:
         self.energy=grab_energy_cp2k(self.filename+'.out',method=self.method)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
-        
+
         #Grab gradient if calculated
         if Grad is True:
             #Grab gradient
@@ -474,12 +474,12 @@ def run_CP2K(cp2kdir,bin_name,filename,numcores=1, paramethod='MPI', mixed_omp_t
 #Regular CP2K input
 def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True, qm_elems=None,
                     basis_dict=None, potential_dict=None, functional=None, restartfile=None,
-                    Grad=True, filename='cp2k', system_coord_file_format="XYZ", 
+                    Grad=True, filename='cp2k', system_coord_file_format="XYZ",
                     coordfile=None,
                     charge=None, mult=None, basis_method='GAPW',
                     mgrid_commensurate=False, scf_maxiter=50, outer_scf_maxiter=10,
                     scf_guess='RESTART', scf_convergence=1e-6, eps_default=1e-10,
-                    periodic_type="XYZ", cell_dimensions=None, cell_vectors=None, 
+                    periodic_type="XYZ", cell_dimensions=None, cell_vectors=None,
                     qm_cell_dims=None, qm_periodic_type=None,basis_file='BASIS', potential_file='POTENTIAL',
                     psolver='wavelet', wavelet_scf_type=40,
                     ngrids=4, cutoff=250, rel_cutoff=60,
@@ -498,13 +498,13 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
     #
     first_atom=1
     last_atom=len(qm_elems)
-    
+
     #Energy or Energy+gradient
     if Grad is True:
         jobdirective='ENERGY_FORCE'
     else:
         jobdirective='ENERGY'
-    
+
     #Make sure we center coordinates if wavelet
     if psolver == 'wavelet':
         print("psolver is wavelet. Coordinates must be centered. Enforcing this by adding CENTER_COORDINATES to input")
@@ -616,13 +616,13 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             inpfile.write(f'      &END FORCEFIELD\n')
             #NOTE: POISSSON and EWALD section below is necessary even though we turn off MM-MM interactions
             #mm_ewald_type=None would turn off MM-MM periodic interactions
-            inpfile.write(f'      &POISSON\n')            
+            inpfile.write(f'      &POISSON\n')
             inpfile.write(f'        &EWALD\n')
-            inpfile.write(f'          EWALD_TYPE {mm_ewald_type}\n') 
+            inpfile.write(f'          EWALD_TYPE {mm_ewald_type}\n')
             inpfile.write(f'          ALPHA {mm_ewald_alpha}\n')
             inpfile.write(f'          GMAX {mm_ewald_gmax}\n')
             inpfile.write(f'        &END EWALD\n')
-            inpfile.write(f'      &END POISSON\n') 
+            inpfile.write(f'      &END POISSON\n')
             inpfile.write(f'    &END MM\n')
             #QM/MM
             inpfile.write(f'    &QMMM\n')
@@ -689,7 +689,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             inpfile.write(f'      COORD_FILE_FORMAT {system_coord_file_format}\n') #File-format: XYZ or PDB (pdb is bad)
             inpfile.write(f'      COORD_FILE_NAME {coordfile}.xyz\n') #Coord-file of whole system with charges (ideally XYZ)
             #inpfile.write(f'      CHARGE_EXTENDED TRUE\n') #Read charges from col 81
-            inpfile.write(f'      CONNECTIVITY OFF\n') #No read or generate bonds 
+            inpfile.write(f'      CONNECTIVITY OFF\n') #No read or generate bonds
             inpfile.write(f'      &GENERATE\n')
             inpfile.write(f'           &ISOLATED_ATOMS\n') #Topology of isolated atoms
             inpfile.write(f'               LIST {first_atom}..{last_atom}\n')
@@ -719,7 +719,7 @@ def grab_gradient_CP2K(outfile,numatoms):
     gradient=np.zeros((numatoms,3))
     atomcount=0
     with open(outfile) as o:
-        for line in o: 
+        for line in o:
             if grad_grab is True:
                 if len(line.split()) == 6:
                     gradient[atomcount,0] = -1*float(line.split()[-3])
@@ -749,7 +749,7 @@ def grab_pcgradient_CP2K(pcgradfile,numpc,numatoms):
                     pc_gradient[pccount,0] = -1*float(line.split()[-3])
                     pc_gradient[pccount,1] = -1*float(line.split()[-2])
                     pc_gradient[pccount,2] = -1*float(line.split()[-1])
-                    pccount+=1 
+                    pccount+=1
                 if atomgrab is True:
                     atomcount+=1
             #Beginning pcgrad_grab
@@ -762,7 +762,7 @@ def grab_pcgradient_CP2K(pcgradfile,numpc,numatoms):
 
 def find_cp2k(cp2kdir, cp2k_bin_name):
     #List of binaries to search for in this order unless specified
-    cp2k_binaries=["cp2k.psmp", "cp2k.popt", "cp2k.ssmp","cp2k.sopt"]  
+    cp2k_binaries=["cp2k.psmp", "cp2k.popt", "cp2k.ssmp","cp2k.sopt"]
     if cp2kdir == None:
         #No cp2kdir
         print(BC.WARNING, f"No cp2kdir argument passed to CP2KTheory. Attempting to find cp2kdir variable inside settings_ash", BC.END)
@@ -785,7 +785,7 @@ def find_cp2k(cp2kdir, cp2k_bin_name):
                     print(BC.OKGREEN,"Found cp2k binary:", bin, BC.END)
                     cp2k_bin_name=bin
                     cp2kdir = os.path.dirname(shutil.which(bin))
-                    return cp2kdir, cp2k_bin_name 
+                    return cp2kdir, cp2k_bin_name
     #If cp2kdir provided or found above
     if cp2kdir != None:
         #cp2kdir provided. Searching

@@ -432,7 +432,7 @@ mol rename top SHCI_CCSD_T_natorbs_noPT_eps_1e-05_HF_diff_density.cube
 set topmol [molinfo top]
 mol top $topmol
 unset topmol
-        
+
 proc vmdrestoremycolors {} {
 set colorcmds {
   {color Display {Background} white}
@@ -443,4 +443,3 @@ foreach colcmd $colorcmds {
 }
 }
 vmdrestoremycolors
-    

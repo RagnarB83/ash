@@ -588,7 +588,7 @@ mol rename top CCSD-lin.mdci.nat_ELF.cube
 set topmol [molinfo top]
 mol top $topmol
 unset topmol
-        
+
 proc vmdrestoremycolors {} {
 set colorcmds {
   {color Display {Background} white}
@@ -599,4 +599,3 @@ foreach colcmd $colorcmds {
 }
 }
 vmdrestoremycolors
-    

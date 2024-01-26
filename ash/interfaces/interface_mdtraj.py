@@ -16,13 +16,13 @@ def MDtraj_RMSF(trajectory, pdbtopology, print_largest_values=True, threshold=0.
     print("Inside MDtraj_RMSF")
     #Import mdtraj library
     mdtraj = MDtraj_import()
-    
+
     # Load trajectory
     print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
     firstframe=traj[0]
     rmsflist = mdtraj.rmsf(traj, reference=None, frame=0, atom_indices=None, parallel=parallel)
-    
+
     if print_largest_values is True:
         print(f"Will print RMSF largest_values={largest_values}")
         large_rmsf_indices = rmsflist.argsort()[::-1][:largest_values]
@@ -43,7 +43,7 @@ def MDtraj_RMSD(trajectory, pdbtopology, atom_indices=None, parallel=True):
     print("Inside MDtraj_RMSD")
     #Import mdtraj library
     mdtraj = MDtraj_import()
-    
+
     # Load trajectory
     print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
@@ -61,7 +61,7 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     traj_basename = os.path.splitext(trajectory)[0]
     #PDB-file basename
     pdb_basename = os.path.splitext(pdbtopology)[0]
-    
+
     #Import mdtraj library
     mdtraj = MDtraj_import()
 
@@ -99,7 +99,7 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     else:
         imaged = traj.image_molecules()
         pdbsnap_imaged = pdbsnap.image_molecules()
-        
+
     # Save trajectory in format
     if format == 'DCD':
         imaged.save(traj_basename + '_imaged.dcd')
@@ -130,7 +130,7 @@ def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
 
     #Trajectory basename
     traj_basename = os.path.splitext(trajectory)[0]
-    
+
     #Import mdtraj library
     mdtraj = MDtraj_import()
 

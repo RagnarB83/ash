@@ -20,7 +20,7 @@ from ash.modules.module_plotting import ASH_plot
 from ash.modules.module_singlepoint import print_fragments_table
 
 # Allowed basis set families. Accessed by function basis_for_element and extrapolation
-basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh', 'def2-dk', 
+basisfamilies=['cc','aug-cc','cc-dkh','cc-dk','aug-cc-dkh','aug-cc-dk','def2','ma-def2','def2-zora', 'def2-dkh', 'def2-dk',
             'ma-def2-zora','ma-def2-dkh', 'ma-def2-dk', 'cc-CV', 'aug-cc-CV', 'cc-CV-dkh', 'cc-CV-dk', 'aug-cc-CV-dkh', 'aug-cc-CV-dk',
             'cc-CV_3dTM-cc_L', 'aug-cc-CV_3dTM-cc_L', 'cc-f12', 'def2-x2c' ]
 
@@ -33,18 +33,18 @@ TightPNO_thresholds={'TCutPNO': 1e-7, 'TCutPairs': 1e-5, 'TCutDO': 5e-3, 'TCutMK
 
 #Flexible ORCA CCSD(T)/CBS protocol class.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
-#pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO']   pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO']    
+#pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO']   pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO']
 
 
-#TODO: CV correction. More general basis set for 3d TM and ligand systems. cc-pwCVTZ-DK (M) ? 
+#TODO: CV correction. More general basis set for 3d TM and ligand systems. cc-pwCVTZ-DK (M) ?
 class ORCA_CC_CBS_Theory:
-    def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', guessmode='Cmatrix', memory=5000, numcores=1, 
-            cardinals=None, basisfamily=None, Triplesextrapolation=False, SCFextrapolation=True, alpha=None, beta=None, 
+    def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', guessmode='Cmatrix', memory=5000, numcores=1,
+            cardinals=None, basisfamily=None, Triplesextrapolation=False, SCFextrapolation=True, alpha=None, beta=None,
             stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
             DLPNO=False, pnosetting='extrapolation', pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO'], FullLMP2Guess=False, MP2_PNO_correction=False,
-            OOCC=False,T1=False, T1correction=False, T1corrbasis_size='Small', T1corrpnosetting='NormalPNOreduced', 
-            relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False, 
-            HOCCcorrection=False, HOCC_program='CFour', HOCC_method='CCSDT', HOCC_basis='DZ', HOCC_ref='RHF', 
+            OOCC=False,T1=False, T1correction=False, T1corrbasis_size='Small', T1corrpnosetting='NormalPNOreduced',
+            relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False,
+            HOCCcorrection=False, HOCC_program='CFour', HOCC_method='CCSDT', HOCC_basis='DZ', HOCC_ref='RHF',
             DBOCcorrection=False, DBOC_program='CFour', DBOC_method='RHF', DBOC_basis='TZ', DBOC_ref='RHF'):
 
         print_line_with_mainheader("ORCA_CC_CBS_Theory")
@@ -52,7 +52,7 @@ class ORCA_CC_CBS_Theory:
         #Indicates that this is a QMtheory
         self.theorytype="QM"
 
-        #CHECKS to exit early 
+        #CHECKS to exit early
         if elements == None:
             print(BC.FAIL, "\nORCA_CC_CBS_Theory requires a list of elements to be given in order to set up basis sets", BC.END)
             print("Example: ORCA_CC_CBS_Theory(elements=['C','Fe','S','H','Mo'], basisfamily='def2',cardinals=[2,3], ...")
@@ -80,7 +80,7 @@ class ORCA_CC_CBS_Theory:
         if OOCC is True and F12==True:
             print(BC.FAIL,"OO-CC calculations can only be done with F12=False.", BC.END)
             ashexit()
-        #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single 
+        #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single
         if len(cardinals) == 1:
             print(BC.WARNING, "Only a single cardinal was chosen. This means that no extrapolation will be carried out", BC.END)
             self.singlebasis=True
@@ -213,7 +213,7 @@ class ORCA_CC_CBS_Theory:
         ######################################################
 
         #Enabling AutoAux for DKH whenna
-        #NOTE: Only strictly necessary when doing 1-center approximation. 
+        #NOTE: Only strictly necessary when doing 1-center approximation.
         # Hopefully not too expensive. Should be robust.
         #See https://orcaforum.kofo.mpg.de/viewtopic.php?f=11&t=1392&start=10#p38051
         if self.relativity == 'DKH' and stabilityanalysis is True:
@@ -293,7 +293,7 @@ maxiter 150\nend
                     #Setting ECP flag to True
                     self.ECPflag=True
                     self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
-                    
+
             #Adding basis set info for each element into blocks
             self.basis2_block="%basis\n"
             for el,bas_ecp in self.Calc2_basis_dict.items():
@@ -304,9 +304,9 @@ maxiter 150\nend
                     self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
 
             #Adding auxiliary basis to all defined blocks
-            self.basis0_block=self.basis0_block+finalauxbasis+"\nend" 
-            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
-            self.basis2_block=self.basis2_block+finalauxbasis+"\nend" 
+            self.basis0_block=self.basis0_block+finalauxbasis+"\nend"
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend"
+            self.basis2_block=self.basis2_block+finalauxbasis+"\nend"
 
             self.blocks0= self.blocks +basis0_block #Used in CCSD and CCSD(T) calcs
             self.blocks1= self.blocks +self.basis1_block #Used in CCSD and CCSD(T) calcs
@@ -355,8 +355,8 @@ maxiter 150\nend
                     self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
 
             #Adding auxiliary basis to all defined blocks
-            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
-            self.basis2_block=self.basis2_block+finalauxbasis+"\nend" 
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend"
+            self.basis2_block=self.basis2_block+finalauxbasis+"\nend"
 
             self.blocks1= self.blocks +self.basis1_block #Used in CCSD(T) calcs
             self.blocks2= self.blocks +self.basis2_block #Used in CCSD(T) calcs
@@ -377,7 +377,7 @@ maxiter 150\nend
                     #Setting ECP flag to True
                     self.ECPflag=True
                     self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
-            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend"
             self.blocks1= self.blocks +self.basis1_block
 
 
@@ -446,12 +446,12 @@ maxiter 150\nend
                 self.ccsdtkeyword='OOCCD(T)'
             else:
                 self.ccsdtkeyword='CCSD(T)'
-        
+
         if Openshellreference == 'QRO':
             self.extrainputkeyword = self.extrainputkeyword + ' UNO '
         elif Openshellreference == 'UHF':
             self.extrainputkeyword = self.extrainputkeyword + ' UHF '
-        
+
         #Global F12-aux basis keyword
         if self.F12 is True:
             cardlabel=self.cardlabels[self.cardinals[0]]
@@ -564,7 +564,7 @@ end
         return E_MP2corr
 
 
-    #T1 correction 
+    #T1 correction
     def T1correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis='Large', pnosetting='NormalPNO', PC=None, current_MM_coords=None, MMcharges=None):
         print("\nNow doing T1 correction. Getting T0 and T1 triples from a single calculation")
 
@@ -620,10 +620,10 @@ end
                 #Applies when there are no triples (e.g. H2)
                 triples_T0=0.0
         print("Triples T0 correlation energy:", triples_T0)
-        
+
         triples_T1 = float(pygrep('Triples Correction (T)                     ...', ccsdt_T1.filename+'.out')[-1].split()[-1])
         print("Triples T1 correlation energy:", triples_T1)
-    
+
         #T1 energy correction
         E_T1corr = triples_T1 - triples_T0
         print("T0->T1 correction:", E_T1corr)
@@ -646,7 +646,7 @@ end
         energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.out')
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.gbw')
-        
+
         energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC' + '.out')
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_FC' + '.gbw')
@@ -661,10 +661,10 @@ end
     # Do 2 calculations with different DLPNO TCutPNO thresholds and extrapolate to PNO limit. Other threshold follow cutoff_setting
     def PNOExtrapolationStep(self,elems=None, current_coords=None, theory=None, calc_label=None, numcores=None, charge=None, mult=None, triples=True, PC=None, current_MM_coords=None, MMcharges=None):
         print("Inside PNOExtrapolationStep")
-        
+
         cutoff_setting=self.pnoextrapolation[3]
 
-        if cutoff_setting == 'NormalPNO' : 
+        if cutoff_setting == 'NormalPNO' :
             thresholdsetting= NormalPNO_thresholds
         elif cutoff_setting == 'TightPNO' :
             thresholdsetting= TightPNO_thresholds
@@ -672,7 +672,7 @@ end
             thresholdsetting= LoosePNO_thresholds
         else:
             thresholdsetting= NormalPNO_thresholds
-        
+
         print("Cutoffsetting: ", cutoff_setting)
         print("Using these general thresholds:")
         print(f'TCutPairs: {thresholdsetting["TCutPairs"]:e}')
@@ -703,13 +703,13 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         #Add mdciblock to blocks of theory
         PNOXblocks = theory.orcablocks + mdciblockX
         PNOYblocks = theory.orcablocks + mdciblockY
-        
-        #Switching guessmodes for SCF as PNO-extrapolation uses same basis and CMatrix fucks with the orbitals requiring 
+
+        #Switching guessmodes for SCF as PNO-extrapolation uses same basis and CMatrix fucks with the orbitals requiring
         PNOXblocks=PNOXblocks.replace("guessmode Cmatrix", "guessmode Fmatrix")
         PNOYblocks=PNOYblocks.replace("guessmode Cmatrix", "guessmode Fmatrix")
 
         theory.orcablocks = PNOXblocks
-        
+
         theory.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         PNOcalcX_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(theory.filename+'.out', DLPNO=self.DLPNO,F12=self.F12)
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOX' + '.out')
@@ -722,7 +722,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         shutil.copyfile(theory.filename+'.out', './' + calc_label + '_PNOY' + '.out')
         shutil.copyfile(theory.filename+'.gbw', './' + calc_label + '_PNOY' + '.gbw')
         #print("PNOcalcY:", PNOcalcY_dict)
-        
+
         #Setting theory.orcablocks back to original
         theory.orcablocks=orcablocks_original
 
@@ -748,13 +748,13 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         print("PNO extrapolated CCSD correlation energy:", E_corrCCSD_final, "Eh")
         print("PNO extrapolated triples correlation energy:", E_corrCCT_final, "Eh")
         print("PNO extrapolated full correlation energy:", E_corrCC_final, "Eh")
-        
+
         return E_SCF, E_corrCCSD_final, E_corrCCT_final, E_corrCC_final
 
 
-#TODO: CV correction. More general basis set for 3d TM and ligand systems. cc-pwCVTZ-DK (M) ? 
+#TODO: CV correction. More general basis set for 3d TM and ligand systems. cc-pwCVTZ-DK (M) ?
 
-    def run(self, current_coords=None, qm_elems=None, 
+    def run(self, current_coords=None, qm_elems=None,
             elems=None, Grad=False, numcores=None, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA_CC_CBS_Theory-------------", BC.END)
@@ -789,7 +789,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                 print("Error. No basis-set definition available for element: {}".format(element))
                 print("Make sure to pass a list of all elements of molecule/benchmark-database when creating ORCA_CC_CBS_Theory object")
                 print("Example: ORCA_CC_CBS_Theory(elements=[\"{}\" ] ".format(element))
-                ashexit() 
+                ashexit()
 
         #Number of atoms and number of electrons
         numatoms=len(elems)
@@ -806,7 +806,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             #Components
             E_dict = {'Total_E' : E_total, 'E_CC_CBS': E_total, 'E_SCF_CBS' : E_total, 'E_corrCCSD_CBS': 0.0, 'E_corrCCT_CBS': 0.0, 'T1energycorr' : 0.0,
             'E_corr_CBS' : 0.0, 'E_SO' : 0.0, 'E_corecorr_and_SR' : 0.0, 'E_HOCC': 0.0, 'E_DBOC': 0.0, 'E_FCIcorrection': 0.0}
-            
+
             self.energy_components=E_dict
             return E_total
 
@@ -841,7 +841,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                 print("Now doing Basis-1 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[0]))
                 print("="*70)
                 #Note: naming as CBS despite single-basis
-                E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corr_CBS = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', 
+                E_SCF_CBS, E_corrCCSD_CBS, E_corrCCT_CBS,E_corr_CBS = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1',
                     numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
 
             #EXTRAPOLATION WITH 2 BASIS SETS
@@ -862,14 +862,14 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     print("Now doing Basis-1 CCSD(T) job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[1]))
                     print("="*70)
 
-                    E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', 
+                    E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1',
                         numcores=numcores, charge=charge, mult=mult, triples=True, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
 
                     print("="*70)
                     print("Now doing Basis-0 CCSD(T) job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[0]))
                     print("="*70)
 
-                    E_SCF_0, E_corrCCSD_0, E_corrCCT_0,E_corrCC_0 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_0, calc_label=calc_label+'cardinal0', 
+                    E_SCF_0, E_corrCCSD_0, E_corrCCT_0,E_corrCC_0 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_0, calc_label=calc_label+'cardinal0',
                         numcores=numcores, charge=charge, mult=mult, triples=True, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
 
                     #Taking SCF and CCSD energies from largest CCSD job (cardinal no. 2) and largest CCSD(T) job (cardinal no. 1)
@@ -888,15 +888,15 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
                     print("\nSCF extrapolation:")
-                    E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily, 
+                    E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily,
                         alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
 
                     #Separate CCSD, (T) and full-corr CBS energies
                     print("\nCCSD corr. extrapolation:")
-                    E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily, 
+                    E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily,
                         beta=self.beta) #2-point extrapolation using smaller cardinals
                     print("\n(T) corr. extrapolation:")
-                    E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, [self.cardinals[0],self.cardinals[1]], self.basisfamily, 
+                    E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, [self.cardinals[0],self.cardinals[1]], self.basisfamily,
                         beta=self.beta) #2-point extrapolation
                     E_corr_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
 
@@ -904,37 +904,37 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     print("="*70)
                     print("Now doing Basis-1 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[0]))
                     print("="*70)
-                    E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1', 
+                    E_SCF_1, E_corrCCSD_1, E_corrCCT_1,E_corrCC_1 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_1, calc_label=calc_label+'cardinal1',
                         numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     print("="*70)
                     print("Basis-1 job done. Now doing Basis-2 job: Family: {} Cardinal: {} ".format(self.basisfamily, self.cardinals[1]))
                     print("="*70)
                     E_SCF_2, E_corrCCSD_2, E_corrCCT_2,E_corrCC_2 = self.PNOExtrapolationStep(elems=elems, current_coords=current_coords, theory=self.ccsdt_2, calc_label=calc_label+'cardinal2',
                         numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
-                
+
                     #Lists of energies
                     scf_energies = [E_SCF_1, E_SCF_2]
                     ccsdcorr_energies = [E_corrCCSD_1, E_corrCCSD_2]
                     triplescorr_energies = [E_corrCCT_1, E_corrCCT_2]
                     corr_energies = [E_corrCC_1, E_corrCC_2]
-        
+
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
                     print("\nSCF extrapolation:")
-                    E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, self.cardinals, self.basisfamily, 
+                    E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, self.cardinals, self.basisfamily,
                         alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
 
                     #Separate CCSDcorr extrapolation
                     print("\nCCSD corr. extrapolation:")
-                    E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, self.cardinals, self.basisfamily, 
+                    E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, self.cardinals, self.basisfamily,
                         beta=self.beta) #2-point extrapolation
                     #(T) extrapolation
                     print("\n(T) corr. extrapolation:")
-                    E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, self.cardinals, self.basisfamily, 
+                    E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, self.cardinals, self.basisfamily,
                         beta=self.beta) #2-point extrapolation
                     E_corr_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
-                    #E_corr_CBS = Extrapolation_twopoint_corr(corr_energies, self.cardinals, self.basisfamily, 
-                    #    beta=self.beta) #2-point extrapolation     
+                    #E_corr_CBS = Extrapolation_twopoint_corr(corr_energies, self.cardinals, self.basisfamily,
+                    #    beta=self.beta) #2-point extrapolation
 
         # OR no PNO extrapolation
         else:
@@ -947,7 +947,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                 print("CCSDT_1_dict:", CCSDT_1_dict)
 
                 if self.MP2_PNO_correction is True:
-                    CCSDT_1_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores, 
+                    CCSDT_1_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores,
                                                             charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                 else:
                     CCSDT_1_MP2_CPS_corr=0.0
@@ -978,7 +978,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     print("CCSD_2_dict:", CCSD_2_dict)
 
                     if self.MP2_PNO_correction is True:
-                        CCSDT_2_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_2step", numcores, 
+                        CCSDT_2_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_2step", numcores,
                                                                 charge=charge, mult=mult, basis=2, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     else:
                         CCSDT_2_MP2_CPS_corr=0.0
@@ -1000,7 +1000,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     print("CCSDT_1_dict:", CCSDT_1_dict)
 
                     if self.MP2_PNO_correction is True:
-                        CCSDT_1_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores, 
+                        CCSDT_1_MP2_CPS_corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores,
                                                                 charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     else:
                         CCSDT_1_MP2_CPS_corr=0.0
@@ -1021,14 +1021,14 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
                     print("\nSCF extrapolation:")
-                    E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily, 
+                    E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily,
                         alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
                     #Separate CCSD, (T) and full-corr CBS energies
                     print("\nCCSD corr. extrapolation:")
-                    E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily, 
+                    E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, [self.cardinals[1],self.cardinals[2]], self.basisfamily,
                         beta=self.beta) #2-point extrapolation using smaller cardinals
                     print("\n(T) corr. extrapolation:")
-                    E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, [self.cardinals[0],self.cardinals[1]], self.basisfamily, 
+                    E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, [self.cardinals[0],self.cardinals[1]], self.basisfamily,
                         beta=self.beta) #2-point extrapolation
                     E_corr_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
 
@@ -1041,7 +1041,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     print("CCSDT_1_dict:", CCSDT_1_dict)
 
                     if self.MP2_PNO_correction is True:
-                        CCSDT_1_MP2corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores, 
+                        CCSDT_1_MP2corr = self.MP2correction_Step(current_coords, elems,"CCSDT_1step", numcores,
                                                                 charge=charge, mult=mult, basis=1, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     else:
                         CCSDT_1_MP2corr=0.0
@@ -1053,7 +1053,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     print("CCSDT_2_dict:", CCSDT_2_dict)
 
                     if self.MP2_PNO_correction is True:
-                        CCSDT_2_MP2corr = self.MP2correction_Step(current_coords, elems,"CCSDT_2step", numcores, 
+                        CCSDT_2_MP2corr = self.MP2correction_Step(current_coords, elems,"CCSDT_2step", numcores,
                                                                 charge=charge, mult=mult, basis=2, pnosetting=self.pnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                     else:
                         CCSDT_2_MP2corr=0.0
@@ -1070,16 +1070,16 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     #BASIS SET EXTRAPOLATION
                     #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
                     print("\nSCF extrapolation:")
-                    E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, self.cardinals, self.basisfamily, 
+                    E_SCF_CBS = Extrapolation_twopoint_SCF(scf_energies, self.cardinals, self.basisfamily,
                         alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
 
                     #Separate CCSD, (T) and full-corr CBS energies
                     print("\nCCSD corr. extrapolation:")
-                    E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, self.cardinals, self.basisfamily, 
+                    E_corrCCSD_CBS = Extrapolation_twopoint_corr(ccsdcorr_energies, self.cardinals, self.basisfamily,
                         beta=self.beta) #2-point extrapolation
                     print("\n(T) corr. extrapolation:")
-                    E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, self.cardinals, self.basisfamily, 
-                        beta=self.beta) #2-point extrapolation        
+                    E_corrCCT_CBS = Extrapolation_twopoint_corr(triplescorr_energies, self.cardinals, self.basisfamily,
+                        beta=self.beta) #2-point extrapolation
                     E_corr_CBS = E_corrCCSD_CBS + E_corrCCT_CBS
 
         ############################################################
@@ -1087,7 +1087,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         ############################################################
         if self.T1 == False:
             if self.T1correction == True:
-                T1energycorr = self.T1correction_Step(current_coords, elems, calc_label,numcores, charge=charge, mult=mult, 
+                T1energycorr = self.T1correction_Step(current_coords, elems, calc_label,numcores, charge=charge, mult=mult,
                     basis=self.T1corrbasis_size, pnosetting=self.T1corrpnosetting, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
                 #Adding T1 energy correction to E_corr_CBS and E_corrCCT_CBS
                 E_corr_CBS = E_corr_CBS + T1energycorr
@@ -1103,7 +1103,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             print("")
             print("Core-Valence Scalar Relativistic Correction is on!")
             #NOTE: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
-            
+
             # TODO: Option if W1-mtsmall basis set is not available? Do: cc-pwCVnZ-DK and cc-pwCVnZ ??
             #TODO: Do element check here to make sure there is an appropriate CV basis set available.
             #W1-mtsmall available for H-Ar
@@ -1161,14 +1161,14 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                 from ash.interfaces.interface_CFour import run_CFour_HLC_correction
                 print("Doing HOCC correction via the CFour program")
                 E_HOCC = run_CFour_HLC_correction(coords=current_coords, elems=elems, charge=charge, mult=mult,
-                                                  theory=None, method=self.HOCC_method, basis=self.HOCC_basis, 
+                                                  theory=None, method=self.HOCC_method, basis=self.HOCC_basis,
                                                   ref=self.HOCC_ref, numcores=original_numcores, openshell=openshell)
 
             elif self.HOCC_program == 'MRCC':
                 print("Doing HOCC correction via the MRCC program")
                 from ash.interfaces.interface_MRCC import run_MRCC_HLC_correction
                 E_HOCC = run_MRCC_HLC_correction(coords=current_coords, elems=elems, charge=charge, mult=mult,
-                                                 theory=None, method=self.HOCC_method, basis=self.HOCC_basis, 
+                                                 theory=None, method=self.HOCC_method, basis=self.HOCC_basis,
                                                  ref=self.HOCC_ref,numcores=original_numcores, openshell=openshell)
         else:
             E_HOCC = 0.0
@@ -1241,7 +1241,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         print("E_HOCC correction : ", E_HOCC, "Eh")
         print("E_DBOC correction : ", E_DBOC, "Eh")
         print("E_FCI correction : ", E_FCIcorrection, "Eh")
-        
+
         print("FINAL ENERGY :", E_FINAL, "Eh")
         #Setting energy_components as an accessible attribute
         self.energy_components=E_dict
@@ -1255,10 +1255,10 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 
 #MRCC version
 class MRCC_CC_CBS_Theory:
-    def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', memory=5000, numcores=1, 
-            cardinals=None, basisfamily=None, SCFextrapolation=True, alpha=None, beta=None, 
+    def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', memory=5000, numcores=1,
+            cardinals=None, basisfamily=None, SCFextrapolation=True, alpha=None, beta=None,
             CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False,
-            LNO=False, lnosetting='XXX', 
+            LNO=False, lnosetting='XXX',
             relativity=None, mrccdir=None, FCI=False, atomicSOcorrection=False):
 
         print_line_with_mainheader("MRCC_CC_CBS_Theory")
@@ -1266,7 +1266,7 @@ class MRCC_CC_CBS_Theory:
         #Indicates that this is a QMtheory
         self.theorytype="QM"
 
-        #CHECKS to exit early 
+        #CHECKS to exit early
         if elements == None:
             print(BC.FAIL, "\nMRCC_CC_CBS_Theory requires a list of elements to be given in order to set up basis sets", BC.END)
             print("Example: MRCC_CC_CBS_Theory(elements=['C','Fe','S','H','Mo'], basisfamily='def2',cardinals=[2,3], ...")
@@ -1288,7 +1288,7 @@ class MRCC_CC_CBS_Theory:
             print(BC.FAIL,"For F12 calculations, set cardinals=[X] i.e. a list of one integer.", BC.END)
             ashexit()
 
-        #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single 
+        #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single
         if len(cardinals) == 1:
             print(BC.WARNING, "Only a single cardinal was chosen. This means that no extrapolation will be carried out", BC.END)
             self.singlebasis=True
@@ -1343,7 +1343,7 @@ class MRCC_CC_CBS_Theory:
         print("")
         ashexit()
         #Getting basis sets and ECPs for each element for a given basis-family and cardinal
-        
+
         self.Calc1_basis_dict={}
         for elem in elements:
             bas=basis_for_element(elem, basisfamily, cardinals[0])
@@ -1406,14 +1406,14 @@ class MRCC_CC_CBS_Theory:
             self.ccsdtkeyword='DF-CCSD(T)'
         else:
             self.ccsdtkeyword='CCSD(T)'
-        
+
         if Openshellreference == 'QRO':
             qroline="qro=on"
             #qro = on
             #self.extrainputkeyword = self.extrainputkeyword + ' UNO '
         elif Openshellreference == 'UHF':
             self.extrainputkeyword = self.extrainputkeyword + ' UHF '
-        
+
         #Global F12-aux basis keyword
         if self.F12 is True:
             cardlabel=self.cardlabels[self.cardinals[0]]
@@ -1466,7 +1466,7 @@ class MRCC_CC_CBS_Theory:
         energy_ccsdt_mtsmall_nofc = ccsdt_mtsmall_NoFC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.out')
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_NoFC' + '.gbw')
-        
+
         energy_ccsdt_mtsmall_fc = ccsdt_mtsmall_FC.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.out', './' + calc_label + 'CCSDT_MTsmall_FC' + '.out')
         shutil.copyfile(ccsdt_mtsmall_NoFC.filename+'.gbw', './' + calc_label + 'CCSDT_MTsmall_FC' + '.gbw')
@@ -1498,7 +1498,7 @@ class MRCC_CC_CBS_Theory:
                 print("Error. No basis-set definition available for element: {}".format(element))
                 print("Make sure to pass a list of all elements of molecule/benchmark-database when creating CC_CBS_Theory object")
                 print("Example: CC_CBS_Theory(elements=[\"{}\" ] ".format(element))
-                ashexit() 
+                ashexit()
 
         #Number of atoms and number of electrons
         numatoms=len(elems)
@@ -1512,7 +1512,7 @@ class MRCC_CC_CBS_Theory:
             E_total = -0.500000
             print("Using hardcoded value: ", E_total)
             if self.FCI is True:
-                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0, 
+                E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0,
                         'E_corrCCT_CBS': 0.0, 'E_corr_CBS' : 0.0, 'E_corecorr_and_SR': 0.0, 'E_SO': 0.0, 'E_FCIcorrection': 0.0}
             else:
                 E_dict = {'Total_E': E_total, 'E_SCF_CBS': E_total, 'E_CC_CBS': E_total, 'E_FCI_CBS': E_total, 'E_corrCCSD_CBS': 0.0,
@@ -1573,16 +1573,16 @@ class MRCC_CC_CBS_Theory:
             print("ccsdcorr_energies :", ccsdcorr_energies)
             print("triplescorr_energies :", triplescorr_energies)
             print("corr_energies :", corr_energies)
-        
+
         #BASIS SET EXTRAPOLATION
-            #E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily, 
+            #E_SCF_CBS, E_corrCCSD_CBS = Extrapolation_twopoint(scf_energies, ccsdcorr_energies, self.cardinals, self.basisfamily,
             #    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
             #Separate CCSD and (T) CBS energies
-            #E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily, 
+            #E_SCF_CBS, E_corrCCT_CBS = Extrapolation_twopoint(scf_energies, triplescorr_energies, self.cardinals, self.basisfamily,
             #    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
 
             #BASIS SET EXTRAPOLATION of SCF and full correlation energies
-            #E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily, 
+            #E_SCF_CBS, E_corr_CBS = Extrapolation_twopoint(scf_energies, corr_energies, self.cardinals, self.basisfamily,
             #    alpha=self.alpha, beta=self.beta, SCFextrapolation=self.SCFextrapolation) #2-point extrapolation
 
         ############################################################
@@ -1592,7 +1592,7 @@ class MRCC_CC_CBS_Theory:
             print("")
             print("Core-Valence Scalar Relativistic Correction is on!")
             #NOTE: We should only do CV if we are doing all-electron calculations. If we have heavy element then we have probably added an ECP (specialbasisfunction)
-            
+
             # TODO: Option if W1-mtsmall basis set is not available? Do: cc-pwCVnZ-DK and cc-pwCVnZ ??
             #TODO: Do element check here to make sure there is an appropriate CV basis set available.
             #W1-mtsmall available for H-Ar
@@ -1680,7 +1680,7 @@ class MRCC_CC_CBS_Theory:
         print("E_corrCCT_CBS : ", E_corrCCT_CBS, "Eh")
         print("Spin-orbit coupling : ", E_SO, "Eh")
         print("E_corecorr_and_SR : ", E_corecorr_and_SR, "Eh")
-        
+
 
         #Setting energy_components as an accessible attribute
         self.energy_components=E_dict
@@ -1696,7 +1696,7 @@ class MRCC_CC_CBS_Theory:
 
 
 
-    
+
 ############################
 # EXTRAPOLATION FUNCTIONS
 #############################
@@ -1720,7 +1720,7 @@ def PNO_extrapolation(E,F):
 #Dictionary of extrapolation parameters. Key: Basisfamilyandcardinals Value: list: [alpha, beta]
 #Added default value of beta=3.0 (theoretical value), alpha=3.9
 extrapolation_parameters_dict = { 'cc_23' : [4.42, 2.460], 'aug-cc_23' : [4.30, 2.510], 'cc_34' : [5.46, 3.050], 'aug-cc_34' : [5.790, 3.050],
-'def2_23' : [10.390,2.4],  'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09],  'ma-def2_23' : [10.390,2.4], 
+'def2_23' : [10.390,2.4],  'def2_34' : [7.880,2.970], 'pc_23' : [7.02, 2.01], 'pc_34': [9.78, 4.09],  'ma-def2_23' : [10.390,2.4],
 'ma-def2_34' : [7.880,2.970], 'default' : [3.9,3.0], 'default_23' : [3.9,2.4]}
 
 
@@ -1813,7 +1813,7 @@ def Extrapolation_twopoint_SCF(scf_energies, cardinals, basis_family, alpha=None
     # If alpha/beta have not been set then we define based on basisfamily and cardinals
     if alpha == None:
         alpha=extrapolation_parameters_dict[extrap_dict_key][0]
-    
+
     #Print energies
     print("Basis family is:", basis_family)
     print("Cardinals are:", cardinals)
@@ -1914,13 +1914,13 @@ def Extrapolation_twopoint_corr(corr_energies, cardinals, basis_family, beta=Non
             extrap_dict_key='default'
         print("Using settings: beta: {}".format(extrapolation_parameters_dict[extrap_dict_key][1]))
 
-    
+
     #Override settings if desired
     print("\nExtrapolation parameters:")
     # If beta has not been set then we define based on basisfamily and cardinals
     if beta == None:
         beta=extrapolation_parameters_dict[extrap_dict_key][1]
-    
+
     print("Used beta :", beta)
 
     #Print energies
@@ -1947,14 +1947,14 @@ def Extrapolation_Riemann_zeta_corr(corr_energies, cardinals):
 
     #Riemann zeta: ksi(s), ksi(4) = pi^4/90
     rz4 = math.pi**4/90
-    
+
     #a = L^4(E_L - E_L-1)
     a = cardinals[-1]**4*(corr_energies[1]-corr_energies[0])
 
     #sum_ang: sum(l^-4 for l=1 to L)
     sum_ang=sum([l**(-4) for l in range(1,cardinals[1]+1)])
-    
-    #E_L 
+
+    #E_L
     E_inf = corr_energies[-1] + a*(rz4-sum_ang)
     print("Cardinals are:", cardinals)
     print("Correlation energies are:", corr_energies[0], "and", corr_energies[1])
@@ -1967,7 +1967,7 @@ def FCI_extrapolation(E):
        Energies provided could be e.g. all at DZ level or alternatively at estimated CBS level
 
     Args:
-        E (list): list of E_SCF, E_corr_CCSD, E_corr_T 
+        E (list): list of E_SCF, E_corr_CCSD, E_corr_T
     """
     d1=E[0];d2=E[1];d3=E[2]
     E_FCI=d1/(1-((d2/d1)/(1-(d3/d2))))
@@ -2120,7 +2120,7 @@ def basis_for_element(element,basisfamily,cardinal):
             print("cc basis set for K is missing in ORCA. Take a look at literature.")
             ashexit()
         elif 20 <= atomnumber <= 36   : #Ca-Kr. Note: K missing
-            return ("cc-pV{}Z".format(cardlabel), None)        
+            return ("cc-pV{}Z".format(cardlabel), None)
         elif 38 <= atomnumber <= 54   : #Sr-Xe. Note: Rb missing
             return ("cc-pV{}Z-PP".format(cardlabel), "SK-MCDHF-RSC")
         elif 72 <= atomnumber <= 86   : #Hf-Rn
@@ -2142,7 +2142,7 @@ def basis_for_element(element,basisfamily,cardinal):
             print("cc basis set for K is missing in ORCA. Take a look at literature.")
             ashexit()
         elif 20 <= atomnumber <= 36   : #Ca-Kr. Note: K missing
-            return ("aug-cc-pV{}Z".format(cardlabel), None)        
+            return ("aug-cc-pV{}Z".format(cardlabel), None)
         elif 38 <= atomnumber <= 54   : #Sr-Xe. Note: Rb missing
             return ("aug-cc-pV{}Z-PP".format(cardlabel), "SK-MCDHF-RSC")
         elif 72 <= atomnumber <= 86   : #Hf-Rn
@@ -2172,7 +2172,7 @@ def basis_for_element(element,basisfamily,cardinal):
                 return ("cc-pV{}Z-DK".format(cardlabel), None)
             elif 72 <= atomnumber <= 86: #Hf-Rn for cc-pVTZ-DK
                 return ("cc-pV{}Z-DK".format(cardlabel), None)
-        elif cardinal == 4:                   
+        elif cardinal == 4:
             if 49 <= atomnumber <= 54 : #In-Xe for cc-pVQZ-DK
                 return ("cc-pV{}Z-DK".format(cardlabel), None)
             elif 81 <= atomnumber <= 86: #Tl-Rn for cc-pVQZ-DK
@@ -2202,7 +2202,7 @@ def basis_for_element(element,basisfamily,cardinal):
                 return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
             elif 72 <= atomnumber <= 86: #Hf-Rn for cc-pVTZ-DK
                 return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
-        elif cardinal == 4:                   
+        elif cardinal == 4:
             if 49 <= atomnumber <= 54 : #In-Xe for cc-pVQZ-DK
                 return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
             elif 81 <= atomnumber <= 86: #Tl-Rn for cc-pVQZ-DK
@@ -2228,11 +2228,11 @@ def basis_for_element(element,basisfamily,cardinal):
             ashexit()
         elif atomnumber == 20:
             #NOTE: There is also a cc-pwCVDZ-PP version
-            return ("cc-pwCV{}Z".format(cardlabel), None)     
+            return ("cc-pwCV{}Z".format(cardlabel), None)
         elif 21 <= atomnumber <= 30  and cardinal > 2: #Sc-Zn. Only for cardinal > 2
             return ("cc-pwCV{}Z".format(cardlabel), None)
         elif 31 <= atomnumber <= 36 or atomnumber == 20   : #Ga-Kr, Ca. Note: K missing
-            return ("cc-pwCV{}Z".format(cardlabel), None)        
+            return ("cc-pwCV{}Z".format(cardlabel), None)
 
         elif 38 <= atomnumber <= 54 :
             return ("cc-pwCV{}Z-PP".format(cardlabel), "SK-MCDHF-RSC")
@@ -2258,11 +2258,11 @@ def basis_for_element(element,basisfamily,cardinal):
             ashexit()
         elif atomnumber == 20:
             #NOTE: There is also a cc-pwCVDZ-PP version
-            return ("aug-cc-pwCV{}Z".format(cardlabel), None)     
+            return ("aug-cc-pwCV{}Z".format(cardlabel), None)
         elif 21 <= atomnumber <= 30  and cardinal > 2: #Sc-Zn. Only for cardinal > 2
             return ("aug-cc-pwCV{}Z".format(cardlabel), None)
         elif 31 <= atomnumber <= 36 or atomnumber == 20   : #Ga-Kr, Ca. Note: K missing
-            return ("aug-cc-pwCV{}Z".format(cardlabel), None)        
+            return ("aug-cc-pwCV{}Z".format(cardlabel), None)
 
         elif 38 <= atomnumber <= 54 :
             return ("aug-cc-pwCV{}Z-PP".format(cardlabel), "SK-MCDHF-RSC")
@@ -2289,7 +2289,7 @@ def basis_for_element(element,basisfamily,cardinal):
             print("Warning. No proper CV basis set available for element {}. Using valence basis set instead".format(element))
             #NOTE: Using DK valence basis sets instead here. Alternative: use nonrelativistic pwCV basis ?+
             #Could use cc-pCVnZ-DK for these ones. BUT NOT available in ORCA!
-            return ("cc-pV{}Z-DK".format(cardlabel), None) 
+            return ("cc-pV{}Z-DK".format(cardlabel), None)
         elif 11 <= atomnumber <= 12: #Na,Mg.
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 13 <= atomnumber <= 18 :
@@ -2299,13 +2299,13 @@ def basis_for_element(element,basisfamily,cardinal):
             return ("cc-pV{}Z-DK".format(cardlabel), None)
         elif atomnumber == 19:
             print("cc-CV-dkh basis set for K is missing in ORCA. Take a look at literature.")
-            ashexit() 
+            ashexit()
         elif 20 <= atomnumber <= 30: #Ca-Zn.
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 39 <= atomnumber <= 54 and cardinal > 2:
-            return ("cc-pwCV{}Z-DK".format(cardlabel), None)      
+            return ("cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 72 <= atomnumber <= 80 and cardinal == 3: #Hf-Hg
-            return ("cc-pwCV{}Z-DK".format(cardlabel), None)            
+            return ("cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 81 <= atomnumber <= 86 and cardinal in [3,4]: #Tl-Rn for TZ and QZ
             return ("cc-pwCV{}Z-DK".format(cardlabel), None)
 
@@ -2336,7 +2336,7 @@ def basis_for_element(element,basisfamily,cardinal):
                 return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
             elif 72 <= atomnumber <= 80: #Hf-Rn for cc-pVTZ-DK
                 return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
-        elif cardinal == 4:                   
+        elif cardinal == 4:
             if 49 <= atomnumber <= 54 : #In-Xe for cc-pVQZ-DK
                 return (prefix+"cc-pV{}Z-DK".format(cardlabel), None)
             elif 81 <= atomnumber <= 86: #Tl-Rn for cc-pVQZ-DK
@@ -2362,7 +2362,7 @@ def basis_for_element(element,basisfamily,cardinal):
             print("Warning. No proper CV basis set available for element {}. Using valence basis set instead".format(element))
             #NOTE: Using DK valence basis sets instead here. Alternative: use nonrelativistic pwCV basis ?+
             #Could use cc-pCVnZ-DK for these ones. BUT NOT available in ORCA!
-            return ("aug-cc-pV{}Z-DK".format(cardlabel), None) 
+            return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
         elif 11 <= atomnumber <= 12: #Na,Mg.
             return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 13 <= atomnumber <= 18 :
@@ -2372,15 +2372,15 @@ def basis_for_element(element,basisfamily,cardinal):
             return ("aug-cc-pV{}Z-DK".format(cardlabel), None)
         elif atomnumber == 19:
             print("aug-cc-CV-dkh basis set for K is missing in ORCA. Take a look at literature.")
-            ashexit() 
+            ashexit()
         elif 20 <= atomnumber <= 30: #Ca-Zn.
             return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 39 <= atomnumber <= 54 and cardinal == 3:
-            return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)      
+            return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 49 <= atomnumber <= 71 :
             return ("aug-cc-pwCV{}Z-DK3".format(cardlabel), None)
         elif 72 <= atomnumber <= 80 and cardinal == 3:
-            return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)            
+            return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)
         elif 81 <= atomnumber <= 86 and cardinal in [3,4]: #Tl-Rn for TZ and QZ
             return ("aug-cc-pwCV{}Z-DK".format(cardlabel), None)
 
@@ -2440,7 +2440,7 @@ def basis_for_element(element,basisfamily,cardinal):
         if atomnumber <= 36 :
             return ("DKH-def2-{}".format(cardlabel), None)
         elif 36 < atomnumber <= 86 and cardinal < 4:
-            
+
             return ("SARC-DKH-{}".format(cardlabel), None)
     #NOTE: Problem SARC QZ or DZ basis set not really available so extrapolations for heavy elements not really possible
     elif basisfamily == "ma-def2-zora":
@@ -2474,7 +2474,7 @@ def basis_for_element(element,basisfamily,cardinal):
             print("cc-F12 basis set missing for K-Zn. Take a look at literature to see if this has changed.")
             ashexit()
         elif 31 <= atomnumber <= 36   : #Ga-Kr.
-            return ("cc-pV{}Z-PP-F12".format(cardlabel), "SK-MCDHF-RSC")        
+            return ("cc-pV{}Z-PP-F12".format(cardlabel), "SK-MCDHF-RSC")
         elif 49 <= atomnumber <= 54   : #In-Xe.
             return ("cc-pV{}Z-PP-F12".format(cardlabel), "SK-MCDHF-RSC")
         elif 81 <= atomnumber <= 86   : #Tl-Rn
@@ -2486,7 +2486,7 @@ def basis_for_element(element,basisfamily,cardinal):
 #Make ORCATHeory object for ICE-CI
 #TODO: Allow basis-set element dictionary
 #TODO: Allow external basis set file
-def make_ICE_theory(basis,tgen, tvar, numcores, nel=None, norb=None, nmin_nmax=False, ice_nmin=None,ice_nmax=None, 
+def make_ICE_theory(basis,tgen, tvar, numcores, nel=None, norb=None, nmin_nmax=False, ice_nmin=None,ice_nmax=None,
     autoice=False, basis_per_element=None, maxcorememory=10000, maxiter=20, etol=1e-6, moreadfile=None,label=""):
     print_line_with_mainheader("make_ICE_theory")
     print("Simple function to create ICE-CI ORCATheory object")
@@ -2623,7 +2623,7 @@ def newAuto_ICE_CAS(fragment=None, basis="cc-pVDZ", basisblock="", moreadfile=No
     end
     end
     """
-    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {basis} tightscf", 
+    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF {basis} tightscf",
                                 orcablocks=casblocks, moreadfile=moreadfile, autostart=autostart, label=f"{label}", numcores=numcores)
 
     result_ICE = ash.Singlepoint(fragment=fragment, theory=ice_cas_CI, charge=charge,mult=mult)
@@ -2709,7 +2709,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     if initial_orbitals =="HF" or initial_orbitals =="RHF" :
         print("Performing HF orbital calculation")
         exit()
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} HF {basis}  tightscf", numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} HF {basis}  tightscf", numcores=numcores,
                                  label='RHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.gbw"
         #Dummy occupations
@@ -2717,36 +2717,36 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     elif initial_orbitals =="UHF-UNO" or initial_orbitals =="UHF" :
         print("Performing UHF natural orbital calculation")
         exit()
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis} normalprint UNO tightscf", numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis} normalprint UNO tightscf", numcores=numcores,
                                  label='UHF', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.unso"
         natoccgrab=UHF_natocc_grab
     elif initial_orbitals =="UHF-QRO":
         print("Performing UHF-QRO natural orbital calculation")
         exit()
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} UHF {basis}  UNO tightscf", numcores=numcores,
                                  label='UHF-QRO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.qro"
         natoccgrab=UHF_natocc_grab
     elif initial_orbitals =="MP2" :
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores,
                                  label='MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
     elif initial_orbitals =="RI-MP2" :
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! RI-MP2 {basis} autoaux tightscf", orcablocks=mp2blocks, numcores=numcores,
                                  label='MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
     elif initial_orbitals =="CCSD":
-        natorbs = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores, 
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores,
                                  label='CCSD', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mdci.nat"
         natoccgrab=CCSD_natocc_grab
     else:
         print("Error: initial_orbitals must be HF, MP2, RI-MP2 or CCSD")
         ashexit()
-    
+
     #Run MP2/CCSD natorb calculation
     ash.Singlepoint(theory=natorbs, fragment=fragment, charge=charge, mult=mult)
 
@@ -2794,7 +2794,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     end
     end
     """
-    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF  {basis} tightscf", 
+    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF  {basis} tightscf",
                                 orcablocks=casblocks, moreadfile=mofile, autostart=autostart, label=f"{label}", numcores=numcores)
 
     result_ICE = ash.Singlepoint(fragment=fragment, theory=ice_cas_CI, charge=charge,mult=mult)
@@ -2832,7 +2832,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
 #TODO: Fix for 1-electron systems
 #TODO: Finish MBE
 def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_element=None,
-                Do_ICE_CI=True, 
+                Do_ICE_CI=True,
                 Do_TGen_fixed_series=True, fixed_tvar=1e-11, Do_Tau3_series=True, Do_Tau7_series=True, Do_EP_series=True,
                 tgen_thresholds=None, ice_nmin=1.999, ice_nmax=0,
                 separate_MP2_nat_initial_orbitals=True,
@@ -2842,7 +2842,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 maxcorememory=10000, numcores=1, ice_ci_maxiter=30, ice_etol=1e-6,
                 upper_sel_threshold=1.999, lower_sel_threshold=0,
                 plot=True, y_axis_label='None', yshift=0.3, ylimits=None, padding=0.4):
-    
+
 
     if DoCAS is True and active_space_for_each == None:
         print("Error: active_space_for_each must be set if DoCAS is True.")
@@ -2922,7 +2922,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 #Creating ICE-CI theory
                 if (tgen,tvar) not in results_ice_tgen_tvar:
                     for i,frag in enumerate(reaction.fragments):
-                        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element,
                             maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i], label=f"Frag_{str(frag.formula)}")
                         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
                         ice.cleanup()
@@ -2961,7 +2961,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 #Creating ICE-CI theory
                 if (tgen,tvar) not in results_ice_tgen_tvar:
                     for i,frag in enumerate(reaction.fragments):
-                        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element,
                             maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i], label=f"Frag_{str(frag.formula)}")
                         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
                         ice.cleanup()
@@ -2994,7 +2994,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 #Creating ICE-CI theory
                 if (tgen,tvar) not in results_ice_tgen_tvar:
                     for i,frag in enumerate(reaction.fragments):
-                        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
+                        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element,
                             maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, moreadfile=reaction.orbital_dictionary["MP2nat"][i], label=f"Frag_{str(frag.formula)}")
                         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
                         ice.cleanup()
@@ -3054,7 +3054,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
 
 
 
-            #Extrapolated Reaction energies 
+            #Extrapolated Reaction energies
             if Do_Tau3_series:
                 tau3_EP_series_2p=[]
                 tau3_EP_series_3p=[]
@@ -3068,7 +3068,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                     tau3_EP_series_3p.append(reaction_energy_3p)
                 #print("tau3_EP_series_2p:", tau3_EP_series_2p)
                 #print("tau3_EP_series_3p:", tau3_EP_series_3p)
-            
+
             #Confidence interval
             #TODO
         print("results_ice_tgen_tvar:", results_ice_tgen_tvar)
@@ -3081,7 +3081,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         %maxcore 11000
         """
         hf = ash.ORCATheory(orcasimpleinput=f"! HF {basis} tightscf", orcablocks=hfblocks, basis_per_element=basis_per_element,numcores=numcores, label='HF', save_output_with_label=True)
-        
+
         result_HF = ash.Singlepoint_reaction(reaction=reaction, theory=hf)
         results_cc['HF'] = result_HF.reaction_energy
         hf.cleanup()
@@ -3134,7 +3134,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             bccd = ash.ORCATheory(orcasimpleinput=f"! CCSD {basis} tightscf", orcablocks=brucknerblocks, basis_per_element=basis_per_element,numcores=numcores, label='BCCD', save_output_with_label=True)
             #pccsd_1a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/1a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD1a', save_output_with_label=True)
             #pccsd_2a = ash.ORCATheory(orcasimpleinput=f"! pCCSD/2a {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='pCCSD2a', save_output_with_label=True)
-            
+
             result_CCSD = ash.Singlepoint_reaction(reaction=reaction, theory=ccsd)
             ccsd.cleanup()
             if DoCC_Bruckner is True:
@@ -3147,7 +3147,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
             #pccsd_2a.cleanup()
             results_cc['CCSD'] = result_CCSD.reaction_energy
 
-            
+
             if Do_OOCC is True:
                 ooccd = ash.ORCATheory(orcasimpleinput=f"! OOCCD {basis} tightscf", orcablocks=ccblocks, basis_per_element=basis_per_element,numcores=numcores, label='OOCCD', save_output_with_label=True)
                 result_OOCCD = ash.Singlepoint_reaction(reaction=reaction, theory=ooccd)
@@ -3189,7 +3189,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                 result_OOCCDT = ash.Singlepoint_reaction(reaction=reaction, theory=ooccdt)
                 ooccdt.cleanup()
                 results_cc['OOCCD(T)'] = result_OOCCDT.reaction_energy
-            
+
             #CCSD(T) with multiple DFT orbitals
             if DoCC_DFTorbs is True:
                 print("Running CCSD(T) with multiple functionals")
@@ -3283,7 +3283,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
         caspt2_energies=[]
         nevpt2_energies=[]
         mrciq_energies=[]
-        
+
         for i,frag in enumerate(reaction.fragments):
             casblocks=f"""%maxcore 11000
     %casscf
@@ -3302,7 +3302,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
                                     numcores=numcores, label=caslabel, save_output_with_label=True)
             mrci_q = ash.ORCATheory(orcasimpleinput=f"! MRCI+Q {basis} tightscf", orcablocks=casblocks, basis_per_element=basis_per_element,
                                     numcores=numcores, label=caslabel, save_output_with_label=True)
-            
+
             result_CASSCF = ash.Singlepoint(fragment=frag, theory=casscf)
             casscf_energies.append(result_CASSCF.energy)
             result_CASPT2 = ash.Singlepoint(fragment=frag, theory=caspt2)
@@ -3315,13 +3315,13 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
 
 
         #Reaction energies
-        reaction_energy_casscf = ash.ReactionEnergy(list_of_energies=casscf_energies, stoichiometry=reaction.stoichiometry, 
+        reaction_energy_casscf = ash.ReactionEnergy(list_of_energies=casscf_energies, stoichiometry=reaction.stoichiometry,
                                                     unit=reaction.unit, silent=False)[0]
-        reaction_energy_caspt2 = ash.ReactionEnergy(list_of_energies=caspt2_energies, stoichiometry=reaction.stoichiometry, 
+        reaction_energy_caspt2 = ash.ReactionEnergy(list_of_energies=caspt2_energies, stoichiometry=reaction.stoichiometry,
                                                     unit=reaction.unit, silent=False)[0]
-        reaction_energy_nevpt2 = ash.ReactionEnergy(list_of_energies=nevpt2_energies, stoichiometry=reaction.stoichiometry, 
+        reaction_energy_nevpt2 = ash.ReactionEnergy(list_of_energies=nevpt2_energies, stoichiometry=reaction.stoichiometry,
                                                     unit=reaction.unit, silent=False)[0]
-        reaction_energy_mrciq = ash.ReactionEnergy(list_of_energies=mrciq_energies, stoichiometry=reaction.stoichiometry, 
+        reaction_energy_mrciq = ash.ReactionEnergy(list_of_energies=mrciq_energies, stoichiometry=reaction.stoichiometry,
                                                     unit=reaction.unit, silent=False)[0]
 
         results_cas['CASSCF'] = reaction_energy_casscf
@@ -3387,7 +3387,7 @@ def Reaction_FCI_Analysis(reaction=None, basis=None, basisfile=None, basis_per_e
     #Plotting if plot is True and if matplotlib worked
     #Create ASH_plot object named edplot
     if plot is True:
-        
+
         if basis_per_element is not None:
             basislabel=""
             for i,j in basis_per_element.items():
@@ -3490,9 +3490,9 @@ def Reaction_FCI_correction(reaction=None, basis=None, basis_per_element=None, n
         print("frag")
 
         #ICE-CI
-        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0], 
-                        norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element, 
-                        maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol, 
+        ice = make_ICE_theory(basis, tgen, tvar,numcores, nel=reaction.properties["CAS"][i][0],
+                        norb=reaction.properties["CAS"][i][1], basis_per_element=basis_per_element,
+                        maxcorememory=maxcorememory, maxiter=ice_ci_maxiter, etol=ice_etol,
                         moreadfile=reaction.orbital_dictionary["MP2nat"][i], label=f"Frag_{str(frag.formula)}")
         result_ICE = ash.Singlepoint(fragment=frag, theory=ice)
         energy_ICE = result_ICE.energy
@@ -3548,7 +3548,7 @@ def Reaction_FCI_correction(reaction=None, basis=None, basis_per_element=None, n
 #TODO: moreadfile option to read in orbitals. Maybe different orbitals for different cardinals ?
 #TODO: Separate function to prepare orbitals
 class ORCA_MRCI_CBS_Theory:
-    def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', memory=5000, numcores=1, 
+    def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', memory=5000, numcores=1,
             cardinals=None, basisfamily=None,  SCFextrapolation=True, alpha=None, beta=None, orcadir=None, relativity=None,
             atomicSOcorrection=False, auxbasis="autoaux-max", MRPT2_method="CASPT2", MRHL_method="MRCI+Q", MRHL_basis="small",
             active_space=None, F12=False, IPEA_shift=0.25) :
@@ -3558,7 +3558,7 @@ class ORCA_MRCI_CBS_Theory:
         #Indicates that this is a QMtheory
         self.theorytype="QM"
 
-        #CHECKS to exit early 
+        #CHECKS to exit early
         if elements == None:
             print(BC.FAIL, "\nORCA_MRCI_CBS_Theory requires a list of elements to be given in order to set up basis sets", BC.END)
             print("Example: ORCA_MRCI_CBS_Theory(elements=['C','Fe','S','H','Mo'], basisfamily='def2',cardinals=[2,3], ...")
@@ -3570,7 +3570,7 @@ class ORCA_MRCI_CBS_Theory:
 
 
 
-        #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single 
+        #Check if only 1 cardinal was chosen: meaning no extrapolation and just a single
         if cardinals == None:
             print("Error: cardinals must be given as a list of integers")
             ashexit()
@@ -3596,7 +3596,7 @@ class ORCA_MRCI_CBS_Theory:
             print(BC.FAIL,"F12 calculations require MRPT2 to be NEVPT2.", BC.END)
             ashexit()
 
-        
+
         #Main attributes
         self.cardlabels={2:'D',3:'T',4:'Q',5:"5",6:"6"}
         self.orcadir = orcadir
@@ -3643,7 +3643,7 @@ class ORCA_MRCI_CBS_Theory:
         ######################################################
         # BLOCK-INPUT
         ######################################################
-        
+
         if self.MRPT2_method == "CASPT2":
             caspt2_settings=f"CASPT2_IPEAshift {self.IPEA_shift}"
         else:
@@ -3722,7 +3722,7 @@ end
                     #Setting ECP flag to True
                     self.ECPflag=True
                     self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
-                    
+
             #Adding basis set info for each element into blocks
             self.basis2_block="%basis\n"
             for el,bas_ecp in self.Calc2_basis_dict.items():
@@ -3733,9 +3733,9 @@ end
                     self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
 
             #Adding auxiliary basis to all defined blocks
-            self.basis0_block=self.basis0_block+finalauxbasis+"\nend" 
-            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
-            self.basis2_block=self.basis2_block+finalauxbasis+"\nend" 
+            self.basis0_block=self.basis0_block+finalauxbasis+"\nend"
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend"
+            self.basis2_block=self.basis2_block+finalauxbasis+"\nend"
 
             self.blocks0= self.blocks +basis0_block #Used in CCSD and CCSD(T) calcs
             self.blocks1= self.blocks +self.basis1_block #Used in CCSD and CCSD(T) calcs
@@ -3784,8 +3784,8 @@ end
                     self.basis2_block=self.basis2_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
 
             #Adding auxiliary basis to all defined blocks
-            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
-            self.basis2_block=self.basis2_block+finalauxbasis+"\nend" 
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend"
+            self.basis2_block=self.basis2_block+finalauxbasis+"\nend"
 
             self.blocks1= self.blocks +self.basis1_block #Used in CCSD(T) calcs
             self.blocks2= self.blocks +self.basis2_block #Used in CCSD(T) calcs
@@ -3806,7 +3806,7 @@ end
                     #Setting ECP flag to True
                     self.ECPflag=True
                     self.basis1_block=self.basis1_block+"newecp {} \"{}\" end\n".format(el,bas_ecp[1])
-            self.basis1_block=self.basis1_block+finalauxbasis+"\nend" 
+            self.basis1_block=self.basis1_block+finalauxbasis+"\nend"
             self.blocks1= self.blocks +self.basis1_block
 
 
@@ -3878,10 +3878,10 @@ end
         #HL correction
         if self.MRHL_method != "None":
             if self.MRHL_basis=="small":
-                self.mrhl = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.mrhl_input_line, 
+                self.mrhl = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.mrhl_input_line,
                                                                     orcablocks=self.blocks1, numcores=self.numcores)
             elif self.MRHL_basis=="large":
-                self.mrhl = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.mrhl_input_line, 
+                self.mrhl = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.mrhl_input_line,
                                                                     orcablocks=self.blocks2, numcores=self.numcores)
             elif self.MRHL_basis=="extrapolation":
                 print("not ready")
@@ -3893,7 +3893,7 @@ end
     def cleanup(self):
         print("Cleanup called")
 
-    def run(self, current_coords=None, qm_elems=None, 
+    def run(self, current_coords=None, qm_elems=None,
             elems=None, Grad=False, numcores=None, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA_MRCI_CBS_Theory-------------", BC.END)
@@ -3919,7 +3919,7 @@ end
                 print("Error. No basis-set definition available for element: {}".format(element))
                 print("Make sure to pass a list of all elements of molecule/benchmark-database when creating ORCA_CC_CBS_Theory object")
                 print("Example: ORCA_CC_CBS_Theory(elements=[\"{}\" ] ".format(element))
-                ashexit() 
+                ashexit()
 
         #Number of atoms and number of electrons
         numatoms=len(elems)
@@ -3947,21 +3947,21 @@ end
         ############
         #Basis-1
         ############
-        self.mrpt2_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, 
+        self.mrpt2_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult,
                          PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
-        
+
         casscf_energy = float(pygrep('Final CASSCF energy', self.mrpt2_1.filename+'.out')[4])
         caspt2_corr_energy = float(pygrep('Total Energy Correction :', self.mrpt2_1.filename+'.out')[-1])
         MRPT2_1_dict['CASSCF'] = casscf_energy
         MRPT2_1_dict['PT2_corr_energy'] = caspt2_corr_energy
-        
+
         ############
         #Basis-2
         ############
         if self.singlebasis is False:
-            self.mrpt2_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, 
+            self.mrpt2_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult,
                             PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
-            
+
             casscf_energy = float(pygrep('Final CASSCF energy', self.mrpt2_2.filename+'.out')[4])
             caspt2_corr_energy = float(pygrep('Total Energy Correction :', self.mrpt2_2.filename+'.out')[-1])
             MRPT2_2_dict['CASSCF'] = casscf_energy
@@ -3974,9 +3974,9 @@ end
         print("Now doing HL MRCI correction")
         #TODO: option to extrapolate to CBS
         if self.MRHL_method != "None":
-            self.mrhl.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, 
+            self.mrhl.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult,
                                 PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
-                
+
             #MRCI total energy (2 lines are found, taking last one)
             casscf_ref_energy = float(pygrep('Final CASSCF energy', self.mrhl.filename+'.out')[4])
             mrci_total_energy = float(pygrep2('STATE   0:  Energy', self.mrhl.filename+'.out')[-1].split()[3])
@@ -4012,10 +4012,10 @@ end
             #BASIS SET EXTRAPOLATION
             #SCF extrapolation. WIll be overridden inside function if self.SCFextrapolation==True
             print("\nSCF extrapolation:")
-            E_SCF_CBS = Extrapolation_twopoint_SCF(casscf_energies, self.cardinals, self.basisfamily, 
+            E_SCF_CBS = Extrapolation_twopoint_SCF(casscf_energies, self.cardinals, self.basisfamily,
                 alpha=self.alpha, SCFextrapolation=self.SCFextrapolation) #2-point SCF extrapolation
 
-            E_corr_MRPT2_CBS = Extrapolation_twopoint_corr(corr_energies, self.cardinals, self.basisfamily, 
+            E_corr_MRPT2_CBS = Extrapolation_twopoint_corr(corr_energies, self.cardinals, self.basisfamily,
                 beta=self.beta) #2-point extrapolation
 
 
@@ -4040,7 +4040,7 @@ end
                 E_SO = 0.0
         else :
             E_SO = 0.0
-    
+
         ############################################################
         #FINAL RESULT
         ############################################################
@@ -4061,7 +4061,7 @@ end
         print("E_corr_MRPT2_CBS : ", E_corr_MRPT2_CBS, "Eh")
         print("E_corrMRCI : ", delta_corr_MRCI, "Eh")
         print("Spin-orbit coupling correction : ", E_SO, "Eh")
-        
+
         print("FINAL ENERGY :", E_FINAL, "Eh")
         #Setting energy_components as an accessible attribute
         self.energy_components=E_dict

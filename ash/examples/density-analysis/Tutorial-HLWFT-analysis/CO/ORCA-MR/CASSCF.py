@@ -43,4 +43,3 @@ mfile = make_molden_file_ORCA(f"{CASSCF_6_5.filename}.gbw")
 #CASSCF 10,8
 Singlepoint(theory=CASSCF_10_8, fragment=CO)
 mfile = make_molden_file_ORCA(f"{CASSCF_10_8.filename}.gbw")
-

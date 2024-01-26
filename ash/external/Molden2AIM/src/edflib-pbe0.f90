@@ -5047,4 +5047,3 @@ subroutine EDFPBE0(iz,ncore,nfun,alf,coe)
  end subroutine EDFLIB92
 
 end
-

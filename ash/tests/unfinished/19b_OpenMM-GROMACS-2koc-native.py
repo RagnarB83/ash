@@ -8,7 +8,7 @@ gromacstopdir="/home/bjornsson/gromacs-2018.3-install/share/gromacs/top"
 frag=Fragment(grofile=grofile)
 
 #Periodic OpenMM on 2KOC system using GROMACS files:
-# Reference data from: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/ 
+# Reference data from: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5549999/
 #Periodic cell info from GRO file
 #Long-range dispersion used. Needed.
 #Nonbonded cutoff: 9 Å. Used in reference scripts

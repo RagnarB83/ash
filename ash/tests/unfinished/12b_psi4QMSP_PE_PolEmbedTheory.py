@@ -41,7 +41,7 @@ psi4dictvar={
 'scf_type' : 'pk'}
 
 
-Psi4QMpart = Psi4Theory(charge=0, mult=1, psi4settings=psi4dictvar, 
+Psi4QMpart = Psi4Theory(charge=0, mult=1, psi4settings=psi4dictvar,
     psi4method=psi4method, runmode='library', printsetting=True)
 
 #Create PolEmbed theory object. fragment always defined with it
@@ -55,7 +55,7 @@ pot_option='SEP'
 PElabel_pyframe='HOH'
 
 
-PolEmbed_SP = PolEmbedTheory(fragment=PhenolH2O_frag, qm_theory=Psi4QMpart, 
+PolEmbed_SP = PolEmbedTheory(fragment=PhenolH2O_frag, qm_theory=Psi4QMpart,
     qmatoms=qmatoms, peatoms=peatoms, pot_option=pot_option, potfilename='System12b',
     pyframe=True, pot_create=True, PElabel_pyframe=PElabel_pyframe)
 

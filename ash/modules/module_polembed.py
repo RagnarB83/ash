@@ -182,7 +182,7 @@ class PolEmbedTheory:
                     system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
                     # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
                     solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
-                    system.add_region(name='solvent', fragments=solvent, use_mfcc=True, use_multipoles=True, 
+                    system.add_region(name='solvent', fragments=solvent, use_mfcc=True, use_multipoles=True,
                                       multipole_order=2, multipole_model='LoProp', multipole_method='DFT', multipole_xcfun='PBE0',
                                       multipole_basis='loprop-6-31+G*', use_polarizabilities=True, polarizability_model='LoProp',
                                       polarizability_method='DFT', polarizability_xcfun='PBE0', polarizability_basis='loprop-6-31+G*')
@@ -258,7 +258,7 @@ class PolEmbedTheory:
             self.potfile=potfilename+'.pot'
         print_time_rel(module_init_time, modulename='PolEmbedTheory creation')
     def run(self, current_coords=None, elems=None, Grad=False, numcores=1, potfile=None, restart=False, charge=None, mult=None):
-    
+
         module_init_time=time.time()
 
         print(BC.WARNING, BC.BOLD, "------------RUNNING PolEmbedTheory MODULE-------------", BC.END)

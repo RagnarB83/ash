@@ -26,6 +26,6 @@ def test_openmm_modeller():
 
     #MM minimization to get rid the worst contacts
     #OpenMM_Opt(fragment=ashfragment, theory=openmmobject, maxiter=100, tolerance=1000)
-    
+
 #test_openmm_basic()
 #test_openmm_modeller()

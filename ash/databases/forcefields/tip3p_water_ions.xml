@@ -6,12 +6,12 @@
   <Type class="OX" element="O" mass="15.9994" name="OX"/>
   <Type class="LIT" element="Li" mass="6.941" name="LIT"/>
   <Type class="SOD" element="Na" mass="22.98977" name="SOD"/>
-  <Type class="MG" element="Mg" mass="24.305" name="MG"/> 
+  <Type class="MG" element="Mg" mass="24.305" name="MG"/>
   <Type class="POT" element="K" mass="39.0983" name="POT"/>
   <Type class="CAL" element="Ca" mass="40.08" name="CAL"/>
   <Type class="RUB" element="Rb" mass="85.4678" name="RUB"/>
   <Type class="CES" element="Cs" mass="132.90545" name="CES"/>
-  <Type class="BAR" element="Ba" mass="137.327" name="BAR"/> 
+  <Type class="BAR" element="Ba" mass="137.327" name="BAR"/>
   <Type class="ZN" element="Zn" mass="65.37" name="ZN"/>
   <Type class="CAD" element="Cd" mass="112.411" name="CAD"/>
   <Type class="CLA" element="Cl" mass="35.45" name="CLA"/>
@@ -54,7 +54,7 @@
   <Bond class1="OW" class2="HW" length="0.09572" k="462750.4"/>
 
 
-  
+
  </HarmonicBondForce>
  <HarmonicAngleForce>
   <Angle class1="HW" class2="OW" class3="HW" angle="1.82421813418" k="836.8"/>

@@ -18,7 +18,7 @@ MM_forcefield=MMforcefield_read('MeOH_H2O-sigma.ff')
 
 #QM and MM objects
 ORCAQMpart = ORCATheory(orcasimpleinput="!BP86 def2-SVP def2/J tightscf", orcablocks="")
-MMpart = NonBondedTheory(charges = atomcharges, atomtypes=atomtypes, forcefield=MM_forcefield, 
+MMpart = NonBondedTheory(charges = atomcharges, atomtypes=atomtypes, forcefield=MM_forcefield,
     LJcombrule='geometric', codeversion="py")
 QMMMobject = QMMMTheory(fragment=H2O_MeOH, qm_theory=ORCAQMpart, mm_theory=MMpart, qmatoms=qmatoms,
                         charges=atomcharges, embedding='Elstat')

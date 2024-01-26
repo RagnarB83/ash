@@ -51,10 +51,10 @@ class deMon2kTheory:
                     ashexit()
         else:
             self.demondir = demondir
-        
+
         #The name of the deMon executable. Often named binary
         self.binary_name=binary_name
-        
+
 
         #Printlevel
         self.printlevel=printlevel
@@ -144,7 +144,7 @@ class deMon2kTheory:
         self.energy=grab_energy_demon2k(self.filename+'.out')
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
-        
+
         #Grab gradient if calculated
         if Grad is True:
             #Grab gradient
@@ -185,7 +185,7 @@ def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type
         jobdirective='ENERGY_FORCE'
     else:
         jobdirective='ENERGY'
-    
+
     guess=False
     #Check if deMon.rst file exists. If so then we read MOs from it
     if os.isfile(f"{filename}.rst") is True:
@@ -200,7 +200,7 @@ def write_deMon2k_input(elems, coords, jobname='ash', filename='deMon', scf_type
         inpfile.write(f'CHARGE {charge}\n')
         inpfile.write(f'MULTI {mult}\n')
         inpfile.write(f'#\n')
-        inpfile.write(f'SCFTYPE {scf_type} TOL={tolerance:.2E}\n')        
+        inpfile.write(f'SCFTYPE {scf_type} TOL={tolerance:.2E}\n')
         inpfile.write(f'VXCTYPE {functional}\n')
         inpfile.write(f'GRID {grid}\n')
         if guess is True:

@@ -63,9 +63,9 @@ class MLatomTheory:
 
 
         #METHODS: pre-trained models
-        #Note: useful method keywords in MLAatom below 
+        #Note: useful method keywords in MLAatom below
         # AIQMx models require either MNDO or Sparrow. Also dftd4 (except AIQM1@DFT* but that one is bad anyway)
-        #'AIQM1', 'AIQM1@DFT', 'AIQM1@DFT*', 
+        #'AIQM1', 'AIQM1@DFT', 'AIQM1@DFT*',
         #ANI models: will download parameters automatically
         #'ANI-1ccx', 'ANI-1x', 'ANI-1x-D4', 'ANI-2x', 'ANI-2x-D4'
         self.method=method
@@ -78,7 +78,7 @@ class MLatomTheory:
         #METHOD
         #############
         if self.method is not None:
-            if 'AIQM' in self.method :    
+            if 'AIQM' in self.method :
                 print("An AIQMx method was selected")
                 print("Warning: this requires setting qm_program keyword as either mndo or sparrow.")
                 print("Also dftd4 D4-dispersion program")
@@ -109,7 +109,7 @@ class MLatomTheory:
         elif self.qm_program == 'sparrow':
             self.setup_sparrow()
             self.setup_dftd4()
-    
+
         #############
         #ML_MODEL
         #############
@@ -150,7 +150,7 @@ class MLatomTheory:
                 print("not ready")
                 ashexit()
                 #self.model = ml.models.sgdml(model_file=model_file, ml_program=ml_program)
-            
+
             print("MLatomTheory model created:", self.model)
 
         #Initialization done
@@ -210,7 +210,7 @@ class MLatomTheory:
             print("A method was selected: ", self.method)
             print("QM program:", self.qm_program)
             print("Creating model")
-            model = ml.models.methods(method=self.method, qm_program=self.qm_program) 
+            model = ml.models.methods(method=self.method, qm_program=self.qm_program)
 
             #Create dftd4.json file before running if required
             if 'AIQM' in self.method:
@@ -228,7 +228,7 @@ class MLatomTheory:
             model = self.model
         else:
             print("No method or ml-model was defined yet.")
-            ashexit()        
+            ashexit()
 
 
         #Run
@@ -237,7 +237,7 @@ class MLatomTheory:
             #Note: MNDO should support PCs, not sure about sparrow
             ashexit()
         else:
-            
+
             if Grad is True:
                 print("Running MLatom Energy + Gradient calculation")
                 model.predict(molecule=molecule,calculate_energy=True,
@@ -260,4 +260,3 @@ class MLatomTheory:
 
                 print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
                 return self.energy
-

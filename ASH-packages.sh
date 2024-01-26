@@ -45,8 +45,8 @@ mamba install -c conda-forge julia # 146MB
 python -m pip install juliacall # 0.1 MB
 
 #Optional QM program packages
-#Psi4 
-mamba install -c psi4 psi4 
+#Psi4
+mamba install -c psi4 psi4
 
 ####################################
 # VERY RARELY NEEDED PACKAGES:

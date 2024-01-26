@@ -18,7 +18,7 @@ class ipieTheory:
         self.label=label
         self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
-        
+
         try:
             self.ipie_exe = os.path.dirname(shutil.which('ipie'))+'/ipie'
             self.pyscf_to_ipie_exe = os.path.dirname(shutil.which('pyscf_to_ipie.py'))+'/pyscf_to_ipie.py'
@@ -27,7 +27,7 @@ class ipieTheory:
             ashexit()
         try:
             import pyblock
-        except ModuleNotFoundError: 
+        except ModuleNotFoundError:
              print("Problem importing pyblock. Pleas install pyblock: pip install pyblock")
              ashexit()
         if numcores > 1:
@@ -37,7 +37,7 @@ class ipieTheory:
             except:
                 print("Problem with mpirun")
                 ashexit()
-        
+
         #Printlevel
         self.printlevel=printlevel
         self.filename=filename
@@ -74,7 +74,7 @@ class ipieTheory:
                 pass
     def determine_frozen_core(self,elems):
         print("Determining frozen core")
-        #Main elements 
+        #Main elements
         FC_elems={'H':0,'He':0,'Li':0,'Be':0,'B':2,'C':2,'N':2,'O':2,'F':2,'Ne':2,
         'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
         'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,'Co':10,'Ni':10,'Cu':10,'Zn':10,
@@ -181,7 +181,7 @@ class ipieTheory:
         ##Analysis
         with open('output.dat', "a") as outfile:
             sp.call(['reblock.py','-b', str(self.numblocks_skip), '-f', 'output.dat'], stdout=outfile)
-        
+
         E_final, error, nsamp_ac = grab_ipie_energy('output.dat')
 
         print("Final ipie AFQMC energy:", E_final)

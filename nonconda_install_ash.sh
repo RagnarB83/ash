@@ -23,7 +23,7 @@ juliaversion="1.6.1"
 #path_to_python3_exe="/usr/bin/python3"
 
 # Force pip to install in user home directory instead of in default global Python location.
-localuserpipoption=false 
+localuserpipoption=false
 
 #Whether to install Python packages in ASH dir instead. Potentially problematic
 localpipinstallation=false

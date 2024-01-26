@@ -1,6 +1,6 @@
 # AutoELF
 
-This is a simple python program, that is designed to speed up the workflow of generating Electron Localisation Function (ELF) plots. This program assumes that the cube and attractors file (.pdb) used as input have been generated using [Multiwfn](http://sobereva.com/multiwfn/). 
+This is a simple python program, that is designed to speed up the workflow of generating Electron Localisation Function (ELF) plots. This program assumes that the cube and attractors file (.pdb) used as input have been generated using [Multiwfn](http://sobereva.com/multiwfn/).
 
 Covalent radii used are taken from [here](https://periodictable.com/Properties/A/CovalentRadius.html).
 
@@ -26,13 +26,13 @@ Covalent radii used are taken from [here](https://periodictable.com/Properties/A
     ```
     from autoelf import *
     auto_elf_assign("ethene.cub", "ethene.pdb", interest_atoms=[0,1])
-    ``` 
+    ```
     We have specified the two required positional arguments, cubefile and pdbfile. We have also specified that we are interested in any VALENCE attractors that are assigned to atoms 0 and 1 (the two carbon atoms). Note: atom indices start from 0.
 
 3. Execute command: python3 ethene.py
 
 4. Output:
-    ![ethene_example](ethene_example.PNG) 
+    ![ethene_example](ethene_example.PNG)
 
 5. What files are produced ?
     - ethene_updated.cub --> Contains ELF isosurface, molecular geometry and VALENCE attractors (all or of interest). This can be visualised in programs such as Chemcraft, Avogadro and VMD.

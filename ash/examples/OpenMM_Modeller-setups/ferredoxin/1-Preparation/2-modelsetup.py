@@ -12,4 +12,3 @@ residue_variants={'A':{38:'CYX',43:'CYX',46:'CYX',76:'CYX'},'B':{38:'CYX',43:'CY
 # Setting up system via Modeller
 OpenMM_Modeller(pdbfile=pdbfile,forcefield="CHARMM36", use_higher_occupancy=True,
     extraxmlfile="specialresidue.xml",  residue_variants=residue_variants)
-

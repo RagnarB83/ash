@@ -142,8 +142,8 @@ def SwitchFunc(x, x0=0.5):
 
 
 def HenkelmanGaussBoostedWorker2(r):
-    KNARRsettings.boost_time = 1.0                                                                                                                           
-    KNARRsettings.boosted = True  
+    KNARRsettings.boost_time = 1.0
+    KNARRsettings.boosted = True
     x0 = 0.5
     y0 = 0.1013
     A = KNARRsettings.gauss_A
@@ -170,7 +170,7 @@ def HenkelmanGaussBoostedWorker2(r):
         H += np.cos(2.0 * np.pi * x) * (1.0 + 4.0 * y) + 0.5 * (2.0 * np.pi * y) ** 2 + 1.20265
         exponent = (x - x0) ** 2 + (y - y0) ** 2
     G = A * np.exp(-alfa * exponent)
-    
+
     # if we are outside the minimum - there is no Gaussian
     if not isMinimum:
         G = 0.0
@@ -178,7 +178,7 @@ def HenkelmanGaussBoostedWorker2(r):
     E = H + boostFunc
     KNARRsettings.boost_time = np.exp(boostFunc/0.2)
     F = np.zeros(shape=(ndim, 1))
-    
+
     # Calculate derivatives
     for i in range(0, ndim, 3):
         x = r[i + 0]

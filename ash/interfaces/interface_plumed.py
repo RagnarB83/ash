@@ -27,7 +27,7 @@ def call_plumed_sum_hills(path_to_plumed,hillsfile,ndim=None, binsg=[99,99], min
         elif ndim == 2:
             print(f"Calling plumed sum_hills with  grid settings: --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}")
             os.system(f'plumed sum_hills --hills HILLS --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}')
-        
+
 #Metadynamics visualization function for Plumed runs
 def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
                 CV1_indices=None, CV2_indices=None, plumed_length_unit=None, plumed_energy_unit=None, plumed_time_unit=None,
@@ -38,7 +38,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         import matplotlib.pyplot as plt
     except:
         print("Problem importing matplotlib (make it is installed in your environment). Plotting is not possible but continuing.")
-    
+
 
     ###############################
     #USER SETTINGS
@@ -50,7 +50,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     #See https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
     ##############################
     WellTemp=True
-    
+
     #Get everything from provided plumed_ash object
     if plumed_ash_object != None:
         print("plumed_ash object provided. Reading")
@@ -108,9 +108,9 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     pi=3.14159265359
     #Dict of energy conversions: Energy-unit to kcal/mol
     energy_conversion_dict= {'eV':1/23.060541945329334, 'kj/mol':4.184 }
-    # possibly conversion from energy-unit to kcal/mol. 
+    # possibly conversion from energy-unit to kcal/mol.
     energy_scaling=energy_conversion_dict[plumed_energy_unit]
-    
+
     #Possible nm to Ang conversion. TODO: Generalize
     if plumed_length_unit =="A":
         distance_scaling=1
@@ -156,8 +156,8 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         print("Final CV2 units:", finalcvunit_2)
         if finalcvunit_2 != finalcvunit_1:
             print("differ. possible problem")
-        
-    
+
+
     print("CV1_type:", CV1_type)
     print("CV2_type:", CV2_type)
     ######################
@@ -261,7 +261,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             PotCurve=False
             print("File potcurve not found. Add file if desired.")
     ########################################
-    
+
 
 
     #READING fes.dat
@@ -364,7 +364,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         final_rc=rc_deg
         colvar_value_deg=np.array(colvar_value)*CV1_scaling
         # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
-        colvar_value_deg_list.append(colvar_value_deg)            
+        colvar_value_deg_list.append(colvar_value_deg)
         finalcolvar_value_list=colvar_value_deg_list
 
     #Possible conversion from nm to Angstrom
@@ -388,7 +388,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
             final_rc2=rc2_deg
             colvar2_value_deg=np.array(colvar2_value)*CV2_scaling
             # New. For multiple COLVAR files we create lists of colvar_value_deg, colvar2_value_deg and biaspot_value_kcal
-            colvar2_value_deg_list.append(colvar2_value_deg)            
+            colvar2_value_deg_list.append(colvar2_value_deg)
             finalcolvar2_value_list=colvar2_value_deg_list
         #Possible conversion from nm to Angstrom
         elif CV2_type.upper()=='RMSD' or CV2_type.upper()=='DISTANCE':
@@ -416,9 +416,9 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
     print("free_energy_kcal:", free_energy_kcal)
     Relfreeenergy_kcal=free_energy_kcal-min(free_energy_kcal)
     print("Relfreeenergy_kcal:", Relfreeenergy_kcal)
-    
-    
-    
+
+
+
     ###################
     # Matplotlib part
     ###################
@@ -720,7 +720,7 @@ class plumed_ASH():
             self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.dylib","")
         else:
             self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.so","")
-        
+
         try:
             import plumed
         except:
@@ -740,7 +740,7 @@ class plumed_ASH():
         #self.plumedobj.cmd("setKbT", 2.478957)
         self.plumedobj.cmd("setNatoms",fragment.numatoms)
         self.plumedobj.cmd("setLogFile","plumed.log")
-        
+
         self.debug=debug
 
         #Initialize object
@@ -783,7 +783,7 @@ class plumed_ASH():
         print("Temperature:", temperature)
         print("Gaussian height: {} {}".format(height, self.plumed_energy_unit))
 
-        
+
         if self.CV1_type.upper() == "DISTANCE" or self.CV1_type.upper() == "RMSD":
             print("Gaussian sigma for CV1: {} {}".format(sigma1,self.plumed_length_unit))
         elif self.CV1_type.upper() == "TORSION" or self.CV1_type.upper() == "ANGLE":
@@ -798,7 +798,7 @@ class plumed_ASH():
                 print("Gaussian sigma for CV2: {} {}".format(sigma2,"rad"))
             else:
                 print("unknown CV2 type. Exiting")
-                ashexit()     
+                ashexit()
         print("Bias factor:", biasfactor)
         print("Timestep: {} {}".format(timestep, self.plumed_time_unit))
         print("")
@@ -806,12 +806,12 @@ class plumed_ASH():
         print("COLVAR filename:", colvar_file)
         print("Stride number", stride_num)
         print("Pace number", pace_num)
-        
+
         self.numwalkers=numwalkers
         #Store masses
         self.masses=np.array(fragment.list_of_masses,dtype=np.float64)
         print("Masses:", self.masses)
-        
+
         if bias_type == "MTD":
             #1D metadynamics
             CV1_indices_string = ','.join(map(str, [i+1 for i in CV1_indices])) #Change from 0 to 1 based indexing and converting to text-string
@@ -824,10 +824,10 @@ class plumed_ASH():
                 self.plumedobj.cmd("readInputLine","cv2: {} ATOMS={}".format(self.CV2_type.upper(), CV2_indices_string))
                 CV_string="cv1,cv2"
                 sigma_string=str(sigma1)+","+str(sigma2)
-            
-            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG={} PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(CV_string,pace_num, 
+
+            self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG={} PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(CV_string,pace_num,
                 height, sigma_string, hills_file, biasfactor, temperature))
-            
+
             #Multiple walker option. Not confirmed to work
             if numwalkers != None:
                 print("not ready")
@@ -870,7 +870,7 @@ class plumed_ASH():
         #Setting current coordinates and forces
         self.plumedobj.cmd("setPositions", coords )
         self.plumedobj.cmd("setForces", forces )
-        
+
         #Running
         print("Running Plumed bias calculation")
         if self.debug is True:

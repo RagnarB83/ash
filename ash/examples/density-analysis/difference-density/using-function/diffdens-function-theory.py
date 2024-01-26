@@ -10,4 +10,3 @@ calcB = ORCATheory(orcasimpleinput="! UKS HF def2-SVP", orcablocks="")
 
 
 difference_density_ORCA(fragment_A=HF_neut, fragment_B=HF_neut, theory_A=calcA, theory_B=calcB, griddensity=80)
-

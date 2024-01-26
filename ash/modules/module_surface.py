@@ -21,10 +21,10 @@ from ash.interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICO
 
 # TODO: Remove ORCATheory specific things
 
-def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='UNRELAXED', resultfile='surface_results.txt', 
-                 keepoutputfiles=True, keepmofiles=False,runmode='serial', coordsystem='dlc', maxiter=250, 
+def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='UNRELAXED', resultfile='surface_results.txt',
+                 keepoutputfiles=True, keepmofiles=False,runmode='serial', coordsystem='dlc', maxiter=250,
                  extraconstraints=None, convergence_setting=None, conv_criteria=None, subfrctor=1,
-                 numcores=1, ActiveRegion=False, actatoms=None, RC1_range=None, RC1_type=None, RC1_indices=None, 
+                 numcores=1, ActiveRegion=False, actatoms=None, RC1_range=None, RC1_type=None, RC1_indices=None,
                  RC2_range=None, RC2_type=None, RC2_indices=None):
     """Calculate 1D/2D surface
 
@@ -65,7 +65,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
         if RC2_indices == None or RC2_type == None or RC2_range == None:
             print("Error: You must provide RC2_indices, RC2_type and RC2_range")
             ashexit()
-    
+
     #Checking if list of lists. If so then we apply multiple constraints for this reaction coordinate (e.g. symmetric bonds)
     #Here making list of list in case only a single list was provided
     if any(isinstance(el, list) for el in RC1_indices) is False:
@@ -100,7 +100,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     #Read dict from file. If file exists, read entries, if not, return empty dict
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary :", surfacedictionary)
-    
+
     #Turn off outputfiles for special theories like: ZeroTheory and ORCA_CC_CBS_Theory
     if theory.__class__.__name__ == "ZeroTheory":
         keepoutputfiles=False
@@ -113,7 +113,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 
 
     pointcount=0
-    
+
     #Create directories to keep track of surface XYZ files, outputfiles, fragmentfiles, MOfiles
 
     #Deleting old directories first
@@ -139,8 +139,8 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     os.mkdir('surface_mofiles')
 
 
-###########################            
-#  PARALLEL 
+###########################
+#  PARALLEL
 ###########################
     if runmode=='parallel':
         print("Parallel runmode.")
@@ -167,7 +167,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
-                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem,
                             constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, conv_criteria=conv_criteria, subfrctor=subfrctor,
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
                             #Shallow copy of fragment
@@ -205,7 +205,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                                                             RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem,
                         constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting,conv_criteria=conv_criteria, subfrctor=subfrctor,
                         ActiveRegion=ActiveRegion, actatoms=actatoms)
                         #Shallow copy of fragment
@@ -226,7 +226,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
         elif scantype.upper() == "RELAXED":
             list_of_constraints=[]
             #Create optimizer object
-            optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem, 
+            optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria, subfrctor=subfrctor,
                         ActiveRegion=ActiveRegion, actatoms=actatoms)
             print("Warning: Relaxed scans in parallel mode are experimental")
@@ -315,8 +315,8 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                     shutil.copy(d+"/Fragment-optimized.xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+".xyz")
 
                 surfacedictionary = result_surface.energies_dict
-###########################            
-#  SERIAL 
+###########################
+#  SERIAL
 ###########################
     elif runmode=='serial':
         print("Serial runmode")
@@ -342,11 +342,11 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("x allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
-                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                            geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem,
                             constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, conv_criteria=conv_criteria, subfrctor=subfrctor,
                             charge=charge, mult=mult,
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
-                            
+
                             #Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
@@ -369,7 +369,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         else:
                             print("RC1, RC2 values in dict already. Skipping.")
                     print("surfacedictionary:", surfacedictionary)
-                    
+
             elif dimension == 1:
                 for RCvalue1 in RCvalue1_list:
                     pointcount+=1
@@ -385,11 +385,11 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                                                          RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem, 
+                        geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem,
                         constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, conv_criteria=conv_criteria, subfrctor=subfrctor,
                             charge=charge, mult=mult,
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
-                        
+
                         #Write geometry to disk: RC1_2.02.xyz
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
@@ -430,8 +430,8 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("allconstraints:", allconstraints)
-                            #Running 
-                            result = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, 
+                            #Running
+                            result = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem,
                                 constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                                 subfrctor=subfrctor,charge=charge, mult=mult,
                                 ActiveRegion=ActiveRegion, actatoms=actatoms)
@@ -471,7 +471,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                                                          RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
                         #Running zero-theory with optimizer just to set geometry
-                        result = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem, 
+                        result = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem,
                             constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                             subfrctor=subfrctor,
                             charge=charge, mult=mult,
@@ -500,10 +500,10 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     #Writing dictionary to file
     write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
 
-    print_time_rel(module_init_time, modulename='calc_surface', moduleindex=0)   
+    print_time_rel(module_init_time, modulename='calc_surface', moduleindex=0)
     result = ASH_Results(label="Surface calc", surfacepoints=surfacedictionary)
-    
-    return result                 
+
+    return result
 
 # Calculate surface from XYZ-file collection.
 #Both unrelaxed (single-point) and relaxed (opt) is now possible
@@ -511,7 +511,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 # TODO: Parallelization and Relaxed mode
 def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=None, mult=None, dimension=None, resultfile='surface_results.txt', scantype='UNRELAXED',runmode='serial',
                          coordsystem='dlc', maxiter=250, extraconstraints=None, convergence_setting=None, conv_criteria=None, subfrctor=1,
-                         numcores=None, RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True, 
+                         numcores=None, RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True,
                          keepmofiles=False,read_mofiles=False, mofilesdir=None):
     module_init_time=time.time()
     print_line_with_mainheader("CALC_SURFACE_FROMXYZ FUNCTION")
@@ -560,8 +560,8 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
     if len(surfacedictionary) == totalnumpoints:
         print("Surface dictionary size {} matching total number of XYZ files {}. We should have all data".format(len(surfacedictionary),totalnumpoints))
         print("Exiting.")
-        result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
-        return result   
+        result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)
+        return result
 
     #Turn off outputfiles for special theories like: ZeroTheory and ORCA_CC_CBS_Theory
     if theory.__class__.__name__ == "ZeroTheory":
@@ -575,7 +575,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
 
 
 
-    #Case Relaxed Scan: 
+    #Case Relaxed Scan:
     if scantype.upper() == "RELAXED":
 
         #Making sure we have defined indices and type
@@ -594,7 +594,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
 
         #Create directory to keep track of optimized surface XYZ files
         try:
-            os.mkdir('surface_xyzfiles') 
+            os.mkdir('surface_xyzfiles')
         except FileExistsError:
             print("")
             print(BC.FAIL,"surface_xyzfiles directory exist already in dir. Please remove it", BC.END)
@@ -616,7 +616,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
         except FileExistsError:
             print("")
             #print(BC.FAIL,"surface_outfiles directory exist already in dir. Removing...", BC.END)
-            
+
         try:
             shutil.rmtree("'surface_mofiles'")
         except:
@@ -675,7 +675,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
                         newfrag.constraints = allconstraints
                     newsurfacepoint.fragment=newfrag
                     list_of_surfacepoints.append(newsurfacepoint)
-     
+
             elif dimension == 1:
                 print("relfile:", relfile)
                 if 'RC2' in relfile:
@@ -733,12 +733,12 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
         ##########################
         elif scantype.upper() == 'RELAXED':
             #Create optimizer object
-            optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem, 
+            optimizer=GeomeTRICOptimizerClass(maxiter=maxiter, coordsystem=coordsystem,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria, subfrctor=subfrctor)
             print("Warning: calc_surface_fromXYZ Relaxed option is experimental")
             if read_mofiles == True:
                 #print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
-                results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores, 
+                results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
                                            mofilesdir=mofilesdir, Opt=True, optimizer=optimizer)
             else:
                 results = ash.Job_parallel(fragments=surfacepointfragments_lists, theories=[theory], numcores=numcores,
@@ -770,14 +770,14 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
                 print("Surfacepoint: {} / {}".format(count+1,totalnumpoints))
                 print("XYZ-file: {}     RC1: {}   RC2: {}".format(relfile,RCvalue1,RCvalue2))
                 print("==================================================================")
-                
+
                 #Adding MO-file for point to theory level object if requested
                 if read_mofiles == True:
                     print("Will read MO-file: {}".format(mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'))
                     if theory.__class__.__name__ == "ORCATheory":
                         theory.moreadfile=mofilesdir+'/'+str(theory.filename)+'_'+pointlabel+'.gbw'
 
-                
+
                 if (RCvalue1,RCvalue2) not in surfacedictionary:
                     mol=ash.Fragment(xyzfile=file)
                     ###########################
@@ -796,8 +796,8 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
                         allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
                                                         RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                         print("allconstraints:", allconstraints)
-                        result = geomeTRICOptimizer(fragment=mol, theory=theory, 
-                                                    maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
+                        result = geomeTRICOptimizer(fragment=mol, theory=theory,
+                                                    maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True,
                                                     convergence_setting=convergence_setting, conv_criteria=conv_criteria, subfrctor=subfrctor,
                                                     charge=charge, mult=mult)
                         energy = result.energy
@@ -806,7 +806,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
                         mol.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                         shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                         #shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
-                    
+
                     print("Energy of file {} : {} Eh".format(relfile, energy))
                     if keepoutputfiles == True:
                         shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
@@ -855,8 +855,8 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
                         allconstraints = set_constraints(dimension=1, RCvalue1=RCvalue1, extraconstraints=extraconstraints,
                                                         RC1_type=RC1_type, RC1_indices=RC1_indices)
                         print("allconstraints:", allconstraints)
-                        result = geomeTRICOptimizer(fragment=mol, theory=theory, 
-                                                    maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True, 
+                        result = geomeTRICOptimizer(fragment=mol, theory=theory,
+                                                    maxiter=maxiter, coordsystem=coordsystem, constraints=allconstraints, constrainvalue=True,
                                                     convergence_setting=convergence_setting, conv_criteria=conv_criteria, subfrctor=subfrctor,
                                                     charge=charge, mult=mult)
                         energy = result.energy
@@ -873,7 +873,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
                     surfacedictionary[(RCvalue1)] = energy
                     #Writing dictionary to file
                     #write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
-                    print("")            
+                    print("")
                 else:
                     print("RC1 value in dict already. Skipping.")
     print("Final surfacedictionary:", surfacedictionary)
@@ -883,8 +883,8 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
 
 
     print_time_rel(module_init_time, modulename='calc_surface_fromXYZ', moduleindex=0)
-    result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)    
-    return result                 
+    result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)
+    return result
 
 
 #######################################################################
@@ -940,7 +940,7 @@ def set_constraints(dimension=None,RCvalue1=None, RCvalue2=None, extraconstraint
 #Format: space-separated columns
 # 1D: coordinate energy   e.g.    -180.0 -201.434343
 # 2D: coordinate1 coordinate2 energy   e.g. e.g.   2.201 -180.0 -201.434343
-#Output: dictionary: (tuple) : float   
+#Output: dictionary: (tuple) : float
 # 1D: (coordinate1) : energy
 # 2D: (coordinate1,coordinate2) : energy
 #TODO: Make more general
@@ -979,9 +979,9 @@ def read_surfacedict_from_file(file, dimension=None):
                     elif dimension==2:
                         key1=float(line.split()[0])
                         key2=float(line.split()[1])
-                        val=float(line.split()[2])                    
+                        val=float(line.split()[2])
                         dictionary[(key1,key2)]=val
-    
+
     if len(dictionary) > 0:
         print("Dictionary read ")
         return dictionary
@@ -1014,6 +1014,3 @@ def write_surfacedict_to_file(surfacedict,file="surface_results.txt",dimension=N
                 y=d[0][1]
                 e=d[1]
                 f.write(str(x)+" "+str(y)+" "+str(e)+'\n')
-
-
-

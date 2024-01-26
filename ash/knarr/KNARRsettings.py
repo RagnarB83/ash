@@ -93,4 +93,3 @@ gauss_alpha = 1.0
 ljrcut = 100.0
 ljsigma = 1.0
 ljepsilon = 1.0
-

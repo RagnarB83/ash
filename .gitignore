@@ -20,3 +20,4 @@ modules/__pycache__
 TODO
 ash.egg-info
 build
+.pre-commit-config.yaml

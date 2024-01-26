@@ -139,7 +139,7 @@ def WriteXYZF(fname, ndim, rxyz, symb, energy=None, fxyz=None):
         raise RuntimeError("Dimension mismatch in forces")
     if len(rxyz) != ndim:
         raise RuntimeError("Dimension mismatch in configuration")
-    
+
     with open(fname, "w") as f:
         f.write(str(ndim / 3) + '\n')
         if energy is not None:

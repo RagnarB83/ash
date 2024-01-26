@@ -75,4 +75,3 @@ def test_read_pdb():
     print(PDB_frag.numatoms)
 
     assert PDB_frag.numatoms == 1079, "Number of atoms in fragment is incorrect"
-

@@ -30,9 +30,9 @@ from ash.dictionaries_lists import eldict
 
 #Wrapper function around PhotoElectron()
 def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=None, trajectory=None,
-                        numcores=1, memory=40000,label=None, 
+                        numcores=1, memory=40000,label=None,
                         Initialstate_charge=None, Initialstate_mult=None,
-                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5, 
+                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5,
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None,
@@ -49,14 +49,14 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
     #So much of the code is theory-specific anyway
     #Method then selects class to use. Probably should switch to dictionaries for all the keywords then
 
-    photo=PhotoElectronClass(theory=theory, fragment=fragment, method=method, vibrational_option=vibrational_option, trajectory=trajectory, numcores=numcores, memory=memory,label=label, 
+    photo=PhotoElectronClass(theory=theory, fragment=fragment, method=method, vibrational_option=vibrational_option, trajectory=trajectory, numcores=numcores, memory=memory,label=label,
                         Initialstate_charge=Initialstate_charge, Initialstate_mult=Initialstate_mult,
-                        Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates, 
+                        Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates,
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
                         tda=tda,brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, check_stability=check_stability,
                         CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
                         MRCI_CASCI_Final=MRCI_CASCI_Final, MRCI_SOC=MRCI_SOC, CASCI_Final=CASCI_Final,
-                        btPNO=btPNO, DLPNO=DLPNO, 
+                        btPNO=btPNO, DLPNO=DLPNO,
                         path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson)
     result = photo.run()
     print_time_rel(timeA, modulename='PhotoElectron', moduleindex=1)
@@ -65,21 +65,21 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
 
 
 class PhotoElectronClass:
-    def __init__(self,theory=None, fragment=None, method=None, vibrational_option=None, trajectory=None, numcores=1, memory=40000,label=None, 
+    def __init__(self,theory=None, fragment=None, method=None, vibrational_option=None, trajectory=None, numcores=1, memory=40000,label=None,
                         Initialstate_charge=None, Initialstate_mult=None,
-                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5, 
+                        Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5,
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
-                        MRCI_CASCI_Final=False, MRCI_SOC=False, CASCI_Final=False, 
-                        btPNO=False, DLPNO=False, 
+                        MRCI_CASCI_Final=False, MRCI_SOC=False, CASCI_Final=False,
+                        btPNO=False, DLPNO=False,
                         path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False):
         """
         PhotoElectron module
         """
         blankline()
         print_line_with_mainheader("PhotoElectron: Calculating PES spectra via TDDFT/CAS/MRCI/EOM/MREOM and Dyson-norm approach")
-        
+
         ###############
         #Early exits
         ################
@@ -91,7 +91,7 @@ class PhotoElectronClass:
             self.TDDFT=True
         elif method == 'SF-TDDFT':
             self.SF_TDDFT=True
-        #CASSCF for initial state and finalstates. if CASCI_Final is True then Finalstate uses Initstate orbitals 
+        #CASSCF for initial state and finalstates. if CASCI_Final is True then Finalstate uses Initstate orbitals
         elif method == 'CASSCF':
             self.CAS=True
         #NEVPT2 for initial state and finalstate IEs. Dyson norms from CASSCF
@@ -113,8 +113,8 @@ class PhotoElectronClass:
         else:
             print("Unknown method selected for PhotoElectron. Exiting")
             ashexit()
-        
-        
+
+
         if method == 'CASSCF' or method == 'MRCI' or method =='MREOM':
             if CAS_Final is None or CAS_Initial is None:
                 print("For methods CASSCF, MRCI or MREOM you must choose an active space for initial and final states.")
@@ -141,7 +141,7 @@ class PhotoElectronClass:
         if isint(numionstates):
             self.numionstates_A=numionstates
             self.numionstates_B=numionstates
-            self.numionstates=self.numionstates_A 
+            self.numionstates=self.numionstates_A
         elif islist(numionstates):
             if len(numionstates)==2:
                 #A,B: first and second multiplicity in Ionizedstate_mult
@@ -151,7 +151,7 @@ class PhotoElectronClass:
             else:
                 #A,B: first and second multiplicity in Ionizedstate_mult
                 self.numionstates_A=numionstates[0]
-                self.numionstates=self.numionstates_A 
+                self.numionstates=self.numionstates_A
 
         self.method=method
         self.theory=theory
@@ -171,16 +171,16 @@ class PhotoElectronClass:
         self.CAS_Initial=CAS_Initial
         self.CAS_Final = CAS_Final
         self.CASCI_Final=CASCI_Final
-        self.memory=memory 
-        self.numcores=numcores 
+        self.memory=memory
+        self.numcores=numcores
         self.noDyson=noDyson
         self.MRCI_Initial=CAS_Initial
         self.MRCI_Final = CAS_Final
         self.tprintwfvalue=tprintwfvalue
         self.MRCI_CASCI_Final=MRCI_CASCI_Final
         self.MRCI_SOC=MRCI_SOC
-        self.btPNO=btPNO 
-        self.DLPNO=DLPNO 
+        self.btPNO=btPNO
+        self.DLPNO=DLPNO
         self.label=label
         self.check_stability=check_stability
         self.no_shakeup=no_shakeup   #For no_shakeup option. Whether to allow more than LUMO virtual excitations or not (default 0)
@@ -207,7 +207,7 @@ class PhotoElectronClass:
             print("virt_offset:", self.virt_offset)
             print("TDA:", self.tda)
             # Threshold for determinant TDDFT printing
-            #NOTE: Currently hardcoded 
+            #NOTE: Currently hardcoded
             self.wfthres = 2.0
             print("self.wfthres:", self.wfthres)
         #Initial Orbital check and print
@@ -250,7 +250,7 @@ class PhotoElectronClass:
             self.MultipleSpinStates = False
             self.Finalstates=[self.stateF1]
             print(BC.OKBLUE, "StateF_1: Charge=", self.Finalstates[0].charge, "Multiplicity", self.Finalstates[0].mult, BC.ENDC)
-            print(BC.OKBLUE, "StateF_1: Numionstates=", self.Finalstates[0].numionstates, BC.ENDC)        
+            print(BC.OKBLUE, "StateF_1: Numionstates=", self.Finalstates[0].numionstates, BC.ENDC)
         #Case list provided for ionized state. Could mean multiple spin states: e.g.  Ionizedstate_mult=[5,7]
         elif type(self.Ionizedstate_mult) is list:
             if len(self.Ionizedstate_mult) == 1:
@@ -287,7 +287,7 @@ class PhotoElectronClass:
         print("")
         print("Number of threads to be used by WFoverlap: ", numcores)
         os.environ["OMP_NUM_THREADS"] = str(numcores)
-        
+
         if brokensym is True:
             print("Brokensym True. Will find BS-solution for StateI via spin-flipping. HSMult: ", HSmult)
 
@@ -309,11 +309,11 @@ class PhotoElectronClass:
 
         #General ORCA setting
         self.theory.orcablocks=self.theory.orcablocks+"\n%method\n"+"frozencore FC_NONE\n"+"end\n"
-        
+
         # For orbital analysis
         if 'NORMALPRINT' not in self.theory.orcasimpleinput.upper():
             self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' Normalprint'
-            
+
         if self.brokensym is True:
             self.theory.brokensym=True
             self.theory.HSmult=self.HSmult
@@ -337,7 +337,7 @@ class PhotoElectronClass:
         if 'KEEPDENS' not in self.theory.orcasimpleinput.upper():
             self.theory.orcasimpleinput=self.theory.orcasimpleinput+' KeepDens '
         if 'ENGRAD' not in self.theory.orcasimpleinput.upper():
-            self.theory.orcasimpleinput=self.theory.orcasimpleinput+' Engrad '   
+            self.theory.orcasimpleinput=self.theory.orcasimpleinput+' Engrad '
         if '/C' not in self.theory.orcasimpleinput.upper():
             self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' AutoAux'
 
@@ -411,14 +411,14 @@ class PhotoElectronClass:
                     print("Will read file:", f"{fstate.label}_state{numstate}.eldens.cube")
                     fcubedict = read_cube(f"{fstate.label}_state{numstate}.eldens.cube")
                     write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
-                    print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", 
+                    print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ",
                             "Densdiff_Init-Finalmult"+ str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
-            #For statetype SCF, we have 1 file Init, and for each Final-multiplicity 
+            #For statetype SCF, we have 1 file Init, and for each Final-multiplicity
             elif statetype == 'SCF':
-                #Only 2 states 
+                #Only 2 states
                 fcubedict = read_cube(f"{fstate.label}_state0.eldens.cube")
                 write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'_{statetype}State0')
-                print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ", 
+                print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ",
                         str(fstate.mult)+f'_{statetype}State0')
         os.chdir('..')
 
@@ -447,7 +447,7 @@ end
         self.stateI.restricted = True
         for fstate in self.Finalstates:
             fstate.restricted = True
-          
+
         casscfblock = self.setup_CASSCF_block(self.MRCI_Initial[0],self.MRCI_Initial[1],1,self.stateI.mult,maxiter=200)
         print("casscfblock:",casscfblock)
 
@@ -460,17 +460,17 @@ end
         else:
             #Simple-input settings
             if 'MRCI+Q' not in self.orig_orcablocks:
-                mrmethodkeyword=' MRCI+Q' 
+                mrmethodkeyword=' MRCI+Q'
             else:
                 mrmethodkeyword=""
             mreomblock=""
-        
+
         #Possible SOC
         if self.MRCI_SOC is True:
             socblock="""soc dosoc true end"""
         else:
             socblock=""
-        
+
         #DENSITIES PRINT added to block
         if self.densities != None:
             print("MRCI Densities requested. Adding densities input to MRCI block")
@@ -503,8 +503,8 @@ end
 
         #Calling SCF run
         result = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.stateI.charge, mult=self.stateI.mult)
-        
-        
+
+
         #SOC or not
         if self.MRCI_SOC is True:
             print("SOC is True. Grabbing lowest eigenvalue of SOC matrix")
@@ -535,7 +535,7 @@ end
 
     def run_MRCI_Final(self,fragment):
         if self.MRCI_CASCI_Final is True:
-            print("Will do CAS-CI reference (using initial-state orbitals) for final-states") 
+            print("Will do CAS-CI reference (using initial-state orbitals) for final-states")
             #In Final-state MRCI we  use the previous CASSCF-orbitals. Hence CAS-CI and noiter
             if 'noiter' not in self.theory.orcasimpleinput.lower():
                 self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' noiter '
@@ -545,7 +545,7 @@ end
         ######################
         print("Modifying MRCI block for Final state, MRCI({},{})".format(self.MRCI_Final[0], self.MRCI_Final[1]))
         print("{} electrons in {} orbitals".format(self.MRCI_Final[0], self.MRCI_Final[1]))
-        
+
         # Making sure multiplicities are sorted in ascending order and creating comma-sep string
         MRCI_mults = ','.join(str(x) for x in sorted([f.mult for f in self.Finalstates]))
         numionstates_string = ','.join(str(f.numionstates) for f in self.Finalstates)
@@ -562,11 +562,11 @@ end
         else:
             #Simple-input settings
             if 'MRCI+Q' not in self.orig_orcablocks:
-                mrmethodkeyword=' MRCI+Q' 
+                mrmethodkeyword=' MRCI+Q'
             else:
                 mrmethodkeyword=""
             mreomblock=""
-        
+
         #Possible SOC
         if self.MRCI_SOC is True:
             socblock="""soc dosoc true end"""
@@ -608,7 +608,7 @@ end
             else:
                 print("Only 1 GBW file was specified in initialorbitalfiles list.")
                 print("Continuing, will use orbitals from previous Init-state calculation instead.")
-        
+
         #RUNNING JOB
         ash.Singlepoint(fragment=fragment, theory=theory, charge=self.Finalstates[0].charge, mult=self.Finalstates[0].mult)
 
@@ -646,7 +646,7 @@ end
                         fstate.ionstates.append(soc_state_energy)
                         fstate.gbwfile = "Final_State" + ".gbw"
                         fstate.outfile = "Final_State" + ".out"
-        
+
             print(BC.OKBLUE,"Initial State energy:", self.stateI.energy, "au",BC.ENDC)
             print(BC.OKBLUE,"Final noSOC-State energies:", nosoc_fstates_dict, BC.ENDC)
             print(BC.OKBLUE,"Final SOC-State energies:", soc_states_list, BC.ENDC)
@@ -654,7 +654,7 @@ end
             #Getting state-energies of all states for each spin multiplicity. MRCI vs. SORCI
             fstates_dict = mrci_state_energies_grab(theory.filename+'.out', SORCI=self.SORCI)
 
-            #PREPARE Final IPs and energies    
+            #PREPARE Final IPs and energies
             for fstate in self.Finalstates:
                 #Each fstate linked with same GBW file and outfile
                 fstate.gbwfile = "Final_State" + ".gbw"
@@ -719,7 +719,7 @@ end
                         os.remove(theory.filename + f'.state_{numstate}_block_{numblock}.spin.tmp')
         return IPs_all, Ionstates_energies_all
 
-    #MRCI prepare determinants for Dyson    
+    #MRCI prepare determinants for Dyson
     def MRCI_prepare_determinants(self):
         #############
         #INIT STATE
@@ -739,14 +739,14 @@ end
         #FINAL STATES
         #############
         print("Grabbing determinants from Final State output")
-        final_states = grab_dets_from_MRCI_output(self.Finalstates[0].outfile,SORCI=self.SORCI)  
-        
+        final_states = grab_dets_from_MRCI_output(self.Finalstates[0].outfile,SORCI=self.SORCI)
+
         for fstate in self.Finalstates:
             det_final,ndets_f = format_ci_vectors(final_states[fstate.mult])
             print(f"{ndets_f} determinants for FinalState mult{fstate.mult} found")
             # Printing to file
             writestringtofile(det_final, "dets_final_mult" + str(fstate.mult))
-            
+
             #Checking if wrong determinant in file and delete
             check_and_delete_wrong_det("dets_final_mult" + str(fstate.mult),fstate.mult)
 
@@ -791,7 +791,7 @@ end
             if 'keepdens' not in self.theory.orcasimpleinput:
                 method_keywords += " keepdens "
 
-        #Assembling theory       
+        #Assembling theory
         theory = copy.copy(self.theory)
         theory.orcasimpleinput = self.orig_orcasimpleinput + method_keywords
         theory.orcablocks = self.orig_orcablocks + casscfblock
@@ -866,7 +866,7 @@ end
             if 'noiter' not in self.theory.orcasimplinput:
                 method_keywords += " noiter "
 
-        #Assembling theory       
+        #Assembling theory
         theory2 = copy.copy(self.theory)
         theory2.orcasimpleinput = self.orig_orcasimpleinput + method_keywords
         theory2.orcablocks = self.orig_orcablocks + casscfblock
@@ -931,7 +931,7 @@ end
         print(BC.OKBLUE,"Final State energies:", fstates_dict, BC.ENDC)
         IPs_all=[]
         Ionstates_energies_all=[]
-        
+
         for fstate in self.Finalstates:
             fstate.ionstates = fstates_dict[fstate.mult]
             Ionstates_energies_all += fstate.ionstates
@@ -1000,7 +1000,7 @@ end
             if stability is False and self.check_stability is True:
                 print("PES: Unstable final state. Exiting...")
                 ashexit()
-            
+
             #Grab SCF energy
             fstate.energy = scfenergygrab(theory.filename+'.out')
 
@@ -1108,7 +1108,7 @@ end
         ###################
         #TDDFT-option SCF+TDDFT for each spin multiplicity
         #################################################
-        
+
         #Choosing highest-spinmult state
         highest_mult_fstate_index = self.Ionizedstate_mult.index(max(self.Ionizedstate_mult))
         highest_mult_fstate=self.Finalstates[highest_mult_fstate_index]
@@ -1241,7 +1241,7 @@ end
             print("ls_tda:", ls_tda)
             print("highest_mult_fstate.energy:", highest_mult_fstate.energy)
             lowest_mult_fstate.ionstates.append(ls_tda / ash.constants.hartoeV + highest_mult_fstate.energy)
-        
+
         print("")
         print(BC.OKBLUE, "TDDFT-derived IPs (eV), delta-SCF IP plus TDDFT transition energies:\n", BC.ENDC, highest_mult_fstate.IPs)
         print(BC.OKBLUE, "SF-TDDFT-derived IPs (eV), :\n", BC.ENDC, lowest_mult_fstate.IPs)
@@ -1263,7 +1263,7 @@ end
 
         #Will calculate IPs directly
         print("Adding MDCI block for initial state")
-        
+
         method_keywords=""
         #Canonical EOM, btPNO or DLPNO
         if self.btPNO == True:
@@ -1275,10 +1275,10 @@ end
         else:
             if 'IP-EOM-CCSD' not in self.theory.orcasimpleinput:
                 method_keywords += ' IP-EOM-CCSD '
-        
+
         if '/C' not in self.theory.orcasimpleinput:
             method_keywords += ' AutoAux '
-        
+
         fstates_dict={}
         IPs_all=[]
         dysonnorms_all=[]
@@ -1296,14 +1296,14 @@ end
             else:
                 print("Final state mult {}, setting DoAlpha true".format(fstate.mult))
                 Electron_ion_line='DoAlpha true'
-            
+
             mdciblock=f"""%mdci
 nroots {fstate.numionstates}
 {Electron_ion_line}
-maxiter 200         
+maxiter 200
 end
 """
-            #Assembling theory       
+            #Assembling theory
             theory = copy.copy(self.theory)
             theory.orcasimpleinput = self.orig_orcasimpleinput + method_keywords
             theory.orcablocks = self.orig_orcablocks + mdciblock
@@ -1333,28 +1333,28 @@ end
             dysonnorms_all += amplitudes
             print("IPs:", IPs)
             print("Dominant singles EOM amplitudes:", amplitudes)
-            
+
             fstate.IPs=IPs
             fstate.dysonnorms=amplitudes
             print("fstate.dysonnorms:", fstate.dysonnorms)
 
-            #EOM may have found fewer roots than requested. Updating 
+            #EOM may have found fewer roots than requested. Updating
             if len(IPs) != fstate.numionstates:
                 print(f"Warning: EOM found fewer states ({len(IPs)}) than requested ({fstate.numionstates})")
                 print("Updating number of states for multiplicity:", fstate.mult)
                 fstate.numionstates=len(IPs)
-            
+
             #Collecting list of all IPs
             self.FinalIPs=self.FinalIPs+IPs
-            
-            
+
+
             #State_energies are Inititial-state energy + transition energy
             state_energies=[IP/ash.constants.hartoeV + self.stateI.energy for IP in IPs]
             Ionstates_energies_all += state_energies
             #Equating the dominant singles amplitudes with dysonnorms.
             fstates_dict[fstate.mult] = state_energies
             print("fstates_dict:", fstates_dict)
-            
+
             fstate.ionstates = fstates_dict[fstate.mult]
 
 
@@ -1377,8 +1377,8 @@ end
         for fstate in self.Finalstates:
             print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
             print("fstate.dysonnorms :", fstate.dysonnorms)
-            self.Finalionstates = self.Finalionstates + fstate.ionstates      
-            self.finaldysonnorms = self.finaldysonnorms + fstate.dysonnorms 
+            self.Finalionstates = self.Finalionstates + fstate.ionstates
+            self.finaldysonnorms = self.finaldysonnorms + fstate.dysonnorms
 
 
         print(BC.WARNING,"WARNING: Dyson norms not calculated for IP-EOM-CCSD. Instead using dominant singles amplitudes as an approximation",BC.ENDC)
@@ -1459,7 +1459,7 @@ end
         print("MO-IPs (alpha), eV : ", self.stk_alpha)
         print("MO-IPs (beta), eV : ", self.stk_beta)
         print("")
-        print("") 
+        print("")
 
 
     #TODO: Fix table for SOC-MRCI
@@ -1477,7 +1477,7 @@ end
         print("Initial state:")
         print("{:>6} {:>7} {:^20} {:^5}".format("State no.", "Mult", "TotalE (Eh)", "State-type"))
         if self.method=='EOM':
-            init_stype='CCSD'           
+            init_stype='CCSD'
         elif self.method == 'CASCI':
             init_stype='CI'
         elif self.method == 'NEVPT2':
@@ -1522,29 +1522,29 @@ end
                         spinmult=self.Finalstates[1].mult
                 else:
                     spinmult=self.stateF1.mult
-                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))                
+                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))
         elif self.method == 'TDDFT':
             #Creating lists of all state labels and transition energies
-            if self.tda is True: 
+            if self.tda is True:
                 tdtype = 'TDA'
-            else: 
+            else:
                 tdtype = 'TDDFT'
             statelabels=[]; tdtransitions=[];spinmults=[]
             for fstate in self.Finalstates:
                 statelabels +=  ['SCF']+[tdtype]*(fstate.numionstates-1)
                 tdtransitions += [0.0]+fstate.TDtransitionenergies
                 spinmults += [fstate.mult]*fstate.numionstates
-            
+
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
             fstate=self.Finalstates[0]
             for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(Finalionstates,IPs,dysonnorms,statelabels,tdtransitions,spinmults)):
                 print(f"{i:>6d} {spinmult:>7d} {E:20.11f} {IE:>10.3f} {dys:>10.5f} {statelabel:>10} {TDtransenergy:>17.3f}")
         elif self.method == 'SF-TDDFT':
             #Creating lists of all state labels and transition energies
-            if self.tda is True: 
+            if self.tda is True:
                 tdtype = 'TDA'
                 sftdtype = 'SFTDA'
-            else: 
+            else:
                 tdtype = 'TDDFT'
                 sftdtype = 'SFTDDFT'
             #Choosing highest-spinmult state
@@ -1560,7 +1560,7 @@ end
             statelabels =  ['SCF']+[tdtype]*(highest_mult_fstate.numionstates-1) + [sftdtype]*lowest_mult_fstate.numionstates
             tdtransitions = [0.0]+highest_mult_fstate.TDtransitionenergies + lowest_mult_fstate.TDtransitionenergies
             spinmults = [highest_mult_fstate.mult]*highest_mult_fstate.numionstates + [lowest_mult_fstate.mult]*lowest_mult_fstate.numionstates
-            
+
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7} {:>15}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type", "TDDFT Exc.E. (eV)"))
             fstate=self.Finalstates[0]
             for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(Finalionstates,IPs,dysonnorms,statelabels,tdtransitions,spinmults)):
@@ -1605,7 +1605,7 @@ end
             writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
 
     def TDDFT_dets_prep(self):
-        
+
         # Create determinant file for ionized TDDFT states
         # Needs Outputfile, CIS-file, restricted-option, XXX, GS multiplicity, number of ion states and states to skip
         # States per Initial and Final options
@@ -1632,7 +1632,7 @@ end
         # Creating determinant-string for Initial State from orbital information
         init_determinant_string = get_dets_from_single(self.totnumorbitals, len(self.stateI.occorbs_alpha), len(self.stateI.occorbs_beta),
                                         self.stateI.restricted, self.frozencore)
-        
+
         writestringtofile(init_determinant_string, "dets_init")
 
         # Printing to file
@@ -1775,7 +1775,7 @@ end
             for i,fragment in enumerate(fragments):
                 print(f"\nRunning geometry {i+1} of {len(fragments)}")
                 frag_IPs,frag_Finalionstates = self.run_TDDFT(fragment)
-                # MO-spectrum 
+                # MO-spectrum
                 self.mo_spectrum()
                 #For wfoverlap
                 self.prepare_mos_file()
@@ -1804,7 +1804,7 @@ end
                 #Diff density
                 #if self.densities == 'SCF' or self.densities == 'All':
                 #    self.make_diffdensities(statetype='SCF')
-                # MO-spectrum 
+                # MO-spectrum
                 self.mo_spectrum()
                 #For wfoverlap
                 self.prepare_mos_file()
@@ -2198,7 +2198,7 @@ def get_dets_from_single(totnumorbitals,numocc_alpha,numocc_beta,restr,frozencor
         #occupation numbers: 1 for alpha, 2 for beta, 0 for empty
         occ_alpha=[1 for i in range(numocc_alpha)]
         virt_alpha=[0 for i in range(totnumorbitals-numocc_alpha)]
-        occ_beta=[2 for i in range(numocc_beta)] 
+        occ_beta=[2 for i in range(numocc_beta)]
         virt_beta=[0 for i in range(totnumorbitals-numocc_beta)]
         occupation_list=occ_alpha+virt_alpha+occ_beta+virt_beta
         detstring = "a"*len(occ_alpha)+"e"*len(virt_alpha)+"b"*len(occ_beta)+"e"*len(virt_beta)
@@ -2239,7 +2239,7 @@ def get_dets_from_cis(logfile,cisfilename,restr,mults,gscharge,gsmult,totnucchar
       #if '# of contracted basis functions' in line:
       #if 'Number of basis functions                   ...' in line:
       #  infos['nbsuse']=int(line.split()[-1])
-      
+
       if 'Orbital ranges used for CIS calculation:' in line:
         s=data[iline+1].replace('.',' ').split()
 
@@ -2484,7 +2484,7 @@ def run_wfoverlap_old(wfoverlapinput,path_wfoverlap,memory,numcores):
     print("Using memory: {} MB".format(memory))
     print("OMP num threads available to WFoverlap: ", os.environ["OMP_NUM_THREADS"])
     os.system('ldd {}'.format(path_wfoverlap))
-    
+
     try:
         proc=sp.Popen(wfcommand,shell=True,stdout=sp.PIPE,stderr=sp.PIPE)
         wfoverlapout=proc.communicate()
@@ -2702,13 +2702,13 @@ def MRCI_SOC_grab(file):
 #MRCI: Grabbing all root energies
 #If SORCI then multiple MRCI output
 def mrci_state_energies_grab(file,SORCI=False, SOC=False):
-    
+
     #If SORCI True then multiple MRCI output sections. we want last one
     if SORCI is True:
         final_part=False
     else:
         final_part=True
-    
+
     grab=False
     blockgrab=False
     grab_blockinfo=False
@@ -3014,7 +3014,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     external_tuple = tuple([0] * external)
                     #First index of external list
                     external_first=int(line.split()[1])
-                    
+
             if 'Determined orbital ranges:' in line:
                 grabrange=True
             if 'Number of rotation parameters' in line:
@@ -3078,8 +3078,8 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("Assignment: 0 HOLE  0 PARTICLE")
                         hole_indices=[]
                         particle_indices=[]
-                        #print("hole_indices:", hole_indices)                         
-                        #print("particle_indices:", particle_indices)    
+                        #print("hole_indices:", hole_indices)
+                        #print("particle_indices:", particle_indices)
 
                     elif 'h---h---' in line and line.count('p')==1:
                         #0-hole 1-particle
@@ -3087,7 +3087,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("Assignment: 0 HOLE  1 PARTICLE")
                         particle_index = int(find_between(line,']p','\n'))
                         particle_indices.append(particle_index)
-                        #print("hole_indices:", hole_indices) 
+                        #print("hole_indices:", hole_indices)
                         #print("particle_indices:", particle_indices)
                     elif 'h---h---' in line and line.count('p')==2:
                         #0-hole 2-particle
@@ -3097,24 +3097,24 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         p_split = [i for i in line.split('p')]
                         pindex_1=int(p_split[-2])
                         pindex_2=int(p_split[-1])
-                        particle_indices=[pindex_1,pindex_2]           
+                        particle_indices=[pindex_1,pindex_2]
                     elif 'h---h ' in line and line.count('p')==0:
                         #1-hole 0-particle
                         particle_indices=[]
-                        #print("Assignment: 1 HOLE  0 PARTICLE")                             
+                        #print("Assignment: 1 HOLE  0 PARTICLE")
                         hole_index=int(find_between(line,'h---h','[').strip())
                         hole_indices.append(hole_index)
-                        #print("hole_indices:", hole_indices) 
-                        #print("particle_indices:", particle_indices)  
+                        #print("hole_indices:", hole_indices)
+                        #print("particle_indices:", particle_indices)
                     elif 'h---h ' in line and line.count('p')==1:
                         #1-hole 1-particle
                         #print("Assignment: 1 HOLE  1 PARTICLE")
                         hole_index=int(find_between(line,'h---h','[').strip())
                         hole_indices.append(hole_index)
                         particle_index = int(find_between(line,']p','\n'))
-                        particle_indices.append(particle_index)                         
-                        #print("hole_indices:", hole_indices) 
-                        #print("particle_indices:", particle_indices)  
+                        particle_indices.append(particle_index)
+                        #print("hole_indices:", hole_indices)
+                        #print("particle_indices:", particle_indices)
                     elif 'h---h ' in line and line.count('p')==2:
                         #1-hole 2-particle
                         #print("Assignment: 1 HOLE  2 PARTICLE")
@@ -3135,15 +3135,15 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("Assignment: 2 HOLE  0 PARTICLE")
                         hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
                         particle_indices=[]
-                        #print("hole_indices:", hole_indices) 
+                        #print("hole_indices:", hole_indices)
                         #print("particle_indices:", particle_indices)
                     elif 'CFG h ' in line and line.count('p')==1:
                         # 2-hole 1-particle
                         #print("Assignment: 2 HOLE  1 PARTICLE")
                         hole_indices=[int(i) for i in find_between(line,'CFG h','[').replace('h','').split()]
                         particle_index = int(find_between(line,']p','\n'))
-                        particle_indices.append(particle_index)   
-                        #print("hole_indices:", hole_indices) 
+                        particle_indices.append(particle_index)
+                        #print("hole_indices:", hole_indices)
                         #print("particle_indices:", particle_indices)
                     elif 'CFG h ' in line and line.count('p')==2:
                         # 2-hole 2-particle
@@ -3154,12 +3154,12 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         pindex_1=int(p_split[-2])
                         pindex_2=int(p_split[-1])
                         particle_indices=[pindex_1,pindex_2]
-                        #print("hole_indices:", hole_indices) 
-                        #print("particle_indices:", particle_indices)                                                    
+                        #print("hole_indices:", hole_indices)
+                        #print("particle_indices:", particle_indices)
                     else:
                         print("Bad line. exiting")
-                        ashexit()    
-                        
+                        ashexit()
+
                 if '[' in line and 'CFG' not in line:
                     dummycount+=1
                     #print("cfg:", cfg)
@@ -3190,11 +3190,11 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                     #        cfglist2.append(0)
                     #    elif k == 1:
                     #        cfglist2.append(1)
-                    
+
                     #print("detlist2:", detlist2)
                     #print("cfglist2:", cfglist2)
-                    
-                    
+
+
                     #Modifying internal_tuple for possible holes
                     #print("internal_tuple :", internal_tuple)
                     #CASE: 1 HOLES  0 PARTICLES:
@@ -3250,8 +3250,8 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #    exit()
                         #print()
                         #modinternal_tuple=list(internal_tuple)
-                        #modinternal_tuple[holeindex] = 
-                        #print("Modifying internal_tuple")                        
+                        #modinternal_tuple[holeindex] =
+                        #print("Modifying internal_tuple")
                         lst_internaltuple=list(internal_tuple)
 
                         #print("lst_internaltuple:", lst_internaltuple)
@@ -3274,7 +3274,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("detlist2:", detlist2)
                         #moddetlist2=detlist2[1:]
                         #print("Mod active tuple :", detlist2)
-                        
+
                         #Unmodified external
                         modexternal_tuple=external_tuple
                     #CASE: 2 HOLES  0 PARTICLES:
@@ -3282,7 +3282,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("CASE 2HOLES 0 PARTICLES")
                         holeindex1=hole_indices[0]
                         holeindex2=hole_indices[1]
-                        
+
                         #SubCase: Double internal hole. Means no spin-label in bracket for this
                         if holeindex1 == holeindex2:
                             #print("Same holeindex")
@@ -3359,7 +3359,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("Mod external tuple :", modexternal_tuple)
                         #Removed particle spin from detlist
                         moddetlist2=detlist2[:-1]
-                        
+
                         #Unmodified internal
                         modinternal_tuple=internal_tuple
                     #CASE: 1 HOLE  1 PARTICLE:
@@ -3371,7 +3371,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         particleindex1=particle_indices[0]
                         #Particleposition in external list
                         particleposition=particleindex1-external_first
-                        
+
                         #Modifying internal list
                         spinlabelh1p1int=detlist2[0]
                         lst_internaltuple=list(internal_tuple)
@@ -3386,14 +3386,14 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("Mod external tuple :", modexternal_tuple)
                         #Modifying detlist
                         moddetlist2=detlist2[1:-1]
-                    #CASE: 0 HOLE  2 PARTICLES:                        
+                    #CASE: 0 HOLE  2 PARTICLES:
                     elif len(hole_indices) == 0 and len(particle_indices) == 2:
                         #print("0hole 2p")
                         particleindex1=particle_indices[0]
                         particleindex2=particle_indices[1]
                         #Particleposition in external list
                         particleposition1=particleindex1-external_first
-                        particleposition2=particleindex2-external_first                        
+                        particleposition2=particleindex2-external_first
                         #Modifying external list
                         #SubCase: Double particle position. Means no spin-label in bracket for this
                         if particleindex1 == particleindex2:
@@ -3402,10 +3402,10 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                             lst_externaltuple[particleposition1] = 3
                             modexternal_tuple=tuple(lst_externaltuple)
                             #print("Mod external tuple :", modexternal_tuple)
-                            
+
                             #Modifying active detlist
                             moddetlist2=detlist2
-                            
+
                         else:
                             #print("Particle indices NOT the same")
                             spinlabelh0p2_1ext=detlist2[-2]
@@ -3416,13 +3416,13 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                             modexternal_tuple=tuple(lst_externaltuple)
                             #print("Mod external tuple :", modexternal_tuple)
                             #Modifying active detlist
-                            moddetlist2=detlist2[:-2]                        
-                        
+                            moddetlist2=detlist2[:-2]
+
                         #Unmodified internal
                         modinternal_tuple=internal_tuple
-                        
-                        
-                    #CASE: 1 HOLE  2 PARTICLES:                        
+
+
+                    #CASE: 1 HOLE  2 PARTICLES:
                     elif len(hole_indices) == 1 and len(particle_indices) == 2:
                         #print("1hole 2p")
                         #Grabbing immediately
@@ -3433,7 +3433,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #Particleposition in external list
                         particleposition1=particleindex1-external_first
                         particleposition2=particleindex2-external_first
-                        
+
                         #Modifying internal list
                         spinlabelh1p2_1int=detlist2[0]
                         lst_internaltuple=list(internal_tuple)
@@ -3442,7 +3442,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #print("Mod internal_tuple :", modinternal_tuple)
                         #Modifying active detlist for hole
                         moddetlist2=moddetlist2[1:]
-                        
+
                         #Modifying external list
                         #SubCase: Double particle position. Means no spin-label in bracket for this
                         if particleindex1 == particleindex2:
@@ -3462,8 +3462,8 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                             #print("Mod external tuple :", modexternal_tuple)
                             #Modifying active detlist
                             moddetlist2=moddetlist2[:-2]
-                        
-                    #CASE: 2 HOLES  2 PARTICLES:                       
+
+                    #CASE: 2 HOLES  2 PARTICLES:
                     elif len(hole_indices) == 2 and len(particle_indices) == 2:
                         #print("2hole 2p")
                         #Grab this immediately
@@ -3475,7 +3475,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         #Particleposition in external list
                         particleposition1=particleindex1-external_first
                         particleposition2=particleindex2-external_first
-                        
+
                         #Modifying internal list
                         #SubCase: Double internal hole. Means no spin-label in bracket for this
                         if holeindex1 == holeindex2:
@@ -3500,7 +3500,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                             #print("Mod internal_tuple :", modinternal_tuple)
                             #Modification to detlist
                             moddetlist2=moddetlist2[2:]
-                        
+
                         #Modifying external list
                         #SubCase: Double particle position. Means no spin-label in bracket for this
                         if particleindex1 == particleindex2:
@@ -3520,9 +3520,9 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                             modexternal_tuple=tuple(lst_externaltuple)
                             #print("Mod external tuple :", modexternal_tuple)
                             #Modifying active detlist
-                            moddetlist2=moddetlist2[:-2]                        
-                        
-                    #CASE: 2 HOLE  1 PARTICLE:   
+                            moddetlist2=moddetlist2[:-2]
+
+                    #CASE: 2 HOLE  1 PARTICLE:
                     elif len(hole_indices) == 2 and len(particle_indices) == 1:
                         #print("2hole 1p")
                         moddetlist2=detlist2
@@ -3531,7 +3531,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         particleindex1=particle_indices[0]
                         #Particleposition in external list
                         particleposition1=particleindex1-external_first
-                        
+
                         #Modifying internal list
                         #SubCase: Double internal hole. Means no spin-label in bracket for this
                         if holeindex1 == holeindex2:
@@ -3564,19 +3564,19 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         lst_externaltuple[particleposition1] = spinlabelh2p1_1ext
                         modexternal_tuple=tuple(lst_externaltuple)
                         #print("Mod external tuple :", modexternal_tuple)
-                        
+
                         #Modifying detlist
-                        moddetlist2=moddetlist2[:-1]                        
-                        
+                        moddetlist2=moddetlist2[:-1]
+
 
                     #CASE: NO HOLES, NO PARTICLES
-                    # internal, active and external are all unchanged                   
+                    # internal, active and external are all unchanged
                     else:
                         #print("0hole 0p")
                         modinternal_tuple=internal_tuple
                         modexternal_tuple=external_tuple
                         moddetlist2=detlist2
-                        
+
                     #combining
                     det_tuple=modinternal_tuple+tuple(moddetlist2)+modexternal_tuple
                     #print("modinternal_tuple:", modinternal_tuple)
@@ -3597,11 +3597,11 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
                         print("det_tuple:", det_tuple)
                         print(f"Problem. Determinant electron-count({det_elcount}) does not add up to correct electron-number({tot_num_electrons})")
                         ashexit()
-                    det_ms = check_spin_of_tuple(det_tuple)    
+                    det_ms = check_spin_of_tuple(det_tuple)
                     if det_ms != (mult-1)/2:
                         print("det_tuple:", det_tuple)
                         print(f"Problem. Determinant spin or M_S value ({det_ms}) does not add up to correct spin (mult:{mult} i.e. M_S: {(mult-1)/2:})")
-                        ashexit() 
+                        ashexit()
                     #This is the CI coeffient
                     coeff = float(line.split()[-1])
                     #print("coeff : ", coeff)
@@ -3631,7 +3631,7 @@ def grab_dets_from_MRCI_output(file, SORCI=False, skip_tiny_CFGs=False):
     return final
 
 #Find wrong determinant in file
-#Temporary function since MRCI-determinant parsing can be  wrong. 
+#Temporary function since MRCI-determinant parsing can be  wrong.
 # We detect bad determinant, exit on error or just delete a determinant and continue
 def check_and_delete_wrong_det(file,reference_mult, exit_on_error=True):
     lines=[];wrongcount=0
@@ -3698,15 +3698,15 @@ def Read_old_results():
 
 def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, plotname='PES-plot',
                           start=None, finish=None, broadening=0.1, points=10000, hftyp_I=None, MOPlot=False, matplotlib=True):
-    
+
     print("This is deprecated. To be removed...")
     ashexit()
-    
+
     if IPs is None or dysonnorms is None:
         print("plot_PES_Spectrum requires IPs and dysonnorms variables")
         ashexit()
 
-    assert len(IPs) == len(dysonnorms), "List of Dysonnorms not same size as list of IPs." 
+    assert len(IPs) == len(dysonnorms), "List of Dysonnorms not same size as list of IPs."
 
     if mos_alpha is None:
         MOPlot=False
@@ -3853,7 +3853,7 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
 #Gives adjusted MO spectrum for initial state
 def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None, Initialstate_mult=None,
                           Ionizedstate_charge=None, Ionizedstate_mult=None):
-    
+
     print("="*30)
     print("Potential-adjustor DFT")
     print("="*30)
@@ -3862,10 +3862,10 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     E_N = init_state.energy
     #Orbitals in eV
     occorbs_alpha, occorbs_beta, hftyp = orbitalgrab(theory.filename+'.out')
-    
+
     print("occorbs_alpha (eV): ", occorbs_alpha)
     print("occorbs_beta (eV): ", occorbs_beta)
-    
+
     #Calculate ionized state (N-1)
     result_Nmin1 = ash.Singlepoint(fragment=fragment, theory=theory, charge=Ionizedstate_charge, mult=Ionizedstate_mult)
     E_Nmin1 = result_Nmin1.energy
@@ -3882,21 +3882,21 @@ def potential_adjustor_DFT(theory=None, fragment=None, Initialstate_charge=None,
     print("eps_HOMO : {} eV".format(eps_HOMO))
     deltaPA=deltaE-eps_HOMO
     print("deltaPA : {} eV".format(deltaPA))
-    
+
     #Adjust alpha and beta orbital sets
     PA_occorbs_alpha=  [orb+deltaPA for orb in occorbs_alpha]
     PA_occorbs_beta = [orb+deltaPA for orb in occorbs_beta]
-    
+
     print("PA_occorbs_alpha (eV): ", PA_occorbs_alpha)
     print("PA_occorbs_beta (eV): ", PA_occorbs_beta)
-    
+
     #IPs in eV as -1 times orbital energies
 
     PA_occorbs_alpha_IPs=[eig*-1 for eig in PA_occorbs_alpha]
     PA_occorbs_beta_IPs=[eig*-1 for eig in PA_occorbs_beta]
     print("PA_occorbs_alpha_IPs (eV):", PA_occorbs_alpha_IPs)
     print("PA_occorbs_beta_IPs (eV):", PA_occorbs_beta_IPs)
-    
+
     #Return negative KS eigenvalues
     return PA_occorbs_alpha_IPs, PA_occorbs_beta_IPs
 

@@ -126,7 +126,7 @@ class Calculator(object):
             if self.template_file is None:
                 raise RuntimeError("EON requires a template file")
             self.template = ReadEONTemplateFile(self.template_file)
-            
+
         elif self.name.upper() == "MBG" or self.name.upper() == "MB":
             self.path_to_calculator = os.getcwd()
             if self.name.upper() == "MBG":

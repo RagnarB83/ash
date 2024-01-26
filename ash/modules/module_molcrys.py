@@ -85,10 +85,10 @@ class Fragmenttype:
             outfile.write("Cluster fraglist: {} \n".format(self.clusterfraglist))
             outfile.write("\n")
             outfile.write("Flat Cluster fraglist: {} \n".format(self.flat_clusterfraglist))
-            
+
 
 def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_angles=None, fragmentobjects=[], theory=None, numcores=1, chargemodel='',
-            clusterradius=None, shortrangemodel='UFF_modH', LJHparameters=[0.0,0.0], auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere', 
+            clusterradius=None, shortrangemodel='UFF_modH', LJHparameters=[0.0,0.0], auto_connectivity=False, simple_supercell=False, shiftasymmunit=False, cluster_type='sphere',
             supercell_expansion=[3,3,3]):
     module_init_time=time.time()
     banner="""
@@ -113,8 +113,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     origtime = time.time()
     currtime = time.time()
-    
-    
+
+
     #INPUT-OPTION: CIF, XTL, XYZ
     if cif_file is not None:
         blankline()
@@ -122,7 +122,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Reading CIF file:", cif_file)
         blankline()
         cell_length,cell_angles,atomlabels,elems,asymmcoords,symmops,cellunits=ash.functions.functions_molcrys.read_ciffile(cif_file)
-        
+
         #Shifting fractional coordinates to make sure we don't have atoms on edges
         if shiftasymmunit is True:
             print("Shifting asymmetric unit")
@@ -151,7 +151,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
         #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
         #print_coords_all(fullcellcoords,elems)
-        
+
         #Calculating cell vectors.
         # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
         #Not sure why we were transposing here
@@ -159,7 +159,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         cell_vectors=ash.functions.functions_molcrys.cellbasis(cell_angles,cell_length)
         print("cell_vectors:", cell_vectors)
         #Get orthogonal coordinates of cell
-        orthogcoords=ash.functions.functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)      
+        orthogcoords=ash.functions.functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)
         blankline()
 
         #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
@@ -173,40 +173,40 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Reading XTL file:", xtl_file)
         blankline()
         cell_length,cell_angles,elems,fullcellcoords=ash.functions.functions_molcrys.read_xtlfile(xtl_file)
-        
+
         #cell_vectors=cellparamtovectors(cell_length,cell_angles)
 
         print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
 
         #Calculating cell vectors.
         # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
-        
+
         #Not sure why we were transposing here. Bad for Ru-allyl
         #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
         cell_vectors=ash.functions.functions_molcrys.cellbasis(cell_angles,cell_length)
-        
+
         print("cell_vectors:", cell_vectors)
         #Get orthogonal coordinates of cell
-        orthogcoords=ash.functions.functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)      
+        orthogcoords=ash.functions.functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)
         blankline()
 
         #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
         ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
-        
+
     elif xyz_file is not None:
         print("WARNING. This option is not well tested. XYZ-file must contain all coordinates of cell.")
         blankline()
-        #Read XYZ-file. Assuming file contains full-cell real-space coordinates 
+        #Read XYZ-file. Assuming file contains full-cell real-space coordinates
         print("Reading XYZ file (assuming real-space coordinates in Angstrom):", xyz_file)
         elems,orthogcoords=ash.modules.module_coords.read_xyzfile(xyz_file)
         print("Read {} atoms from XYZ-files".format(len(orthogcoords)))
-        
+
         #Need to read cell_lengths and cell_angles also
         if cell_length is None or cell_angles is None:
             print("cell_length/cell_angles is not defined. This is needed for XYZ-file option.")
             ashexit()
         blankline()
-        
+
         #Calculating cell vectors.
         # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
         #Not sure why transposing
@@ -229,22 +229,22 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
 
-    
+
     #Used by cell_extend_frag_withcenter and frag_define
     #fract_to_orthogonal uses original so it is transposed back
-    
+
     #Converting orthogcoords to numpy array for better performance
     orthogcoords=np.array(orthogcoords)
 
     ash.modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-original")
-    
+
     #Change origin to centroid of coords
     orthogcoords=ash.modules.module_coords.change_origin_to_centroid(orthogcoords)
     ash.modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-changedORIGIN")
-    
-    
+
+
     #Make simpler super-cell for cases where molecule is not in cell
-    #TODO: Not sure if need this. 
+    #TODO: Not sure if need this.
     #if simple_supercell is True:
     #    print("Simple supercell is True")
     #    #exit()return extended, new_elems
@@ -257,8 +257,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #    print("supercell_elems ({}) :".format(len(supercell_elems),supercell_elems))
     #    #supercell_orthogcoords=fract_to_orthogonal([cell_vectors[0],cell_vectors[1],cell_vectors[2]*1],supercell_coords)
     #    write_xyzfile(supercell_elems,supercell_coords,"supercell_coords")
-    #    
-    #    #DEFINING supercell as cell from now on 
+    #
+    #    #DEFINING supercell as cell from now on
     #    orthogcoords=supercell_coords
     #    elems=supercell_elems
 
@@ -302,7 +302,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 #Setting found fragmentlists as empty. Otherwise trouble.
                 for fragobject in fragmentobjects:
                     fragobject.fraglist=[]
-                    
+
         # If all test_tolerances failed.
         if checkflag == 1:
             print("Automatic connectivity failed. Make sure that the fragment definitions are correct, "
@@ -348,13 +348,13 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             ashexit()
     elif cluster_type == 'supercell':
         #Super-cell instead of sphere. Advantage: If unitcell is well-behaved then we will have no dipole problem when we cut a sphere.
-        #Disadvantage, we could have partial fragment at boundary. 
+        #Disadvantage, we could have partial fragment at boundary.
         #TODO: Check for partial fragments at boundary and clean up?? Adapt remove_partial_fragments ???
         print(BC.WARNING,"Warning. cluster_type = supercell is untested ",BC.END)
         tempcluster_coords,tempcluster_elems = ash.functions.functions_molcrys.cell_extend_frag(cell_vectors, orthogcoords,elems,supercell_expansion)
-        
+
         #TODO: Clean up partial fragments at boundary
-        
+
     else:
         print("unknown cluster_type")
         ashexit()
@@ -368,7 +368,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #TODO: Slightly ugly. Clean up at some point
     print("Creating temp Cluster fragment:")
     tempcluster=ash.Fragment(elems=tempcluster_elems, coords=tempcluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
-    
+
     #Reorder cluster so that molecular fragment atoms appear in order
     newatomindexorder=[]
     for fragx in tempcluster.connectivity:
@@ -378,7 +378,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     print("Creating new Cluster fragment:")
     Cluster=ash.Fragment(elems=cluster_elems, coords=cluster_coords, scale=chosenscale, tol=chosentol, conncalc=True)
-    
+
     #print_time_rel_and_tot(currtime, origtime, modulename='create Cluster fragment')
     currtime=time.time()
     Cluster.print_system("Cluster-first.ygg")
@@ -386,7 +386,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print("Cluster size: ", Cluster.numatoms, "atoms")
     #print_time_rel_and_tot(currtime, origtime, modulename='print Cluster system')
     currtime=time.time()
-    
+
     # Going through found frags and identify mainfrags and counterfrags
     #print("Connectivity fragments:", Cluster.connectivity)
     print("Number of Connectivity fragments:", len(Cluster.connectivity))
@@ -408,7 +408,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Reordering fragment object: ", fragmentobject.Name)
         ash.functions.functions_molcrys.reordercluster(Cluster,fragmentobject)
         printdebug(fragmentobject.clusterfraglist)
-        
+
         #Update element list in fragmentobject after reordering. Used later (DDEC)
         fragcoords,fragelems=Cluster.get_coords_for_atoms(fragmentobject.clusterfraglist[0])
         fragmentobject.Atoms=fragelems
@@ -601,7 +601,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print("")
     print_time_rel_and_tot(currtime, origtime, modulename="Molcrys: SP iterations")
     currtime=time.time()
-    
+
     #Now that charges are converged (for mainfrag and counterfrags ???).
     #Now derive LJ parameters ?? Important for DDEC-LJ derivation
     #Defining atomtypes in Cluster fragment for LJ interaction
@@ -635,8 +635,8 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
                 atomtypesdict[atype]=el
         for atypex in atomtypesdict.items():
             forcefile.write('element  {} {}\n'.format(atypex[0],atypex[1]))
-    
-    
+
+
     #Adding Centralmainfrag to Cluster
     Cluster.add_centralfraginfo(Centralmainfrag)
     #Printing out Cluster fragment file
@@ -647,5 +647,3 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     print_time_rel(module_init_time, modulename='Molcrys', moduleindex=0)
     return Cluster
-
-

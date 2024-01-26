@@ -15,4 +15,3 @@ end
 
 set molden:do_norm_janpa t
 task dft
-

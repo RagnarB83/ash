@@ -126,7 +126,7 @@ class NWChemTheory:
             pcfile=self.filename+'.pc'
         else:
             pcfile=None
-        
+
         #Write inputfile
         write_NWChem_input(self.nwcheminput,charge,mult,qm_elems,current_coords, method=self.method,
                 Grad=Grad, PCfile=pcfile, filename=self.filename, openshell=self.openshell, tce=self.tce)
@@ -138,7 +138,7 @@ class NWChemTheory:
         self.energy=grab_energy_nwchem(self.filename+'.out',method=self.method, tce=self.tce)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
-        
+
         #Grab gradient if calculated
         if Grad is True:
             #Grab gradient
@@ -213,7 +213,7 @@ def write_NWChem_input(nwcheminput,charge,mult,elems,coords, filename='nwchem',
         inpfile.write(nwcheminput)
         #Write job directive
         if tce is True:
-            inpfile.write(f"task tce {jobdirective}\n")        
+            inpfile.write(f"task tce {jobdirective}\n")
         else:
             inpfile.write(f"task {method} {jobdirective}\n")
         inpfile.write('\n')
@@ -276,7 +276,7 @@ def grab_pcgradient_NWChem(pcgradfile,numpc):
                 pc_gradient[pccount,0] = float(line.split()[0])
                 pc_gradient[pccount,1] = float(line.split()[1])
                 pc_gradient[pccount,2] = float(line.split()[2])
-                pccount+=1 
+                pccount+=1
     if pccount != numpc:
         print("Problem grabbing PC gradient from file:", pcgradfile)
         ashexit()

@@ -34,7 +34,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         print("Option:", option)
         print("Gridsetting:", grid)
         print("Numcores:", numcores)
-    
+
     print("Copying ASH Multiwfn settings.ini file to current directory")
     shutil.copy(f"{ash.ashpath}/external/Multiwfn/settings.ini", "settings.ini")
     ############################
@@ -64,7 +64,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         for el,c in zip(elems,coords):
             print(f"{el} {c[0]:10.5f} {c[1]:10.5f} {c[2]:10.5f}")
 
-    #TODO: Update, once fchk files are supported 
+    #TODO: Update, once fchk files are supported
     if os.path.isfile(moldenfile) is False:
         print(f"The selected Moldenfile: {moldenfile} does not exist. Exiting")
         ashexit()
@@ -74,7 +74,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         if printlevel >= 2:
             print("Renaming MOLDEN_NAT to MOLDEN_NAT.molden")
         os.rename(moldenfile, "MOLDEN_NAT.molden")
-        moldenfile="MOLDEN_NAT.molden"    
+        moldenfile="MOLDEN_NAT.molden"
 
     #Valence density requires num_frozen_orbs
     if option == 'valence-density':
@@ -121,7 +121,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     #    moldenfile="mrccnew.molden"
     #    #Now make new mwfnoptions file for the density generation
     #    write_multiwfn_input_option(option="density", grid=grid, printlevel=printlevel)
-    
+
     ###########################
     #WRITING MULTIWFN INPUT
     ###########################
@@ -134,7 +134,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
             ashexit()
         if fockfile == None:
             print("NOCV option requires fockfile option (can be ORCA output containing Fock-matrix printout)")
-            ashexit()   
+            ashexit()
         #Create dummy-input
         write_multiwfn_input_option(option="nocv", grid=grid, fragmentfiles=fragmentfiles, openshell=openshell,
                                     fockfile=fockfile, printlevel=printlevel)
@@ -147,7 +147,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     else:
         #Writing input
         write_multiwfn_input_option(option=option, grid=grid, printlevel=printlevel)
-    
+
     ############################
     #RUNNING MULTIWFN
     ############################
@@ -197,7 +197,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         os.rename(outputfile, finaloutputfile)
         if printlevel >= 2:
             print("ELF Cube-file written:", finaloutputfile)
-        return finaloutputfile   
+        return finaloutputfile
     elif option =="nocv":
         print("NOCV option was chosen.")
         print("Relevant Cube-files were created and NOCV output can be found in: NOCV.txt")
@@ -205,7 +205,7 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
     elif option =="hirshfeld":
         print("Hirshfeld option was chosen.")
 
-        #read file: 
+        #read file:
         outputfile=moldenfile+'.chg'
         print(f"A file: {outputfile} was created")
 
@@ -220,8 +220,8 @@ def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densit
         writeoutput=2 #Write Cubefile to current dir
         # 5 Output and plot specific property within a spatial region (calc. grid data)
         # 1 Electron density                 2 Gradient norm of electron density
-        
-        inputformula=f"""5 
+
+        inputformula=f"""5
 {denstype}
 {grid}
 {writeoutput}
@@ -234,14 +234,14 @@ q
         writeoutput=2 #Write Cubefile to current dir
         # 5 Output and plot specific property within a spatial region (calc. grid data)
         # 1 Electron density                 2 Gradient norm of electron density
-        
+
         inputformula=f"""6
 26
 1-{frozenorbitals}
 0
 q
 -1
-5 
+5
 {denstype}
 {grid}
 {writeoutput}
@@ -266,7 +266,7 @@ q
 3
 -10
 q
-        """        
+        """
     elif option == 'nocv':
         print("Writing Multiwfn inputfile for NOCV analysis")
         denstype=1
@@ -285,7 +285,7 @@ q
         writeoutput=2 #Write Cubefile to current dir
         # 5 Output and plot specific property within a spatial region (calc. grid data)
         # 1 Electron density                 2 Gradient norm of electron density
-        
+
         #-2 means generation of Fock matrix by information in file ? Is this valid. Output is not entirely correct
         #-1 means that we read Fock matrix externally. Can read ORCA output that contains Fock-matrix printout
         #%output Print[P_Iter_F] 1 end
@@ -321,7 +321,7 @@ q
 -10
 q
         """
-    elif option == 'hirshfeld':        
+    elif option == 'hirshfeld':
         inputformula=f"""7
 1
 1
@@ -398,4 +398,3 @@ def read_fchkfile(file):
     #For open-shell choose different NOs
 
     pass
-
