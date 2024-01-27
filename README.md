@@ -15,9 +15,9 @@ Please open an issue on Github and we will try to fix any problems as soon as po
 
 **Installation:**
 See https://ash.readthedocs.io/en/latest/setup.html for detailed installation instructions.
-A proper ASH installation should be done in a conda/mamba environment.
+A proper ASH installation must usually be done in a conda/mamba environment.
 
-Simple test installation :
+Basic installation via pip:
 
 ```sh
 #Install ASH using pip (default main branch)
@@ -26,6 +26,7 @@ pip install git+https://github.com/RagnarB83/ash.git
 #Install the NEW (development) branch of ASH
 pip install git+https://github.com/RagnarB83/ash.git@NEW
  ```
+
 
 **Documentation:**
 
@@ -43,7 +44,7 @@ Ongoing priorities:
 - Write unit tests
 - Improve documentation of code, write docstrings.
 
-**Very basic xample:**
+**Very basic example:**
 
 ```sh
 from ash import *
