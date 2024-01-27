@@ -3,15 +3,8 @@ ASH - A MULTISCALE MODELLING PROGRAM
 R. Bjornsson
 """
 # Python libraries
-import os
-import shutil
 import numpy as np
-import copy
-import subprocess as sp
-import glob
 import sys
-import inspect
-import time
 import atexit
 import pathlib
 #Getting ASH-path

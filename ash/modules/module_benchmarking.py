@@ -8,10 +8,9 @@ import time
 import ash
 #import ash.modules.module_coords
 from ash.functions.functions_general import ashexit, isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
-from ash.functions.functions_elstructure import check_cores_vs_electrons, num_core_electrons
+from ash.functions.functions_elstructure import check_cores_vs_electrons
 from ash.interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output
 from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
-from ash.modules.module_coords import check_charge_mult
 
 #BenchReaction class. Used for benchmarking
 class BenchReaction:
@@ -257,7 +256,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
     #Determine what type of type of property by grepping file
 
     test_property = pygrep("#TESTSET_INFO Property:",benchmarksetpath+'Reference_data.txt')
-    if test_property == None:
+    if test_property is None:
         print("Found no \"#TESTSET_INFO Property\" line in Reference.txt file. Assuming property to be energy")
         property='energy'
     else:
@@ -356,7 +355,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 print("Unrecognized property")
 
             #Preserve outputfile
-            if keepoutputfiles == True:
+            if keepoutputfiles is True:
                 shutil.copyfile(theory.filename+'.out', str(theory.filename)+'_'+system.filename+'.out')
             theory.cleanup()
 

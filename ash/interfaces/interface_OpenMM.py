@@ -12,7 +12,7 @@ import ash.constants
 ashpath = os.path.dirname(ash.__file__)
 from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, find_replace_string_in_file, \
     print_line_with_subheader1, print_line_with_subheader2, isint, writelisttofile, writestringtofile, search_list_of_lists_for_index, create_conn_dict, \
-    pygrep
+    pygrep,print_if_level
 
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
@@ -26,29 +26,6 @@ from ash.interfaces.interface_plumed import MTD_analyze
 from ash.interfaces.interface_mdtraj import MDtraj_import, MDtraj_imagetraj, MDtraj_RMSF
 import ash.functions.functions_parallel
 import ash.modules.module_plotting
-
-# Reporter for forces similar to xyz format
-class ForceReporter(object):
-    def __init__(self, file, reportInterval):
-        self._out = open(file, 'w')
-        self._reportInterval = reportInterval
-
-    def __del__(self):
-        self._out.close()
-
-    def describeNextReport(self, simulation):
-        steps = self._reportInterval - simulation.currentStep%self._reportInterval
-        return (steps, False, False, True, False, None)
-
-    def report(self, simulation, state):
-        import openmm
-        forces = state.getForces().value_in_unit(openmm.unit.kilojoules/openmm.unit.mole/openmm.unit.nanometer)
-        print("writing forces")
-        energy=state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoule_per_mole)
-        self._out.write('%g\n%g\n' % (len(forces), energy))
-        for f in forces:
-            self._out.write('%g %g %g\n' % (f[0], f[1], f[2]))
-        self._out.flush()
 
 
 class OpenMMTheory:
@@ -72,10 +49,17 @@ class OpenMMTheory:
 
 
         self.printlevel=printlevel
-        if self.printlevel > 0:
-            print_line_with_mainheader("OpenMM Theory")
+        print_line_with_mainheader("OpenMM Theory")
         module_init_time = time.time()
         timeA = time.time()
+
+        # CPU: Control either by provided numcores keyword, or by setting env variable:
+        # $OPENMM_CPU_THREADS in shell
+        # before running.
+        os.environ['OMP_NUM_THREADS'] = str(numcores)
+        print("OpenMM CPU threads set to:", os.environ['OMP_NUM_THREADS'])
+        self.numcores=numcores #Setting for general ASH compatibility
+
         #Indicate that this is a MMtheory
         self.theorytype="MM"
         self.theorynamelabel="OpenMM"
@@ -162,9 +146,7 @@ class OpenMMTheory:
         self.delete_QM1_MM1_bonded = delete_QM1_MM1_bonded
         # Platform (CPU, CUDA, OpenCL) and Parallelization
         self.platform_choice = platform
-        # CPU: Control either by provided numcores keyword, or by setting env variable: $OPENMM_CPU_THREADS in shell
-        # before running.
-        self.numcores=numcores #Setting for general ASH compatibility
+
         if properties == None:
             self.properties = {}
         else:
@@ -173,29 +155,29 @@ class OpenMMTheory:
             if self.printlevel > 0:
                 print("Using platform: CPU")
             self.properties["Threads"] = str(numcores)
-            if numcores > 1:
-                if self.printlevel > 0:
-                    print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
-                if self.printlevel > 0:
-                    print(BC.WARNING,"Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.",BC.END)
-                    print("If OPENMM_CPU_THREADS was not set in jobscript, physical cores will probably be used.")
-                    print("To be safe: check the running process on the node",BC.END)
-            else:
-                if self.printlevel > 0:
-                    print("Numcores=1 or no numcores variable provided to OpenMM object")
-                    print("Checking if OPENMM_CPU_THREADS shell variable is present")
-                try:
-                    if self.printlevel > 0:
-                        print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(
-                        os.environ["OPENMM_CPU_THREADS"]))
-                except KeyError:
-                    print(
-                        "OPENMM_CPU_THREADS environment variable not set.\nOpenMM will choose number of physical cores "
-                        "present.")
+            #if numcores > 1:
+            #    if self.printlevel > 0:
+            #        print("Numcores variable provided to OpenMM object. Will use {} cores with OpenMM".format(numcores))
+                #if self.printlevel > 0:
+                #    print(BC.WARNING,"Warning: Linux may ignore this user-setting and go with OPENMM_CPU_THREADS variable instead if set.",BC.END)
+                #    print("If OPENMM_CPU_THREADS was not set in jobscript, physical cores will probably be used.")
+                #    print("To be safe: check the running process on the node",BC.END)
+            #else:
+            #    if self.printlevel > 0:
+            #        print("Numcores=1 or no numcores variable provided to OpenMM object")
+                    #print("Checking if OPENMM_CPU_THREADS shell variable is present")
+                #try:
+                #    if self.printlevel > 0:
+                #        print("OpenMM will use {} threads according to environment variable: OPENMM_CPU_THREADS".format(
+                #        os.environ["OPENMM_CPU_THREADS"]))
+                #except KeyError:
+                #    print(
+                #        "OPENMM_CPU_THREADS environment variable not set.\nOpenMM will choose number of physical cores "
+                #        "present.")
         else:
             if self.printlevel > 0:
                 print("Using platform:", self.platform_choice)
-        print("Properties settings:", self.properties)
+        #print("Properties settings:", self.properties)
         # Whether to do energy decomposition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_decomposition = do_energy_decomposition
 
@@ -771,33 +753,36 @@ class OpenMMTheory:
                 print_line_with_subheader1("Adding user constraints, restraints or frozen atoms.")
         # Now adding user-defined system constraints (only bond-constraints supported for now)
         if constraints is not None:
-            if self.printlevel > 0:
+            if self.printlevel >= 1:
                 print("Before adding user constraints, system contains {} constraints".format(self.system.getNumConstraints()))
                 print("")
 
             if len(constraints) < 50:
-                print("User-constraints to add:", constraints)
+                if self.printlevel >= 1:
+                    print("User-constraints to add:", constraints)
             else:
-                print(f"{len(constraints)} user-defined constraints to add.")
+                if self.printlevel >= 1:
+                    print(f"{len(constraints)} user-defined constraints to add.")
 
             # Cleaning up constraint list. Adding distance if missing
             if 2 in [len(con) for con in constraints]:
-                print("Missing distance value for some constraints. Can apply current-geometry distances if ASH\n"
-                      "fragment has been provided")
+                if self.printlevel >= 1:
+                    print("Missing distance value for some constraints. Can apply current-geometry distances if ASH\n"
+                        "fragment has been provided")
                 if fragment is None:
-                    print("No ASH fragment provided to OpenMMTheory. Will check if pdbfile is defined and use coordinates from there")
+                    if self.printlevel >= 1:
+                        print("No ASH fragment provided to OpenMMTheory. Will check if pdbfile is defined and use coordinates from there")
                     if pdbfile is None:
-                        print("No PDBfile present either. Either fragment or PDBfile containing \
-                            coordinates is required for constraint definition")
+                        if self.printlevel >= 1:
+                            print("No PDBfile present either. Either fragment or PDBfile containing \
+                                coordinates is required for constraint definition")
                         ashexit()
                     else:
-                        fragment=Fragment(pdbfile=pdbfile)
+                        fragment=Fragment(pdbfile=pdbfile,printlevel=0)
                 # Cleaning up constraint list. Adding distance if missing
-                constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints)
+                constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints,printlevel=self.printlevel)
             self.user_constraints = constraints
-            print("")
             self.add_bondconstraints(constraints=constraints)
-            print("")
             # print("After adding user constraints, system contains {} constraints".format(self.system.getNumConstraints()))
             if self.printlevel > 0:
                 print(f"{len(self.user_constraints)} user-defined constraints added.")
@@ -805,9 +790,11 @@ class OpenMMTheory:
         if frozen_atoms is not None:
             self.user_frozen_atoms = frozen_atoms
             if len(self.user_frozen_atoms) < 50:
-                print("Frozen atoms to add:", str(frozen_atoms).strip("[]"))
+                if self.printlevel >= 1:
+                    print("Frozen atoms to add:", str(frozen_atoms).strip("[]"))
             else:
-                print(f"{len(self.user_frozen_atoms)} user-defined frozen atoms to add.")
+                if self.printlevel >= 1:
+                    print(f"{len(self.user_frozen_atoms)} user-defined frozen atoms to add.")
             self.freeze_atoms(frozen_atoms=frozen_atoms)
 
         # Now adding user-defined restraints (only bond-restraints supported for now)
@@ -816,19 +803,21 @@ class OpenMMTheory:
             # Example: [[700,701, 1.05, 5.0 ]] Unit is Angstrom and kcal/mol * Angstrom^-2
             self.user_restraints = restraints
             if len(self.user_restraints) < 50:
-                print("User-restraints to add:", restraints)
+                if self.printlevel >= 1:
+                    print("User-restraints to add:", restraints)
             else:
-                print(f"{len(self.user_restraints)} user-defined restraints to add.")
+                if self.printlevel >= 1:
+                    print(f"{len(self.user_restraints)} user-defined restraints to add.")
             self.add_bondrestraints(restraints=restraints)
 
         #Now changing masses if requested
         if changed_masses is not None:
-            if self.printlevel > 0:
+            if self.printlevel >= 1:
                 print("Modified masses")
             #changed_masses should be a dict of : atomindex: mass
             self.modify_masses(changed_masses=changed_masses)
 
-        if self.printlevel > 0:
+        if self.printlevel >= 1:
             print("\nSystem constraints defined upon system creation:", self.system.getNumConstraints())
             print("Use printlevel =>3 to see list of all constraints")
         if self.printlevel >= 3:
@@ -984,12 +973,12 @@ class OpenMMTheory:
     # To set positions in OpenMMobject (in nm) from np-array (Angstrom)
     def set_positions(self, coords,simulation):
         import openmm
-        print("Setting coordinates of OpenMM object")
+        print_if_level("Setting coordinates of OpenMM object", self.printlevel,1)
         coords_nm = coords * 0.1  # converting from Angstrom to nm
         pos = [openmm.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in
                range(len(coords_nm))] * openmm.unit.nanometer
         simulation.context.setPositions(pos)
-        print("Coordinates set")
+        print_if_level("Coordinates set", self.printlevel,1)
 
     #Add dummy
     #https://simtk.org/plugins/phpBB/viewtopicPhpbb.php?f=161&t=10049&p=0&start=0&view=&sid=b844250e55b14682fb21b5f66a4d810f
@@ -1252,7 +1241,7 @@ class OpenMMTheory:
     def add_bondconstraints(self, constraints=None):
         import openmm
         for i, j, d in constraints:
-            print("Adding bond constraint between atoms {} and {}. Distance value: {:.4f} Å".format(i, j, d))
+            print_if_level(f"Adding bond constraint between atoms {i} and {j}. Distance value: {d:.4f} Å", self.printlevel,1)
             self.system.addConstraint(i, j, d * openmm.unit.angstroms)
 
     #Remove all defined constraints in system
@@ -2081,6 +2070,37 @@ class OpenMMTheory:
         print_time_rel(timeA, modulename="modify_bonded_forces")
 
 
+
+# Reporter for forces similar to xyz format
+class ForceReporter(object):
+    def __init__(self, file, reportInterval):
+        self._out = open(file, 'w')
+        self._reportInterval = reportInterval
+
+    def __del__(self):
+        self._out.close()
+
+    def describeNextReport(self, simulation):
+        steps = self._reportInterval - simulation.currentStep%self._reportInterval
+        return (steps, False, False, True, False, None)
+
+    def report(self, simulation, state):
+        import openmm
+        forces = state.getForces().value_in_unit(openmm.unit.kilojoules/openmm.unit.mole/openmm.unit.nanometer)
+        print("writing forces")
+        energy=state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoule_per_mole)
+        self._out.write('%g\n%g\n' % (len(forces), energy))
+        for f in forces:
+            self._out.write('%g %g %g\n' % (f[0], f[1], f[2]))
+        self._out.flush()
+
+
+
+
+
+
+
+
 # For frozen systems we use Customforce in order to specify interaction groups
 # if len(self.frozen_atoms) > 0:
 
@@ -2198,22 +2218,22 @@ def create_cnb(original_nbforce,system_numparticles):
 
 
 # Clean up list of lists of constraint definition. Add distance if missing
-def clean_up_constraints_list(fragment=None, constraints=None):
-    print("Checking defined constraints.")
+def clean_up_constraints_list(fragment=None, constraints=None,printlevel=2):
+    print_if_level("Checking defined constraints.",printlevel,1)
     newconstraints = []
     for con in constraints:
         if len(con) == 3:
             newconstraints.append(con)
         elif len(con) == 2:
             distance = distance_between_atoms(fragment=fragment, atoms=[con[0],con[1]])
-            print("Adding missing distance definition between atoms {} and {}: {:.4f}".format(con[0], con[1], distance))
+            print_if_level(f"Adding missing distance definition between atoms {con[0]} and {con[1]}: {distance:.4f}",printlevel,1)
             newcon = [con[0], con[1], distance]
             newconstraints.append(newcon)
     return newconstraints
 
 
 def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePeriodicBox=True,
-               traj_frequency=100, use_reporter=True):
+               traj_frequency=100, use_reporter=True,printlevel=0):
     import openmm
     from packaging import version
     module_init_time = time.time()
@@ -2230,48 +2250,52 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
         print("Only OpenMMTheory allowed in OpenMM_Opt. Exiting.")
         ashexit()
 
-    print("Number of atoms:", fragment.numatoms)
-    print("Max iterations:", maxiter)
-    print(f"Tolerance: {tolerance} kj/mol/nm:")
+    if printlevel >= 1:
+        print("Number of atoms:", fragment.numatoms)
+        print("Max iterations:", maxiter)
+        print(f"Tolerance: {tolerance} kj/mol/nm:")
     #if float(openmm.__version__) >= 8.1:
     if version.parse(openmm.__version__) >= version.parse("8.1"):
-        print("Will write to trajectory every {} iterations".format(traj_frequency))
-
-    print("OpenMM autoconstraints:", openmmobject.autoconstraints)
-    print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
-    print("OpenMM rigidwater constraints:", openmmobject.rigidwater)
+        if printlevel >= 1:
+            print("Will write to trajectory every {} iterations".format(traj_frequency))
+    if printlevel >= 1:
+        print("OpenMM autoconstraints:", openmmobject.autoconstraints)
+        print("OpenMM hydrogenmass:", openmmobject.hydrogenmass)
+        print("OpenMM rigidwater constraints:", openmmobject.rigidwater)
 
     if openmmobject.user_constraints:
-        print("User constraints:", openmmobject.user_constraints)
+        print_if_level(f"User constraints: {openmmobject.user_constraints}", printlevel,1 )
     else:
-        print("User constraints: None")
+        print_if_level("User constraints: None", printlevel,1 )
 
     if openmmobject.user_restraints:
-        print("User restraints:", openmmobject.user_restraints)
+        print_if_level(f"User restraints: {openmmobject.user_restraints}", printlevel,1 )
     else:
-        print("User restraints: None")
-    print("Number of frozen atoms:", len(openmmobject.user_frozen_atoms))
+        print_if_level("User restraints: None", printlevel,1 )
+    print_if_level(f"Number of frozen atoms: {len(openmmobject.user_frozen_atoms)}", printlevel,1 )
     if 0 < len(openmmobject.user_frozen_atoms) < 50:
-        print("Frozen atoms", openmmobject.user_frozen_atoms)
-    print("")
+        print(f"Frozen atoms {openmmobject.user_frozen_atoms}", printlevel,1 )
+
 
     if openmmobject.autoconstraints is None:
-        print(f"{BC.WARNING}WARNING: Autoconstraints have not been set in OpenMMTheory object definition.{BC.END}")
-        print(f"{BC.WARNING}This means that by default no bonds are constrained in the optimization.{BC.END}")
-        print("Will continue...")
+        if printlevel >= 1:
+            print(f"{BC.WARNING}WARNING: Autoconstraints have not been set in OpenMMTheory object definition.{BC.END}")
+            print(f"{BC.WARNING}This means that by default no bonds are constrained in the optimization.{BC.END}")
+            print("Will continue...")
     if openmmobject.rigidwater is True and len(openmmobject.user_frozen_atoms) != 0 or (
             openmmobject.autoconstraints is not None and len(openmmobject.user_frozen_atoms) != 0):
-        print(
-            f"{BC.WARNING}WARNING: Frozen_atoms options selected but there are general constraints defined in{BC.END} "
-            f"{BC.WARNING}the OpenMM object (either rigidwater=True or autoconstraints is not None)\n{BC.END}"
-            f"{BC.WARNING}OpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
+            if printlevel >= 1:
+                print(f"{BC.WARNING}WARNING: Frozen_atoms options selected but there are general constraints defined in{BC.END} "
+                f"{BC.WARNING}the OpenMM object (either rigidwater=True or autoconstraints is not None)\n{BC.END}"
+                f"{BC.WARNING}OpenMM will crash if constraints and frozen atoms involve the same atoms{BC.END}")
 
 
     openmmobject.set_simulation_parameters(timestep=0.001, temperature=1, integrator='VerletIntegrator')
 
     #CREATE SIMULATION OBJECT
     simulation = openmmobject.create_simulation()
-    print("Simulation created.")
+
+    print_if_level("Simulation created.", printlevel,1)
 
     #############################################
     #New in OpenMM 8.1: reporters for minimizer
@@ -2296,26 +2320,30 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 
                 if short is True:
                     #Possible short mode: not finished
-                    print(f"Iteration {iteration} ")
+                    if printlevel >= 1:
+                        print(f"Iteration {iteration} ")
                 else:
                     #print("MACRO iteration:", self.macroiter)
-                    print("TOTAL iteration:", self.totaliter)
-                    print(f"Micro Iteration {iteration}")
+                    if printlevel >= 1:
+                        print("TOTAL iteration:", self.totaliter)
+                        print(f"Micro Iteration {iteration}")
                     self.print_energy(args)
                     self.print_forces()
                     self.write_traj(x,iteration)
                 #Once maxiter reached
                 if iteration == maxiter-1:
-                    print("Max iterations reached. Now modifying restraints and restarting")
+                    if printlevel >= 1:
+                        print("Max iterations reached. Now modifying restraints and restarting")
                     #self.macroiter+=1
                     return True
 
                 return False
             def write_traj(self,x,iteration):
                 if self.totaliter % traj_frequency == 0:
-                    print("-"*40)
-                    print("Now writing to trajectory file")
-                    print("-"*40)
+                    if printlevel >= 1:
+                        print("-"*40)
+                        print("Now writing to trajectory file")
+                        print("-"*40)
                     #exit()
                     #Reshaping and converting to Angstrom
                     pos = 10*np.array(x).reshape(-1,3)
@@ -2325,8 +2353,9 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
                     restraint_energy = args["restraint energy"] /ash.constants.hartokj
                     restraint_strength = args["restraint strength"]
                     max_constraint_error = args["max constraint error"]
-                    print("System energy:", system_energy)
-                    print("Restraint energy:", restraint_energy)
+                    if printlevel >= 1:
+                        print("System energy:", system_energy)
+                        print("Restraint energy:", restraint_energy)
                     #self.energy = self.state.getPotentialEnergy().value_in_unit_system(openmm.unit.md_unit_system) / ash.constants.hartokj
 
             def get_forces(self,grad):
@@ -2338,9 +2367,10 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
                 self.rms_force = np.sqrt(sum(n * n for n in self.forces_init.flatten()) / len(forces_init.flatten()))
                 self.max_force = self.forces_init.max()
             def print_forces(self):
-                print(f"RMS force (w restraints): {self.rms_force} Eh/Bohr")
-                print(f"Max force (w restraints): {self.max_force} Eh/Bohr")
-                print("")
+                if printlevel >= 1:
+                    print(f"RMS force (w restraints): {self.rms_force} Eh/Bohr")
+                    print(f"Max force (w restraints): {self.max_force} Eh/Bohr")
+                    print("")
             def get_state(self):
                 print("")
                 self.state = simulation.context.getState(getEnergy=True, getForces=True,
@@ -2349,27 +2379,27 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
         reporter = Reporter()
 
     # Context: settings positions of simulation object
-    print("Now adding coordinates")
+    print_if_level("Now adding coordinates", printlevel,1)
     openmmobject.set_positions(fragment.coords,simulation)
 
     print("")
     state = simulation.context.getState(getEnergy=True, getForces=True,
                                                      enforcePeriodicBox=enforcePeriodicBox)
-    print("Initial potential energy is: {} Eh".format(
-        state.getPotentialEnergy().value_in_unit_system(openmm.unit.md_unit_system) / ash.constants.hartokj))
+    potE_init=state.getPotentialEnergy().value_in_unit_system(openmm.unit.md_unit_system) \
+                                                   / ash.constants.hartokj
+    print_if_level(f"Initial potential energy is: {potE_init} Eh", printlevel,1)
     kjmolnm_to_atomic_factor = -49614.752589207
     forces_init = np.array(state.getForces(asNumpy=True)) / kjmolnm_to_atomic_factor
     rms_force = np.sqrt(sum(n * n for n in forces_init.flatten()) / len(forces_init.flatten()))
-    print(f"Initial RMS force: {rms_force} Eh/Bohr (w/o restraints)")
-    print(f"Initial Max force: {forces_init.max()} Eh/Bohr (w/o restraints)")
-    print("")
-    #####################################
-    print("Starting minimization.")
-    #if float(openmm.__version__) >= 8.1 and use_reporter is True:
+    if printlevel >= 1:
+        print(f"Initial RMS force: {rms_force} Eh/Bohr (w/o restraints)")
+        print(f"Initial Max force: {forces_init.max()} Eh/Bohr (w/o restraints)")
+        print("")
+        print("Starting minimization.")
     if version.parse(openmm.__version__) >= version.parse("8.1") and use_reporter is True:
-
-        print("OpenMM versions >= 8.1. Will use a reporter to output progress")
-        print("OpenMM_Opt trajectory will be written to: OpenMMOpt_traj.xyz")
+        if printlevel >= 1:
+            print("OpenMM versions >= 8.1. Will use a reporter to output progress")
+            print("OpenMM_Opt trajectory will be written to: OpenMMOpt_traj.xyz")
         #Removing possible old traj file
         try:
             os.remove("OpenMMOpt_traj.xyz")
@@ -2386,30 +2416,36 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
     print("")
     state = simulation.context.getState(getEnergy=True, getPositions=True, getForces=True,
                                                      enforcePeriodicBox=enforcePeriodicBox)
-    print("Final Potential energy is: {} Eh".format(
-        state.getPotentialEnergy().value_in_unit_system(openmm.unit.md_unit_system) / ash.constants.hartokj))
+    if printlevel >= 1:
+        print("Final Potential energy is: {} Eh".format(
+            state.getPotentialEnergy().value_in_unit_system(openmm.unit.md_unit_system) / ash.constants.hartokj))
     forces_final = np.array(state.getForces(asNumpy=True)) / kjmolnm_to_atomic_factor
     rms_force = np.sqrt(sum(n * n for n in forces_final.flatten()) / len(forces_final.flatten()))
-    print(f"Final RMS force: {rms_force} Eh/Bohr (w/o restraints)")
-    print(f"Final Max force: {forces_final.max()} Eh/Bohr (w/o restraints)")
+    if printlevel >= 1:
+        print(f"Final RMS force: {rms_force} Eh/Bohr (w/o restraints)")
+        print(f"Final Max force: {forces_final.max()} Eh/Bohr (w/o restraints)")
 
     # Get coordinates
     newcoords = state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
-    print("")
-    print("Updating coordinates in ASH fragment.")
+    if printlevel >= 1:
+        print("")
+        print("Updating coordinates in ASH fragment.")
     fragment.coords = newcoords
 
     #Writing final PDB-file. If system is non-periodic (according to OpenMMTheory settings) then we set enforcePeriodicBox to False
     #to avoid some strange geometry translation
     if openmmobject.Periodic is True:
-        print(f"Writing final PDB file (enforcePeriodicBox={enforcePeriodicBox})")
+        if printlevel >= 1:
+            print(f"Writing final PDB file (enforcePeriodicBox={enforcePeriodicBox})")
         positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions()
     else:
-        print("Writing final PDB file (enforcePeriodicBox=False)")
+        if printlevel >= 1:
+            print("Writing final PDB file (enforcePeriodicBox=False)")
         positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=False).getPositions()
     write_pdbfile_openMM(openmmobject.topology, positions, 'frag-minimized.pdb')
 
-    print('All Done!')
+    if printlevel >= 1:
+        print('All Done!')
     print_time_rel(module_init_time, modulename="OpenMM_Opt", moduleindex=1)
 
     return fragment

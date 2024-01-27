@@ -1,5 +1,4 @@
 from ash import *
-from math import isclose
 
 
 #Read solvated PDB-file, create OpenMMTheory job and run MM singlepoint
