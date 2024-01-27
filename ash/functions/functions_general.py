@@ -51,7 +51,7 @@ def create_ash_env_file():
 ulimit -s unlimited
 ASHPATH={ash_dir}
 python3path={path_to_python3_dir}
-#PYTHONPATH for finding ASH not recommended. commented out
+#PYTHONPATH for finding ASH usually not recommended. Better to install (pip install) commented out
 #export PYTHONPATH=$ASHPATH:\$ASHPATH/ash/lib:$PYTHONPATH
 export PATH=$python3path:$ASHPATH:$JULIAPATH:$PATH
 export LD_LIBRARY_PATH=$ASHPATH/ash/lib:$LD_LIBRARY_PATH
