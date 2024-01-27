@@ -10,5 +10,5 @@ def test_chargemult():
     HF_frag=Fragment(coordsstring=fragcoords)
     HF_frag2=Fragment(coordsstring=fragcoords, charge=0, mult=1)
 
-    assert HF_frag.charge == None, "Charge is not None"
+    assert HF_frag.charge is None, "Charge is not None"
     assert HF_frag2.charge == 0, "Charge is not 0"

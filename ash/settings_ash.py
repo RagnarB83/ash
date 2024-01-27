@@ -67,7 +67,7 @@ def try_read_setting(stringvalue, datatype):
                 settings_dict[stringvalue] = False
         else:
             settings_dict[stringvalue] = parser.get("Settings", stringvalue)
-    except:
+    except Exception:
         pass
 
 #NOTE: Warning. If user added quotation marks around string then things go awry. Look into

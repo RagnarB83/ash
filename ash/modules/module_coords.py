@@ -102,6 +102,9 @@ class Fragment:
 
         if self.printlevel >= 2:
             print_line_with_subheader1("New ASH fragment")
+        #Minimal ASH Fragment
+        if self.printlevel == 0:
+            print("ASH Fragment created")
         self.energy = None
         self.elems = []
         # self.coords=np.empty_like([],shape=(0,3))
@@ -506,7 +509,8 @@ class Fragment:
                     self.numatoms = int(line.split()[0])
                 elif count == 1:
                     if readchargemult is True:
-                        print("Reading charge/mult from file header.")
+                        if self.printlevel >= 2:
+                            print("Reading charge/mult from file header.")
                         try:
                             self.charge = int(line.split()[0])
                             self.mult = int(line.split()[1])

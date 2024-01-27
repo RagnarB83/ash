@@ -126,7 +126,7 @@ class ORCATheory:
         self.orcablocks=orcablocks
 
         #Input-lines only for first run call
-        if first_iteration_input != None:
+        if first_iteration_input is not None:
             self.first_iteration_input = first_iteration_input
         else:
             self.first_iteration_input=""
@@ -134,19 +134,19 @@ class ORCATheory:
         #BROKEN SYM OPTIONS
         self.brokensym=brokensym
         self.HSmult=HSmult
-        if type(atomstoflip) is int:
+        if isinstance(atomstoflip, int):
             print(BC.FAIL,"Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.", BC.END)
             ashexit()
-        if atomstoflip != None:
+        if atomstoflip is not None:
             self.atomstoflip=atomstoflip
         else:
             self.atomstoflip=[]
         #Basis sets per element
         self.basis_per_element=basis_per_element
-        if self.basis_per_element != None:
+        if self.basis_per_element is not None:
             print("Basis set dictionary for each element provided:", basis_per_element)
         #Extrabasis
-        if extrabasisatoms != None:
+        if extrabasisatoms is not None:
             self.extrabasisatoms=extrabasisatoms
             self.extrabasis=extrabasis
         else:
@@ -170,7 +170,7 @@ class ORCATheory:
         #NMF
         self.NMF=NMF
         if self.NMF is True:
-            if NMF_sigma == None:
+            if NMF_sigma is None:
                 print("NMF option requires setting NMF_sigma")
                 ashexit()
             self.NMF_sigma=NMF_sigma
@@ -198,7 +198,7 @@ end
 
         #XDM: if True then we add !AIM to input
         self.xdm=False
-        if xdm == True:
+        if xdm is True:
             self.xdm=True
             self.xdm_a1=xdm_a1
             self.xdm_a2=xdm_a2
@@ -235,13 +235,12 @@ end
         for file in list_files:
             try:
                 os.remove(file)
-            except:
+            except FileNotFoundError:
                 pass
-        # os.remove(self.filename + '.out')
         try:
             for tmpfile in glob.glob("self.filename*tmp"):
                 os.remove(tmpfile)
-        except:
+        except FileNotFoundError:
             pass
 
     #Do an ORCA-optimization instead of ASH optimization. Useful for gas-phase chemistry when ORCA-optimizer is better than geomeTRIC

@@ -46,7 +46,8 @@ class PySCFTheory:
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
         self.analytic_hessian=False
-
+        self.printlevel=printlevel
+        #if self.printlevel >= 2:
         print_line_with_mainheader("PySCFTheory initialization")
 
         #EARLY EXITS
@@ -60,7 +61,8 @@ class PySCFTheory:
             print("basis_file should be a string of the filename containing basis set in NWChem format")
             ashexit()
         if functional is not None:
-            print(f"Functional keyword: {functional} chosen. DFT is on!")
+            if self.printlevel >= 1:
+                print(f"Functional keyword: {functional} chosen. DFT is on!")
             if scf_type == 'RHF':
                 print("Changing RHF to RKS")
                 scf_type='RKS'
@@ -106,8 +108,6 @@ class PySCFTheory:
         #Setting meanfield object as None
         self.mf = None
 
-        #Printlevel
-        self.printlevel=printlevel
         self.label=label
         self.memory=memory
         self.filename=filename
@@ -314,47 +314,48 @@ class PySCFTheory:
         self.num_orbs=None
 
         #Print the options
-        print("SCF:", self.SCF)
-        print("SCF-type:", self.scf_type)
-        print("x2c:", self.x2c)
-        print("Post-SCF:", self.postSCF)
-        print("Symmetry:", self.symmetry)
-        print("conv_tol:", self.conv_tol)
-        print("Grid level:", self.gridlevel)
-        print("verbose_setting:", self.verbose_setting)
-        print("Basis:", self.basis)
-        print("Basis-file:", self.basis_file)
-        print("SCF stability analysis:", self.stability_analysis)
-        print("Functional:", self.functional)
-        print("Coupled cluster:", self.CC)
-        print("CC method:", self.CCmethod)
-        print("CC direct:", self.CC_direct)
-        print("CC density:", self.CC_density)
-        print("CC maxcycles:", self.cc_maxcycle)
-        print("CC DIIS space size:", self.cc_diis_space)
-        print("FNO-CC:", self.FNO)
-        print("FNO_thresh:", self.FNO_thresh)
-        print("FNO orbitals:", self.FNO_orbitals)
-        print("MP2:", self.MP2)
-        print("MP2_DF:",self.MP2_DF)
-        print("Frozen_core_setting:", self.frozen_core_setting)
-        print("Frozen_virtual orbitals:",self.frozen_virtuals)
-        print("Polarizable embedding:", self.pe)
-        print()
-        print("CAS:", self.CAS)
-        print("CASSCF:", self.CASSCF)
-        print("CASSCF maxcycles:", self.casscf_maxcycle)
-        print("AVAS:", self.AVAS)
-        print("DMET_CAS:", self.DMET_CAS)
-        print("APC:", self.APC)
-        print("APC max size:", self.apc_max_size)
-        print("CAS_AO_labels (for AVAS/DMET_CAS)", self.CAS_AO_labels)
-        print("CAS_nmin:", self.cas_nmin)
-        print("CAS_nmax:", self.cas_nmax)
-        print("Active space:", self.active_space)
-        print()
-        print("MC-PDFT:", self.mcpdft)
-        print("mcpdft_functional:", self.mcpdft_functional)
+        if self.printlevel >= 1:
+            print("SCF:", self.SCF)
+            print("SCF-type:", self.scf_type)
+            print("x2c:", self.x2c)
+            print("Post-SCF:", self.postSCF)
+            print("Symmetry:", self.symmetry)
+            print("conv_tol:", self.conv_tol)
+            print("Grid level:", self.gridlevel)
+            print("verbose_setting:", self.verbose_setting)
+            print("Basis:", self.basis)
+            print("Basis-file:", self.basis_file)
+            print("SCF stability analysis:", self.stability_analysis)
+            print("Functional:", self.functional)
+            print("Coupled cluster:", self.CC)
+            print("CC method:", self.CCmethod)
+            print("CC direct:", self.CC_direct)
+            print("CC density:", self.CC_density)
+            print("CC maxcycles:", self.cc_maxcycle)
+            print("CC DIIS space size:", self.cc_diis_space)
+            print("FNO-CC:", self.FNO)
+            print("FNO_thresh:", self.FNO_thresh)
+            print("FNO orbitals:", self.FNO_orbitals)
+            print("MP2:", self.MP2)
+            print("MP2_DF:",self.MP2_DF)
+            print("Frozen_core_setting:", self.frozen_core_setting)
+            print("Frozen_virtual orbitals:",self.frozen_virtuals)
+            print("Polarizable embedding:", self.pe)
+            print()
+            print("CAS:", self.CAS)
+            print("CASSCF:", self.CASSCF)
+            print("CASSCF maxcycles:", self.casscf_maxcycle)
+            print("AVAS:", self.AVAS)
+            print("DMET_CAS:", self.DMET_CAS)
+            print("APC:", self.APC)
+            print("APC max size:", self.apc_max_size)
+            print("CAS_AO_labels (for AVAS/DMET_CAS)", self.CAS_AO_labels)
+            print("CAS_nmin:", self.cas_nmin)
+            print("CAS_nmax:", self.cas_nmax)
+            print("Active space:", self.active_space)
+            print()
+            print("MC-PDFT:", self.mcpdft)
+            print("mcpdft_functional:", self.mcpdft_functional)
 
     def determine_frozen_core(self,elems):
         print("Determining frozen core")
@@ -776,7 +777,8 @@ class PySCFTheory:
 
         print(f"read_chkfile: Attempting to read chkfile: {chkfile}")
         if chkfile != None:
-            print("Reading orbitals from checkpointfile:", chkfile)
+            if self.printlevel >= 1:
+                print("Reading orbitals from checkpointfile:", chkfile)
             if os.path.isfile(chkfile) is False:
                 print("File does not exist. Continuing!")
                 return False
@@ -784,35 +786,42 @@ class PySCFTheory:
                 self.chkfileobject = pyscf.scf.chkfile.load(chkfile, 'scf')
                 #TODO: Check if orbitals read are correct
                 if len(self.chkfileobject["mo_occ"]) == 2:
-                    print("Reading unrestricted orbitals from checkpointfile")
+                    if self.printlevel >= 1:
+                        print("Reading unrestricted orbitals from checkpointfile")
                     #unrestricted
                     sum_occ = sum(self.chkfileobject["mo_occ"][0]) + sum(self.chkfileobject["mo_occ"][1])
                 else:
-                    print("Reading restricted orbitals from checkpointfile")
+                    if self.printlevel >= 1:
+                        print("Reading restricted orbitals from checkpointfile")
                     #restricted
                     try:
                         sum_occ = sum(self.chkfileobject.mo_occ)
                         if self.num_electrons != sum_occ:
-                            print(f"Number of electrons in checkpointfile ({sum_occ}) does not match number of electrons in molecule ({self.num_electrons})")
-                            print("Ignoring MOs in chkfile and continuing")
+                            if self.printlevel >= 1:
+                                print(f"Number of electrons in checkpointfile ({sum_occ}) does not match number of electrons in molecule ({self.num_electrons})")
+                                print("Ignoring MOs in chkfile and continuing")
                             return False
                     except AttributeError:
-                        print("No occupations found in chkfile. Continuing")
+                        if self.printlevel >= 1:
+                            print("No occupations found in chkfile. Continuing")
 
                 return True
             except TypeError:
-                print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
-                print("Ignoring and continuing")
+                if self.printlevel >= 1:
+                    print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
+                    print("Ignoring and continuing")
                 return False
 
     def setup_guess(self):
-        print("Setting up orbital guess")
+        if self.printlevel >= 1:
+            print("Setting up orbital guess")
 
         #DM SPECIFIED
         if self.dm is not None:
         #Input DM matrix specified
-            print("DM found inside pySCFTheory object. Using this for guess")
-            print("Num. basis functions:", self.num_basis_functions)
+            if self.printlevel >= 1:
+                print("DM found inside pySCFTheory object. Using this for guess")
+                print("Num. basis functions:", self.num_basis_functions)
             #print("self.dm.shape:", self.dm.shape)
             #print("self.dm.shape[0]:", self.dm.shape[0])
             if self.scf_type == 'RHF' or self.scf_type == 'RKS' or self.scf_type == 'GHF' or self.scf_type == 'GKS':
@@ -823,8 +832,9 @@ class PySCFTheory:
                     return None
             else:
                 #UHF/UKS etc
-                print("Num basis functions:", self.num_basis_functions)
-                print("DM shape:", self.dm[0].shape) #DM is a tuple for unrestricted
+                if self.printlevel >= 1:
+                    print("Num basis functions:", self.num_basis_functions)
+                    print("DM shape:", self.dm[0].shape) #DM is a tuple for unrestricted
                 if self.dm[0].shape[0] != self.num_basis_functions:
                     if self.dm[0].shape[0]*2 != self.num_basis_functions:
                         print(f"Warning: The density matrix shape {self.dm.shape} does not match number of basis functions ({self.num_basis_functions}).")
@@ -836,7 +846,8 @@ class PySCFTheory:
 
         #MOREADFILE
         elif self.moreadfile != None:
-            print("Moread: Trying to read SCF-orbitals from file")
+            if self.printlevel >= 1:
+                print("Moread: Trying to read SCF-orbitals from file")
             if '.molden' in self.moreadfile:
                 mo_coefficients, occupations = pySCF_read_MOs(self.moreadfile,self)
                 self.mf.mo_occ = occupations
@@ -848,10 +859,12 @@ class PySCFTheory:
             return dm
         #NOTHING SPECIFIED: so possible AUTOSTART
         else:
-            print("Neither input dm or moreadfile was specified")
+            if self.printlevel >= 1:
+                print("Neither input dm or moreadfile was specified")
             #1.AUTOSTART (unless noautostart)
             if self.noautostart is False:
-                print(f"Autostart: Trying file: {self.filename+'.chk'}")
+                if self.printlevel >= 1:
+                    print(f"Autostart: Trying file: {self.filename+'.chk'}")
                 #AUTOSTART: FIRST CHECKING if CHKFILE with self.filename(pyscf.chk) exists
                 if self.read_chkfile(self.filename+'.chk') is True:
                     self.mf.__dict__.update(self.chkfileobject)
@@ -859,9 +872,11 @@ class PySCFTheory:
                     return dm
             #2. GUESS GENERATION (noautostart or autostart failed)
             if self.noautostart is True:
-                print("Autostart false enforced")
+                if self.printlevel >= 1:
+                    print("Autostart false enforced")
             #If noautostart is True or no checkpointfile we do the regular orbital-guess (default minao or whatever is specified)
-            print("Using orbital guess option:", self.guess)
+            if self.printlevel >= 1:
+                print("Using orbital guess option:", self.guess)
             if self.guess not in ['minao', 'atom', 'huckel', 'vsap','1e']:
                 print("Guess option not recognized. Valid guess options are: ", ['minao', 'atom', 'huckel', 'vsap','1e'])
                 ashexit()
@@ -1665,17 +1680,21 @@ class PySCFTheory:
 
     #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
     def get_dipole_moment(self, dm=None, label=None):
-        print("get_dipole_moment function:")
+        if self.printlevel >=1:
+            print("get_dipole_moment function:")
         if label == None:
             label=""
         if dm is None:
-            print("No DM provided. Using mean-field object dm")
+            if self.printlevel >=1:
+                print("No DM provided. Using mean-field object dm")
             #MF dipole moment
-            dipole = self.mf.dip_moment(unit='A.U.')
+            dipole = self.mf.dip_moment(unit='A.U.',verbose=self.printlevel)
         else:
-            print("Using provided DM")
-            dipole = self.mf.dip_moment(dm=dm,unit='A.U.')
-            print(f"WF Dipole moment ({label}): {dipole} A.U.")
+            if self.printlevel >=1:
+                print("Using provided DM")
+            dipole = self.mf.dip_moment(dm=dm,unit='A.U.',verbose=self.printlevel)
+            if self.printlevel >=1:
+                print(f"WF Dipole moment ({label}): {dipole} A.U.")
         return dipole
     def get_polarizability_tensor(self):
         try:
@@ -1693,7 +1712,8 @@ class PySCFTheory:
 
     #Create mol object (self.mol) via method
     def create_mol(self, qm_elems, current_coords, charge, mult):
-        print("Creating mol object")
+        if self.printlevel >= 1:
+            print("Creating mol object")
         import pyscf
 
         #Defining pyscf mol object and populating
@@ -1711,7 +1731,8 @@ class PySCFTheory:
 
     #Define basis in mol object
     def define_basis(self,basis_string_from_file=None):
-        print("Defining basis set in mol object")
+        if self.printlevel >= 1:
+            print("Defining basis set in mol object")
         import pyscf
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #Object can be string ('def2-SVP') or a dict with element-specific keys and values
@@ -1729,11 +1750,13 @@ class PySCFTheory:
             #self.mol.basis = #{'H': gto.basis.read('basis/STO-2G.dat')
         else:
             self.mol.basis=self.basis
-        print("Basis set:", self.mol.basis)
+        if self.printlevel >= 1:
+            print("Basis set:", self.mol.basis)
 
         #Optional setting magnetic moments
         if self.magmom != None:
-            print("Setting magnetic moments from user-input:", self.magmom)
+            if self.printlevel >= 1:
+                print("Setting magnetic moments from user-input:", self.magmom)
             self.mol.magmom=self.magmom #Should be a list of the collinear spins of each atom
         #ECP: Can be string ('def2-SVP') or dict or a dict with element-specific keys and values
         self.mol.ecp = self.ecp
@@ -1742,12 +1765,14 @@ class PySCFTheory:
         #BUILD mol object
         self.mol.build()
         self.num_basis_functions=len(self.mol.ao_labels())
-        print("Number of basis functions:", self.num_basis_functions)
+        if self.printlevel >= 1:
+            print("Number of basis functions:", self.num_basis_functions)
         ###########
 
     #Create mf object (self.mf) via method
     def create_mf(self):
-        print("Creating pySCF mf object")
+        if self.printlevel >= 1:
+            print("Creating pySCF mf object")
         import pyscf
         #RKS v UKS v RHF v UHF v GHF v GKS
         #TODO: Dirac HF and KS also
@@ -1769,7 +1794,8 @@ class PySCFTheory:
             self.mf = pyscf.scf.GKS(self.mol)
 
     def set_mf_scfconv_options(self):
-        print("Modifying mf SCF options")
+        if self.printlevel >= 1:
+            print("Modifying mf SCF options")
         import pyscf
         #Direct SCF or conventional
         self.mf.direct_scf=self.direct_scf
@@ -1896,13 +1922,15 @@ class PySCFTheory:
                 print("PySCF will most likely give an error")
         #If sgx was not selected but densityfit was, we do RI-J if pure-DFT or RI-JK if hybrid-DFT/HF
         elif self.densityfit is True:
-            print("Density fitting option is on. Turning on in meanfield object!")
+            if self.printlevel >= 1:
+                print("Density fitting option is on. Turning on in meanfield object!")
             if self.auxbasis != None:
                 self.mf = self.mf.density_fit(self.auxbasis)
             else:
                 self.mf = self.mf.density_fit()
         else:
-            print("No density fitting options in use")
+            if self.printlevel >= 1:
+                print("No density fitting options in use")
 
     def set_DFT_options(self):
         if self.functional is not None:
@@ -2040,48 +2068,56 @@ class PySCFTheory:
 
     #Independent method to run SCF using previously defined mf object and possible input dm
     def run_SCF(self,mf=None, dm=None, max_cycle=None):
-        print("\nInside run_SCF")
+        if self.printlevel >= 1:
+            print("\nInside run_SCF")
         module_init_time=time.time()
         if mf is None:
-            print("No mf object provided. Using self.mf")
+            if self.printlevel >=1:
+                print("No mf object provided. Using self.mf")
             if self.mf is None:
                 print("No self.mf object defined. Exiting")
                 ashexit()
             else:
                 mf=self.mf
         if dm is None:
-            print("No dm provided.")
+            if self.printlevel >=1:
+                print("No dm provided.")
         else:
-            print("DM provided. Will be used")
+            if self.printlevel >=1:
+                print("DM provided. Will be used")
         #Modify max-cycle in mf object if requested
         if max_cycle is not None:
-            print("mf:", mf)
             mf.max_cycle=max_cycle
-        print("Max cycle in mf object:", mf.max_cycle)
-        print("Running SCF")
+        if self.printlevel >=1:
+            print("Max cycle in mf object:", mf.max_cycle)
+            print("Running SCF")
         scf_result = mf.run(dm)
-        print("SCF done!")
         E_tot = scf_result.e_tot
-        print("E_tot:", E_tot)
+        if self.printlevel >=1:
+            print("SCF done!")
+            print("E_tot:", E_tot)
         if self.functional != None:
             E_xc = scf_result.scf_summary["exc"]
             E_dmf = E_tot - E_xc
-            print("E_dmf:", E_dmf)
-            print("E_xc:", E_xc)
+            if self.printlevel >= 1:
+                print("E_dmf:", E_dmf)
+                print("E_xc:", E_xc)
 
         #Setting number of orbitals as attribute of object
         if len(self.mf.mo_occ) == 2:
             self.num_orbs = len(self.mf.mo_occ[0]) # Unrestricted
         else:
             self.num_orbs = len(self.mf.mo_occ) # Restricted
-        print("Number of orbitals:", self.num_orbs)
+        if self.printlevel >= 1:
+            print("Number of orbitals:", self.num_orbs)
 
         #Calculating new dm and preserving it
-        print("Calculating density matrix from converged MO's and storing as dm attribute of PySCFTheory object")
+        if self.printlevel >= 1:
+            print("Calculating density matrix from converged MO's and storing as dm attribute of PySCFTheory object")
         dm = mf.make_rdm1()
         self.dm=dm
 
-        print_time_rel(module_init_time, modulename='pySCF run_SCF', moduleindex=2)
+        print_time_rel(module_init_time, modulename='pySCF run_SCF', moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
         return scf_result
 
     #General run function to distinguish  possible specialrun (disabled) and mainrun
@@ -2112,11 +2148,11 @@ class PySCFTheory:
 
         #Load pyscf
         import pyscf
-        print("PySCF version:", pyscf.__version__)
-
         #Set PySCF threads to numcores
         pyscf.lib.num_threads(self.numcores)
-        print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
+        if self.printlevel >1:
+            print("PySCF version:", pyscf.__version__)
+            print("Number of PySCF lib threads is:", pyscf.lib.num_threads())
         #Checking environment variables
         try:
             print("os.environ['OMP_NUM_THREADS']:", os.environ['OMP_NUM_THREADS'])
@@ -2160,8 +2196,9 @@ class PySCFTheory:
 
         #Setting number of electrons for system (used by load_chkfile etc)
         self.num_electrons  = int(ash.modules.module_coords.nucchargelist(qm_elems) - charge)
-        print("Number of electrons:", self.num_electrons)
-        print()
+        if self.printlevel >= 1:
+            print("Number of electrons:", self.num_electrons)
+            print()
 
         #####################
         #CREATE MOL OBJECT
@@ -2232,7 +2269,8 @@ class PySCFTheory:
         #EMBEDDING OPTIONS
         ##############################
         self.set_embedding_options(PC=PC,MM_coords=current_MM_coords, MMcharges=MMcharges)
-        print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
+        if self.printlevel >1:
+            print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
 
 
     #Actual Run
@@ -2245,7 +2283,6 @@ class PySCFTheory:
         #############################################################
         #RUNNING
         #############################################################
-        print()
 
         #####################
         #SCF STEP
@@ -2276,12 +2313,11 @@ class PySCFTheory:
                 #NOTE: dm needs to have been created here (regardless of the type of guess)
                 #scf_result = self.mf.run(dm)
                 scf_result = self.run_SCF(dm=dm)
-                print("SCF energy:", scf_result.e_tot)
 
             #Possible stability analysis
             self.run_stability_analysis()
-            print("\nSCF energy:", scf_result.e_tot)
             if self.printlevel >1:
+                print("\nSCF energy:", scf_result.e_tot)
                 print("SCF energy components:", self.mf.scf_summary)
 
             #Orbital and Occupation printing
@@ -2326,8 +2362,8 @@ class PySCFTheory:
                 s2, spinmult = self.mf.spin_square()
                 print("UHF/UKS <S**2>:", s2)
                 print(f"UHF/UKS spinmult: {spinmult}\n")
-
-            print("SCF Dipole moment:")
+            if self.printlevel >=1:
+                print("SCF Dipole moment:")
             self.get_dipole_moment()
 
             #Dispersion correction
@@ -2461,7 +2497,8 @@ class PySCFTheory:
 
             #Pointcharge-gradient (separate)
             if PC is True:
-                print("Calculating pointcharge gradient")
+                if self.printlevel >=1:
+                    print("Calculating pointcharge gradient")
                 #Make density matrix
                 checkpoint=time.time()
                 dm = self.mf.make_rdm1()
@@ -2474,17 +2511,20 @@ class PySCFTheory:
             if self.printlevel >1:
                 print("Gradient calculation done")
 
-        print()
-        print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
+        if self.printlevel >= 1:
+            print()
+            print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
         if Grad == True:
-            print("Single-point PySCF energy:", self.energy)
+            if self.printlevel >=0:
+                print("Single-point PySCF energy:", self.energy)
             print_time_rel(module_init_time, modulename='pySCF actualrun', moduleindex=2)
             if PC is True:
                 return self.energy, self.gradient, self.pcgrad
             else:
                 return self.energy, self.gradient
         else:
-            print("Single-point PySCF energy:", self.energy)
+            if self.printlevel >=0:
+                print("Single-point PySCF energy:", self.energy)
             print_time_rel(module_init_time, modulename='pySCF actualrun', moduleindex=2)
             return self.energy
 

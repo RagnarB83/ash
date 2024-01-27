@@ -7,7 +7,7 @@ import sys
 
 import ash.settings_ash
 #import ash
-from ash.functions.functions_general import ashexit, BC, print_time_tot_color, timingsobject, print_line_with_mainheader, \
+from ash.functions.functions_general import ashexit, BC, print_time_tot_color, timingsobject, \
     print_line_with_subheader1
 
 programversion = "0.9dev"
@@ -44,7 +44,7 @@ def print_header():
     try:
         with open(os.path.dirname(ash.__file__) + "/VERSION") as f:
             git_commit_number = int(f.readline())
-    except:
+    except Exception:
         git_commit_number = "Unknown"
 
     print(f"{BC.OKGREEN}{'-' * 80}{BC.END}")
@@ -92,7 +92,7 @@ def print_header():
                   with open(inputfilepath) as f:
                       for line in f:
                           print("   >", line, end="")
-                except:
+                except Exception:
                     pass
                 print(f"{BC.WARNING}{'=' * 80}",BC.END)
                 print()
@@ -103,17 +103,17 @@ def print_logo():
     # https://textik.com/#91d6380098664f89
     # https://www.gridsagegames.com/rexpaint/
 
-    ascii_banner = """
-   ▄████████    ▄████████    ▄█    █▄
-  ███    ███   ███    ███   ███    ███
-  ███    ███   ███    █▀    ███    ███
-  ███    ███   ███         ▄███▄▄▄▄███▄▄
-▀███████████ ▀███████████ ▀▀███▀▀▀▀███▀
-  ███    ███          ███   ███    ███
-  ███    ███    ▄█    ███   ███    ███
-  ███    █▀   ▄████████▀    ███    █▀
+#     ascii_banner = """
+#    ▄████████    ▄████████    ▄█    █▄
+#   ███    ███   ███    ███   ███    ███
+#   ███    ███   ███    █▀    ███    ███
+#   ███    ███   ███         ▄███▄▄▄▄███▄▄
+# ▀███████████ ▀███████████ ▀▀███▀▀▀▀███▀
+#   ███    ███          ███   ███    ███
+#   ███    ███    ▄█    ███   ███    ███
+#   ███    █▀   ▄████████▀    ███    █▀
 
-    """
+#     """
 
     ascii_banner_center = """
                             ▄████████    ▄████████    ▄█    █▄
