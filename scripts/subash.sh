@@ -53,8 +53,8 @@ print_usage () {
   echo "${yellow}Or: subash input.py -t T      Submit using T threads (for OpenMP/OpenMM/MKL).${normal}"
   echo "${yellow}Or: subash input.py -s /path/to/scratchdir      Submit using specific scratchdir .${normal}"
   echo "${yellow}Or: subash input.py -mw            Submit multi-Python job (multiple walkers) .${normal}"
-  echo "${yellow}Or: subash input.py -n aar154      Submit to specific node (-n, --node).${normal}"
-  echo "${yellow}Or: subash input.py -q queuname    Submit to specific queue: .${normal}"
+  echo "${yellow}Or: subash input.py -n node54      Submit to specific node (-n, --node).${normal}"
+  echo "${yellow}Or: subash input.py -q queuename    Submit to specific queue: .${normal}"
   exit
 }
 

@@ -51,10 +51,11 @@ def create_ash_env_file():
 ulimit -s unlimited
 ASHPATH={ash_dir}
 python3path={path_to_python3_dir}
-#PYTHONPATH for finding ASH usually not recommended. Better to install (pip install) commented out
-#export PYTHONPATH=$ASHPATH:\$ASHPATH/ash/lib:$PYTHONPATH
-export PATH=$python3path:$ASHPATH:$JULIAPATH:$PATH
-export LD_LIBRARY_PATH=$ASHPATH/ash/lib:$LD_LIBRARY_PATH
+#PYTHONPATH for finding ASH usually not recommended.
+#Better to install into Python environment (pip install)
+#export PYTHONPATH=$ASHPATH:\$ASHPATH/lib:$PYTHONPATH
+export PATH=$python3path:$PATH
+export LD_LIBRARY_PATH=$ASHPATH/lib:$LD_LIBRARY_PATH
 
 echo "Sourced ASH environment file!"
 echo "Importing ASH within Python should now work!"
