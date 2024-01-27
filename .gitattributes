@@ -1,2 +1,9 @@
 # Reclassify rtf-files (primarily CHARMM top*.rtf) as vendored, will be excluded from language statistics
 *.rtf linguist-vendored
+
+#Alternatively we can exclude dirs like this
+#ash/examples/* linguist-vendored
+#ash/databases/* linguist-vendored
+#ash/external/* linguist-vendored
+#ash/lib/* linguist-vendored
+#ash/tests/* linguist-vendored
