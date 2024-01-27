@@ -1,0 +1,2 @@
+# Reclassify rtf-files (primarily CHARMM top*.rtf) as vendored, will be excluded from language statistics
+*.rtf linguist-vendored
