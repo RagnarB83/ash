@@ -231,9 +231,8 @@ def get_gradient_yamlfile(file):
     import yaml
     with open(file, 'r') as f:
 	    yaml_stuff = yaml.safe_load(f)
-	forces=yaml_stuff['Atomic Forces (Ha/Bohr)']
+	    forces=yaml_stuff['Atomic Forces (Ha/Bohr)']
     grad=-1*np.array([list(f.values())[0] for f in forces])
-
     return grad
 
 def grab_gradient_bigdft(numatoms):
