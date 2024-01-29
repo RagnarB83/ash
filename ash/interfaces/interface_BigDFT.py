@@ -14,9 +14,13 @@ from ash.modules.module_coords import elemstonuccharges, check_multiplicity, che
 
 #BIGDFT
 
+#TODO: periodicity
+#TODO: QM/MM
+
 class BigDFTTheory:
     def __init__(self, printlevel=2, filename='bigdft_', maxiter=500, electronic_temp=300, label=None,
-                 hgrid=0.4, functional=None, threads=1, mpiprocs=1, numcores=1, use_gpu=False):
+                 hgrid=0.4, functional=None, threads=1, mpiprocs=1, numcores=1, use_gpu=False,
+                 soft_pseudo=False, linear_scaling=False):
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
@@ -32,6 +36,7 @@ class BigDFTTheory:
         self.numcores=numcores
         self.filename=filename
         self.maxiter=maxiter
+        self.linear_scaling=linear_scaling
 
 
         print_line_with_mainheader("BigDFT INTERFACE")
@@ -39,14 +44,21 @@ class BigDFTTheory:
         #Parallelization for both library and inputfile runmode
         print("BigDFT object numcores:", self.numcores)
 
+
         try:
             from BigDFT import Calculators as calc
         except:
             print("Problem importing BigDFT library. Have you installed it correctly ?")
+            print("Both BigDFT-suite and PyBigDFT are required.")
+            print("The following may work:")
+            print("conda install -c conda-forge bigdft-suite")
+            print("pip install PyBigDFT")
             ashexit(code=9)
 
         #???
         #reload(calc)
+        #print("Setting OMP_NUM_THREADS to: ", numcores)
+        #os.environ['OMP_NUM_THREADS'] = str(numcores)
         #Specifying
         if threads == 1 and mpiprocs == 1 and numcores == 1:
             print(f"Threads: {threads} MPIprocs:{mpiprocs} and numcores:{numcores}")
@@ -62,8 +74,8 @@ class BigDFTTheory:
             print(f"Setting Threads: {threads} and MPIprocs:{mpiprocs}")
             self.study = calc.SystemCalculator(omp=threads,mpi_run=f'mpirun -np {mpiprocs}')
         elif numcores != 1:
-            print("Numcores set. Setting MPI-processes equal to numcores (MPI is faster than threading)", numcores)
-            self.study = calc.SystemCalculator(omp=1,mpi_run=f'mpirun -np {mpiprocs}')
+            print("Numcores only set. Setting MPI-processes equal to numcores (MPI is faster than threading)", numcores)
+            self.study = calc.SystemCalculator(omp=1,mpi_run=f'mpirun -np {numcores}')
         else:
             print("Unknown parallelization option")
             ashexit()
@@ -80,6 +92,10 @@ class BigDFTTheory:
         self.inp.set_hgrid(hgrid)
         #self.inp.set_rmult([3.5,9.0])
         self.inp.set_xc(functional)
+
+        #Soft pseudopotentials
+        if soft_pseudo is True:
+            self.inp.set_psp_nlcc()  # Soft pseudopotentials
 
         self.inp["perf"]={}
 
@@ -143,6 +159,13 @@ class BigDFTTheory:
         #Write coordinates to disk (necessary ??)
         ash.modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename, printlevel=self.printlevel)
         self.inp.set_atomic_positions(f'{self.filename}.xyz')
+
+        #Linear scaling
+        if self.linear_scaling is True:
+            print("Activating linear scaling feature")
+            self.inp["import"] = "linear"
+
+
 
         if Grad is True:
             print("Grad is True")
