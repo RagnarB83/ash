@@ -55,10 +55,6 @@ class BigDFTTheory:
             print("pip install PyBigDFT")
             ashexit(code=9)
 
-        #???
-        #reload(calc)
-        #print("Setting OMP_NUM_THREADS to: ", numcores)
-        #os.environ['OMP_NUM_THREADS'] = str(numcores)
         #Specifying
         if threads == 1 and mpiprocs == 1 and numcores == 1:
             print(f"Threads: {threads} MPIprocs:{mpiprocs} and numcores:{numcores}")
@@ -114,6 +110,24 @@ class BigDFTTheory:
 
         print("BigDFT input object:", self.inp)
 
+    def add_PC_to_sys(self,systemobj,MMcoords,MMcharges):
+        print("Warning: this requires pandas to be installed: pip install pandas")
+        #Append MM coords to
+        #TODO: units
+        print("here")
+        print("systemobj.PointParticles.X:", systemobj.PointParticles.X)
+        print("sys.PointParticles.Z:", systemobj.PointParticles.Z)
+        newX = np.append(systemobj.PointParticles.X,MMcoords,axis=0)
+        print("\nnewX:", newX)
+        newZ = np.append(systemobj.PointParticles.Z,MMcharges)
+        print("\nnewZ:", newZ)
+        systemobj.PointParticles.X=newX
+        systemobj.PointParticles.Z=newZ
+        print()
+        print("NEW systemobj.PointParticles.X:", systemobj.PointParticles.X)
+        print("NEW sys.PointParticles.Z:", systemobj.PointParticles.Z)
+
+        return systemobj
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -198,15 +212,35 @@ class BigDFTTheory:
     #else:
     #    OLD,Simpler. just add atomic positions to input
     #    self.inp.set_atomic_positions(f'{self.filename}.xyz')
+        if PC is True:
+            print("PC is True. Adding PC charges")
+            self.add_PC_to_sys(sys,current_MM_coords,MMcharges)
+            print("done")
+            print(sys.PointParticles.X)
+            print(sys.PointParticles.Z)
+            print(sys.get_posinp())
+            #exit()
+
 
 
         print("------------Running BigDFT-------------")
         #Call BigDFT run
-        result = self.study.run(input=self.inp, posinp=sys.get_posinp(), name=self.filename)
+        if PC is True:
+            #not ready
+            result = self.study.run(input=self.inp, sys=sys, name=self.filename)
+            print(sys.PointParticles.X)
+            print(sys.PointParticles.Z)
+            print(sys.get_posinp())
+            print("rb here")
+            print(result.energy)
+            exit()
+        else:
+            result = self.study.run(input=self.inp, posinp=sys.get_posinp(), name=self.filename)
         #log = code.run(input=inp, posinp=sys.get_posinp(), name="sdf")
         print("result:", result)
         print(result.__dict__)
         self.energy = result.energy
+
 
         #Check if finished. Grab energy
         if Grad==True:
@@ -235,6 +269,7 @@ def get_gradient_yamlfile(file):
     grad=-1*np.array([list(f.values())[0] for f in forces])
     return grad
 
+#Note: old, no longer applicable (forces_posinp.xyz not created by current setup)
 def grab_gradient_bigdft(numatoms):
     grab=False
     gradient=np.zeros((numatoms,3))
