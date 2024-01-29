@@ -202,14 +202,19 @@ class BigDFTTheory:
 
         print("------------Running BigDFT-------------")
         #Call BigDFT run
-        result = self.study.run(input=self.inp, posinp=sys.get_posinp(), name="BigDFT_run")
+        result = self.study.run(input=self.inp, posinp=sys.get_posinp(), name=self.filename)
         #log = code.run(input=inp, posinp=sys.get_posinp(), name="sdf")
         print("result:", result)
+        print(result.__dict__)
         self.energy = result.energy
 
         #Check if finished. Grab energy
         if Grad==True:
-            self.gradient = grab_gradient_bigdft(len(qm_elems))
+            # Old:
+            #self.gradient = grab_gradient_bigdft(len(qm_elems))
+            yamlfile=f'log-{self.filename}.yaml'
+            print("yamlfile:", yamlfile)
+            self.gradient = get_gradient_yamlfile(yamlfile)
             print("BigDFT energy :", self.energy)
             print("------------ENDING BIGDFT-INTERFACE-------------")
             print_time_rel(module_init_time, modulename='BigDFT run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
@@ -220,7 +225,16 @@ class BigDFTTheory:
             print_time_rel(module_init_time, modulename='BIGDFT run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             return self.energy
 
+#using yaml to read forces from file
+#yaml will have been instaleld by bigdf
+def get_gradient_yamlfile(file):
+    import yaml
+    with open(file, 'r') as f:
+	    yaml_stuff = yaml.safe_load(f)
+	forces=yaml_stuff['Atomic Forces (Ha/Bohr)']
+    grad=-1*np.array([list(f.values())[0] for f in forces])
 
+    return grad
 
 def grab_gradient_bigdft(numatoms):
     grab=False
