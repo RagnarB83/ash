@@ -19,7 +19,7 @@ from ash.modules.module_coords import elemstonuccharges, check_multiplicity, che
 
 class BigDFTTheory:
     def __init__(self, printlevel=2, filename='bigdft_', maxiter=500, electronic_temp=300, label=None,
-                 hgrid=0.4, functional=None, threads=1, mpiprocs=1, numcores=1, use_gpu=False,
+                 hgrid=0.4, rmult=None, functional=None, threads=1, mpiprocs=1, numcores=1, use_gpu=False,
                  soft_pseudo=False, linear_scaling=False):
 
         #Indicate that this is a QMtheory
@@ -88,9 +88,17 @@ class BigDFTTheory:
         from BigDFT import Inputfiles as I
         self.inp=I.Inputfile()
 
+        #rmult
+        if rmult is None:
+            print("Warning: rmult is not set. Should typically be given as a list of 2 int/float numbers (meaning coarse and fine grid)")
+            print("Using settings rmult=[5.0,9.0] and continuing")
+            rmult=[5.0,9.0]
+
+
+
         #Settings
         self.inp.set_hgrid(hgrid)
-        #self.inp.set_rmult([3.5,9.0])
+        self.inp.set_rmult(rmult)
         self.inp.set_xc(functional)
 
         #Soft pseudopotentials
