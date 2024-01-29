@@ -19,8 +19,8 @@ from ash.modules.module_coords import elemstonuccharges, check_multiplicity, che
 
 class BigDFTTheory:
     def __init__(self, printlevel=2, filename='bigdft_', maxiter=500, electronic_temp=300, label=None,
-                 hgrid=0.4, rmult=None, functional=None, threads=1, mpiprocs=1, numcores=1, use_gpu=False,
-                 soft_pseudo=False, linear_scaling=False):
+                 hgrid=0.4, rmult=None, functional="PBE", threads=1, mpiprocs=1, numcores=1, use_gpu=False,
+                 soft_pseudo=False, linear_scaling=False, use_system=False):
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
@@ -38,6 +38,8 @@ class BigDFTTheory:
         self.maxiter=maxiter
         self.linear_scaling=linear_scaling
 
+        #Whether to use System,Fragments,ATom stuff or not
+        self.use_system=use_system
 
         print_line_with_mainheader("BigDFT INTERFACE")
 
@@ -166,7 +168,6 @@ class BigDFTTheory:
         check_multiplicity(qm_elems,charge,mult)
         #Write coordinates to disk (necessary ??)
         ash.modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename, printlevel=self.printlevel)
-        self.inp.set_atomic_positions(f'{self.filename}.xyz')
 
         #Linear scaling
         if self.linear_scaling is True:
@@ -182,11 +183,36 @@ class BigDFTTheory:
             print(" self.inp:",  self.inp)
 
 
+        if self.use_system is True:
+            from BigDFT.Systems import System
+            from BigDFT.Fragments import Fragment
+            from BigDFT.IO import XYZReader
+            #Create system
+            sys = System()
+            #Add a fragment to System
+            sys["Frag:0"] = Fragment()
+            #Read XYZ-file (H2O with .xyz assumed)
+            print("self.filename.upper():", self.filename.upper())
+            with XYZReader(self.filename.upper()) as ifile:
+                print("ifile:", ifile)
+                #Loop over atoms in file
+                for at in ifile:
+                    print("at:", at)
+                    #Add to fragment inside system
+                    sys["Frag:0"] += Fragment([at])
+            numatoms=len(sys["Frag:0"].atoms)
+            print("number of atoms in fragment:", numatoms)
+            print(sys.get_posinp())
+        else:
+            #Simpler. just add atomic positions to input
+            self.inp.set_atomic_positions(f'{self.filename}.xyz')
+
+
         print("------------Running BigDFT-------------")
         #Call BigDFT run
-        #NOTE: Parallelization. OMP_NUM_THREADS ???
-        result = self.study.run(input=self.inp)
-
+        result = self.study.run(input=self.inp, posinp=sys.get_posinp(), name="BigDFT run")
+        #log = code.run(input=inp, posinp=sys.get_posinp(), name="sdf")
+        print("result:", result)
         self.energy = result.energy
 
         #Check if finished. Grab energy
