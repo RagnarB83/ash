@@ -229,6 +229,7 @@ class Fragment:
         if mult != None:
             self.mult = mult
 
+
         #Now update attributes after defining coordinates, getting charge, mult
         self.update_attributes()
         if conncalc is True:
@@ -3047,7 +3048,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
     print("numatoms_in_resgroup: ", numatoms_in_resgroup)
     print("num_added_atoms: ", num_added_atoms)
     if numatoms_in_resgroup != num_added_atoms:
-        print("Number of ATOM entries in resgroup in {} not equal to number of added atom-coordinatese.")
+        print("Number of ATOM entries in resgroup in {} not equal to number of added atom-coordinates.")
         print("Wrong RESgroup chosen or missing coordinates?")
         print("Exiting")
         ashexit()

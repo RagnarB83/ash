@@ -4058,7 +4058,7 @@ class OpenMM_MDclass:
                                                   self.state.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
-
+        print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
         ########################
         # Updating ASH fragment
         ########################
