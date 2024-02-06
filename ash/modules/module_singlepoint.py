@@ -528,7 +528,8 @@ class ScriptTheory:
             return self.energy,self.gradient
 
 
-def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=None, unit='kcal/mol', label=None, reference=None, silent=False):
+def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=None, unit='kcal/mol', label=None, reference=None, silent=False,
+                   correction=0.0):
     """Calculate reaction energy from list of energies (or energies from list of fragments) and stoichiometry
 
     Args:
@@ -552,6 +553,13 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
         print("stoichiometry list is required")
         ashexit()
 
+    if correction != 0.0:
+        print("User-correction was added. ")
+        print(f"Correction to reaction energy in {correction} Eh ")
+        correction_in_unit = correction *conversionfactor[unit]
+        print(f"correction_in_unit in {correction_in_unit} {unit}")
+    else:
+        correction_in_unit=0.0
 
     #List of energies option
     if list_of_energies is not None:
@@ -566,7 +574,7 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
                 reactant_energy=reactant_energy+list_of_energies[i]*abs(stoich)
             if stoich > 0:
                 product_energy=product_energy+list_of_energies[i]*abs(stoich)
-        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
+        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]+correction_in_unit
         if reference is None:
             error=None
             if silent is False:
@@ -583,7 +591,7 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
                 reactant_energy=reactant_energy+list_of_fragments[i].energy*abs(stoich)
             if stoich > 0:
                 product_energy=product_energy+list_of_fragments[i].energy*abs(stoich)
-        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]
+        reaction_energy=(product_energy-reactant_energy)*conversionfactor[unit]+correction_in_unit
         if reference is None:
             error=None
             if silent is False:

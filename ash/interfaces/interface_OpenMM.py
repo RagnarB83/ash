@@ -65,6 +65,7 @@ class OpenMMTheory:
         self.theorynamelabel="OpenMM"
         self.analytic_hessian=False
         self.label=label
+        self.fragment=fragment
 
         # OPEN MM load
         try:
@@ -497,6 +498,10 @@ class OpenMMTheory:
             self.forcefield = openmm.app.ForceField(*xmlfiles)
             #Defining some things. resids is used by actregiondefine
             self.resids = [i.residue.index for i in self.topology.atoms()]
+            self.resnames = [i.residue.name for i in self.topology.atoms()]
+            self.atomnames = [i.name for i in self.topology.atoms()]
+
+
 
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
         if self.system is None:
@@ -846,6 +851,31 @@ class OpenMMTheory:
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
 
+    #Function to write PDB-file if everything is available
+    def write_pdbfile(self, outputname="system"):
+        import openmm
+        import openmm.app
+        print("Writing PDB-file using OpenMMTheory object")
+        print("Will be using defined topology.")
+        print("Internal positions:", self.positions)
+        if self.positions is not None:
+            print("Found positions in OpenMMTheory object. Using them to write PDB-file.")
+            openmm.app.PDBFile.writeFile(self.topology, self.positions, open(f'{outputname}.pdb', 'w'))
+        elif self.fragment is not None:
+            print("Found an ASH fragment file referenced. Using coordinates in fragment to write PDB-file.")
+            print(self.fragment)
+            coords_nm = self.fragment.coords * 0.1  # converting from Angstrom to nm
+            pos = [openmm.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in
+                range(len(coords_nm))] * openmm.unit.nanometer
+            openmm.app.PDBFile.writeFile(self.topology, pos, open(f'{outputname}.pdb', 'w'))
+        #NOTE: If pdb-file is defined we could grab coordinates from there. However, they will be the same so what is the point
+        else:
+            print("Found neither system positions defined or an ASH fragment file. Can not write PDB-file.")
+            ashexit()
+
+
+
+
     #Function that handles periodicity in forcefield objects (for Amber, CHARMM). TODO: Test GROMACS and XML
     def set_periodics_before_system_creation(self,PBCvectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
         import openmm
@@ -1151,6 +1181,12 @@ class OpenMMTheory:
         self.system.addForce(new_restraints)
 
     # TODO: Angleconstraints and Dihedral restraints
+
+    # Z_cc: length of cone part
+    # R_cylinder: radius of cylinder part
+    # alpha: angle of cone in degrees
+    # k_xy: force constant in kcal/mol/r2
+    # force_group ??
     def add_funnel_restraint(self, host_index, guest_index,
         k_xy=10.0, z_cc=11.0, alpha=35.0, R_cylinder=1.0, force_group=10):
             import openmm
@@ -1170,14 +1206,15 @@ class OpenMMTheory:
             funnel.setForceGroup(force_group)
 
             # Funnel parameters
-            funnel.addGlobalParameter("k_xy", k_xy)
-            funnel.addGlobalParameter("z_cc", z_cc)
-            funnel.addGlobalParameter("alpha", alpha)
-            funnel.addGlobalParameter("R_cylinder", R_cylinder)
+            funnel.addGlobalParameter("k_xy", k_xy*openmm.unit.kilocalorie_per_mole/openmm.unit.angstrom**2)
+            funnel.addGlobalParameter("z_cc", z_cc*openmm.unit.angstrom)
+            funnel.addGlobalParameter("alpha", alpha*openmm.unit.degrees)
+            funnel.addGlobalParameter("R_cylinder", R_cylinder*openmm.unit.angstrom)
 
             # Add host and guest indices
-            g1 = funnel.addGroup(host_index)
-            g2 = funnel.addGroup(guest_index)
+            g1 = funnel.addGroup(host_index, [1.0 for i in range(len(host_index))])
+            g2 = funnel.addGroup(guest_index, [1.0 for i in range(len(guest_index))])
+
 
             # Add bond
             funnel.addBond([g1, g2], [])
@@ -2501,8 +2538,10 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     # Forcefield options
     if forcefield is not None:
         print("Forcefield:", forcefield)
-        if forcefield == 'Amber99':
+        if forcefield == 'Amber99' or forcefield == 'Amber99sb':
             xmlfile = "amber99sb.xml"
+        elif forcefield == 'Amber99sb-ildn':
+            xmlfile = "amber99sbildn.xml"
         elif forcefield == 'Amber96':
             xmlfile = "amber96.xml"
         elif forcefield == 'Amber03':
@@ -2511,40 +2550,10 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             xmlfile = "amber10.xml"
         elif forcefield == 'Amber14':
             xmlfile = "amber14-all.xml"
-
-            if watermodel is None:
-                print("No watermodel selected.")
-                if waterxmlfile is None:
-                    print("No waterxmlfile selected either")
-                    print("Selecting automatically recommended TIP3P-4B (watermodel='tip3pfb')")
-                    print("This is a reparameterized version of TIP3P")
-                    watermodel='tip3pfb'
-            print("watermodel:", watermodel)
-            # Using specific Amber FB version of TIP3P
-            if watermodel.lower() == "tip3pfb" or watermodel.lower() == "tip3p-fb":
-                modeller_solvent_name="tip3p" #Used when adding solvent
-                waterxmlfile = "amber14/tip3pfb.xml" #NOTE: this is not actually TIP3P but a reparaterized version
-            elif watermodel.lower () == 'tip3p':
-                 modeller_solvent_name="tip3p"
-                 waterxmlfile = "amber14/tip3p.xml"
-            print("Waterxmlfile selected:", waterxmlfile)
         elif forcefield == 'Amber96':
             xmlfile = "amber96.xml"
         elif forcefield == 'CHARMM36':
             xmlfile = "charmm36.xml"
-            # Using specific CHARMM36 version of TIP3P
-            if watermodel is None:
-                print("No watermodel selected.")
-                if waterxmlfile is None:
-                    print("No waterxmlfile selected either")
-                    print("Selecting automatically recommended CHARMM-style TIP3P")
-                    watermodel='tip3p'
-
-            print("watermodel:", watermodel)
-            if watermodel.lower() == "tip3p":
-                modeller_solvent_name="tip3p" #Used when adding solvent
-                waterxmlfile = "charmm36/water.xml"
-            print("Waterxmlfile selected:", waterxmlfile)
         elif forcefield == 'CHARMM2013':
             xmlfile = "charmm_polar_2013.xml"
         elif forcefield == 'Amoeba2013':
@@ -2561,6 +2570,43 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     else:
         print("You must provide a forcefield name, forcefieldobject or xmlfile keywords!")
         ashexit()
+
+    #Water model selection for CHARMM forcefields
+    if 'CHARMM' in forcefield:
+        # Using specific CHARMM36 version of TIP3P
+        if watermodel is None:
+            print("No watermodel selected.")
+            if waterxmlfile is None:
+                print("No waterxmlfile selected either")
+                print("Selecting automatically recommended CHARMM-style TIP3P")
+                watermodel='tip3p'
+
+        print("watermodel:", watermodel)
+        if watermodel.lower() == "tip3p":
+            modeller_solvent_name="tip3p" #Used when adding solvent
+            waterxmlfile = "charmm36/water.xml"
+        print("Waterxmlfile selected:", waterxmlfile)
+
+
+    #Water model selection for AMber forcefields
+    if 'Amber' in forcefield:
+        if watermodel is None:
+            print("No watermodel selected.")
+            if waterxmlfile is None:
+                print("No waterxmlfile selected either")
+                print("Selecting automatically recommended TIP3P-4B (watermodel='tip3pfb')")
+                print("This is a reparameterized version of TIP3P")
+                watermodel='tip3pfb'
+        print("watermodel:", watermodel)
+        # Using specific Amber FB version of TIP3P
+        if watermodel.lower() == "tip3pfb" or watermodel.lower() == "tip3p-fb":
+            modeller_solvent_name="tip3p" #Used when adding solvent
+            waterxmlfile = "amber14/tip3pfb.xml" #NOTE: this is not actually TIP3P but a reparaterized version
+        elif watermodel.lower () == 'tip3p':
+                modeller_solvent_name="tip3p"
+                waterxmlfile = "amber14/tip3p.xml"
+        print("Waterxmlfile selected:", waterxmlfile)
+
 
     ############
     # Define a forcefield if using XML-files
@@ -2831,8 +2877,6 @@ def write_pdbfile_openMM(topology, positions, filename):
     import openmm.app
     openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
     print("Wrote PDB-file:", filename)
-
-
 
 # Assumes all atoms of small molecule present (including hydrogens)
 def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0, 70.0, 70.0],
@@ -4078,7 +4122,7 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
                              numsteps_per_NPT=10000, max_NPT_cycles=10, pressure=1,
                           volume_threshold=1.3, density_threshold=0.005, temperature=300, timestep=0.001,
                           traj_frequency=100, trajfilename='equilibration_NPT', trajectory_file_option='DCD',
-                          coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=False,
+                          coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=True,
                           dummyatomrestraint=False, solute_indices=None, barostat_frequency=25):
     """NPT simulations until volume and density stops changing
 
@@ -4202,7 +4246,7 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         print("Trying to load mdtraj for reimaging trajectory")
         try:
             print("Imaging trajectory")
-            MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}.pdb")
+            MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}_lastframe.pdb")
         except ImportError:
             print("mdtraj library could not be imported. Skipping")
 
@@ -4490,16 +4534,19 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
             ashexit()
 
         #Getting atom indices for host and guess
-        guest_indices =  funnel_parameters['ligand_indices']
+        guest_indices = funnel_parameters['ligand_indices']
         print("guest_indices:", guest_indices)
-        #TODO: Define protein indices here somehow
-        #host_indices =
+        if 'host_indices' in funnel_parameters:
+            print("Found host indices in funnel_parameters")
+            host_indices = funnel_parameters['host_indices']
+            print("host_indices:",host_indices)
+        else:
+            print("No host_indices found in funnel_parameters")
+            exit()
 
-        print("Not ready yet")
-        exit()
-        #md.add_funnel_restraint(host_indices, guest_indices,
-        #    k_xy=funnel_parameters[k_xy], z_cc=funnel_parameters[z_cc], alpha=funnel_parameters[alpha],
-        #    R_cylinder=funnel_parameters[R_cylinder], force_group=funnel_parameters[force_group])
+        md.openmmobject.add_funnel_restraint(host_indices, guest_indices,
+            k_xy=funnel_parameters['k_xy'], z_cc=funnel_parameters['z_cc'], alpha=funnel_parameters['alpha'],
+            R_cylinder=funnel_parameters['R_cylinder'], force_group=funnel_parameters['force_group'])
 
     #Calling md.run with either native option active or false
     print("Now starting metadynamics simulation")
@@ -5135,7 +5182,7 @@ def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffi
                                  forcefield_option='GAFF', gaffversion='gaff-2.11',
                                  output_xmlfile="ligand.xml",
                                 openff_file="openff-2.0.0.offxml",
-                                expected_coul14=0.8333333333333334, expected_lj14=0.5):
+                                expected_coul14=0.8333333333333334, expected_lj14=0.5, allow_undefined_stereo=None):
     print_line_with_mainheader("SmallMolecule Parameterizor")
     print("Input options: xyzfile, pdbfile, molfile, sdffile, smiles_string")
     print("Forcefield options: GAFF, OpenFF")
@@ -5186,7 +5233,7 @@ def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffi
     elif smiles_string:
         print("SMILES string provided:", smiles_string)
         # Create an OpenFF Molecule object from SMILES string
-        molecule = Molecule.from_smiles(smiles_string)
+        molecule = Molecule.from_smiles(smiles_string,allow_undefined_stereo=allow_undefined_stereo)
     elif xyzfile:
         print("XYZ file provided:", xyzfile)
         print("Converting XYZ file to PDB file with connectivity")
@@ -5196,7 +5243,7 @@ def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffi
         smiles_string = pdb_to_smiles(pdbfile)
         print("SMILES string:", smiles_string)
         # Create an OpenFF Molecule object from SMILES string
-        molecule = Molecule.from_smiles(smiles_string)
+        molecule = Molecule.from_smiles(smiles_string,allow_undefined_stereo=allow_undefined_stereo)
     elif pdbfile:
         print("PDB-file provided:", pdbfile)
         print("Converting PDB-file into SMILES string")
@@ -5204,10 +5251,11 @@ def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffi
         smiles_string = pdb_to_smiles(pdbfile)
         print("SMILES string:", smiles_string)
         # Create an OpenFF Molecule object from SMILES string
-        molecule = Molecule.from_smiles(smiles_string)
+        molecule = Molecule.from_smiles(smiles_string,allow_undefined_stereo=allow_undefined_stereo)
     else:
         print("No inputfile provided. Exiting")
         ashexit()
+
 
     # Create an OpenMM ForceField object
     print("Now creating an Amber14 compatible OpenMM ForceField object")

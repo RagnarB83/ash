@@ -675,6 +675,10 @@ class Fragment:
         # Now ordering the labels according to the sort indices
         self.fragmenttype_labels = [combined_flat_labels[i] for i in sortindices]
 
+    #Centroid
+    def get_centroid(self):
+        return np.mean(self.coords, axis=0)
+
     # Molcrys option:
     def add_centralfraginfo(self, list):
         self.Centralmainfrag = list
@@ -2013,7 +2017,9 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
     # Can grab everything from OpenMMobject if provided
     # NOTE: These lists are only defined for CHARMM files currently. Not Amber or GROMACS
     if openmmobject is not None:
+        print("here")
         atomnames = openmmobject.atomnames
+        print(atomnames)
         resnames = openmmobject.resnames
         residlabels = openmmobject.resids
         segmentlabels = openmmobject.segmentnames
