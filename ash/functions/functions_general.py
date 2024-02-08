@@ -64,11 +64,13 @@ export PATH=$python3path:$PATH
 export LD_LIBRARY_PATH=$ASHPATH/lib:$LD_LIBRARY_PATH
 
 #################################
-echo "Sourced ASH environment file!"
-echo "Importing ASH within Python should now work!"
-echo "ASH is located in $ASHPATH"
-echo "The Python interpreter that you should be using is located in $python3path"
+echo \"Sourced ASH environment file!\"
+echo \"Importing ASH within Python should now work!\"
+echo \"ASH is located in $ASHPATH\"
+echo \"The Python interpreter that you should be using is located in $python3path \"
 """
+
+
     with open(f"{os.path.expanduser('~')}/set_environment_ash.sh", "w") as f:
         f.write(ash_multiline_string)
     print("Created file:   set_environment_ash.sh      in your home-directory.")

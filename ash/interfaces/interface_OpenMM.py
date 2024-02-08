@@ -5178,7 +5178,7 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     return outputname
 
 
-def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffile=None, smiles_string=None,
+def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffile=None, smiles_string=None, resname="LIG",
                                  forcefield_option='GAFF', gaffversion='gaff-2.11',
                                  output_xmlfile="ligand.xml",
                                 openff_file="openff-2.0.0.offxml",
@@ -5237,7 +5237,7 @@ def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffi
     elif xyzfile:
         print("XYZ file provided:", xyzfile)
         print("Converting XYZ file to PDB file with connectivity")
-        pdbfile = xyz_to_pdb_with_connectivity(xyzfile)
+        pdbfile = xyz_to_pdb_with_connectivity(xyzfile, resname=resname)
         # Create a SMILES string from PDB-file
         print("Converting PDB-file into SMILES string")
         smiles_string = pdb_to_smiles(pdbfile)
@@ -5252,10 +5252,11 @@ def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffi
         print("SMILES string:", smiles_string)
         # Create an OpenFF Molecule object from SMILES string
         molecule = Molecule.from_smiles(smiles_string,allow_undefined_stereo=allow_undefined_stereo)
+
+        writepdb_with_connectivity(pdbfile)
     else:
         print("No inputfile provided. Exiting")
         ashexit()
-
 
     # Create an OpenMM ForceField object
     print("Now creating an Amber14 compatible OpenMM ForceField object")
