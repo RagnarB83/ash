@@ -14,9 +14,13 @@ from ash.modules.module_coords import elemstonuccharges, check_multiplicity, che
 
 #BIGDFT
 
+#TODO: periodicity
+#TODO: QM/MM
+
 class BigDFTTheory:
     def __init__(self, printlevel=2, filename='bigdft_', maxiter=500, electronic_temp=300, label=None,
-                 hgrid=0.4, functional=None, threads=1, mpiprocs=1, numcores=1, use_gpu=False):
+                 hgrid=0.4, rmult=None, functional="PBE", threads=1, mpiprocs=1, numcores=1, use_gpu=False,
+                 soft_pseudo=False, linear_scaling=False):
 
         #Indicate that this is a QMtheory
         self.theorytype="QM"
@@ -32,6 +36,7 @@ class BigDFTTheory:
         self.numcores=numcores
         self.filename=filename
         self.maxiter=maxiter
+        self.linear_scaling=linear_scaling
 
 
         print_line_with_mainheader("BigDFT INTERFACE")
@@ -39,14 +44,17 @@ class BigDFTTheory:
         #Parallelization for both library and inputfile runmode
         print("BigDFT object numcores:", self.numcores)
 
+
         try:
             from BigDFT import Calculators as calc
         except:
             print("Problem importing BigDFT library. Have you installed it correctly ?")
+            print("Both BigDFT-suite and PyBigDFT are required.")
+            print("The following may work:")
+            print("conda install -c conda-forge bigdft-suite")
+            print("pip install PyBigDFT")
             ashexit(code=9)
 
-        #???
-        #reload(calc)
         #Specifying
         if threads == 1 and mpiprocs == 1 and numcores == 1:
             print(f"Threads: {threads} MPIprocs:{mpiprocs} and numcores:{numcores}")
@@ -62,8 +70,8 @@ class BigDFTTheory:
             print(f"Setting Threads: {threads} and MPIprocs:{mpiprocs}")
             self.study = calc.SystemCalculator(omp=threads,mpi_run=f'mpirun -np {mpiprocs}')
         elif numcores != 1:
-            print("Numcores set. Setting MPI-processes equal to numcores (MPI is faster than threading)", numcores)
-            self.study = calc.SystemCalculator(omp=1,mpi_run=f'mpirun -np {mpiprocs}')
+            print("Numcores only set. Setting MPI-processes equal to numcores (MPI is faster than threading)", numcores)
+            self.study = calc.SystemCalculator(omp=1,mpi_run=f'mpirun -np {numcores}')
         else:
             print("Unknown parallelization option")
             ashexit()
@@ -76,10 +84,22 @@ class BigDFTTheory:
         from BigDFT import Inputfiles as I
         self.inp=I.Inputfile()
 
+        #rmult
+        if rmult is None:
+            print("Warning: rmult is not set. Should typically be given as a list of 2 int/float numbers (meaning coarse and fine grid)")
+            print("Using settings rmult=[5.0,9.0] and continuing")
+            rmult=[5.0,9.0]
+
+
+
         #Settings
         self.inp.set_hgrid(hgrid)
-        #self.inp.set_rmult([3.5,9.0])
+        self.inp.set_rmult(rmult)
         self.inp.set_xc(functional)
+
+        #Soft pseudopotentials
+        if soft_pseudo is True:
+            self.inp.set_psp_nlcc()  # Soft pseudopotentials
 
         self.inp["perf"]={}
 
@@ -90,6 +110,24 @@ class BigDFTTheory:
 
         print("BigDFT input object:", self.inp)
 
+    def add_PC_to_sys(self,systemobj,MMcoords,MMcharges):
+        print("Warning: this requires pandas to be installed: pip install pandas")
+        #Append MM coords to
+        #TODO: units
+        print("here")
+        print("systemobj.PointParticles.X:", systemobj.PointParticles.X)
+        print("sys.PointParticles.Z:", systemobj.PointParticles.Z)
+        newX = np.append(systemobj.PointParticles.X,MMcoords,axis=0)
+        print("\nnewX:", newX)
+        newZ = np.append(systemobj.PointParticles.Z,MMcharges)
+        print("\nnewZ:", newZ)
+        systemobj.PointParticles.X=newX
+        systemobj.PointParticles.Z=newZ
+        print()
+        print("NEW systemobj.PointParticles.X:", systemobj.PointParticles.X)
+        print("NEW sys.PointParticles.Z:", systemobj.PointParticles.Z)
+
+        return systemobj
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -142,25 +180,75 @@ class BigDFTTheory:
         check_multiplicity(qm_elems,charge,mult)
         #Write coordinates to disk (necessary ??)
         ash.modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename, printlevel=self.printlevel)
-        self.inp.set_atomic_positions(f'{self.filename}.xyz')
 
+        #Linear scaling
+        if self.linear_scaling is True:
+            print("Activating linear scaling feature")
+            self.inp["import"] = "linear"
+
+
+        #Grad or not
         if Grad is True:
             print("Grad is True")
             self.inp["perf"]["calculate_forces"] = True
-
             print(" self.inp:",  self.inp)
+
+        #Create system
+        from BigDFT.Systems import System
+        from BigDFT.Fragments import Fragment
+        from BigDFT.IO import read_xyz
+        #Create system
+        sys = System()
+        #Add a fragment to System
+        sys["Frag:0"] = Fragment()
+        #Read XYZ-file (H2O with .xyz assumed)
+        print("self.filename:", self.filename)
+
+        with open(f"{self.filename}.xyz") as ifile:
+            sys = read_xyz(ifile, fragmentation="atomic") #or fragmentation=single for 1 big fragment
+        numatoms=len(sys.get_posinp()["positions"])
+        print("Number of atoms in system:", numatoms)
+        print(sys.get_posinp())
+    #else:
+    #    OLD,Simpler. just add atomic positions to input
+    #    self.inp.set_atomic_positions(f'{self.filename}.xyz')
+        if PC is True:
+            print("PC is True. Adding PC charges")
+            self.add_PC_to_sys(sys,current_MM_coords,MMcharges)
+            print("done")
+            print(sys.PointParticles.X)
+            print(sys.PointParticles.Z)
+            print(sys.get_posinp())
+            #exit()
+
 
 
         print("------------Running BigDFT-------------")
         #Call BigDFT run
-        #NOTE: Parallelization. OMP_NUM_THREADS ???
-        result = self.study.run(input=self.inp)
-
+        if PC is True:
+            #not ready
+            result = self.study.run(input=self.inp, sys=sys, name=self.filename)
+            print(sys.PointParticles.X)
+            print(sys.PointParticles.Z)
+            print(sys.get_posinp())
+            print("rb here")
+            print(result.energy)
+            exit()
+        else:
+            result = self.study.run(input=self.inp, posinp=sys.get_posinp(), name=self.filename)
+        #log = code.run(input=inp, posinp=sys.get_posinp(), name="sdf")
+        print("result:", result)
+        print(result.__dict__)
         self.energy = result.energy
+
 
         #Check if finished. Grab energy
         if Grad==True:
-            self.gradient = grab_gradient_bigdft(len(qm_elems))
+            # Old:
+            #self.gradient = grab_gradient_bigdft(len(qm_elems))
+            yamlfile=f'log-{self.filename}.yaml'
+            print("yamlfile:", yamlfile)
+            self.gradient = get_gradient_yamlfile(yamlfile)
             print("BigDFT energy :", self.energy)
             print("------------ENDING BIGDFT-INTERFACE-------------")
             print_time_rel(module_init_time, modulename='BigDFT run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
@@ -171,8 +259,17 @@ class BigDFTTheory:
             print_time_rel(module_init_time, modulename='BIGDFT run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             return self.energy
 
+#using yaml to read forces from file
+#yaml will have been instaleld by bigdf
+def get_gradient_yamlfile(file):
+    import yaml
+    with open(file, 'r') as f:
+	    yaml_stuff = yaml.safe_load(f)
+	    forces=yaml_stuff['Atomic Forces (Ha/Bohr)']
+    grad=-1*np.array([list(f.values())[0] for f in forces])
+    return grad
 
-
+#Note: old, no longer applicable (forces_posinp.xyz not created by current setup)
 def grab_gradient_bigdft(numatoms):
     grab=False
     gradient=np.zeros((numatoms,3))

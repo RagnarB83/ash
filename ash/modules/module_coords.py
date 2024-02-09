@@ -112,6 +112,12 @@ class Fragment:
         self.connectivity = []
         self.atomcharges = []
         self.atomtypes = []
+        #Optional PDB-information that might be stored (if PDB-file read)
+        self.pdb_atomnames = None
+        self.pdb_resnames = None
+        self.pdb_chainlabels = None
+        self.pdb_residlabels = None
+        self.pdb_conect_lines =None
         # Atomnames in a forcefield sense
         # self.atomnames = []
         self.Centralmainfrag = []
@@ -228,6 +234,7 @@ class Fragment:
             self.charge = charge
         if mult != None:
             self.mult = mult
+
 
         #Now update attributes after defining coordinates, getting charge, mult
         self.update_attributes()
@@ -498,6 +505,16 @@ class Fragment:
             print("Reading coordinates from PDB file '{}' into fragment.".format(filename))
 
         self.elems, self.coords = read_pdbfile(filename, use_atomnames_as_elements=use_atomnames_as_elements)
+        print("Number of atoms in PDB file:", len(self.elems))
+        #Also reading PDB residue/atom/segment information
+        if self.printlevel >= 2:
+            print("Reading atom/residue info from PDB file '{}' into fragment.".format(filename))
+        self.pdb_atomnames, self.pdb_resnames, self.pdb_residlabels, self.pdb_chainlabels, self.pdb_conect_lines = read_pdbfile_info(filename)
+        print("Number of atomnames found in PDB file:", len(self.pdb_atomnames))
+
+        if len(self.coords) != len(self.pdb_atomnames):
+            print("Warning: Number of coords found in PDB file does not match number of atomnames found.")
+
 
     def read_xyzfile(self, filename, scale=None, tol=None, readchargemult=False, conncalc=True):
         if self.printlevel >= 2:
@@ -550,8 +567,6 @@ class Fragment:
     # Get coordinates for specific atoms (from list of atom indices)
     # NOTE: This also returns elements, bit silly
     def get_coords_for_atoms(self, atoms):
-        # Now np compatible
-        # subcoords=[self.coords[i] for i in atoms]
         subcoords = np.take(self.coords, atoms, axis=0)
         subelems = [self.elems[i] for i in atoms]
         return subcoords, subelems
@@ -674,9 +689,25 @@ class Fragment:
         # Now ordering the labels according to the sort indices
         self.fragmenttype_labels = [combined_flat_labels[i] for i in sortindices]
 
+    #Centroid
+    def get_centroid(self):
+        return np.mean(self.coords, axis=0)
+
     # Molcrys option:
     def add_centralfraginfo(self, list):
         self.Centralmainfrag = list
+
+    #Write PDB-file
+    def write_pdbfile(self,filename="Fragment"):
+        print("Fragment.write_pdbfile method called")
+        #Write PDB-file if information is available
+        if self.pdb_atomnames is not None:
+            print("Found PDB residue/atom/segment information stored in fragment. Writing proper PDB file.")
+        else:
+            print("Warning: No PDB residue/atom/segment information available (only available if Fragment was created from a PDB-file).")
+            print("Will write PDB file with basic default residue/atom/segment names.")
+        write_pdbfile(self, outputname=filename, atomnames=self.pdb_atomnames, chainlabels=self.pdb_chainlabels,
+                      resnames=self.pdb_resnames,residlabels=self.pdb_residlabels, segmentlabels=None, conect_lines=self.pdb_conect_lines)
 
     def write_xyzfile(self, xyzfilename="Fragment-xyzfile.xyz", writemode='w', write_chargemult=True, write_energy=True):
 
@@ -1799,8 +1830,6 @@ def read_pdbfile(filename, use_atomnames_as_elements=False):
     # atomindex=[]
     residname = []
 
-    # TODO: Check. Are there different PDB formats?
-    # used this: https://cupnet.net/pdb-format/
     coords = []
     try:
         with open(filename) as f:
@@ -1860,6 +1889,29 @@ def read_pdbfile(filename, use_atomnames_as_elements=False):
     else:
         elems = elemcol
     return elems, coords_np
+
+def read_pdbfile_info(filename, use_atomnames_as_elements=False):
+    atomnames=[]
+    chainlabels=[]
+    residnames = []
+    residlabels = []
+    conect_lines = []
+    try:
+        with open(filename) as f:
+            for line in f:
+                if line.startswith("ATOM") or line.startswith("HETATM"):
+                    atomnames.append(line[12:16].replace(' ', ''))
+                    residnames.append(line[17:20].replace(' ', ''))
+                    chainlabels.append(line[21:22].replace(' ', ''))
+                    residlabels.append(int(line[22:26].replace(' ', '')))
+                if line.startswith("CONECT"):
+                    conect_lines.append(line)
+    except FileNotFoundError:
+        print("File '{}' does not exist!".format(filename))
+        ashexit()
+
+    return atomnames, residnames, residlabels, chainlabels, conect_lines
+
 
 
 # Read GROMACS Gro coordinate file and box info
@@ -2003,7 +2055,7 @@ def write_amber_crdfile(fragment=None, pdbfile=None, output="amber.crd"):
 # Example, minimal: write_pdbfile(frag)
 # TODO: Add option to write new hybrid-36 standard PDB file instead of current hexadecimal nonstandard fix
 def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnames=None, resnames=None,
-                  residlabels=None, segmentlabels=None, dummyname='DUM', charges_column=None):
+                  residlabels=None, chainlabels=None, segmentlabels=None, dummyname='DUM', charges_column=None, conect_lines=None):
     print("Writing PDB-file...")
     # Using ASH fragment
     elems = fragment.elems
@@ -2012,7 +2064,9 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
     # Can grab everything from OpenMMobject if provided
     # NOTE: These lists are only defined for CHARMM files currently. Not Amber or GROMACS
     if openmmobject is not None:
+        print("here")
         atomnames = openmmobject.atomnames
+        print(atomnames)
         resnames = openmmobject.resnames
         residlabels = openmmobject.resids
         segmentlabels = openmmobject.segmentnames
@@ -2024,6 +2078,8 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
         atomnames = fragment.elems
     if resnames is None or len(resnames) == 0:
         resnames = fragment.numatoms * [dummyname]
+    if chainlabels is None or len(chainlabels) == 0:
+        chainlabels = fragment.numatoms * ['']
     if residlabels is None or len(residlabels) == 0:
         residlabels = fragment.numatoms * [1]
     # Note: choosing to make segment ID 3-letter-string (and then space)
@@ -2047,8 +2103,8 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
         ashexit()
 
     with open(outputname + '.pdb', 'w') as pfile:
-        for count, (atomname, c, resname, resid, seg, el) in enumerate(
-                zip(atomnames, coords, resnames, residlabels, segmentlabels, elems)):
+        for count, (atomname, c, resname, chainlabel,resid, seg, el) in enumerate(
+                zip(atomnames, coords, resnames, chainlabels,residlabels, segmentlabels, elems)):
             atomindex = count + 1
             # Convert to hexadecimal if >= 100K.
             # Note: unsupported standard but VMD will read it
@@ -2068,16 +2124,23 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
             #Optional charges column (used by CP2K)
             if charges_column != None:
                 charge=charges_column[count]
-                line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s} {:>10.6f}".format(
-                    'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
-                    seg[0:3], el, charge)
+                #line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s} {:>10.6f}".format(
+                #    'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
+                #    seg[0:3], el, charge)
+                line = "{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
+                    'ATOM', atomindexstring, atomnamestring, '', resname, chainlabel, resid, '', c[0], c[1], c[2], 1.0, 0.00, el,charge)
             #Regular
             else:
-                line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}".format(
-                    'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
-                    seg[0:3], el, '')
-
+                #line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:>2s}{:5d}{:1s}  {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}".format(
+                #    'ATOM', atomindexstring, atomnamestring, '', resname, chainlabel, resid, '', c[0], c[1], c[2], 1.0, 0.00,
+                #    seg[0:3], el)
+                line = "{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
+                    'ATOM', atomindexstring, atomnamestring, '', resname, chainlabel, resid, '', c[0], c[1], c[2], 1.0, 0.00, el,'')
             pfile.write(line + '\n')
+        # Write CONECT lines if provided
+        if conect_lines is not None:
+            for conectline in conect_lines:
+                pfile.write(conectline)
     print("Wrote PDB file: ", outputname + '.pdb')
     return outputname + '.pdb'
 
@@ -2181,10 +2244,116 @@ def list_of_masses(ellist):
     return masses
 
 
-##############################
-# RMSD and align related functions
-# Many more to be added.
+##########################################################################################################
+#Flexible align functions that take 2 fragments or files and aligns one of them on top of the other
+#Support different order, i.e. we reorder. We can either keep reorder or not
+#We also support subset of atoms to align on.
+##########################################################################################################
+
+#For XYZ-files
+def flexible_align_xyz(xyzfileA, xyzfileB, rotate_only=False, translate_only=False, reordering=False, reorder_method='brute', subset=None):
+    print(f"Will align molecule in file {xyzfileA} onto molecule in file {xyzfileB}")
+    fragmentA = Fragment(xyzfile=xyzfileA)
+    fragmentB = Fragment(xyzfile=xyzfileB)
+
+    newfragA = flexible_align(fragmentA,fragmentB, rotate_only=rotate_only, translate_only=translate_only, reordering=reordering, reorder_method=reorder_method, subset=subset)
+
+    #Write XYZ-file for newfragA
+    newfragA.write_xyzfile(f"{xyzfileA.replace('.xyz','')}_aligned.xyz")
+
+#For PDB-files
+def flexible_align_pdb(pdbfileA, pdbfileB, rotate_only=False, translate_only=False, reordering=False, reorder_method='brute', subset=None):
+    print(f"Will align molecule in file {pdbfileA} onto molecule in file {pdbfileB}")
+    fragmentA = Fragment(pdbfile=pdbfileA)
+    fragmentB = Fragment(pdbfile=pdbfileB)
+
+    #Call flexible align, get aligned coords as new fragA
+    newfragA = flexible_align(fragmentA,fragmentB, rotate_only=rotate_only, translate_only=translate_only, reordering=reordering, reorder_method=reorder_method, subset=subset)
+
+    #Write PDBfile. PDB-info will have been read and stored
+    fragmentA.coords=newfragA.coords #Replacing coords in original fragmentA
+    fragmentA.write_pdbfile(filename=f"{pdbfileA.replace('.pdb','')}_aligned") #Now write out
+
+#For ASH fragments
+def flexible_align(fragmentA, fragmentB, rotate_only=False, translate_only=False, reordering=False, reorder_method='brute', subset=None):
+    print("flexible_align function")
+    import geometric
+    #Do chosen subset
+    if subset is not None:
+        print("Subset option chosen")
+        if any(isinstance(el, list) for el in subset) is True:
+            print("Subset is a list of lists")
+            print("Subset for A:", subset[0])
+            print("Subset for B:", subset[1])
+            if len(subset[0]) != len(subset[1]):
+                print("Length of subsets not equal. This is not allowed. Exiting.")
+                ashexit()
+            print("Will align using each list of indices for each fragment")
+            subsetA_coords, subsetA_elems =fragmentA.get_coords_for_atoms(subset[0])
+            subsetB_coords, subsetB_elems =fragmentB.get_coords_for_atoms(subset[1])
+
+        else:
+            print("Subset is a list of indices")
+            print("Will align using the same indices in both fragments (will only work if both fragments have the same atom order)")
+            subsetA_coords, subsetA_elems =fragmentA.get_coords_for_atoms(subset)
+            subsetB_coords, subsetB_elems =fragmentB.get_coords_for_atoms(subset)
+
+        print("subsetA_elems:", subsetA_elems)
+        print("subsetA_coords:", subsetA_coords)
+
+        print("subsetB_elems:", subsetB_elems)
+        print("subsetB_coords:", subsetB_coords)
+
+    else:
+        subsetA_coords=fragmentA.coords
+        subsetB_coords=fragmentB.coords
+
+    #TODO Possible reordering
+    if reordering is True:
+        print("Reordering atoms in fragmentB for better alignment (may not always work)")
+        print("Warning: this requires the rmsd package to be installed: pip install rmsd")
+        from rmsd import reorder_brute, reorder_hungarian, reorder_inertia_hungarian, reorder_similarity, reorder_distance
+        print(f"Reorder method: {reorder_method}")
+        if reorder_method == 'brute':
+            print("Warning: brute force method can be very slow for large systems but is very accurate")
+            print("If too slow then try next (in order): inertia_hungarian, hungarian and distance")
+        #Note: brute works well, hungarian fails e.g. for benzamidine example, distance works for benzamidine
+        reorder_methods_dict={'brute':reorder_brute, 'hungarian':reorder_hungarian, 'inertia_hungarian':reorder_inertia_hungarian, 'similarity':reorder_similarity, 'distance':reorder_distance}
+        print("Note: All reorder-method options (from rmsd pakcage): brute, hungarian, inertia_hungarian, similarity, distance")
+        order = reorder(reorder_methods_dict[reorder_method], np.array(subsetA_coords), np.array(subsetB_coords),
+                                np.array(subsetA_elems), np.array(subsetB_elems))
+        print("Order:", order)
+        subsetB_coords = subsetB_coords[order]
+    else:
+        print("No reordering of atoms in fragmentA")
+
+    #Use geometric function to get translation and rotation matrices for the subsets
+    trans, rot = geometric.molecule.get_rotate_translate(subsetA_coords,subsetB_coords)
+
+    #Translate only (all atoms in A)
+    if translate_only is True:
+        print("Doing translation only")
+        Anew = fragmentA.coords + trans
+    #Rotate only (all atoms in A)
+    elif rotate_only is True:
+        print("Doing rotation only")
+        Anew =  np.dot(fragmentA.coords, rot)
+    #Trans+rot (default)
+    else:
+        #Apply trans+rot to all atoms in fragmentA
+        Anew = np.dot(fragmentA.coords, rot) + trans
+
+    #Create new frag
+    newfrag = Fragment(elems=fragmentA.elems, coords=Anew)
+    newfrag.print_coords()
+
+    return newfrag
+
+
 #####################################
+# RMSD and align related functions
+#####################################
+
 def kabsch_rmsd(P, Q):
     """
     Rotate matrix P unto Q and calculate the RMSD
@@ -2244,16 +2413,6 @@ def kabsch(P, Q):
     U = np.dot(V, W)
 
     return U
-
-
-# Old list version
-def old_centroid(X):
-    """
-    Calculate the centroid from a vectorset X
-    """
-    C = sum(X) / len(X)
-    return C
-
 
 def centroid(X):
     """
@@ -2434,7 +2593,7 @@ def reorder_hungarian_scipy(p_atoms, q_atoms, p_coord, q_coord):
 
     # Find unique atoms
     unique_atoms = np.unique(p_atoms)
-    # print("unique_atoms:", unique_atoms)
+    print("unique_atoms:", unique_atoms)
     # generate full view from q shape to fill in atom view on the fly
     view_reorder = np.zeros(q_atoms.shape, dtype=int)
     view_reorder -= 1
@@ -2577,13 +2736,12 @@ def reorder(reorder_method, p_coord, q_coord, p_atoms, q_atoms):
     p_coord -= p_cent
     q_coord -= q_cent
 
+    #Convert from element string to atomic number
+    p_atoms = np.array([elematomnumbers[el.lower()] for el in p_atoms])
+    q_atoms = np.array([elematomnumbers[el.lower()] for el in q_atoms])
+
     q_review = reorder_method(p_atoms, q_atoms, p_coord, q_coord)
     reorderlist = [q_review.tolist()][0]
-    # q_coord = q_coord[q_review]
-    # q_atoms = q_atoms[q_review]
-
-    # print("q_coord:", q_coord)
-    # print("q_atoms:", q_atoms)
     return reorderlist
 
 
@@ -2603,6 +2761,7 @@ AXIS_REFLECTIONS = np.array([
     [-1, 1, -1],
     [1, -1, -1],
     [-1, -1, -1]])
+
 
 
 # QM-region expand function. Finds whole fragments.
@@ -3047,7 +3206,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
     print("numatoms_in_resgroup: ", numatoms_in_resgroup)
     print("num_added_atoms: ", num_added_atoms)
     if numatoms_in_resgroup != num_added_atoms:
-        print("Number of ATOM entries in resgroup in {} not equal to number of added atom-coordinatese.")
+        print("Number of ATOM entries in resgroup in {} not equal to number of added atom-coordinates.")
         print("Wrong RESgroup chosen or missing coordinates?")
         print("Exiting")
         ashexit()
@@ -3441,7 +3600,7 @@ def writepdb_with_connectivity(file):
     return os.path.splitext(file)[0]+'_withcon.pdb'
 
 #Function to read in XYZ-file (small molecule) and create PDB-file with CONECT lines (geometry needs to be sensible)
-def xyz_to_pdb_with_connectivity(file):
+def xyz_to_pdb_with_connectivity(file, resname="UNL"):
     print("xyz_to_pdb_with_connectivity function:")
     #OpenBabel
     try:
@@ -3457,6 +3616,7 @@ def xyz_to_pdb_with_connectivity(file):
     mol.write(format='pdb', filename=os.path.splitext(file)[0]+'temp.pdb', overwrite=True)
     #Read-in again (this will create a Residue)
     newmol = next(pybel.readfile("pdb", os.path.splitext(file)[0]+'temp.pdb'))
+
     os.remove(os.path.splitext(file)[0]+'temp.pdb')
 
     #Atomlabel = {0:'C1',1:'X',2:'C',3:'C',4:'C',5:'C',6:'C',7:'C',8:'C',9:'C',10:'C',11:'C',12:'C'}
@@ -3465,6 +3625,8 @@ def xyz_to_pdb_with_connectivity(file):
     #Note: currently just combining element and atomindex to get a unique atomname (otherwise Modeller will not work)
     #TODO: make something better (element-specific numbering?)
     for res in pybel.ob.OBResidueIter(newmol.OBMol):
+        #Setting residue name
+        res.SetName(resname)
         for i,atom in enumerate(openbabel.OBResidueAtomIter(res)):
             atomname = res.GetAtomID(atom)
             #print("atomname:", atomname)

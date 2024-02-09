@@ -28,7 +28,7 @@ python -m pip  install pyscf # 50 MB
 mamba install -c conda-forge mdtraj  # 8 MB
 
 #Optional:  required for plotting in ASH
-mamba install -c conda-forge scipy
+mamba install -c conda-forge scipy #17 MB
 mamba install -c conda-forge matplotlib # 203 MB
 
 ####################################
