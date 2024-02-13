@@ -425,13 +425,14 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             ashexit()
 
         #Adding singlet embedding if requested
+        self.mch.fcisolver.block_extra_keyword=[]
         if self.singlet_embedding is True:
-            self.mch.fcisolver.block_extra_keyword= ["singlet_embedding"]
+            self.mch.fcisolver.block_extra_keyword.append(["singlet_embedding"])
         #WF coeffs printing
         if self.print_WF_coeffs is True:
-            self.mch.fcisolver.block_extra_keyword= ["irrep_reorder"]
-            self.mch.fcisolver.block_extra_keyword= ["mps_tags KET"]
-            self.mch.fcisolver.block_extra_keyword= ["sample 0.05"]
+            self.mch.fcisolver.block_extra_keyword.append(["irrep_reorder"])
+            self.mch.fcisolver.block_extra_keyword.append(["mps_tags KET"])
+            self.mch.fcisolver.block_extra_keyword.append(["sample 0.05"])
 
         #RDM option: DONE ELSEWHERE
         #self.mch.fcisolver.DoRDM = dordm
