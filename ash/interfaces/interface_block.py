@@ -29,7 +29,7 @@ class BlockTheory:
                 Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
                 FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False,
-                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block"):
+                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block", print_WF_coeffs=False):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
@@ -116,6 +116,7 @@ class BlockTheory:
         self.Block_direct=Block_direct
         self.maxM=maxM
         self.singlet_embedding=singlet_embedding
+        self.print_WF_coeffs=print_WF_coeffs
         self.tol=tol
 
         self.fcidumpfile=fcidumpfile
@@ -155,6 +156,7 @@ class BlockTheory:
         print("macroiter:", self.macroiter)
         print("MaxM", self.maxM)
         print("singlet_embedding:", self.singlet_embedding)
+        print("print_WF_coeffs:", self.print_WF_coeffs)
         print("Tolerance", self.tol)
         print("Post-DMRG jobs:")
         print("FIC_MRCI:", FIC_MRCI)
@@ -425,6 +427,11 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         #Adding singlet embedding if requested
         if self.singlet_embedding is True:
             self.mch.fcisolver.block_extra_keyword= ["singlet_embedding"]
+        #WF coeffs printing
+        if self.print_WF_coeffs is True:
+            self.mch.fcisolver.block_extra_keyword= ["irrep_reorder"]
+            self.mch.fcisolver.block_extra_keyword= ["mps_tags KET"]
+            self.mch.fcisolver.block_extra_keyword= ["sample 0.05"]
 
         #RDM option: DONE ELSEWHERE
         #self.mch.fcisolver.DoRDM = dordm

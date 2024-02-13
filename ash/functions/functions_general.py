@@ -58,7 +58,7 @@ python3path={path_to_python3_dir}
 
 #PYTHONPATH for finding ASH usually not recommended.
 #Better to install into Python environment (pip install)
-#export PYTHONPATH=$ASHPATH:\$ASHPATH/lib:$PYTHONPATH
+#export PYTHONPATH=$ASHPATH:$ASHPATH/lib:$PYTHONPATH
 
 export PATH=$python3path:$PATH
 export LD_LIBRARY_PATH=$ASHPATH/lib:$LD_LIBRARY_PATH
@@ -68,7 +68,7 @@ echo \"Sourced ASH environment file!\"
 echo \"Importing ASH within Python should now work!\"
 echo \"ASH is located in $ASHPATH\"
 echo \"The Python interpreter that you should be using is located in $python3path \"
-"""
+    """
 
 
     with open(f"{os.path.expanduser('~')}/set_environment_ash.sh", "w") as f:
@@ -85,14 +85,31 @@ echo \"The Python interpreter that you should be using is located in $python3pat
 # TODO: Avoid reloading
 julia_loaded = False
 
+def is_interactive() -> bool:
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return True  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter
+
 #General function to exit ASH
 #NOTE: By default we exit with errorcode 1
 def ashexit(errormessage=None, code=1):
     print(BC.FAIL,"ASH exiting with code:", code, BC.END)
+
     if errormessage != None:
         print(BC.FAIL,"Error message:", errormessage, BC.END)
-    #raise SystemExit(code)
-    sys.exit(1)
+
+    #If in Jupyter notebook, then we do a softer return
+    if is_interactive():
+        raise SystemExit("ASH exiting due to error")
+    else:
+        sys.exit(1)
 
 def basename(filename):
     return os.path.splitext(filename)[0]
