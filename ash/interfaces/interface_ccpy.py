@@ -1,18 +1,10 @@
-import subprocess as sp
-import shutil
 import time
-import numpy as np
-import os
-import sys
-import glob
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
-from ash.constants import ang2bohr, harkcal
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep,pygrep2,find_program
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 from ash.functions.functions_parallel import check_OpenMPI
-import ash.settings_ash
 
-#Interface to ccpy: https://github.com/piecuch-group/ccpy
-#Coupled cluster package in python
+# Interface to ccpy: https://github.com/piecuch-group/ccpy
+# Coupled cluster package in python
 
 
 
@@ -28,12 +20,12 @@ class ccpyTheory:
 
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-        #Check for PySCFTheory object
+        # Check for PySCFTheory object
         if pyscftheoryobject is None:
             print("Error: No pyscftheoryobject was provided. This is required")
             ashexit()
 
-        #MAKING SURE WE HAVE ccpy
+        # MAKING SURE WE HAVE ccpy
         try:
             import ccpy
         except ModuleNotFoundError:

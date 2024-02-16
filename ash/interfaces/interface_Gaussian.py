@@ -7,9 +7,10 @@ import numpy as np
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import ash.settings_ash
 
-# GaussianTheory object.
+# Very basic interface to Gaussian.
+
 class GaussianTheory:
-    def __init__(self, gaussiandir=None, gauss_executable='g16', filename='gaussian', printlevel=2, label="Gaussian",
+    def __init__(self, gaussiandir=None, gauss_executable='g16', filename='gaussian', file_extension='.com', printlevel=2, label="Gaussian",
                 gaussianinput=None, memory='800MB', numcores=1):
 
         self.theorynamelabel="Gaussian"
@@ -22,11 +23,12 @@ class GaussianTheory:
             print(f"{self.theorynamelabel}Theory requires a gaussianinput keyword")
             ashexit()
 
-        #Parallelization: Gaussian uses OpenMP.
-        #Numcores will be used to set nprocshared in Gaussian input file.
+        # Parallelization: Gaussian uses shared-memory parallelism (controlled via nprocshared). No support for Linda yet.
+        # Numcores will be used to set nprocshared in Gaussian input file.
 
-        #Finding Gaussian
+        # Finding Gaussian
         self.gauss_executable=gauss_executable
+        self.file_extension=file_extension
         if gaussiandir is None:
             print(BC.WARNING, f"No gaussiandir argument passed to {self.theorynamelabel}Theory. Attempting to find gaussiandir variable inside settings_ash", BC.END)
             try:
@@ -52,19 +54,19 @@ class GaussianTheory:
             self.gaussiandir = gaussiandir
             print("Gaussian dir provided:", self.gaussiandir)
             print(f"Making sure gauss_executable {self.gauss_executable}  is in PATH.")
-            if shutil.which(self.gauss_executable) is None:
-                print(BC.FAIL, f"Error. {self.gauss_executable} not found in PATH. Exiting...", BC.END)
-                print(BC.FAIL, f" Note: If g09 is desired, change gauss_executable to 'g09' in the GaussianTheory object.", BC.END)
-                ashexit()
+            #if shutil.which(self.gauss_executable) is None:
+            #    print(BC.FAIL, f"Error. {self.gauss_executable} not found in PATH. Exiting...", BC.END)
+            #    print(BC.FAIL, f" Note: If g09 is desired, change gauss_executable to 'g09' in the GaussianTheory object.", BC.END)
+            #    ashexit()
 
-        #Setting Gaussian environment variables
+        # Setting Gaussian environment variables
         os.environ['GAUSS_EXEDIR'] = self.gaussiandir
         print("Setting GAUSS_EXEDIR to:", self.gaussiandir)
         os.environ['GAUSS_SCRDIR'] = '.'
         print("Setting GAUSS_SCRDIR to: ", os.getcwd())
 
 
-        #CHECKS if input contains disallowed keywords
+        # CHECKS if input contains disallowed keywords
         if 'opt' in gaussianinput.lower():
             print(BC.FAIL, f"Error. You should not input an optimization keyword in gaussianinput-string. Exiting...", BC.END)
             ashexit()
@@ -78,14 +80,14 @@ class GaussianTheory:
             print(BC.FAIL, f"Error. You should not input a scan keyword in gaussianinput-string. Exiting...", BC.END)
             ashexit()
 
-        #Printlevel
+        # Printlevel
         self.printlevel=printlevel
         self.filename=filename
         self.gaussianinput=gaussianinput
         self.memory=memory
         self.numcores=numcores
 
-    #Set numcores method
+    # Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cleanup(self):
@@ -106,7 +108,7 @@ class GaussianTheory:
             ashexit()
 
         print("Job label:", label)
-        print(f"Creating inputfile: {self.filename}.com")
+        print(f"Creating inputfile: {self.filename}{self.file_extension}")
         print(f"{self.theorynamelabel} input:")
         print(self.gaussianinput)
 
@@ -126,24 +128,15 @@ class GaussianTheory:
             else:
                 qm_elems = elems
 
-        #Write PC to disk
-        if PC is True:
-            print("pc true")
-            ashexit()
-            #create_Gaussian_pcfile_general(current_MM_coords,MMcharges, filename=self.filename)
-            pcfile=self.filename+'.pc'
-        else:
-            pcfile=None
+        # Write inputfile
+        write_Gaussian_input(self.gaussianinput,charge,mult,qm_elems,current_coords, memory=self.memory, MMcharges=MMcharges, MMcoords=current_MM_coords,
+                Grad=Grad, PC=PC, filename=self.filename, file_extension=self.file_extension, numcores=self.numcores)
 
-        #Write inputfile
-        write_Gaussian_input(self.gaussianinput,charge,mult,qm_elems,current_coords, memory=self.memory,
-                Grad=Grad, PCfile=pcfile, filename=self.filename, numcores=self.numcores)
-
-        #Run Gaussian
+        # Run Gaussian
         print(self.gauss_executable)
-        run_Gaussian(self.gaussiandir,gauss_exe=self.gauss_executable, filename=self.filename)
+        run_Gaussian(self.gaussiandir,gauss_exe=self.gauss_executable, filename=self.filename, file_extension=self.file_extension)
 
-        #Grab energy
+        # Grab energy
         self.energy_dict=grab_energy_gaussian(self.filename+'.log')
         for k,v in self.energy_dict.items():
             if v is not None:
@@ -153,13 +146,13 @@ class GaussianTheory:
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
-        #Grab gradient if calculated
+        # Grab gradient if calculated
         if Grad is True:
-            #Grab gradient
+            # Grab gradient
             self.gradient = grab_gradient_Gaussian(self.filename+'.log',len(current_coords))
-            #Grab PCgradient from separate file
+            # Grab PCgradient from separate file
             if PC is True:
-                print("PC option not ready")
+                print("A gradient calculation with PCs has been requested. Unfortunately point charge gradients are not available")
                 ashexit()
                 #self.pcgradient = grab_pcgradient_Gaussian(f'{self.filename}.bqforce.dat',len(MMcharges))
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
@@ -167,7 +160,7 @@ class GaussianTheory:
             else:
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
                 return self.energy, self.gradient
-        #Returning energy without gradient
+         #Returning energy without gradient
         else:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
@@ -177,25 +170,31 @@ class GaussianTheory:
 # Independent Gaussian functions
 ################################
 
-def run_Gaussian(gaussiandir, gauss_exe=None, filename='gaussian'):
+def run_Gaussian(gaussiandir, gauss_exe=None, file_extension=None, filename='gaussian'):
     #Note: using .out to grab any stdout and stderr from program. Default .log is used for actual output
     with open(filename+'.out', 'w') as ofile:
-        process = sp.run([gaussiandir + f'/{gauss_exe}', filename+'.com'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        process = sp.run([gaussiandir + f'/{gauss_exe}', filename+file_extension], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
-def write_Gaussian_input(gaussianinput,charge,mult,elems,coords, filename='gaussian', memory='800MB', numcores=1,
-    PCfile=None, Grad=True):
+def write_Gaussian_input(gaussianinput,charge,mult,elems,coords, filename='gaussian', file_extension=None, memory='800MB', numcores=1,
+                        PC = False, Grad=True, MMcharges=None, MMcoords=None):
+
+    # Grad
     if Grad is True:
-        gaussianinput+=' force'
+        gaussianinput += ' force'
 
-    #Avoid reorientation of molecule
+    # Avoid reorientation of molecule
     if 'nosym' not in gaussianinput:
-        gaussianinput+=' nosymm'
+        gaussianinput += ' nosymm'
 
-    with open(f"{filename}.com", 'w') as inpfile:
+    # Pointcharge embedding
+    if PC is True:
+        gaussianinput += ' charge'
+
+    with open(f"{filename}{file_extension}", 'w') as inpfile:
         #Todo: Gaussian-header lines
         inpfile.write(f'%mem={memory}\n')
         inpfile.write(f'%chk={filename}.chk\n')
-        inpfile.write(f'%nprocshared={numcores}\n')
+        inpfile.write(f'%NProcShared={numcores}\n')
 
         #Turning off symmetry by default (important for ASH opt and QM/MM).
         #TODO: Re-enable symmetry if wanted by user? Useful for using symmetry in expensive CC calculations
@@ -207,23 +206,23 @@ def write_Gaussian_input(gaussianinput,charge,mult,elems,coords, filename='gauss
         for el,c in zip(elems,coords):
             inpfile.write(f'{el } {c[0]} {c[1]} {c[2]}\n')
 
-        #Pointcharge embedding
-        if PCfile != None:
-            inpfile.write(f'bq\n')
-            #Loading PC file. Telling N about format
-            inpfile.write(f'load {PCfile} format 2 3 4 1\n')
-            #PC forces
-            inpfile.write(f'force\n')
-            inpfile.write(f'end\n')
-
         inpfile.write('\n')
 
-#Grab Gaussian energy
-def grab_energy_gaussian(outfile):
-    energy_dict={'total_energy':None,'scf_energy':None,'mp2_energy':None,'mp2corr_energy':None,'ccsd_energy':None, "ccsd_t_energy":None}
+        #Pointcharge embedding
+        if PC is True:
+            for MMc,MMxyz in zip(MMcharges,MMcoords):
+                inpfile.write(f'{MMxyz[0]} {MMxyz[1]} {MMxyz[2]} {MMc}\n')
+        inpfile.write('\n')
 
-    #Note: Grabbing all possible SCF, MP2, CCSD, CCSD(T) energies
-    #Setting total-energy to the last found energy
+
+# Grab Gaussian energy
+def grab_energy_gaussian(outfile):
+    energy_dict = {'total_energy': None, 'scf_energy': None,
+                   'mp2_energy': None, 'mp2corr_energy': None,
+                   'ccsd_energy': None, "ccsd_t_energy": None}
+
+    # Note: Grabbing all possible SCF, MP2, CCSD, CCSD(T) energies
+    # Setting total-energy to the last found energy
 
     with open(outfile) as f:
         for line in f:
@@ -242,25 +241,26 @@ def grab_energy_gaussian(outfile):
                 energy_dict["total_energy"]=energy_dict["ccsd_t_energy"]
     return energy_dict
 
-def grab_gradient_Gaussian(outfile,numatoms):
-    grad_grab=False
-    gradient=np.zeros((numatoms,3))
-    atomcount=0
+
+def grab_gradient_Gaussian(outfile, numatoms):
+    grad_grab = False
+    gradient = np.zeros((numatoms, 3))
+    atomcount = 0
     with open(outfile) as o:
-        for i,line in enumerate(o):
+        for i, line in enumerate(o):
             if grad_grab is True:
                 if 'Number' in line or '----' in line:
                     continue
-                gradient[atomcount,0] = -1*float(line.split()[-3])
-                gradient[atomcount,1] = -1*float(line.split()[-2])
-                gradient[atomcount,2] = -1*float(line.split()[-1])
-                atomcount+=1
+                gradient[atomcount, 0] = -1 * float(line.split()[-3])
+                gradient[atomcount, 1] = -1 * float(line.split()[-2])
+                gradient[atomcount, 2] = -1 * float(line.split()[-1])
+                atomcount += 1
             if 'Cartesian' in line:
-                grad_grab=False
+                grad_grab = False
             if ' Center     Atomic                   Forces (Hartrees/Bohr)' in line:
-                grad_grab=True
+                grad_grab = True
             if atomcount == numatoms:
-                 grad_grab=False
+                grad_grab = False
     return gradient
 
 #QM/MM: TODO
