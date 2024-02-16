@@ -7,7 +7,7 @@ import numpy as np
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import ash.settings_ash
 
-#GaussianTheory object.
+# GaussianTheory object.
 class GaussianTheory:
     def __init__(self, gaussiandir=None, gauss_executable='g16', filename='gaussian', printlevel=2, label="Gaussian",
                 gaussianinput=None, memory='800MB', numcores=1):
@@ -88,7 +88,7 @@ class GaussianTheory:
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
-    def cleanup():
+    def cleanup(self):
         print(f"{self.theorynamelabel} cleanup not yet implemented.")
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
