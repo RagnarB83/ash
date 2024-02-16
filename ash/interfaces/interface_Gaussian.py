@@ -247,9 +247,9 @@ def grab_gradient_Gaussian(outfile,numatoms):
             if grad_grab is True:
                 if 'Number' in line or '----' in line:
                     continue
-                gradient[atomcount,0] = float(line.split()[-3])
-                gradient[atomcount,1] = float(line.split()[-2])
-                gradient[atomcount,2] = float(line.split()[-1])
+                gradient[atomcount,0] = -1*float(line.split()[-3])
+                gradient[atomcount,1] = -1*float(line.split()[-2])
+                gradient[atomcount,2] = -1*float(line.split()[-1])
                 atomcount+=1
             if 'Cartesian' in line:
                 grad_grab=False
