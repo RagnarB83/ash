@@ -6,7 +6,6 @@ import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import ash.settings_ash
-from ash.functions.functions_parallel import check_OpenMPI
 
 #GaussianTheory object.
 class GaussianTheory:
@@ -25,7 +24,6 @@ class GaussianTheory:
 
         #Parallelization: Gaussian uses OpenMP.
         #Numcores will be used to set nprocshared in Gaussian input file.
-
 
         #Finding Gaussian
         self.gauss_executable=gauss_executable
@@ -125,6 +123,7 @@ class GaussianTheory:
         #Write PC to disk
         if PC is True:
             print("pc true")
+            ashexit()
             create_Gaussian_pcfile_general(current_MM_coords,MMcharges, filename=self.filename)
             pcfile=self.filename+'.pc'
         else:
@@ -175,6 +174,7 @@ class GaussianTheory:
 def run_Gaussian(gaussiandir, gauss_exe=None, filename='gaussian'):
     print("gaussiandir:", gaussiandir)
     print("gauss_executable:", gauss_exe)
+    #Note: using .out to grab any stdout and stderr from program. Default .log is used for actual output
     with open(filename+'.out', 'w') as ofile:
         process = sp.run([gaussiandir + f'/{gauss_exe}', filename+'.com'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
