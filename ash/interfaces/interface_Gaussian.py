@@ -139,7 +139,7 @@ class GaussianTheory:
         run_Gaussian(self.gaussiandir,gauss_exe=self.gauss_executable, filename=self.filename)
 
         #Grab energy
-        self.energy_dict=grab_energy_gaussian(self.filename+'.out')
+        self.energy_dict=grab_energy_gaussian(self.filename+'.log')
         for k,v in self.energy_dict.items():
             if v is not None:
                 print(f"{k}: {v}")
@@ -151,7 +151,7 @@ class GaussianTheory:
         #Grab gradient if calculated
         if Grad is True:
             #Grab gradient
-            self.gradient = grab_gradient_Gaussian(self.filename+'.out',len(current_coords))
+            self.gradient = grab_gradient_Gaussian(self.filename+'.log',len(current_coords))
             #Grab PCgradient from separate file
             if PC is True:
                 print("PC option not ready")

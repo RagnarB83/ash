@@ -90,6 +90,7 @@ from .interfaces.interface_QUICK import QUICKTheory
 from .interfaces.interface_TeraChem import TeraChemTheory
 from .interfaces.interface_sparrow import SparrowTheory
 from .interfaces.interface_NWChem import NWChemTheory
+from .interfaces.interface_Gaussian import GaussianTheory
 from .interfaces.interface_CP2K import CP2KTheory
 from .interfaces.interface_BigDFT import BigDFTTheory
 from .interfaces.interface_deMon import deMon2kTheory
