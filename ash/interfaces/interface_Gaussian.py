@@ -224,7 +224,7 @@ def grab_energy_gaussian(outfile):
     with open(outfile) as f:
         for line in f:
             if 'SCF Done:' in line:
-                energy_dict["scf_energy"]=float(line.split()[5])
+                energy_dict["scf_energy"]=float(line.split()[4])
                 energy_dict["total_energy"]=energy_dict["scf_energy"]
             if ' E2 =' in line:
                 energy_dict["mp2corr_energy"]=float(line.split()[2])
