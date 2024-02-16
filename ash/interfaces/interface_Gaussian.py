@@ -130,7 +130,7 @@ class GaussianTheory:
         if PC is True:
             print("pc true")
             ashexit()
-            create_Gaussian_pcfile_general(current_MM_coords,MMcharges, filename=self.filename)
+            #create_Gaussian_pcfile_general(current_MM_coords,MMcharges, filename=self.filename)
             pcfile=self.filename+'.pc'
         else:
             pcfile=None
@@ -161,7 +161,7 @@ class GaussianTheory:
             if PC is True:
                 print("PC option not ready")
                 ashexit()
-                self.pcgradient = grab_pcgradient_Gaussian(f'{self.filename}.bqforce.dat',len(MMcharges))
+                #self.pcgradient = grab_pcgradient_Gaussian(f'{self.filename}.bqforce.dat',len(MMcharges))
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
                 return self.energy, self.gradient, self.pcgradient
             else:
