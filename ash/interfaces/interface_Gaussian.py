@@ -178,8 +178,6 @@ class GaussianTheory:
 ################################
 
 def run_Gaussian(gaussiandir, gauss_exe=None, filename='gaussian'):
-    print("gaussiandir:", gaussiandir)
-    print("gauss_executable:", gauss_exe)
     #Note: using .out to grab any stdout and stderr from program. Default .log is used for actual output
     with open(filename+'.out', 'w') as ofile:
         process = sp.run([gaussiandir + f'/{gauss_exe}', filename+'.com'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
