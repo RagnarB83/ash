@@ -57,6 +57,12 @@ class GaussianTheory:
                 print(BC.FAIL, f" Note: If g09 is desired, change gauss_executable to 'g09' in the GaussianTheory object.", BC.END)
                 ashexit()
 
+        #Setting Gaussian environment variables
+        os.environ['GAUSS_EXEDIR'] = self.gaussiandir
+        print("Setting GAUSS_EXEDIR to:", self.gaussiandir)
+        os.environ['GAUSS_SCRDIR'] = '.'
+        print("Setting GAUSS_SCRDIR to: ", os.getcwd())
+
 
         #CHECKS if input contains disallowed keywords
         if 'opt' in gaussianinput.lower():
