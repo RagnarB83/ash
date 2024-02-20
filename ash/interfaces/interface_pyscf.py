@@ -57,8 +57,12 @@ class PySCFTheory:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
             ashexit()
         if basis is None and basis_file is None:
-            print("Error: You must provide basis or basis_file keyword . Basis set can a name (string) or dict (elements as keys)")
-            print("basis_file should be a string of the filename containing basis set in NWChem format")
+            print("Error: You must either provide a basis or a basis_file keyword . Basis can a name (string) or dict (elements as keys)")
+            print("basis_file should be a string of the filename containing basis set for each element, in NWChem format")
+            print("Best to download basis set from https://www.basissetexchange.org/")
+            ashexit()
+        if basis_file is not None and not os.path.isfile(basis_file):
+            print("Error: basis_file does not exist. Exiting")
             ashexit()
         if functional is not None:
             if self.printlevel >= 1:
@@ -1730,29 +1734,30 @@ class PySCFTheory:
 
 
     #Define basis in mol object
-    def define_basis(self,basis_string_from_file=None):
+    def define_basis(self,elems=None):
         if self.printlevel >= 1:
             print("Defining basis set in mol object")
         import pyscf
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
-        #Object can be string ('def2-SVP') or a dict with element-specific keys and values
-        #NOTE: Basis-file parsing not quite ready.
-        #NOTE: Need to read file containing also basis for that element I think
         #NOTE: We should also support basis set exchange API: https://github.com/pyscf/pyscf/issues/1299
         if self.basis_file != None:
-            print("basis_file option is not ready")
-            ashexit()
-            #with open(self.basis_file) as b:
-            #    basis_string_from_file=' '.join(b.readlines())
-            #print("basis_string_from_file:", basis_string_from_file)
-            self.mol.basis= pyscf.gto.basis.parse(basis_string_from_file)
-            #https://github.com/nmardirossian/PySCF_Tutorial/blob/master/dev_guide.ipynb
-            #self.mol.basis = #{'H': gto.basis.read('basis/STO-2G.dat')
+            if self.printlevel >= 1:
+                print("Reading basis set from file:", self.basis_file)
+            basis_dict={}
+            for elem in elems:
+                if self.printlevel >= 1:
+                    print(f"Reading basis set for element: {elem} from file: {self.basis_file}")
+                basis_per_elem=pyscf.gto.basis.load(self.basis_file, elem)
+                if self.printlevel >= 3:
+                    print("basis_per_elem:", basis_per_elem)
+                basis_dict[elem]=basis_per_elem
+            self.mol.basis=basis_dict
         else:
+            if self.printlevel >= 1:
+                print("Using basis set from input string")
             self.mol.basis=self.basis
         if self.printlevel >= 1:
             print("Basis set:", self.mol.basis)
-
         #Optional setting magnetic moments
         if self.magmom != None:
             if self.printlevel >= 1:
@@ -2209,8 +2214,7 @@ class PySCFTheory:
         # BASIS
         #####################
 
-        #TODO: basis_string_from_file option
-        self.define_basis(basis_string_from_file=None)
+        self.define_basis(elems=qm_elems)
 
         ############################
         # CREATE MF OBJECT
