@@ -618,17 +618,22 @@ class PySCFTheory:
         if type(ccsd) == pyscf.cc.uccsd.UCCSD:
             print("CCSD(T) lambda UHF")
             #NOTE: No threading parallelization seen here, not sure why
-            conv, l1, l2 = uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+            conv, l1, l2 = uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2, max_cycle=self.cc_maxcycle)
             rdm1 = uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
             Dm = rdm1[0]+rdm1[1]
         else:
             print("CCSD(T) lambda RHF")
-            conv, l1, l2 = ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+            conv, l1, l2 = ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2, max_cycle=self.cc_maxcycle)
             rdm1 = ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
             if np.ndim(rdm1) == 3:
                 Dm = rdm1[0]+rdm1[1]
             elif np.ndim(rdm1) == 2:
                 Dm = rdm1
+        if conv is False:
+            print("Error: CCSD(T) lambda equations failed to converge! Be very careful with the results")
+            ashexit()
+        else:
+            print("CC lambda equations converged!")
         # Diagonalize the DM in AO basis
         S = mf.get_ovlp()
         A = reduce(np.dot, (S, Dm, S))
@@ -1663,7 +1668,7 @@ class PySCFTheory:
 
         #Preserving new DM
         print("Coupled cluster density matrix stored as dm attribute of PySCFTheory object")
-        print("rdm1:", rdm1)
+        #print("rdm1:", rdm1)
         #print("rdm1[0] shape", rdm1[0].shape)
         self.dm = rdm1
 
