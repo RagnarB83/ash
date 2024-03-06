@@ -100,6 +100,7 @@ from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, r
 from .interfaces.interface_xtb import xTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
 from .interfaces.interface_MLatom import MLatomTheory
+from .interfaces.interface_DRACO import DRACOTheory
 
 # MM: external and internal
 from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \

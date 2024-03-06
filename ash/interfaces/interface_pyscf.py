@@ -14,6 +14,8 @@ import copy
 
 #PySCF Theory object.
 #TODO: Somehow support reading in user mf object ?
+#Easier now than before. However, each run calls both prepare_run and actual_run
+#Can we skip prepare_run (creates mf etc.) and update coordinates only?
 #TODO: PE: Polarizable embedding (CPPE). Revisit
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Dirac HF/KS
