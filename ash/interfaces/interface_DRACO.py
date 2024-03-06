@@ -29,9 +29,12 @@ def get_draco_radii(fragment=None, xyzfile=None, dracodir=None, radii_type='cpcm
     print("Radii type:", radii_type)
     print("Solvent:", solvent)
 
+
     #draco h2o.xyz --solvent water
     with open('draco.out', 'w') as ofile:
-        sp.run([dracodir+'/draco', xyzfile, '--radii', radii_type, '--solvent', solvent], stdin=input, stdout=ofile)
+        args_list = [dracodir+'/draco', xyzfile, '--radii', radii_type, '--solvent', solvent]
+        print("args_list:", args_list)
+        sp.run(args_list, stdin=input, stdout=ofile)
 
     #Grab radii from draco.out
     radii = grab_radii('draco.out')
