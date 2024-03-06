@@ -202,9 +202,10 @@ end
             #if len(cpcm_radii) != len(c:
             #    print("Error: Number of radii provided does not match number of elements in molecule")
             #    ashexit()
-            cpcm_block=""
+            cpcm_block="%cpcm\n"
             for i,radius in enumerate(cpcm_radii):
                 cpcm_block= cpcm_block+ f"AtomRadii({i},  {radius})\n"
+            cpcm_block=cpcm_block+"end\n"
             print("cpcm_block:", cpcm_block)
             self.orcablocks=self.orcablocks+cpcm_block
 
