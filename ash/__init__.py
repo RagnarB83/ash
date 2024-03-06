@@ -80,7 +80,7 @@ import ash.interfaces.interface_ORCA
 
 from .interfaces.interface_Psi4 import Psi4Theory
 from .interfaces.interface_dalton import DaltonTheory
-from .interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,KS_inversion_kspies,DFA_error_analysis
+from .interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,KS_inversion_kspies,DFA_error_analysis,pySCF_write_Moldenfile
 density_potential_inversion=KS_inversion_kspies #Temporary
 from .interfaces.interface_ipie import ipieTheory
 from .interfaces.interface_dice import DiceTheory

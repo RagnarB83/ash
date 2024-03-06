@@ -8,13 +8,11 @@ import ash.settings_ash
 # Basic interface to DRACO: scaling of solvation radii based on geometry and charges
 # https://github.com/grimme-lab/DRACO
 
-# This interface simply calls DRACO on an XYZ-file and chosen solvent and returns the scaled radii
-# TODO: Add qmodeL EEQ vs CEH option
+# This interface simply calls DRACO on an ASH-Fragment or XYZ-file and chosen solvent and returns the scaled radii
 
 # Can be used (with modifications) as input radii in ORCA and other codes
 
-
-def get_draco_radii(fragment=None, xyzfile=None, charge=None, dracodir=None, radii_type='cpcm', solvent=None,
+def get_draco_radii(fragment=None, xyzfile=None, charge=None, dracodir=None, radii_type='cpcm', solvent='water',
                     chargemodel='ceh'):
 
     #Early exits

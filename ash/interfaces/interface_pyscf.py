@@ -2759,6 +2759,28 @@ def pySCF_read_MOs(moreadfile,pyscfobject):
         ashexit()
     return mo_coefficients, occupations
 
+def pySCF_write_Moldenfile(pyscfobject=None, label="orbs"):
+    print("pySCF_write_Moldenfile function\n")
+    import pyscf
+    from pyscf.tools import molden
+
+    #Early exits
+    if pyscfobject is None:
+        print("Error: pyscfobject must be provided")
+        ashexit()
+
+    mo_coefficients = pyscfobject.mf.mo_coeff
+    occupations = pyscfobject.mf.mo_occ
+    mo_energies = pyscfobject.mf.mo_energy
+
+    print("Writing orbitals to disk as Molden file")
+    molden.from_mo(pyscfobject.mol, f'pyscf_{label}.molden', mo_coefficients, occ=occupations)
+    with open(f'{label}.molden', 'w') as f1:
+        molden.header(pyscfobject.mol, f1)
+        molden.orbital_coeff(pyscfobject.mol, f1, mo_coefficients, ene=mo_energies, occ=occupations)
+    return
+
+
 #Standalone density-potential inversion functions
 def KS_inversion_n2v(pyscftheoryobj, dm, method='PDECO', numcores=1, opt_max_iter=200,
                      guide_components="fermi_amaldi", gtol=1e-6):
