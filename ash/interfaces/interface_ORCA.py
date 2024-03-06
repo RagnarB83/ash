@@ -24,7 +24,8 @@ class ORCATheory:
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label="ORCA",
                  moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
-                 fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None):
+                 fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None,
+                 cpcm_radii=None):
         print_line_with_mainheader("ORCATheory initialization")
 
 
@@ -195,6 +196,17 @@ nroots {self.TDDFTroots}
 IRoot {self.FollowRoot}
 end
 """
+        #Specific CPCM radii. e.g. to use DRACO radii
+        if cpcm_radii is not None:
+            print("CPCM radii provided:", cpcm_radii)
+            #if len(cpcm_radii) != len(c:
+            #    print("Error: Number of radii provided does not match number of elements in molecule")
+            #    ashexit()
+            cpcm_block=""
+            for i,radius in enumerate(cpcm_radii):
+                cpcm_block= cpcm_block+ f"AtomRadii({i},  {radius})\n"
+            print("cpcm_block:", cpcm_block)
+            self.orcablocks=self.orcablocks+cpcm_block
 
         #XDM: if True then we add !AIM to input
         self.xdm=False
