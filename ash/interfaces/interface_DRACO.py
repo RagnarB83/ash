@@ -43,12 +43,15 @@ def get_draco_radii(fragment=None, xyzfile=None, dracodir=None, radii_type='cpcm
     return radii
 
 def grab_radii(outfile):
+    grab=False
     radii=[]
     with open(outfile) as o:
         for line in o:
-            if len(line.split()) == 4:
-                if 'Identifier' not in line:
+            if grab is True:
+                if len(line.split()) == 4:
                     radii.append(line.split()[2])
+            if 'Identifier  Partial Charge' in line:
+                grab=True
     return radii
 
 def check_DRACO_location(dracodir):
