@@ -10,18 +10,28 @@ import ash.settings_ash
 
 # This interface simply calls DRACO on an XYZ-file and chosen solvent and returns the scaled radii
 # TODO: Add qmodeL EEQ vs CEH option
-# TODO: Solvent-model radii output option
 
 # Can be used (with modifications) as input radii in ORCA and other codes
 
 
-def get_draco_radii(xyzfile=None, solvent=None, dracodir=None):
+def get_draco_radii(fragment=None, xyzfile=None, dracodir=None, radii_type='cpcm', solvent=None):
+
+    if fragment == None and xyzfile == None:
+        print(BC.FAIL, "No fragment or xyzfile provided. Exiting.", BC.END)
+        ashexit()
+    if fragment != None:
+        print("Using ASH fragment. Writing XYZ-file to disk")
+        xyzfile = fragment.write_xyzfile(xyzfilename="fragment.xyz")
 
     dracodir=check_DRACO_location(dracodir)
+    print("DRACO directory:", dracodir)
+    print("\nXYZ-file:", xyzfile)
+    print("Radii type:", radii_type)
+    print("Solvent:", solvent)
 
     #draco h2o.xyz --solvent water
     with open('draco.out', 'w') as ofile:
-        sp.run([dracodir+'/draco', xyzfile,'-solvent', solvent], stdin=input, stdout=ofile)
+        sp.run([dracodir+'/draco', xyzfile, '--radii', radii_type, '--solvent', solvent], stdin=input, stdout=ofile)
 
     #Grab radii from draco.out
     radii = grab_radii('draco.out')
