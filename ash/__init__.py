@@ -66,8 +66,8 @@ import ash.interfaces.interface_multiwfn
 from .interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from .modules.module_spinprojection import SpinProjectionTheory
-#DualTheory
-from .modules.module_dualtheory import DualTheory
+#DualTheory and WrapTheory
+from .modules.module_dualtheory import DualTheory,WrapTheory
 
 # Surface
 from .modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, write_surfacedict_to_file
@@ -101,6 +101,7 @@ from .interfaces.interface_xtb import xTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
 from .interfaces.interface_MLatom import MLatomTheory
 from .interfaces.interface_DRACO import get_draco_radii
+from .interfaces.interface_DFTD4 import DFTD4Theory, calc_DFTD4
 
 # MM: external and internal
 from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \

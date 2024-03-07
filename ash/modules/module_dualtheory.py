@@ -354,3 +354,45 @@ class DualTheory:
             return energy,gradient
         else:
             return energy
+
+
+
+#########################
+# WrapTheory class
+#########################
+# Similar in a way to DualTheory but we simply want to combine a regular Theory with a basic correction
+# Intended to be used for simple corrections like DFTD4.
+
+class WrapTheory:
+    """ASH WrapTheory theory.
+    Combines 2 theories to give a modified energy and modified gradient
+    """
+    def __init__(self, theory1=None, theory2=None, printlevel=1, label=None):
+
+        self.theorytype="QM"
+        self.theory1=theory1
+        self.theory2=theory2
+        self.printlevel=printlevel
+        self.label=label
+        self.filename=""
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
+            charge=None, mult=None):
+
+        # Calculate Theory 1
+        e_theory1, g_theory1 = self.theory1.run(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
+            elems=elems, Grad=Grad, PC=PC, numcores=numcores, label=label, charge=charge, mult=mult)
+
+        # Calculate Theory 2
+        e_theory2, g_theory2 = self.theory2.run(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
+            elems=elems, Grad=Grad, PC=PC, numcores=numcores, label=label, charge=charge, mult=mult)
+
+        #Combine energy and gradient
+        energy = e_theory1 + e_theory2
+        gradient = g_theory1 + g_theory2
+
+        if Grad == True:
+            return energy, gradient
+        else:
+            return energy
