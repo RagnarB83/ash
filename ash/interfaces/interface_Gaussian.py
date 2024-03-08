@@ -53,18 +53,13 @@ class GaussianTheory:
         else:
             self.gaussiandir = gaussiandir
             print("Gaussian dir provided:", self.gaussiandir)
-            print(f"Making sure gauss_executable {self.gauss_executable}  is in PATH.")
-            #if shutil.which(self.gauss_executable) is None:
-            #    print(BC.FAIL, f"Error. {self.gauss_executable} not found in PATH. Exiting...", BC.END)
-            #    print(BC.FAIL, f" Note: If g09 is desired, change gauss_executable to 'g09' in the GaussianTheory object.", BC.END)
-            #    ashexit()
+            print(f"Making sure gauss_executable {self.gauss_executable} is in PATH.")
 
         # Setting Gaussian environment variables
         os.environ['GAUSS_EXEDIR'] = self.gaussiandir
         print("Setting GAUSS_EXEDIR to:", self.gaussiandir)
         os.environ['GAUSS_SCRDIR'] = '.'
         print("Setting GAUSS_SCRDIR to: ", os.getcwd())
-
 
         # CHECKS if input contains disallowed keywords
         if 'opt' in gaussianinput.lower():
@@ -90,6 +85,7 @@ class GaussianTheory:
     # Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
+
     def cleanup(self):
         print(f"{self.theorynamelabel} cleanup not yet implemented.")
 
@@ -112,15 +108,14 @@ class GaussianTheory:
         print(f"{self.theorynamelabel} input:")
         print(self.gaussianinput)
 
-
-        #Coords provided to run
+        # Coords provided to run
         if current_coords is not None:
             pass
         else:
             print("no current_coords")
             ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
                 print("No elems provided")
@@ -152,7 +147,7 @@ class GaussianTheory:
             self.gradient = grab_gradient_Gaussian(self.filename+'.log',len(current_coords))
             # Grab PCgradient from separate file
             if PC is True:
-                print("A gradient calculation with PCs has been requested. Unfortunately point charge gradients are not available")
+                print("A gradient calculation with PCs has been requested. Unfortunately, point charge gradients are not available")
                 ashexit()
                 #self.pcgradient = grab_pcgradient_Gaussian(f'{self.filename}.bqforce.dat',len(MMcharges))
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
@@ -160,7 +155,7 @@ class GaussianTheory:
             else:
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
                 return self.energy, self.gradient
-         #Returning energy without gradient
+        # Returning energy without gradient
         else:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
@@ -171,7 +166,7 @@ class GaussianTheory:
 ################################
 
 def run_Gaussian(gaussiandir, gauss_exe=None, file_extension=None, filename='gaussian'):
-    #Note: using .out to grab any stdout and stderr from program. Default .log is used for actual output
+    # Note: using .out to grab any stdout and stderr from program. Default .log is used for actual output
     with open(filename+'.out', 'w') as ofile:
         process = sp.run([gaussiandir + f'/{gauss_exe}', filename+file_extension], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
@@ -191,13 +186,13 @@ def write_Gaussian_input(gaussianinput,charge,mult,elems,coords, filename='gauss
         gaussianinput += ' charge'
 
     with open(f"{filename}{file_extension}", 'w') as inpfile:
-        #Todo: Gaussian-header lines
+        # Todo: Gaussian-header lines
         inpfile.write(f'%mem={memory}\n')
         inpfile.write(f'%chk={filename}.chk\n')
         inpfile.write(f'%NProcShared={numcores}\n')
 
-        #Turning off symmetry by default (important for ASH opt and QM/MM).
-        #TODO: Re-enable symmetry if wanted by user? Useful for using symmetry in expensive CC calculations
+        # Turning off symmetry by default (important for ASH opt and QM/MM).
+        # TODO: Re-enable symmetry if wanted by user? Useful for using symmetry in expensive CC calculations
         inpfile.write(gaussianinput+'\n')
         inpfile.write('\n') #empty line
         inpfile.write('ASH-created Gaussian input\n') #Title line
@@ -208,7 +203,7 @@ def write_Gaussian_input(gaussianinput,charge,mult,elems,coords, filename='gauss
 
         inpfile.write('\n')
 
-        #Pointcharge embedding
+        # Pointcharge embedding
         if PC is True:
             for MMc,MMxyz in zip(MMcharges,MMcoords):
                 inpfile.write(f'{MMxyz[0]} {MMxyz[1]} {MMxyz[2]} {MMc}\n')
@@ -263,7 +258,7 @@ def grab_gradient_Gaussian(outfile, numatoms):
                 grad_grab = False
     return gradient
 
-#QM/MM: TODO
+# QM/MM: TODO
 
 #Grab PC gradient from Gaussian written file
 # def grab_pcgradient_Gaussian(pcgradfile,numpc):
