@@ -2932,7 +2932,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 
 #Function to prepare ORCA orbitals for another ORCA calculation
 #Mainly for getting natural orbitals
-def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
+def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="", label="frag_",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None,
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
         FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6,
@@ -3335,6 +3335,8 @@ end
     else:
         nat_occupations=[]
 
-    print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", mofile)
+    #Renaming mofile (for purposes of having unique mofiles if we run this function multiple times)
+    newmofile = label + mofile
+    print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", newmofile)
     print("Also returning natural occupations list:", nat_occupations)
-    return mofile, nat_occupations
+    return newmofile, nat_occupations
