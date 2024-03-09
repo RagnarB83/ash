@@ -150,17 +150,14 @@ def load_pythoncall():
     JuliaMain.include(ashpath + "/functions/functions_julia.jl")
     return JuliaMain
 
-def load_pyjulia():
-    print("Now loading PyJulia. This will fail if :\n\
-        - PyJulia Python package has not been installed\n\
-        - Julia PyCall package has not been installed\n\
-        - python-jl/python3_ash interpreter not used (necessary for static libpython)\n")
-        #- Julia Hungarian package has not been installed")
-
-    from julia import Main as JuliaMain
-    #NOTE: Reading old Pyjulia function file here instead.
-    JuliaMain.include(ashpath + "/functions/functions_julia_oldpyjulia.jl")
-    return JuliaMain
+#def load_pyjulia():
+#    print("Now loading PyJulia. This will fail if :\n\
+#        - Julia PyCall package has not been installed\n\
+#
+#    from julia import Main as JuliaMain
+#    #NOTE: Reading old Pyjulia function file here instead.
+#    JuliaMain.include(ashpath + "/functions/functions_julia_oldpyjulia.jl")
+#    return JuliaMain
 
 def load_julia_interface(julia_library=None):
     print("\nCalling Julia interface")
@@ -169,7 +166,7 @@ def load_julia_interface(julia_library=None):
     if julia_library == None:
         julia_library=ash.settings_ash.settings_dict["julia_library"]
 
-    print("Note: PythonCall/Juliacall is recommended (default). PyJulia interface is less stable.")
+    print("Note: PythonCall/Juliacall is recommended (default).")
     # Loading pythoncall or pyjulia
     print("Library is set to:", julia_library)
     #Global variables
@@ -200,13 +197,13 @@ def load_julia_interface(julia_library=None):
             except:
                 print("Problem loading pythoncall/juliacall.")
                 ashexit()
-        elif julia_library == "pyjulia":
-            try:
-                JuliaMain = load_pyjulia()
-                print("Julia interface successfully loaded")
-            except:
-                print("Problem loading pyjulia")
-                ashexit()
+        #elif julia_library == "pyjulia":
+        #    try:
+        #        JuliaMain = load_pyjulia()
+        #        print("Julia interface successfully loaded")
+        #    except:
+        #        print("Problem loading pyjulia")
+        #        ashexit()
         else:
             print("Unknown Julia library:", julia_library)
             ashexit()

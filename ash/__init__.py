@@ -189,7 +189,7 @@ if ash.settings_ash.settings_dict["print_exit_footer"] is True:
         atexit.register(ash.ash_header.print_timings)
 
 # Julia dependency. Load in the beginning or not.
-#As both PyJulia and PythonCall are a bit slow to load, it is best to only load when needed (current behaviour)
+#As PythonCall can be a bit slow to load, it is best to only load when needed (current behaviour)
 if ash.settings_ash.settings_dict["load_julia"] is True:
     try:
         print("Importing Julia interface and loading functions")
