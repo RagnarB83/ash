@@ -10,13 +10,12 @@ import ash.settings_ash
 
 # Basic interface to MNDO
 # Only support for energy and gradient + QM/MM energy+ gradient for now
-
 # TODO: check parallelization
 
 # MNDOTheory object.
 class MNDOTheory:
     def __init__(self, mndodir=None, filename='mndo', method=None, printlevel=2, label="MNDO",
-                numcores=1, restart_option=True):
+                numcores=1, restart_option=True, diis=False):
 
         self.theorynamelabel="MNDO"
         self.label=label
@@ -51,12 +50,18 @@ class MNDOTheory:
         self.method=method
         self.numcores=numcores
 
+        # Parallelization: no threading used it seems
         # Set OMP_NUM_THREADS to numcores
-        os.environ['OMP_NUM_THREADS'] = str(self.numcores)
+        # os.environ['OMP_NUM_THREADS'] = str(self.numcores)
+        #Some MPI support in MNDO, but we have not tested
 
         # Whether to automatically save DM and read DM from file or not
         # Should give fewer SCF iterations but more IO
         self.restart_option=restart_option
+
+        # DIIS: Default off (activated by MNDO itself if SCF-problems).
+        # For convergence issues, set to True (DIIS activated from beginning)
+        self.diis=diis
 
     #Set numcores method
     def set_numcores(self,numcores):
@@ -101,7 +106,7 @@ class MNDOTheory:
 
         # Write inputfile
         write_mndo_input(self.method,self.filename,qm_elems,current_coords,charge,mult,PC=PC, Grad=Grad,
-                         MMcharges=MMcharges, MMcoords=current_MM_coords, restart=self.restart_option)
+                         MMcharges=MMcharges, MMcoords=current_MM_coords, restart=self.restart_option, diis=self.diis)
 
         # Run MNDO
         run_MNDO(self.mndodir,self.filename)
@@ -128,7 +133,7 @@ class MNDOTheory:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
 
-def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, restart=True):
+def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, restart=True, diis=False):
     mndo_methods={'ODM3':-23,'ODM2':-22,'MNDO/d':-10,'OM3':-8,
                     'PM3':-7,'OM2':-6,'OM1':-5,'AM1':-2,
                     'MNDOC': -1, 'MNDO':0, 'MINDO/3':1, 'CNDO/2':2,
@@ -157,9 +162,15 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
         if restart is True:
             restartline="ipubo=1 ktrial=11"
 
+        # DIIS settings
+        diisline="idiis=0" #idiis=0 means DIIS off by default but will be turned on if SCF-problems
+        if diis is True:
+            #Activate DIIS from beginning
+            diisline="idiis=1"
+
 
         f.write(f"iop={mndo_methods[method]}  jop={jobtype} {openshellkwstring}  iform=1 igeom=1 +\n")
-        f.write(f"kitscf=300 kharge={charge} {restartline} +\n")
+        f.write(f"kitscf=300 kharge={charge} {restartline} {diisline} +\n")
         f.write(f"imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
         # PC-part
         if PC is True:
