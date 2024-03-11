@@ -15,7 +15,7 @@ import ash.settings_ash
 # MNDOTheory object.
 class MNDOTheory:
     def __init__(self, mndodir=None, filename='mndo', method=None, printlevel=2, label="MNDO",
-                numcores=1, restart_option=True, diis=False):
+                numcores=1, restart_option=True, diis=False, guess_option=0):
 
         self.theorynamelabel="MNDO"
         self.label=label
@@ -62,6 +62,7 @@ class MNDOTheory:
         # DIIS: Default off (activated by MNDO itself if SCF-problems).
         # For convergence issues, set to True (DIIS activated from beginning)
         self.diis=diis
+        self.guess_option=guess_option
 
     #Set numcores method
     def set_numcores(self,numcores):
@@ -106,7 +107,7 @@ class MNDOTheory:
 
         # Write inputfile
         write_mndo_input(self.method,self.filename,qm_elems,current_coords,charge,mult,PC=PC, Grad=Grad,
-                         MMcharges=MMcharges, MMcoords=current_MM_coords, restart=self.restart_option, diis=self.diis)
+                         MMcharges=MMcharges, MMcoords=current_MM_coords, restart=self.restart_option, diis=self.diis, guess_option=self.guess_option)
 
         # Run MNDO
         run_MNDO(self.mndodir,self.filename)
@@ -133,7 +134,7 @@ class MNDOTheory:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
 
-def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, restart=True, diis=False):
+def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, restart=True, diis=False, guess_option=0):
     mndo_methods={'ODM3':-23,'ODM2':-22,'MNDO/d':-10,'OM3':-8,
                     'PM3':-7,'OM2':-6,'OM1':-5,'AM1':-2,
                     'MNDOC': -1, 'MNDO':0, 'MINDO/3':1, 'CNDO/2':2,
@@ -155,12 +156,16 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
         # iform=2 for free-format
         # ksym=0 no symmetry, nprint for energy output, mprint for gradient output
 
+        # Guess
+        ktrial_line=f"ktrial={guess_option}"
+
         # Note: ipub=1 saves fort.11 file with density-matrix
         # Note: ktrial=11 loads fort.11 as SCF-guess.
         # Should be faster, although more IO would be performed
         restartline=""
         if restart is True:
-            restartline="ipubo=1 ktrial=11"
+            restartline="ipubo=1"
+            ktrial_line="ktrial=11"
 
         # DIIS settings
         diisline="idiis=0" #idiis=0 means DIIS off by default but will be turned on if SCF-problems
@@ -170,7 +175,7 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
 
 
         f.write(f"iop={mndo_methods[method]}  jop={jobtype} {openshellkwstring}  iform=1 igeom=1 +\n")
-        f.write(f"kitscf=300 kharge={charge} {restartline} {diisline} +\n")
+        f.write(f"kitscf=300 kharge={charge} {restartline} {ktrial_line} {diisline} +\n")
         f.write(f"imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
         # PC-part
         if PC is True:
