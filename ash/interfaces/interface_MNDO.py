@@ -16,7 +16,7 @@ import ash.settings_ash
 # MNDOTheory object.
 class MNDOTheory:
     def __init__(self, mndodir=None, filename='mndo', method=None, printlevel=2, label="MNDO",
-                numcores=1):
+                numcores=1, restart_option=True):
 
         self.theorynamelabel="MNDO"
         self.label=label
@@ -40,7 +40,7 @@ class MNDOTheory:
                     self.mndodir = os.path.dirname(shutil.which('mndo2020'))
                     print(BC.OKGREEN,"Found mndo2020 in PATH. Setting mndodir to:", self.mndodir, BC.END)
                 except:
-                    print(BC.FAIL,"Found no mndo2020 executable in PATH. Exiting... ", BC.END)
+                    print(BC.FAIL,"Found no mndo2020 executable in PATH. Exiting...", BC.END)
                     print("See https://mndo.kofo.mpg.de about MNDO licenses")
                     ashexit()
         else:
@@ -50,6 +50,11 @@ class MNDOTheory:
         self.filename=filename
         self.method=method
         self.numcores=numcores
+
+        # Whether to automatically save DM and read DM from file or not
+        # Should give fewer SCF iterations but more IO
+        self.restart_option=restart_option
+
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -93,7 +98,7 @@ class MNDOTheory:
 
         # Write inputfile
         write_mndo_input(self.method,self.filename,qm_elems,current_coords,charge,mult,PC=PC, Grad=Grad,
-                         MMcharges=MMcharges, MMcoords=current_MM_coords)
+                         MMcharges=MMcharges, MMcoords=current_MM_coords, restart=self.restart_option)
 
         # Run MNDO
         run_MNDO(self.mndodir,self.filename)
@@ -117,7 +122,7 @@ class MNDOTheory:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
 
-def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False):
+def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, restart=True):
     mndo_methods={'ODM3':-23,'ODM2':-22,'MNDO/d':-10,'OM3':-8,
                     'PM3':-7,'OM2':-6,'OM1':-5,'AM1':-2,
                     'MNDOC': -1, 'MNDO':0, 'MINDO/3':1, 'CNDO/2':2,
@@ -139,8 +144,16 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
         # iform=2 for free-format
         # ksym=0 no symmetry, nprint for energy output, mprint for gradient output
 
+        # Note: ipub=1 saves fort.11 file with density-matrix
+        # Note: ktrial=11 loads fort.11 as SCF-guess.
+        # Should be faster, although more IO would be performed
+        restartline=""
+        if restart is True:
+            restartline="ipubo=1 ktrial=11"
+
+
         f.write(f"iop={mndo_methods[method]}  jop={jobtype} {openshellkwstring}  iform=1 igeom=1 +\n")
-        f.write(f"kitscf=300 kharge={charge} +\n")
+        f.write(f"kitscf=300 kharge={charge} {restartline} +\n")
         f.write(f"imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
         # PC-part
         if PC is True:
