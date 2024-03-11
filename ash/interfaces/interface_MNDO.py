@@ -51,6 +51,9 @@ class MNDOTheory:
         self.method=method
         self.numcores=numcores
 
+        # Set OMP_NUM_THREADS to numcores
+        os.environ['OMP_NUM_THREADS'] = str(self.numcores)
+
         # Whether to automatically save DM and read DM from file or not
         # Should give fewer SCF iterations but more IO
         self.restart_option=restart_option
