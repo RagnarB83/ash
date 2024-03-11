@@ -894,7 +894,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     #Find duplicate coordinates (atoms on top of each other). Add index to deletion list. Happens if atoms have coordinates right on box boundary
     #List of Bools, duplicates are True
     #NOTE: Problem, way too slow
-    print("Starting filter duplicate. This step is currently slow. To be fixed")
+    print("Starting filter duplicate")
     timestampA=time.time()
     dupls=np.array(filter_duplicate(extended_coords))
     print_time_rel(timestampA, modulename='filter duplicate', moduleindex=4)

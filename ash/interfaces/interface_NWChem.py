@@ -8,14 +8,14 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 import ash.settings_ash
 from ash.functions.functions_parallel import check_OpenMPI
 
-#Reasonably flexible NWChem interface: NWChem input should be specified by nwcheminput multi-line string.
-#Everything except geometry
-#Works for RHF,UHF,RKS,UKS, MP2, CCSD(T) w/wo TCE. PC available: energy and gradient
-#TODO: Constrained DFT
-#TODO: GPU support for CC
-#TODO: ADFT
+# Reasonably flexible NWChem interface: NWChem input should be specified by nwcheminput multi-line string.
+# Everything except geometry
+# Works for RHF,UHF,RKS,UKS, MP2, CCSD(T) w/wo TCE. PC available: energy and gradient
+# TODO: Constrained DFT
+# TODO: GPU support for CC
+# TODO: ADFT
 
-#NWChem Theory object.
+# NWChem Theory object.
 class NWChemTheory:
     def __init__(self, nwchemdir=None, filename='nwchem', openshell=False, printlevel=2, label="NWChem",
                 nwcheminput=None, method='scf', tce=False, numcores=1):

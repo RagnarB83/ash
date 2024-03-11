@@ -6,25 +6,25 @@ import os
 import shutil
 
 ##########################
-#MLatom Theory interface
+# MLatom Theory interface
 ##########################
-#NOTE: we only intend to support mostly ML functionality in MLatom (not all basic QM methods)
+# NOTE: we only intend to support mostly ML functionality in MLatom (not all basic QM methods)
 
-#MLatom has 3 types of models:
-#1) methods: these are pre-trained or at least standalone electronic structure methods
-#2) ml_model: these are models that require training
-#3) model_tree_node: some composite models (unclear)
+# MLatom has 3 types of models:
+# 1) methods: these are pre-trained or at least standalone electronic structure methods
+# 2) ml_model: these are models that require training
+# 3) model_tree_node: some composite models (unclear)
 
-#methods examples: AIQM1, AIQM1@DFT, AIQM1@DFT*, ANI-1ccx, ANI-1x, ANI-1x-D4, ANI-2x, ANI-2x-D4
-#ml_model examples: ani, dpmd, gap, physnet, sgdml
+# methods examples: AIQM1, AIQM1@DFT, AIQM1@DFT*, ANI-1ccx, ANI-1x, ANI-1x-D4, ANI-2x, ANI-2x-D4
+# ml_model examples: ani, dpmd, gap, physnet, sgdml
 
-#MLatom may use/require interfaces to : TorchANI, DeepMD-kit, GAP/QUIP, Physnet, sGDML
+# MLatom may use/require interfaces to : TorchANI, DeepMD-kit, GAP/QUIP, Physnet, sGDML
 
-#NOTES on interface:
+# NOTES on interface:
 # AIQMx methods require either MNDO or Sparrow as QM-program. Also dftd4.
-   #Sparrow lacks AIQMx gradient (for ODM2 part), only energies available.
+# Sparrow lacks AIQMx gradient (for ODM2 part), only energies available.
 
-#ASH will likely only support running ML models, not training them
+# ASH will likely only support running ML models, not training them
 
 
 class MLatomTheory:
