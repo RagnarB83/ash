@@ -104,7 +104,10 @@ class MNDOTheory:
         run_MNDO(self.mndodir,self.filename)
 
         # Grab energy
-        self.energy, self.gradient, self.pcgradient =grab_energy_gradient_mndo(f"{self.filename}.out", len(current_coords), Grad=Grad, PC=True, numpc=len(MMcharges))
+        if PC is True:
+            self.energy, self.gradient, self.pcgradient =grab_energy_gradient_mndo(f"{self.filename}.out", len(current_coords), Grad=Grad, PC=True, numpc=len(MMcharges))
+        else:
+            self.energy, self.gradient, self.pcgradient =grab_energy_gradient_mndo(f"{self.filename}.out", len(current_coords), Grad=Grad, PC=False)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
