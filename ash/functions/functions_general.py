@@ -649,6 +649,7 @@ def column(matrix, i):
 #Printing if currprintlevel
 def print_time_rel(timestamp, modulename='Unknown', moduleindex=4, currprintlevel=1, currthreshold=1):
     secs = time.time() - timestamp
+    print("secs:", secs)
     mins = secs / 60
     if currprintlevel >= currthreshold:
         print_line_with_subheader2(
