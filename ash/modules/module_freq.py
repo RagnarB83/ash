@@ -169,16 +169,15 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Displacement: {:5.4f} Å ({:5.4f} Bohr)".format(displacement,displacement_bohr))
     blankline()
     print("Starting geometry:")
-    #Converting to numpy array just in case
+    # Converting to numpy array just in case
     current_coords_array=np.array(coords)
 
     print("Printing hessatoms geometry...")
     ash.modules.module_coords.print_coords_for_atoms(coords,elems,hessatoms)
     blankline()
 
-
-    #Looping over each atom and each coordinate to create displaced geometries
-    #Only displacing atom if in hessatoms list. i.e. possible partial Hessian
+    # Looping over each atom and each coordinate to create displaced geometries
+    # Only displacing atom if in hessatoms list. i.e. possible partial Hessian
     list_of_displaced_geos=[]
     list_of_displacements=[]
     for atom_index in range(0,len(current_coords_array)):
@@ -207,9 +206,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     if printlevel > 1:
         print("List of displacements:", list_of_displacements)
 
-    #Creating ASH fragments
-    #Creating displacement labels as strings and adding to fragment
-    #Also calclabels, currently used by runmode serial only
+    # Creating ASH fragments
+    # Creating displacement labels as strings and adding to fragment
+    # Also calclabels, currently used by runmode serial only
     list_of_labels=[]
     all_disp_fragments=[]
     for dispgeo,disp in zip(list_of_displaced_geos,list_of_displacements):

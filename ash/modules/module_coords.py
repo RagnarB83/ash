@@ -103,7 +103,7 @@ class Fragment:
         if self.printlevel >= 2:
             print_line_with_subheader1("New ASH fragment")
         #Minimal ASH Fragment
-        if self.printlevel == 0:
+        if self.printlevel > 0:
             print("ASH Fragment created")
         self.energy = None
         self.elems = []

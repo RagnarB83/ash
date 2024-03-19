@@ -445,7 +445,7 @@ class QMMMTheory:
         return
 
     # diff version. Potentially faster
-    def make_QM_PC_gradient_optimized():
+    def make_QM_PC_gradient_optimized(self):
         self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
         xatom_mask = np.isin(self.allatoms, self.qmatoms)
         self.QM_PC_gradient[xatom_mask] = self.QMgradient_wo_linkatoms
