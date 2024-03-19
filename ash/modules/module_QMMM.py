@@ -785,6 +785,7 @@ class QMMMTheory:
         if self.printlevel > 1: print("Number of PCs provided to QM-program:", len(self.pointcharges))
 
         #QM-part
+        print_time_rel(CheckpointTime, modulename='QM-step-prep', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
         if self.qm_theory_name == "None" or self.qm_theory_name == "ZeroTheory":
             print("No QMtheory. Skipping QM calc")
             QMenergy=0.0;self.linkatoms=False;PCgradient=np.array([0.0, 0.0, 0.0])
@@ -793,8 +794,8 @@ class QMMMTheory:
         #TODO: Add check whether QM-code supports both pointcharges and pointcharge-gradient?
         else:
             #Calling QM theory, providing current QM and MM coordinates.
-            if Grad==True:
-                if PC==True:
+            if Grad is True:
+                if PC is True:
                     QMenergy, QMgradient, PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,
