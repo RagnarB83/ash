@@ -9,31 +9,36 @@ import ash.settings_ash
 from ash.modules.module_coords import write_xyzfile, write_pdbfile,cubic_box_size,bounding_box_dimensions
 from ash.functions.functions_parallel import check_OpenMPI
 
-#Dictionary of element radii in Angstrom for use with CP2K for GEEP embedding
-#Warning:Parameters for O, H, K and Cl found online. Rest are guestimates.
-#Note: Also seen 1.2 used for O
-element_radii_for_cp2k = {'H':0.44,'He':0.44,'Li':0.6,'Be':0.6,'B':0.78,'C':0.78,'N':0.78,'O':0.78,'F':0.78,'Ne':0.78,
-                       'Na':1.58,'Mg':1.58,'Al':1.67,'Si':1.67,'P':1.67,'S':1.67,'Cl':1.67,'Ar':1.67,
-                       'K':1.52,'Ca':1.6,'Sc':1.6,'Ti':1.6,'V':1.6,'Cr':1.6,'Mn':1.6,'Fe':1.6,'Co':1.6,
-                       'Ni':1.6,'Cu':1.6,'Zn':1.6,'Br':1.6, 'Mo':1.7}
+# Dictionary of element radii in Angstrom for use with CP2K for GEEP embedding
+# Warning:Parameters for O, H, K and Cl found online. Rest are guestimates.
+# Note: Also seen 1.2 used for O
+element_radii_for_cp2k = {'H': 0.44, 'He': 0.44, 'Li': 0.6, 'Be': 0.6,
+                          'B': 0.78, 'C': 0.78, 'N': 0.78, 'O': 0.78,
+                          'F': 0.78, 'Ne': 0.78, 'Na': 1.58, 'Mg': 1.58,
+                          'Al': 1.67, 'Si': 1.67, 'P': 1.67, 'S': 1.67,
+                          'Cl': 1.67, 'Ar': 1.67, 'K': 1.52, 'Ca': 1.6,
+                          'Sc': 1.6, 'Ti': 1.6, 'V': 1.6, 'Cr': 1.6, 'Mn': 1.6,
+                          'Fe': 1.6, 'Co': 1.6, 'Ni': 1.6, 'Cu': 1.6,
+                          'Zn': 1.6, 'Br': 1.6, 'Mo': 1.7}
 
-#CP2K Theory object.
-#CP2K embedding options: coupling='COULOMB' (regular elstat-embed) or 'GAUSSIAN' (GEEP) or S-WAVE
-#Periodic: True (periodic_type='XYZ) or False (periodic_type='NONE')
-#NOTE: Currently not supporting 2D or 1D periodicity
-#Psolvers: 'PERIODIC', 'MT', 'MULTIPOLE' or 'wavelet'
-#For Periodic=True: 'PERIODIC', 'wavelet' or 'IMPLICIT'
-#For Periodic=False: 'MT' or 'wavelet' are good options
+# CP2K Theory object.
+# CP2K embedding options: coupling='COULOMB' (regular elstat-embed) or 'GAUSSIAN' (GEEP) or S-WAVE
+# Periodic: True (periodic_type='XYZ) or False (periodic_type='NONE')
+# NOTE: Currently not supporting 2D or 1D periodicity
+# Psolvers: 'PERIODIC', 'MT', 'MULTIPOLE' or 'wavelet'
+# For Periodic=True: 'PERIODIC', 'wavelet' or 'IMPLICIT'
+# For Periodic=False: 'MT' or 'wavelet' are good options
 
-#MT Solver (noPBC): Cell should be 2 as large as charge density. MT incompatible with GEEP and PBC
-#Wavelet Solver (noPBC or PBC): Cell can be smaller. Compatible with GEEP. Also PBC
-#Periodic Solver (only PBC): Cell can be smaller. Compatible with GEEP. Fast
+# MT Solver (noPBC): Cell should be 2 as large as charge density. MT incompatible with GEEP and PBC
+# Wavelet Solver (noPBC or PBC): Cell can be smaller. Compatible with GEEP. Also PBC
+# Periodic Solver (only PBC): Cell can be smaller. Compatible with GEEP. Fast
 
-#Basis_method='GAPW' : all-electron or pseudopotential. More stable forces, might be more expensive. Not all features available
+# Basis_method='GAPW' : all-electron or pseudopotential. More stable forces, might be more expensive. Not all features available
 # 'GPW' : only pseudopotential. Can be more efficient.
+# 'XTB'
 class CP2KTheory:
     def __init__(self, cp2kdir=None, cp2k_bin_name=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
-                periodic=False, periodic_type='XYZ', qm_periodic_type=None,cell_dimensions=None, cell_vectors=None,
+                periodic=False, periodic_type='XYZ', qm_periodic_type=None, xtb_periodic=False, cell_dimensions=None, cell_vectors=None,
                 qm_cell_dims=None, qm_cell_shift_par=6.0, wavelet_scf_type=40,
                 functional=None, psolver='wavelet', potential_file='POTENTIAL', basis_file='BASIS',
                 basis_method='GAPW', ngrids=4, cutoff=250, rel_cutoff=60,
@@ -125,27 +130,26 @@ class CP2KTheory:
             print("Numcores=1. No parallelization of CP2K requested")
             self.parallelization=None
 
-        #Printlevel
+        # Printlevel
         self.printlevel=printlevel
         self.filename=filename
 
-
-
-        #Methods
+        # Methods
         self.method=method #Can be QUICKSTEP or QMMM
         self.basis_method = basis_method #GAPW or GPW
-        #Basis and PP stuff
+        # Basis and PP stuff
         self.basis_dict=basis_dict
         self.basis_file=basis_file
         self.potential_dict=potential_dict
         self.potential_file=potential_file
 
-        #Periodic options and cell
+        # Periodic options and cell
         self.periodic=periodic
         self.psolver=psolver
         self.wavelet_scf_type=wavelet_scf_type
         self.qm_periodic_type=qm_periodic_type
-        #self.cell_length=cell_length #Total cell length (full system including MM if QM/MM)
+        self.xtb_periodic=xtb_periodic # Boolean, xtB Ewald True or False
+        # self.cell_length=cell_length #Total cell length (full system including MM if QM/MM)
         self.cell_dimensions=cell_dimensions #Cell dimensions. For full system
         self.cell_vectors=cell_vectors #Cell vectors. For full system
         self.qm_cell_dims=qm_cell_dims # Optional QM-cell dims (only if QM/MM)
@@ -322,6 +326,7 @@ class CP2KTheory:
                              cell_dimensions=self.cell_dimensions,
                              cell_vectors=self.cell_vectors,
                              qm_cell_dims=self.qm_cell_dims, qm_periodic_type=self.qm_periodic_type,
+                             xtb_periodic=self.xtb_periodic,
                              basis_file=self.basis_file,
                              potential_file=self.potential_file, periodic_type=self.periodic_type,
                              psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
@@ -364,6 +369,7 @@ class CP2KTheory:
                              coordfile=system_xyzfile, scf_convergence=self.scf_convergence, eps_default=self.eps_default,
                              scf_maxiter=self.scf_maxiter, outer_scf_maxiter=self.outer_scf_maxiter,
                              periodic_type=self.periodic_type,
+                             xtb_periodic=self.xtb_periodic,
                              cell_dimensions=self.cell_dimensions,
                              cell_vectors=self.cell_vectors,
                              basis_file=self.basis_file, potential_file=self.potential_file,
@@ -480,7 +486,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     mgrid_commensurate=False, scf_maxiter=50, outer_scf_maxiter=10,
                     scf_guess='RESTART', scf_convergence=1e-6, eps_default=1e-10,
                     periodic_type="XYZ", cell_dimensions=None, cell_vectors=None,
-                    qm_cell_dims=None, qm_periodic_type=None,basis_file='BASIS', potential_file='POTENTIAL',
+                    qm_cell_dims=None, qm_periodic_type=None, xtb_periodic=False, basis_file='BASIS', potential_file='POTENTIAL',
                     psolver='wavelet', wavelet_scf_type=40,
                     ngrids=4, cutoff=250, rel_cutoff=60,
                     coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
@@ -579,6 +585,12 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         #QS
         inpfile.write(f'    &QS\n')
         inpfile.write(f'      METHOD {basis_method}\n') #NOTE
+        if basis_method == 'XTB':
+            inpfile.write(f'      &XTB\n') #NOTE
+            inpfile.write(f'          CHECK_ATOMIC_CHARGES F\n')
+            inpfile.write(f'          DO_EWALD  {xtb_periodic}\n') #NOTE
+            inpfile.write(f'          USE_HALOGEN_CORRECTION T\n') #NOTE
+            inpfile.write(f'      &END XTB\n') #NOTE
         inpfile.write(f'      EPS_DEFAULT {eps_default}\n') #NOTE
         inpfile.write(f'    &END QS\n')
 

@@ -103,7 +103,7 @@ class Fragment:
         if self.printlevel >= 2:
             print_line_with_subheader1("New ASH fragment")
         #Minimal ASH Fragment
-        if self.printlevel == 0:
+        if self.printlevel > 0:
             print("ASH Fragment created")
         self.energy = None
         self.elems = []
@@ -2593,7 +2593,7 @@ def reorder_hungarian_scipy(p_atoms, q_atoms, p_coord, q_coord):
 
     # Find unique atoms
     unique_atoms = np.unique(p_atoms)
-    print("unique_atoms:", unique_atoms)
+    #print("unique_atoms:", unique_atoms)
     # generate full view from q shape to fill in atom view on the fly
     view_reorder = np.zeros(q_atoms.shape, dtype=int)
     view_reorder -= 1

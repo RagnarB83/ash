@@ -435,8 +435,9 @@ class QMMMTheory:
                 self.dipole_coords.append(pos_d2)
         #print_time_rel(timeA, modulename="SetDipoleCharges", currprintlevel=self.printlevel, currthreshold=1)
 
-    #More efficient version than previous loop
-    def make_QM_PC_gradient(self):
+    # Reasonably efficient version (this dominates QM/MM gradient prepare)
+    def make_QM_PC_gradient_old(self):
+        #print("this is old")
         self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
         qmatom_indices = np.where(np.isin(self.allatoms, self.qmatoms))[0]
         pcatom_indices = np.where(~np.isin(self.allatoms, self.qmatoms))[0] # ~ is NOT operator in numpy
@@ -444,7 +445,19 @@ class QMMMTheory:
         self.QM_PC_gradient[pcatom_indices] = self.PCgradient[:len(pcatom_indices)]
         return
 
-    #TruncatedPCfunction control flow for pointcharge field passed to QM program
+    # diff version. Potentially faster
+    def make_QM_PC_gradient_optimized(self):
+        #print("this is optimized")
+        self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
+        xatom_mask = np.isin(self.allatoms, self.qmatoms)
+        self.QM_PC_gradient[xatom_mask] = self.QMgradient_wo_linkatoms
+        self.QM_PC_gradient[~xatom_mask] = self.PCgradient[:len(self.allatoms) - np.sum(xatom_mask)]
+        return
+
+    # TODO: test!
+    make_QM_PC_gradient=make_QM_PC_gradient_optimized
+
+    # TruncatedPCfunction control flow for pointcharge field passed to QM program
     def TruncatedPCfunction(self):
         self.TruncatedPCcalls+=1
         print("TruncatedPC approximation!")
@@ -772,6 +785,7 @@ class QMMMTheory:
         if self.printlevel > 1: print("Number of PCs provided to QM-program:", len(self.pointcharges))
 
         #QM-part
+        print_time_rel(CheckpointTime, modulename='QM-step-prep', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
         if self.qm_theory_name == "None" or self.qm_theory_name == "ZeroTheory":
             print("No QMtheory. Skipping QM calc")
             QMenergy=0.0;self.linkatoms=False;PCgradient=np.array([0.0, 0.0, 0.0])
@@ -780,8 +794,8 @@ class QMMMTheory:
         #TODO: Add check whether QM-code supports both pointcharges and pointcharge-gradient?
         else:
             #Calling QM theory, providing current QM and MM coordinates.
-            if Grad==True:
-                if PC==True:
+            if Grad is True:
+                if PC is True:
                     QMenergy, QMgradient, PCgradient = self.qm_theory.run(current_coords=self.qmcoords,
                                                                                          current_MM_coords=self.pointchargecoords,
                                                                                          MMcharges=self.pointcharges,

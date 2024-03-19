@@ -24,7 +24,8 @@ class ORCATheory:
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label="ORCA",
                  moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
-                 fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None):
+                 fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None,
+                 cpcm_radii=None):
         print_line_with_mainheader("ORCATheory initialization")
 
 
@@ -195,6 +196,18 @@ nroots {self.TDDFTroots}
 IRoot {self.FollowRoot}
 end
 """
+        #Specific CPCM radii. e.g. to use DRACO radii
+        if cpcm_radii is not None:
+            print("CPCM radii provided:", cpcm_radii)
+            #if len(cpcm_radii) != len(c:
+            #    print("Error: Number of radii provided does not match number of elements in molecule")
+            #    ashexit()
+            cpcm_block="%cpcm\n"
+            for i,radius in enumerate(cpcm_radii):
+                cpcm_block= cpcm_block+ f"AtomRadii({i},  {radius})\n"
+            cpcm_block=cpcm_block+"end\n"
+            print("cpcm_block:", cpcm_block)
+            self.orcablocks=self.orcablocks+cpcm_block
 
         #XDM: if True then we add !AIM to input
         self.xdm=False
@@ -2919,7 +2932,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 
 #Function to prepare ORCA orbitals for another ORCA calculation
 #Mainly for getting natural orbitals
-def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="",
+def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="", label="frag",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None,
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
         FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6,
@@ -3322,6 +3335,9 @@ end
     else:
         nat_occupations=[]
 
-    print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", mofile)
+    #Renaming mofile (for purposes of having unique mofiles if we run this function multiple times)
+    newmofile = label + '_'+mofile
+    os.rename(mofile, newmofile)
+    print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", newmofile)
     print("Also returning natural occupations list:", nat_occupations)
-    return mofile, nat_occupations
+    return newmofile, nat_occupations

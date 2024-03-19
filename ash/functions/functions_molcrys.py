@@ -831,9 +831,10 @@ NAME         X           Y           Z
 
 
 
-#Filter coords array based on duplicate condition. https://stackoverflow.com/questions/43035503/efficiently-delete-arrays-that-are-close-from-each-other-given-a-threshold-in-py
+#Filter coords array based on duplicate condition.
 #Gives list of duplicate row indices if less than threshold
-def filter_duplicate(data):
+#Old slow version
+def filter_duplicate_old(data):
     def condition(xs,prev):
         threshold=1e-5
         val=sum((x-yp)*(x-yp) for x,yp in zip(xs,prev))
@@ -844,6 +845,14 @@ def filter_duplicate(data):
             result.append(element)
         else:
             duplicate_indices.append(rowindex)
+    return duplicate_indices
+
+#New fast version
+def filter_duplicate(data):
+    threshold = 1e-5
+    squared_diff = np.sum((data[:, np.newaxis] - data[np.newaxis, :])**2, axis=2)
+    np.fill_diagonal(squared_diff, np.inf)  # Set diagonal elements to infinity to exclude self-comparison
+    duplicate_indices = np.where(np.any(squared_diff < threshold, axis=1))[0]
     return duplicate_indices
 
 
@@ -885,7 +894,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     #Find duplicate coordinates (atoms on top of each other). Add index to deletion list. Happens if atoms have coordinates right on box boundary
     #List of Bools, duplicates are True
     #NOTE: Problem, way too slow
-    print("Starting filter duplicate. This step is currently slow. To be fixed")
+    print("Starting filter duplicate")
     timestampA=time.time()
     dupls=np.array(filter_duplicate(extended_coords))
     print_time_rel(timestampA, modulename='filter duplicate', moduleindex=4)

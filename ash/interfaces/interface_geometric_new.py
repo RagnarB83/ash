@@ -72,16 +72,17 @@ class GeomeTRICOptimizerClass:
             if frozenatoms==None:
                 frozenatoms=[]
 
-            if ActiveRegion == True and coordsystem == "tric":
+            if ActiveRegion is True and coordsystem == "tric":
                 print("Warning: ActiveRegion True and coordsystem is TRIC.")
-                print("This requires translation")
+                print("HDLC coordinate system is usually more robust for large systems.")
+                print("Try coordsystem='hdlc' if you experience problems")
                 #TODO: Look into this more
-                #print("Activeregion true and coordsystem = tric are not compatible")
-                #print("Switching to HDLC")
-                #coordsystem='hdlc'
-                #exit()
+                # print("Activeregion true and coordsystem = tric are not compatible")
+                # print("Switching to HDLC")
+                # coordsystem='hdlc'
+                # exit()
 
-            #Defining some attributes
+            # Defining some attributes
             self.maxiter=maxiter
             self.actatoms=actatoms
             self.frozenatoms=frozenatoms

@@ -6,7 +6,7 @@ module Juliafunctions
 using PythonCall
 
 ########################################################################
-# This Julia interfaced only intended for PythonCall (not PyJulia)
+# This Julia interfaced only intended for PythonCall
 ########################################################################
 
 # Simple test function

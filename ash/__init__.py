@@ -66,8 +66,8 @@ import ash.interfaces.interface_multiwfn
 from .interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from .modules.module_spinprojection import SpinProjectionTheory
-#DualTheory
-from .modules.module_dualtheory import DualTheory
+#DualTheory and WrapTheory
+from .modules.module_dualtheory import DualTheory,WrapTheory
 
 # Surface
 from .modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, write_surfacedict_to_file
@@ -80,7 +80,7 @@ import ash.interfaces.interface_ORCA
 
 from .interfaces.interface_Psi4 import Psi4Theory
 from .interfaces.interface_dalton import DaltonTheory
-from .interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,KS_inversion_kspies,DFA_error_analysis
+from .interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,KS_inversion_kspies,DFA_error_analysis,pySCF_write_Moldenfile
 density_potential_inversion=KS_inversion_kspies #Temporary
 from .interfaces.interface_ipie import ipieTheory
 from .interfaces.interface_dice import DiceTheory
@@ -90,15 +90,19 @@ from .interfaces.interface_QUICK import QUICKTheory
 from .interfaces.interface_TeraChem import TeraChemTheory
 from .interfaces.interface_sparrow import SparrowTheory
 from .interfaces.interface_NWChem import NWChemTheory
+from .interfaces.interface_Gaussian import GaussianTheory
 from .interfaces.interface_CP2K import CP2KTheory
 from .interfaces.interface_BigDFT import BigDFTTheory
 from .interfaces.interface_deMon import deMon2kTheory
 from .interfaces.interface_ccpy import ccpyTheory
+from .interfaces.interface_MNDO import MNDOTheory
 
 from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
 from .interfaces.interface_xtb import xTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
 from .interfaces.interface_MLatom import MLatomTheory
+from .interfaces.interface_DRACO import get_draco_radii
+from .interfaces.interface_DFTD4 import DFTD4Theory, calc_DFTD4
 
 # MM: external and internal
 from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
@@ -186,7 +190,7 @@ if ash.settings_ash.settings_dict["print_exit_footer"] is True:
         atexit.register(ash.ash_header.print_timings)
 
 # Julia dependency. Load in the beginning or not.
-#As both PyJulia and PythonCall are a bit slow to load, it is best to only load when needed (current behaviour)
+#As PythonCall can be a bit slow to load, it is best to only load when needed (current behaviour)
 if ash.settings_ash.settings_dict["load_julia"] is True:
     try:
         print("Importing Julia interface and loading functions")

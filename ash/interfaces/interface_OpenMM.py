@@ -5178,9 +5178,8 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     return outputname
 
 
-def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffile=None, smiles_string=None, resname="LIG",
-                                 forcefield_option='GAFF', gaffversion='gaff-2.11', charge=None,
-                                openff_file="openff-2.0.0.offxml",
+def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfile=None, sdffile=None, smiles_string=None, resname="LIG",
+                                 forcefield_option='GAFF', gaffversion='gaff-2.11', openff_file="openff-2.0.0.offxml",
                                 expected_coul14=0.8333333333333334, expected_lj14=0.5, allow_undefined_stereo=None):
     print_line_with_mainheader("SmallMolecule Parameterizor")
     print("Input options: xyzfile, pdbfile, molfile, sdffile, smiles_string")
@@ -5244,6 +5243,9 @@ def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffi
         print("A SMILES string input means that no coordinate information is available. PDB-file created will have dummy coordinates that you have to fill in yourself.")
     elif xyzfile:
         print("XYZ file provided:", xyzfile)
+        if os.path.isfile(xyzfile) is False:
+            print("File does not exist. Exiting")
+            ashexit()
         print("Will use RDKit to convert XYZ file to an RDKit Mol object and then to OpenFF Molecule object")
         #Now using rdkit for more reliable XYZ-Mol conversion (handles total charges and bond orders)
         from rdkit import Chem
@@ -5367,10 +5369,14 @@ def small_molecule_parameterizer(xyzfile=None, pdbfile=None, molfile=None, sdffi
         write_xmlfile_parmed(topology,system,final_xmlfilename)
 
     #Create PDB-file that matches xml-file
-    print("Now creating a PDB-file that matches the XML-file")
-    #Getting Cartesian coordinates from molecule
-    pos = [openmm.Vec3(i[0]._magnitude,i[1]._magnitude,i[2]._magnitude) for i in molecule._conformers[0]]
-    openmm.app.PDBFile.writeFile(topology, pos* openmm.unit.angstrom, open(f'{resname}.pdb', 'w'))
+    if smiles_string is None:
+        print("Now creating a PDB-file that matches the XML-file")
+        #Getting Cartesian coordinates from molecule
+        pos = [openmm.Vec3(i[0]._magnitude,i[1]._magnitude,i[2]._magnitude) for i in molecule._conformers[0]]
+        openmm.app.PDBFile.writeFile(topology, pos* openmm.unit.angstrom, open(f'{resname}.pdb', 'w'))
+    else:
+        print("A SMILES-string was given. No PDB-file created since no structural information available")
+
 
     #Now we have created an OpenMM system based on ligand Forcefield and created an XML-file
     print()
