@@ -107,7 +107,7 @@ class MNDOTheory:
                 qm_elems = elems
 
         # Write inputfile
-        write_mndo_input(self.method,self.filename,qm_elems,current_coords,charge,mult,PC=PC, Grad=Grad, , scfconv=self.scfconv,
+        write_mndo_input(self.method,self.filename,qm_elems,current_coords,charge,mult, PC=PC, Grad=Grad, scfconv=self.scfconv,
                          MMcharges=MMcharges, MMcoords=current_MM_coords, restart=self.restart_option, diis=self.diis, guess_option=self.guess_option)
 
         # Run MNDO
