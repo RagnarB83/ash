@@ -435,8 +435,8 @@ class QMMMTheory:
                 self.dipole_coords.append(pos_d2)
         #print_time_rel(timeA, modulename="SetDipoleCharges", currprintlevel=self.printlevel, currthreshold=1)
 
-    #More efficient version than previous loop
-    def make_QM_PC_gradient(self):
+    # Reasonably efficient version (this dominates QM/MM gradient prepare)
+    def make_QM_PC_gradient_old(self):
         self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
         qmatom_indices = np.where(np.isin(self.allatoms, self.qmatoms))[0]
         pcatom_indices = np.where(~np.isin(self.allatoms, self.qmatoms))[0] # ~ is NOT operator in numpy
@@ -444,7 +444,20 @@ class QMMMTheory:
         self.QM_PC_gradient[pcatom_indices] = self.PCgradient[:len(pcatom_indices)]
         return
 
-    #TruncatedPCfunction control flow for pointcharge field passed to QM program
+    # diff version. Potentially faster
+    def make_QM_PC_gradient_optimized():
+        self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
+        xatom_mask = np.isin(self.allatoms, self.qmatoms)
+        self.QM_PC_gradient[xatom_mask] = self.QMgradient_wo_linkatoms
+        self.QM_PC_gradient[~xatom_mask] = self.PCgradient[:len(self.allatoms) - np.sum(xatom_mask)]
+        return
+
+    #TODO: test!
+    make_QM_PC_gradient=make_QM_PC_gradient_old
+
+
+
+    # TruncatedPCfunction control flow for pointcharge field passed to QM program
     def TruncatedPCfunction(self):
         self.TruncatedPCcalls+=1
         print("TruncatedPC approximation!")

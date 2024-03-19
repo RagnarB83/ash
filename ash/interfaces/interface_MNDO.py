@@ -15,7 +15,7 @@ import ash.settings_ash
 # MNDOTheory object.
 class MNDOTheory:
     def __init__(self, mndodir=None, filename='mndo', method=None, printlevel=2, label="MNDO",
-                numcores=1, restart_option=True, diis=False, guess_option=0):
+                numcores=1, restart_option=True, diis=False, guess_option=0, scfconv=6):
 
         self.theorynamelabel="MNDO"
         self.label=label
@@ -63,6 +63,7 @@ class MNDOTheory:
         # For convergence issues, set to True (DIIS activated from beginning)
         self.diis=diis
         self.guess_option=guess_option
+        self.scfconv=scfconv #10**(-scfconv) eV. MNDO default is 6 i.e. 1E-6 eV => 3.67E-08 Eh
 
     #Set numcores method
     def set_numcores(self,numcores):
@@ -86,7 +87,7 @@ class MNDOTheory:
             ashexit()
 
         print("Job label:", label)
-        print(f"Creating inputfile: {self.filename}.nw")
+        print(f"Creating inputfile: {self.filename}.inp")
         print(f"{self.theorynamelabel} input:")
         print("MNDO method:", self.method)
 
@@ -106,7 +107,7 @@ class MNDOTheory:
                 qm_elems = elems
 
         # Write inputfile
-        write_mndo_input(self.method,self.filename,qm_elems,current_coords,charge,mult,PC=PC, Grad=Grad,
+        write_mndo_input(self.method,self.filename,qm_elems,current_coords,charge,mult,PC=PC, Grad=Grad, , scfconv=self.scfconv,
                          MMcharges=MMcharges, MMcoords=current_MM_coords, restart=self.restart_option, diis=self.diis, guess_option=self.guess_option)
 
         # Run MNDO
@@ -134,7 +135,7 @@ class MNDOTheory:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
 
-def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, restart=True, diis=False, guess_option=0):
+def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, restart=True, diis=False, guess_option=0, scfconv=6):
     mndo_methods={'ODM3':-23,'ODM2':-22,'MNDO/d':-10,'OM3':-8,
                     'PM3':-7,'OM2':-6,'OM1':-5,'AM1':-2,
                     'MNDOC': -1, 'MNDO':0, 'MINDO/3':1, 'CNDO/2':2,
@@ -176,7 +177,7 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
 
         f.write(f"iop={mndo_methods[method]}  jop={jobtype} {openshellkwstring}  iform=1 igeom=1 +\n")
         f.write(f"kitscf=300 kharge={charge} {restartline} {ktrial_line} {diisline} +\n")
-        f.write(f"imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
+        f.write(f"iscf={scfconv} imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
         # PC-part
         if PC is True:
             # mminp=2 pointcharges
