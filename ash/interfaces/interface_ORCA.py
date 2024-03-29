@@ -60,7 +60,7 @@ class ORCATheory:
         self.check_for_errors=check_for_errors
         self.check_for_warnings=check_for_warnings
 
-        #Counter for how often ORCATheory.run is called
+        # Counter for how often ORCATheory.run is called
         self.runcalls=0
 
         #Whether to keep the ORCA outputfile for each run as orca_runX.out

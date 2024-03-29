@@ -661,7 +661,7 @@ def calcfreq(evalues):
     c = ash.constants.c
     pi = ash.constants.pi
     evalues_si = [val*hartree2j/bohr2m/bohr2m/amu2kg for val in evalues]
-    vfreq_hz = [1/(2*pi)*np.sqrt(np.complex_(val)) for val in evalues_si]
+    vfreq_hz = [1/(2*pi)*np.sqrt(np.complex128(val)) for val in evalues_si]
     vfreq = [val/c for val in vfreq_hz]
     return vfreq
 

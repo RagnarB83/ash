@@ -587,6 +587,7 @@ def writelisttofile(pylist, file, separator=" "):
 
 # Natural (human) sorting of list
 def natural_sort(l):
+    import re
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(l, key=alphanum_key)
@@ -649,11 +650,11 @@ def column(matrix, i):
 #Printing if currprintlevel
 def print_time_rel(timestamp, modulename='Unknown', moduleindex=4, currprintlevel=1, currthreshold=1):
     secs = time.time() - timestamp
-    print("secs:", secs)
+    #print("secs:", secs)
     mins = secs / 60
     if currprintlevel >= currthreshold:
         print_line_with_subheader2(
-            "Time to calculate step ({}): {:3.2f} seconds, {:3.1f} minutes.".format(modulename, secs, mins))
+            "Time to calculate step ({}): {:4.3f} seconds, {:3.1f} minutes.".format(modulename, secs, mins))
     # Adding time to Timings object
     timingsobject.add(modulename, secs, moduleindex=moduleindex)
 

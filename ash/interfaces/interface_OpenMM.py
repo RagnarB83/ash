@@ -97,9 +97,9 @@ class OpenMMTheory:
         # Initialize system
         self.system = None
 
-        #Degrees of freedom of system (accounts for frozen atoms and constraints)
-        #Will be set by compute_DOF
-        self.dof=None
+        # Degrees of freedom of system (accounts for frozen atoms and constraints)
+        # Will be set by compute_DOF
+        self.dof = None
 
         # Autoconstraints when creating MM system: Default: None,  Options: Hbonds, AllBonds, HAng
         if autoconstraints == 'HBonds':
@@ -815,7 +815,7 @@ class OpenMMTheory:
                     print(f"{len(self.user_restraints)} user-defined restraints to add.")
             self.add_bondrestraints(restraints=restraints)
 
-        #Now changing masses if requested
+        # Now changing masses if requested
         if changed_masses is not None:
             if self.printlevel >= 1:
                 print("Modified masses")
@@ -828,30 +828,28 @@ class OpenMMTheory:
         if self.printlevel >= 3:
             for i in range(0, self.system.getNumConstraints()):
                 print("Defined constraints:", self.system.getConstraintParameters(i))
-        #print_time_rel(timeA, modulename="system create")
+        # print_time_rel(timeA, modulename="system create")
         timeA = time.time()
 
-
-
-        #Set simulation parameters (here just default options)
+        # Set simulation parameters (here just default options)
         self.set_simulation_parameters()
 
-        #Now calling function to compute the actual degrees of freedom.
-        #NOTE: Needs to be called once, after system-create, constraints and frozen atoms are done.
+        # Now calling function to compute the actual degrees of freedom.
+        # NOTE: Needs to be called once, after system-create, constraints and frozen atoms are done.
         self.compute_DOF()
 
-        #Force run. Option to allow run even though constraints may be defined
-        #Used by GentlewarmupMD etc. to get a basic gradient
+        # Force run. Option to allow run even though constraints may be defined
+        # Used by GentlewarmupMD etc. to get a basic gradient
         self.force_run=False
 
         # Create/update basic simulation (will be overridden by OpenMM_Opt, OpenMM_MD functions)
-        #Disabling as we want to make OpenMMTheory picklable
-        #update_simulation needs to be called instead by run
-        #self.create_simulation()
+        # Disabling as we want to make OpenMMTheory picklable
+        # update_simulation needs to be called instead by run
+        # self.create_simulation()
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
 
-    #Function to write PDB-file if everything is available
+    # Function to write PDB-file if everything is available
     def write_pdbfile(self, outputname="system"):
         import openmm
         import openmm.app
@@ -1062,37 +1060,47 @@ class OpenMMTheory:
         #4. remove system restraint force ?
         self.system.removeForce(-1)
 
-
-    #Option to make sure small solute in water behaves for PBC
-    #NOTE: DOes not work
-    def add_custom_bond_force(self,i,j,forceconstant):
+# Bond restraint force, e.g. for umbrella sampling
+# TODO : unit check
+    def add_custom_bond_force(self,i,j,value,forceconstant):
         import openmm
-        print(f"Adding custom bond force between atom index i={i} and j={j} with forceconstant={forceconstant}")
+        print(f"Adding custom bond force between atom index i={i} and j={j} with value: {value} Angstrom, forceconstant={forceconstant} kcal/mol/Angstrom^2")
         bond_force = openmm.CustomBondForce("0.5*k*(r-r0)^2")
-        bond_force.addGlobalParameter("k", forceconstant)
-        bond_force.addGlobalParameter("r0", 1.0)
-        #bond_force = openmm.HarmonicBondForce()
-        #bond_force.addBond(i,j,0.0,forceconstant)
+        bond_force.addGlobalParameter("k", forceconstant*openmm.unit.kilocalorie_per_mole/openmm.unit.angstrom**2)
+        bond_force.addGlobalParameter("r0", value*openmm.unit.angstrom)
         bond_force.addBond(i, j)
-        print("bond_force getBondParameters:", bond_force.getBondParameters(0))
-        bond_force.setUsesPeriodicBoundaryConditions(True)
+        bond_force.setUsesPeriodicBoundaryConditions(False)
         self.system.addForce(bond_force)
 
+
     #For umbrella sampling e.g
-    def add_custom_torsion_force(self,i,j,k,l,forceconstant):
+    #TODO: unit check
+    def add_custom_angle_force(self,i,j,k,value,forceconstant):
+        import openmm
+        print(f"Adding custom angle force for atoms: {i}, {j}, {k}  with value: {value} radians with forceconstant={forceconstant}")
+        angle_force = openmm.CustomAngleForce("0.5*k*(theta-theta0)^2")
+        angle_force.addGlobalParameter("k",forceconstant)
+        angle_force.addGlobalParameter("theta0", value)
+        angle_force.addAngle(i, j, k)
+        angle_force.setUsesPeriodicBoundaryConditions(False)
+        self.system.addForce(angle_force)
+
+    # Harmonic torsion bias for umbrella sampling e.g
+     #TODO: unit check
+    def add_custom_torsion_force(self,i,j,k,l,value,forceconstant):
         import openmm
         import math
         print(f"Adding custom torsion force for atoms: {i}, {j}, {k}, {l}  with forceconstant={forceconstant}")
-        torsion_force = openmm.CustomTorsionForce("0.5*K*dtheta^2; dtheta = min(diff, 2*Pi-diff); diff = abs(theta - theta0)")
+        torsion_force = openmm.CustomTorsionForce("0.5*k*dtheta^2; dtheta = min(diff, 2*Pi-diff); diff = abs(theta - theta0)")
+        #Note: using global here, should be fine 1 torsion
         torsion_force.addGlobalParameter("Pi", math.pi)
-        torsion_force.addGlobalParameter("k", forceconstant)
-        torsion_force.addGlobalParameter("r0", 1.0)
-        torsion_force.addGlobalParameter("theta0", 0.0)
-        #bond_force = openmm.HarmonicBondForce()
-        #bond_force.addBond(i,j,0.0,forceconstant)
+        torsion_force.addGlobalParameter("k",forceconstant)
+        torsion_force.addGlobalParameter("theta0", value)
         torsion_force.addTorsion(i, j, k, l)
+        print("torsion_force getTorsionParameters:", torsion_force.getTorsionParameters(0))
         torsion_force.setUsesPeriodicBoundaryConditions(True)
         self.system.addForce(torsion_force)
+
     # This is custom externa force that restrains group of atoms to center of system
     def add_center_force(self, center_coords=None, atomindices=None, forceconstant=1.0):
         import openmm
@@ -3239,14 +3247,15 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None,
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
-              anderson_thermostat=False, platform='CPU', constraints=None,
+              anderson_thermostat=False, platform='CPU', constraints=None, restraints=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
               center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False):
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, force_file_option=force_file_option, constraints=constraints,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, force_file_option=force_file_option,
+                        constraints=constraints, restraints=restraints,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, printlevel=printlevel, hydrogenmass=hydrogenmass,
@@ -3272,7 +3281,7 @@ class OpenMM_MDclass:
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
                  barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None,
                  coupling_frequency=1, printlevel=2, platform='CPU',
-                 anderson_thermostat=False, hydrogenmass=1.5, constraints=None,
+                 anderson_thermostat=False, hydrogenmass=1.5, constraints=None, restraints=None,
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
                  center_force_atoms=None, centerforce_constant=1.0,
@@ -3327,6 +3336,29 @@ class OpenMM_MDclass:
                                 hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
             self.QM_MM_object = None
             self.qmtheory=theory
+
+        #Basic restraints (bond,angle,torsion)
+        if restraints is not None:
+            print("Restraints defined. Will add to OpenMMTheory object")
+            print("All restraints:", restraints)
+            for restraint in restraints:
+                print("Restraint:", restraint)
+                if len(restraint) == 4:
+                    print("Bond restraint assumed")
+                    print(f"Atoms: {restraint[0]} {restraint[1]} Value: {restraint[2]} Force-constant: {restraint[3]} kcal/mol/Angstrom^2")
+                    self.openmmobject.add_custom_bond_force(restraint[0], restraint[1], restraint[2], restraint[3])
+                elif len(restraint) == 5:
+                    print("Angle restraint assumed")
+                    print(f"Atoms: {restraint[0]} {restraint[1]} {restraint[2]} Value: {restraint[3]} Force-constant: {restraint[4]} kcal/mol/radian^2")
+                    self.openmmobject.add_custom_angle_force(restraint[0], restraint[1], restraint[2], restraint[3], restraint[4])
+                elif len(restraint) == 6:
+                    print("Torsion restraint assumed")
+                    print(f"Atoms: {restraint[0]} {restraint[1]} {restraint[2]} {restraint[3]} Value: {restraint[4]} Force-constant: {restraint[5]} kcal/mol/radian^2")
+                    self.openmmobject.add_custom_torsion_force(restraint[0], restraint[1], restraint[2], restraint[3], restraint[4], restraint[5])
+
+
+
+
 
         # Assigning some basic variables
         self.temperature = temperature
@@ -5257,7 +5289,7 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
         print("RDKit-determined Smiles_string is:", smiles_string)
         molecule = Molecule.from_rdkit(mol)
 
-        #OLD stilly way: convert XYZ-to-PDB and then PDB-to-SMILES
+        #OLD silly way: convert XYZ-to-PDB and then PDB-to-SMILES
         #print("Converting XYZ file to PDB file with connectivity")
         #pdbfile = xyz_to_pdb_with_connectivity(xyzfile, resname=resname)
         # Create a SMILES string from PDB-file
@@ -5369,13 +5401,10 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
         write_xmlfile_parmed(topology,system,final_xmlfilename)
 
     #Create PDB-file that matches xml-file
-    if smiles_string is None:
-        print("Now creating a PDB-file that matches the XML-file")
-        #Getting Cartesian coordinates from molecule
-        pos = [openmm.Vec3(i[0]._magnitude,i[1]._magnitude,i[2]._magnitude) for i in molecule._conformers[0]]
-        openmm.app.PDBFile.writeFile(topology, pos* openmm.unit.angstrom, open(f'{resname}.pdb', 'w'))
-    else:
-        print("A SMILES-string was given. No PDB-file created since no structural information available")
+    print("Now creating a PDB-file that matches the XML-file")
+    #Getting Cartesian coordinates from molecule
+    pos = [openmm.Vec3(i[0]._magnitude,i[1]._magnitude,i[2]._magnitude) for i in molecule._conformers[0]]
+    openmm.app.PDBFile.writeFile(topology, pos* openmm.unit.angstrom, open(f'{resname}.pdb', 'w'))
 
 
     #Now we have created an OpenMM system based on ligand Forcefield and created an XML-file
