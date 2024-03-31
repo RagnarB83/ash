@@ -26,6 +26,10 @@ class QMMMTheory:
         if qm_theory is None or qmatoms is None:
             print("Error: QMMMTheory requires defining: qm_theory, qmatoms, fragment")
             ashexit()
+        # If fragment object has not been defined
+        if fragment is None:
+            print("fragment= keyword has not been defined for QM/MM. Exiting")
+            ashexit()
 
         # Defining charge/mult of QM-region
         self.qm_charge=qm_charge
@@ -59,47 +63,50 @@ class QMMMTheory:
         print("QM-theory:", self.qm_theory_name)
         print("MM-theory:", self.mm_theory_name)
 
-        # If fragment object has been defined
-        # This probably needs to be always true
-        if fragment is not None:
-            self.fragment=fragment
-            self.coords=fragment.coords
-            self.elems=fragment.elems
-            self.connectivity=fragment.connectivity
+        self.fragment=fragment
+        self.coords=fragment.coords
+        self.elems=fragment.elems
+        self.connectivity=fragment.connectivity
 
-            # Region definitions
-            self.allatoms=list(range(0,len(self.elems)))
-            print("All atoms in fragment:", len(self.allatoms))
-            # Sorting qmatoms list
-            self.qmatoms = sorted(qmatoms)
+        # Region definitions
+        self.allatoms=list(range(0,len(self.elems)))
+        print("All atoms in fragment:", len(self.allatoms))
+        self.num_allatoms=len(self.allatoms)
+        # Sorting qmatoms list
+        self.qmatoms = sorted(qmatoms)
 
-            if len(self.qmatoms) == 0:
-                print("Error: List of qmatoms provided is empty. This is not allowed.")
+        # All-atom Bool-array for whether atom-index is a QM-atom index or not
+        # Used by make_QM_PC_gradient
+        self.xatom_mask = np.isin(self.allatoms, self.qmatoms)
+        self.sum_xatom_mask = np.sum(self.xatom_mask)
+
+        if len(self.qmatoms) == 0:
+            print("Error: List of qmatoms provided is empty. This is not allowed.")
+            ashexit()
+        self.mmatoms = listdiff(self.allatoms, self.qmatoms)
+
+        # FROZEN AND ACTIVE ATOM REGIONS for NonbondedTheory
+        if self.mm_theory_name == "NonBondedTheory":
+            #NOTE: To be looked at. actatoms and frozenatoms have no meaning in OpenMMTHeory. NonbondedTheory, however.
+            if actatoms is None and frozenatoms is None:
+                #print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
+                #print("All {} atoms active, no atoms frozen in QM/MM definition (may not be frozen in optimizer)".format(len(self.allatoms)))
+                self.actatoms=self.allatoms
+                self.frozenatoms=[]
+            elif actatoms is not None and frozenatoms is None:
+                print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
+                #Sorting actatoms list
+                self.actatoms = sorted(actatoms)
+                self.frozenatoms = listdiff(self.allatoms, self.actatoms)
+                print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
+            elif frozenatoms is not None and actatoms is None:
+                print("Frozenatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
+                self.frozenatoms = sorted(frozenatoms)
+                self.actatoms = listdiff(self.allatoms, self.frozenatoms)
+                print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
+            else:
+                print("active_atoms and frozen_atoms can not be both defined")
                 ashexit()
-            self.mmatoms=listdiff(self.allatoms,self.qmatoms)
-
-            # FROZEN AND ACTIVE ATOM REGIONS for NonbondedTheory
-            if self.mm_theory_name == "NonBondedTheory":
-                #NOTE: To be looked at. actatoms and frozenatoms have no meaning in OpenMMTHeory. NonbondedTheory, however.
-                if actatoms is None and frozenatoms is None:
-                    #print("Actatoms/frozenatoms list not passed to QM/MM object. Will do all frozen interactions in MM (expensive).")
-                    #print("All {} atoms active, no atoms frozen in QM/MM definition (may not be frozen in optimizer)".format(len(self.allatoms)))
-                    self.actatoms=self.allatoms
-                    self.frozenatoms=[]
-                elif actatoms is not None and frozenatoms is None:
-                    print("Actatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-                    #Sorting actatoms list
-                    self.actatoms = sorted(actatoms)
-                    self.frozenatoms = listdiff(self.allatoms, self.actatoms)
-                    print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
-                elif frozenatoms is not None and actatoms is None:
-                    print("Frozenatoms list passed to QM/MM object. Will skip all frozen interactions in MM.")
-                    self.frozenatoms = sorted(frozenatoms)
-                    self.actatoms = listdiff(self.allatoms, self.frozenatoms)
-                    print("{} active atoms, {} frozen atoms".format(len(self.actatoms), len(self.frozenatoms)))
-                else:
-                    print("active_atoms and frozen_atoms can not be both defined")
-                    ashexit()
 
             # print("List of all atoms:", self.allatoms)
             print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
@@ -109,9 +116,7 @@ class QMMMTheory:
             # print("MM region", self.mmatoms)
             blankline()
 
-        else:
-            print("fragment= keyword has not been defined for QM/MM. Exiting")
-            ashexit()
+
 
         # Setting QM/MM qmatoms in QMtheory also (used for Spin-flipping currently)
         self.qm_theory.qmatoms=self.qmatoms
@@ -490,12 +495,10 @@ class QMMMTheory:
         self.QM_PC_gradient[pcatom_indices] = self.PCgradient[:len(pcatom_indices)]
         return
 
-    # diff version. Slightly faster
+    # Faster version. Also, uses precalculated mask.
     def make_QM_PC_gradient_optimized(self):
-        self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
-        xatom_mask = np.isin(self.allatoms, self.qmatoms)
-        self.QM_PC_gradient[xatom_mask] = self.QMgradient_wo_linkatoms
-        self.QM_PC_gradient[~xatom_mask] = self.PCgradient[:len(self.allatoms) - np.sum(xatom_mask)]
+        self.QM_PC_gradient[self.xatom_mask] = self.QMgradient_wo_linkatoms
+        self.QM_PC_gradient[~self.xatom_mask] = self.PCgradient[:self.num_allatoms - self.sum_xatom_mask]
         return
 
     make_QM_PC_gradient=make_QM_PC_gradient_optimized
@@ -750,6 +753,9 @@ class QMMMTheory:
         # For truncatedPC option.
         self.pointcharges_original=copy.copy(self.pointcharges)
 
+        # Populate QM_PC_gradient for efficiency
+        self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
+
         print_time_rel(init_time_elstat_runprep, modulename='elstat_runprep', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
 
     # Electrostatic embedding run
@@ -868,14 +874,13 @@ class QMMMTheory:
         print_time_rel(CheckpointTime, modulename='QM step', moduleindex=2,currprintlevel=self.printlevel, currthreshold=1)
         CheckpointTime = time.time()
 
-        #Final QM/MM gradient. Combine QM gradient, MM gradient, PC-gradient (elstat MM gradient from QM code).
+        # Final QM/MM gradient. Combine QM gradient, MM gradient, PC-gradient (elstat MM gradient from QM code).
         # Do linkatom force projections in the end
-        #UPDATE: Do MM step in the end now so that we have options for OpenMM extern force
+        # UPDATE: Do MM step in the end now so that we have options for OpenMM extern force
         if Grad == True:
             Grad_prep_CheckpointTime = time.time()
-            #assert len(self.allatoms) == len(self.MMgradient)
-
-            #Defining QMgradient without linkatoms if present
+            # assert len(self.allatoms) == len(self.MMgradient)
+            # Defining QMgradient without linkatoms if present
             if self.linkatoms==True:
                 self.QMgradient = QMgradient
                 QMgradient_wo_linkatoms=QMgradient[0:-self.num_linkatoms] #remove linkatoms
@@ -883,18 +888,18 @@ class QMMMTheory:
                 self.QMgradient = QMgradient
                 QMgradient_wo_linkatoms=QMgradient
 
-            #if self.printlevel >= 2:
+            # if self.printlevel >= 2:
             #    ash.modules.module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.allatoms, file="QMgradient_wo_linkatoms", description="QM+ gradient withoutlinkatoms (au/Bohr):")
 
 
-            #TRUNCATED PC Option:
+            # TRUNCATED PC Option:
             if self.TruncatedPC is True:
-                #DONE ONCE: CALCULATE FULL PC GRADIENT TO DETERMINE CORRECTION
+                # DONE ONCE: CALCULATE FULL PC GRADIENT TO DETERMINE CORRECTION
                 if self.TruncatedPC_recalc_flag is True:
                     CheckpointTime = time.time()
                     truncfullCheckpointTime = time.time()
 
-                    #We have calculated truncated QM and PC gradient
+                    # We have calculated truncated QM and PC gradient
                     QMgradient_trunc = QMgradient
                     PCgradient_trunc = PCgradient
 
