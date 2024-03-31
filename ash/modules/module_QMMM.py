@@ -83,7 +83,8 @@ class QMMMTheory:
         if len(self.qmatoms) == 0:
             print("Error: List of qmatoms provided is empty. This is not allowed.")
             ashexit()
-        self.mmatoms = listdiff(self.allatoms, self.qmatoms)
+        # self.mmatoms = listdiff(self.allatoms, self.qmatoms)
+        self.mmatoms = np.setdiff1d(self.allatoms, self.qmatoms)
 
         # FROZEN AND ACTIVE ATOM REGIONS for NonbondedTheory
         if self.mm_theory_name == "NonBondedTheory":
@@ -802,11 +803,8 @@ class QMMMTheory:
         # General QM-code energy+gradient call.
         #########################################################################################
 
-        # NOTE: These 2 np.take lines are the slowest (95%) of before QM-steps (except elstat_runprep)
-        # Update self.mmcoords based on new current_coords
-        self.mmcoords = np.take(current_coords, self.mmatoms,axis=0)
-        # Get QM-coords based on new current_coords
-        used_qmcoords = np.take(current_coords, self.qmatoms,axis=0)
+        # Split current_coords into MM-part and QM-part efficiently. Test: 4 ms for FeFeco setup
+        used_mmcoords, used_qmcoords = current_coords[~self.xatom_mask], current_coords[self.xatom_mask]
 
         if self.linkatoms is True:
             # Update linkatom coordinates. Sets: self.linkatoms_dict, self.linkatom_indices, self.num_linkatoms, self.linkatoms_coords
@@ -817,9 +815,9 @@ class QMMMTheory:
         # Update self.pointchargecoords based on new current_coords
         if self.dipole_correction:
             self.SetDipoleCharges(current_coords) # Note: running again
-            self.pointchargecoords = np.append(self.mmcoords, np.array(self.dipole_coords), axis=0)
+            self.pointchargecoords = np.append(used_mmcoords, np.array(self.dipole_coords), axis=0)
         else:
-            self.pointchargecoords = self.mmcoords
+            self.pointchargecoords = used_mmcoords
 
         # TRUNCATED PC Option: Speeding up QM/MM jobs of large systems by passing only a truncated PC field to the QM-code most of the time
         # Speeds up QM-pointcharge gradient that otherwise dominates
