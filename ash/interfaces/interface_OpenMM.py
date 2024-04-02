@@ -1145,8 +1145,6 @@ class OpenMMTheory:
         for i in range(self.system.getNumParticles()):
             customforce.addParticle(i, np.array([0.0, 0.0, 0.0]))
         self.system.addForce(customforce)
-        # self.externalforce=customforce
-        # Necessary:
         #self.create_simulation(timestep=self.timestep, integrator=self.integrator,
         #                       coupling_frequency=self.coupling_frequency, temperature=self.temperature)
         #self.update_simulation()
@@ -1155,26 +1153,17 @@ class OpenMMTheory:
         print("Added force")
         return customforce
 
-    #NOTE: This can take some time but not sure we can make this faster
-    def update_custom_external_force(self, customforce, gradient, simulation, conversion_factor=49614.752589207):
+    #NOTE: This setParticleParameters takes some time but not sure we can make this faster
+    def update_custom_external_force(self, customforce, gradient, simulation):
         if self.printlevel >= 2:
             print("Updating custom external force")
-        # shiftpar_inkjmol=shiftparameter*2625.4996394799
         # Convert Eh/Bohr gradient to force in kj/mol nm
         # *49614.501681716106452
         #NOTE: default conversion factor (49614.752589207) assumes input gradient in Eh/Bohr and converting to kJ/mol nm
-        forces = -gradient * conversion_factor
+        forces = -gradient * 49614.752589207
         for i, f in enumerate(forces):
             customforce.setParticleParameters(i, i, f)
-        # print("xx")
-        # self.externalforce.X(shiftparameter)
-        # NOTE: updateParametersInContext expensive. Avoid somehow???
-        # https://github.com/openmm/openmm/issues/1892
-        # print("Current value of global par 0:", self.externalforce.getGlobalParameterDefaultValue(0))
-        # self.externalforce.setGlobalParameterDefaultValue(0, shiftpar_inkjmol)
-        # print("Current value of global par 0:", self.externalforce.getGlobalParameterDefaultValue(0))
         customforce.updateParametersInContext(simulation.context)
-
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
         print("Adding restraints:", restraints)
@@ -3842,7 +3831,8 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
                 # Get current coordinates from state to use for QM/MM step
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
-
+                checkpoint = time.time()
+                print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 #QM/MM periodic. Translating coords outside of box, back in
                 if self.openmmobject.Periodic is True:
                     print("Periodic QM/MM is on")
@@ -3881,7 +3871,6 @@ class OpenMM_MDclass:
 
 
                 checkpoint = time.time()
-                print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 # Run QM/MM step to get full system QM+PC gradient.
                 self.QM_MM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
                                       exit_after_customexternalforce_update=True, charge=self.charge, mult=self.mult)
@@ -3892,7 +3881,7 @@ class OpenMM_MDclass:
                 CheckpointTime = time.time()
                 self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,
                                                                self.QM_MM_object.QM_PC_gradient,self.simulation)
-                print_time_rel(CheckpointTime, modulename='QM/MM openMM: update custom external force', moduleindex=2,
+                print_time_rel(CheckpointTime, modulename='update custom external force', moduleindex=2,
                                 currprintlevel=self.printlevel, currthreshold=1)
 
                 # NOTE: Think about energy correction (currently skipped above)

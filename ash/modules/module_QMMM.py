@@ -943,12 +943,11 @@ class QMMMTheory:
                 if self.embedding=="Elstat":
                     self.PCgradient = PCgradient
 
-            #Initialize QM_PC gradient (has full system size) and fill up
-            #TODO: This can be made more efficient
+            # Populate QM_PC gradient (has full system size)
             CheckpointTime = time.time()
             self.make_QM_PC_gradient() #populates self.QM_PC_gradient
             print_time_rel(CheckpointTime, modulename='QMpcgrad prepare', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
-            #self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
+            # self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
             #qmcount=0;pccount=0
             #for i in self.allatoms:
             #    if i in self.qmatoms:
