@@ -106,18 +106,24 @@ class MNDOTheory:
             else:
                 qm_elems = elems
 
+        print_time_rel(module_init_time, modulename=f'mndo prep-before-write', moduleindex=3)
         # Write inputfile
         write_mndo_input(self.method,self.filename,qm_elems,current_coords,charge,mult, PC=PC, Grad=Grad, scfconv=self.scfconv,
                          MMcharges=MMcharges, MMcoords=current_MM_coords, restart=self.restart_option, diis=self.diis, guess_option=self.guess_option)
 
+        print_time_rel(module_init_time, modulename=f'mndo prep-run', moduleindex=3)
         # Run MNDO
         run_MNDO(self.mndodir,self.filename)
+        print_time_rel(module_init_time, modulename=f'mndo run-done', moduleindex=3)
 
         # Grab energy
         if PC is True:
-            self.energy, self.gradient, self.pcgradient =grab_energy_gradient_mndo(f"{self.filename}.out", len(current_coords), Grad=Grad, PC=True, numpc=len(MMcharges))
+            self.energy, self.gradient, self.pcgradient = grab_energy_gradient_mndo(f"{self.filename}.out", len(current_coords), Grad=Grad, PC=True, numpc=len(MMcharges))
         else:
-            self.energy, self.gradient, self.pcgradient =grab_energy_gradient_mndo(f"{self.filename}.out", len(current_coords), Grad=Grad, PC=False)
+            self.energy, self.gradient, self.pcgradient = grab_energy_gradient_mndo(f"{self.filename}.out", len(current_coords), Grad=Grad, PC=False)
+        if self.energy is None:
+            print("MNDO failed to calculate an energy. Exiting. Check MNDO outputfile for errors.")
+            ashexit()
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
@@ -199,6 +205,7 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
             for q,pc_c in zip(MMcharges,MMcoords):
                 f.write(f"{pc_c[0]} {pc_c[1]} {pc_c[2]} {q}\n")
 
+
 def run_MNDO(mndodir,filename):
     print("Running MNDO")
     infile=open(f"{filename}.inp")
@@ -206,6 +213,7 @@ def run_MNDO(mndodir,filename):
     sp.run([f"{mndodir}/mndo2020"], stdin=infile, stdout=ofile)
     infile.close()
     ofile.close()
+
 
 def grab_energy_gradient_mndo(file, numatoms, Grad=False, PC=False, numpc=None):
     energy=None

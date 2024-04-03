@@ -1135,19 +1135,13 @@ class OpenMMTheory:
 
     def add_custom_external_force(self):
         import openmm
-        # customforce=None
-        # inspired by https://github.com/CCQC/janus/blob/ba70224cd7872541d279caf0487387104c8253e6/janus/mm_wrapper/openmm_wrapper.py
         customforce = openmm.CustomExternalForce("-x*fx -y*fy -z*fz")
-        # customforce.addGlobalParameter('shift', 0.0)
         customforce.addPerParticleParameter('fx')
         customforce.addPerParticleParameter('fy')
         customforce.addPerParticleParameter('fz')
         for i in range(self.system.getNumParticles()):
             customforce.addParticle(i, np.array([0.0, 0.0, 0.0]))
         self.system.addForce(customforce)
-        #self.create_simulation(timestep=self.timestep, integrator=self.integrator,
-        #                       coupling_frequency=self.coupling_frequency, temperature=self.temperature)
-        #self.update_simulation()
         # http://docs.openmm.org/latest/api-c++/generated/OpenMM.CustomExternalForce.html
 
         print("Added force")
