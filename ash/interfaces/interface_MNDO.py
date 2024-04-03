@@ -77,7 +77,7 @@ class MNDOTheory:
             charge=None, mult=None):
 
         module_init_time=time.time()
-        if numcores == None:
+        if numcores is None:
             numcores = self.numcores
 
         print(BC.OKBLUE, BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
@@ -180,7 +180,6 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
             #Activate DIIS from beginning
             diisline="idiis=1"
 
-
         f.write(f"iop={mndo_methods[method]}  jop={jobtype} {openshellkwstring}  iform=1 igeom=1 +\n")
         f.write(f"kitscf=300 kharge={charge} {restartline} {ktrial_line} {diisline} +\n")
         f.write(f"iscf={scfconv} imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
@@ -202,9 +201,10 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
             f.write(f"{atomnum} {c[0]} 0 {c[1]} 0 {c[2]} 0\n")
         f.write("0 0.0 0 0.0 0 0.0 0\n")
         if PC is True:
-            for q,pc_c in zip(MMcharges,MMcoords):
-                f.write(f"{pc_c[0]} {pc_c[1]} {pc_c[2]} {q}\n")
-
+            #for q,pc_c in zip(MMcharges,MMcoords):
+            #    f.write(f"{pc_c[0]} {pc_c[1]} {pc_c[2]} {q}\n")
+            pcdata = np.column_stack((MMcoords, MMcharges))
+            np.savetxt(f, pcdata, fmt='%f %f %f %f')
 
 def run_MNDO(mndodir,filename):
     print("Running MNDO")
