@@ -13,9 +13,12 @@ import ash.settings_ash
 # TODO: check parallelization
 
 # MNDOTheory object.
+
+
 class MNDOTheory:
     def __init__(self, mndodir=None, filename='mndo', method=None, printlevel=2, label="MNDO",
-                numcores=1, restart_option=True, diis=False, guess_option=0, scfconv=6):
+                 numcores=1, restart_option=True, diis=False, guess_option=0,
+                 scfconv=6):
 
         self.theorynamelabel="MNDO"
         self.label=label
@@ -142,6 +145,7 @@ class MNDOTheory:
             return self.energy
 
 def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, restart=True, diis=False, guess_option=0, scfconv=6):
+    #init_time=time.time()
     mndo_methods={'ODM3':-23,'ODM2':-22,'MNDO/d':-10,'OM3':-8,
                     'PM3':-7,'OM2':-6,'OM1':-5,'AM1':-2,
                     'MNDOC': -1, 'MNDO':0, 'MINDO/3':1, 'CNDO/2':2,
@@ -156,55 +160,86 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
     else:
         openshellkwstring=""
 
-    with open(f"{filename}.inp", "w") as f:
-        # iop is method number
-        # igeom=1 cartesian
-        # jop=-2 for gradient calc
-        # iform=2 for free-format
-        # ksym=0 no symmetry, nprint for energy output, mprint for gradient output
+    # Open file
+    f = open(f"{filename}.inp", "w")
 
-        # Guess
-        ktrial_line=f"ktrial={guess_option}"
+    # List to keep inputlines
+    inputlines=[]
 
-        # Note: ipub=1 saves fort.11 file with density-matrix
-        # Note: ktrial=11 loads fort.11 as SCF-guess.
-        # Should be faster, although more IO would be performed
-        restartline=""
-        if restart is True:
-            restartline="ipubo=1"
-            ktrial_line="ktrial=11"
+    # iop is method number
+    # igeom=1 cartesian
+    # jop=-2 for gradient calc
+    # iform=2 for free-format
+    # ksym=0 no symmetry, nprint for energy output, mprint for gradient output
 
-        # DIIS settings
-        diisline="idiis=0" #idiis=0 means DIIS off by default but will be turned on if SCF-problems
-        if diis is True:
-            #Activate DIIS from beginning
-            diisline="idiis=1"
+    # Guess
+    ktrial_line=f"ktrial={guess_option}"
 
-        f.write(f"iop={mndo_methods[method]}  jop={jobtype} {openshellkwstring}  iform=1 igeom=1 +\n")
-        f.write(f"kitscf=300 kharge={charge} {restartline} {ktrial_line} {diisline} +\n")
-        f.write(f"iscf={scfconv} imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
-        # PC-part
-        if PC is True:
-            # mminp=2 pointcharges
-            # numatom=X number of PCs
-            # mmcoup=2 elstat embedding. mmcoup=3 is MMpol
-            # mmlink=2 linkatoms elstat option. mmlink=2 (sees all atoms, fine since we do charge-shifting anyway)
-            # mmfile=1 read PCs from file nb2o
-            # ipsana=1 analytic derivative
-            f.write(f"mminp=2 numatm={len(MMcharges)} mmcoup=2 mmlink=2 nlink=0 ipsana=1\n")
-        else:
-            f.write("\n")
-        f.write("MNDO label\n")
-        f.write("\n")
-        for el,c in zip(elems,coords):
-            atomnum=elematomnumbers[el.lower()]
-            f.write(f"{atomnum} {c[0]} 0 {c[1]} 0 {c[2]} 0\n")
-        f.write("0 0.0 0 0.0 0 0.0 0\n")
-        if PC is True:
-            #for q,pc_c in zip(MMcharges,MMcoords):
-            #    f.write(f"{pc_c[0]} {pc_c[1]} {pc_c[2]} {q}\n")
-            pcdata = np.column_stack((MMcoords, MMcharges))
-            np.savetxt(f, pcdata, fmt='%f %f %f %f')
+    # Note: ipub=1 saves fort.11 file with density-matrix
+    # Note: ktrial=11 loads fort.11 as SCF-guess.
+    # Should be faster, although more IO would be performed
+    restartline=""
+    if restart is True:
+        restartline="ipubo=1"
+        ktrial_line="ktrial=11"
+
+    # DIIS settings
+    diisline="idiis=0" #idiis=0 means DIIS off by default but will be turned on if SCF-problems
+    if diis is True:
+        #Activate DIIS from beginning
+        diisline="idiis=1"
+
+    # f.write(f"iop={mndo_methods[method]}  jop={jobtype} {openshellkwstring}  iform=1 igeom=1 +\n")
+    # f.write(f"kitscf=300 kharge={charge} {restartline} {ktrial_line} {diisline} +\n")
+    # f.write(f"iscf={scfconv} imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
+    inputlines.append(f"iop={mndo_methods[method]}  jop={jobtype} {openshellkwstring}  iform=1 igeom=1 +\n")
+    inputlines.append(f"kitscf=300 kharge={charge} {restartline} {ktrial_line} {diisline} +\n")
+    inputlines.append(f"iscf={scfconv} imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
+    #print_time_rel(init_time, modulename=f'time1', moduleindex=3)
+    # PC-part
+    if PC is True:
+        # mminp=2 pointcharges
+        # numatom=X number of PCs
+        # mmcoup=2 elstat embedding. mmcoup=3 is MMpol
+        # mmlink=2 linkatoms elstat option. mmlink=2 (sees all atoms, fine since we do charge-shifting anyway)
+        # mmfile=1 read PCs from file nb2o
+        # ipsana=1 analytic derivative
+        #f.write(f"mminp=2 numatm={len(MMcharges)} mmcoup=2 mmlink=2 nlink=0 ipsana=1\n")
+        inputlines.append(f"mminp=2 numatm={len(MMcharges)} mmcoup=2 mmlink=2 nlink=0 ipsana=1\n")
+    else:
+        #f.write("\n")
+        inputlines.append("\n")
+    #f.write("MNDO label\n")
+    #f.write("\n")
+    inputlines.append("MNDO label\n\n")
+
+    for el,c in zip(elems,coords):
+        atomnum=elematomnumbers[el.lower()]
+        #f.write(f"{atomnum} {c[0]} 0 {c[1]} 0 {c[2]} 0\n")
+        inputlines.append(f"{atomnum} {c[0]} 0 {c[1]} 0 {c[2]} 0\n")
+    #f.write("0 0.0 0 0.0 0 0.0 0\n")
+    inputlines.append("0 0.0 0 0.0 0 0.0 0\n")
+
+    #print_time_rel(init_time, modulename=f'time3', moduleindex=3)
+    for line in inputlines:
+        f.write(line)
+
+    f.close()
+    #Now appending PCs to file if using
+    if PC is True:
+        pcdata = np.column_stack((MMcoords, MMcharges))
+        #Fast appending to file
+        ash.functions.functions_general.fast_nparray_write(pcdata,filename=f"{filename}.inp", writemode="a")
+
+        #Old:
+        #for q,pc_c in zip(MMcharges,MMcoords):
+        #    f.write(f"{pc_c[0]} {pc_c[1]} {pc_c[2]} {q}\n")
+        #print_time_rel(init_time, modulename=f'time4b', moduleindex=3)
+        #np.savetxt(f, pcdata, fmt='%f %f %f %f')
+        #f.writelines([f"{i[0]} {i[1]} {i[2]} {i[3]}\n" for i in pcdata])
+    #print_time_rel(init_time, modulename=f'time4c', moduleindex=3)
+
+
 
 def run_MNDO(mndodir,filename):
     print("Running MNDO")

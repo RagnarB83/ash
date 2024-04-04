@@ -569,6 +569,15 @@ def write_datafile(x, y, filename="new.dat", separator="     "):
             f.write(f"{i}{separator}{j}\n")
     print("Wrote new datafile:", filename)
 
+# Fast numpy-array to file
+# https://stackoverflow.com/questions/53820891/speed-of-writing-a-numpy-array-to-a-text-file
+#Note: float_format can be changed to e.g. %8.6f
+def fast_nparray_write(a, filename="bla5", writemode="w", float_format="%g"):
+    with open(filename,writemode) as f:
+        fmt = ' '.join([float_format]*a.shape[1])
+        fmt = '\n'.join([fmt]*a.shape[0])
+        data = fmt % tuple(a.ravel())
+        f.write(data)
 
 
 # Write a string to file simply
