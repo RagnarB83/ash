@@ -1900,10 +1900,19 @@ def read_pdbfile_info(filename, use_atomnames_as_elements=False):
         with open(filename) as f:
             for line in f:
                 if line.startswith("ATOM") or line.startswith("HETATM"):
+                    #print(line)
                     atomnames.append(line[12:16].replace(' ', ''))
                     residnames.append(line[17:20].replace(' ', ''))
                     chainlabels.append(line[21:22].replace(' ', ''))
-                    residlabels.append(int(line[22:26].replace(' ', '')))
+                    #Resid grab
+                    #Note: Resids are integer up to 9999 but after that many programs (VMD, OpenMM) switch to a hex notation
+                    # Here grabbing resid as string instead of integer in general
+                    residlabel_temp=line[22:26].replace(' ', '')
+                    if residlabel_temp == 'A000':
+                        print("Warning: read_pdbfile_info encountered a hexadecimal notation (A000) for resid (likely due to resids > 9999). Hopefully things will be fine")
+                        print(f"PDB-file: {filename}. Line: {line}")
+                    residlabel=str(residlabel_temp)
+                    residlabels.append(residlabel)
                 if line.startswith("CONECT"):
                     conect_lines.append(line)
     except FileNotFoundError:
@@ -2122,19 +2131,20 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
             # Using string format from: cupnet.net/pdb-format/
 
             #Optional charges column (used by CP2K)
+            #NOTE: Changed resid from integer to string so that we can support the hex notation for resids when resids go above 9999
             if charges_column != None:
                 charge=charges_column[count]
                 #line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s} {:>10.6f}".format(
                 #    'ATOM', atomindexstring, atomnamestring, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00,
                 #    seg[0:3], el, charge)
-                line = "{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
+                line = "{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:4s}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
                     'ATOM', atomindexstring, atomnamestring, '', resname, chainlabel, resid, '', c[0], c[1], c[2], 1.0, 0.00, el,charge)
             #Regular
             else:
                 #line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:>2s}{:5d}{:1s}  {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s}".format(
                 #    'ATOM', atomindexstring, atomnamestring, '', resname, chainlabel, resid, '', c[0], c[1], c[2], 1.0, 0.00,
                 #    seg[0:3], el)
-                line = "{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
+                line = "{:6s}{:5s} {:^4s}{:1s}{:3s} {:1s}{:4s}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
                     'ATOM', atomindexstring, atomnamestring, '', resname, chainlabel, resid, '', c[0], c[1], c[2], 1.0, 0.00, el,'')
             pfile.write(line + '\n')
         # Write CONECT lines if provided

@@ -110,6 +110,10 @@ from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass
         OpenMM_metadynamics, Gentle_warm_up_MD, check_gradient_for_bad_atoms, get_free_energy_from_biasfiles, \
         free_energy_from_bias_array,metadynamics_plot_data, merge_pdb_files
 
+# General aliases
+MolecularDynamics = OpenMM_MD
+MetaDynamics = OpenMM_metadynamics
+
 #TODO: Temporary aliases, to be deleted
 OpenMM_box_relaxation = OpenMM_box_equilibration
 small_molecule_parameterizor=small_molecule_parameterizer
