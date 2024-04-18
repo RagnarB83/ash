@@ -830,19 +830,24 @@ class KnarrCalculator:
                     # Defining full_coords as original coords temporarily
                     #full_coords = self.full_fragment_reactant.coords
                     #Creating deep copy of reactant coordinates as it will be modified
-                    full_coords = copy.deepcopy(self.full_fragment_reactant.coords)
+                    #New: Using full_coords from either reactant or product depending on which the image_number it is closest to
+                    #Note: this is technically only an issue for QM/MM jobs if the NEB-active region is smaller (e.g. same as QM-region) than the actregion used originally to find 
+                    #reactant and product geometries
+
+                    #Closer to reactant
+                    if min([0,self.numimages-1], key=lambda x:abs(x-image_number)) == 0:
+                        full_coords = copy.deepcopy(self.full_fragment_reactant.coords)
+                    #Closer to product
+                    elif min([0,self.numimages-1], key=lambda x:abs(x-image_number)) == self.numimages-1 :
+                        full_coords = copy.deepcopy(self.full_fragment_product.coords)
 
                     # Replacing act-region coordinates with coords from currcoords
-
                     for i, c in enumerate(full_coords):
                         if i in self.actatoms:
                             # Silly. Pop-ing first coord from currcoords until done
                             curr_c, currcoords = currcoords[0], currcoords[1:]
                             full_coords[i] = curr_c
                     full_current_image_coords = full_coords
-
-                    #List of all image-geometries (full coords)
-                    #full_coords_images_list.append(full_current_image_coords)
 
                     self.full_coords_images_dict[image_number] = copy.deepcopy(full_current_image_coords)
 

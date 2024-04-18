@@ -803,6 +803,7 @@ class QMMMTheory:
         # General QM-code energy+gradient call.
         #########################################################################################
 
+
         # Split current_coords into MM-part and QM-part efficiently. Test: 4 ms for FeFeco setup
         used_mmcoords, used_qmcoords = current_coords[~self.xatom_mask], current_coords[self.xatom_mask]
 
