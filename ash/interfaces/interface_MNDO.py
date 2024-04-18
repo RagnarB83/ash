@@ -194,7 +194,7 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
     # f.write(f"iscf={scfconv} imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
     inputlines.append(f"iop={mndo_methods[method]}  jop={jobtype} {openshellkwstring}  iform=1 igeom=1 +\n")
     inputlines.append(f"kitscf=300 kharge={charge} {restartline} {ktrial_line} {diisline} +\n")
-    inputlines.append(f"iscf={scfconv} imult={mult} nprint=-4  mprint=0 ksym=0 +\n")
+    inputlines.append(f"iscf={scfconv} imult={mult} nprint=-4  mprint=5 ksym=0 +\n")
     #print_time_rel(init_time, modulename=f'time1', moduleindex=3)
     # PC-part
     if PC is True:
