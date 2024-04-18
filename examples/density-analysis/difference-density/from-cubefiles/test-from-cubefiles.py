@@ -6,7 +6,7 @@ from ash.functions.functions_elstructure import  read_cube, write_cube_diff
 ##########################################
 #Use this script if you have Cube-files already calculatd
 #And you want to get the difference density
-#Warning: Cube files must have prepared equivalently
+#Warning: Cube files must have been prepared equivalently
 
 
 file1="calc1.eldens.cube"
