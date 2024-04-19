@@ -11,7 +11,28 @@ import ash.interfaces.interface_xtb
 from ash.interfaces.interface_xtb import grabatomcharges_xTB
 from ash.modules.module_MM import UFFdict
 from ash.functions.functions_elstructure import DDEC_to_LJparameters,DDEC_calc
-#import ash
+
+
+# Function for getting indices of repeated rows in a 2d numpy array
+# Used to find rows to delete
+def get_indices_of_repeated_rows(a):
+
+    # List of row-indices to delete
+    to_delete = []
+
+    unq, count = np.unique(a, axis=0, return_counts=True)
+    repeated_groups = unq[count > 1]
+
+    for repeated_group in repeated_groups:
+        repeated_idx = np.argwhere(np.all(a == repeated_group, axis=1))
+        #print("repeated_idx:", repeated_idx)
+        #print(repeated_idx.ravel())
+        for i in repeated_idx.ravel()[1:]:
+            to_delete.append(i)
+        #print("to_delete:", to_delete)
+    return to_delete
+
+
 
 
 #Extend cell to 3x3x3 (27 cells) so that original cell is in middle
@@ -255,6 +276,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
 
     #print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step2', moduleindex=4)
     #currtime=time.time()
+
     #3.  Going through fragment fraglists. Finding atoms that belong to another cell (i.e. large atom index).
     # Finding equivalent atom positions inside original cell
     #Comparing all lists and removing identical lists created by Step 2
@@ -940,7 +962,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
             print("Load successful")
             #Get list of fragments for all surfaceatoms
             print("Now calling Julia function")
-            fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,ash.modules.module_coords.eldict_covrad)
+            fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, np.array(elems), 99, scale, tol,ash.modules.module_coords.eldict_covrad)
             #TODO: Necessary. Can we change return of Julia function instead??
             fraglist_temp = [list(i) for i in fraglist_temp]
 
@@ -1151,15 +1173,15 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
         #ORCASPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
-        ash.Singlepoint(theory=ORCASPcalculation, fragment=gasfrag, charge=fragmentobject.Charge,mult=fragmentobject.Mult)
+        ash.Singlepoint(theory=ORCASPcalculation, fragment=gasfrag, charge=fragmentobject.charge,mult=fragmentobject.mult)
         #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA orca run', moduleindex=4)
         currtime = time.time()
 
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
             atomcharges, molmoms, voldict = DDEC_calc(elems=gasfrag.elems, theory=ORCASPcalculation,
-                                            numcores=NUMPROC, DDECmodel=chargemodel, molecule_charge=fragmentobject.Charge,
-                                            molecule_spinmult=fragmentobject.Mult,
+                                            numcores=NUMPROC, DDECmodel=chargemodel, molecule_charge=fragmentobject.charge,
+                                            molecule_spinmult=fragmentobject.mult,
                                             calcdir="DDEC_fragment"+str(id), gbwfile=ORCASPcalculation.filename+'.gbw')
 
             print("atomcharges:", atomcharges)
@@ -1230,8 +1252,8 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         print("xTBSPcalculation:", xTBSPcalculation)
         print(xTBSPcalculation.__dict__)
         #Run xTB calculation with charge-model info
-        #xTBSPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
-        ash.Singlepoint(theory=xTBSPcalculation, fragment=gasfrag, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
+        #xTBSPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.mult)
+        ash.Singlepoint(theory=xTBSPcalculation, fragment=gasfrag, charge=fragmentobject.charge, mult=fragmentobject.mult)
 
         #Grab atomic charges for fragment.
 
@@ -1346,7 +1368,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
                 print("Using GBW file: ", gbwfile)
                 DDECcharges, fragmentobject.molmoms, fragmentobject.voldict = DDEC_calc(elems=fragmentobject.Atoms, theory=QMtheory,
                                                         numcores=numcores, DDECmodel=shortrangemodel,
-                                                        molecule_spinmult=fragmentobject.Mult, molecule_charge=fragmentobject.Charge,
+                                                        molecule_spinmult=fragmentobject.mult, molecule_charge=fragmentobject.charge,
                                                         calcdir="DDEC_LJcalc_fragment_{}".format(fragmentobject.Name), gbwfile=gbwfile)
                 print("DDECcharges:", DDECcharges)
             #Getting R0 and epsilon

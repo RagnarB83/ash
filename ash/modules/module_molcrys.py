@@ -29,6 +29,8 @@ class Fragmenttype:
         self.mass = ash.modules.module_coords.totmasslist(self.Atoms)
         self.Charge = charge
         self.Mult = mult
+        self.charge=charge
+        self.mult=mult
         self.fraglist= []
         self.clusterfraglist= []
         #Keeping track of molmoms, voldict in case of DDEC
@@ -62,8 +64,8 @@ class Fragmenttype:
             outfile.write("Elements: {} \n".format(self.Elements))
             outfile.write("Nuccharge: {} \n".format(self.Nuccharge))
             outfile.write("Mass: {} \n".format(self.mass))
-            outfile.write("Charge: {} \n".format(self.Charge))
-            outfile.write("Mult: {} \n".format(self.Mult))
+            outfile.write("Charge: {} \n".format(self.charge))
+            outfile.write("Mult: {} \n".format(self.mult))
             outfile.write("\n")
             outfile.write("Current atomcharges: {} \n".format(self.charges))
             outfile.write("\n")
@@ -224,10 +226,21 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         ashexit()
 
 
-
-
+    print("Reading of inputfile done")
 
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
+    print("Number of coords in cell: ", len(orthogcoords))
+    print("Number of elements in cell: ", len(elems))
+    print("Checking for duplicate atoms in cell")
+
+    # NEW: check for duplicate atoms in cell (happened for Cu-complex by Joseph)
+    delatom_indices  = ash.functions.functions_molcrys.get_indices_of_repeated_rows(orthogcoords)
+    if len(delatom_indices) > 0:
+        print("Duplicate atoms found in cell. Removing duplicates")
+        orthogcoords = np.delete(orthogcoords, delatom_indices, axis=0)
+        elems = np.delete(elems, delatom_indices)
+        print("Updated number of coords in cell: ", len(orthogcoords))
+        print("Updated number of elements in cell: ", len(elems))
 
 
     #Used by cell_extend_frag_withcenter and frag_define
@@ -428,6 +441,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     Cluster.print_system("Cluster-info-nocharges.ygg")
     #print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
     currtime=time.time()
+
     # Create dirs to keep track of various files before QM calculations begin
     try:
         os.mkdir('SPloop-files')
@@ -458,7 +472,10 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
 
     elif theory.__class__.__name__ == "xTBTheory":
-        pass
+        try:
+            os.remove("pcharge")
+        except:
+            pass
         ash.functions.functions_molcrys.gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,theory.xtbdir,theory.xtbmethod,numcores)
     else:
         print("Unsupported theory for charge-calculations in MolCrys. Options are: ORCATheory or xTBTheory")
@@ -543,7 +560,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         # Run ORCA QM/MM calculation with charge-model info
         QMMM_SP_calculation = ash.QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
                                              charges=Cluster.atomcharges, embedding='Elstat')
-        QMMM_SP_calculation.run(numcores=numcores, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult)
+        QMMM_SP_calculation.run(current_coords=Cluster.coords, elems=Cluster.elems, numcores=numcores, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult)
 
         #Keeping the GBWfile
         if theory.__class__.__name__ == "ORCATheory":

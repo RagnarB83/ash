@@ -2,24 +2,24 @@ import copy
 import time
 import numpy as np
 import math
-import shutil
 
-#functions related to QM/MM
 import ash.modules.module_coords
 from ash.modules.module_coords import Fragment, write_pdbfile
-from ash.functions.functions_general import ashexit, BC,blankline,listdiff,print_time_rel,printdebug,print_line_with_mainheader,writelisttofile,print_if_level
+from ash.functions.functions_general import ashexit, BC, blankline, listdiff, print_time_rel,printdebug,print_line_with_mainheader,writelisttofile,print_if_level
 import ash.settings_ash
 
-#QM/MM theory object.
-#Required at init: qm_theory and qmatoms. Fragment not. Can come later
-#TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
+# QM/MM theory object.
+# Required at init: qm_theory and qmatoms. Fragment not. Can come later
+# TODO NOTE: If we add init arguments, remember to update Numfreq QMMM option as it depends on the keywords
+
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None, charges=None,
                  embedding="Elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
                  unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
                 qm_charge=None, qm_mult=None, dipole_correction=True):
-        module_init_time=time.time()
-        timeA=time.time()
+
+        module_init_time = time.time()
+        timeA = time.time()
         print_line_with_mainheader("QM/MM Theory")
 
         # Check for necessary keywords
@@ -32,24 +32,24 @@ class QMMMTheory:
             ashexit()
 
         # Defining charge/mult of QM-region
-        self.qm_charge=qm_charge
-        self.qm_mult=qm_mult
+        self.qm_charge = qm_charge
+        self.qm_mult = qm_mult
 
         # Indicate that this is a hybrid QM/MM type theory
-        self.theorytype="QM/MM"
+        self.theorytype = "QM/MM"
 
-        # External force energy. ALways zero except when using openmm_externalforce
-        self.extforce_energy=0.0
+        # External force energy. Zero except when using openmm_externalforce
+        self.extforce_energy = 0.0
 
         # Linkatoms False by default. Later checked.
-        self.linkatoms=False
+        self.linkatoms = False
 
         # Counter for how often QMMMTheory.run is called
-        self.runcalls=0
+        self.runcalls = 0
 
         # Whether we are using OpenMM custom external forces or not
         # NOTE: affects runmode
-        self.openmm_externalforce=openmm_externalforce
+        self.openmm_externalforce = openmm_externalforce
 
         # Theory level definitions
         self.printlevel=printlevel
@@ -253,12 +253,13 @@ class QMMMTheory:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
                 print("Note: used connectivity settings, scale={} and tol={} to determine boundary.".format(conn_scale,conn_tolerance))
-                self.linkatoms=True
+                self.linkatoms = True
                 # Get MM boundary information. Stored as self.MMboundarydict
                 self.get_MMboundary(conn_scale,conn_tolerance)
             else:
-                print("No covalent QM-MM boundary. Linkatoms option set to False")
+                print("No covalent QM-MM boundary. Linkatoms and dipole_correction options set to False")
                 self.linkatoms=False
+                self.dipole_correction=False
 
             # Removing possible QM atom constraints in OpenMMTheory
             # Will only apply when running OpenMM_Opt or OpenMM_MD
@@ -317,6 +318,8 @@ class QMMMTheory:
             # TODO: Remove option for no MM theory or keep this ??
             if self.embedding=="Elstat":
                 self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
+            self.linkatoms=False
+            self.dipole_correction=False
         print_time_rel(module_init_time, modulename='QM/MM object creation', currprintlevel=self.printlevel, moduleindex=3)
 
 
@@ -638,7 +641,6 @@ class QMMMTheory:
         return polarizability
     #General run
     def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
-
         if self.embedding == "Mechanical":
             return self.mech_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
                 label=label, charge=charge, mult=mult)
@@ -803,7 +805,6 @@ class QMMMTheory:
         # General QM-code energy+gradient call.
         #########################################################################################
 
-
         # Split current_coords into MM-part and QM-part efficiently. Test: 4 ms for FeFeco setup
         used_mmcoords, used_qmcoords = current_coords[~self.xatom_mask], current_coords[self.xatom_mask]
 
@@ -814,6 +815,7 @@ class QMMMTheory:
             used_qmcoords = np.append(used_qmcoords, np.array(linkatoms_coords), axis=0)
 
         # Update self.pointchargecoords based on new current_coords
+        print("self.dipole_correction:", self.dipole_correction)
         if self.dipole_correction:
             self.SetDipoleCharges(current_coords) # Note: running again
             self.pointchargecoords = np.append(used_mmcoords, np.array(self.dipole_coords), axis=0)
@@ -911,10 +913,6 @@ class QMMMTheory:
                                                                                          Grad=True, PC=True, numcores=numcores)
                     print_time_rel(CheckpointTime, modulename='trunc-pc full calculation', moduleindex=3)
                     CheckpointTime = time.time()
-                    #try:
-                    #    shutil.copyfile(self.qm_theory.filename+'.out', self.qm_theory.filename+'_full'+'.out')
-                    #except:
-                    #    pass
 
                     #TruncPC correction to QM energy
                     self.truncPC_E_correction = QMenergy_full - QMenergy
@@ -1481,3 +1479,30 @@ def actregiondefine(pdbfile=None, mmtheory=None, psffile=None, fragment=None, ra
     ash.modules.module_coords.write_XYZ_for_atoms(fragment.coords,fragment.elems, act_indices, "ActiveRegion")
     print("Wrote Active region XYZfile: ActiveRegion.xyz  (inspect with visualization program)")
     return act_indices
+
+
+# General QM-PC gradient calculation
+def General_QM_PC_gradient(qm_coords,qm_nuc_charges,mol,mm_coords,mm_charges,dm):
+    print("not ready")
+    exit()
+    if dm.shape[0] == 2:
+        dmf = dm[0] + dm[1] #unrestricted
+    else:
+        dmf=dm
+    # The interaction between QM atoms and MM particles
+    # \sum_K d/dR (1/|r_K-R|) = \sum_K (r_K-R)/|r_K-R|^3
+    #qm_coords = mol.atom_coords()
+    #qm_charges = mol.atom_charges()
+    dr = qm_coords[:,None,:] - mm_coords
+    r = np.linalg.norm(dr, axis=2)
+    g = np.einsum('r,R,rRx,rR->Rx', qm_nuc_charges, mm_charges, dr, r**-3)
+    # The interaction between electron density and MM particles
+    # d/dR <i| (1/|r-R|) |j> = <i| d/dR (1/|r-R|) |j> = <i| -d/dr (1/|r-R|) |j>
+    #   = <d/dr i| (1/|r-R|) |j> + <i| (1/|r-R|) |d/dr j>
+    for i, q in enumerate(mm_charges):
+        with mol.with_rinv_origin(mm_coords[i]):
+            v = mol.intor('int1e_iprinv')
+        f =(np.einsum('ij,xji->x', dmf, v) +
+            np.einsum('ij,xij->x', dmf, v.conj())) * -q
+        g[i] += f
+    return g
