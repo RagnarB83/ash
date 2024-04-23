@@ -224,7 +224,7 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
     for line in inputlines:
         f.write(line)
 
-    f.close()
+
     #Now appending PCs to file if using
     if PC is True:
         pcdata = np.column_stack((MMcoords, MMcharges))
@@ -238,7 +238,7 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
         #np.savetxt(f, pcdata, fmt='%f %f %f %f')
         #f.writelines([f"{i[0]} {i[1]} {i[2]} {i[3]}\n" for i in pcdata])
     #print_time_rel(init_time, modulename=f'time4c', moduleindex=3)
-
+    f.close()
 
 
 def run_MNDO(mndodir,filename):
