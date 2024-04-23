@@ -225,12 +225,13 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
         f.write(line)
 
 
+    f.close()
     #Now appending PCs to file if using
     if PC is True:
         pcdata = np.column_stack((MMcoords, MMcharges))
         #Fast appending to file
-        #ash.functions.functions_general.fast_nparray_write(pcdata,filename=f"{filename}.inp", writemode="a")
-        np.savetxt(f, pcdata, fmt='%-12.7f%-12.7f%-12.7f%-8.4f')
+        ash.functions.functions_general.fast_nparray_write(pcdata, float_format="%-12.7f %-12.7f %-12.7f %-8.4f", filename=f"{filename}.inp", writemode="a")
+        #np.savetxt(f, pcdata, fmt='%-12.7f%-12.7f%-12.7f%-8.4f')
         #Old:
         #for q,pc_c in zip(MMcharges,MMcoords):
         #    f.write(f"{pc_c[0]} {pc_c[1]} {pc_c[2]} {q}\n")
@@ -238,7 +239,7 @@ def write_mndo_input(method,filename,elems,coords,charge,mult, PC=False, MMcharg
         #np.savetxt(f, pcdata, fmt='%f %f %f %f')
         #f.writelines([f"{i[0]} {i[1]} {i[2]} {i[3]}\n" for i in pcdata])
     #print_time_rel(init_time, modulename=f'time4c', moduleindex=3)
-    f.close()
+
 
 
 def run_MNDO(mndodir,filename):
