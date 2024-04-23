@@ -298,4 +298,9 @@ def grab_energy_gradient_mndo(file, numatoms, Grad=False, PC=False, numpc=None):
                 if 'CARTESIAN QM+MM GRADIENT NORM' in line:
                     pcgrab=False
 
+    if Grad is True and PC is True:
+        if np.any(pcgradient) is False:
+            print("Error: PCgradient array from MNDO output is zero. Something went wrong.")
+            ashexit()
+
     return energy,gradient,pcgradient
