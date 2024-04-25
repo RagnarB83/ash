@@ -1829,7 +1829,7 @@ class PySCFTheory:
             self.mf = RHF(self.mol)
         elif self.scf_type == 'UHF':
             from gpu4pyscf.scf import UHF
-            self.mf = pyscf.scf.UHF(self.mol)
+            self.mf = UHF(self.mol)
         else:
             print("SCF-type not available for gpu4pyscf")
             ashexit()
@@ -1866,18 +1866,33 @@ class PySCFTheory:
             if self.printlevel >1:
                 print(f"Levelshift value: {self.level_shift}")
             self.mf.level_shift = self.level_shift
-        #DIIS option
-        if self.diis_method == 'CDIIS' or self.diis_method == 'DIIS':
-            self.mf.DIIS = pyscf.scf.DIIS
-        elif self.diis_method == 'ADIIS':
-            self.mf.DIIS = pyscf.scf.ADIIS
-        elif self.diis_method == 'EDIIS':
-            self.mf.DIIS = pyscf.scf.EDIIS
+        #DIIS
+        self.set_diis()
+
         #SOSCF/Newton
         if self.soscf is True:
             if self.printlevel >1:
                 print("SOSCF is True. Turning on in meanfield object")
             self.mf = self.mf.newton()
+
+    def set_diis(self):
+        if self.platform == 'CPU':
+            import pyscf
+            #DIIS option
+            if self.diis_method == 'CDIIS' or self.diis_method == 'DIIS':
+                self.mf.DIIS = pyscf.scf.DIIS
+            elif self.diis_method == 'ADIIS':
+                self.mf.DIIS = pyscf.scf.ADIIS
+            elif self.diis_method == 'EDIIS':
+                self.mf.DIIS = pyscf.scf.EDIIS
+        else:
+            import gpu4pyscf
+            #DIIS option
+            if self.diis_method == 'CDIIS' or self.diis_method == 'DIIS':
+                self.mf.DIIS = gpu4pyscf.scf.diis.DIIS
+            else:
+                print("For GPU platform, ADIIS, EDIIS or others are not supported")
+                ashexit()
 
     def set_mf_smearing(self):
         import pyscf.scf.addons
