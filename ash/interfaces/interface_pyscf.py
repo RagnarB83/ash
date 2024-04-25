@@ -22,7 +22,7 @@ import copy
 #TODO: Gradient for post-SCF methods and TDDFT
 
 class PySCFTheory:
-    def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf",
+    def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU',
                   scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False,
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk',
                   noautostart=False, autostart=True,
@@ -126,6 +126,9 @@ class PySCFTheory:
         self.potfile=potfile
 
         # SCF
+        self.platform=platform
+        if self.platform == 'GPU':
+            print("Warning: GPU platform for PySCF. This requires gpu4pyscf plugin to be available")
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
         self.conv_tol=conv_tol
@@ -1804,6 +1807,32 @@ class PySCFTheory:
             self.mf = pyscf.scf.GHF(self.mol)
         elif self.scf_type == 'GKS':
             self.mf = pyscf.scf.GKS(self.mol)
+#Create mf object (self.mf) via method
+    def create_mf_for_gpu(self):
+        if self.printlevel >= 1:
+            print("Creating pySCF mf object using gpu4pyscf")
+
+        try:
+            import gpu4pyscf
+        except ModuleNotFoundError:
+            print("gpu4pyscf library not found. Make sure it is installed. See: https://github.com/pyscf/gpu4pyscf")
+            ashexit()
+
+        if self.scf_type == 'RKS':
+            from gpu4pyscf.dft import rks
+            self.mf = rks.RKS(self.mol)
+        elif self.scf_type == 'UKS':
+            from gpu4pyscf.dft import uks
+            self.mf = uks.UKS(self.mol)
+        elif self.scf_type == 'RHF':
+            from gpu4pyscf.scf import RHF
+            self.mf = RHF(self.mol)
+        elif self.scf_type == 'UHF':
+            from gpu4pyscf.scf import UHF
+            self.mf = pyscf.scf.UHF(self.mol)
+        else:
+            print("SCF-type not available for gpu4pyscf")
+            ashexit()
 
     def set_mf_scfconv_options(self):
         if self.printlevel >= 1:
@@ -2226,7 +2255,11 @@ class PySCFTheory:
         ############################
         # CREATE MF OBJECT
         ############################
-        self.create_mf() #Creates self.mf
+        if self.platform == 'GPU':
+            print("Platform is GPU")
+            self.create_mf_for_gpu() #Creates self.mf
+        else:
+            self.create_mf() #Creates self.mf
 
         #GHF/GKS
         if self.scf_type == 'GHF' or self.scf_type == 'GKS':
