@@ -466,22 +466,21 @@ class OpenMMTheory:
         # Simple OpenMM system without any forcefield defined. Requires ASH fragment
         # Used for OpenMM_MD with QM Hamiltonian
         elif dummysystem is True:
-            #Create list of atomnames, used in PDB topology and XML file
+            # Create list of atomnames, used in PDB topology and XML file
             atomnames_full=[j+str(i) for i,j in enumerate(fragment.elems)]
-            #Write PDB-file frag.pdb with dummy atomnames
+            # Write PDB-file frag.pdb with dummy atomnames
             write_pdbfile(fragment, outputname="frag", atomnames=atomnames_full)
-            #Load PDB-file and create topology
+            # Load PDB-file and create topology
             pdb = openmm.app.PDBFile("frag.pdb")
             self.topology = pdb.topology
 
-            #Create dummy XML file
+            # Create dummy XML file
             xmlfile = write_xmlfile_nonbonded(filename="dummy.xml", resnames=["DUM"], atomnames_per_res=[atomnames_full], atomtypes_per_res=[fragment.elems],
                                             elements_per_res=[fragment.elems], masses_per_res=[fragment.masses],
                                             charges_per_res=[[0.0]*fragment.numatoms],
                                             sigmas_per_res=[[0.0]*fragment.numatoms], epsilons_per_res=[[0.0]*fragment.numatoms], skip_nb=True)
-            #Create dummy forcefield
+            # Create dummy forcefield
             self.forcefield = openmm.app.ForceField(xmlfile)
-
 
         # Read topology from PDB-file and XML-forcefield files to define forcefield
         else:

@@ -2130,8 +2130,10 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
             atomnamestring = atomname[-4:]
             # Using string format from: cupnet.net/pdb-format/
 
-            #Optional charges column (used by CP2K)
             #NOTE: Changed resid from integer to string so that we can support the hex notation for resids when resids go above 9999
+            resid = str(resid)
+
+            #Optional charges column (used by CP2K)
             if charges_column != None:
                 charge=charges_column[count]
                 #line = "{:6s}{:>5s} {:^4s}{:1s}{:3s}{:1s}{:5d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}      {:4s}{:>2s} {:>10.6f}".format(
