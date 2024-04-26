@@ -707,7 +707,7 @@ class PySCFTheory:
             print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
             #import gpu4pyscf
             #mull_pop_func = gpu4pyscf.dft.RKS.mulliken_pop
-            #return
+            return
         else:
             mull_pop_func = pyscf.scf.rhf.mulliken_pop
             mull_spinpop_func = pyscf.scf.uhf.mulliken_spin_pop
