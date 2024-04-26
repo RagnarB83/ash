@@ -705,7 +705,12 @@ class PySCFTheory:
         #For now, we return
         if self.platform == 'GPU':
             print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
-            return
+            #import gpu4pyscf
+            #mull_pop_func = gpu4pyscf.dft.RKS.mulliken_pop
+            #return
+        else:
+            mull_pop_func = pyscf.scf.rhf.mulliken_pop
+            mull_spinpop_func = pyscf.scf.uhf.mulliken_spin_pop
 
         if label==None:
             label=''
@@ -715,17 +720,17 @@ class PySCFTheory:
                     dm = mf.make_rdm1()
                 #print("dm:", dm)
                 #print("dm.shape:", dm.shape)
-                mulliken_pop =pyscf.scf.rhf.mulliken_pop(self.mol,dm, verbose=verbose)
-                print(f"{label} Mulliken charges:", mulliken_pop[1])
+                mulliken_populations =mull_pop_func(self.mol,dm, verbose=verbose)
+                print(f"{label} Mulliken charges:", mulliken_populations[1])
             elif unrestricted is True:
                 if dm is None:
                     dm = mf.make_rdm1()
                 #print("dm:", dm)
                 #print("dm.shape:", dm.shape)
-                mulliken_pop =pyscf.scf.rhf.mulliken_pop(self.mol,dm, verbose=verbose)
-                mulliken_spinpop = pyscf.scf.uhf.mulliken_spin_pop(self.mol,dm, verbose=verbose)
-                print(f"{label} Mulliken charges:", mulliken_pop[1])
-                print(f"{label} Mulliken spin pops:", mulliken_spinpop[1])
+                mulliken_populations =mull_pop_func(self.mol,dm, verbose=verbose)
+                mulliken_spinpopulations = mull_spinpop_func(self.mol,dm, verbose=verbose)
+                print(f"{label} Mulliken charges:", mulliken_populations[1])
+                print(f"{label} Mulliken spin pops:", mulliken_spinpopulations[1])
         return
 
     def run_stability_analysis(self):
