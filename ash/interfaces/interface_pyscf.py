@@ -1825,7 +1825,8 @@ class PySCFTheory:
             self.mf = pyscf.scf.GHF(self.mol)
         elif self.scf_type == 'GKS':
             self.mf = pyscf.scf.GKS(self.mol)
-#Create mf object (self.mf) via method
+
+    #Probably depreceated. Created mf for GPU.
     def create_mf_for_gpu(self):
         if self.printlevel >= 1:
             print("Creating pySCF mf object using gpu4pyscf")
@@ -2288,11 +2289,11 @@ class PySCFTheory:
         ############################
         # CREATE MF OBJECT
         ############################
-        if self.platform == 'GPU':
-            print("Platform is GPU")
-            self.create_mf_for_gpu() #Creates self.mf
-        else:
-            self.create_mf() #Creates self.mf
+        #if self.platform == 'GPU':
+        #    print("Platform is GPU")
+        #    self.create_mf_for_gpu() #Creates self.mf
+        #else:
+        self.create_mf() #Creates self.mf
 
         #GHF/GKS
         if self.scf_type == 'GHF' or self.scf_type == 'GKS':
@@ -2349,6 +2350,13 @@ class PySCFTheory:
         if self.printlevel >1:
             print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
 
+
+        #############################
+        # PLATFORM CHANGE
+        #############################
+        if self.platform == 'GPU':
+            print("GPU platform requested. Will now convert mf object to GPU")
+            self.mf = self.mf.to_gpu()
 
     #Actual Run
     #Assumes prepare_run has been executed
