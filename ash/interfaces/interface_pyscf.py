@@ -1709,6 +1709,11 @@ class PySCFTheory:
     def get_dipole_moment(self, dm=None, label=None):
         if self.printlevel >=1:
             print("get_dipole_moment function:")
+
+        if self.platform =="GPU":
+            print("Dipole moment calculation not currently supported on GPU")
+            return None
+
         if label == None:
             label=""
         if dm is None:
