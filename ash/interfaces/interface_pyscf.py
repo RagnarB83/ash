@@ -699,6 +699,13 @@ class PySCFTheory:
     def run_population_analysis(self, mf, unrestricted=False, dm=None, type='Mulliken', label=None, verbose=3):
         import pyscf
         print()
+
+        #TODO: gpu4pyscf errors for Mulliken pop analysis. Probably fixed later
+        #For now, we return
+        if self.platform == 'gpu4pyscf':
+            print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
+            return
+
         if label==None:
             label=''
         if type == 'Mulliken':
