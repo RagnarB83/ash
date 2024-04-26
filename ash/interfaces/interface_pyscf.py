@@ -120,6 +120,9 @@ class PySCFTheory:
         self.printsetting=printsetting
         self.verbose_setting=verbose_setting
 
+        # Counter for how often pyscftheory.run is called
+        self.runcalls = 0
+
         #CPPE Polarizable Embedding options
         self.pe=pe
         #Potfile from user or passed on via QM/MM Theory object ?
@@ -2200,12 +2203,17 @@ class PySCFTheory:
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
             charge=None, mult=None):
 
-        #Prepare for run (create mol object, mf object, modify mf object etc.)
-        #Does not execute SCF, CC or anything
-        self.prepare_run(current_coords=current_coords, elems=elems, charge=charge, mult=mult,
-                         current_MM_coords=current_MM_coords,
-                         MMcharges=MMcharges, qm_elems=qm_elems, Grad=Grad, PC=PC,
-                         numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label)
+        # FIRST RUN
+        if self.runcalls == 0:
+            print("First run. Running prepare_run method")
+            #Prepare for run (create mol object, mf object, modify mf object etc.)
+            #Does not execute SCF, CC or anything
+            self.prepare_run(current_coords=current_coords, elems=elems, charge=charge, mult=mult,
+                            current_MM_coords=current_MM_coords,
+                            MMcharges=MMcharges, qm_elems=qm_elems, Grad=Grad, PC=PC,
+                            numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label)
+            self.runcalls += 1
+
         #Actual run
         return self.actualrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
         elems=elems, Grad=Grad, PC=PC, numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
