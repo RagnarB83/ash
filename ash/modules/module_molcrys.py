@@ -220,7 +220,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     print("Number of elements in cell: ", len(elems))
     print("Checking for duplicate atoms in cell")
 
-    # NEW: check for duplicate atoms in cell (happened for Cu-complex by Joseph)
+    # NEW: check for duplicate atoms in cell
     delatom_indices  = ash.functions.functions_molcrys.get_indices_of_repeated_rows(orthogcoords)
     if len(delatom_indices) > 0:
         print("Duplicate atoms found in cell. Removing duplicates")

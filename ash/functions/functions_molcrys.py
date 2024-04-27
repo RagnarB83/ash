@@ -557,49 +557,45 @@ def read_xtlfile(file):
                 x_coord = float(line.split()[1])
                 y_coord = float(line.split()[2])
                 z_coord = float(line.split()[3])
+
+                #Now checking each coordinate if it is outside unitcell
+                coord_mod = shift_fract_coord([x_coord,y_coord,z_coord])
+                elems.append(line.split()[0])
+                coords.append(coord_mod)
+                #Note: if statements below right now just for printing
                 #XTL file can contain coordinates outside unitcell
                 if x_coord < 0.0 or y_coord < 0.0 or z_coord < 0.0:
                     print("Warning: Fractional atom coordinate in XTL file may be outside cell: {} {} {}".format(x_coord,y_coord,z_coord))
                     print("Modifying")
-                    coord_mod=[]
-                    for i in [x_coord,y_coord,z_coord]:
-                        if i < 0.0:
-                            mod = 1+i
-                            coord_mod.append(mod)
-                        else:
-                            coord_mod.append(i)
-                    #print("coord_mod:", coord_mod)
-                    #exit()
-                    elems.append(line.split()[0])
-                    coords.append(coord_mod)
                 elif x_coord > 1.0 or y_coord > 1.0 or z_coord > 1.0:
                     print("Warning: Fractional atom coordinate in XTL file may be outside cell: {} {} {}".format(x_coord,y_coord,z_coord))
                     print("Modifying")
-                    coord_mod=[]
-                    for i in [x_coord,y_coord,z_coord]:
-                        if i > 1.0:
-                            mod = round(i-1,4)
-                            #print("mod:", mod)
-                            coord_mod.append(mod)
-                        else:
-                            coord_mod.append(i)
-                    #print("2coord_mod:", coord_mod)
-                    #exit()
-                    elems.append(line.split()[0])
-                    coords.append(coord_mod)
-                else:
-                    elems.append(line.split()[0])
-                    coords.append([x_coord,y_coord,z_coord])
-
-                #coords.append([float(line.split()[1]), float(line.split()[2]),
-                #               float(line.split()[3])])
-
             if 'NAME         X           Y           Z' in line:
                 grabfract=True
     #TODO: Skip lines with negative fractional coords or larger than 1.0
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],elems,coords
-#Read CIF_file
-#Grab coordinates, cell parameters and symmetry operations
+
+#Function to shift a fractional coordinate so that it is fully inside unit cell
+def shift_fract_coord(a, rounddec=5):
+    new = []
+    #Looping over each coord
+    for i in a:
+        if i > 1.0:
+            mod = round(i-1.0,rounddec)
+        elif i < 0.0:
+            mod = round(1.0+i,rounddec)
+        # Set 1.0 fract coords to 0 (will create duplicates but removed later)
+        elif i == 1.0:
+            mod = round(0.0, rounddec)
+        #No shift required but rounding up number
+        else:
+            mod=round(i, rounddec)
+        new.append(mod)
+    return new
+
+
+# Read CIF_file
+# Grab coordinates, cell parameters and symmetry operations
 def read_ciffile(file):
     cell_a=0;cell_b=0;cell_c=0;cell_alpha=0;cell_beta=0;cell_gamma=0
     atomlabels=[]
