@@ -392,7 +392,6 @@ def fract_to_orthogonal(cellvectors, fraccoords):
 
 #Convert from orthogonal coordinates (Å) to fractional Cartesian coordinates
 #TODO: Has not been checked for correctness
-
 def orthogonal_to_fractional(cellvectors, orthogcoords):
     print("function not tested")
     ashexit()
@@ -409,15 +408,12 @@ def orthogonal_to_fractional(cellvectors, orthogcoords):
             latCnt[a][b] = cellParam[b][a]
     detLatCnt = det3(latCnt)
     for i in orthogcoords:
-        #x = i[0]*cellvectors[0][0] + i[1]*cellvectors[1][0] + i[2]*cellvectors[2][0]
-        #y = i[0]*cellvectors[0][1] + i[1]*cellvectors[1][1] + i[2]*cellvectors[2][1]
-        #z = i[0]*cellvectors[0][2] + i[1]*cellvectors[1][2] + i[2]*cellvectors[2][2]
-        x = (det3([[i[1], latCnt[0][1], latCnt[0][2]], [i[2], latCnt[1][1], latCnt[1][2]],
-                      [i[3], latCnt[2][1], latCnt[2][2]]])) / detLatCnt
-        y = (det3([[latCnt[0][0], i[1], latCnt[0][2]], [latCnt[1][0], i[2], latCnt[1][2]],
-                      [latCnt[2][0], i[3], latCnt[2][2]]])) / detLatCnt
-        z = (det3([[latCnt[0][0], latCnt[0][1], i[1]], [latCnt[1][0], latCnt[1][1], i[2]],
-                      [latCnt[2][0], latCnt[2][1], i[3]]])) / detLatCnt
+        x = (det3([[i[0], latCnt[0][1], latCnt[0][2]], [i[1], latCnt[1][1], latCnt[1][2]],
+                      [i[2], latCnt[2][1], latCnt[2][2]]])) / detLatCnt
+        y = (det3([[latCnt[0][0], i[0], latCnt[0][2]], [latCnt[1][0], i[1], latCnt[1][2]],
+                      [latCnt[2][0], i[2], latCnt[2][2]]])) / detLatCnt
+        z = (det3([[latCnt[0][0], latCnt[0][1], i[0]], [latCnt[1][0], latCnt[1][1], i[1]],
+                      [latCnt[2][0], latCnt[2][1], i[2]]])) / detLatCnt
         fract.append([x, y, z])
     return fract
 
@@ -561,11 +557,36 @@ def read_xtlfile(file):
                 x_coord = float(line.split()[1])
                 y_coord = float(line.split()[2])
                 z_coord = float(line.split()[3])
-                #XTL file from VESTA can contain coordinates outside unitcell
+                #XTL file can contain coordinates outside unitcell
                 if x_coord < 0.0 or y_coord < 0.0 or z_coord < 0.0:
-                    print("Skipping fractline in XTL file (outside cell): {} {} {}".format(x_coord,y_coord,z_coord))
+                    print("Warning: Fractional atom coordinate in XTL file may be outside cell: {} {} {}".format(x_coord,y_coord,z_coord))
+                    print("Modifying")
+                    coord_mod=[]
+                    for i in [x_coord,y_coord,z_coord]:
+                        if i < 0.0:
+                            mod = 1+i
+                            coord_mod.append(mod)
+                        else:
+                            coord_mod.append(i)
+                    #print("coord_mod:", coord_mod)
+                    #exit()
+                    elems.append(line.split()[0])
+                    coords.append(coord_mod)
                 elif x_coord > 1.0 or y_coord > 1.0 or z_coord > 1.0:
-                    print("Skipping fractline in XTL file (outside cell): {} {} {}".format(x_coord,y_coord,z_coord))
+                    print("Warning: Fractional atom coordinate in XTL file may be outside cell: {} {} {}".format(x_coord,y_coord,z_coord))
+                    print("Modifying")
+                    coord_mod=[]
+                    for i in [x_coord,y_coord,z_coord]:
+                        if i > 1.0:
+                            mod = round(i-1,4)
+                            #print("mod:", mod)
+                            coord_mod.append(mod)
+                        else:
+                            coord_mod.append(i)
+                    #print("2coord_mod:", coord_mod)
+                    #exit()
+                    elems.append(line.split()[0])
+                    coords.append(coord_mod)
                 else:
                     elems.append(line.split()[0])
                     coords.append([x_coord,y_coord,z_coord])
