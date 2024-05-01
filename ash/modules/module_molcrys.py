@@ -235,16 +235,18 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
     ash.modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-original")
 
-    #Change origin to centroid of coords
+    # Change origin to centroid of coords
     orthogcoords=ash.modules.module_coords.change_origin_to_centroid(orthogcoords)
     ash.modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-changedORIGIN")
 
-
-    #Final orthogcoords converted to fract (for XTL-file)
-    #fullcellcoords_fract = ash.functions.functions_molcrys.orthogonal_to_fractional(cell_vectors, orthogcoords)
-    #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-    ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
-
+    # Final orthogcoords converted to fract (for XTL-file)
+    # fullcellcoords_fract = ash.functions.functions_molcrys.orthogonal_to_fractional(cell_vectors, orthogcoords)
+    # Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+    #Note: skipping if XYZ-file was used
+    try:
+        ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+    except:
+        pass
 
     #Make simpler super-cell for cases where molecule is not in cell
     #TODO: Not sure if need this.

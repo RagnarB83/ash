@@ -781,14 +781,20 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
             for c in coords:
                 if c[0] < 0:
                     cnew_x=1+c[0]
+                elif c[0] == 1.0:
+                    cnew_x=0.0
                 else:
                     cnew_x=c[0]
                 if c[1] < 0:
                     cnew_y=1+c[1]
+                elif c[1] == 1.0:
+                    cnew_y=0.0
                 else:
                     cnew_y=c[1]
                 if c[2] < 0:
                     cnew_z = 1 + c[2]
+                elif c[2] == 1.0:
+                    cnew_z=0.0
                 else:
                     cnew_z = c[2]
                 fullcell.append([cnew_x,cnew_y,cnew_z])
@@ -825,17 +831,26 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                         printdebug("sumoperation_z:", sumoperation_z)
             for c in coords:
                 c_new=[multoperation_x*c[0]+sumoperation_x,multoperation_y*c[1]+sumoperation_y,multoperation_z*c[2]+sumoperation_z]
+                #exit()
                 #Translating coordinates so always positive
                 if c_new[0] < 0:
                     cnew_x=1+c_new[0]
+                elif c_new[0] == 1.0 or c_new[0] == -1.0: #If coord is 1.0 then set to 0
+                    cnew_x=0.0
                 else:
                     cnew_x=c_new[0]
+                #
                 if c_new[1] < 0:
                     cnew_y=1+c_new[1]
+                elif c_new[1] == 1.0 or c_new[1] == -1.0: #If coord is 1.0 then set to 0
+                    cnew_y=0.0
                 else:
                     cnew_y=c_new[1]
+                #
                 if c_new[2] < 0:
                     cnew_z = 1 + c_new[2]
+                elif c_new[2] == 1.0 or c_new[2] == -1.0: #If coord is 1.0 then set to 0
+                    cnew_z=0.0
                 else:
                     cnew_z = c_new[2]
                 fullcell.append([cnew_x,cnew_y,cnew_z])
