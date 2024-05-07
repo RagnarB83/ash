@@ -11,14 +11,13 @@ import ash.modules.module_coords
 from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index,print_if_level
 from ash.modules.module_singlepoint import Singlepoint
 from ash.modules.module_coords import check_charge_mult
-#from ash.functions.functions_elstructure import xdm_run, calc_cm5
 import ash.functions.functions_elstructure
 import ash.constants
 import ash.settings_ash
 import ash.functions.functions_parallel
 
 
-#ORCA Theory object.
+# ORCA Theory object.
 class ORCATheory:
     def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label="ORCA",
@@ -33,106 +32,105 @@ class ORCATheory:
         self.theorytype="QM"
         self.analytic_hessian=True
 
-        #Making sure we have a working ORCA location
+        # Making sure we have a working ORCA location
         print("Checking for ORCA location")
         self.orcadir = check_ORCA_location(orcadir)
-        #Making sure ORCA binary works (and is not orca the screenreader)
+        # Making sure ORCA binary works (and is not orca the screenreader)
         check_ORCAbinary(self.orcadir)
-        #Checking OpenMPI
+        # Checking OpenMPI
         if numcores != 1:
             print(f"ORCA parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version (for the ORCA version) is available in your environment")
             ash.functions.functions_parallel.check_OpenMPI()
 
-        #Bind to core option when calling ORCA: i.e. execute: /path/to/orca file.inp "--bind-to none"
-        #TODO: Default False; make True?
+        # Bind to core option when calling ORCA: i.e. execute: /path/to/orca file.inp "--bind-to none"
+        # TODO: Default False; make True?
         self.bind_to_core_option=bind_to_core_option
         print("bind_to_core_option:", self.bind_to_core_option)
 
-        #Checking if user added Opt, Freq keywords
+        # Checking if user added Opt, Freq keywords
         if ' OPT' in orcasimpleinput.upper() or ' FREQ' in orcasimpleinput.upper() :
             print(BC.FAIL,"Error. orcasimpleinput variable can not contain ORCA job-directives like: Opt, Freq, Numfreq", BC.END)
             print("String:", orcasimpleinput.upper())
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
             ashexit()
 
-        #Whether to check ORCA outputfile for errors and warnings or not
-        #Generally recommended. Could be disabled to speed up I/O a tiny bit
+        # Whether to check ORCA outputfile for errors and warnings or not
+        # Generally recommended. Could be disabled to speed up I/O a tiny bit
         self.check_for_errors=check_for_errors
         self.check_for_warnings=check_for_warnings
 
         # Counter for how often ORCATheory.run is called
         self.runcalls=0
 
-        #Whether to keep the ORCA outputfile for each run as orca_runX.out
+        # Whether to keep the ORCA outputfile for each run as orca_runX.out
         self.keep_each_run_output=keep_each_run_output
-        #Whether to save ORCA outputfile with given label
+        # Whether to save ORCA outputfile with given label
         if save_output_with_label is True and label is None:
             print("Error: save_output_with_label option requires a label keyword also")
             ashexit()
         else:
             self.save_output_with_label=save_output_with_label
 
-        #Print population_analysis in each run
+        # Print population_analysis in each run
         self.print_population_analysis=print_population_analysis
 
-        #Label to distinguish different ORCA objects
+        # Label to distinguish different ORCA objects
         self.label=label
 
-        #Create inputfile with generic name
+        # Create inputfile with generic name
         self.filename=filename
 
-        #Whether to exit ORCA if subprocess command faile
+        # Whether to exit ORCA if subprocess command faile
         self.ignore_ORCA_error=ignore_ORCA_error
 
 
-        #MOREAD-file
+        # MOREAD-file
         self.moreadfile=moreadfile
         self.moreadfile_always=moreadfile_always
-        #Autostart
+        # Autostart
         self.autostart=autostart
         # Each ORCA calculation will save path to last GBW-file used in case we have switched directories
-        #and we want to use last one
+        # and we want to use last one
         self.path_to_last_gbwfile_used=None #default None
 
-        #Printlevel
+        # Printlevel
         self.printlevel=printlevel
 
-        #TDDFT
+        # TDDFT
         self.TDDFT=TDDFT
         self.TDDFTroots=TDDFTroots
         self.FollowRoot=FollowRoot
 
-        #Setting numcores of object
-        #NOTE: nprocs is deprecated but kept on for a bit
+        # Setting numcores of object
+        # NOTE: nprocs is deprecated but kept on for a bit
         if nprocs is None:
             self.numcores=numcores
         else:
             self.numcores=nprocs
 
-        #Property block. Added after coordinates unless None
+        # Property block. Added after coordinates unless None
         self.propertyblock=propertyblock
 
-        #Store optional properties of ORCA run job in a dict
+        # Store optional properties of ORCA run job in a dict
         self.properties ={}
 
-
-        #Adding NoAutostart keyword to extraline if requested
+        # Adding NoAutostart keyword to extraline if requested
         if self.autostart is False:
             self.extraline=extraline+"\n! Noautostart"
         else:
             self.extraline=extraline
 
-        #Inputfile definitions
+        # Inputfile definitions
         self.orcasimpleinput=orcasimpleinput
         self.orcablocks=orcablocks
 
-        #Input-lines only for first run call
+        # Input-lines only for first run call
         if first_iteration_input is not None:
             self.first_iteration_input = first_iteration_input
         else:
             self.first_iteration_input=""
 
-        #BROKEN SYM OPTIONS
+        # BROKEN SYM OPTIONS
         self.brokensym=brokensym
         self.HSmult=HSmult
         if isinstance(atomstoflip, int):
@@ -142,11 +140,11 @@ class ORCATheory:
             self.atomstoflip=atomstoflip
         else:
             self.atomstoflip=[]
-        #Basis sets per element
+        # Basis sets per element
         self.basis_per_element=basis_per_element
         if self.basis_per_element is not None:
             print("Basis set dictionary for each element provided:", basis_per_element)
-        #Extrabasis
+        # Extrabasis
         if extrabasisatoms is not None:
             self.extrabasisatoms=extrabasisatoms
             self.extrabasis=extrabasis
@@ -154,7 +152,7 @@ class ORCATheory:
             self.extrabasisatoms=[]
             self.extrabasis=""
 
-        #Used in the case of counterpoise calculations
+        # Used in the case of counterpoise calculations
         self.ghostatoms = [] #Adds ":" in front of element in coordinate block. Have basis functions and grid points
         self.dummyatoms = [] #Adds DA instead of element. No real atom
 
@@ -162,13 +160,13 @@ class ORCATheory:
         self.fragment_indices = fragment_indices
 
         # self.qmatoms need to be set for Flipspin to work for QM/MM job.
-        #Overwritten by QMMMtheory, used in Flip-spin
+        # Overwritten by QMMMtheory, used in Flip-spin
         self.qmatoms=[]
 
-        #Whether to keep a copy of last output (filename_last.out) or not
+        # Whether to keep a copy of last output (filename_last.out) or not
         self.keep_last_output=True
 
-        #NMF
+        # NMF
         self.NMF=NMF
         if self.NMF is True:
             if NMF_sigma is None:
@@ -256,15 +254,13 @@ end
         except FileNotFoundError:
             pass
 
-    #Do an ORCA-optimization instead of ASH optimization. Useful for gas-phase chemistry when ORCA-optimizer is better than geomeTRIC
+    # Do an ORCA-optimization instead of ASH optimization. Useful for gas-phase chemistry when ORCA-optimizer is better than geomeTRIC
     def Opt(self, fragment=None, Grad=None, Hessian=None, numcores=None, charge=None, mult=None):
 
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL ORCA OPTIMIZATION-------------", BC.END)
-        #Coords provided to run or else taken from initialization.
-        #if len(current_coords) != 0:
-
-
+        # Coords provided to run or else taken from initialization.
+        # if len(current_coords) != 0:
 
         if fragment == None:
             print("No fragment provided to Opt.")
@@ -281,8 +277,6 @@ end
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.Opt method", BC.END)
             ashexit()
-
-
 
         if numcores==None:
             numcores=self.numcores
@@ -301,7 +295,7 @@ end
             print(self.propertyblock)
         print("Charge: {}  Mult: {}".format(charge, mult))
 
-        #TODO: Make more general
+        # TODO: Make more general
         create_orca_input_plain(self.filename, elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                 charge, mult, extraline=self.extraline, HSmult=self.HSmult, moreadfile=self.moreadfile)
         print(BC.OKGREEN, f"ORCA Calculation started using {numcores} CPU cores", BC.END)
