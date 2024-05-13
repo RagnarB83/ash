@@ -2628,31 +2628,47 @@ class PySCFTheory:
 #Based on https://github.com/pyscf/pyscf/blob/master/examples/qmmm/30-force_on_mm_particles.py
 #Uses pyscf mol and MM coords and charges and provided density matrix to get pointcharge gradient
 def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
+    #Making sure density matrix is as it should
+    if dm.shape[0] == 2:
+        dmf = np.array(dm[0] + dm[1]) #unrestricted
+    else:
+        dmf=np.array(dm)
 
+#GPU
     if GPU is True:
-        print("pyscf_pointcharge_gradient, GPU-option enabled (requires cupy to be installed)")
         import cupy
         einsumfunc = cupy.einsum
+        linalg_norm_func=cupy.linalg.norm
+
+        mm_coords_used=cupy.asarray(mm_coords)
+        mm_charges_used=cupy.asarray(mm_charges)
+        qm_coords = cupy.asarray(mol.atom_coords())
+        qm_charges = cupy.asarray(mol.atom_charges())
+        dmf=cupy.asarray(dmf)
+#CPU
     else:
         einsumfunc=np.einsum
+        linalg_norm_func=np.linalg.norm
+        mm_coords_used=mm_coords
+        mm_charges_used=mm_charges
+        qm_coords = mol.atom_coords()
+        qm_charges = mol.atom_charges()
+
     print("Einsumfunc from:", einsumfunc.__module__)
-    if dm.shape[0] == 2:
-        dmf = dm[0] + dm[1] #unrestricted
-    else:
-        dmf=dm
+
     # The interaction between QM atoms and MM particles
     # \sum_K d/dR (1/|r_K-R|) = \sum_K (r_K-R)/|r_K-R|^3
-    qm_coords = mol.atom_coords()
-    qm_charges = mol.atom_charges()
-    dr = qm_coords[:,None,:] - mm_coords
-    r = np.linalg.norm(dr, axis=2)
-    g = einsumfunc('r,R,rRx,rR->Rx', qm_charges, mm_charges, dr, r**-3)
+    dr = qm_coords[:,None,:] - mm_coords_used
+    r = linalg_norm_func(dr, axis=2)
+    g = einsumfunc('r,R,rRx,rR->Rx', qm_charges, mm_charges_used, dr, r**-3)
+
     # The interaction between electron density and MM particles
     # d/dR <i| (1/|r-R|) |j> = <i| d/dR (1/|r-R|) |j> = <i| -d/dr (1/|r-R|) |j>
     #   = <d/dr i| (1/|r-R|) |j> + <i| (1/|r-R|) |d/dr j>
-    for i, q in enumerate(mm_charges):
+
+    for i, q in enumerate(mm_charges_used):
         with mol.with_rinv_origin(mm_coords[i]):
-            v = mol.intor('int1e_iprinv')
+            v = cupy.asarray(mol.intor('int1e_iprinv'))
         f =(einsumfunc('ij,xji->x', dmf, v) +
             einsumfunc('ij,xij->x', dmf, v.conj())) * -q
         g[i] += f
@@ -2660,9 +2676,8 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
     #Converting from Cupy to numpy
     if GPU is True:
         return cupy.asnumpy(g)
-
-
-    return g
+    else:
+        return g
 
 
 #Function to do multireference correction via pyscf-based theories: Dice or Block.
