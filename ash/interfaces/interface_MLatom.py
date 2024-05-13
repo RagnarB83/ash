@@ -196,17 +196,25 @@ class MLatomTheory(Theory):
         molDB.add_xyz_vectorial_properties_from_file(molDB_xyzvecproperty_file, xyz_derivative_property_to_learn)
 
         # Split
-        print("Splitting molDB into subtraining database (subtrainDB) and validation database (valDB).")
-        print("Split fraction:", split_fraction)
-        subtrainDB, valDB = molDB.split(fraction_of_points_in_splits=split_fraction)
-        print("subtrainDB:", subtrainDB)
-        print("valDB:", valDB)
+        if self.ml_model.lower() == 'kreg':
+            print("KREG selected, no splitting")
+            print("\nNow training...")
+            self.model.train(molecular_database=molDB,
+                            property_to_learn=property_to_learn,
+                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
+                            hyperparameters=hyperparameters)
+        else:
+            print("Splitting molDB into subtraining database (subtrainDB) and validation database (valDB).")
+            print("Split fraction:", split_fraction)
+            subtrainDB, valDB = molDB.split(fraction_of_points_in_splits=split_fraction)
+            print("subtrainDB:", subtrainDB)
+            print("valDB:", valDB)
 
-        print("\nNow training...")
-        self.model.train(molecular_database=molDB, validation_molecular_database=valDB,
-                         property_to_learn=property_to_learn,
-                         xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
-                         hyperparameters=hyperparameters)
+            print("\nNow training...")
+            self.model.train(molecular_database=molDB, validation_molecular_database=valDB,
+                            property_to_learn=property_to_learn,
+                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
+                            hyperparameters=hyperparameters)
 
     # General run function
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
