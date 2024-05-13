@@ -2628,6 +2628,7 @@ class PySCFTheory:
 #Based on https://github.com/pyscf/pyscf/blob/master/examples/qmmm/30-force_on_mm_particles.py
 #Uses pyscf mol and MM coords and charges and provided density matrix to get pointcharge gradient
 def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
+    time0=time.time()
     #Making sure density matrix is as it should
     if dm.shape[0] == 2:
         dmf = np.array(dm[0] + dm[1]) #unrestricted
@@ -2655,13 +2656,13 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
         qm_charges = mol.atom_charges()
 
     print("Einsumfunc from:", einsumfunc.__module__)
-
+    print("Time for setup 1:", time.time()-time0)
     # The interaction between QM atoms and MM particles
     # \sum_K d/dR (1/|r_K-R|) = \sum_K (r_K-R)/|r_K-R|^3
     dr = qm_coords[:,None,:] - mm_coords_used
     r = linalg_norm_func(dr, axis=2)
     g = einsumfunc('r,R,rRx,rR->Rx', qm_charges, mm_charges_used, dr, r**-3)
-
+    print("Time for setup 2:", time.time()-time0)
     # The interaction between electron density and MM particles
     # d/dR <i| (1/|r-R|) |j> = <i| d/dR (1/|r-R|) |j> = <i| -d/dr (1/|r-R|) |j>
     #   = <d/dr i| (1/|r-R|) |j> + <i| (1/|r-R|) |d/dr j>
@@ -2672,7 +2673,7 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
         f =(einsumfunc('ij,xji->x', dmf, v) +
             einsumfunc('ij,xij->x', dmf, v.conj())) * -q
         g[i] += f
-
+    print("Time for setup 4:", time.time()-time0)
     #Converting from Cupy to numpy
     if GPU is True:
         return cupy.asnumpy(g)
