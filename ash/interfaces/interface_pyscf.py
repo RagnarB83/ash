@@ -2624,7 +2624,14 @@ class PySCFTheory:
 
 #Based on https://github.com/pyscf/pyscf/blob/master/examples/qmmm/30-force_on_mm_particles.py
 #Uses pyscf mol and MM coords and charges and provided density matrix to get pointcharge gradient
-def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
+def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
+
+    if GPU is True:
+        import cupy
+        einsumfunc = cupy.einsum
+    else:
+        einsumfunc=np.einsum
+
     if dm.shape[0] == 2:
         dmf = dm[0] + dm[1] #unrestricted
     else:
@@ -2635,15 +2642,15 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
     qm_charges = mol.atom_charges()
     dr = qm_coords[:,None,:] - mm_coords
     r = np.linalg.norm(dr, axis=2)
-    g = np.einsum('r,R,rRx,rR->Rx', qm_charges, mm_charges, dr, r**-3)
+    g = einsumfunc('r,R,rRx,rR->Rx', qm_charges, mm_charges, dr, r**-3)
     # The interaction between electron density and MM particles
     # d/dR <i| (1/|r-R|) |j> = <i| d/dR (1/|r-R|) |j> = <i| -d/dr (1/|r-R|) |j>
     #   = <d/dr i| (1/|r-R|) |j> + <i| (1/|r-R|) |d/dr j>
     for i, q in enumerate(mm_charges):
         with mol.with_rinv_origin(mm_coords[i]):
             v = mol.intor('int1e_iprinv')
-        f =(np.einsum('ij,xji->x', dmf, v) +
-            np.einsum('ij,xij->x', dmf, v.conj())) * -q
+        f =(einsumfunc('ij,xji->x', dmf, v) +
+            einsumfunc('ij,xij->x', dmf, v.conj())) * -q
         g[i] += f
     return g
 

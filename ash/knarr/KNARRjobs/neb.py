@@ -340,7 +340,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         WriteTraj(basename + "_optimization.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
                   path.GetSymbols(), path.GetEnergy())
         WritePath(basename + "_current.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
-                  path.GetSymbols(), path.GetEnergy())
+                  path.GetSymbols(), path.GetEnergy()/27.21140795)
 
         # =======================================================
         # Make checks - angle, possible intermediate images, etc.
@@ -624,7 +624,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()])),extra))
 
         WritePath(basename + "_MEP.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
-                  path.GetSymbols(), path.GetEnergy())
+                  path.GetSymbols(), path.GetEnergy()/27.21140795)
 
         #RB: keep current.xyz file
         #if os.path.isfile(basename + "_current.xyz"):
@@ -685,7 +685,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     if stop_neb:
         PrintMaxIter(maxiter)
         WritePath(basename + "_last_iter.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),
-                  path.GetSymbols(), path.GetEnergy())
+                  path.GetSymbols(), path.GetEnergy()/27.21140795)
 
         #RB: keep current.xyz file
         #if os.path.isfile(basename + "_current.xyz"):
