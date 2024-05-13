@@ -22,7 +22,7 @@ import copy
 #TODO: Gradient for post-SCF methods and TDDFT
 
 class PySCFTheory:
-    def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU',
+    def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
                   scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False,
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk',
                   noautostart=False, autostart=True,
@@ -130,8 +130,10 @@ class PySCFTheory:
 
         # SCF
         self.platform=platform
+        self.GPU_pcgrad=GPU_pcgrad #Pointcharge gradient not on GPU by default
         if self.platform == 'GPU':
             print("Warning: GPU platform for PySCF. This requires gpu4pyscf plugin to be available")
+            self.GPU_pcgrad=True
             print("Pointcharge gradient will also be performed on GPU using cupy")
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
@@ -2599,7 +2601,7 @@ class PySCFTheory:
                 print_time_rel(checkpoint, modulename='pySCF make_rdm1 for PC', moduleindex=2)
                 current_MM_coords_bohr = current_MM_coords*ash.constants.ang2bohr
                 checkpoint=time.time()
-                self.pcgrad = pyscf_pointcharge_gradient(self.mol,np.array(current_MM_coords_bohr),np.array(MMcharges),dm, GPU=self.platform)
+                self.pcgrad = pyscf_pointcharge_gradient(self.mol,np.array(current_MM_coords_bohr),np.array(MMcharges),dm, GPU=self.GPU_pcgrad)
                 print_time_rel(checkpoint, modulename='pyscf_pointcharge_gradient', moduleindex=2)
 
             if self.printlevel >1:
