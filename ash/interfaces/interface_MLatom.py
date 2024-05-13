@@ -116,11 +116,10 @@ class MLatomTheory(Theory):
             # ml_program is either MLatomF or KREG_API
             if ml_model.lower() == 'kreg':
                 print("KREG selected")
-                #if ml_program is None:
-                #    print("ml_program keyword was not set and is required for KREG. Exiting.")
-                #    ashexit()
-                    #, ml_program=ml_program
-                self.model = ml.models.kreg(model_file=model_file)
+                if ml_program is None:
+                    print("ml_program keyword was not set and is required for KREG. Options are: 'KREG_API' and 'MLatomF'. Exiting.")
+                    ashexit()
+                self.model = ml.models.kreg(model_file=model_file, ml_program=ml_program)
             elif ml_model.lower() == 'ani':
                 print("ANI selected")
                 self.model = ml.models.ani(model_file=model_file)
