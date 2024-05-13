@@ -2100,9 +2100,10 @@ class OpenMMTheory:
 
 # Reporter for forces similar to xyz format
 class ForceReporter(object):
-    def __init__(self, file, reportInterval):
+    def __init__(self, file, reportInterval, atomic_units=False):
         self._out = open(file, 'w')
         self._reportInterval = reportInterval
+        self.atomic_units=atomic_units
 
     def __del__(self):
         self._out.close()
@@ -2113,20 +2114,16 @@ class ForceReporter(object):
 
     def report(self, simulation, state):
         import openmm
-        forces = state.getForces().value_in_unit(openmm.unit.kilojoules/openmm.unit.mole/openmm.unit.nanometer)
-        print("writing forces")
         energy=state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoule_per_mole)
+        forces = state.getForces().value_in_unit(openmm.unit.kilojoules/openmm.unit.mole/openmm.unit.nanometer)
+        if self.atomic_units:
+            forces = np.array(forces) / -49614.752589207
+            #energy = energy * 2625.5002
+
         self._out.write('%g\n%g\n' % (len(forces), energy))
         for f in forces:
             self._out.write('%g %g %g\n' % (f[0], f[1], f[2]))
         self._out.flush()
-
-
-
-
-
-
-
 
 # For frozen systems we use Customforce in order to specify interaction groups
 # if len(self.frozen_atoms) > 0:
@@ -3227,7 +3224,7 @@ def read_NPT_statefile(npt_output):
 # Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None,
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None, atomic_units_force_reporter=False,
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
               anderson_thermostat=False, platform='CPU', constraints=None, restraints=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
@@ -3236,7 +3233,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, force_file_option=force_file_option,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, force_file_option=force_file_option, atomic_units_force_reporter=atomic_units_force_reporter,
                         constraints=constraints, restraints=restraints,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
@@ -3261,7 +3258,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.004,
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None,
+                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None, atomic_units_force_reporter=False,
                  coupling_frequency=1, printlevel=2, platform='CPU',
                  anderson_thermostat=False, hydrogenmass=1.5, constraints=None, restraints=None,
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
@@ -3353,6 +3350,8 @@ class OpenMM_MDclass:
         self.barostat_frequency = barostat_frequency
         self.trajectory_file_option=trajectory_file_option
         self.force_file_option=force_file_option
+        self.atomic_units_force_reporter=atomic_units_force_reporter #Forces in atomic units
+
         #PERIODIC or not
         if self.openmmobject.Periodic is True:
             #Generally we want True but for now allowing user to modify (default=True)
@@ -3616,9 +3615,10 @@ class OpenMM_MDclass:
             simulation.reporters.append(
                 mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=self.enforcePeriodicBox))
-        if self.force_file_option == 'txt':
+        if self.force_file_option != None:
             print("ForceReporter traj format selected.")
-            simulation.reporters.append(ForceReporter(self.trajfilename + '_force.txt', self.traj_frequency))
+            #exit()
+            simulation.reporters.append(ForceReporter(self.trajfilename + '_force.txt', self.traj_frequency, atomic_units=self.atomic_units_force_reporter))
 
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
@@ -3850,17 +3850,7 @@ class OpenMM_MDclass:
                 #    current_coords = center_coordinates(current_coords,)
 
 
-                #Printing step-info or write-trajectory at regular intervals
-                if step % self.traj_frequency == 0:
-                    # Manual step info option
-                    if self.printlevel >= 2:
-                        print_current_step_info(step,current_state,self.openmmobject)
 
-                    #print("QM/MM step. Writing unwrapped to trajfile: OpenMMMD_traj_unwrapped.xyz")
-                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_unwrapped", printlevel=1, writemode='a')
-
-                    print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
-                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
 
 
                 checkpoint = time.time()
@@ -3868,6 +3858,21 @@ class OpenMM_MDclass:
                 self.QM_MM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
                                       exit_after_customexternalforce_update=True, charge=self.charge, mult=self.mult)
                 print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+
+                #Printing step-info or write-trajectory at regular intervals
+                if step % self.traj_frequency == 0:
+                    # Manual step info option
+                    if self.printlevel >= 2:
+
+                        #Defining total QM/MM potential energy
+                        QM_MM_energy = self.QM_MM_object.QMenergy+self.QM_MM_object.MMenergy-self.QM_MM_object.extforce_energy
+                        print_current_step_info(step,current_state,self.openmmobject,qm_energy=QM_MM_energy)
+
+                    #print("QM/MM step. Writing unwrapped to trajfile: OpenMMMD_traj_unwrapped.xyz")
+                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_unwrapped", printlevel=1, writemode='a')
+
+                    print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
+                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
 
                 # Now need to update OpenMM external force with new QM-PC force
                  #The QM_PC gradient (link-atom projected, from QM_MM object) is provided to OpenMM external force
@@ -3951,17 +3956,6 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="get current coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
 
-                #Printing step-info or write-trajectory at regular intervals
-                if step % self.traj_frequency == 0:
-                    # Manual step info option
-                    if self.printlevel >= 2:
-                        print_current_step_info(step,current_state,self.openmmobject)
-                    #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
-                    #checkpoint = time.time()
-                    # Manual trajectory option (reporters do not work for manual dynamics steps)
-                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
-                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
-                    #checkpoint = time.time()
 
                 # Run QM step to get full system QM gradient.
                 # Updates OpenMM object with QM forces
@@ -3976,6 +3970,19 @@ class OpenMM_MDclass:
                 extforce_energy=3*np.mean(sum(gradient*current_coords*1.88972612546))
                 if self.printlevel >= 2:
                     print("extforce_energy:", extforce_energy)
+
+                #Printing step-info or write-trajectory at regular intervals
+                if step % self.traj_frequency == 0:
+                    # Manual step info option
+                    if self.printlevel >= 2:
+                        print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
+                    #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
+                    #checkpoint = time.time()
+                    # Manual trajectory option (reporters do not work for manual dynamics steps)
+                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    #checkpoint = time.time()
+
 
                 #OpenMM metadynamics
                 if metadynamics == True:
@@ -4274,19 +4281,31 @@ def calc_kinetic_energy(velocities,dof):
         kin+=0.5*np.dot(v,v)
     return 2*kin / (dof*ash.constants.BOLTZ)
 
-#Used in OpenMM_MD when doing simulation step-by-step (e.g. QM/MM MD)
-def print_current_step_info(step,state,openmmobject):
+#Used in OpenMM_MD when doing simulation step-by-step (e.g. QM-MD and QM/MM MD)
+def print_current_step_info(step,state,openmmobject, qm_energy=None):
     import openmm
+
+    #Kinetic energy directly from MD-state
     kinetic_energy=state.getKineticEnergy()
-    pot_energy=state.getPotentialEnergy()
+    kinetic_energy_eh=kinetic_energy.value_in_unit(openmm.unit.kilojoules_per_mole)/2625.5002
+
+    #Potential energy from ASH Theory level instead
+    if qm_energy is not None:
+        dummy_warning="(correct)"
+        pot_energy=qm_energy
+    else:
+        dummy_warning="(dummy)"
+        pot_energy=state.getPotentialEnergy()
+
+
     temp=(2*kinetic_energy/(openmmobject.dof*openmm.unit.MOLAR_GAS_CONSTANT_R)).value_in_unit(openmm.unit.kelvin)
 
     print("="*50)
     print("SIMULATION STATUS (STEP {})".format(step))
     print("_"*50)
     print("Time: {}".format(state.getTime()))
-    print("Potential energy:", pot_energy)
-    print("Kinetic energy:", kinetic_energy )
+    print(f"Potential energy {dummy_warning}: {pot_energy} Eh")
+    print(f"Kinetic energy: {kinetic_energy_eh} Eh")
     print("Temperature: {}".format(temp))
     print("="*50)
 

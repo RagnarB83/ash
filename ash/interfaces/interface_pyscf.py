@@ -132,6 +132,7 @@ class PySCFTheory:
         self.platform=platform
         if self.platform == 'GPU':
             print("Warning: GPU platform for PySCF. This requires gpu4pyscf plugin to be available")
+            print("Pointcharge gradient will also be performed on GPU using cupy")
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
         self.conv_tol=conv_tol
@@ -2598,7 +2599,7 @@ class PySCFTheory:
                 print_time_rel(checkpoint, modulename='pySCF make_rdm1 for PC', moduleindex=2)
                 current_MM_coords_bohr = current_MM_coords*ash.constants.ang2bohr
                 checkpoint=time.time()
-                self.pcgrad = pyscf_pointcharge_gradient(self.mol,current_MM_coords_bohr,MMcharges,dm)
+                self.pcgrad = pyscf_pointcharge_gradient(self.mol,np.array(current_MM_coords_bohr),np.array(MMcharges),dm, GPU=self.platform)
                 print_time_rel(checkpoint, modulename='pyscf_pointcharge_gradient', moduleindex=2)
 
             if self.printlevel >1:
@@ -2627,11 +2628,12 @@ class PySCFTheory:
 def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
 
     if GPU is True:
+        print("pyscf_pointcharge_gradient, GPU-option enabled (requires cupy to be installed)")
         import cupy
         einsumfunc = cupy.einsum
     else:
         einsumfunc=np.einsum
-
+    print("Einsumfunc from:", einsumfunc.__module__)
     if dm.shape[0] == 2:
         dmf = dm[0] + dm[1] #unrestricted
     else:
