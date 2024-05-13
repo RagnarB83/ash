@@ -2656,6 +2656,12 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
         f =(einsumfunc('ij,xji->x', dmf, v) +
             einsumfunc('ij,xij->x', dmf, v.conj())) * -q
         g[i] += f
+
+    #Converting from Cupy to numpy
+    if GPU is True:
+        return cupy.asnumpy(g)
+
+
     return g
 
 
