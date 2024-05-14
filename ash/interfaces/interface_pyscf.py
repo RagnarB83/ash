@@ -2646,8 +2646,11 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
         qm_coords = cupy.asarray(mol.atom_coords())
         qm_charges = cupy.asarray(mol.atom_charges())
         dmf=cupy.asarray(dmf)
+        array_mod=cupy.asarray
 #CPU
     else:
+        def dummy(f): return f
+        array_mod=dummy
         einsumfunc=np.einsum
         linalg_norm_func=np.linalg.norm
         mm_coords_used=mm_coords
@@ -2669,7 +2672,7 @@ def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
 
     for i, q in enumerate(mm_charges_used):
         with mol.with_rinv_origin(mm_coords[i]):
-            v = cupy.asarray(mol.intor('int1e_iprinv'))
+            v = array_mod(mol.intor('int1e_iprinv'))
         f =(einsumfunc('ij,xji->x', dmf, v) +
             einsumfunc('ij,xij->x', dmf, v.conj())) * -q
         g[i] += f
