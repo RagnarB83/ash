@@ -104,6 +104,7 @@ from .interfaces.interface_MLatom import MLatomTheory
 from .interfaces.interface_DRACO import get_draco_radii
 from .interfaces.interface_DFTD4 import DFTD4Theory, calc_DFTD4
 from .interfaces.interface_torch import TorchTheory
+from .interfaces.interface_packmol import packmol_solvate
 
 # MM: external and internal
 from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \

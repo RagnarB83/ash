@@ -16,7 +16,7 @@ eldict={'H':1,'He':2,'Li':3,'Be':4,'B':5,'C':6,'N':7,'O':8,'F':9,'Ne':10,'Na':11
 # Used by: module_coords: conv_atomtypes_elems and read_gromacsfile. Also in read_pdbfile when atomnames option is active
 # Added MW as atomtype for M-site. Problem for QM-code
 atomtypes_dict = {'H': 'H', 'HA': 'H', 'HB': 'H', 'HW': 'H', 'HH': 'H', 'HN': 'H', 'HD': 'H', 'HZ': 'H', 'HG': 'H',
-                  'HE': 'H', 'HT': 'H', 'H1': 'H', 'H2': 'H', 'H3': 'H', 'HT1': 'H', 'HT2': 'H', 'HT3': 'H',
+                  'HE': 'H', 'HT': 'H', 'H1': 'H', 'H2': 'H', 'H3': 'H', 'HT1': 'H', 'HT2': 'H', 'HT3': 'H', 'HC': 'H', 'HF':'H',
                   'HN1': 'H', 'HN2': 'H',
                   'HB1': 'H', 'HB2': 'H', 'HG1': 'H', 'HG2': 'H', 'HG11': 'H', 'HG12': 'H', 'HG13': 'H', 'HG21': 'H',
                   'HG22': 'H', 'HG23': 'H', 'HH11': 'H', 'HH12': 'H', 'HH21': 'H', 'HH22': 'H', 'HD11': 'H',
