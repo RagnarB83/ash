@@ -2928,7 +2928,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 #Mainly for getting natural orbitals
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="", label="frag",
         MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None,
-        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False,
+        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False, natorb_iterations=None,
         FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6,
         ROHF=False, ROHF_case=None, MP2_nat_step=False, MREOMtype="MR-EOM",
         NMF=False, NMF_sigma=None):
@@ -2951,7 +2951,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         ashexit()
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "bla", theory=None)
+    charge,mult = check_charge_mult(charge, mult, "QM", fragment, "ORCA_orbital_setup", theory=None)
 
     #ORBITALS_OPTIONS
     #If ROHF only is requested we activate the ROHF procedure
@@ -3014,10 +3014,14 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
     #FOBO
     if 'FOBO' in orbitals_option:
         print("FOBO-type orbitals requested.")
+        
         if CASCI is True:
             print("Warning: CAS-CI is True. No CASSCF orbital optimization will be carried out.")
-            print("Warning: To get natural orbitals from CAS-CI calculation we modify gtol instead of using noiter")
-            gtol=9999999
+            extrainput += " noiter "
+        elif natorb_iterations is not None:
+            print("FOBO and natorbitations active. Turning off CASSCF orbital optimization")
+            extrainput += " noiter "
+
     if 'MR' in orbitals_option:
         print("orbitals_option:", orbitals_option)
         if 'SORCI' in orbitals_option:
@@ -3049,7 +3053,10 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             gtol=9999999
 
 
-    #Always tarting from scratch, unless moreadfile is provided (will override)
+    if natorb_iterations is not None:
+        print("Natural orbital iterations will be performed!")
+
+    #Always starting from scratch, unless moreadfile is provided (will override)
     autostart_option=False
 
     ######################
@@ -3250,7 +3257,9 @@ end
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MRCIkeyword} {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores,
                                  label=MRCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.b0_s0.nat"
-        natoccgrab=None
+
+        def dummy(f): return f
+        natoccgrab=dummy
         print("Warning: can not get full natural occupations from MRCI+Q calculation")
     elif 'FOBO' in orbitals_option:
         #Defining a ROHF-type CASSCF
@@ -3258,15 +3267,16 @@ end
             print("CAS_nel and CAS_norb not given. Guessing ROHF-type CASSCF based on multiplicity")
             CAS_nel=mult-1
             CAS_norb=mult-1
+            print(f"CAS_nel: {CAS_nel} CAS_norb:{CAS_norb}")
 
         if CAS_nel == 0:
             print("Closed-shell system. Adding AllowRHF keyword")
-            extrainput="AllowRHF"
+            extrainput+="AllowRHF"
         #FOBO_options
         if FOBO_excitation_options is None:
             FOBO_excitation_options = {'1h':1,'1p':1,'1h1p':1,'2h':0,'2h1p':1}
             print("Using default FOBO_excitation_options:", FOBO_excitation_options)
-
+        #exit()
         mrciblocks=f"""
 %maxcore {memory}
 {basisblock}
@@ -3294,44 +3304,69 @@ natorbs 2
 tsel {MRCI_tsel}
 end
 """
+        #NOTE: Added noiter here to prevent CASSCF module from messing with orbitals
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput}  {basis} autoaux tightscf", orcablocks=mrciblocks, numcores=numcores,
                                  label='FOBO', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.b0_s0.nat"
-        natoccgrab=None
-        print("Warning: can not get full natural occupations from MRCI+Q calculation")
+        def dummy(f): return f
+        natoccgrab=dummy
+        print("Warning: can not get full natural occupations from FOBO calculation")
     else:
         print("Error: orbitals_option not recognized")
         ashexit()
 
     #Run natorb calculation unless everything is done
     if alldone is False:
-        ash.Singlepoint(theory=natorbs, fragment=fragment, charge=charge, mult=mult)
 
-    #Print natural occupations if available
-    if natoccgrab is not None:
-        nat_occupations=natoccgrab(natorbs.filename+'.out')
-        print(f"{orbitals_option} Natorb. ccupations:", nat_occupations)
-        print("\nTable of natural occupation numbers")
-        print(f"Dashed lines indicated occupations within nmin={nmin} and nmax={nmax} window")
-        print("")
-        print("{:<9} {:6} ".format("Orbital", f"{orbitals_option}-nat-occ"))
-        print("----------------------------------------")
-        init_flag=False
-        final_flag=False
-        for index,(nocc) in enumerate(nat_occupations):
-            if init_flag is False and nocc<nmin:
-                print("-"*40)
-                init_flag=True
-            if final_flag is False and nocc<nmax:
-                print("-"*40)
-                final_flag=True
-            print(f"{index:<9} {nocc:9.4f}")
-    else:
-        nat_occupations=[]
+        if natorb_iterations:
+            print("Natural-orbital iterations option is ON!")
+            print(f"Will run {natorb_iterations} natural-orbital iterations")
+            for n_i in range(0,natorb_iterations):
+
+                print(f"Now running natorb iteration {n_i}")
+                ash.Singlepoint(theory=natorbs, fragment=fragment, charge=charge, mult=mult)
+
+                if n_i == 0:
+                    print("Iteration 0 done. Now setting moread option for next iteration")
+                    natorbs.moreadfile=mofile
+                    natorbs.moreadfile_always=True
+
+                nat_occupations=natoccgrab(natorbs.filename+'.out')
+                if orbitals_option not in ['MRCI','FOBO']:
+                    natocc_print(nat_occupations,orbitals_option,nmin,nmax)
+                os.rename(f"{natorbs.filename}.out", f"orca_natorbiter_{n_i}.out")
+        else:
+            print("Now running natorb calculation")
+            ash.Singlepoint(theory=natorbs, fragment=fragment, charge=charge, mult=mult)
+            if natoccgrab is not None:
+                nat_occupations=natoccgrab(natorbs.filename+'.out')
+                if orbitals_option not in ['MRCI','FOBO']:
+                    natocc_print(nat_occupations,orbitals_option,nmin,nmax)
+            else:
+                nat_occupations=[]
 
     #Renaming mofile (for purposes of having unique mofiles if we run this function multiple times)
     newmofile = label + '_'+mofile
     os.rename(mofile, newmofile)
     print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", newmofile)
     print("Also returning natural occupations list:", nat_occupations)
+    
     return newmofile, nat_occupations
+    
+def natocc_print(nat_occupations,orbitals_option,nmin,nmax):
+    print(f"{orbitals_option} Natorb. ccupations:", nat_occupations)
+    print("\nTable of natural occupation numbers")
+    print(f"Dashed lines indicated occupations within nmin={nmin} and nmax={nmax} window")
+    print("")
+    print("{:<9} {:6} ".format("Orbital", f"{orbitals_option}-nat-occ"))
+    print("----------------------------------------")
+    init_flag=False
+    final_flag=False
+    for index,(nocc) in enumerate(nat_occupations):
+        if init_flag is False and nocc<nmin:
+            print("-"*40)
+            init_flag=True
+        if final_flag is False and nocc<nmax:
+            print("-"*40)
+            final_flag=True
+        print(f"{index:<9} {nocc:9.4f}")
