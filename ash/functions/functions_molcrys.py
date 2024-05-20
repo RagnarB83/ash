@@ -11,7 +11,28 @@ import ash.interfaces.interface_xtb
 from ash.interfaces.interface_xtb import grabatomcharges_xTB
 from ash.modules.module_MM import UFFdict
 from ash.functions.functions_elstructure import DDEC_to_LJparameters,DDEC_calc
-#import ash
+
+
+# Function for getting indices of repeated rows in a 2d numpy array
+# Used to find rows to delete
+def get_indices_of_repeated_rows(a):
+
+    # List of row-indices to delete
+    to_delete = []
+
+    unq, count = np.unique(a, axis=0, return_counts=True)
+    repeated_groups = unq[count > 1]
+
+    for repeated_group in repeated_groups:
+        repeated_idx = np.argwhere(np.all(a == repeated_group, axis=1))
+        #print("repeated_idx:", repeated_idx)
+        #print(repeated_idx.ravel())
+        for i in repeated_idx.ravel()[1:]:
+            to_delete.append(i)
+        #print("to_delete:", to_delete)
+    return to_delete
+
+
 
 
 #Extend cell to 3x3x3 (27 cells) so that original cell is in middle
@@ -255,6 +276,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
 
     #print_time_rel_and_tot(currtime, origtime, modulename='molcrys_frag_define_step2', moduleindex=4)
     #currtime=time.time()
+
     #3.  Going through fragment fraglists. Finding atoms that belong to another cell (i.e. large atom index).
     # Finding equivalent atom positions inside original cell
     #Comparing all lists and removing identical lists created by Step 2
@@ -370,7 +392,6 @@ def fract_to_orthogonal(cellvectors, fraccoords):
 
 #Convert from orthogonal coordinates (Å) to fractional Cartesian coordinates
 #TODO: Has not been checked for correctness
-
 def orthogonal_to_fractional(cellvectors, orthogcoords):
     print("function not tested")
     ashexit()
@@ -387,15 +408,12 @@ def orthogonal_to_fractional(cellvectors, orthogcoords):
             latCnt[a][b] = cellParam[b][a]
     detLatCnt = det3(latCnt)
     for i in orthogcoords:
-        #x = i[0]*cellvectors[0][0] + i[1]*cellvectors[1][0] + i[2]*cellvectors[2][0]
-        #y = i[0]*cellvectors[0][1] + i[1]*cellvectors[1][1] + i[2]*cellvectors[2][1]
-        #z = i[0]*cellvectors[0][2] + i[1]*cellvectors[1][2] + i[2]*cellvectors[2][2]
-        x = (det3([[i[1], latCnt[0][1], latCnt[0][2]], [i[2], latCnt[1][1], latCnt[1][2]],
-                      [i[3], latCnt[2][1], latCnt[2][2]]])) / detLatCnt
-        y = (det3([[latCnt[0][0], i[1], latCnt[0][2]], [latCnt[1][0], i[2], latCnt[1][2]],
-                      [latCnt[2][0], i[3], latCnt[2][2]]])) / detLatCnt
-        z = (det3([[latCnt[0][0], latCnt[0][1], i[1]], [latCnt[1][0], latCnt[1][1], i[2]],
-                      [latCnt[2][0], latCnt[2][1], i[3]]])) / detLatCnt
+        x = (det3([[i[0], latCnt[0][1], latCnt[0][2]], [i[1], latCnt[1][1], latCnt[1][2]],
+                      [i[2], latCnt[2][1], latCnt[2][2]]])) / detLatCnt
+        y = (det3([[latCnt[0][0], i[0], latCnt[0][2]], [latCnt[1][0], i[1], latCnt[1][2]],
+                      [latCnt[2][0], i[2], latCnt[2][2]]])) / detLatCnt
+        z = (det3([[latCnt[0][0], latCnt[0][1], i[0]], [latCnt[1][0], latCnt[1][1], i[1]],
+                      [latCnt[2][0], latCnt[2][1], i[2]]])) / detLatCnt
         fract.append([x, y, z])
     return fract
 
@@ -539,24 +557,45 @@ def read_xtlfile(file):
                 x_coord = float(line.split()[1])
                 y_coord = float(line.split()[2])
                 z_coord = float(line.split()[3])
-                #XTL file from VESTA can contain coordinates outside unitcell
+
+                #Now checking each coordinate if it is outside unitcell
+                coord_mod = shift_fract_coord([x_coord,y_coord,z_coord])
+                elems.append(line.split()[0])
+                coords.append(coord_mod)
+                #Note: if statements below right now just for printing
+                #XTL file can contain coordinates outside unitcell
                 if x_coord < 0.0 or y_coord < 0.0 or z_coord < 0.0:
-                    print("Skipping fractline in XTL file (outside cell): {} {} {}".format(x_coord,y_coord,z_coord))
+                    print("Warning: Fractional atom coordinate in XTL file may be outside cell: {} {} {}".format(x_coord,y_coord,z_coord))
+                    print("Modifying")
                 elif x_coord > 1.0 or y_coord > 1.0 or z_coord > 1.0:
-                    print("Skipping fractline in XTL file (outside cell): {} {} {}".format(x_coord,y_coord,z_coord))
-                else:
-                    elems.append(line.split()[0])
-                    coords.append([x_coord,y_coord,z_coord])
-
-                #coords.append([float(line.split()[1]), float(line.split()[2]),
-                #               float(line.split()[3])])
-
+                    print("Warning: Fractional atom coordinate in XTL file may be outside cell: {} {} {}".format(x_coord,y_coord,z_coord))
+                    print("Modifying")
             if 'NAME         X           Y           Z' in line:
                 grabfract=True
     #TODO: Skip lines with negative fractional coords or larger than 1.0
     return [cell_a, cell_b, cell_c],[cell_alpha, cell_beta, cell_gamma],elems,coords
-#Read CIF_file
-#Grab coordinates, cell parameters and symmetry operations
+
+#Function to shift a fractional coordinate so that it is fully inside unit cell
+def shift_fract_coord(a, rounddec=5):
+    new = []
+    #Looping over each coord
+    for i in a:
+        if i > 1.0:
+            mod = round(i-1.0,rounddec)
+        elif i < 0.0:
+            mod = round(1.0+i,rounddec)
+        # Set 1.0 fract coords to 0 (will create duplicates but removed later)
+        elif i == 1.0:
+            mod = round(0.0, rounddec)
+        #No shift required but rounding up number
+        else:
+            mod=round(i, rounddec)
+        new.append(mod)
+    return new
+
+
+# Read CIF_file
+# Grab coordinates, cell parameters and symmetry operations
 def read_ciffile(file):
     cell_a=0;cell_b=0;cell_c=0;cell_alpha=0;cell_beta=0;cell_gamma=0
     atomlabels=[]
@@ -742,14 +781,20 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
             for c in coords:
                 if c[0] < 0:
                     cnew_x=1+c[0]
+                elif c[0] == 1.0:
+                    cnew_x=0.0
                 else:
                     cnew_x=c[0]
                 if c[1] < 0:
                     cnew_y=1+c[1]
+                elif c[1] == 1.0:
+                    cnew_y=0.0
                 else:
                     cnew_y=c[1]
                 if c[2] < 0:
                     cnew_z = 1 + c[2]
+                elif c[2] == 1.0:
+                    cnew_z=0.0
                 else:
                     cnew_z = c[2]
                 fullcell.append([cnew_x,cnew_y,cnew_z])
@@ -786,17 +831,26 @@ def fill_unitcell(cell_length,cell_angles,atomlabels,elems,coords,symmops):
                         printdebug("sumoperation_z:", sumoperation_z)
             for c in coords:
                 c_new=[multoperation_x*c[0]+sumoperation_x,multoperation_y*c[1]+sumoperation_y,multoperation_z*c[2]+sumoperation_z]
+                #exit()
                 #Translating coordinates so always positive
                 if c_new[0] < 0:
                     cnew_x=1+c_new[0]
+                elif c_new[0] == 1.0 or c_new[0] == -1.0: #If coord is 1.0 then set to 0
+                    cnew_x=0.0
                 else:
                     cnew_x=c_new[0]
+                #
                 if c_new[1] < 0:
                     cnew_y=1+c_new[1]
+                elif c_new[1] == 1.0 or c_new[1] == -1.0: #If coord is 1.0 then set to 0
+                    cnew_y=0.0
                 else:
                     cnew_y=c_new[1]
+                #
                 if c_new[2] < 0:
                     cnew_z = 1 + c_new[2]
+                elif c_new[2] == 1.0 or c_new[2] == -1.0: #If coord is 1.0 then set to 0
+                    cnew_z=0.0
                 else:
                     cnew_z = c_new[2]
                 fullcell.append([cnew_x,cnew_y,cnew_z])
@@ -831,9 +885,10 @@ NAME         X           Y           Z
 
 
 
-#Filter coords array based on duplicate condition. https://stackoverflow.com/questions/43035503/efficiently-delete-arrays-that-are-close-from-each-other-given-a-threshold-in-py
+#Filter coords array based on duplicate condition.
 #Gives list of duplicate row indices if less than threshold
-def filter_duplicate(data):
+#Old slow version
+def filter_duplicate_old(data):
     def condition(xs,prev):
         threshold=1e-5
         val=sum((x-yp)*(x-yp) for x,yp in zip(xs,prev))
@@ -844,6 +899,14 @@ def filter_duplicate(data):
             result.append(element)
         else:
             duplicate_indices.append(rowindex)
+    return duplicate_indices
+
+#New fast version
+def filter_duplicate(data):
+    threshold = 1e-5
+    squared_diff = np.sum((data[:, np.newaxis] - data[np.newaxis, :])**2, axis=2)
+    np.fill_diagonal(squared_diff, np.inf)  # Set diagonal elements to infinity to exclude self-comparison
+    duplicate_indices = np.where(np.any(squared_diff < threshold, axis=1))[0]
     return duplicate_indices
 
 
@@ -885,7 +948,7 @@ def create_MMcluster(orthogcoords,elems,cell_vectors,sphereradius):
     #Find duplicate coordinates (atoms on top of each other). Add index to deletion list. Happens if atoms have coordinates right on box boundary
     #List of Bools, duplicates are True
     #NOTE: Problem, way too slow
-    print("Starting filter duplicate. This step is currently slow. To be fixed")
+    print("Starting filter duplicate")
     timestampA=time.time()
     dupls=np.array(filter_duplicate(extended_coords))
     print_time_rel(timestampA, modulename='filter duplicate', moduleindex=4)
@@ -931,7 +994,7 @@ def remove_partial_fragments(coords,elems,sphereradius,fragmentobjects, scale=No
             print("Load successful")
             #Get list of fragments for all surfaceatoms
             print("Now calling Julia function")
-            fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, elems, 99, scale, tol,ash.modules.module_coords.eldict_covrad)
+            fraglist_temp = Juliafunctions.calc_fraglist_for_atoms_julia(surfaceatoms,coords, np.array(elems), 99, scale, tol,ash.modules.module_coords.eldict_covrad)
             #TODO: Necessary. Can we change return of Julia function instead??
             fraglist_temp = [list(i) for i in fraglist_temp]
 
@@ -1142,15 +1205,15 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         #print(ORCASPcalculation.__dict__)
         #Run ORCA calculation with charge-model info
         #ORCASPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
-        ash.Singlepoint(theory=ORCASPcalculation, fragment=gasfrag, charge=fragmentobject.Charge,mult=fragmentobject.Mult)
+        ash.Singlepoint(theory=ORCASPcalculation, fragment=gasfrag, charge=fragmentobject.charge,mult=fragmentobject.mult)
         #print_time_rel_and_tot(currtime, origtime, modulename='gasfragcalc_ORCA orca run', moduleindex=4)
         currtime = time.time()
 
         if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':
             #Calling DDEC_calc (calls chargemol)
             atomcharges, molmoms, voldict = DDEC_calc(elems=gasfrag.elems, theory=ORCASPcalculation,
-                                            numcores=NUMPROC, DDECmodel=chargemodel, molecule_charge=fragmentobject.Charge,
-                                            molecule_spinmult=fragmentobject.Mult,
+                                            numcores=NUMPROC, DDECmodel=chargemodel, molecule_charge=fragmentobject.charge,
+                                            molecule_spinmult=fragmentobject.mult,
                                             calcdir="DDEC_fragment"+str(id), gbwfile=ORCASPcalculation.filename+'.gbw')
 
             print("atomcharges:", atomcharges)
@@ -1221,8 +1284,8 @@ def gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,xtbdir,xtbmethod,NUMPROC
         print("xTBSPcalculation:", xTBSPcalculation)
         print(xTBSPcalculation.__dict__)
         #Run xTB calculation with charge-model info
-        #xTBSPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
-        ash.Singlepoint(theory=xTBSPcalculation, fragment=gasfrag, charge=fragmentobject.Charge, mult=fragmentobject.Mult)
+        #xTBSPcalculation.run(numcores=NUMPROC, charge=fragmentobject.Charge, mult=fragmentobject.mult)
+        ash.Singlepoint(theory=xTBSPcalculation, fragment=gasfrag, charge=fragmentobject.charge, mult=fragmentobject.mult)
 
         #Grab atomic charges for fragment.
 
@@ -1337,7 +1400,7 @@ def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,main
                 print("Using GBW file: ", gbwfile)
                 DDECcharges, fragmentobject.molmoms, fragmentobject.voldict = DDEC_calc(elems=fragmentobject.Atoms, theory=QMtheory,
                                                         numcores=numcores, DDECmodel=shortrangemodel,
-                                                        molecule_spinmult=fragmentobject.Mult, molecule_charge=fragmentobject.Charge,
+                                                        molecule_spinmult=fragmentobject.mult, molecule_charge=fragmentobject.charge,
                                                         calcdir="DDEC_LJcalc_fragment_{}".format(fragmentobject.Name), gbwfile=gbwfile)
                 print("DDECcharges:", DDECcharges)
             #Getting R0 and epsilon

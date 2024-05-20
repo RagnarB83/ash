@@ -58,7 +58,7 @@ python3path={path_to_python3_dir}
 
 #PYTHONPATH for finding ASH usually not recommended.
 #Better to install into Python environment (pip install)
-#export PYTHONPATH=$ASHPATH:\$ASHPATH/lib:$PYTHONPATH
+#export PYTHONPATH=$ASHPATH:$ASHPATH/lib:$PYTHONPATH
 
 export PATH=$python3path:$PATH
 export LD_LIBRARY_PATH=$ASHPATH/lib:$LD_LIBRARY_PATH
@@ -68,7 +68,7 @@ echo \"Sourced ASH environment file!\"
 echo \"Importing ASH within Python should now work!\"
 echo \"ASH is located in $ASHPATH\"
 echo \"The Python interpreter that you should be using is located in $python3path \"
-"""
+    """
 
 
     with open(f"{os.path.expanduser('~')}/set_environment_ash.sh", "w") as f:
@@ -85,14 +85,31 @@ echo \"The Python interpreter that you should be using is located in $python3pat
 # TODO: Avoid reloading
 julia_loaded = False
 
+def is_interactive() -> bool:
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return True  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter
+
 #General function to exit ASH
 #NOTE: By default we exit with errorcode 1
 def ashexit(errormessage=None, code=1):
     print(BC.FAIL,"ASH exiting with code:", code, BC.END)
+
     if errormessage != None:
         print(BC.FAIL,"Error message:", errormessage, BC.END)
-    #raise SystemExit(code)
-    sys.exit(1)
+
+    #If in Jupyter notebook, then we do a softer return
+    if is_interactive():
+        raise SystemExit("ASH exiting due to error")
+    else:
+        sys.exit(1)
 
 def basename(filename):
     return os.path.splitext(filename)[0]
@@ -133,17 +150,14 @@ def load_pythoncall():
     JuliaMain.include(ashpath + "/functions/functions_julia.jl")
     return JuliaMain
 
-def load_pyjulia():
-    print("Now loading PyJulia. This will fail if :\n\
-        - PyJulia Python package has not been installed\n\
-        - Julia PyCall package has not been installed\n\
-        - python-jl/python3_ash interpreter not used (necessary for static libpython)\n")
-        #- Julia Hungarian package has not been installed")
-
-    from julia import Main as JuliaMain
-    #NOTE: Reading old Pyjulia function file here instead.
-    JuliaMain.include(ashpath + "/functions/functions_julia_oldpyjulia.jl")
-    return JuliaMain
+#def load_pyjulia():
+#    print("Now loading PyJulia. This will fail if :\n\
+#        - Julia PyCall package has not been installed\n\
+#
+#    from julia import Main as JuliaMain
+#    #NOTE: Reading old Pyjulia function file here instead.
+#    JuliaMain.include(ashpath + "/functions/functions_julia_oldpyjulia.jl")
+#    return JuliaMain
 
 def load_julia_interface(julia_library=None):
     print("\nCalling Julia interface")
@@ -152,7 +166,7 @@ def load_julia_interface(julia_library=None):
     if julia_library == None:
         julia_library=ash.settings_ash.settings_dict["julia_library"]
 
-    print("Note: PythonCall/Juliacall is recommended (default). PyJulia interface is less stable.")
+    print("Note: PythonCall/Juliacall is recommended (default).")
     # Loading pythoncall or pyjulia
     print("Library is set to:", julia_library)
     #Global variables
@@ -183,13 +197,13 @@ def load_julia_interface(julia_library=None):
             except:
                 print("Problem loading pythoncall/juliacall.")
                 ashexit()
-        elif julia_library == "pyjulia":
-            try:
-                JuliaMain = load_pyjulia()
-                print("Julia interface successfully loaded")
-            except:
-                print("Problem loading pyjulia")
-                ashexit()
+        #elif julia_library == "pyjulia":
+        #    try:
+        #        JuliaMain = load_pyjulia()
+        #        print("Julia interface successfully loaded")
+        #    except:
+        #        print("Problem loading pyjulia")
+        #        ashexit()
         else:
             print("Unknown Julia library:", julia_library)
             ashexit()
@@ -555,6 +569,18 @@ def write_datafile(x, y, filename="new.dat", separator="     "):
             f.write(f"{i}{separator}{j}\n")
     print("Wrote new datafile:", filename)
 
+# Fast numpy-array to file
+# https://stackoverflow.com/questions/53820891/speed-of-writing-a-numpy-array-to-a-text-file
+#Note: float_format needs to match dimension of array
+def fast_nparray_write(a, float_format="%-12.7f %-12.7f %-12.7f %-8.4f", filename="bla5", writemode="w"):
+    with open(filename,writemode) as f:
+        #fmt = ' '.join([float_format]*a.shape[1])
+        #fmt = '\n'.join([fmt]*a.shape[0])
+        #print("fmt:", fmt)
+        #print(type(fmt))
+        fmt = '\n'.join([float_format]*a.shape[0])
+        data = fmt % tuple(a.ravel())
+        f.write(data)
 
 
 # Write a string to file simply
@@ -573,6 +599,7 @@ def writelisttofile(pylist, file, separator=" "):
 
 # Natural (human) sorting of list
 def natural_sort(l):
+    import re
     convert = lambda text: int(text) if text.isdigit() else text.lower()
     alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
     return sorted(l, key=alphanum_key)
@@ -635,10 +662,11 @@ def column(matrix, i):
 #Printing if currprintlevel
 def print_time_rel(timestamp, modulename='Unknown', moduleindex=4, currprintlevel=1, currthreshold=1):
     secs = time.time() - timestamp
+    #print("secs:", secs)
     mins = secs / 60
     if currprintlevel >= currthreshold:
         print_line_with_subheader2(
-            "Time to calculate step ({}): {:3.2f} seconds, {:3.1f} minutes.".format(modulename, secs, mins))
+            "Time to calculate step ({}): {:4.3f} seconds, {:3.1f} minutes.".format(modulename, secs, mins))
     # Adding time to Timings object
     timingsobject.add(modulename, secs, moduleindex=moduleindex)
 

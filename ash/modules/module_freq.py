@@ -169,16 +169,15 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print("Displacement: {:5.4f} Å ({:5.4f} Bohr)".format(displacement,displacement_bohr))
     blankline()
     print("Starting geometry:")
-    #Converting to numpy array just in case
+    # Converting to numpy array just in case
     current_coords_array=np.array(coords)
 
     print("Printing hessatoms geometry...")
     ash.modules.module_coords.print_coords_for_atoms(coords,elems,hessatoms)
     blankline()
 
-
-    #Looping over each atom and each coordinate to create displaced geometries
-    #Only displacing atom if in hessatoms list. i.e. possible partial Hessian
+    # Looping over each atom and each coordinate to create displaced geometries
+    # Only displacing atom if in hessatoms list. i.e. possible partial Hessian
     list_of_displaced_geos=[]
     list_of_displacements=[]
     for atom_index in range(0,len(current_coords_array)):
@@ -207,9 +206,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     if printlevel > 1:
         print("List of displacements:", list_of_displacements)
 
-    #Creating ASH fragments
-    #Creating displacement labels as strings and adding to fragment
-    #Also calclabels, currently used by runmode serial only
+    # Creating ASH fragments
+    # Creating displacement labels as strings and adding to fragment
+    # Also calclabels, currently used by runmode serial only
     list_of_labels=[]
     all_disp_fragments=[]
     for dispgeo,disp in zip(list_of_displaced_geos,list_of_displacements):
@@ -662,7 +661,7 @@ def calcfreq(evalues):
     c = ash.constants.c
     pi = ash.constants.pi
     evalues_si = [val*hartree2j/bohr2m/bohr2m/amu2kg for val in evalues]
-    vfreq_hz = [1/(2*pi)*np.sqrt(np.complex_(val)) for val in evalues_si]
+    vfreq_hz = [1/(2*pi)*np.sqrt(np.complex128(val)) for val in evalues_si]
     vfreq = [val/c for val in vfreq_hz]
     return vfreq
 

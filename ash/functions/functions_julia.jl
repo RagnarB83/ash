@@ -6,7 +6,7 @@ module Juliafunctions
 using PythonCall
 
 ########################################################################
-# This Julia interfaced only intended for PythonCall (not PyJulia)
+# This Julia interfaced only intended for PythonCall
 ########################################################################
 
 # Simple test function
@@ -38,7 +38,8 @@ function calc_connectivity(coords,elems,conndepth,scale, tol,eldict_covrad)
     println("Calling calc_connectivity (pythoncall/juliacall)")
     #PythonCall to Julia conversion
     coords=pyconvert(Array,coords)
-    elems=pyconvert(Array,elems)
+    #elems=pyconvert(Array,elems)
+    elems=pyconvert(Array{String,1},elems)
     eldict_covrad=pyconvert(Dict,eldict_covrad)
 	#0-index based atomlist
 	atomlist=[0:length(elems)-1;]
@@ -52,7 +53,8 @@ function calc_fraglist_for_atoms_julia(atomlist,coords, elems, conndepth, scale,
     #PythonCall to Julia conversion
     atomlist=pyconvert(Array,atomlist)
     coords=pyconvert(Array,coords)
-    elems=pyconvert(Array,elems)
+    #elems=pyconvert(Array,elems)
+    elems=pyconvert(Array{String,1},elems)
     eldict_covrad=pyconvert(Dict,eldict_covrad)
     fraglist = calc_fraglist_for_atoms(atomlist,coords, elems, conndepth, scale, tol,eldict_covrad)
     #Convert fraglist
@@ -93,7 +95,8 @@ end
 #Reorder cluster with Julia
 function reorder_cluster_julia(elems,coords,fraglists)
     println("Calling reorder_cluster_julia (pythoncall/juliacall)")
-    elems=pyconvert(Array,elems)
+    #elems=pyconvert(Array,elems)
+    elems=pyconvert(Array{String,1},elems)
     coords=pyconvert(Array,coords)
     fraglists=pyconvert(Array,fraglists)
     newfraglists = reorder_cluster(elems,coords,fraglists)
@@ -177,7 +180,10 @@ function distance_view(coords::Array{Float64,2},i::Int64,j::Int64)
 end
 
 function get_molecule_members_julia(coords, elems, loopnumber, scale, tol, eldict_covrad, atomindex)
+    #println("inside get_molecule_members_julia")
 	membs = Int64[]
+    #function get_connected_atoms_julia(coords::Array{Float64,2}, elems::Array{String,1},
+    #eldict_covrad::Dict{String,Float64},scale::Float64,tol::Float64, atomindex::Int64)
 	membs = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, atomindex)
 	finalmembs = membs
 	for i in 1:loopnumber
@@ -204,7 +210,7 @@ end
 #NOTE: This function is not optimized!
 function get_connected_atoms_forlist_julia(coords::Array{Float64,2}, elems::Array{String,1}, scale::Float64,tol::Float64,
     eldict_covrad, atomlist::Array{Int64,1})
-    println("get_connected_atoms_forlist_julia")
+    #println("get_connected_atoms_forlist_julia")
     finallist = Array{Int64}[]
     @inbounds for atomindex in atomlist
         conn = get_connected_atoms_julia(coords, elems, eldict_covrad, scale, tol, atomindex)

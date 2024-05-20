@@ -8,14 +8,14 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 import ash.settings_ash
 from ash.functions.functions_parallel import check_OpenMPI
 
-#Reasonably flexible NWChem interface: NWChem input should be specified by nwcheminput multi-line string.
-#Everything except geometry
-#Works for RHF,UHF,RKS,UKS, MP2, CCSD(T) w/wo TCE. PC available: energy and gradient
-#TODO: Constrained DFT
-#TODO: GPU support for CC
-#TODO: ADFT
+# Reasonably flexible NWChem interface: NWChem input should be specified by nwcheminput multi-line string.
+# Everything except geometry
+# Works for RHF,UHF,RKS,UKS, MP2, CCSD(T) w/wo TCE. PC available: energy and gradient
+# TODO: Constrained DFT
+# TODO: GPU support for CC
+# TODO: ADFT
 
-#NWChem Theory object.
+# NWChem Theory object.
 class NWChemTheory:
     def __init__(self, nwchemdir=None, filename='nwchem', openshell=False, printlevel=2, label="NWChem",
                 nwcheminput=None, method='scf', tce=False, numcores=1):
@@ -63,8 +63,8 @@ class NWChemTheory:
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
-    def cleanup():
-        print(f"self.theorynamelabel cleanup not yet implemented.")
+    def cleanup(self):
+        print(f"{self.theorynamelabel} cleanup not yet implemented.")
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,

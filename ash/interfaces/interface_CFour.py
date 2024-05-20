@@ -287,10 +287,10 @@ class CFourTheory:
                 print("Unknown option for frozen_core_settings")
                 ashexit()
 
-    #Method to grab dipole moment from a CFour outputfile (assumes run has been executed)
+    # Method to grab dipole moment from a CFour outputfile (assumes run has been executed)
     def get_dipole_moment(self):
         return grab_dipole_moment(self.filename+'.out')
-    #Method to grab polarizability tensor from a CFour outputfile (assumes run has been executed)
+    # Method to grab polarizability tensor from a CFour outputfile (assumes run has been executed)
     def get_polarizability_tensor(self):
         return grab_polarizability_tensor(self.filename+'.out')
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.

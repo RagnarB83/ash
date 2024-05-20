@@ -1,40 +1,41 @@
 import time
 
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader
+from ash.modules.module_theory import Theory
 import numpy as np
 import os
 import shutil
 
 ##########################
-#MLatom Theory interface
+# MLatom Theory interface
 ##########################
-#NOTE: we only intend to support mostly ML functionality in MLatom (not all basic QM methods)
+# NOTE: we only intend to support mostly ML functionality in MLatom (not all basic QM methods)
 
-#MLatom has 3 types of models:
-#1) methods: these are pre-trained or at least standalone electronic structure methods
-#2) ml_model: these are models that require training
-#3) model_tree_node: some composite models (unclear)
+# MLatom has 3 types of models:
+# 1) methods: these are pre-trained or at least standalone electronic structure methods
+# 2) ml_model: these are models that require training
+# 3) model_tree_node: some composite models (unclear)
 
-#methods examples: AIQM1, AIQM1@DFT, AIQM1@DFT*, ANI-1ccx, ANI-1x, ANI-1x-D4, ANI-2x, ANI-2x-D4
-#ml_model examples: ani, dpmd, gap, physnet, sgdml
+# methods examples: AIQM1, AIQM1@DFT, AIQM1@DFT*, ANI-1ccx, ANI-1x, ANI-1x-D4, ANI-2x, ANI-2x-D4
+# ml_model examples: ani, dpmd, gap, physnet, sgdml
 
-#MLatom may use/require interfaces to : TorchANI, DeepMD-kit, GAP/QUIP, Physnet, sGDML
+# MLatom may use/require interfaces to : TorchANI, DeepMD-kit, GAP/QUIP, Physnet, sGDML
 
-#NOTES on interface:
+# NOTES on interface:
 # AIQMx methods require either MNDO or Sparrow as QM-program. Also dftd4.
-   #Sparrow lacks AIQMx gradient (for ODM2 part), only energies available.
-
-#ASH will likely only support running ML models, not training them
+# Sparrow lacks AIQMx gradient (for ODM2 part), only energies available.
 
 
-class MLatomTheory:
-    def __init__(self, printsetting=False, printlevel=2, numcores=1, label="mlatom", filename="sdf",
+
+class MLatomTheory(Theory):
+    def __init__(self, printlevel=2, numcores=1, label="mlatom",
                  method=None, ml_model=None, model_file=None, qm_program=None, ml_program=None):
         module_init_time=time.time()
+        super().__init__()
         self.theorynamelabel="MLatom"
         self.theorytype="QM"
-        self.analytic_hessian=False
-
+        self.printlevel=printlevel
+        self.label=label
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
 
         try:
@@ -47,42 +48,35 @@ class MLatomTheory:
             print("You probably also have to do: pip install scipy torch torchani tqdm matplotlib statsmodels h5py pyh5md")
             ashexit()
 
-        #EARLY EXITS
+        # EARLY EXITS
 
         if method is None and ml_model is None:
             print("Neither a method or ml_model was selected for MLatomTheory interface. Exiting.")
             ashexit()
 
-        #Store optional properties of run in dict
-        self.properties ={}
-
-        #Printlevel
-        self.printlevel=printlevel
-        self.label=label
-        self.filename=filename
 
 
-        #METHODS: pre-trained models
-        #Note: useful method keywords in MLAatom below
+        # METHODS: pre-trained models
+        # Note: useful method keywords in MLAatom below
         # AIQMx models require either MNDO or Sparrow. Also dftd4 (except AIQM1@DFT* but that one is bad anyway)
-        #'AIQM1', 'AIQM1@DFT', 'AIQM1@DFT*',
-        #ANI models: will download parameters automatically
-        #'ANI-1ccx', 'ANI-1x', 'ANI-1x-D4', 'ANI-2x', 'ANI-2x-D4'
-        self.method=method
-        self.qm_program=qm_program
-        self.ml_program=ml_program
-        self.ml_model=ml_model
+        # 'AIQM1', 'AIQM1@DFT', 'AIQM1@DFT*',
+        # ANI models: will download parameters automatically
+        # 'ANI-1ccx', 'ANI-1x', 'ANI-1x-D4', 'ANI-2x', 'ANI-2x-D4'
+        self.method = method
+        self.qm_program = qm_program
+        self.ml_program = ml_program
+        self.ml_model = ml_model
         print("Checking if method or ml_model was selected")
         print("Method:", self.method)
         #############
-        #METHOD
+        # METHOD
         #############
         if self.method is not None:
             if 'AIQM' in self.method :
                 print("An AIQMx method was selected")
                 print("Warning: this requires setting qm_program keyword as either mndo or sparrow.")
                 print("Also dftd4 D4-dispersion program")
-                if self.qm_program != "mndo" or self.qm_program != "sparrow":
+                if self.qm_program not in ["mndo","sparrow"]:
                     print("QM program keyword is neither mndo or sparrow. Not allowed, exiting.")
                     ashexit()
             elif 'ANI' in self.method:
@@ -100,7 +94,7 @@ class MLatomTheory:
         print("QM program:", self.qm_program)
 
         #############
-        #QM-PROGRAM
+        # QM-PROGRAM
         #############
         if self.qm_program == 'mndo':
             self.setup_mndo()
@@ -111,49 +105,46 @@ class MLatomTheory:
             self.setup_dftd4()
 
         #############
-        #ML_MODEL
+        # ML_MODEL
         #############
         if self.ml_model is not None:
             print("ml_model was selected:", ml_model)
             print("model_file:", model_file)
             print("ml_program:", ml_program)
 
-
-            #KREG
-            #ml_program is either MLatomF or KREG_API
+            # KREG
+            # ml_program is either MLatomF or KREG_API
             if ml_model.lower() == 'kreg':
                 print("KREG selected")
                 if ml_program is None:
-                    print("ml_program keyword was not set and is required for KREG. Exiting.")
+                    print("ml_program keyword was not set and is required for KREG. Options are: 'KREG_API' and 'MLatomF'. Exiting.")
                     ashexit()
                 self.model = ml.models.kreg(model_file=model_file, ml_program=ml_program)
             elif ml_model.lower() == 'ani':
                 print("ANI selected")
                 self.model = ml.models.ani(model_file=model_file)
+                print(self.model)
             elif ml_model.lower() == 'dpmd':
                 print("DMPD selected")
-                print("not ready")
-                exit()
-                #self.model = ml.models.dpmd(model_file=model_file, DeePMDdir)
-            elif ml_model.lower() =='gap':
+                self.model = ml.models.dpmd(model_file=model_file)
+            elif ml_model.lower() == 'gap':
                 print("GAP selected")
-                print("not ready")
-                ashexit()
-                #self.model = ml.models.gap(model_file=model_file, ml_program=ml_program)
-            elif ml_model.lower() =='physnet':
+                self.model = ml.models.gap(model_file=model_file)
+            elif ml_model.lower() == 'physnet':
                 print("Physnet selected")
-                print("not ready")
-                ashexit()
-                #self.model = ml.models.physnet(model_file=model_file, ml_program=ml_program)
-            elif ml_model.lower() =='sgdml':
+                self.model = ml.models.physnet(model_file=model_file)
+            elif ml_model.lower() == 'sgdml':
                 print("SGDML selected")
-                print("not ready")
+                self.model = ml.models.sgdml(model_file=model_file)
+            elif ml_model.lower() == 'mace':
+                print("MACE selected")
+                self.model = ml.models.mace(model_file=model_file)
+            else:
+                print("Unknown ml_model selected. Exiting")
                 ashexit()
-                #self.model = ml.models.sgdml(model_file=model_file, ml_program=ml_program)
-
             print("MLatomTheory model created:", self.model)
 
-        #Initialization done
+        # Initialization done
         print_time_rel(module_init_time, modulename='MLatom creation', moduleindex=2)
 
     def setup_mndo(self):
@@ -190,7 +181,44 @@ class MLatomTheory:
             print("Found no sparrow executable in your environment. Exiting.")
             ashexit()
 
-    #General run function
+    #TODO: Add hyper-parameter optimize option
+    def train(self, molDB_xyzfile=None, molDB_scalarproperty_file=None,
+              molDB_xyzvecproperty_file=None, split_DB=False, split_fraction=[0.9, 0.1],
+              property_to_learn='energy',
+              xyz_derivative_property_to_learn='energy_gradients',
+              hyperparameters=None):
+
+        import mlatom as ml
+        molDB = ml.data.molecular_database.from_xyz_file(filename = molDB_xyzfile)
+        print(f"Created from file ({molDB_xyzfile}): a", molDB)
+        molDB.add_scalar_properties_from_file(molDB_scalarproperty_file, property_to_learn)
+        molDB.add_xyz_vectorial_properties_from_file(molDB_xyzvecproperty_file, xyz_derivative_property_to_learn)
+
+        if hyperparameters is None:
+            hyperparameters={}
+
+        # Split
+        if self.ml_model.lower() == 'kreg':
+            print("KREG selected, no splitting")
+            print("\nNow training...")
+            self.model.train(molecular_database=molDB,
+                            property_to_learn=property_to_learn,
+                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
+                            hyperparameters=hyperparameters)
+        else:
+            print("Splitting molDB into subtraining database (subtrainDB) and validation database (valDB).")
+            print("Split fraction:", split_fraction)
+            subtrainDB, valDB = molDB.split(fraction_of_points_in_splits=split_fraction)
+            print("subtrainDB:", subtrainDB)
+            print("valDB:", valDB)
+
+            print("\nNow training...")
+            self.model.train(molecular_database=molDB, validation_molecular_database=valDB,
+                            property_to_learn=property_to_learn,
+                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
+                            hyperparameters=hyperparameters)
+
+    # General run function
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
@@ -199,20 +227,18 @@ class MLatomTheory:
 
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
-        #Prepare for run
-        #mlatom.data
+        # Prepare for run
         molecule = ml.data.molecule(charge, mult)
         molecule.read_from_numpy(coordinates=current_coords, species=np.array(elems))
 
-        #mlatom.models
-        #Comp chem models, 3 types: methods (used as is), ml_model (requires training), model_tree_node (composite)
+        # mlatom.models
+        # Comp chem models, 3 types: methods (used as is), ml_model (requires training), model_tree_node (composite)
         if self.method is not None:
             print("A method was selected: ", self.method)
             print("QM program:", self.qm_program)
             print("Creating model")
             model = ml.models.methods(method=self.method, qm_program=self.qm_program)
-
-            #Create dftd4.json file before running if required
+            # Create dftd4.json file before running if required
             if 'AIQM' in self.method:
                 print("An AIQMx method was selected")
                 #NOTE: dftd4 interface of MLatom has a bug for current dftd4 release
@@ -226,15 +252,15 @@ class MLatomTheory:
         elif self.ml_model is not None:
             print("A ml_model was selected: ", self.ml_model)
             model = self.model
+
         else:
             print("No method or ml-model was defined yet.")
             ashexit()
 
-
-        #Run
+        # Run
         if PC is True:
             print("PC is not yet supported by MLatomTheory interface")
-            #Note: MNDO should support PCs, not sure about sparrow
+            # Note: MNDO should support PCs, not sure about sparrow
             ashexit()
         else:
 

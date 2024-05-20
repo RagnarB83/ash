@@ -22,7 +22,7 @@ print("Sys path:", sys.path)
 #sys.path.insert(0, ashpath+"/geometric-master")
 
 from .functions.functions_general import create_ash_env_file,blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
-    printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit
+    printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit, natural_sort
 
 #Results dataclass
 from .modules.module_results import ASH_Results
@@ -66,8 +66,8 @@ import ash.interfaces.interface_multiwfn
 from .interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from .modules.module_spinprojection import SpinProjectionTheory
-#DualTheory
-from .modules.module_dualtheory import DualTheory
+#DualTheory and WrapTheory
+from .modules.module_dualtheory import DualTheory,WrapTheory
 
 # Surface
 from .modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, write_surfacedict_to_file
@@ -80,7 +80,7 @@ import ash.interfaces.interface_ORCA
 
 from .interfaces.interface_Psi4 import Psi4Theory
 from .interfaces.interface_dalton import DaltonTheory
-from .interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,KS_inversion_kspies,DFA_error_analysis
+from .interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,KS_inversion_kspies,DFA_error_analysis,pySCF_write_Moldenfile
 density_potential_inversion=KS_inversion_kspies #Temporary
 from .interfaces.interface_ipie import ipieTheory
 from .interfaces.interface_dice import DiceTheory
@@ -90,21 +90,31 @@ from .interfaces.interface_QUICK import QUICKTheory
 from .interfaces.interface_TeraChem import TeraChemTheory
 from .interfaces.interface_sparrow import SparrowTheory
 from .interfaces.interface_NWChem import NWChemTheory
+from .interfaces.interface_Gaussian import GaussianTheory
 from .interfaces.interface_CP2K import CP2KTheory
 from .interfaces.interface_BigDFT import BigDFTTheory
 from .interfaces.interface_deMon import deMon2kTheory
 from .interfaces.interface_ccpy import ccpyTheory
+from .interfaces.interface_MNDO import MNDOTheory
 
 from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
 from .interfaces.interface_xtb import xTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
 from .interfaces.interface_MLatom import MLatomTheory
+from .interfaces.interface_DRACO import get_draco_radii
+from .interfaces.interface_DFTD4 import DFTD4Theory, calc_DFTD4
+from .interfaces.interface_torch import TorchTheory
+from .interfaces.interface_packmol import packmol_solvate
 
 # MM: external and internal
 from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
      OpenMM_box_equilibration, write_nonbonded_FF_for_ligand, solvate_small_molecule, small_molecule_parameterizer, \
         OpenMM_metadynamics, Gentle_warm_up_MD, check_gradient_for_bad_atoms, get_free_energy_from_biasfiles, \
         free_energy_from_bias_array,metadynamics_plot_data, merge_pdb_files
+
+# General aliases
+MolecularDynamics = OpenMM_MD
+MetaDynamics = OpenMM_metadynamics
 
 #TODO: Temporary aliases, to be deleted
 OpenMM_box_relaxation = OpenMM_box_equilibration
@@ -186,7 +196,7 @@ if ash.settings_ash.settings_dict["print_exit_footer"] is True:
         atexit.register(ash.ash_header.print_timings)
 
 # Julia dependency. Load in the beginning or not.
-#As both PyJulia and PythonCall are a bit slow to load, it is best to only load when needed (current behaviour)
+#As PythonCall can be a bit slow to load, it is best to only load when needed (current behaviour)
 if ash.settings_ash.settings_dict["load_julia"] is True:
     try:
         print("Importing Julia interface and loading functions")

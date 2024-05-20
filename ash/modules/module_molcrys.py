@@ -29,6 +29,8 @@ class Fragmenttype:
         self.mass = ash.modules.module_coords.totmasslist(self.Atoms)
         self.Charge = charge
         self.Mult = mult
+        self.charge=charge
+        self.mult=mult
         self.fraglist= []
         self.clusterfraglist= []
         #Keeping track of molmoms, voldict in case of DDEC
@@ -62,8 +64,8 @@ class Fragmenttype:
             outfile.write("Elements: {} \n".format(self.Elements))
             outfile.write("Nuccharge: {} \n".format(self.Nuccharge))
             outfile.write("Mass: {} \n".format(self.mass))
-            outfile.write("Charge: {} \n".format(self.Charge))
-            outfile.write("Mult: {} \n".format(self.Mult))
+            outfile.write("Charge: {} \n".format(self.charge))
+            outfile.write("Mult: {} \n".format(self.mult))
             outfile.write("\n")
             outfile.write("Current atomcharges: {} \n".format(self.charges))
             outfile.write("\n")
@@ -140,31 +142,18 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
             print("Filling up unitcell using symmetry operations")
             fullcellcoords, elems = ash.functions.functions_molcrys.fill_unitcell(cell_length, cell_angles, atomlabels, elems, asymmcoords, symmops)
             print("Full-cell coords", len(fullcellcoords))
-            #print("fullcellcoords", fullcellcoords)
-            #print("elems:", elems)
             numasymmunits = len(fullcellcoords) / len(asymmcoords)
             print("Number of fractional coordinates in asymmetric unit:", len(asymmcoords))
             print("Number of asymmetric units in whole cell:", int(numasymmunits))
 
-        #OLD, To delete
-        #cell_vectors=cellparamtovectors(cell_length,cell_angles)
-        print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
-        #print_coordinates(elems, np.array(fullcellcoords), title="Fractional coordinates")
-        #print_coords_all(fullcellcoords,elems)
 
+        print("Number of fractional coordinates in whole cell:", len(fullcellcoords))
         #Calculating cell vectors.
-        # Transposed cell vectors used here (otherwise nonsense for non-orthorhombic cells)
-        #Not sure why we were transposing here
-        #cell_vectors=np.transpose(cellbasis(cell_angles,cell_length))
         cell_vectors=ash.functions.functions_molcrys.cellbasis(cell_angles,cell_length)
         print("cell_vectors:", cell_vectors)
         #Get orthogonal coordinates of cell
         orthogcoords=ash.functions.functions_molcrys.fract_to_orthogonal(cell_vectors,fullcellcoords)
         blankline()
-
-        #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-        ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
-
 
     elif xtl_file is not None:
         blankline()
@@ -191,7 +180,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         blankline()
 
         #Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
-        ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+        #ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
 
     elif xyz_file is not None:
         print("WARNING. This option is not well tested. XYZ-file must contain all coordinates of cell.")
@@ -223,25 +212,41 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         print("Neither CIF-file, XTL-file or XYZ-file passed to molcrys. Exiting...")
         ashexit()
 
-
-
-
+    orthogcoords=np.array(orthogcoords)
+    print("Reading of inputfile done")
 
     print("Cell parameters: {} {} {} {} {} {}".format(cell_length[0],cell_length[1], cell_length[2] , cell_angles[0], cell_angles[1], cell_angles[2]))
+    print("Number of coords in cell: ", len(orthogcoords))
+    print("Number of elements in cell: ", len(elems))
+    print("Checking for duplicate atoms in cell")
 
-
-    #Used by cell_extend_frag_withcenter and frag_define
-    #fract_to_orthogonal uses original so it is transposed back
-
-    #Converting orthogcoords to numpy array for better performance
-    orthogcoords=np.array(orthogcoords)
+    # NEW: check for duplicate atoms in cell
+    delatom_indices  = ash.functions.functions_molcrys.get_indices_of_repeated_rows(orthogcoords)
+    if len(delatom_indices) > 0:
+        print("Duplicate atoms found in cell. Removing duplicates")
+        orthogcoords = np.delete(orthogcoords, delatom_indices, axis=0)
+        elems = np.delete(elems, delatom_indices)
+        try:
+            fullcellcoords = np.delete(fullcellcoords, delatom_indices, axis=0)
+        except:
+            pass
+        print("Updated number of coords in cell: ", len(orthogcoords))
+        print("Updated number of elements in cell: ", len(elems))
 
     ash.modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-original")
 
-    #Change origin to centroid of coords
+    # Change origin to centroid of coords
     orthogcoords=ash.modules.module_coords.change_origin_to_centroid(orthogcoords)
     ash.modules.module_coords.write_xyzfile(elems,orthogcoords,"cell_orthog-changedORIGIN")
 
+    # Final orthogcoords converted to fract (for XTL-file)
+    # fullcellcoords_fract = ash.functions.functions_molcrys.orthogonal_to_fractional(cell_vectors, orthogcoords)
+    # Write fractional coordinate XTL file of fullcell coordinates (for visualization in VESTA)
+    #Note: skipping if XYZ-file was used
+    try:
+        ash.functions.functions_molcrys.write_xtl(cell_length,cell_angles,elems,fullcellcoords,"complete_unitcell.xtl")
+    except:
+        pass
 
     #Make simpler super-cell for cases where molecule is not in cell
     #TODO: Not sure if need this.
@@ -261,14 +266,6 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     #    #DEFINING supercell as cell from now on
     #    orthogcoords=supercell_coords
     #    elems=supercell_elems
-
-
-
-
-
-    print("")
-    #print_coordinates(elems, orthogcoords, title="Orthogonal coordinates")
-    #print_coords_all(orthogcoords,elems)
 
     #Define fragments of unitcell. Updates mainfrag, counterfrag1 etc. object information
 
@@ -428,6 +425,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     Cluster.print_system("Cluster-info-nocharges.ygg")
     #print_time_rel_and_tot(currtime, origtime, modulename='Cluster print system')
     currtime=time.time()
+
     # Create dirs to keep track of various files before QM calculations begin
     try:
         os.mkdir('SPloop-files')
@@ -458,7 +456,10 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
 
 
     elif theory.__class__.__name__ == "xTBTheory":
-        pass
+        try:
+            os.remove("pcharge")
+        except:
+            pass
         ash.functions.functions_molcrys.gasfragcalc_xTB(fragmentobjects,Cluster,chargemodel,theory.xtbdir,theory.xtbmethod,numcores)
     else:
         print("Unsupported theory for charge-calculations in MolCrys. Options are: ORCATheory or xTBTheory")
@@ -543,7 +544,7 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         # Run ORCA QM/MM calculation with charge-model info
         QMMM_SP_calculation = ash.QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
                                              charges=Cluster.atomcharges, embedding='Elstat')
-        QMMM_SP_calculation.run(numcores=numcores, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult)
+        QMMM_SP_calculation.run(current_coords=Cluster.coords, elems=Cluster.elems, numcores=numcores, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult)
 
         #Keeping the GBWfile
         if theory.__class__.__name__ == "ORCATheory":

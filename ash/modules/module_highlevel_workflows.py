@@ -755,7 +755,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 #TODO: CV correction. More general basis set for 3d TM and ligand systems. cc-pwCVTZ-DK (M) ?
 
     def run(self, current_coords=None, qm_elems=None,
-            elems=None, Grad=False, numcores=None, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None):
+            elems=None, Grad=False, numcores=None, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None, mm_elems=None):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA_CC_CBS_Theory-------------", BC.END)
 
@@ -1478,7 +1478,7 @@ class MRCC_CC_CBS_Theory:
 
     #NOTE: TODO: PC info ??
     #TODO: coords and elems vs. fragment issue
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, charge=None, mult=None):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None, mm_elems=None):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING MRCC_CC_CBS_Theory-------------", BC.END)
         ashexit()
@@ -3894,7 +3894,7 @@ end
         print("Cleanup called")
 
     def run(self, current_coords=None, qm_elems=None,
-            elems=None, Grad=False, numcores=None, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None):
+            elems=None, Grad=False, numcores=None, charge=None, mult=None, PC=None, current_MM_coords=None, MMcharges=None, mm_elems=None):
 
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING ORCA_MRCI_CBS_Theory-------------", BC.END)
 

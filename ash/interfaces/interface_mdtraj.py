@@ -72,8 +72,8 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     numframes = len(traj._time)
     print("Found {} frames in trajectory.".format(numframes))
     print("PBC information in trajectory:")
-    print("Unitcell lengths:", traj.unitcell_lengths[0])
-    print("Unitcell angles", traj.unitcell_angles[0])
+    #print("Unitcell lengths:", traj.unitcell_lengths[0])
+    #print("Unitcell angles", traj.unitcell_angles[0])
     # If PBC information is missing from traj file (OpenMM: Charmmfiles, Amberfiles option etc) then provide this info
     if unitcell_lengths is not None:
         print("unitcell_lengths info provided by user.")
@@ -84,9 +84,8 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     #    print("Missing PBC info. This can be provided by unitcell_lengths and unitcell_angles keywords")
 
 
-    #Also load the pdbfile as a trajectory-snapshot (in addition to being topology)
+    # Also load the pdbfile as a trajectory-snapshot (in addition to being topology)
     pdbsnap = mdtraj.load(pdbtopology, top=pdbtopology)
-
     # Manual anchor if needed
     # NOTE: not sure how well this works but it's something
     if solute_anchor is True:
@@ -99,7 +98,6 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
     else:
         imaged = traj.image_molecules()
         pdbsnap_imaged = pdbsnap.image_molecules()
-
     # Save trajectory in format
     if format == 'DCD':
         imaged.save(traj_basename + '_imaged.dcd')
@@ -109,7 +107,6 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
         print("Saved reimaged trajectory:", traj_basename + '_imaged.pdb')
     else:
         print("Unknown trajectory format.")
-
     #Save PDB-snapshot
     pdbsnap_imaged.save(pdb_basename + '_imaged.pdb')
     print("Saved reimaged PDB-file:", pdb_basename + '_imaged.pdb')

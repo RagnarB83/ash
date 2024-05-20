@@ -14,13 +14,15 @@ import copy
 
 #PySCF Theory object.
 #TODO: Somehow support reading in user mf object ?
+#Easier now than before. However, each run calls both prepare_run and actual_run
+#Can we skip prepare_run (creates mf etc.) and update coordinates only?
 #TODO: PE: Polarizable embedding (CPPE). Revisit
 #TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Dirac HF/KS
 #TODO: Gradient for post-SCF methods and TDDFT
 
 class PySCFTheory:
-    def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf",
+    def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
                   scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False,
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk',
                   noautostart=False, autostart=True,
@@ -57,8 +59,12 @@ class PySCFTheory:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
             ashexit()
         if basis is None and basis_file is None:
-            print("Error: You must provide basis or basis_file keyword . Basis set can a name (string) or dict (elements as keys)")
-            print("basis_file should be a string of the filename containing basis set in NWChem format")
+            print("Error: You must either provide a basis or a basis_file keyword . Basis can a name (string) or dict (elements as keys)")
+            print("basis_file should be a string of the filename containing basis set for each element, in NWChem format")
+            print("Best to download basis set from https://www.basissetexchange.org/")
+            ashexit()
+        if basis_file is not None and not os.path.isfile(basis_file):
+            print("Error: basis_file does not exist. Exiting")
             ashexit()
         if functional is not None:
             if self.printlevel >= 1:
@@ -114,12 +120,21 @@ class PySCFTheory:
         self.printsetting=printsetting
         self.verbose_setting=verbose_setting
 
+        # Counter for how often pyscftheory.run is called
+        self.runcalls = 0
+
         #CPPE Polarizable Embedding options
         self.pe=pe
         #Potfile from user or passed on via QM/MM Theory object ?
         self.potfile=potfile
 
         # SCF
+        self.platform=platform
+        self.GPU_pcgrad=GPU_pcgrad #Pointcharge gradient not on GPU by default
+        if self.platform == 'GPU':
+            print("Warning: GPU platform for PySCF. This requires gpu4pyscf plugin to be available")
+            self.GPU_pcgrad=True
+            print("Pointcharge gradient will also be performed on GPU using cupy")
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
         self.conv_tol=conv_tol
@@ -614,17 +629,22 @@ class PySCFTheory:
         if type(ccsd) == pyscf.cc.uccsd.UCCSD:
             print("CCSD(T) lambda UHF")
             #NOTE: No threading parallelization seen here, not sure why
-            conv, l1, l2 = uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+            conv, l1, l2 = uccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2, max_cycle=self.cc_maxcycle)
             rdm1 = uccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
             Dm = rdm1[0]+rdm1[1]
         else:
             print("CCSD(T) lambda RHF")
-            conv, l1, l2 = ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2)
+            conv, l1, l2 = ccsd_t_lambda.kernel(ccsd, eris, ccsd.t1, ccsd.t2, max_cycle=self.cc_maxcycle)
             rdm1 = ccsd_t_rdm.make_rdm1(ccsd, ccsd.t1, ccsd.t2, l1, l2, eris=eris, ao_repr=True)
             if np.ndim(rdm1) == 3:
                 Dm = rdm1[0]+rdm1[1]
             elif np.ndim(rdm1) == 2:
                 Dm = rdm1
+        if conv is False:
+            print("Error: CCSD(T) lambda equations failed to converge! Be very careful with the results")
+            ashexit()
+        else:
+            print("CC lambda equations converged!")
         # Diagonalize the DM in AO basis
         S = mf.get_ovlp()
         A = reduce(np.dot, (S, Dm, S))
@@ -685,6 +705,19 @@ class PySCFTheory:
     def run_population_analysis(self, mf, unrestricted=False, dm=None, type='Mulliken', label=None, verbose=3):
         import pyscf
         print()
+        print("Running population analysis")
+
+        #TODO: gpu4pyscf errors for Mulliken pop analysis. Probably fixed later
+        #For now, we return
+        if self.platform == 'GPU':
+            print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
+            #import gpu4pyscf
+            #mull_pop_func = gpu4pyscf.dft.RKS.mulliken_pop
+            return
+        else:
+            mull_pop_func = pyscf.scf.rhf.mulliken_pop
+            mull_spinpop_func = pyscf.scf.uhf.mulliken_spin_pop
+
         if label==None:
             label=''
         if type == 'Mulliken':
@@ -693,17 +726,17 @@ class PySCFTheory:
                     dm = mf.make_rdm1()
                 #print("dm:", dm)
                 #print("dm.shape:", dm.shape)
-                mulliken_pop =pyscf.scf.rhf.mulliken_pop(self.mol,dm, verbose=verbose)
-                print(f"{label} Mulliken charges:", mulliken_pop[1])
+                mulliken_populations =mull_pop_func(self.mol,dm, verbose=verbose)
+                print(f"{label} Mulliken charges:", mulliken_populations[1])
             elif unrestricted is True:
                 if dm is None:
                     dm = mf.make_rdm1()
                 #print("dm:", dm)
                 #print("dm.shape:", dm.shape)
-                mulliken_pop =pyscf.scf.rhf.mulliken_pop(self.mol,dm, verbose=verbose)
-                mulliken_spinpop = pyscf.scf.uhf.mulliken_spin_pop(self.mol,dm, verbose=verbose)
-                print(f"{label} Mulliken charges:", mulliken_pop[1])
-                print(f"{label} Mulliken spin pops:", mulliken_spinpop[1])
+                mulliken_populations =mull_pop_func(self.mol,dm, verbose=verbose)
+                mulliken_spinpopulations = mull_spinpop_func(self.mol,dm, verbose=verbose)
+                print(f"{label} Mulliken charges:", mulliken_populations[1])
+                print(f"{label} Mulliken spin pops:", mulliken_spinpopulations[1])
         return
 
     def run_stability_analysis(self):
@@ -1659,7 +1692,7 @@ class PySCFTheory:
 
         #Preserving new DM
         print("Coupled cluster density matrix stored as dm attribute of PySCFTheory object")
-        print("rdm1:", rdm1)
+        #print("rdm1:", rdm1)
         #print("rdm1[0] shape", rdm1[0].shape)
         self.dm = rdm1
 
@@ -1682,6 +1715,11 @@ class PySCFTheory:
     def get_dipole_moment(self, dm=None, label=None):
         if self.printlevel >=1:
             print("get_dipole_moment function:")
+
+        if self.platform =="GPU":
+            print("Dipole moment calculation not currently supported on GPU")
+            return None
+
         if label == None:
             label=""
         if dm is None:
@@ -1730,29 +1768,30 @@ class PySCFTheory:
 
 
     #Define basis in mol object
-    def define_basis(self,basis_string_from_file=None):
+    def define_basis(self,elems=None):
         if self.printlevel >= 1:
             print("Defining basis set in mol object")
         import pyscf
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
-        #Object can be string ('def2-SVP') or a dict with element-specific keys and values
-        #NOTE: Basis-file parsing not quite ready.
-        #NOTE: Need to read file containing also basis for that element I think
         #NOTE: We should also support basis set exchange API: https://github.com/pyscf/pyscf/issues/1299
         if self.basis_file != None:
-            print("basis_file option is not ready")
-            ashexit()
-            #with open(self.basis_file) as b:
-            #    basis_string_from_file=' '.join(b.readlines())
-            #print("basis_string_from_file:", basis_string_from_file)
-            self.mol.basis= pyscf.gto.basis.parse(basis_string_from_file)
-            #https://github.com/nmardirossian/PySCF_Tutorial/blob/master/dev_guide.ipynb
-            #self.mol.basis = #{'H': gto.basis.read('basis/STO-2G.dat')
+            if self.printlevel >= 1:
+                print("Reading basis set from file:", self.basis_file)
+            basis_dict={}
+            for elem in elems:
+                if self.printlevel >= 1:
+                    print(f"Reading basis set for element: {elem} from file: {self.basis_file}")
+                basis_per_elem=pyscf.gto.basis.load(self.basis_file, elem)
+                if self.printlevel >= 3:
+                    print("basis_per_elem:", basis_per_elem)
+                basis_dict[elem]=basis_per_elem
+            self.mol.basis=basis_dict
         else:
+            if self.printlevel >= 1:
+                print("Using basis set from input string")
             self.mol.basis=self.basis
         if self.printlevel >= 1:
             print("Basis set:", self.mol.basis)
-
         #Optional setting magnetic moments
         if self.magmom != None:
             if self.printlevel >= 1:
@@ -1793,6 +1832,33 @@ class PySCFTheory:
         elif self.scf_type == 'GKS':
             self.mf = pyscf.scf.GKS(self.mol)
 
+    #Probably depreceated. Created mf for GPU.
+    def create_mf_for_gpu(self):
+        if self.printlevel >= 1:
+            print("Creating pySCF mf object using gpu4pyscf")
+
+        try:
+            import gpu4pyscf
+        except ModuleNotFoundError:
+            print("gpu4pyscf library not found. Make sure it is installed. See: https://github.com/pyscf/gpu4pyscf")
+            ashexit()
+
+        if self.scf_type == 'RKS':
+            from gpu4pyscf.dft import rks
+            self.mf = rks.RKS(self.mol)
+        elif self.scf_type == 'UKS':
+            from gpu4pyscf.dft import uks
+            self.mf = uks.UKS(self.mol)
+        elif self.scf_type == 'RHF':
+            from gpu4pyscf.scf import RHF
+            self.mf = RHF(self.mol)
+        elif self.scf_type == 'UHF':
+            from gpu4pyscf.scf import UHF
+            self.mf = UHF(self.mol)
+        else:
+            print("SCF-type not available for gpu4pyscf")
+            ashexit()
+
     def set_mf_scfconv_options(self):
         if self.printlevel >= 1:
             print("Modifying mf SCF options")
@@ -1825,18 +1891,33 @@ class PySCFTheory:
             if self.printlevel >1:
                 print(f"Levelshift value: {self.level_shift}")
             self.mf.level_shift = self.level_shift
-        #DIIS option
-        if self.diis_method == 'CDIIS' or self.diis_method == 'DIIS':
-            self.mf.DIIS = pyscf.scf.DIIS
-        elif self.diis_method == 'ADIIS':
-            self.mf.DIIS = pyscf.scf.ADIIS
-        elif self.diis_method == 'EDIIS':
-            self.mf.DIIS = pyscf.scf.EDIIS
+        #DIIS
+        self.set_diis()
+
         #SOSCF/Newton
         if self.soscf is True:
             if self.printlevel >1:
                 print("SOSCF is True. Turning on in meanfield object")
             self.mf = self.mf.newton()
+
+    def set_diis(self):
+        if self.platform == 'CPU':
+            import pyscf
+            #DIIS option
+            if self.diis_method == 'CDIIS' or self.diis_method == 'DIIS':
+                self.mf.DIIS = pyscf.scf.DIIS
+            elif self.diis_method == 'ADIIS':
+                self.mf.DIIS = pyscf.scf.ADIIS
+            elif self.diis_method == 'EDIIS':
+                self.mf.DIIS = pyscf.scf.EDIIS
+        else:
+            import gpu4pyscf
+            #DIIS option
+            if self.diis_method == 'CDIIS' or self.diis_method == 'DIIS':
+                self.mf.DIIS = gpu4pyscf.scf.diis.DIIS
+            else:
+                print("For GPU platform, ADIIS, EDIIS or others are not supported")
+                ashexit()
 
     def set_mf_smearing(self):
         import pyscf.scf.addons
@@ -2125,12 +2206,17 @@ class PySCFTheory:
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
             charge=None, mult=None):
 
-        #Prepare for run (create mol object, mf object, modify mf object etc.)
-        #Does not execute SCF, CC or anything
-        self.prepare_run(current_coords=current_coords, elems=elems, charge=charge, mult=mult,
-                         current_MM_coords=current_MM_coords,
-                         MMcharges=MMcharges, qm_elems=qm_elems, Grad=Grad, PC=PC,
-                         numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label)
+        # FIRST RUN
+        if self.runcalls == 0:
+            print("First run. Running prepare_run method")
+            #Prepare for run (create mol object, mf object, modify mf object etc.)
+            #Does not execute SCF, CC or anything
+            self.prepare_run(current_coords=current_coords, elems=elems, charge=charge, mult=mult,
+                            current_MM_coords=current_MM_coords,
+                            MMcharges=MMcharges, qm_elems=qm_elems, Grad=Grad, PC=PC,
+                            numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label)
+            self.runcalls += 1
+
         #Actual run
         return self.actualrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
         elems=elems, Grad=Grad, PC=PC, numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
@@ -2209,12 +2295,15 @@ class PySCFTheory:
         # BASIS
         #####################
 
-        #TODO: basis_string_from_file option
-        self.define_basis(basis_string_from_file=None)
+        self.define_basis(elems=qm_elems)
 
         ############################
         # CREATE MF OBJECT
         ############################
+        #if self.platform == 'GPU':
+        #    print("Platform is GPU")
+        #    self.create_mf_for_gpu() #Creates self.mf
+        #else:
         self.create_mf() #Creates self.mf
 
         #GHF/GKS
@@ -2272,6 +2361,13 @@ class PySCFTheory:
         if self.printlevel >1:
             print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
 
+
+        #############################
+        # PLATFORM CHANGE
+        #############################
+        if self.platform == 'GPU':
+            print("GPU platform requested. Will now convert mf object to GPU")
+            self.mf = self.mf.to_gpu()
 
     #Actual Run
     #Assumes prepare_run has been executed
@@ -2505,7 +2601,7 @@ class PySCFTheory:
                 print_time_rel(checkpoint, modulename='pySCF make_rdm1 for PC', moduleindex=2)
                 current_MM_coords_bohr = current_MM_coords*ash.constants.ang2bohr
                 checkpoint=time.time()
-                self.pcgrad = pyscf_pointcharge_gradient(self.mol,current_MM_coords_bohr,MMcharges,dm)
+                self.pcgrad = pyscf_pointcharge_gradient(self.mol,np.array(current_MM_coords_bohr),np.array(MMcharges),dm, GPU=self.GPU_pcgrad)
                 print_time_rel(checkpoint, modulename='pyscf_pointcharge_gradient', moduleindex=2)
 
             if self.printlevel >1:
@@ -2531,28 +2627,61 @@ class PySCFTheory:
 
 #Based on https://github.com/pyscf/pyscf/blob/master/examples/qmmm/30-force_on_mm_particles.py
 #Uses pyscf mol and MM coords and charges and provided density matrix to get pointcharge gradient
-def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm):
+def pyscf_pointcharge_gradient(mol,mm_coords,mm_charges,dm, GPU=False):
+    time0=time.time()
+    #Making sure density matrix is as it should
     if dm.shape[0] == 2:
-        dmf = dm[0] + dm[1] #unrestricted
+        dmf = np.array(dm[0] + dm[1]) #unrestricted
     else:
-        dmf=dm
+        dmf=np.array(dm)
+
+#GPU
+    if GPU is True:
+        import cupy
+        einsumfunc = cupy.einsum
+        linalg_norm_func=cupy.linalg.norm
+
+        mm_coords_used=cupy.asarray(mm_coords)
+        mm_charges_used=cupy.asarray(mm_charges)
+        qm_coords = cupy.asarray(mol.atom_coords())
+        qm_charges = cupy.asarray(mol.atom_charges())
+        dmf=cupy.asarray(dmf)
+        array_mod=cupy.asarray
+#CPU
+    else:
+        def dummy(f): return f
+        array_mod=dummy
+        einsumfunc=np.einsum
+        linalg_norm_func=np.linalg.norm
+        mm_coords_used=mm_coords
+        mm_charges_used=mm_charges
+        qm_coords = mol.atom_coords()
+        qm_charges = mol.atom_charges()
+
+    print("Einsumfunc from:", einsumfunc.__module__)
+    print("Time for setup 1:", time.time()-time0)
     # The interaction between QM atoms and MM particles
     # \sum_K d/dR (1/|r_K-R|) = \sum_K (r_K-R)/|r_K-R|^3
-    qm_coords = mol.atom_coords()
-    qm_charges = mol.atom_charges()
-    dr = qm_coords[:,None,:] - mm_coords
-    r = np.linalg.norm(dr, axis=2)
-    g = np.einsum('r,R,rRx,rR->Rx', qm_charges, mm_charges, dr, r**-3)
+    dr = qm_coords[:,None,:] - mm_coords_used
+    r = linalg_norm_func(dr, axis=2)
+    g = einsumfunc('r,R,rRx,rR->Rx', qm_charges, mm_charges_used, dr, r**-3)
+    print("Time for setup 2:", time.time()-time0)
     # The interaction between electron density and MM particles
     # d/dR <i| (1/|r-R|) |j> = <i| d/dR (1/|r-R|) |j> = <i| -d/dr (1/|r-R|) |j>
     #   = <d/dr i| (1/|r-R|) |j> + <i| (1/|r-R|) |d/dr j>
-    for i, q in enumerate(mm_charges):
+
+    for i, q in enumerate(mm_charges_used):
         with mol.with_rinv_origin(mm_coords[i]):
-            v = mol.intor('int1e_iprinv')
-        f =(np.einsum('ij,xji->x', dmf, v) +
-            np.einsum('ij,xij->x', dmf, v.conj())) * -q
+            v = array_mod(mol.intor('int1e_iprinv'))
+        f =(einsumfunc('ij,xji->x', dmf, v) +
+            einsumfunc('ij,xij->x', dmf, v.conj())) * -q
         g[i] += f
-    return g
+    print("Time for setup 4:", time.time()-time0)
+    #Converting from Cupy to numpy
+    if GPU is True:
+        return cupy.asnumpy(g)
+    else:
+        return g
 
 
 #Function to do multireference correction via pyscf-based theories: Dice or Block.
@@ -2747,6 +2876,28 @@ def pySCF_read_MOs(moreadfile,pyscfobject):
         print("Is basis different? Exiting")
         ashexit()
     return mo_coefficients, occupations
+
+def pySCF_write_Moldenfile(pyscfobject=None, label="orbs"):
+    print("pySCF_write_Moldenfile function\n")
+    import pyscf
+    from pyscf.tools import molden
+
+    #Early exits
+    if pyscfobject is None:
+        print("Error: pyscfobject must be provided")
+        ashexit()
+
+    mo_coefficients = pyscfobject.mf.mo_coeff
+    occupations = pyscfobject.mf.mo_occ
+    mo_energies = pyscfobject.mf.mo_energy
+
+    print("Writing orbitals to disk as Molden file")
+    molden.from_mo(pyscfobject.mol, f'pyscf_{label}.molden', mo_coefficients, occ=occupations)
+    with open(f'{label}.molden', 'w') as f1:
+        molden.header(pyscfobject.mol, f1)
+        molden.orbital_coeff(pyscfobject.mol, f1, mo_coefficients, ene=mo_energies, occ=occupations)
+    return
+
 
 #Standalone density-potential inversion functions
 def KS_inversion_n2v(pyscftheoryobj, dm, method='PDECO', numcores=1, opt_max_iter=200,

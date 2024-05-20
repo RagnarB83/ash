@@ -64,11 +64,6 @@ echo ""
 echo "Python3 path: $path_to_python3_dir"
 echo ""
 
-#if [[ ! -f python3_ash ]]
-#then
-#echo "This script must be run when inside the ash directory! Please cd to it first"
-#exit
-#fi
 
 if [[ ! -d $path_to_python3_dir ]]
 then
@@ -173,8 +168,8 @@ $pipcommand install numpy $piparg
 #Geometric
 $pipcommand install geometric $piparg
 
-#PyJulia. Julia needs to be available
-$pipcommand install julia $piparg
+#Pythoncall
+$pipcommand install juliacall $piparg
 
 #elif [ $use_julia_conda = true ]
 #then
