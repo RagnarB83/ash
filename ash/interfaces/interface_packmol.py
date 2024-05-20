@@ -3,6 +3,7 @@ import os
 import shutil
 import math
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
+from ash.modules.module_coords import writepdb_with_connectivity
 import ash.settings_ash
 
 # Basic packmol interface
@@ -88,8 +89,16 @@ output {result_file}.{filetype}
     result_filename=f"{result_file}.{filetype}"
     print("\nPackmol-interface finished successfully")
     print("Packmol output can be found in packmol.out")
-    print(f"Created result file: {result_filename}")
+    print(f"Created file: {result_filename}")
 
+    if inputfiles[0].endswith(".pdb"):
+        print("\nWarning: Packmol-created PDB-files may not contain correct connectivity information!")
+        print("Will now try to use ASH function writepdb_with_connectivity to write a new PDB-file with connectivity information.")
+        writepdb_with_connectivity("final.pdb")
+        result_filename=f"{result_file}_withcon.{filetype}"
+        print("Created file:", result_filename)
+        print("Creating also single-molecule file:")
+        writepdb_with_connectivity(inputfiles[0])
     return result_filename
 
 def check_packmol_location(packmoldir, binary_name="packmol", dirname="packmoldir"):

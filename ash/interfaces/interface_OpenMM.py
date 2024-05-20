@@ -44,7 +44,8 @@ class OpenMMTheory:
                  switching_function_distance=10.0,
                  ewalderrortolerance=5e-4, PMEparameters=None,
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
-                 constraints=None, restraints=None, frozen_atoms=None, fragment=None, dummysystem=False,
+                 constraints=None, bondconstraints=None,
+                 restraints=None, frozen_atoms=None, fragment=None, dummysystem=False,
                  autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None):
 
 
@@ -751,25 +752,34 @@ class OpenMMTheory:
         #NOTE: Regular list of floats
         self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
 
+        #Note: constraints and bondconstraints are the same thing
+        if constraints is not None:
+            print("constraints keyword specified is deprecated. Use bondconstraints instead")
+            bondconstraints = constraints
 
-        if constraints or frozen_atoms or restraints:
+
+        if bondconstraints or frozen_atoms or restraints:
             if self.printlevel > 0:
                 print_line_with_subheader1("Adding user constraints, restraints or frozen atoms.")
         # Now adding user-defined system constraints (only bond-constraints supported for now)
-        if constraints is not None:
+        if bondconstraints is not None:
+            if bondconstraints is None:
+                bondconstraints = []
+            tot_num_user_constraints = len(bondconstraints)
+
             if self.printlevel >= 1:
                 print("Before adding user constraints, system contains {} constraints".format(self.system.getNumConstraints()))
                 print("")
 
-            if len(constraints) < 50:
+            if len(bondconstraints) < 50:
                 if self.printlevel >= 1:
-                    print("User-constraints to add:", constraints)
+                    print("User-constraints to add (bond)", bondconstraints)
             else:
                 if self.printlevel >= 1:
-                    print(f"{len(constraints)} user-defined constraints to add.")
+                    print(f"{tot_num_user_constraints} user-defined constraints to add.")
 
-            # Cleaning up constraint list. Adding distance if missing
-            if 2 in [len(con) for con in constraints]:
+            # Cleaning up bondconstraint list. Adding distance if missing
+            if 2 in [len(con) for con in bondconstraints]:
                 if self.printlevel >= 1:
                     print("Missing distance value for some constraints. Can apply current-geometry distances if ASH\n"
                         "fragment has been provided")
@@ -784,9 +794,18 @@ class OpenMMTheory:
                     else:
                         fragment=Fragment(pdbfile=pdbfile,printlevel=0)
                 # Cleaning up constraint list. Adding distance if missing
-                constraints = clean_up_constraints_list(fragment=fragment, constraints=constraints,printlevel=self.printlevel)
-            self.user_constraints = constraints
-            self.add_bondconstraints(constraints=constraints)
+                bondconstraints = clean_up_constraints_list(fragment=fragment, constraints=bondconstraints,printlevel=self.printlevel)
+                self.add_bondconstraints(constraints=bondconstraints)
+            # Angle constraints
+            #TODO
+            #self.add_angleconstraints(constraints=angleconstraints)
+            # Dihedral constraints
+            #TODO
+            #self.add_dihedralconstraints(constraints=dihedralconstraints)
+
+
+            self.user_constraints = bondconstraints
+
             # print("After adding user constraints, system contains {} constraints".format(self.system.getNumConstraints()))
             if self.printlevel > 0:
                 print(f"{len(self.user_constraints)} user-defined constraints added.")
@@ -4270,6 +4289,8 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
             MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}_lastframe.pdb")
         except ImportError:
             print("mdtraj library could not be imported. Skipping")
+        except ValueError:
+            print("mdtraj reimaging failed. Skipping")
 
     print_time_rel(module_init_time, modulename="OpenMM_box_equilibration", moduleindex=1)
     return md.state.getPeriodicBoxVectors()
@@ -4696,6 +4717,8 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
                     threshold=0.005, largest_values=10)
             except ImportError:
                 print("mdtraj library could not be imported. Skipping")
+            except ValueError:
+                print("mdtraj reimaging failed. Skipping")
 
     print("Gentle_warm_up_MD finished successfully!")
     print_time_rel(module_init_time, modulename="Gentle_warm_up_MD", moduleindex=1)
@@ -5308,7 +5331,7 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
         raw_mol = Chem.MolFromPDBFile(pdbfile, removeHs=False)
         mol = Chem.Mol(raw_mol)
         #rdDetermineBonds.DetermineConnectivity(mol)
-        rdDetermineBonds.DetermineBonds(mol,charge=1)
+        rdDetermineBonds.DetermineBonds(mol,charge=charge)
         smiles_string =Chem.MolToSmiles(mol)
         print("RDKit-determined Smiles_string is:", smiles_string)
         molecule = Molecule.from_rdkit(mol)
@@ -5453,7 +5476,7 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
           OpenMM_Modeller(pdbfile=full_pdbfile, forcefield=\'Amber14\', extraxmlfile=\"{final_xmlfilename}\")")
 
     print(f"or in OpenMMTheory like this:\n\
-          OpenMMTheory(xmlfiles=[\"amber14-all.xml\", \"amber14/tip3pfb.xml\", \"{final_xmlfilename}\"]")
+          OpenMMTheory(xmlfiles=[\"amber14-all.xml\", \"amber14/tip3pfb.xml\", \"{final_xmlfilename}\"])")
     print()
     print("\nWarning: Make sure that the ligand has the same atom order in the large-system PDB-file \nas in the \
 file that was used in this function.")

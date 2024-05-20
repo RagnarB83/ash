@@ -109,15 +109,9 @@ class QMMMTheory:
                 print("active_atoms and frozen_atoms can not be both defined")
                 ashexit()
 
-            # print("List of all atoms:", self.allatoms)
-            print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
-            print("MM region ({} atoms)".format(len(self.mmatoms)))
-            # print_time_rel(timeA, modulename="Region setup")
-            timeA=time.time()
-            # print("MM region", self.mmatoms)
-            blankline()
-
-
+        # print("List of all atoms:", self.allatoms)
+        print("QM region ({} atoms): {}".format(len(self.qmatoms),self.qmatoms))
+        print("MM region ({} atoms)".format(len(self.mmatoms)))
 
         # Setting QM/MM qmatoms in QMtheory also (used for Spin-flipping currently)
         self.qm_theory.qmatoms=self.qmatoms
