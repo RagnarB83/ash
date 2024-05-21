@@ -3243,7 +3243,8 @@ def read_NPT_statefile(npt_output):
 # Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None, atomic_units_force_reporter=False,
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
               anderson_thermostat=False, platform='CPU', constraints=None, restraints=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
@@ -3252,7 +3253,8 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, force_file_option=force_file_option, atomic_units_force_reporter=atomic_units_force_reporter,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        energy_file_option=energy_file_option, force_file_option=force_file_option, atomic_units_force_reporter=atomic_units_force_reporter,
                         constraints=constraints, restraints=restraints,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
@@ -3277,7 +3279,8 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.004,
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None, atomic_units_force_reporter=False,
+                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+                 energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
                  coupling_frequency=1, printlevel=2, platform='CPU',
                  anderson_thermostat=False, hydrogenmass=1.5, constraints=None, restraints=None,
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
@@ -3368,7 +3371,8 @@ class OpenMM_MDclass:
         self.plumed_object = plumed_object
         self.barostat_frequency = barostat_frequency
         self.trajectory_file_option=trajectory_file_option
-        self.force_file_option=force_file_option
+        self.force_file_option=force_file_option #Gradients/forces as a file
+        self.energy_file_option=energy_file_option #Energies as a file
         self.atomic_units_force_reporter=atomic_units_force_reporter #Forces in atomic units
 
         #PERIODIC or not
@@ -3634,10 +3638,25 @@ class OpenMM_MDclass:
             simulation.reporters.append(
                 mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=self.enforcePeriodicBox))
+        elif self.trajectory_file_option =="XYZ":
+            print("XYZ trajectory format selected (not available for classical MD). Warning: not very fast")
+            print("Deleting possible old trajectory-file (OpenMMMD_traj.xyz)")
+            try:
+                os.remove("OpenMMMD_traj.xyz")
+            except:
+                pass
+            #Done manually by write_xyzfile
+
         if self.force_file_option != None:
             print("ForceReporter traj format selected.")
             #exit()
             simulation.reporters.append(ForceReporter(self.trajfilename + '_force.txt', self.traj_frequency, atomic_units=self.atomic_units_force_reporter))
+        if self.energy_file_option != None:
+            print("Energyfile  selected.")
+            try:
+                os.remove(self.energy_file_option)
+            except:
+                pass
 
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
@@ -3908,7 +3927,7 @@ class OpenMM_MDclass:
 
 
                 #OpenMM metadynamics
-                if metadynamics == True:
+                if metadynamics is True:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
                     meta_object.step(self.simulation, 1)
@@ -3997,8 +4016,13 @@ class OpenMM_MDclass:
                         print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
                     #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     #checkpoint = time.time()
-                    # Manual trajectory option (reporters do not work for manual dynamics steps)
-                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    if self.energy_file_option != None:
+                        with open(self.energy_file_option,"a") as f:
+                            f.write(f"{energy}\n")
+
+                    # Manual trajectory option
+                    if self.trajectory_file_option =="XYZ":
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
                     #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                     #checkpoint = time.time()
 
@@ -4071,10 +4095,10 @@ class OpenMM_MDclass:
                     print_current_step_info(step,current_state,self.openmmobject)
                     print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
-                    # Manual trajectory option (reporters do not work for manual dynamics steps)
-                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
-                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
-                    #checkpoint = time.time()
+
+                    if self.trajectory_file_option =="XYZ":
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+
 
                 self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)

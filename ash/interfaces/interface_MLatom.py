@@ -181,16 +181,16 @@ class MLatomTheory(Theory):
             print("Found no sparrow executable in your environment. Exiting.")
             ashexit()
 
-    #TODO: Add hyper-parameter optimize option
+    # TODO: Add hyper-parameter optimize option
     def train(self, molDB_xyzfile=None, molDB_scalarproperty_file=None,
               molDB_xyzvecproperty_file=None, split_DB=False, split_fraction=[0.9, 0.1],
-              property_to_learn='energy',
-              xyz_derivative_property_to_learn='energy_gradients',
+              property_to_learn='energy', xyz_derivative_property_to_learn='energy_gradients',
               hyperparameters=None):
 
         import mlatom as ml
         molDB = ml.data.molecular_database.from_xyz_file(filename = molDB_xyzfile)
         print(f"Created from file ({molDB_xyzfile}): a", molDB)
+
         molDB.add_scalar_properties_from_file(molDB_scalarproperty_file, property_to_learn)
         molDB.add_xyz_vectorial_properties_from_file(molDB_xyzvecproperty_file, xyz_derivative_property_to_learn)
 
