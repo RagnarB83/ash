@@ -8,6 +8,7 @@ import itertools
 
 #import ash
 import ash.constants
+import ash.modules.module_coords
 
 ashpath = os.path.dirname(ash.__file__)
 from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, find_replace_string_in_file, \
@@ -889,9 +890,6 @@ class OpenMMTheory:
             print("Found neither system positions defined or an ASH fragment file. Can not write PDB-file.")
             ashexit()
 
-
-
-
     #Function that handles periodicity in forcefield objects (for Amber, CHARMM). TODO: Test GROMACS and XML
     def set_periodics_before_system_creation(self,PBCvectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
         import openmm
@@ -931,7 +929,6 @@ class OpenMMTheory:
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][1] = PBCvectors[0][0]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = PBCvectors[1][1]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = PBCvectors[2][2]
-
 
         elif periodic_cell_dimensions is not None:
             print("\nPBC cell dimensions provided by user:", periodic_cell_dimensions)
@@ -992,8 +989,6 @@ class OpenMMTheory:
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][1] = periodic_cell_dimensions[0]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = periodic_cell_dimensions[1]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = periodic_cell_dimensions[2]
-
-
 
     #Get PBC vectors from topology of openmm object. Convenient in a script
     def get_PBC_vectors(self):
@@ -2879,10 +2874,24 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     return openmmobject, fragment
 
 
-def write_pdbfile_openMM(topology, positions, filename):
+def write_pdbfile_openMM(topology, positions, filename, connectivity_dict=None):
     import openmm.app
+
+    if connectivity_dict is not None:
+        print("Connectivity passed to write_pdbfile_openMM")
+        openmm_add_bonds_to_topology(topology,connectivity_dict)
+
     openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
     print("Wrote PDB-file:", filename)
+
+#Take OpenMM topology and connectivity dictionary and add bonds to topology
+#in order for OpenMM PDBFile.writeFile to write CONECT lines
+def openmm_add_bonds_to_topology(topology,connectivity):
+    atoms = (list(topology.atoms()))
+    for conatom,conlist in connectivity.items():
+        for conl in conlist:
+            topology.addBond(atoms[conatom],atoms[conl])
+
 
 # Assumes all atoms of small molecule present (including hydrogens)
 def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0, 70.0, 70.0],

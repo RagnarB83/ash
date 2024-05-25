@@ -88,9 +88,9 @@ class Fragment:
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
                  mult=None, label=None, readchargemult=False, use_atomnames_as_elements=False):
 
-        #print_line_with_mainheader("Fragment")
+        # print_line_with_mainheader("Fragment")
 
-        #Defining initial charge/mult attributes. Will be redefined
+        # Defining initial charge/mult attributes. Will be redefined
         self.charge=None
         self.mult=None
 
@@ -102,7 +102,7 @@ class Fragment:
 
         if self.printlevel >= 2:
             print_line_with_subheader1("New ASH fragment")
-        #Minimal ASH Fragment
+        # Minimal ASH Fragment
         if self.printlevel > 0:
             print("ASH Fragment created")
         self.energy = None
@@ -112,12 +112,13 @@ class Fragment:
         self.connectivity = []
         self.atomcharges = []
         self.atomtypes = []
-        #Optional PDB-information that might be stored (if PDB-file read)
+        # Optional PDB-information that might be stored (if PDB-file read)
         self.pdb_atomnames = None
         self.pdb_resnames = None
         self.pdb_chainlabels = None
         self.pdb_residlabels = None
         self.pdb_conect_lines =None
+        self.pdb_topology=None  #New, use OpenMM to read PDB-file and get topology
         # Atomnames in a forcefield sense
         # self.atomnames = []
         self.Centralmainfrag = []
@@ -140,7 +141,7 @@ class Fragment:
         # NOW PROCESSING INPUT DATA
         ##############################
 
-        #Lists of elements and coordinates provided
+        # Lists of elements and coordinates provided
         if coords is not None:
             # Adding coords as list of lists (or np.array). Conversion to numpy array
             self.coords = reformat_list_to_array(coords)
@@ -148,21 +149,21 @@ class Fragment:
                 print("Error: Coords list provided but no elems list. Exiting.")
                 ashexit()
             if len(elems) != len(coords):
-                print("Error: Coords list and elems list have different lengths. Exiting.")
+                print(f"Error: Coords list (len {len(coords)}) and elems list ({len(elems)}) have different lengths. Exiting.")
                 ashexit()
             self.elems = elems
-            #self.update_attributes()
+            # self.update_attributes()
             # If connectivity passed
             if connectivity != None:
                 conncalc = False
                 self.connectivity = connectivity
-        #Defining an atom
+        # Defining an atom
         elif atom is not None:
             print("Creating Atom Fragment")
             self.elems=[atom]
             self.coords = reformat_list_to_array([[0.0,0.0,0.0]])
             #self.update_attributes()
-        #Defining a diatomic
+        # Defining a diatomic
         elif diatomic is not None:
             print("Creating Diatomic Fragment from formula and bondlength")
             if bondlength is None:
@@ -177,7 +178,7 @@ class Fragment:
                 print(f"Problem with molecular formula diatomic={diatomic} string!")
                 ashexit()
             self.coords = reformat_list_to_array([[0.0,0.0,0.0],[0.0,0.0,float(bondlength)]])
-            #self.update_attributes()
+            # self.update_attributes()
         # If coordsstring given, read elems and coords from it
         elif coordsstring is not None:
             self.add_coords_from_string(coordsstring, scale=scale, tol=tol, conncalc=conncalc)
@@ -188,15 +189,16 @@ class Fragment:
         elif xyzfile is not None:
             self.label = xyzfile.split('/')[-1].split('.')[0]
             self.read_xyzfile(xyzfile, readchargemult=readchargemult, conncalc=conncalc)
-        #PDB-file
+        # PDB-file
         elif pdbfile is not None:
             self.label = pdbfile.split('/')[-1].split('.')[0]
-            self.read_pdbfile(pdbfile, conncalc=False, use_atomnames_as_elements=use_atomnames_as_elements)
-        #GROMACS GRO-file
+            self.read_pdbfile_openmm(pdbfile)
+            #self.read_pdbfile_old(pdbfile, conncalc=False, use_atomnames_as_elements=use_atomnames_as_elements)
+        # GROMACS GRO-file
         elif grofile is not None:
             self.label = grofile.split('/')[-1].split('.')[0]
             self.read_grofile(grofile, conncalc=False)
-        #Amber CRD file (requires prmtop file as well)
+        # Amber CRD file (requires prmtop file as well)
         elif amber_inpcrdfile is not None:
             self.label = amber_inpcrdfile.split('/')[-1].split('.')[0]
             print("Reading Amber INPCRD file")
@@ -204,15 +206,15 @@ class Fragment:
                 print("amber_prmtopfile argument must be provided as well!")
                 ashexit()
             self.read_amberfile(inpcrdfile=amber_inpcrdfile, prmtopfile=amber_prmtopfile, conncalc=conncalc)
-        #Chemshell-file (coordinates in Bohrs)
+        # Chemshell-file (coordinates in Bohrs)
         elif chemshellfile is not None:
             self.label = chemshellfile.split('/')[-1].split('.')[0]
             self.read_chemshellfile(chemshellfile, conncalc=conncalc)
-        #ASH fragment file
+        # ASH fragment file
         elif fragfile is not None:
             self.label = fragfile.split('/')[-1].split('.')[0]
             self.read_fragment_from_file(fragfile)
-        #Reading an XYZ-file from the ASH database
+        # Reading an XYZ-file from the ASH database
         elif databasefile is not None:
             databasepath=ashpath+"/databases/fragments/"
             xyzfile=databasepath+databasefile
@@ -236,14 +238,14 @@ class Fragment:
             self.mult = mult
 
 
-        #Now update attributes after defining coordinates, getting charge, mult
+        # Now update attributes after defining coordinates, getting charge, mult
         self.update_attributes()
         if conncalc is True:
             if len(self.connectivity) == 0:
                 self.calc_connectivity(scale=scale, tol=tol)
 
-        #Constraints attributes. Used by parallel surface-scan to pass constraints along.
-        #Populated by calc_surface relaxed para
+        # Constraints attributes. Used by parallel surface-scan to pass constraints along.
+        # Populated by calc_surface relaxed para
         self.constraints = None
 
     def __repr__(self):
@@ -354,7 +356,6 @@ class Fragment:
         self.update_attributes()
         if conn is True:
             self.calc_connectivity(scale=scale, tol=tol)
-
 
     # Get list of atom-indices for specific elements or groups
     # Atom indices except those provided
@@ -500,13 +501,13 @@ class Fragment:
         #    print("Note: Not reading connectivity from file.")
 
     # Read PDB file
-    def read_pdbfile(self, filename, conncalc=True, scale=None, tol=None, use_atomnames_as_elements=False):
+    def read_pdbfile_old(self, filename, conncalc=True, scale=None, tol=None, use_atomnames_as_elements=False):
         if self.printlevel >= 2:
             print("Reading coordinates from PDB file '{}' into fragment.".format(filename))
 
-        self.elems, self.coords = read_pdbfile(filename, use_atomnames_as_elements=use_atomnames_as_elements)
+        self.elems, self.coords = read_pdbfile_old(filename, use_atomnames_as_elements=use_atomnames_as_elements)
         print("Number of atoms in PDB file:", len(self.elems))
-        #Also reading PDB residue/atom/segment information
+        # Also reading PDB residue/atom/segment information
         if self.printlevel >= 2:
             print("Reading atom/residue info from PDB file '{}' into fragment.".format(filename))
         self.pdb_atomnames, self.pdb_resnames, self.pdb_residlabels, self.pdb_chainlabels, self.pdb_conect_lines = read_pdbfile_info(filename)
@@ -515,6 +516,21 @@ class Fragment:
         if len(self.coords) != len(self.pdb_atomnames):
             print("Warning: Number of coords found in PDB file does not match number of atomnames found.")
 
+    # TODO: Switch to using OpenMM for PDB-file reading instead ?
+    def read_pdbfile_openmm(self,filename):
+        if self.printlevel >= 2:
+            print("read_pdbfile_openmm: Reading coordinates from PDB file '{}' into fragment.".format(filename))
+        try:
+            import openmm.app
+        except ImportError:
+            print("Error: OpenMM not installed. Cannot read PDB file.")
+            ashexit()
+        pdb = openmm.app.PDBFile(filename)
+        self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
+        self.elems = [atom.element.symbol for atom in pdb.topology.atoms()]
+
+        #Topology
+        self.pdb_topology = pdb.topology
 
     def read_xyzfile(self, filename, scale=None, tol=None, readchargemult=False, conncalc=True):
         if self.printlevel >= 2:
@@ -708,6 +724,58 @@ class Fragment:
             print("Will write PDB file with basic default residue/atom/segment names.")
         write_pdbfile(self, outputname=filename, atomnames=self.pdb_atomnames, chainlabels=self.pdb_chainlabels,
                       resnames=self.pdb_resnames,residlabels=self.pdb_residlabels, segmentlabels=None, conect_lines=self.pdb_conect_lines)
+        return f"{filename}.pdb"
+
+    # Create new topology from scratch if none is defined (defined automatically when reading PDB-files by OpenMM)
+    def define_topology(self, scale=1.0, tol=0.1):
+        try:
+            import openmm.app
+        except ImportError:
+            print("Error: OpenMM not installed. Cannot define a topology")
+            ashexit()
+        print("Defining new basic single-chain, single-residue topology")
+        self.pdb_topology = openmm.app.Topology()
+        chain = self.pdb_topology.addChain()
+        residue = self.pdb_topology.addResidue("MOL", chain)
+
+        # Defaultdictionary to keep track of unique element-atomnames
+        atomnames_dict=defaultdict(int)
+        for el in self.elems:
+            atomnumber = openmm.app.Element.getBySymbol(el).atomic_number
+            element = openmm.app.Element.getByAtomicNumber(atomnumber)
+            # Define unique atomname
+            atomnames_dict[el] += 1
+            atomname = f"{el}{atomnames_dict[el]}"
+            self.pdb_topology.addAtom(atomname, element, residue)
+
+        # Create connectivity by default for new topology
+        connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, scale,tol)
+        print("Adding connectivity to PDB topology")
+        ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology, connectivity_dict)
+
+    # Write PDB-file via OpenMM
+    def write_pdbfile_openmm(self,filename="Fragment", calc_connectivity=False):
+        print("write_pdbfile_openmm\n")
+        try:
+            import openmm.app
+        except ImportError:
+            print("Error: OpenMM not installed. Cannot read PDB file.")
+            ashexit()
+
+        if self.pdb_topology is None:
+            print("Warning: ASH Fragment has no PDB-file topology defined (required for PDB-file writing)")
+            print("Now defining new topology from scratch")
+            self.define_topology() #Creates self.pdb_topology
+
+        # Before writing PDB-file, request connectivity calculation so that we get correct CONECT lines for non-biomolecules
+        if calc_connectivity is True:
+            print("Connectivity calculation requested for Fragment")
+            connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, 1.0,0.1)
+            print("Adding connectivity to PDB topology")
+            ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology,connectivity_dict)
+
+        openmm.app.PDBFile.writeFile(self.pdb_topology, self.coords, file=open(filename, 'w'))
+        print("Wrote PDB-file:", filename)
 
     def write_xyzfile(self, xyzfilename="Fragment-xyzfile.xyz", writemode='w', write_chargemult=True, write_energy=True):
 
@@ -1332,31 +1400,24 @@ def get_connected_atoms(coords, elems, scale, tol, atomindex):
                 connatoms.append(i)
     return connatoms
 
-
 # Euclidean distance functions:
 # https://semantive.com/pl/blog/high-performance-computation-in-python-numpy/
 def einsum_mat(mat_v, mat_u):
     mat_z = mat_v - mat_u
     return np.sqrt(np.einsum('ij,ij->i', mat_z, mat_z))
 
-
 def bare_numpy_mat(mat_v, mat_u):
     return np.sqrt(np.sum((mat_v - mat_u) ** 2, axis=1))
-
 
 def l2_norm_mat(mat_v, mat_u):
     return np.linalg.norm(mat_v - mat_u, axis=1)
 
-
 def dummy_mat(mat_v, mat_u):
     return [sum((v_i - u_i) ** 2 for v_i, u_i in zip(v, u)) ** 0.5 for v, u in zip(mat_v, mat_u)]
 
-
 # Get connected atoms to chosen atom index based on threshold
-# Clever np version for calculating the euclidean distance without a for-loop and having to call distance function
-# many time
+# np version for calculating the euclidean distance
 # https://semantive.com/pl/blog/high-performance-computation-in-python-numpy/
-# Avoiding for loops
 def get_connected_atoms_np(coords, elems, scale, tol, atomindex):
     # print("inside get conn atoms np")
     # print("atomindex:", atomindex)
@@ -1386,6 +1447,14 @@ def get_connected_atoms_np(coords, elems, scale, tol, atomindex):
     connatoms = np.where(diff < 0)[0].tolist()
     return connatoms
 
+# Get a dictionary of atoms (values) connected to each atom (key)
+def get_connected_atoms_dict(coords, elems, scale, tol):
+    conndict={}
+    for c in range(0,len(coords)):
+        conn = get_connected_atoms_np(coords, elems, scale, tol, c)
+        conn.remove(c)
+        conndict[c]=conn
+    return conndict
 
 #Get connected atoms for a small list of atoms with input fragment, includes input atoms
 #Used e.g. in NEB-TS
@@ -3598,6 +3667,7 @@ def sdf_to_pdb(file):
     return os.path.splitext(file)[0]+'.pdb'
 
 #Function to read in PDB-file and write new one with CONECT lines (geometry needs to be sensible)
+#NOTE: Requires OpenBabel which seems unnecessary, probably better to use OpenMM functionality instead
 def writepdb_with_connectivity(file):
     #OpenBabel
     try:
@@ -3747,3 +3817,79 @@ def bounding_box_dimensions(coordinates,shift=0.0):
     dimensions = max_values - min_values
     final_dims = dimensions + shift
     return dimensions  # Return the dimensions of the bounding box
+
+
+#Simple function to combine 2 ASH fragments where one is assumed to be a solute (fewer atoms) and the other assumed to be
+#some kind of solvent system (box,sphere etc.)
+#Use tolerance (tol) e.g. to control how many solvent molecules around get deleted
+#Currently using 0.4 as default based on threonine in acetonitrile example
+def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, write_pdb=False,
+                                       solute_pdb=None, solvent_pdb=None, outputname="solution.pdb"):
+    print("\ninsert_solute_into_solvent\n")
+    #Early exits
+    if write_pdb:
+        print("Write PDB option is active.")
+        if solute_pdb is None or solvent_pdb is None:
+            print("Error: write_pdb is active but no input solute_pdb or solvent_pdb files were provided")
+            ashexit()
+    if solute is None and solute_pdb is not None:
+        print("No solute fragment provided but solute_pdb is set. Reading solute fragment from PDB-file")
+        solute = Fragment(pdbfile=solute_pdb)
+    if solvent is None and solvent_pdb is not None:
+        print("No solvent fragment provided but solvent_pdb is set. Reading solvent fragment from PDB-file")
+        solvent = Fragment(pdbfile=solvent_pdb)
+
+    #Get centers
+    com_box = solvent.get_coordinate_center()
+    com_solute = solute.get_coordinate_center()
+
+    #Translating solute coords
+    trans_coord=np.array(com_box)-np.array(com_solute)
+    solute.coords=solute.coords+trans_coord
+
+    #New Fragment by combining element lists and coordinates
+    new_frag = Fragment(elems=solute.elems+solvent.elems, coords = np.vstack((solute.coords,solvent.coords)), printlevel=2)
+
+    new_frag.write_xyzfile(xyzfilename="solution-pre.xyz")
+    #Trim by removing clashing atoms
+    new_frag.printlevel=1
+    #Find atoms connected to solute index 0. Uses scale and tol
+    membs = get_molecule_members_loop_np2(new_frag.coords, new_frag.elems, 10, scale, tol, atomindex=0, membs=None)
+    print("Found clashing solvent atoms:", membs)
+    delatoms=[]
+    for i in membs:
+        if i >= solute.numatoms:
+            delatoms.append(i)
+    delatoms.sort(reverse=True)
+    for d in delatoms:
+        new_frag.delete_atom(d)
+    new_frag.printlevel=2
+    print()
+    print("Final fragment after removing clashing atoms:")
+    new_frag.update_attributes()
+    new_frag.write_xyzfile(xyzfilename="solution.xyz")
+
+    #WRITE PDB
+    if write_pdb:
+        print("Write_PDB is active. Will write PDB-file of solute+solvent system for topology purposes")
+        try:
+            import openmm.app
+        except ImportError:
+            print("Error: OpenMM library not found. Please install OpenMM")
+            ashexit()
+
+        #PDB-files
+        pdb1 = openmm.app.PDBFile(solute_pdb)
+        pdb2 = openmm.app.PDBFile(solvent_pdb)
+
+        #Create modeller object
+        modeller = openmm.app.Modeller(pdb1.topology, pdb1.positions) #Add pdbfile1
+        modeller.add(pdb2.topology, pdb2.positions) #Add pdbfile2
+        #Delete clashing atoms from topology
+        toDelete = [r for j,r in enumerate(modeller.topology.atoms()) if j in delatoms]
+        modeller.delete(toDelete)
+        mergedPositions = new_frag.coords
+
+        #Write merged topology and positions to new PDB file
+        ash.interfaces.interface_OpenMM.write_pdbfile_openMM(modeller.topology, mergedPositions, outputname)
+    return new_frag
