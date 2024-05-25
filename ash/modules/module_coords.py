@@ -505,7 +505,7 @@ class Fragment:
         if self.printlevel >= 2:
             print("Reading coordinates from PDB file '{}' into fragment.".format(filename))
 
-        self.elems, self.coords = read_pdbfile_old(filename, use_atomnames_as_elements=use_atomnames_as_elements)
+        self.elems, self.coords = read_pdbfile(filename, use_atomnames_as_elements=use_atomnames_as_elements)
         print("Number of atoms in PDB file:", len(self.elems))
         # Also reading PDB residue/atom/segment information
         if self.printlevel >= 2:
