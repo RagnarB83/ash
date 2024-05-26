@@ -868,6 +868,16 @@ class OpenMMTheory:
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
 
+    # Create a mixed MM/ML potential system from a ML potential (requires OpenMM-ML)
+    # from openmmml import MLPotential
+    # potential = MLPotential('ani2x')
+    #TODO: Check whether system contains all previous settings (frozen atoms, constraints)
+    #TODO: May have to check
+    def create_mixed_ML_system(self,potential,mlatoms):
+        print("Creating a mixed MM/ML system (replaces old MM system)")
+        print("MLatom indices:", mlatoms)
+        self.system = potential.createMixedSystem(self.topology, self.system, mlatoms)
+
     # Function to write PDB-file if everything is available
     def write_pdbfile(self, outputname="system"):
         import openmm
@@ -1072,6 +1082,11 @@ class OpenMMTheory:
         #3. remove from topology
         #4. remove system restraint force ?
         self.system.removeForce(-1)
+
+    # Method to add any (compatible) force to system (could e.g. be a loaded TorchForce )
+    def add_force(self,newforce):
+        print("Adding new force to system:", newforce)
+        self.system.addForce(newforce)
 
 # Bond restraint force, e.g. for umbrella sampling
 # TODO : unit check
