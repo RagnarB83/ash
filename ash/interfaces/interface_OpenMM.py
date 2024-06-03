@@ -3924,11 +3924,12 @@ class OpenMM_MDclass:
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
                     # Manual step info option
-                    if self.printlevel >= 2:
+                    #NOTE: Can't do it because the MM-energy has not been calculated yet when we do customexternalforceupdate option
+                    #if self.printlevel >= 2:
 
                         #Defining total QM/MM potential energy
-                        QM_MM_energy = self.QM_MM_object.QMenergy+self.QM_MM_object.MMenergy-self.QM_MM_object.extforce_energy
-                        print_current_step_info(step,current_state,self.openmmobject,qm_energy=QM_MM_energy)
+                    #    QM_MM_energy = self.QM_MM_object.QMenergy+self.QM_MM_object.MMenergy-self.QM_MM_object.extforce_energy
+                    #    print_current_step_info(step,current_state,self.openmmobject,qm_energy=QM_MM_energy)
 
                     #print("QM/MM step. Writing unwrapped to trajfile: OpenMMMD_traj_unwrapped.xyz")
                     #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_unwrapped", printlevel=1, writemode='a')

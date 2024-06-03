@@ -7,19 +7,16 @@ import numpy as np
 import sys
 import atexit
 import pathlib
-#Getting ASH-path
+# Getting ASH-path
 ashpath = str(pathlib.Path(__file__).parent.resolve())
 print("ashpath:", ashpath)
 ###############
 # ASH modules
 ###############
-#import ash
+# import ash
 # Adding modules,interfaces directories to sys.path
 sys.path.insert(0, ashpath)
-#ashpath = os.path.dirname(ash.__file__)
 print("Sys path:", sys.path)
-#Add local geometric dir to syspath
-#sys.path.insert(0, ashpath+"/geometric-master")
 
 from .functions.functions_general import create_ash_env_file,blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
     printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit, natural_sort
@@ -40,7 +37,6 @@ from .modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to
 import ash.modules.module_singlepoint
 from .modules.module_singlepoint import Singlepoint, newSinglepoint, ZeroTheory, ScriptTheory, Singlepoint_fragments,\
      Singlepoint_theories, Singlepoint_fragments_and_theories, Singlepoint_reaction
-
 
 # Parallel
 import ash.functions.functions_parallel
@@ -116,7 +112,7 @@ from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass
 MolecularDynamics = OpenMM_MD
 MetaDynamics = OpenMM_metadynamics
 
-#TODO: Temporary aliases, to be deleted
+# TODO: Temporary aliases, to be deleted
 OpenMM_box_relaxation = OpenMM_box_equilibration
 small_molecule_parameterizor=small_molecule_parameterizer
 
@@ -152,7 +148,7 @@ from .modules.module_molcrys import molcrys, Fragmenttype
 # Geometry optimization
 from .functions.functions_optimization import SimpleOpt, BernyOpt
 
-#geomeTRIC interface
+# geomeTRIC interface
 from .interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICOptimizerClass
 Optimizer = geomeTRICOptimizer
 Opt = geomeTRICOptimizer
@@ -174,7 +170,7 @@ import ash.modules.module_benchmarking
 from .modules.module_benchmarking import run_benchmark
 
 
-#Plotting
+# Plotting
 import ash.modules.module_plotting
 from .modules.module_plotting import reactionprofile_plot, contourplot, plot_Spectrum, MOplot_vertical, ASH_plot
 
@@ -196,7 +192,7 @@ if ash.settings_ash.settings_dict["print_exit_footer"] is True:
         atexit.register(ash.ash_header.print_timings)
 
 # Julia dependency. Load in the beginning or not.
-#As PythonCall can be a bit slow to load, it is best to only load when needed (current behaviour)
+# As PythonCall can be a bit slow to load, it is best to only load when needed (current behaviour)
 if ash.settings_ash.settings_dict["load_julia"] is True:
     try:
         print("Importing Julia interface and loading functions")

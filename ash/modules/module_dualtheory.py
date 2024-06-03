@@ -381,18 +381,24 @@ class WrapTheory:
             charge=None, mult=None):
 
         # Calculate Theory 1
-        e_theory1, g_theory1 = self.theory1.run(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
-            elems=elems, Grad=Grad, PC=PC, numcores=numcores, label=label, charge=charge, mult=mult)
+        e_theory1, g_theory1 = self.theory1.run(current_coords=current_coords,
+                                                current_MM_coords=current_MM_coords,
+                                                MMcharges=MMcharges, qm_elems=qm_elems,
+                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+                                                label=label, charge=charge, mult=mult)
 
         # Calculate Theory 2
-        e_theory2, g_theory2 = self.theory2.run(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
-            elems=elems, Grad=Grad, PC=PC, numcores=numcores, label=label, charge=charge, mult=mult)
+        e_theory2, g_theory2 = self.theory2.run(current_coords=current_coords,
+                                                current_MM_coords=current_MM_coords,
+                                                MMcharges=MMcharges, qm_elems=qm_elems,
+                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+                                                label=label, charge=charge, mult=mult)
 
-        #Combine energy and gradient
+        # Combine energy and gradient
         energy = e_theory1 + e_theory2
         gradient = g_theory1 + g_theory2
 
-        if Grad == True:
+        if Grad:
             return energy, gradient
         else:
             return energy
