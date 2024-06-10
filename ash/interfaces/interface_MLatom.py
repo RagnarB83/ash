@@ -195,7 +195,8 @@ class MLatomTheory(Theory):
         print(f"Created from file ({molDB_xyzfile}): a", molDB)
 
         molDB.add_scalar_properties_from_file(molDB_scalarproperty_file, property_to_learn)
-        molDB.add_xyz_vectorial_properties_from_file(molDB_xyzvecproperty_file, xyz_derivative_property_to_learn)
+        if xyz_derivative_property_to_learn == 'energy_gradients':
+            molDB.add_xyz_vectorial_properties_from_file(molDB_xyzvecproperty_file, xyz_derivative_property_to_learn)
 
         if hyperparameters is None:
             hyperparameters={}
