@@ -29,7 +29,7 @@ import shutil
 
 class MLatomTheory(Theory):
     def __init__(self, printlevel=2, numcores=1, label="mlatom",
-                 method=None, ml_model=None, model_file=None, qm_program=None, ml_program=None):
+                 method=None, ml_model=None, model_file=None, qm_program=None, ml_program=None, device='cpu'):
         module_init_time=time.time()
         super().__init__()
         self.theorynamelabel="MLatom"
@@ -66,6 +66,7 @@ class MLatomTheory(Theory):
         self.qm_program = qm_program
         self.ml_program = ml_program
         self.ml_model = ml_model
+        self.device = device  # 'cpu' or 'cuda' (used by Torch-based models/methods)
         print("Checking if method or ml_model was selected")
         print("Method:", self.method)
         #############
@@ -239,7 +240,7 @@ class MLatomTheory(Theory):
             print("A method was selected: ", self.method)
             print("QM program:", self.qm_program)
             print("Creating model")
-            model = ml.models.methods(method=self.method, qm_program=self.qm_program)
+            model = ml.models.methods(method=self.method, qm_program=self.qm_program, device=self.device)
             # Create dftd4.json file before running if required
             if 'AIQM' in self.method:
                 print("An AIQMx method was selected")
