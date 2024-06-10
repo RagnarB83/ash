@@ -46,7 +46,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
     elems=fragment.elems
 
     #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint", theory=theory)
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint", theory=theory, printlevel=printlevel)
 
 
     # Run a single-point energy job with gradient
@@ -88,7 +88,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
 
 #Single-point energy function that runs calculations on 1 fragment using multiple theories. Returns a list of energies.
 #TODO: allow Grad option?
-def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
+def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None, printlevel=2):
     print_line_with_mainheader("Singlepoint_theories function")
     module_init_time=time.time()
     print("Will run single-point calculation on the fragment with multiple theories")
@@ -98,7 +98,8 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None):
     #Looping through fragmengs
     for theory in theories:
         #Check charge/mult
-        charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint_theories", theory=theory)
+        charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint_theories", theory=theory,
+                                        printlevel=printlevel)
 
         #Running single-point.
         result = Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)

@@ -87,6 +87,8 @@ class MLatomTheory(Theory):
                 print("A ODMx type semi-empirical method was selected. This requires MNDO")
             elif 'OM' in self.method:
                 print("A OMx type semi-empirical method was selected. This requires MNDO")
+            elif 'AIMNet' in self.method:
+                print("A AIMNet type method was selected")
             else:
                 print(f"Either an invalid  {self.method} or unknown method (to MLatomTheory interface) was selected. Exiting.")
                 ashexit()

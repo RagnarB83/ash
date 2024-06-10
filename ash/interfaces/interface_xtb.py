@@ -310,7 +310,6 @@ class xTBTheory:
             #Todo: xtbrestart possibly. needs to be optional
             ash.modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
 
-            print("x")
             # Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")

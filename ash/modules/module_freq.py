@@ -512,7 +512,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     #Write ORCA-style Hessian file. Hardcoded filename here. Change?
     #Note: Passing hesscords here instead of coords. Change?
     ash.interfaces.interface_ORCA.write_ORCA_Hessfile(hessian, hesscoords, hesselems, hessmasses, hessatoms, "orcahessfile.hess")
-    print("Wrote ORCA-style Hessian file: orcahessfile.hess")
+
     #Create dummy-ORCA file with frequencies and normal modes
     printdummyORCAfile(hesselems, hesscoords, frequencies, evectors, nmodes, "orcahessfile.hess")
     print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
