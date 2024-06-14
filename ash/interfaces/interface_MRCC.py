@@ -469,6 +469,9 @@ ex.lev, nsing, ntrip, rest, CC/CI, dens, conver, symm, diag, CS, spatial, HF, nd
     with open(filename, 'w') as f:
         f.write(inputstring)
 
+    #Touch KEYWD file (otherwise MRCC crashes)
+    sp.run(["touch", "KEYWD"])
+
 def yoshimine_sort(a,b,c,d):
     if a > b:
         ab = a*(a+1)/2 + b
@@ -485,7 +488,7 @@ def yoshimine_sort(a,b,c,d):
     return math.floor(abcd)
 
 # Write the fort.55 MRCC integral file from a Numpy array
-def MRCC_write_integralfile(full_integrals=None, basis_dim=None, filename="fort.55"):
+def MRCC_write_integralfile(full_integrals=None, basis_dim=None, filename="fort.55", int_threshold=1e-16):
 
     # Header
     header = f"""    {basis_dim}    2
@@ -494,8 +497,8 @@ def MRCC_write_integralfile(full_integrals=None, basis_dim=None, filename="fort.
 """
 
     if full_integrals is not  None:
-        int_threshold=1e-15
         print("Full integral tensor provided")
+        print("Integral threshold:", int_threshold)
         num_integrals = full_integrals.shape[0]**4
         print("num_integrals:", num_integrals)
         # dim = full_integrals.shape[0]
