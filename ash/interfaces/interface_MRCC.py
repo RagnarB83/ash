@@ -493,7 +493,7 @@ def yoshimine_sort(a,b,c,d):
 def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, num_corr_el=None, filename="fort.55", int_threshold=1e-16):
 
     if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None or num_corr_el is None:
-        print("Error: two_el_integrals, one_el_integrals or nuc_repulsion_energy not provided")
+        print("Error: two_el_integrals, one_el_integrals, num_corr_el or nuc_repulsion_energy not provided")
         ashexit()
 
     basis_dim = one_el_integrals[0].size
