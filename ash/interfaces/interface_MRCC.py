@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 import numpy as np
+import math
 
 import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep
@@ -455,3 +456,72 @@ def grab_dipole_moment(outfile):
             if ' Dipole moment [au]:' in line:
                 grab=True
     return dipole_moment
+
+
+# Write MRCC rudimentary inputfile (fort.56) file with list of occupations
+def MRCC_write_basic_inputfile(occupations=None, filename="fort.56", ex_level=4, nsing=1, ntrip=0, rest=0, CC_CI=1, dens=0, CS=1, spatial=1, HF=1, ndoub=0, nacto=0, nactv=0, tol=9, maxex=0, sacc=0, freq=0.00, symm=0, conver=0, diag=0, dboc=0, mem=1024):
+
+    occupation_string = ' '.join(str(x) for x in occupations)
+    inputstring=f"""   {ex_level}    {nsing}    {ntrip}     {rest}    {CC_CI}    {dens}     {conver}     {symm}     {diag}    {CS}    {spatial}     {HF}      {ndoub}    {nacto}      {nactv}    {tol}      {maxex}     {sacc} {freq}     {dboc} {mem}
+ex.lev, nsing, ntrip, rest, CC/CI, dens, conver, symm, diag, CS, spatial, HF, ndoub, nacto, nactv, tol, maxex, sacc, freq, dboc, mem
+ {occupation_string}"""
+
+    with open(filename, 'w') as f:
+        f.write(inputstring)
+
+def yoshimine_sort(a,b,c,d):
+    if a > b:
+        ab = a*(a+1)/2 + b
+    else:
+        ab = b*(b+1)/2 + a
+    if c > d:
+        cd = c*(c+1)/2 + d
+    else:
+        cd = d*(d+1)/2 + c
+    if ab > cd:
+        abcd = ab*(ab+1)/2 + cd
+    else:
+        abcd = cd*(cd+1)/2 + ab
+    return math.floor(abcd)
+
+# Write the fort.55 MRCC integral file from a Numpy array
+def MRCC_write_integralfile(full_integrals=None, basis_dim=None, filename="fort.55"):
+
+    # Header
+    header = f"""    {basis_dim}    2
+ {'  '.join('1' for i in range(basis_dim))}
+  XXX
+"""
+
+    if full_integrals is not  None:
+        int_threshold=1e-15
+        print("Full integral tensor provided")
+        num_integrals = full_integrals.shape[0]**4
+        print("num_integrals:", num_integrals)
+        # dim = full_integrals.shape[0]
+        # print("Integral dimension:", dim)
+        # Slow way to write integrals to disk
+        integral_string=""
+        from collections import OrderedDict
+        int_dict=OrderedDict() #yos_value : [int_value,[i,j,k,l ]]  Note, switching to 1-based indexing here
+        for i in range(0,basis_dim):
+            for j in range(0,basis_dim):
+                for k in range(0,basis_dim):
+                    for l in range(0,basis_dim):
+                        yos_val = yoshimine_sort(i,j,k,l)
+                        if yos_val not in int_dict:
+                            int_value=full_integrals[i,j,k,l]
+                            if int_value > int_threshold:
+                                int_dict[yos_val] = [int_value,[i+1,j+1,k+1,l+1]]
+
+        for k,v in int_dict.items():
+            integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+    else:
+        # TODO: integrals array with symmetry
+        print("else")
+        exit()
+
+    # Combine string and write do disk
+    final_string=header+integral_string
+    with open(filename, 'w') as f:
+        f.write(final_string)
