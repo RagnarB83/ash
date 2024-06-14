@@ -220,11 +220,13 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
                      frozen_core_option=None, no_basis_read_orbs=True):
     print("Writing MRCC inputfile")
 
-    # For case where no basis is defined, assumed that fort.55 and fort.56 files have been created (contaning integrals)
-    if no_basis_read_orbs is True:
-        inpfile.write("iface=cfour") #Activates CFour interface (just means that MRCC will read in fort.55 and fort.56 files)
-
     with open("MINP", 'w') as inpfile:
+
+
+        # For case where no basis is defined, assumed that fort.55 and fort.56 files have been created (contaning integrals)
+        if no_basis_read_orbs is True:
+            inpfile.write("iface=cfour") #Activates CFour interface (just means that MRCC will read in fort.55 and fort.56 files)
+
         for m in mrccinput.split('\n'):
             if 'core' in m:
                 print("Warning: ignoring user-defined core option. Using frozen_core_option instead")
