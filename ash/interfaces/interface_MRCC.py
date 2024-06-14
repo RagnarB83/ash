@@ -492,6 +492,10 @@ def yoshimine_sort(a,b,c,d):
 
 def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, filename="fort.55", int_threshold=1e-16):
 
+    if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None:
+        print("Error: two_el_integrals, one_el_integrals or nuc_repulsion_energy not provided")
+        ashexit()
+
     basis_dim = one_el_integrals[0].size
 
     # Header
@@ -505,7 +509,8 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
     print("num_integrals:", num_integrals)
 
     # String
-    integral_string=""
+
+
     # Integral dict
     from collections import OrderedDict
     int_1el_dict=OrderedDict()
@@ -519,6 +524,14 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
     # 2-electron integrals
     npair = basis_dim*(basis_dim+1)//2
     print("npair:", npair)
+
+    # Open file
+    f = open(filename, 'w')
+
+    #Write header
+    f.write(header)
+
+    two_el_integral_string=""
     if two_el_integrals.ndim == 2:
         print("ndim 2, assuming 4-fold symmetry")
         xint_2el_dict=OrderedDict()
@@ -536,7 +549,7 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
                 ij += 1
         # Creating string for 2-el integrals
         for k,v in xint_2el_dict.items():
-            integral_string+=f"{v:>29.20E}{k[0]:>5}{k[1]:>5}{k[2]:>5}{k[3]:>5}\n"
+            two_el_integral_string+=f"{v:>29.20E}{k[0]:>5}{k[1]:>5}{k[2]:>5}{k[3]:>5}\n"
 
     elif two_el_integrals.ndim == 4:
         print("ndim 4")
@@ -551,18 +564,21 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
                             int_value=two_el_integrals[i,j,k,l]
                             if abs(int_value) > int_threshold:
                                 int_2el_dict[yos_val] = [int_value,[i+1,j+1,k+1,l+1]]
-                                #int_2el_dict[(i+1, j+1, k+1, l+1)] = two_el_integrals[i,j,k,l]
         # Creating string
         for k,v in int_2el_dict.items():
-            integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+            two_el_integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
 
-    # Creating string for 1-el integrals
+
+    # Writing 2-electron integrals to file
+    f.write(two_el_integral_string)
+
+    # Writing string for 1-el integrals
+    one_el_string=""
     for k,v in int_1el_dict.items():
-        integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
-    # Nuclear repulsion energy
-    integral_string+=f"{nuc_repulsion_energy:>29.20E}{0:>5}{0:>5}{0:>5}{0:>5}\n"
+        one_el_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+    f.write(one_el_string)
 
-    # Combine string and write do disk
-    final_string=header+integral_string
-    with open(filename, 'w') as f:
-        f.write(final_string)
+    # Nuclear repulsion energy
+    f.write(f"{nuc_repulsion_energy:>29.20E}{0:>5}{0:>5}{0:>5}{0:>5}\n")
+
+    f.close()
