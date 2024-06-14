@@ -488,7 +488,8 @@ def yoshimine_sort(a,b,c,d):
     return math.floor(abcd)
 
 # Write the fort.55 MRCC integral file from Numpy arrays
-def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, filename="fort.55", int_threshold=1e-16):
+#TODO: unrestricted case
+def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, filename="fort.55", int_threshold=1e-16):
 
     basis_dim = one_el_integrals[0].size
 
@@ -499,13 +500,11 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, filena
 """
 
     if two_el_integrals is not None:
-        print("Full integral tensor provided")
         print("Integral threshold:", int_threshold)
         num_integrals = two_el_integrals.shape[0]**4
         print("num_integrals:", num_integrals)
-        # dim = full_integrals.shape[0]
-        # print("Integral dimension:", dim)
-        # Slow way to write integrals to disk
+
+        # String
         integral_string=""
         # Integral dict
         from collections import OrderedDict
@@ -523,7 +522,7 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, filena
         if two_el_integrals.ndim == 2:
             print("ndim 2, assuming 4-fold symmetry")
             xint_2el_dict=OrderedDict()
-            #4-fold symmetry
+            # 4-fold symmetry
             assert (two_el_integrals.size == npair**2)
             ij = 0
             for i in range(basis_dim):
@@ -560,8 +559,8 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, filena
         # Creating string for 1-el integrals
         for k,v in int_1el_dict.items():
             integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
-        # Final null string
-        integral_string+="0 0 0 0 0\n"
+        # Nuclear repulsion energy
+        integral_string+=f"{nuc_repulsion_energy:>29.20E}{0:>5}{0:>5}{0:>5}{0:>5}\n"
     else:
         # TODO: integrals array with symmetry
         print("else")
