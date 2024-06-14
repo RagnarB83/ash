@@ -487,19 +487,20 @@ def yoshimine_sort(a,b,c,d):
         abcd = cd*(cd+1)/2 + ab
     return math.floor(abcd)
 
-# Write the fort.55 MRCC integral file from Numpy arrays
+# Write the fort.55 MRCC integral file (FCIDUMP format with header) from Numpy arrays
 # TODO: unrestricted case
 
-def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, filename="fort.55", int_threshold=1e-16):
+def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, num_corr_el=None, filename="fort.55", int_threshold=1e-16):
 
-    if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None:
+    if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None or num_corr_el is None:
         print("Error: two_el_integrals, one_el_integrals or nuc_repulsion_energy not provided")
         ashexit()
 
     basis_dim = one_el_integrals[0].size
 
     # Header
-    header = f"""    {basis_dim}    2
+    #Note: assuming no symmetry setting 1 as irrep for each orbital
+    header = f"""    {basis_dim}    {num_corr_el}
  {'  '.join('1' for i in range(basis_dim))}
   150000
 """
@@ -507,9 +508,6 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
     print("Integral threshold:", int_threshold)
     num_integrals = two_el_integrals.shape[0]**4
     print("num_integrals:", num_integrals)
-
-    # String
-
 
     # Integral dict
     from collections import OrderedDict
