@@ -225,6 +225,7 @@ def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep
 
         # For case where no basis is defined, assumed that fort.55 and fort.56 files have been created (contaning integrals)
         if no_basis_read_orbs is True:
+            print("Warning: no_basis_read_orbs is True. Adding iface=cfour option, means that integrals will be read from fort.55 and fort.56 files")
             inpfile.write("iface=cfour") #Activates CFour interface (just means that MRCC will read in fort.55 and fort.56 files)
 
         for m in mrccinput.split('\n'):
