@@ -16,7 +16,7 @@ MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z',
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
                 mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label="MRCC",
-                keep_orientation=True, frozen_core_settings='Auto'):
+                keep_orientation=True, frozen_core_settings='Auto', no_basis_read_orbs=False):
 
         self.theorynamelabel="MRCC"
         self.theorytype="QM"
@@ -55,6 +55,13 @@ class MRCCTheory:
         #Parallelization strategy: 'OMP', 'OMP-and-MKL' or 'MPI'
         self.parallelization=parallelization
         self.keep_orientation=keep_orientation
+
+        # No basis read orbs option If True, MRCC will read in fort.55 and fort.56 files (containing integrals)
+        self.no_basis_read_orbs=no_basis_read_orbs
+        if self.no_basis_read_orbs is True:
+            if 'basis' in mrccinput:
+                print("Error: basis keyword found in mrccinput. should not be used when no_basis_read_orbs option is active")
+                ashexit()
 
         if self.keep_orientation is True:
             print("Warning: keep_orientation options is on (by default)! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
@@ -147,7 +154,7 @@ class MRCCTheory:
 
         if Grad==True:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string, no_basis_read_orbs=self.no_basis_read_orbs)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
@@ -162,7 +169,7 @@ class MRCCTheory:
 
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string, no_basis_read_orbs=self.no_basis_read_orbs)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
@@ -210,8 +217,13 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
 def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None,
-                     frozen_core_option=None):
+                     frozen_core_option=None, no_basis_read_orbs=True):
     print("Writing MRCC inputfile")
+
+    # For case where no basis is defined, assumed that fort.55 and fort.56 files have been created (contaning integrals)
+    if no_basis_read_orbs is True:
+        inpfile.write("iface=cfour") #Activates CFour interface (just means that MRCC will read in fort.55 and fort.56 files)
+
     with open("MINP", 'w') as inpfile:
         for m in mrccinput.split('\n'):
             if 'core' in m:
@@ -492,7 +504,7 @@ def yoshimine_sort(a,b,c,d):
 # Write the fort.55 MRCC integral file (FCIDUMP format with header) from Numpy arrays
 # TODO: unrestricted case
 
-def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, num_corr_el=None, num_frozen_orbs=0, filename="fort.55", int_threshold=1e-16):
+def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, num_corr_el=None, filename="fort.55", int_threshold=1e-16):
 
     if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None or num_corr_el is None:
         print("Error: two_el_integrals, one_el_integrals, num_corr_el or nuc_repulsion_energy not provided")
