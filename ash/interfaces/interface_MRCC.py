@@ -487,7 +487,7 @@ def yoshimine_sort(a,b,c,d):
         abcd = cd*(cd+1)/2 + ab
     return math.floor(abcd)
 
-# Write the fort.55 MRCC integral file from a Numpy array
+# Write the fort.55 MRCC integral file from Numpy arrays
 def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, filename="fort.55", int_threshold=1e-16):
 
     basis_dim = one_el_integrals[0].size
@@ -498,7 +498,7 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, filena
   150000
 """
 
-    if two_el_integrals is not  None:
+    if two_el_integrals is not None:
         print("Full integral tensor provided")
         print("Integral threshold:", int_threshold)
         num_integrals = two_el_integrals.shape[0]**4
@@ -510,30 +510,58 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, filena
         # Integral dict
         from collections import OrderedDict
         int_1el_dict=OrderedDict()
-        int_2el_dict=OrderedDict() #yos_value : [int_value,[i,j,k,l ]]  Note, switching to 1-based indexing here
+
         # 1-electron integrals (using 0 as dummy 3rd and 4th index)
         for m in range(0,basis_dim):
             for n in range(m,basis_dim):
                 int_value=one_el_integrals[m,n]
                 int_1el_dict[(m,n)] = [int_value,[m+1,n+1,0,0]]
-                print("int_1el_dict:", int_1el_dict)
-        print("int_1el_dict:", int_1el_dict)
-        # 1-electron integrals
-        for i in range(0,basis_dim):
-            for j in range(0,basis_dim):
-                for k in range(0,basis_dim):
-                    for l in range(0,basis_dim):
-                        yos_val = yoshimine_sort(i,j,k,l)
-                        if yos_val not in int_2el_dict:
-                            int_value=two_el_integrals[i,j,k,l]
-                            if int_value > int_threshold:
-                                int_2el_dict[yos_val] = [int_value,[i+1,j+1,k+1,l+1]]
-        #Creating string for 2-el integrals
-        for k,v in int_2el_dict.items():
-            integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
-        #Creating string for 1-el integrals
+
+        # 2-electron integrals
+        npair = basis_dim*(basis_dim+1)//2
+        print("npair:", npair)
+        if two_el_integrals.ndim == 2:
+            print("ndim 2, assuming 4-fold symmetry")
+            xint_2el_dict=OrderedDict()
+            #4-fold symmetry
+            assert (two_el_integrals.size == npair**2)
+            ij = 0
+            for i in range(basis_dim):
+                for j in range(0, i+1):
+                    kl = 0
+                    for k in range(0, basis_dim):
+                        for l in range(0, k+1):
+                            if abs(two_el_integrals[ij,kl]) > int_threshold:
+                                xint_2el_dict[(i+1, j+1, k+1, l+1)] = two_el_integrals[ij,kl]
+                            kl += 1
+                    ij += 1
+            # Creating string for 2-el integrals
+            for k,v in xint_2el_dict.items():
+                integral_string+=f"{v:>29.20E}{k[0]:>5}{k[1]:>5}{k[2]:>5}{k[3]:>5}\n"
+
+        elif two_el_integrals.ndim == 4:
+            print("ndim 4")
+            int_2el_dict=OrderedDict() #yos_value : [int_value,[i,j,k,l ]]  Note, switching to 1-based indexing here
+            # 2-electron integrals
+            for i in range(0,basis_dim):
+                for j in range(0,basis_dim):
+                    for k in range(0,basis_dim):
+                        for l in range(0,basis_dim):
+                            yos_val = yoshimine_sort(i,j,k,l)
+                            if yos_val not in int_2el_dict:
+                                int_value=two_el_integrals[i,j,k,l]
+                                if abs(int_value) > int_threshold:
+                                    int_2el_dict[yos_val] = [int_value,[i+1,j+1,k+1,l+1]]
+                                    #int_2el_dict[(i+1, j+1, k+1, l+1)] = two_el_integrals[i,j,k,l]
+            # Creating string
+            for k,v in int_2el_dict.items():
+                integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+
+        # Creating string for 1-el integrals
         for k,v in int_1el_dict.items():
             integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+        # Final null string
+        integral_string+="0 0 0 0 0\n"
     else:
         # TODO: integrals array with symmetry
         print("else")
