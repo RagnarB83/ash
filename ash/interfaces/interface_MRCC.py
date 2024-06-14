@@ -459,6 +459,8 @@ def grab_dipole_moment(outfile):
 
 
 # Write MRCC rudimentary inputfile (fort.56) file with list of occupations
+# TODO: unrestricted case
+#NOTE: For frozen-core calculations the occupations should only be for active electrons
 def MRCC_write_basic_inputfile(occupations=None, filename="fort.56", ex_level=4, nsing=1, ntrip=0, rest=0, CC_CI=1, dens=0, CS=1, spatial=1, HF=1, ndoub=0, nacto=0, nactv=0, tol=9, maxex=0, sacc=0, freq=0.00, symm=0, conver=0, diag=0, dboc=0, mem=1024):
 
     occupation_string = ' '.join(str(x) for x in occupations)
@@ -490,7 +492,7 @@ def yoshimine_sort(a,b,c,d):
 # Write the fort.55 MRCC integral file (FCIDUMP format with header) from Numpy arrays
 # TODO: unrestricted case
 
-def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, num_corr_el=None, filename="fort.55", int_threshold=1e-16):
+def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, num_corr_el=None, num_frozen_orbs=0, filename="fort.55", int_threshold=1e-16):
 
     if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None or num_corr_el is None:
         print("Error: two_el_integrals, one_el_integrals, num_corr_el or nuc_repulsion_energy not provided")
@@ -500,7 +502,7 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
 
     # Header
     #Note: assuming no symmetry setting 1 as irrep for each orbital
-    header = f"""    {basis_dim}    {num_corr_el}
+    header = f"""    {basis_dim}    {num_corr_el} {num_frozen_orbs} 0
  {'  '.join('1' for i in range(basis_dim))}
   150000
 """
@@ -565,7 +567,6 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
         # Creating string
         for k,v in int_2el_dict.items():
             two_el_integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
-
 
     # Writing 2-electron integrals to file
     f.write(two_el_integral_string)
