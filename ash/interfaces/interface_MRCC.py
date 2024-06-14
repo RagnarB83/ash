@@ -517,7 +517,7 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
 
     # Header
     #Note: assuming no symmetry setting 1 as irrep for each orbital
-    header = f"""    {basis_dim}    {num_corr_el} {num_frozen_orbs} 0
+    header = f"""    {basis_dim}    {num_corr_el}
  {'  '.join('1' for i in range(basis_dim))}
   150000
 """
