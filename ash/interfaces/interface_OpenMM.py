@@ -1087,7 +1087,15 @@ class OpenMMTheory:
     def add_force(self,newforce):
         print("Adding new force to system:", newforce)
         self.system.addForce(newforce)
-
+    def remove_force(self,forceindex):
+        print(f"Removing force-index {forceindex}: {self.system.getForces()[forceindex].getName()}")
+        self.system.removeForce(forceindex)
+    def remove_force_by_name(self,forcename):
+        print(f"Searching forces and removing a force name: {forcename}")
+        for i, force in enumerate(self.system.getForces()):
+            if force.getName() == forcename:
+                print(f"Removing force-index {i}: {forcename}")
+                self.system.removeForce(i)
 # Bond restraint force, e.g. for umbrella sampling
 # TODO : unit check
     def add_custom_bond_force(self,i,j,value,forceconstant):
@@ -1554,13 +1562,11 @@ class OpenMMTheory:
         import openmm
         timeA = time.time()
         # Energy composition
-        # TODO: Calling this is expensive (seconds)as the energy has to be recalculated.
-        # Only do for cases: a) single-point b) First energy-step in optimization and last energy-step
-        # OpenMM energy components
+        # NOTE: Calling this is expensive (seconds)as the energy has to be recalculated.
         openmm_energy = dict()
         energycomp = self.getEnergyDecomposition(simulation.context)
-        #print("energycomp: ", energycomp)
-        #print("self.forcegroups:", self.forcegroups)
+        print("energycomp: ", energycomp)
+        print("self.forcegroups:", self.forcegroups)
         # print("len energycomp", len(energycomp))
         # print("openmm_energy: ", openmm_energy)
         print("")
@@ -1599,16 +1605,6 @@ class OpenMMTheory:
                 openmm_energy['Otherforce' + str(extrafcount)] = comp[1]
 
         print_time_rel(timeA, modulename="energy decomposition")
-        # timeA = time.time()
-
-        # The force terms to print in the ordered table.
-        # Deprecated. Better to print everything.
-        # Missing terms in force_terms will be printed separately
-        # if self.Forcefield == 'CHARMM':
-        #    force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded', '14-LJ']
-        # else:
-        #    #Modify...
-        #    force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
 
         # Sum all force-terms
         sumofallcomponents = 0.0
