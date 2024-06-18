@@ -2124,6 +2124,7 @@ class PySCFTheory:
             #Newer syntax
             mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
             self.mf = qmmm_for_scf(self.mf, mm_mol)
+            print("Here self.mf:", self.mf)
 
         #Polarizable embedding option
         elif self.pe is True:
