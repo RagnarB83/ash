@@ -2221,6 +2221,7 @@ class PySCFTheory:
         if self.printlevel >=1:
             print("Max cycle in mf object:", mf.max_cycle)
             print("Running SCF")
+        print("mf:", mf)
         scf_result = mf.run(dm)
         E_tot = scf_result.e_tot
         if self.printlevel >=1:
