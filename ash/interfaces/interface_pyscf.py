@@ -2404,6 +2404,15 @@ class PySCFTheory:
         if self.CC or self.MP2:
             self.set_frozen_core_settings(qm_elems)
 
+
+        #############################
+        # PLATFORM CHANGE
+        #############################
+        #Testing to convert mf object to GPU before QM/MM
+        if self.platform == 'GPU':
+            print("GPU platform requested. Will now convert mf object to GPU")
+            self.mf = self.mf.to_gpu()
+
         ##############################
         #EMBEDDING OPTIONS
         ##############################
@@ -2412,12 +2421,7 @@ class PySCFTheory:
             print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
 
 
-        #############################
-        # PLATFORM CHANGE
-        #############################
-        if self.platform == 'GPU':
-            print("GPU platform requested. Will now convert mf object to GPU")
-            self.mf = self.mf.to_gpu()
+
 
     #Actual Run
     #Assumes prepare_run has been executed
