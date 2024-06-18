@@ -2093,6 +2093,7 @@ class PySCFTheory:
                 else:
                     print("method classname:", method.__class__)
                     if self.platform == 'GPU':
+                        import gpu4pyscf
                         if isinstance(method, (gpu4pyscf.scf.hf.RHF, gpu4pyscf.scf.uhf.UHF)):
                             print("Method is GPU object")
                             # Avoid to initialize QMMM twice
