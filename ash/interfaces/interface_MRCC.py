@@ -474,9 +474,30 @@ def grab_dipole_moment(outfile):
 
 
 # Write MRCC rudimentary inputfile (fort.56) file with list of occupations
-# TODO: unrestricted case
 #NOTE: For frozen-core calculations the occupations should only be for active electrons
-def MRCC_write_basic_inputfile(occupations=None, filename="fort.56", ex_level=4, nsing=1, ntrip=0, rest=0, CC_CI=1, dens=0, CS=1, spatial=1, HF=1, ndoub=0, nacto=0, nactv=0, tol=9, maxex=0, sacc=0, freq=0.00, symm=0, conver=0, diag=0, dboc=0, mem=1024):
+def MRCC_write_basic_inputfile(occupations=None, filename="fort.56", scf_type="RHF",
+                               ex_level=4, nsing=1, ntrip=0, rest=0, CC_CI=1, dens=0, CS=1,
+                               spatial=1, HF=1, ndoub=0, nacto=0, nactv=0, tol=9, maxex=0,
+                               sacc=0, freq=0.0000, symm=0, conver=0, diag=0, dboc=0, mem=1024):
+    print("SCF_type:", scf_type)
+    if scf_type == 'RHF':
+        nsing=1
+        ndoub=0
+        CS=1
+        spatial=1
+        HF=1
+    elif scf_type == 'ROHF':
+        nsing=0
+        ndoub=1
+        CS=0
+        spatial=1
+        HF=0
+    elif scf_type == 'UHF':
+        nsing=0
+        ndoub=1
+        CS=0
+        spatial=0
+        HF=1
 
     occupation_string = ' '.join(str(x) for x in occupations)
     inputstring=f"""   {ex_level}    {nsing}    {ntrip}     {rest}    {CC_CI}    {dens}     {conver}     {symm}     {diag}    {CS}    {spatial}     {HF}      {ndoub}    {nacto}      {nactv}    {tol}      {maxex}     {sacc} {freq}     {dboc} {mem}
@@ -506,13 +527,23 @@ def yoshimine_sort(a,b,c,d):
 
 # Write the fort.55 MRCC integral file (FCIDUMP format with header) from Numpy arrays
 # TODO: unrestricted case
-
-def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, num_corr_el=None, filename="fort.55", int_threshold=1e-16):
+# TODO: Generalize FCIDUMP with different headers (e.g. Molpro, MRCC) and different filenames
+def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None,
+                            num_corr_el=None, filename="fort.55", int_threshold=1e-16, scf_type="RHF"):
 
     if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None or num_corr_el is None:
         print("Error: two_el_integrals, one_el_integrals, num_corr_el or nuc_repulsion_energy not provided")
         ashexit()
 
+    print("SCF_type:", scf_type)
+    if scf_type == 'RHF':
+        pass
+    elif scf_type == 'ROHF':
+        print("Error: ROHF not yet implemented")
+        ashexit()
+    elif scf_type == 'UHF':
+        print("Error: UHF not yet implemented")
+        ashexit()
     basis_dim = one_el_integrals[0].size
 
     # Header
@@ -543,10 +574,12 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
     # Open file
     f = open(filename, 'w')
 
-    #Write header
+    # Write header
     f.write(header)
 
+    # Set up 2-electron integrals
     two_el_integral_string=""
+
     if two_el_integrals.ndim == 2:
         print("ndim 2, assuming 4-fold symmetry")
         xint_2el_dict=OrderedDict()
@@ -586,13 +619,13 @@ def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_re
     # Writing 2-electron integrals to file
     f.write(two_el_integral_string)
 
-    # Writing string for 1-el integrals
+    # Writing 1-el integrals
     one_el_string=""
     for k,v in int_1el_dict.items():
         one_el_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
     f.write(one_el_string)
 
-    # Nuclear repulsion energy
+    # Nuclear repulsion energy as last line
     f.write(f"{nuc_repulsion_energy:>29.20E}{0:>5}{0:>5}{0:>5}{0:>5}\n")
 
     f.close()

@@ -2072,13 +2072,52 @@ class PySCFTheory:
     def set_embedding_options(self, PC=False, MM_coords=None, MMcharges=None):
         #QM/MM electrostatic embedding
         if PC is True:
+            import pyscf
             import pyscf.qmmm
             # QM/MM pointcharge embedding
+            #TODO: Gaussian blur option
             print("PC True. Adding pointcharges")
-            self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
+            #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
+
+            #NOTE: Temporary qmmm_for_scf function that is compatible with gpu4pyscf
+            def qmmm_for_scf(method, mm_mol):
+                #assert (isinstance(method, (pyscf.scf.hf.SCF, pyscf.mcscf.casci.CASBase)))
+                if isinstance(method, pyscf.scf.hf.SCF):
+                    print("QM/MM. Case: normal MF object")
+                    # Avoid to initialize QMMM twice
+                    if isinstance(method, pyscf.qmmm.QMMM):
+                        method.mm_mol = mm_mol
+                        return method
+
+                    cls = pyscf.qmmm.QMMMSCF
+                else:
+                    print("method classname:", method.__class__)
+                    if self.platform == 'GPU':
+                        if isinstance(method, (gpu4pyscf.scf.hf.RHF, gpu4pyscf.scf.uhf.UHF)):
+                            print("Method is GPU object")
+                            # Avoid to initialize QMMM twice
+                            if isinstance(method, pyscf.qmmm.QMMM):
+                                method.mm_mol = mm_mol
+                                return method
+                            cls = pyscf.qmmm.QMMMSCF
+                    else:
+                        print("Some post-HF method")
+                        # post-HF methods
+                        if isinstance(method._scf, pyscf.qmmm.QMMM):
+                            method._scf.mm_mol = mm_mol
+                            return method
+
+                        cls = pyscf.qmmm.QMMMPostSCF
+
+                return pyscf.lib.set_class(cls(method, mm_mol), (cls, method.__class__))
+
+
+            #Newer syntax
+            mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
+            self.mf = qmmm_for_scf(self.mf, mm_mol)
 
         #Polarizable embedding option
-        if self.pe is True:
+        elif self.pe is True:
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
             try:
