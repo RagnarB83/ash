@@ -2086,10 +2086,13 @@ class PySCFTheory:
                     print("QM/MM. Case: normal MF object")
                     # Avoid to initialize QMMM twice
                     if isinstance(method, pyscf.qmmm.QMMM):
+
                         method.mm_mol = mm_mol
                         return method
 
                     cls = pyscf.qmmm.QMMMSCF
+                    print("cls:", cls)
+                    print(cls.__dict__)
                 else:
                     print("method classname:", method.__class__)
                     if self.platform == 'GPU':
@@ -2098,9 +2101,14 @@ class PySCFTheory:
                             print("Method is GPU object")
                             # Avoid to initialize QMMM twice
                             if isinstance(method, pyscf.qmmm.QMMM):
+                                print("a")
+                                print("method:", method)
+                                print("method.mm_mol:", method.mm_mol)
                                 method.mm_mol = mm_mol
                                 return method
                             cls = pyscf.qmmm.QMMMSCF
+                            print("cls:", cls)
+                            print(cls.__dict__)
                     else:
                         print("Some post-HF method")
                         # post-HF methods
