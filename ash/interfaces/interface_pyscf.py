@@ -2079,51 +2079,12 @@ class PySCFTheory:
             print("PC True. Adding pointcharges")
             #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
 
-            #NOTE: Temporary qmmm_for_scf function that is compatible with gpu4pyscf
-            def qmmm_for_scf(method, mm_mol):
-                #assert (isinstance(method, (pyscf.scf.hf.SCF, pyscf.mcscf.casci.CASBase)))
-                if isinstance(method, pyscf.scf.hf.SCF):
-                    print("QM/MM. Case: normal MF object")
-                    # Avoid to initialize QMMM twice
-                    if isinstance(method, pyscf.qmmm.QMMM):
-
-                        method.mm_mol = mm_mol
-                        return method
-
-                    cls = pyscf.qmmm.QMMMSCF
-                    print("cls:", cls)
-                    print(cls.__dict__)
-                else:
-                    print("method classname:", method.__class__)
-                    if self.platform == 'GPU':
-                        import gpu4pyscf
-                        if isinstance(method, (gpu4pyscf.scf.hf.RHF, gpu4pyscf.scf.uhf.UHF)):
-                            print("Method is GPU object")
-                            # Avoid to initialize QMMM twice
-                            if isinstance(method, pyscf.qmmm.QMMM):
-                                print("a")
-                                print("method:", method)
-                                print("method.mm_mol:", method.mm_mol)
-                                method.mm_mol = mm_mol
-                                return method
-                            cls = pyscf.qmmm.QMMMSCF
-                            print("cls:", cls)
-                            print(cls.__dict__)
-                    else:
-                        print("Some post-HF method")
-                        # post-HF methods
-                        if isinstance(method._scf, pyscf.qmmm.QMMM):
-                            method._scf.mm_mol = mm_mol
-                            return method
-
-                        cls = pyscf.qmmm.QMMMPostSCF
-
-                return pyscf.lib.set_class(cls(method, mm_mol), (cls, method.__class__))
-
-
             #Newer syntax
             mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
-            self.mf = qmmm_for_scf(self.mf, mm_mol)
+
+            #Modified pyscf QM/MM routines
+            import ash.interfaces.interface_pyscf_mods
+            self.mf = ash.interfaces.interface_pyscf_mods.qmmm_for_scf(self.mf, mm_mol)
             print("Here self.mf:", self.mf)
 
         #Polarizable embedding option
@@ -2404,6 +2365,12 @@ class PySCFTheory:
         if self.CC or self.MP2:
             self.set_frozen_core_settings(qm_elems)
 
+        ##############################
+        #EMBEDDING OPTIONS
+        ##############################
+        self.set_embedding_options(PC=PC,MM_coords=current_MM_coords, MMcharges=MMcharges)
+        if self.printlevel >1:
+            print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
 
         #############################
         # PLATFORM CHANGE
@@ -2412,15 +2379,6 @@ class PySCFTheory:
         if self.platform == 'GPU':
             print("GPU platform requested. Will now convert mf object to GPU")
             self.mf = self.mf.to_gpu()
-
-        ##############################
-        #EMBEDDING OPTIONS
-        ##############################
-        self.set_embedding_options(PC=PC,MM_coords=current_MM_coords, MMcharges=MMcharges)
-        if self.printlevel >1:
-            print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
-
-
 
 
     #Actual Run
