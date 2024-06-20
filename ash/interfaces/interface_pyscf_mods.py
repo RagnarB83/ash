@@ -85,15 +85,6 @@ class QMMMSCF(QMMM):
         print("method:", method)
         print("type:", type(method))
         print("classname:", method.__class__)
-        # RB mod:
-        #TODO: get rid of
-        self.platform=platform
-        if self.platform == "GPU":
-            print("here")
-            import cupy
-            self.einsumfunc = cupy.einsum
-        else:
-            self.einsumfunc = np.einsum
 
     def undo_qmmm(self):
         print("Inside undo QM/MM")
@@ -121,15 +112,14 @@ class QMMMSCF(QMMM):
         print("mol:", mol)
         h1e = super().get_hcore(mol)
         print("h1e:", h1e)
-        #RB: convert needed variables to GPU
         coords = mm_mol.atom_coords()
         charges = mm_mol.atom_charges()
         #RB: convert needed variables to GPU
-        if self.platform == "GPU":
-            print("here")
-            coords = cupy.asarray(coords)
-            charges = cupy.asarray(charges)
-            h1e = cupy.asarray(charges)
+        import cupy
+        coords = cupy.asarray(coords)
+        charges = cupy.asarray(charges)
+        h1e = cupy.asarray(charges)
+        einsumfunc=cupy.einsum
         print("coords:", coords)
         print("charges:", charges)
         print("charges type", type(charges))
@@ -151,13 +141,13 @@ class QMMMSCF(QMMM):
                 fakemol = gto.fakemol_for_charges(coords[i0:i1], expnts[i0:i1])
                 j3c = df.incore.aux_e2(mol, fakemol, intor=intor,
                                        aosym='s2ij', cintopt=cintopt)
-                v += self.einsumfunc('xk,k->x', j3c, -charges[i0:i1])
+                v += einsumfunc('xk,k->x', j3c, -charges[i0:i1])
             v = lib.unpack_tril(v)
             h1e += v
         else:
             for i0, i1 in lib.prange(0, charges.size, blksize):
                 j3c = mol.intor('int1e_grids', hermi=1, grids=coords[i0:i1])
-                h1e += self.einsumfunc('kpq,k->pq', j3c, -charges[i0:i1])
+                h1e += einsumfunc('kpq,k->pq', j3c, -charges[i0:i1])
         return h1e
 
     def energy_nuc(self):
