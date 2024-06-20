@@ -2084,6 +2084,7 @@ class PySCFTheory:
 
             #Modified pyscf QM/MM routines
             import ash.interfaces.interface_pyscf_mods
+            print("self.platform:", self.platform)
             self.mf = ash.interfaces.interface_pyscf_mods.qmmm_for_scf(self.mf, mm_mol, platform=self.platform)
             print("Here self.mf:", self.mf)
 

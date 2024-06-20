@@ -9,6 +9,21 @@ import numpy
 
 # NOTE: Temporary qmmm_for_scf function that is compatible with gpu4pyscf
 def qmmm_for_scf(method, mm_mol, platform="CPU"):
+    print("Inside qmmm_for_scf")
+    print("method:", method)
+    print("QM/MM. Case: normal MF object")
+    # Avoid to initialize QMMM twice
+    if isinstance(method, pyscf.qmmm.QMMM):
+        method.mm_mol = mm_mol
+        return method
+    cls = QMMMSCF
+    print("cls:", cls)
+    print(cls.__dict__)
+    return pyscf.lib.set_class(cls(method, mm_mol), (cls, method.__class__))
+
+def qmmm_for_scf2(method, mm_mol, platform="CPU"):
+    print("Inside qmmm_for_scf")
+    print("method:", method)
     #assert (isinstance(method, (pyscf.scf.hf.SCF, pyscf.mcscf.casci.CASBase)))
     if isinstance(method, pyscf.scf.hf.SCF):
         print("QM/MM. Case: normal MF object")
