@@ -117,8 +117,16 @@ class QMMMSCF(QMMM):
         print("mol:", mol)
         h1e = super().get_hcore(mol)
         print("h1e:", h1e)
+        #RB: convert needed variables to GPU
         coords = mm_mol.atom_coords()
         charges = mm_mol.atom_charges()
+        #RB: convert needed variables to GPU
+        if self.platform == "GPU":
+            coords = cupy.asarray(coords)
+            charges = cupy.asarray(charges)
+        print("coords:", coords)
+        print("charges:", charges)
+        print("charges type", type(charges))
         nao = mol.nao
         max_memory = self.max_memory - lib.current_memory()[0]
         blksize = int(min(max_memory*1e6/8/nao**2, 200))
