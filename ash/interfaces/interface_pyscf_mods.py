@@ -2,13 +2,15 @@ from pyscf.lib import logger
 from pyscf import lib
 from pyscf import scf,gto
 import pyscf
-import numpy
+import numpy as np
+
 
 # Modifications to pyscf code for GPU support
 # TODO: #avoid platform
 
 # NOTE: Temporary qmmm_for_scf function that is compatible with gpu4pyscf
 def qmmm_for_scf(method, mm_mol, platform="CPU"):
+
     print("Inside qmmm_for_scf")
     print("method:", method)
     print("QM/MM. Case: normal MF object")
@@ -21,6 +23,7 @@ def qmmm_for_scf(method, mm_mol, platform="CPU"):
     print(cls.__dict__)
     return pyscf.lib.set_class(cls(method, mm_mol), (cls, method.__class__))
 
+#Option only if we first convert the method to GPU object
 def qmmm_for_scf2(method, mm_mol, platform="CPU"):
     print("Inside qmmm_for_scf")
     print("method:", method)
@@ -74,11 +77,19 @@ _QMMM = QMMM
 class QMMMSCF(QMMM):
     _keys = {'mm_mol'}
 
-    def __init__(self, method, mm_mol=None):
+    def __init__(self, method, mm_mol=None, platform="CPU"):
         self.__dict__.update(method.__dict__)
         if mm_mol is None:
             mm_mol = gto.Mole()
         self.mm_mol = mm_mol
+        # RB mod:
+        #TODO: get rid of
+        self.platform=platform
+        if self.platform == "GPU":
+            import cupy
+            self.einsumfunc = cupy.einsum
+        else:
+            self.einsumfunc = np.einsum
 
     def undo_qmmm(self):
         print("Inside undo QM/MM")
@@ -125,13 +136,13 @@ class QMMMSCF(QMMM):
                 fakemol = gto.fakemol_for_charges(coords[i0:i1], expnts[i0:i1])
                 j3c = df.incore.aux_e2(mol, fakemol, intor=intor,
                                        aosym='s2ij', cintopt=cintopt)
-                v += numpy.einsum('xk,k->x', j3c, -charges[i0:i1])
+                v += self.einsumfunc('xk,k->x', j3c, -charges[i0:i1])
             v = lib.unpack_tril(v)
             h1e += v
         else:
             for i0, i1 in lib.prange(0, charges.size, blksize):
                 j3c = mol.intor('int1e_grids', hermi=1, grids=coords[i0:i1])
-                h1e += numpy.einsum('kpq,k->pq', j3c, -charges[i0:i1])
+                h1e += self.einsumfunc('kpq,k->pq', j3c, -charges[i0:i1])
         return h1e
 
     def energy_nuc(self):
@@ -220,12 +231,12 @@ class QMMMGrad:
                 fakemol = gto.fakemol_for_charges(coords[i0:i1], expnts[i0:i1])
                 j3c = df.incore.aux_e2(mol, fakemol, intor, aosym='s1',
                                        comp=3, cintopt=cintopt)
-                v += numpy.einsum('ipqk,k->ipq', j3c, charges[i0:i1])
+                v += self.einsumfunc('ipqk,k->ipq', j3c, charges[i0:i1])
             g_qm += v
         else:
             for i0, i1 in lib.prange(0, charges.size, blksize):
                 j3c = mol.intor('int1e_grids_ip', grids=coords[i0:i1])
-                g_qm += numpy.einsum('ikpq,k->ipq', j3c, charges[i0:i1])
+                g_qm += self.einsumfunc('ikpq,k->ipq', j3c, charges[i0:i1])
         return g_qm
 
     def grad_hcore_mm(self, dm, mol=None):
@@ -262,7 +273,7 @@ class QMMMGrad:
             fakemol = gto.fakemol_for_charges(coords[i0:i1], expnts[i0:i1])
             j3c = df.incore.aux_e2(mol, fakemol, intor, aosym='s1',
                                    comp=3, cintopt=cintopt)
-            g[i0:i1] = numpy.einsum('ipqk,qp->ik', j3c * charges[i0:i1], dm).T
+            g[i0:i1] = self.einsumfunc('ipqk,qp->ik', j3c * charges[i0:i1], dm).T
         return g
 
     contract_hcore_mm = grad_hcore_mm # for backward compatibility
@@ -279,7 +290,7 @@ class QMMMGrad:
             q1 = mol.atom_charge(i)
             r1 = mol.atom_coord(i)
             r = lib.norm(r1-coords, axis=1)
-            g_mm[i] = -q1 * numpy.einsum('i,ix,i->x', charges, r1-coords, 1/r**3)
+            g_mm[i] = -q1 * self.einsumfunc('i,ix,i->x', charges, r1-coords, 1/r**3)
         if atmlst is not None:
             g_mm = g_mm[atmlst]
         return g_qm + g_mm
@@ -299,7 +310,7 @@ class QMMMGrad:
             q1 = mol.atom_charge(i)
             r1 = mol.atom_coord(i)
             r = lib.norm(r1-coords, axis=1)
-            g_mm += q1 * numpy.einsum('i,ix,i->ix', charges, r1-coords, 1/r**3)
+            g_mm += q1 * self.einsumfunc('i,ix,i->ix', charges, r1-coords, 1/r**3)
         return g_mm
 
     def to_gpu(self):
