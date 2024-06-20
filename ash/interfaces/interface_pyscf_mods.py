@@ -114,8 +114,9 @@ class QMMMSCF(QMMM):
             mol = self.mol
         mm_mol = self.mm_mol
 
+        print("mol:", mol)
         h1e = super().get_hcore(mol)
-
+        print("h1e:", h1e)
         coords = mm_mol.atom_coords()
         charges = mm_mol.atom_charges()
         nao = mol.nao
