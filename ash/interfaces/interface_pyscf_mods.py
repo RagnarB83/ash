@@ -151,7 +151,7 @@ class QMMMSCF(QMMM):
         print("obj1:", obj)
         obj = qmmm_for_scf(obj, self.mm_mol)
         print("obj2:", obj)
-        return lib.to_gpu(self, obj)
+        return lib.to_gpu(obj)
 
     def nuc_grad_method(self):
         scf_grad = super().nuc_grad_method()
