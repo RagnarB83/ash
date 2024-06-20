@@ -5,6 +5,7 @@ import pyscf
 import numpy
 
 # Modifications to pyscf code for GPU support
+# TODO: #avoid platform
 
 # NOTE: Temporary qmmm_for_scf function that is compatible with gpu4pyscf
 def qmmm_for_scf(method, mm_mol, platform="CPU"):
@@ -22,8 +23,10 @@ def qmmm_for_scf(method, mm_mol, platform="CPU"):
         print(cls.__dict__)
     else:
         print("method classname:", method.__class__)
+        print("platform:", platform)
         if platform == 'GPU':
             import gpu4pyscf
+            print("here")
             if isinstance(method, (gpu4pyscf.scf.hf.RHF, gpu4pyscf.scf.uhf.UHF)):
                 print("Method is GPU object")
                 # Avoid to initialize QMMM twice
