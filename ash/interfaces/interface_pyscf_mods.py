@@ -82,10 +82,14 @@ class QMMMSCF(QMMM):
         if mm_mol is None:
             mm_mol = gto.Mole()
         self.mm_mol = mm_mol
+        print("method:", method)
+        print("type:", type(method))
+        print("classname:", method.__class__)
         # RB mod:
         #TODO: get rid of
         self.platform=platform
         if self.platform == "GPU":
+            print("here")
             import cupy
             self.einsumfunc = cupy.einsum
         else:
@@ -122,8 +126,10 @@ class QMMMSCF(QMMM):
         charges = mm_mol.atom_charges()
         #RB: convert needed variables to GPU
         if self.platform == "GPU":
+            print("here")
             coords = cupy.asarray(coords)
             charges = cupy.asarray(charges)
+            h1e = cupy.asarray(charges)
         print("coords:", coords)
         print("charges:", charges)
         print("charges type", type(charges))
