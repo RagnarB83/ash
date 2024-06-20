@@ -120,7 +120,9 @@ class QMMMSCF(QMMM):
         charges = cupy.asarray(charges)
         h1e = cupy.asarray(charges)
         einsumfunc=cupy.einsum
+        print("h1e type:", type(coords))
         print("coords:", coords)
+        print("coords type:", type(coords))
         print("charges:", charges)
         print("charges type", type(charges))
         nao = mol.nao
