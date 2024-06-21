@@ -1,6 +1,7 @@
 from pyscf.lib import logger
 from pyscf import lib
 from pyscf import scf,gto
+from pyscf import df
 import pyscf
 import numpy as np
 
@@ -215,6 +216,10 @@ class QMMMGrad:
 
     def get_hcore(self, mol=None):
         ''' (QM 1e grad) + <-d/dX i|q_mm/r_mm|j>'''
+
+        #RB
+        einsumfunc=np.einsum
+
         if mol is None:
             mol = self.mol
         mm_mol = self.base.mm_mol
@@ -239,12 +244,12 @@ class QMMMGrad:
                 fakemol = gto.fakemol_for_charges(coords[i0:i1], expnts[i0:i1])
                 j3c = df.incore.aux_e2(mol, fakemol, intor, aosym='s1',
                                        comp=3, cintopt=cintopt)
-                v += self.einsumfunc('ipqk,k->ipq', j3c, charges[i0:i1])
+                v += einsumfunc('ipqk,k->ipq', j3c, charges[i0:i1])
             g_qm += v
         else:
             for i0, i1 in lib.prange(0, charges.size, blksize):
                 j3c = mol.intor('int1e_grids_ip', grids=coords[i0:i1])
-                g_qm += self.einsumfunc('ikpq,k->ipq', j3c, charges[i0:i1])
+                g_qm += einsumfunc('ikpq,k->ipq', j3c, charges[i0:i1])
         return g_qm
 
     def grad_hcore_mm(self, dm, mol=None):
@@ -260,6 +265,9 @@ class QMMMGrad:
             dm : array
                 The QM density matrix.
         '''
+        #RB
+        einsumfunc=np.einsum
+
         if mol is None:
             mol = self.mol
         mm_mol = self.base.mm_mol
@@ -281,12 +289,15 @@ class QMMMGrad:
             fakemol = gto.fakemol_for_charges(coords[i0:i1], expnts[i0:i1])
             j3c = df.incore.aux_e2(mol, fakemol, intor, aosym='s1',
                                    comp=3, cintopt=cintopt)
-            g[i0:i1] = self.einsumfunc('ipqk,qp->ik', j3c * charges[i0:i1], dm).T
+            g[i0:i1] = einsumfunc('ipqk,qp->ik', j3c * charges[i0:i1], dm).T
         return g
 
     contract_hcore_mm = grad_hcore_mm # for backward compatibility
 
     def grad_nuc(self, mol=None, atmlst=None):
+        #RB
+        einsumfunc=np.einsum
+
         if mol is None: mol = self.mol
         coords = self.base.mm_mol.atom_coords()
         charges = self.base.mm_mol.atom_charges()
@@ -298,7 +309,7 @@ class QMMMGrad:
             q1 = mol.atom_charge(i)
             r1 = mol.atom_coord(i)
             r = lib.norm(r1-coords, axis=1)
-            g_mm[i] = -q1 * self.einsumfunc('i,ix,i->x', charges, r1-coords, 1/r**3)
+            g_mm[i] = -q1 * einsumfunc('i,ix,i->x', charges, r1-coords, 1/r**3)
         if atmlst is not None:
             g_mm = g_mm[atmlst]
         return g_qm + g_mm
@@ -308,6 +319,8 @@ class QMMMGrad:
         (in the form of point charge Coulomb interactions)
         with respect to MM atoms.
         '''
+        #RB
+        einsumfunc=np.einsum
         if mol is None:
             mol = self.mol
         mm_mol = self.base.mm_mol
@@ -318,7 +331,7 @@ class QMMMGrad:
             q1 = mol.atom_charge(i)
             r1 = mol.atom_coord(i)
             r = lib.norm(r1-coords, axis=1)
-            g_mm += q1 * self.einsumfunc('i,ix,i->ix', charges, r1-coords, 1/r**3)
+            g_mm += q1 * einsumfunc('i,ix,i->ix', charges, r1-coords, 1/r**3)
         return g_mm
 
     def to_gpu(self):
