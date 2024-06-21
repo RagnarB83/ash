@@ -149,7 +149,7 @@ class QMMMSCF(QMMM):
             for i0, i1 in lib.prange(0, charges.size, blksize):
                 j3c = mol.intor('int1e_grids', hermi=1, grids=coords[i0:i1])
                 h1e += einsumfunc('kpq,k->pq', j3c, -charges[i0:i1])
-         h1e = array_mod(h1e)
+        h1e = array_mod(h1e)
         return h1e
 
     def energy_nuc(self):

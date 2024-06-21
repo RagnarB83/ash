@@ -788,12 +788,17 @@ noio
                                                                         mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
                     #RDM
                     rdm1 = self.mch.make_rdm1(ao_repr=True)
-                    #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
-
+                    try:
+                        print("Attempting SHCI spin-rdm")
+                        dm_ab = self.mch.make_rdm1s()  # in AOs
+                    except:
+                        print("No SHCI spin-rdm available")
                     #Mulliken analysis
                     try:
                         print("Attempting Mulliken analysis")
                         self.pyscftheoryobject.run_population_analysis(self.pyscftheoryobject.mf, unrestricted=False, dm=rdm1, type='Mulliken', label='SHCI')
+                        import pyscf
+                        pyscf.scf.uhf.mulliken_spin_pop(self.pyscftheoryobject.mol, dm_ab, s=self.pyscftheoryobject.mf.get_ovlp())
                     except:
                         pass
                     #Dipole moment

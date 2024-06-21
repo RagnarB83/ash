@@ -586,6 +586,14 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.DMRG_DoRDM is True:
             print("DMRG DoRDM is True. Calculating RDM1 and creating DMRG natural orbitals")
             rdm1 = self.mch.make_rdm1(ao_repr=True)
+            try:
+                print("Attempting DMRG spin-rdm")
+                #rdm1s = self.mch.dmrgscf.DMRGCI.make_rdm1s(mc.fcisolver, root, norb, nelec)
+                rdm1s = self.mch.make_rdm1s(ao_repr=True)
+            except:
+                print("Problem with DMRG spin-rdm")
+
+
             # rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
             # Natural orbitals
             occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
@@ -597,6 +605,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             try:
                 print("Attempting Mulliken analysis")
                 self.pyscftheoryobject.run_population_analysis(self.pyscftheoryobject.mf, unrestricted=False, dm=rdm1, type='Mulliken', label='DMRG')
+                pyscf.scf.uhf.mulliken_spin_pop(self.pyscftheoryobject.mol, rdm1s, s=self.pyscftheoryobject.mf.get_ovlp())
             except:
                 pass
 
