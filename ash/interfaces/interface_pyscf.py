@@ -23,7 +23,7 @@ import copy
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
-                  scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False,
+                  scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry=False,
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk',
                   noautostart=False, autostart=True,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
@@ -141,6 +141,7 @@ class PySCFTheory:
         self.direct_scf=direct_scf
         self.basis=basis #Basis set can be string or dict with elements as keys
         self.basis_file = basis_file
+        self.cartesian_basis=cartesian_basis
         self.magmom=magmom
         self.ecp=ecp
         self.functional=functional
@@ -1751,7 +1752,7 @@ class PySCFTheory:
 
 
     #Create mol object (self.mol) via method
-    def create_mol(self, qm_elems, current_coords, charge, mult):
+    def create_mol(self, qm_elems, current_coords, charge, mult, cartesian_basis=None):
         if self.printlevel >= 1:
             print("Creating mol object")
         import pyscf
@@ -1767,6 +1768,11 @@ class PySCFTheory:
         self.mol.symmetry = self.symmetry
         self.mol.charge = charge
         self.mol.spin = mult-1
+
+        #cartesian basis or not
+        if cartesian_basis is not None:
+            print("Setting cartesian basis flag to:", cartesian_basis)
+            self.mol.cart = cartesian_basis
 
 
     #Define basis in mol object
@@ -2303,7 +2309,7 @@ class PySCFTheory:
         #####################
         #CREATE MOL OBJECT
         #####################
-        self.create_mol(qm_elems, current_coords, charge, mult)
+        self.create_mol(qm_elems, current_coords, charge, mult, cartesian_basis=self.cartesian_basis)
 
         #####################
         # BASIS
