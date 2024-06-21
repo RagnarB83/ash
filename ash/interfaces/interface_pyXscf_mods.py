@@ -77,6 +77,7 @@ class QMMMSCF(QMMM):
         if mm_mol is None:
             mm_mol = gto.Mole()
         self.mm_mol = mm_mol
+        self.platform=platform
 
     def undo_qmmm(self):
         print("Inside undo QM/MM")
