@@ -1671,6 +1671,8 @@ class PySCFTheory:
         if self.CCmethod == 'CCSD':
             rdm1 = ccobject.make_rdm1(ao_repr=True)
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
+            print("Mulliken analysis for CCSD density matrix")
+            self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD')
             self.get_dipole_moment(dm=rdm1, label="CCSD")
         elif self.CCmethod == 'BCCD':
             rdm1 = ccobject.make_rdm1(ao_repr=True)
