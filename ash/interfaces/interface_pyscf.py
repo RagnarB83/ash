@@ -2083,9 +2083,9 @@ class PySCFTheory:
             mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
 
             #Modified pyscf QM/MM routines
-            import ash.interfaces.interface_pyscf_mods
+            import ash.interfaces.interface_pyXscf_mods
             print("self.platform:", self.platform)
-            self.mf = ash.interfaces.interface_pyscf_mods.qmmm_for_scf(self.mf, mm_mol, platform=self.platform)
+            self.mf = ash.interfaces.interface_pyXscf_mods.qmmm_for_scf(self.mf, mm_mol, platform=self.platform)
             print("Here self.mf:", self.mf)
 
         #Polarizable embedding option

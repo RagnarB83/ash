@@ -582,23 +582,30 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print("Final total energy:", self.energy)
         self.properties['energy'] = self.energy
 
-        #RDM and Natural orbitals
+        # RDM and Natural orbitals
         if self.DMRG_DoRDM is True:
             print("DMRG DoRDM is True. Calculating RDM1 and creating DMRG natural orbitals")
             rdm1 = self.mch.make_rdm1(ao_repr=True)
-            #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
-            #Natural orbitals
+            # rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
+            # Natural orbitals
             occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
             print("DMRG natural orbital occupations:", occupations)
             print("\nWriting natural orbitals to Moldenfile")
             self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol,
                                                                 mo_coefficients, occupations, label="DMRG_Final_nat_orbs")
-            #Dipole moment
+            # Mulliken analysis
+            try:
+                print("Attempting Mulliken analysis")
+                self.pyscftheoryobject.run_population_analysis(self.pyscftheoryobject.mf, unrestricted=False, dm=rdm1, type='Mulliken', label='DMRG')
+            except:
+                pass
+
+            # Dipole moment
             print("Now doing dipole")
             dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_DMRG_M_{self.maxM}")
 
 
-            #Setting properties for a possible future job
+            # Setting properties for a possible future job
             self.properties['rdm1'] = rdm1
             self.properties['natural_occupations'] = occupations
             self.properties['natural_orbitals'] = mo_coefficients

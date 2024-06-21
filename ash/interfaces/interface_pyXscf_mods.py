@@ -6,11 +6,8 @@ import numpy as np
 
 
 # Modifications to pyscf code for GPU support
-# TODO: #avoid platform
-
 # NOTE: Temporary qmmm_for_scf function that is compatible with gpu4pyscf
 def qmmm_for_scf(method, mm_mol, platform="CPU"):
-
     print("Inside qmmm_for_scf")
     print("method:", method)
     print("QM/MM. Case: normal MF object")
@@ -19,9 +16,7 @@ def qmmm_for_scf(method, mm_mol, platform="CPU"):
         method.mm_mol = mm_mol
         return method
     cls = QMMMSCF
-    print("cls:", cls)
-    print(cls.__dict__)
-    return pyscf.lib.set_class(cls(method, mm_mol), (cls, method.__class__))
+    return pyscf.lib.set_class(cls(method, mm_mol,platform=platform), (cls, method.__class__))
 
 #Option only if we first convert the method to GPU object
 def qmmm_for_scf2(method, mm_mol, platform="CPU"):
@@ -82,9 +77,6 @@ class QMMMSCF(QMMM):
         if mm_mol is None:
             mm_mol = gto.Mole()
         self.mm_mol = mm_mol
-        print("method:", method)
-        print("type:", type(method))
-        print("classname:", method.__class__)
 
     def undo_qmmm(self):
         print("Inside undo QM/MM")
@@ -109,22 +101,29 @@ class QMMMSCF(QMMM):
             mol = self.mol
         mm_mol = self.mm_mol
 
-        print("mol:", mol)
         h1e = super().get_hcore(mol)
-        print("h1e:", h1e)
-        coords = mm_mol.atom_coords()
-        charges = mm_mol.atom_charges()
-        #RB: convert needed variables to GPU
-        import cupy
-        coords = cupy.asarray(coords)
-        charges = cupy.asarray(charges)
-        h1e = cupy.asarray(charges)
-        einsumfunc=cupy.einsum
-        print("h1e type:", type(coords))
-        print("coords:", coords)
+        print("h1e type:", type(h1e))
+        #RB mode
+        if self.platform == "CPU":
+            print("cpu type")
+            einsumfunc=np.einsum
+            coords = mm_mol.atom_coords()
+            charges = mm_mol.atom_charges()
+            def dummy(f): return f
+            array_mod=dummy
+        elif self.platform == "GPU":
+            print("gpu type")
+            import cupy
+            einsumfunc=cupy.einsum
+            #h1e=cupy.asnumpy(h1e)
+            coords = mm_mol.atom_coords()
+            charges = cupy.asarray(mm_mol.atom_charges())
+            array_mod=cupy.asarray
+
+        print("h1e type:", type(h1e))
         print("coords type:", type(coords))
-        print("charges:", charges)
         print("charges type", type(charges))
+
         nao = mol.nao
         max_memory = self.max_memory - lib.current_memory()[0]
         blksize = int(min(max_memory*1e6/8/nao**2, 200))
@@ -148,8 +147,9 @@ class QMMMSCF(QMMM):
             h1e += v
         else:
             for i0, i1 in lib.prange(0, charges.size, blksize):
-                j3c = cupy.asarray(mol.intor('int1e_grids', hermi=1, grids=coords[i0:i1]))
+                j3c = mol.intor('int1e_grids', hermi=1, grids=coords[i0:i1])
                 h1e += einsumfunc('kpq,k->pq', j3c, -charges[i0:i1])
+         h1e = array_mod(h1e)
         return h1e
 
     def energy_nuc(self):
@@ -275,7 +275,7 @@ class QMMMGrad:
         cintopt = gto.moleintor.make_cintopt(mol._atm, mol._bas,
                                              mol._env, intor)
 
-        g = numpy.empty_like(coords)
+        g = np.empty_like(coords)
         for i0, i1 in lib.prange(0, charges.size, blksize):
             fakemol = gto.fakemol_for_charges(coords[i0:i1], expnts[i0:i1])
             j3c = df.incore.aux_e2(mol, fakemol, intor, aosym='s1',
@@ -290,9 +290,9 @@ class QMMMGrad:
         coords = self.base.mm_mol.atom_coords()
         charges = self.base.mm_mol.atom_charges()
 
-        g_qm = super().grad_nuc(mol, atmlst)
+        g_qm = super().grad_nuc(atmlst)
 # nuclei lattice interaction
-        g_mm = numpy.empty((mol.natm,3))
+        g_mm = np.empty((mol.natm,3))
         for i in range(mol.natm):
             q1 = mol.atom_charge(i)
             r1 = mol.atom_coord(i)
@@ -312,7 +312,7 @@ class QMMMGrad:
         mm_mol = self.base.mm_mol
         coords = mm_mol.atom_coords()
         charges = mm_mol.atom_charges()
-        g_mm = numpy.zeros_like(coords)
+        g_mm = np.zeros_like(coords)
         for i in range(mol.natm):
             q1 = mol.atom_charge(i)
             r1 = mol.atom_coord(i)

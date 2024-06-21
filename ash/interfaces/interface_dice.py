@@ -786,10 +786,18 @@ noio
                     print("\nWriting natural orbitals to Moldenfile")
                     self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol,
                                                                         mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
-                    #Dipole moment
-                    print("Now doing dipole")
+                    #RDM
                     rdm1 = self.mch.make_rdm1(ao_repr=True)
                     #rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
+
+                    #Mulliken analysis
+                    try:
+                        print("Attempting Mulliken analysis")
+                        self.pyscftheoryobject.run_population_analysis(self.pyscftheoryobject.mf, unrestricted=False, dm=rdm1, type='Mulliken', label='SHCI')
+                    except:
+                        pass
+                    #Dipole moment
+                    print("Now doing dipole")
                     dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_SHCI_eps_{self.SHCI_sweep_epsilon[-1]}")
 
                     #Setting properties for a possible future job
