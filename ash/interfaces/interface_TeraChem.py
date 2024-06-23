@@ -94,7 +94,7 @@ class TeraChemTheory:
             create_terachem_pcfile_general(current_MM_coords,MMcharges, filename=self.filename)
 
         #Grab energy and gradient
-        if Grad==True:
+        if Grad:
             if PC is True:
                 write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,
                     Grad=True, PCfile=self.filename+'.pc', xyzfilename=self.filename+'.xyz',filename=self.filename)
@@ -119,6 +119,13 @@ class TeraChemTheory:
             run_terachem(self.terachemdir,self.filename)
 
             self.energy=grab_energy_terachem(self.filename+'.out')
+
+        #PC correact
+        #Terachem included PC-PC interaction need to correct
+        if PC:
+            pc_pc_energy = ash.modules.module_coords.nuc_nuc_repulsion(current_MM_coords, MMcharges)
+            print("PC-PC energy:", pc_pc_energy)
+            self.energy = self.energy - pc_pc_energy
 
         #TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)

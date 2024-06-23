@@ -3893,3 +3893,12 @@ def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, wr
         #Write merged topology and positions to new PDB file
         ash.interfaces.interface_OpenMM.write_pdbfile_openMM(modeller.topology, mergedPositions, outputname)
     return new_frag
+
+#Basic fast function to calculate the Coulomb energy.
+#Assumes coords in Angstrom
+def nuc_nuc_repulsion(coords, charges):
+    coords_b = coords * 1.88972612546
+    diff = coords_b[:, np.newaxis, :] - coords_b[np.newaxis, :, :]
+    distances = np.sqrt(np.sum(diff**2, axis=-1))
+    np.fill_diagonal(distances, np.inf)
+    return np.sum(np.triu(charges[:, np.newaxis] * charges[np.newaxis, :] / distances, k=1))
