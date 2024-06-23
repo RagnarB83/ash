@@ -1675,22 +1675,26 @@ class PySCFTheory:
             print("Mulliken analysis for CCSD density matrix")
             self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD')
             self.get_dipole_moment(dm=rdm1, label="CCSD")
+            molden_name=f"pySCF_CCSD_natorbs"
         elif self.CCmethod == 'BCCD':
             rdm1 = ccobject.make_rdm1(ao_repr=True)
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
             #Dipole moment
             self.get_dipole_moment(dm=rdm1, label="BCCD")
+            molden_name=f"pySCF_BCCD_natorbs"
         elif self.CCmethod == 'CCSD(T)':
             natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccobject,mf)
             print("Mulliken analysis for CCSD(T) density matrix")
             self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
             dipole = self.get_dipole_moment(dm=rdm1, label="CCSD(T)")
+            molden_name=f"pySCF_CCSD_T_natorbs"
         elif self.CCmethod == 'BCCD(T)':
             print("Warning: Density for BCCD(T) has not been tested")
             natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccobject,mf)
             print("Mulliken analysis for BCCD(T) density matrix")
             self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='BCCD(T)')
             dipole = self.get_dipole_moment(dm=rdm1, label="BCCD(T)")
+            molden_name=f"pySCF_BCCD_T_natorbs"
 
 
         #Preserving new DM
@@ -1708,7 +1712,6 @@ class PySCFTheory:
         ash.functions.functions_elstructure.poly_rad_index_nu_nl(natocc)
         ash.functions.functions_elstructure.poly_rad_index_n_d(natocc)
         print()
-        molden_name=f"pySCF_{self.CCmethod}_natorbs"
         print(f"Writing {self.CCmethod} natural orbitals to Moldenfile: {molden_name}.molden")
         self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
 
