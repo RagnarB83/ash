@@ -3896,9 +3896,10 @@ def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, wr
 
 #Basic fast function to calculate the Coulomb energy.
 #Assumes coords in Angstrom
-def nuc_nuc_repulsion(coords, charges):
+def nuc_nuc_repulsion_vectorized(coords, charges):
+    charges = np.array(charges)  # Ensure charges is a numpy array
     coords_b = coords * 1.88972612546
-    diff = coords_b[:, np.newaxis, :] - coords_b[np.newaxis, :, :]
-    distances = np.sqrt(np.sum(diff**2, axis=-1))
+    diff = coords_b[:, None, :] - coords_b[None, :, :]
+    distances = np.linalg.norm(diff, axis=2)
     np.fill_diagonal(distances, np.inf)
-    return np.sum(np.triu(charges[:, np.newaxis] * charges[np.newaxis, :] / distances, k=1))
+    return 0.5 * np.sum(charges[:, None] * charges[None, :] / distances)
