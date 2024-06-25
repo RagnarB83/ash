@@ -7,7 +7,7 @@ class Theory:
         self.theorynamelabel = None
         self.label = None
         self.analytic_hessian = False
-        self.numcores = None
+        self.numcores = 1
         self.filename = None
         self.printlevel = None
         self.properties = {}

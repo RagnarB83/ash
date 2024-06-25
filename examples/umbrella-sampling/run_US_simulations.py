@@ -3,7 +3,6 @@ import os
 import math
 
 # Example script for performing a basic umbrella sampling simulation using ASH
-# Note:
 # System: Butane torsion using GFN1-XTB
 
 numcores = 1
@@ -27,7 +26,6 @@ filename_prefix="US_window" # Used for created files
 M = 20 # M centers of harmonic biasing potentials
 theta0 = np.linspace(-math.pi, math.pi, M, endpoint = False) # array of values
 
-
 # Save MD and US settings to parameterfile
 import json
 json.dump({'M': M, 'RC_atoms': RC_atoms, 'RC_FC': RC_FC, timestep: 'timestep',
@@ -37,7 +35,7 @@ json.dump({'M': M, 'RC_atoms': RC_atoms, 'RC_FC': RC_FC, timestep: 'timestep',
           open("ASH_US_parameters.txt", 'w'))
 
 # Loop over windows and run biased simulation in each
-# Note: More efficient to run these as independent simulations in parallel
+# Note: It is more efficient to run these as independent simulations in parallel
 for ind,RC_val in enumerate(theta0):
     print("="*50)
     print(f"NEW UMBRELLA WINDOW. Value: {RC_val}")

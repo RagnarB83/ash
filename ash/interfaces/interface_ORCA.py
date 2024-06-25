@@ -3014,7 +3014,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
     #FOBO
     if 'FOBO' in orbitals_option:
         print("FOBO-type orbitals requested.")
-        
+
         if CASCI is True:
             print("Warning: CAS-CI is True. No CASSCF orbital optimization will be carried out.")
             extrainput += " noiter "
@@ -3080,8 +3080,10 @@ end
 %scf
 {rohfcase_line}
 end
+{extrablock}
 """
-        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf", orcablocks=rohfblocks, numcores=numcores, autostart=autostart_option,
+        rohf = ash.ORCATheory(orcasimpleinput=f"! ROHF {basis} tightscf notrah  {extrainput}", orcablocks=rohfblocks,
+                              numcores=numcores, autostart=autostart_option,
                                  label='ROHF', filename="ROHF", save_output_with_label=True, moreadfile=moreadfile)
         Singlepoint(theory=rohf,fragment=fragment)
         #Now SCF-step is done. Now adding noiter to extrainput and moreadfile
@@ -3153,6 +3155,7 @@ end
         alldone=True
         mofile=f"{rohf.filename}.gbw"
         natoccgrab=None
+        nat_occupations=None
     elif orbitals_option =="MP2" :
         mp2blocks=f"""
         %maxcore {memory}
@@ -3350,9 +3353,9 @@ end
     os.rename(mofile, newmofile)
     print("\nReturning name of orbital file that can be used in next ORCATheory calculation (moreadfile option):", newmofile)
     print("Also returning natural occupations list:", nat_occupations)
-    
+
     return newmofile, nat_occupations
-    
+
 def natocc_print(nat_occupations,orbitals_option,nmin,nmax):
     print(f"{orbitals_option} Natorb. ccupations:", nat_occupations)
     print("\nTable of natural occupation numbers")
