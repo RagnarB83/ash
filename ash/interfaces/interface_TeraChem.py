@@ -127,6 +127,7 @@ class TeraChemTheory:
             self.energy = self.energy - pc_pc_energy
             print("Terachem energy (after correction)", self.energy)
             if Grad:
+                print("todo")
                 # Correct QM_polarized gradient
 
         # TODO: write in error handling here
