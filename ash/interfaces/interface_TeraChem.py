@@ -125,8 +125,9 @@ class TeraChemTheory:
             # pc_pc_energy = ash.modules.module_coords.nuc_nuc_repulsion(current_MM_coords, MMcharges)
             # print("old PC-PC energy:", pc_pc_energy)
             # TODO: Benchmark how fast this is, add Julia option
+            #Note: Using cupy by default, requires GPU (requirement for Terachem anyway)
             curr_time = time.time()
-            pc_selfen, pc_selfgrad = ash.modules.module_MM.coulombcharge(MMcharges, current_MM_coords)
+            pc_selfen, pc_selfgrad = ash.modules.module_MM.coulombcharge(MMcharges, current_MM_coords, mode="cupy")
             print_time_rel(curr_time, modulename=f'PC-E+G correction', moduleindex=2)
             print("PC-PC self-energy:", pc_selfen)
             self.energy = self.energy - pc_selfen
