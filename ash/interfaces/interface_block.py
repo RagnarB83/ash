@@ -42,6 +42,9 @@ class BlockTheory:
         #Store optional properties of Block run job in a dict
         self.properties ={}
 
+        #Runcalls
+        self.runcalls=0
+
         #Check for PySCFTheory object
         if pyscftheoryobject is None:
             print("Error: No pyscftheoryobject was provided. This is required")
@@ -500,27 +503,29 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
+        self.runcalls+=1
         module_init_time=time.time()
+
         import pyscf
-        if numcores == None:
+        if numcores is None:
             numcores = self.numcores
 
         print(BC.OKBLUE, BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
-        #Checking if charge and mult has been provided
+        # Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, f"Error. charge and mult has not been defined for {self.theorynamelabel}Theory.run method", BC.END)
             ashexit()
 
         print("Job label:", label)
 
-        #Coords provided to run
+        # Coords provided to run
         if current_coords is not None:
             pass
         else:
             print("no current_coords")
             ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
                 print("No elems provided")
@@ -528,53 +533,62 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             else:
                 qm_elems = elems
 
-        #Cleanup before run.
+        # Cleanup before run.
         self.cleanup()
 
-        #Run PySCF to get integrals and MOs. This would probably only be an SCF
+        # Run PySCF to get integrals and MOs. This would probably only be an SCF
         if self.Block_direct != True:
             self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
-        #Get frozen-core
+        # Get frozen-core
         if self.frozencore is True:
-            if self.Block_direct == None:
+            if self.Block_direct is None:
                 self.determine_frozen_core(qm_elems)
         else:
-            self.frozen_core_orbs=0
+            self.frozen_core_orbs = 0
 
         # NOW RUNNING
         #TODO: Distinguish between Block2, Stackblock, Block1.5.
         #TODO: Distinguish between direct run using FCIDUMP also
-        if self.blockversion =='Block2':
+
+        # Setup initial_orbitals only if DMRG job has not been run before, otherwise we reuse previous
+
+        if self.runcalls == 1:
+            print("First runcall.")
+            print("Doing initial orbital setup")
             mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
+            print("Doing active space setup")
             self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
-            self.setup_DMRG_job(verbose=5, rdmoption=None)
-            self.DMRG_run(mo_coeffs)
         else:
-            print("Unknown blockversion")
-            ashexit()
+            print("Not first runcall. Reusing previous initial orbitals")
+            mo_coeffs = self.mch.mo_coeff
+
+        print("Setting up DMRG job")
+        self.setup_DMRG_job(verbose=5, rdmoption=None)
+        print("Running DMRG")
+        self.DMRG_run(mo_coeffs)
 
         dmrg_energy = self.energy
         print("DMRG energy:", dmrg_energy)
 
-        #DMRG-FIC-MRCI
+        # DMRG-FIC-MRCI
         if self.FIC_MRCI is True:
             e_corr = self.DMRG_FIC_MRCISD()
-        #DMRG-SC-NEVPT2
+        # DMRG-SC-NEVPT2
         elif self.SC_NEVPT2 is True:
             e_corr = self.DMRG_SC_NEVPT2()
-        #DMRG-SC-NEVPT2 via Wick
+        # DMRG-SC-NEVPT2 via Wick
         elif self.SC_NEVPT2_Wick is True:
             e_corr = self.DMRG_SC_NEVPT2_Wick()
-        #DMRG-SC-NEVPT2
+        # DMRG-SC-NEVPT2
         elif self.SC_NEVPT2 is True:
             e_corr = self.DMRG_SC_NEVPT2()
-        #DMRG-IC-NEVPT2
+        # DMRG-IC-NEVPT2
         elif self.IC_NEVPT2 is True:
             e_corr = self.DMRG_IC_NEVPT2()
         else:
             e_corr=0.0
-        #Total energy
+        # Total energy
         self.energy = dmrg_energy + e_corr
 
         #Print final energy

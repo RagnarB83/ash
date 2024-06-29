@@ -465,10 +465,11 @@ class QMMMTheory:
         checkpoint=time.time()
         if self.printlevel > 1:
             print("Adding extra charges to preserve dipole moment for charge-shifting")
+            print("MMboundarydict:", self.MMboundarydict)
         # Adding 2 dipole pointcharges for each MM2 atom
         self.dipole_charges = []
         self.dipole_coords = []
-        print("MMboundarydict:", self.MMboundarydict)
+
 
         for MM1,MMx in self.MMboundarydict.items():
             # Getting original MM1 charge (before set to 0)
@@ -809,7 +810,7 @@ class QMMMTheory:
             used_qmcoords = np.append(used_qmcoords, np.array(linkatoms_coords), axis=0)
 
         # Update self.pointchargecoords based on new current_coords
-        print("self.dipole_correction:", self.dipole_correction)
+        #print("self.dipole_correction:", self.dipole_correction)
         if self.dipole_correction:
             self.SetDipoleCharges(current_coords) # Note: running again
             self.pointchargecoords = np.append(used_mmcoords, np.array(self.dipole_coords), axis=0)
