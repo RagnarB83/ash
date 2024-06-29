@@ -121,14 +121,17 @@ class TeraChemTheory:
         # PC-correction
         # Terachem includes PC-PC interaction, we need to correct
         if PC:
-            pc_pc_energy = ash.modules.module_coords.nuc_nuc_repulsion(current_MM_coords, MMcharges)
-            print("PC-PC energy:", pc_pc_energy)
             print("Terachem energy (before correction)", self.energy)
-            self.energy = self.energy - pc_pc_energy
+            pc_pc_energy = ash.modules.module_coords.nuc_nuc_repulsion(current_MM_coords, MMcharges)
+            print("old PC-PC energy:", pc_pc_energy)
+            pc_selfen, pc_selfgrad = coulombcharge(charges, coords)
+            print("new pc_en :", pc_selfen)
+            self.energy = self.energy - pc_selfen
             print("Terachem energy (after correction)", self.energy)
             if Grad:
-                print("todo")
-                # Correct QM_polarized gradient
+                print("Old PCgradient:", self.pcgradient)
+                self.pcgradient = self.pcgradient - pc_selfgrad
+                print("New self.pcgradient", self.pcgradient)
 
         # TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)

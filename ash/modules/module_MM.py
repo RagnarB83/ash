@@ -641,11 +641,46 @@ def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
 
     return final_energy,final_gradient
 
-#TODO: Do we always calculate charge if atoms are connected? Need connectivity for CHARMM/Amber expressions
+
 #Coulomb energy and gradient in Bohrs
+#Note: charges and coords should be Numpy arrays
+def distance_matrix(coords):
+    """ Calculate the distance matrix and difference matrix for a set of coordinates. """
+    diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
+    dist = np.sqrt(np.sum(diff ** 2, axis=-1))
+    return dist, diff
+
 def coulombcharge(charges, coords):
+    # Constants conversion
+    ang2bohr = 1.88972612546  # Angstrom to Bohr conversion factor
+
+    # Converting coordinates to Bohr
+    coords_b = coords * ang2bohr
+    charges = np.array(charges).flatten()
+
+    # Calculate the distance matrix and coordinate differences
+    dist_matrix, diff_matrix = distance_matrix(coords_b)
+    np.fill_diagonal(dist_matrix, np.inf)  # Avoid division by zero
+
+    # Calculate Coulomb energy
+    charges_matrix = np.outer(charges, charges)
+    pair_energies = np.triu(charges_matrix / dist_matrix)
+    energy = np.sum(pair_energies)
+
+    # Calculate electric field components
+    efield_pair_hat = diff_matrix / dist_matrix[..., np.newaxis]
+    efield_pair = efield_pair_hat / dist_matrix[..., np.newaxis] ** 2
+
+    # Calculate the gradient
+    gradient = np.sum(efield_pair * charges[np.newaxis, :, np.newaxis] * charges[:, np.newaxis, np.newaxis], axis=1)
+    gradient *= -1
+
+    return energy, gradient
+
+def old_coulombcharge(charges, coords):
     #Converting list to numpy array and converting to bohr
-    coords_b=np.array(coords)*ash.constants.ang2bohr
+    ang2bohr = 1.8897259886  # Angstrom to Bohr conversion factor
+    coords_b=np.array(coords)*ang2bohr
     #Coulomb energy
     energy=0
     #Initialize Coulomb gradient
