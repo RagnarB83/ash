@@ -119,23 +119,24 @@ class TeraChemTheory:
             self.energy=grab_energy_terachem(self.filename+'.out')
 
         # PC-correction
-        # Terachem includes PC-PC interaction, we need to correct
+        # Terachem includes PC-PC interaction, we need to correct energy and pcgradient
         if PC:
             print("Terachem energy (before correction)", self.energy)
-            pc_pc_energy = ash.modules.module_coords.nuc_nuc_repulsion(current_MM_coords, MMcharges)
-            print("old PC-PC energy:", pc_pc_energy)
+            # pc_pc_energy = ash.modules.module_coords.nuc_nuc_repulsion(current_MM_coords, MMcharges)
+            # print("old PC-PC energy:", pc_pc_energy)
+            # TODO: Benchmark how fast this is, add Julia option
+            curr_time = time.time()
             pc_selfen, pc_selfgrad = ash.modules.module_MM.coulombcharge(MMcharges, current_MM_coords)
-            print("new pc_en :", pc_selfen)
+            print_time_rel(curr_time, modulename=f'PC-E+G correction', moduleindex=2)
+            print("PC-PC self-energy:", pc_selfen)
             self.energy = self.energy - pc_selfen
-            print("Terachem energy (after correction)", self.energy)
+            print("Terachem energy (after PC-PC selfenergy subtraction)", self.energy)
             if Grad:
-                print("Old PCgradient:", self.pcgradient)
                 self.pcgradient = self.pcgradient - pc_selfgrad
-                print("New self.pcgradient", self.pcgradient)
 
         # TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
-        if Grad == True:
+        if Grad:
             print(f"Single-point {self.theorynamelabel} energy:", self.energy)
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             if PC is True:
