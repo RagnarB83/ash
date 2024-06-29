@@ -124,7 +124,7 @@ class TeraChemTheory:
             print("Terachem energy (before correction)", self.energy)
             pc_pc_energy = ash.modules.module_coords.nuc_nuc_repulsion(current_MM_coords, MMcharges)
             print("old PC-PC energy:", pc_pc_energy)
-            pc_selfen, pc_selfgrad = ash.modules.module_MM.coulombcharge(charges, coords)
+            pc_selfen, pc_selfgrad = ash.modules.module_MM.coulombcharge(MMcharges, current_MM_coords)
             print("new pc_en :", pc_selfen)
             self.energy = self.energy - pc_selfen
             print("Terachem energy (after correction)", self.energy)
