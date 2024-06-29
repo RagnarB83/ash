@@ -587,11 +587,11 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         elif self.IC_NEVPT2 is True:
             e_corr = self.DMRG_IC_NEVPT2()
         else:
-            e_corr=0.0
+            e_corr = 0.0
         # Total energy
         self.energy = dmrg_energy + e_corr
 
-        #Print final energy
+        # Print final energy
         print("Post-DMRG Correlation energy:", e_corr)
         print("Final total energy:", self.energy)
         self.properties['energy'] = self.energy
@@ -602,13 +602,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             rdm1 = self.mch.make_rdm1(ao_repr=True)
             try:
                 print("Attempting DMRG spin-rdm")
-                #rdm1s = self.mch.dmrgscf.DMRGCI.make_rdm1s(mc.fcisolver, root, norb, nelec)
                 rdm1s = self.mch.make_rdm1s(ao_repr=True)
             except:
                 print("Problem with DMRG spin-rdm")
 
-
-            # rdm1 = self.mch.fcisolver.make_rdm1(self.mch.ci, self.mch.nmo, self.mch.nelec)
             # Natural orbitals
             occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
             print("DMRG natural orbital occupations:", occupations)
@@ -626,7 +623,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             # Dipole moment
             print("Now doing dipole")
             dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_DMRG_M_{self.maxM}")
-
 
             # Setting properties for a possible future job
             self.properties['rdm1'] = rdm1

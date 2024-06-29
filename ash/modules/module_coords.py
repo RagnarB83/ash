@@ -705,7 +705,7 @@ class Fragment:
         # Now ordering the labels according to the sort indices
         self.fragmenttype_labels = [combined_flat_labels[i] for i in sortindices]
 
-    #Centroid
+    # Centroid
     def get_centroid(self):
         return np.mean(self.coords, axis=0)
 
@@ -713,10 +713,10 @@ class Fragment:
     def add_centralfraginfo(self, list):
         self.Centralmainfrag = list
 
-    #Write PDB-file
+    # Write PDB-file
     def write_pdbfile(self,filename="Fragment"):
         print("Fragment.write_pdbfile method called")
-        #Write PDB-file if information is available
+        # Write PDB-file if information is available
         if self.pdb_atomnames is not None:
             print("Found PDB residue/atom/segment information stored in fragment. Writing proper PDB file.")
         else:
@@ -754,7 +754,7 @@ class Fragment:
         ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology, connectivity_dict)
 
     # Write PDB-file via OpenMM
-    def write_pdbfile_openmm(self,filename="Fragment", calc_connectivity=False):
+    def write_pdbfile_openmm(self,filename="Fragment", calc_connectivity=False, pdb_topology=None):
         print("write_pdbfile_openmm\n")
         try:
             import openmm.app
@@ -762,10 +762,16 @@ class Fragment:
             print("Error: OpenMM not installed. Cannot read PDB file.")
             ashexit()
 
-        if self.pdb_topology is None:
+        if pdb_topology is not None:
+            print("Using input pdb_topology")
+            self.pdb_topology = pdb_topology
+        elif self.pdb_topology is None:
             print("Warning: ASH Fragment has no PDB-file topology defined (required for PDB-file writing)")
             print("Now defining new topology from scratch")
-            self.define_topology() #Creates self.pdb_topology
+            if pdb_topology is None:
+                self.define_topology() #Creates self.pdb_topology
+        else:
+            print("Using pdbtopology found in ASH fragment")
 
         # Before writing PDB-file, request connectivity calculation so that we get correct CONECT lines for non-biomolecules
         if calc_connectivity is True:
@@ -2224,26 +2230,6 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
                 pfile.write(conectline)
     print("Wrote PDB file: ", outputname + '.pdb')
     return outputname + '.pdb'
-
-# Write PDBfile (dummy version) for PyFrame
-# NOTE: Deprecated???
-def write_pdbfile_dummy(elems, coords, name, atomlabels, residlabels):
-    with open(name + '.pdb', 'w') as pfile:
-        resnames = atomlabels
-        # resnames=['QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'QM', 'HOH', 'HOH','HOH']
-        # resids=[1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2]
-        # Example:
-        # pfile.write("ATOM      1  N   SER A   2      65.342  32.035  32.324  1.00  0.00           N\n")
-        for count, (el, c, resname, resid) in enumerate(zip(elems, coords, resnames, residlabels)):
-            # print(count, el,c,resname)
-            # Dummy resid for everything
-            # resid=1
-            # Using string format from: https://cupnet.net/pdb-format/
-            line = "{:6s}{:5d} {:^4s}{:1s}{:3s} {:1s}{:4d}{:1s}   {:8.3f}{:8.3f}{:8.3f}{:6.2f}{:6.2f}          {:>2s}{:2s}".format(
-                'ATOM', count + 1, el, '', resname, '', resid, '', c[0], c[1], c[2], 1.0, 0.00, el, '')
-            pfile.write(line + '\n')
-    print("Wrote PDB file: ", name + '.pdb')
-
 
 # Calculate nuclear charge from XYZ-file
 def nucchargexyz(file):
