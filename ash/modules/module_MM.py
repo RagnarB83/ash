@@ -656,6 +656,15 @@ def coulombcharge(charges, coords, mode="numpy"):
     elif mode=="cupy":
         print("Calling coulombcharge_cupy")
         return coulombcharge_cupy(charges, coords)
+    elif mode=="julia":
+        print("Calling coulombcharge_julia")
+        print("Loading Julia")
+        try:
+            Juliafunctions=load_julia_interface()
+        except:
+            print("Problem loading Julia")
+            ashexit()
+        return Juliafunctions.coulombchargev1c(charges, coords)(charges, coords)
     else:
         print("Unknown mode for coulombcharge")
         ashexit()
@@ -701,7 +710,7 @@ def distance_matrix_cupy(coords1, coords2):
     dist = cp.sqrt(cp.sum(diff ** 2, axis=-1))
     return dist, diff
 
-#Coulomb-charge cupy-version with batching
+# Decent Coulomb-charge cupy-version with batching
 def coulombcharge_cupy(charges, coords, batch_size=1000):
     import cupy as cp
     ang2bohr = 1.88972612546  # Angstrom to Bohr conversion factor
