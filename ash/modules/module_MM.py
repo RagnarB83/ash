@@ -695,40 +695,60 @@ def coulombcharge_np(charges, coords):
 
     return energy, gradient
 
-def coulombcharge_cupy(charges, coords):
+def distance_matrix_cupy(coords1, coords2):
     import cupy as cp
-    # Constants conversion
-    ang2bohr = 1.88972612546 # Angstrom to Bohr conversion factor
+    diff = coords1[:, cp.newaxis, :] - coords2[cp.newaxis, :, :]
+    dist = cp.sqrt(cp.sum(diff ** 2, axis=-1))
+    return dist, diff
 
-    # Converting coordinates to Bohr and moving to GPU
+#Coulomb-charge cupy-version with batching
+def coulombcharge_cupy(charges, coords, batch_size=1000):
+    import cupy as cp
+    ang2bohr = 1.88972612546  # Angstrom to Bohr conversion factor
     coords_b = cp.array(coords * ang2bohr)
     charges = cp.array(np.array(charges).flatten())
+    num_atoms = len(charges)
+    energy = cp.float64(0)
+    gradient = cp.zeros((num_atoms, 3), dtype=cp.float64)
 
-    # Calculate the distance matrix and coordinate differences
-    dist_matrix, diff_matrix = distance_matrix_cupy(coords_b)
-    cp.fill_diagonal(dist_matrix, cp.inf) # Avoid division by zero
+    for i in range(0, num_atoms, batch_size):
+        end_i = min(i + batch_size, num_atoms)
+        coords_batch_i = coords_b[i:end_i]
+        charges_batch_i = charges[i:end_i]
 
-    # Calculate Coulomb energy
-    charges_matrix = cp.outer(charges, charges)
-    pair_energies = cp.triu(charges_matrix / dist_matrix)
-    energy = cp.sum(pair_energies)
+        for j in range(i, num_atoms, batch_size):
+            end_j = min(j + batch_size, num_atoms)
+            coords_batch_j = coords_b[j:end_j]
+            charges_batch_j = charges[j:end_j]
 
-    # Calculate electric field components
-    efield_pair_hat = diff_matrix / dist_matrix[..., cp.newaxis]
-    efield_pair = efield_pair_hat / dist_matrix[..., cp.newaxis] ** 2
+            dist_matrix, diff_matrix = distance_matrix_cupy(coords_batch_i, coords_batch_j)
 
-    # Calculate the gradient
-    gradient = cp.sum(efield_pair * charges[cp.newaxis, :, cp.newaxis] * charges[:, cp.newaxis, cp.newaxis], axis=1)
-    gradient *= -1
+            # Avoid self-interactions
+            if i == j:
+                cp.fill_diagonal(dist_matrix, cp.inf)
 
-    # Move results back to CPU and return as NumPy arrays
+            charges_matrix = cp.outer(charges_batch_i, charges_batch_j)
+
+            # Calculate Coulomb energy
+            pair_energies = charges_matrix / dist_matrix
+            energy += cp.sum(cp.triu(pair_energies) if i == j else pair_energies)
+
+            # Calculate gradient (note the sign change here)
+            efield_pair = -diff_matrix / dist_matrix[..., cp.newaxis]**3
+            grad_contrib_i = cp.sum(efield_pair * charges_batch_j[cp.newaxis, :, cp.newaxis], axis=1)
+            gradient[i:end_i] += charges_batch_i[:, cp.newaxis] * grad_contrib_i
+
+            if i != j:
+                grad_contrib_j = -cp.sum(efield_pair * charges_batch_i[:, cp.newaxis, cp.newaxis], axis=0)
+                gradient[j:end_j] += charges_batch_j[:, cp.newaxis] * grad_contrib_j
+            else:
+                # For i == j, we need to zero out the diagonal contributions
+                grad_contrib_j = -cp.sum(efield_pair * charges_batch_i[:, cp.newaxis, cp.newaxis], axis=0)
+                grad_contrib_j[cp.arange(end_j-i)] = 0
+                gradient[j:end_j] += charges_batch_j[:, cp.newaxis] * grad_contrib_j
+
     return float(energy.get()), gradient.get()
 
-def distance_matrix_cupy(coords):
-    import cupy as cp
-    diff = coords[:, cp.newaxis, :] - coords[cp.newaxis, :, :]
-    dist = cp.sqrt(cp.sum(diff**2, axis=-1))
-    return dist, diff
 
 def old_coulombcharge(charges, coords):
     #Converting list to numpy array and converting to bohr
