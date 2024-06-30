@@ -664,7 +664,7 @@ def coulombcharge(charges, coords, mode="numpy"):
         except:
             print("Problem loading Julia")
             ashexit()
-        return Juliafunctions.coulombchargev1c(charges, coords)
+        return Juliafunctions.coulomb_julia(charges, coords)
     else:
         print("Unknown mode for coulombcharge")
         ashexit()
