@@ -122,12 +122,13 @@ class PolEmbedTheory:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
                     ashexit(code=9)
-                #Create dummy pdb-file if PDB-file not provided
+                # Create dummy pdb-file if PDB-file not provided
                 if pdbfile is None:
                     print("TODO")
+                    ashexit()
                     #ash.modules.module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
-                    #file=self.potfilename+'.pdb'
-                #Pyframe
+                    file=self.potfilename+'.pdb'
+                # Pyframe
                 if self.pot_option=='SEP':
                     print("Pot option: SEP")
                     system = pyframe.MolecularSystem(input_file=file)
