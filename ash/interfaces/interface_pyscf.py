@@ -23,7 +23,7 @@ import copy
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
-                  scf_type=None, basis=None, basis_file=None, ecp=None, functional=None, gridlevel=5, symmetry=False,
+                  scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry=False,
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk',
                   noautostart=False, autostart=True,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
@@ -141,6 +141,7 @@ class PySCFTheory:
         self.direct_scf=direct_scf
         self.basis=basis #Basis set can be string or dict with elements as keys
         self.basis_file = basis_file
+        self.cartesian_basis=cartesian_basis
         self.magmom=magmom
         self.ecp=ecp
         self.functional=functional
@@ -1671,23 +1672,29 @@ class PySCFTheory:
         if self.CCmethod == 'CCSD':
             rdm1 = ccobject.make_rdm1(ao_repr=True)
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
+            print("Mulliken analysis for CCSD density matrix")
+            self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD')
             self.get_dipole_moment(dm=rdm1, label="CCSD")
+            molden_name=f"pySCF_CCSD_natorbs"
         elif self.CCmethod == 'BCCD':
             rdm1 = ccobject.make_rdm1(ao_repr=True)
             natocc, natorb = pyscf.mcscf.addons.make_natural_orbitals(ccobject)
             #Dipole moment
             self.get_dipole_moment(dm=rdm1, label="BCCD")
+            molden_name=f"pySCF_BCCD_natorbs"
         elif self.CCmethod == 'CCSD(T)':
             natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccobject,mf)
             print("Mulliken analysis for CCSD(T) density matrix")
             self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='CCSD(T)')
             dipole = self.get_dipole_moment(dm=rdm1, label="CCSD(T)")
+            molden_name=f"pySCF_CCSD_T_natorbs"
         elif self.CCmethod == 'BCCD(T)':
             print("Warning: Density for BCCD(T) has not been tested")
             natocc,natorb,rdm1 = self.calculate_CCSD_T_natorbs(ccobject,mf)
             print("Mulliken analysis for BCCD(T) density matrix")
             self.run_population_analysis(mf, unrestricted=unrestricted, dm=rdm1, type='Mulliken', label='BCCD(T)')
             dipole = self.get_dipole_moment(dm=rdm1, label="BCCD(T)")
+            molden_name=f"pySCF_BCCD_T_natorbs"
 
 
         #Preserving new DM
@@ -1705,7 +1712,6 @@ class PySCFTheory:
         ash.functions.functions_elstructure.poly_rad_index_nu_nl(natocc)
         ash.functions.functions_elstructure.poly_rad_index_n_d(natocc)
         print()
-        molden_name=f"pySCF_{self.CCmethod}_natorbs"
         print(f"Writing {self.CCmethod} natural orbitals to Moldenfile: {molden_name}.molden")
         self.write_orbitals_to_Moldenfile(self.mol, natorb, natocc,  label=molden_name)
 
@@ -1749,7 +1755,7 @@ class PySCFTheory:
 
 
     #Create mol object (self.mol) via method
-    def create_mol(self, qm_elems, current_coords, charge, mult):
+    def create_mol(self, qm_elems, current_coords, charge, mult, cartesian_basis=None):
         if self.printlevel >= 1:
             print("Creating mol object")
         import pyscf
@@ -1765,6 +1771,11 @@ class PySCFTheory:
         self.mol.symmetry = self.symmetry
         self.mol.charge = charge
         self.mol.spin = mult-1
+
+        #cartesian basis or not
+        if cartesian_basis is not None:
+            print("Setting cartesian basis flag to:", cartesian_basis)
+            self.mol.cart = cartesian_basis
 
 
     #Define basis in mol object
@@ -2072,13 +2083,24 @@ class PySCFTheory:
     def set_embedding_options(self, PC=False, MM_coords=None, MMcharges=None):
         #QM/MM electrostatic embedding
         if PC is True:
+            import pyscf
             import pyscf.qmmm
             # QM/MM pointcharge embedding
+            #TODO: Gaussian blur option
             print("PC True. Adding pointcharges")
-            self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
+            #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
+
+            #Newer syntax
+            mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
+
+            #Modified pyscf QM/MM routines
+            import ash.interfaces.interface_pyXscf_mods
+            print("self.platform:", self.platform)
+            self.mf = ash.interfaces.interface_pyXscf_mods.qmmm_for_scf(self.mf, mm_mol, platform=self.platform)
+            print("Here self.mf:", self.mf)
 
         #Polarizable embedding option
-        if self.pe is True:
+        elif self.pe is True:
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
             try:
@@ -2172,6 +2194,7 @@ class PySCFTheory:
         if self.printlevel >=1:
             print("Max cycle in mf object:", mf.max_cycle)
             print("Running SCF")
+        print("mf:", mf)
         scf_result = mf.run(dm)
         E_tot = scf_result.e_tot
         if self.printlevel >=1:
@@ -2289,7 +2312,7 @@ class PySCFTheory:
         #####################
         #CREATE MOL OBJECT
         #####################
-        self.create_mol(qm_elems, current_coords, charge, mult)
+        self.create_mol(qm_elems, current_coords, charge, mult, cartesian_basis=self.cartesian_basis)
 
         #####################
         # BASIS
@@ -2361,13 +2384,14 @@ class PySCFTheory:
         if self.printlevel >1:
             print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
 
-
         #############################
         # PLATFORM CHANGE
         #############################
+        #Testing to convert mf object to GPU before QM/MM
         if self.platform == 'GPU':
             print("GPU platform requested. Will now convert mf object to GPU")
             self.mf = self.mf.to_gpu()
+
 
     #Actual Run
     #Assumes prepare_run has been executed

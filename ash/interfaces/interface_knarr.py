@@ -764,7 +764,8 @@ class KnarrCalculator:
                                 shutil.copyfile(path_to_imagefile,"./"+imagefile_name)
                             else:
                                 if self.printlevel >= 1:
-                                    print(f"File {path_to_imagefile} does NOT exist. Continuing.")
+                                    print(f"File {path_to_imagefile} does NOT exist. Exiting.")
+                                ashexit()
 
                 #Handling GBW files for ORCATheory and QMMMTheory (if using ORCA)
                 if self.ORCAused == True:
@@ -831,7 +832,7 @@ class KnarrCalculator:
                     #full_coords = self.full_fragment_reactant.coords
                     #Creating deep copy of reactant coordinates as it will be modified
                     #New: Using full_coords from either reactant or product depending on which the image_number it is closest to
-                    #Note: this is technically only an issue for QM/MM jobs if the NEB-active region is smaller (e.g. same as QM-region) than the actregion used originally to find 
+                    #Note: this is technically only an issue for QM/MM jobs if the NEB-active region is smaller (e.g. same as QM-region) than the actregion used originally to find
                     #reactant and product geometries
 
                     #Closer to reactant
@@ -950,7 +951,8 @@ class KnarrCalculator:
                                         shutil.copyfile(path_to_imagefile,workerdir+"/"+self.theory.filename+".gbw") #Copying to Pooljob_image_X as orca.gbw
                             else:
                                 if self.printlevel >= 1:
-                                    print(f"File {path_to_imagefile} does NOT exist. Continuing.")
+                                    print(f"File {path_to_imagefile} does NOT exist. Exiting.")
+                                ashexit()
 
 
                 ################################################

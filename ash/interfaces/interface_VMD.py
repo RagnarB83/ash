@@ -88,6 +88,8 @@ mol scaleminmax top 1 0.000000 0.000000
 mol smoothrep top 1 0
 mol drawframes top 1 {{now}}
 mol rename top {cubefile}
+#deselects
+molinfo top set drawn 0
 
 set topmol [molinfo top]
 mol top $topmol

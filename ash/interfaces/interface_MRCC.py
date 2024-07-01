@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 import numpy as np
+import math
 
 import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep
@@ -15,7 +16,7 @@ MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z',
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
                 mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label="MRCC",
-                keep_orientation=True, frozen_core_settings='Auto'):
+                keep_orientation=True, frozen_core_settings='Auto', no_basis_read_orbs=False):
 
         self.theorynamelabel="MRCC"
         self.theorytype="QM"
@@ -54,6 +55,13 @@ class MRCCTheory:
         #Parallelization strategy: 'OMP', 'OMP-and-MKL' or 'MPI'
         self.parallelization=parallelization
         self.keep_orientation=keep_orientation
+
+        # No basis read orbs option If True, MRCC will read in fort.55 and fort.56 files (containing integrals)
+        self.no_basis_read_orbs=no_basis_read_orbs
+        if self.no_basis_read_orbs is True:
+            if 'basis' in mrccinput:
+                print("Error: basis keyword found in mrccinput. should not be used when no_basis_read_orbs option is active")
+                ashexit()
 
         if self.keep_orientation is True:
             print("Warning: keep_orientation options is on (by default)! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
@@ -146,7 +154,7 @@ class MRCCTheory:
 
         if Grad==True:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string, no_basis_read_orbs=self.no_basis_read_orbs)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
@@ -161,7 +169,7 @@ class MRCCTheory:
 
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string, no_basis_read_orbs=self.no_basis_read_orbs)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
@@ -209,9 +217,17 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
 def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None,
-                     frozen_core_option=None):
+                     frozen_core_option=None, no_basis_read_orbs=True):
     print("Writing MRCC inputfile")
+
     with open("MINP", 'w') as inpfile:
+
+
+        # For case where no basis is defined, assumed that fort.55 and fort.56 files have been created (contaning integrals)
+        if no_basis_read_orbs is True:
+            print("Warning: no_basis_read_orbs is True. Adding iface=cfour option, means that integrals will be read from fort.55 and fort.56 files")
+            inpfile.write("iface=cfour") #Activates CFour interface (just means that MRCC will read in fort.55 and fort.56 files)
+
         for m in mrccinput.split('\n'):
             if 'core' in m:
                 print("Warning: ignoring user-defined core option. Using frozen_core_option instead")
@@ -455,3 +471,161 @@ def grab_dipole_moment(outfile):
             if ' Dipole moment [au]:' in line:
                 grab=True
     return dipole_moment
+
+
+# Write MRCC rudimentary inputfile (fort.56) file with list of occupations
+#NOTE: For frozen-core calculations the occupations should only be for active electrons
+def MRCC_write_basic_inputfile(occupations=None, filename="fort.56", scf_type="RHF",
+                               ex_level=4, nsing=1, ntrip=0, rest=0, CC_CI=1, dens=0, CS=1,
+                               spatial=1, HF=1, ndoub=0, nacto=0, nactv=0, tol=9, maxex=0,
+                               sacc=0, freq=0.0000, symm=0, conver=0, diag=0, dboc=0, mem=1024):
+    print("SCF_type:", scf_type)
+    if scf_type == 'RHF':
+        nsing=1
+        ndoub=0
+        CS=1
+        spatial=1
+        HF=1
+    elif scf_type == 'ROHF':
+        nsing=0
+        ndoub=1
+        CS=0
+        spatial=1
+        HF=0
+    elif scf_type == 'UHF':
+        nsing=0
+        ndoub=1
+        CS=0
+        spatial=0
+        HF=1
+
+    occupation_string = ' '.join(str(x) for x in occupations)
+    inputstring=f"""   {ex_level}    {nsing}    {ntrip}     {rest}    {CC_CI}    {dens}     {conver}     {symm}     {diag}    {CS}    {spatial}     {HF}      {ndoub}    {nacto}      {nactv}    {tol}      {maxex}     {sacc} {freq}     {dboc} {mem}
+ex.lev, nsing, ntrip, rest, CC/CI, dens, conver, symm, diag, CS, spatial, HF, ndoub, nacto, nactv, tol, maxex, sacc, freq, dboc, mem
+ {occupation_string}"""
+
+    with open(filename, 'w') as f:
+        f.write(inputstring)
+
+    #Touch KEYWD file (otherwise MRCC crashes)
+    sp.run(["touch", "KEYWD"])
+
+def yoshimine_sort(a,b,c,d):
+    if a > b:
+        ab = a*(a+1)/2 + b
+    else:
+        ab = b*(b+1)/2 + a
+    if c > d:
+        cd = c*(c+1)/2 + d
+    else:
+        cd = d*(d+1)/2 + c
+    if ab > cd:
+        abcd = ab*(ab+1)/2 + cd
+    else:
+        abcd = cd*(cd+1)/2 + ab
+    return math.floor(abcd)
+
+# Write the fort.55 MRCC integral file (FCIDUMP format with header) from Numpy arrays
+# TODO: unrestricted case
+# TODO: Generalize FCIDUMP with different headers (e.g. Molpro, MRCC) and different filenames
+def MRCC_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None,
+                            num_corr_el=None, filename="fort.55", int_threshold=1e-16, scf_type="RHF"):
+
+    if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None or num_corr_el is None:
+        print("Error: two_el_integrals, one_el_integrals, num_corr_el or nuc_repulsion_energy not provided")
+        ashexit()
+
+    print("SCF_type:", scf_type)
+    if scf_type == 'RHF':
+        pass
+    elif scf_type == 'ROHF':
+        print("Error: ROHF not yet implemented")
+        ashexit()
+    elif scf_type == 'UHF':
+        print("Error: UHF not yet implemented")
+        ashexit()
+    basis_dim = one_el_integrals[0].size
+
+    # Header
+    #Note: assuming no symmetry setting 1 as irrep for each orbital
+    header = f"""    {basis_dim}    {num_corr_el}
+ {'  '.join('1' for i in range(basis_dim))}
+  150000
+"""
+
+    print("Integral threshold:", int_threshold)
+    num_integrals = two_el_integrals.shape[0]**4
+    print("num_integrals:", num_integrals)
+
+    # Integral dict
+    from collections import OrderedDict
+    int_1el_dict=OrderedDict()
+
+    # 1-electron integrals (using 0 as dummy 3rd and 4th index)
+    for m in range(0,basis_dim):
+        for n in range(m,basis_dim):
+            int_value=one_el_integrals[m,n]
+            int_1el_dict[(m,n)] = [int_value,[m+1,n+1,0,0]]
+
+    # 2-electron integrals
+    npair = basis_dim*(basis_dim+1)//2
+    print("npair:", npair)
+
+    # Open file
+    f = open(filename, 'w')
+
+    # Write header
+    f.write(header)
+
+    # Set up 2-electron integrals
+    two_el_integral_string=""
+
+    if two_el_integrals.ndim == 2:
+        print("ndim 2, assuming 4-fold symmetry")
+        xint_2el_dict=OrderedDict()
+        # 4-fold symmetry
+        assert (two_el_integrals.size == npair**2)
+        ij = 0
+        for i in range(basis_dim):
+            for j in range(0, i+1):
+                kl = 0
+                for k in range(0, basis_dim):
+                    for l in range(0, k+1):
+                        if abs(two_el_integrals[ij,kl]) > int_threshold:
+                            xint_2el_dict[(i+1, j+1, k+1, l+1)] = two_el_integrals[ij,kl]
+                        kl += 1
+                ij += 1
+        # Creating string for 2-el integrals
+        for k,v in xint_2el_dict.items():
+            two_el_integral_string+=f"{v:>29.20E}{k[0]:>5}{k[1]:>5}{k[2]:>5}{k[3]:>5}\n"
+
+    elif two_el_integrals.ndim == 4:
+        print("ndim 4")
+        int_2el_dict=OrderedDict() #yos_value : [int_value,[i,j,k,l ]]  Note, switching to 1-based indexing here
+        # 2-electron integrals
+        for i in range(0,basis_dim):
+            for j in range(0,basis_dim):
+                for k in range(0,basis_dim):
+                    for l in range(0,basis_dim):
+                        yos_val = yoshimine_sort(i,j,k,l)
+                        if yos_val not in int_2el_dict:
+                            int_value=two_el_integrals[i,j,k,l]
+                            if abs(int_value) > int_threshold:
+                                int_2el_dict[yos_val] = [int_value,[i+1,j+1,k+1,l+1]]
+        # Creating string
+        for k,v in int_2el_dict.items():
+            two_el_integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+
+    # Writing 2-electron integrals to file
+    f.write(two_el_integral_string)
+
+    # Writing 1-el integrals
+    one_el_string=""
+    for k,v in int_1el_dict.items():
+        one_el_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+    f.write(one_el_string)
+
+    # Nuclear repulsion energy as last line
+    f.write(f"{nuc_repulsion_energy:>29.20E}{0:>5}{0:>5}{0:>5}{0:>5}\n")
+
+    f.close()

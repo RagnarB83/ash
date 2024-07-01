@@ -183,9 +183,10 @@ def load_julia_interface(julia_library=None):
             juliapath=os.path.dirname(shutil.which('julia'))
             print("Found Julia in dir:", juliapath)
         except TypeError:
-            print("Problem. No julia binary found in PATH environment variable.")
-            print("Make sure the path to Julia's bin directory is available in your shell-configuration or jobscript")
-            ashexit()
+            print("Possible Problem. No julia binary found in PATH environment variable.")
+            print("Make sure the path to your desired Julia's bin directory is available in your shell-configuration or jobscript")
+            print("Will continue as pythoncall may be able to install Julia for you.")
+            #ashexit()
 
         #Importing the necessary interface library
         print("Loading a Python/Julia interface library")

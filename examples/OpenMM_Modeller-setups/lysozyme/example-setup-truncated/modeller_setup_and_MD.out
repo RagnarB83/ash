@@ -1,0 +1,1847 @@
+ashpath: /Users/rb269145/ASH-code/ASH-NEW/ash/ash
+Sys path: ['/Users/rb269145/ASH-code/ASH-NEW/ash/ash', '/Users/rb269145/ash-tests/Fast-QM-MM-MD/lysozyme/initial-setup', '/Users/rb269145/ASH-code/ASH-NEW/ash', '/Users/rb269145/miniconda3/envs/ASH_openmm/lib/python311.zip', '/Users/rb269145/miniconda3/envs/ASH_openmm/lib/python3.11', '/Users/rb269145/miniconda3/envs/ASH_openmm/lib/python3.11/lib-dynload', '/Users/rb269145/miniconda3/envs/ASH_openmm/lib/python3.11/site-packages', '__editable__.molSimplify-1.7.3.finder.__path_hook__']
+[92m--------------------------------------------------------------------------------[0m
+[92m--------------------------------------------------------------------------------[0m
+                                           ASH
+                         [93mA MULTISCALE MODELLING PROGRAM[0m
+                                  [93m[1mVersion: 0.9dev[0m
+                           [93mGit commit version: Unknown[0m
+[92m--------------------------------------------------------------------------------[0m
+[92m--------------------------------------------------------------------------------[0m
+ASH path: /Users/rb269145/ASH-code/ASH-NEW/ash/ash
+Python version: 3.11.4
+Python interpreter: /Users/rb269145/miniconda3/envs/ASH_openmm/bin/python3
+
+ASH Settings after reading defaults and ~/ash_user_settings.ini :
+See https://ash.readthedocs.io/en/latest/basics.html#ash-settings on how to change settings.
+	 debugflag :  False
+	 load_julia :  False
+	 julia_library :  pythoncall
+	 use_ANSI_color :  True
+	 print_logo :  False
+	 print_input :  True
+	 scale :  1.0
+	 tol :  0.2
+	 conndepth :  10
+	 connectivity_code :  julia
+	 nonbondedMM_code :  julia
+	 print_exit_footer :  True
+	 print_full_timings :  True
+
+Note: ASH can use ANSI escape sequences for displaying color. Use e.g. less -R to display
+To turn on/off escape sequences, set: 'use_ANSI_color = False' in
+~/ash_user_settings.ini
+
+Input script: /Users/rb269145/ash-tests/Fast-QM-MM-MD/lysozyme/initial-setup/modeller_setup_and_MD.py
+[93m================================================================================
+   > from ash import *
+   >
+   > #Original raw PDB-file (no hydrogens, nosolvent)
+   > #Download from https://www.rcsb.org/structure/1AKI
+   > pdbfile="1aki.pdb"
+   >
+   > #Setting up new system, adding hydrogens, solvent, ions and defining forcefield, topology
+   > #Here using CHARMM, Amber is also possible
+   > omm, ashfrag = OpenMM_Modeller(pdbfile=pdbfile, forcefield='CHARMM36', watermodel="tip3p", pH=7.0,
+   >     solvent_padding=10.0, ionicstrength=0.1, platform='OpenCL')
+   >
+   > #Gentle warmup MD (3 MD simulations: 10/50/200 steps with timesteps 0.5/1/4 fs at 1 K/10K/300K)
+   > Gentle_warm_up_MD(fragment=ashfrag, theory=omm, time_steps=[0.0005,0.001,0.004],
+   >             steps=[10,50,200], temperatures=[1,10,300])
+   >
+   > #Run NPT simulation until density and volume converges
+   > OpenMM_box_equilibration(fragment=ashfrag, theory=omm, datafilename="nptsim.csv", numsteps_per_NPT=10000,
+   >                   temperature=300, timestep=0.003, traj_frequency=100, trajfilename='equilbox_NPT',
+   >                   trajectory_file_option='DCD', coupling_frequency=1)
+   >
+   > #Classical MD simulation for 1000 ps
+   > OpenMM_MD(fragment=ashfrag, theory=omm, timestep=0.003, simulation_time=1000, traj_frequency=1000, temperature=300,
+   >     integrator='LangevinMiddleIntegrator', coupling_frequency=1, trajectory_file_option='DCD')
+[93m================================================================================ [0m
+
+
+
+                      [92m###########################[0m
+                      [92m#                         #[0m
+                    [92m#     [1mOpenMM Modeller     #[0m
+                      [92m#                         #[0m
+                      [92m###########################[0m
+Imported OpenMM library version: 8.1
+Forcefield: CHARMM36
+watermodel: tip3p
+Waterxmlfile selected: charmm36/water.xml
+XMfile: charmm36.xml
+Water model: tip3p
+Water xmlfile: charmm36/water.xml
+Now creating forcefield object
+PDBfile: 1aki.pdb
+pH: 7.0
+User-provided dictionary of residue_variants: {}
+
+Now checking PDB-file for alternate locations, i.e. multiple occupancies:
+
+Using PDB-file 1aki.pdb
+
+Running PDBFixer
+Found missing residues: {}
+Found non-standard residues: []
+Found missing atoms: {}
+Found missing terminals: {}
+Added missing atoms.
+PDBFixer done.
+[93m Warning: PDBFixer can create unreasonable orientations of residues if residues are missing or multiple occupancies are present.
+         You should inspect the created PDB-file to be sure. [0m
+Wrote PDBfile: system_afterfixes.pdb
+
+
+Now loading Modeller.
+Modeller topology has 207 residues.
+Modeller topology has 2 chains.
+Modeller topology has 1079 atoms.
+Chains: [<Chain 0>, <Chain 1>]
+This is chain 0, it has 129 residues and they are: [<Residue 0 (LYS) of chain 0>, <Residue 1 (VAL) of chain 0>, <Residue 2 (PHE) of chain 0>, <Residue 3 (GLY) of chain 0>, <Residue 4 (ARG) of chain 0>, <Residue 5 (CYS) of chain 0>, <Residue 6 (GLU) of chain 0>, <Residue 7 (LEU) of chain 0>, <Residue 8 (ALA) of chain 0>, <Residue 9 (ALA) of chain 0>, <Residue 10 (ALA) of chain 0>, <Residue 11 (MET) of chain 0>, <Residue 12 (LYS) of chain 0>, <Residue 13 (ARG) of chain 0>, <Residue 14 (HIS) of chain 0>, <Residue 15 (GLY) of chain 0>, <Residue 16 (LEU) of chain 0>, <Residue 17 (ASP) of chain 0>, <Residue 18 (ASN) of chain 0>, <Residue 19 (TYR) of chain 0>, <Residue 20 (ARG) of chain 0>, <Residue 21 (GLY) of chain 0>, <Residue 22 (TYR) of chain 0>, <Residue 23 (SER) of chain 0>, <Residue 24 (LEU) of chain 0>, <Residue 25 (GLY) of chain 0>, <Residue 26 (ASN) of chain 0>, <Residue 27 (TRP) of chain 0>, <Residue 28 (VAL) of chain 0>, <Residue 29 (CYS) of chain 0>, <Residue 30 (ALA) of chain 0>, <Residue 31 (ALA) of chain 0>, <Residue 32 (LYS) of chain 0>, <Residue 33 (PHE) of chain 0>, <Residue 34 (GLU) of chain 0>, <Residue 35 (SER) of chain 0>, <Residue 36 (ASN) of chain 0>, <Residue 37 (PHE) of chain 0>, <Residue 38 (ASN) of chain 0>, <Residue 39 (THR) of chain 0>, <Residue 40 (GLN) of chain 0>, <Residue 41 (ALA) of chain 0>, <Residue 42 (THR) of chain 0>, <Residue 43 (ASN) of chain 0>, <Residue 44 (ARG) of chain 0>, <Residue 45 (ASN) of chain 0>, <Residue 46 (THR) of chain 0>, <Residue 47 (ASP) of chain 0>, <Residue 48 (GLY) of chain 0>, <Residue 49 (SER) of chain 0>, <Residue 50 (THR) of chain 0>, <Residue 51 (ASP) of chain 0>, <Residue 52 (TYR) of chain 0>, <Residue 53 (GLY) of chain 0>, <Residue 54 (ILE) of chain 0>, <Residue 55 (LEU) of chain 0>, <Residue 56 (GLN) of chain 0>, <Residue 57 (ILE) of chain 0>, <Residue 58 (ASN) of chain 0>, <Residue 59 (SER) of chain 0>, <Residue 60 (ARG) of chain 0>, <Residue 61 (TRP) of chain 0>, <Residue 62 (TRP) of chain 0>, <Residue 63 (CYS) of chain 0>, <Residue 64 (ASN) of chain 0>, <Residue 65 (ASP) of chain 0>, <Residue 66 (GLY) of chain 0>, <Residue 67 (ARG) of chain 0>, <Residue 68 (THR) of chain 0>, <Residue 69 (PRO) of chain 0>, <Residue 70 (GLY) of chain 0>, <Residue 71 (SER) of chain 0>, <Residue 72 (ARG) of chain 0>, <Residue 73 (ASN) of chain 0>, <Residue 74 (LEU) of chain 0>, <Residue 75 (CYS) of chain 0>, <Residue 76 (ASN) of chain 0>, <Residue 77 (ILE) of chain 0>, <Residue 78 (PRO) of chain 0>, <Residue 79 (CYS) of chain 0>, <Residue 80 (SER) of chain 0>, <Residue 81 (ALA) of chain 0>, <Residue 82 (LEU) of chain 0>, <Residue 83 (LEU) of chain 0>, <Residue 84 (SER) of chain 0>, <Residue 85 (SER) of chain 0>, <Residue 86 (ASP) of chain 0>, <Residue 87 (ILE) of chain 0>, <Residue 88 (THR) of chain 0>, <Residue 89 (ALA) of chain 0>, <Residue 90 (SER) of chain 0>, <Residue 91 (VAL) of chain 0>, <Residue 92 (ASN) of chain 0>, <Residue 93 (CYS) of chain 0>, <Residue 94 (ALA) of chain 0>, <Residue 95 (LYS) of chain 0>, <Residue 96 (LYS) of chain 0>, <Residue 97 (ILE) of chain 0>, <Residue 98 (VAL) of chain 0>, <Residue 99 (SER) of chain 0>, <Residue 100 (ASP) of chain 0>, <Residue 101 (GLY) of chain 0>, <Residue 102 (ASN) of chain 0>, <Residue 103 (GLY) of chain 0>, <Residue 104 (MET) of chain 0>, <Residue 105 (ASN) of chain 0>, <Residue 106 (ALA) of chain 0>, <Residue 107 (TRP) of chain 0>, <Residue 108 (VAL) of chain 0>, <Residue 109 (ALA) of chain 0>, <Residue 110 (TRP) of chain 0>, <Residue 111 (ARG) of chain 0>, <Residue 112 (ASN) of chain 0>, <Residue 113 (ARG) of chain 0>, <Residue 114 (CYS) of chain 0>, <Residue 115 (LYS) of chain 0>, <Residue 116 (GLY) of chain 0>, <Residue 117 (THR) of chain 0>, <Residue 118 (ASP) of chain 0>, <Residue 119 (VAL) of chain 0>, <Residue 120 (GLN) of chain 0>, <Residue 121 (ALA) of chain 0>, <Residue 122 (TRP) of chain 0>, <Residue 123 (ILE) of chain 0>, <Residue 124 (ARG) of chain 0>, <Residue 125 (GLY) of chain 0>, <Residue 126 (CYS) of chain 0>, <Residue 127 (ARG) of chain 0>, <Residue 128 (LEU) of chain 0>]
+
+This is chain 1, it has 78 residues and they are: [<Residue 129 (HOH) of chain 1>, <Residue 130 (HOH) of chain 1>, <Residue 131 (HOH) of chain 1>, <Residue 132 (HOH) of chain 1>, <Residue 133 (HOH) of chain 1>, <Residue 134 (HOH) of chain 1>, <Residue 135 (HOH) of chain 1>, <Residue 136 (HOH) of chain 1>, <Residue 137 (HOH) of chain 1>, <Residue 138 (HOH) of chain 1>, <Residue 139 (HOH) of chain 1>, <Residue 140 (HOH) of chain 1>, <Residue 141 (HOH) of chain 1>, <Residue 142 (HOH) of chain 1>, <Residue 143 (HOH) of chain 1>, <Residue 144 (HOH) of chain 1>, <Residue 145 (HOH) of chain 1>, <Residue 146 (HOH) of chain 1>, <Residue 147 (HOH) of chain 1>, <Residue 148 (HOH) of chain 1>, <Residue 149 (HOH) of chain 1>, <Residue 150 (HOH) of chain 1>, <Residue 151 (HOH) of chain 1>, <Residue 152 (HOH) of chain 1>, <Residue 153 (HOH) of chain 1>, <Residue 154 (HOH) of chain 1>, <Residue 155 (HOH) of chain 1>, <Residue 156 (HOH) of chain 1>, <Residue 157 (HOH) of chain 1>, <Residue 158 (HOH) of chain 1>, <Residue 159 (HOH) of chain 1>, <Residue 160 (HOH) of chain 1>, <Residue 161 (HOH) of chain 1>, <Residue 162 (HOH) of chain 1>, <Residue 163 (HOH) of chain 1>, <Residue 164 (HOH) of chain 1>, <Residue 165 (HOH) of chain 1>, <Residue 166 (HOH) of chain 1>, <Residue 167 (HOH) of chain 1>, <Residue 168 (HOH) of chain 1>, <Residue 169 (HOH) of chain 1>, <Residue 170 (HOH) of chain 1>, <Residue 171 (HOH) of chain 1>, <Residue 172 (HOH) of chain 1>, <Residue 173 (HOH) of chain 1>, <Residue 174 (HOH) of chain 1>, <Residue 175 (HOH) of chain 1>, <Residue 176 (HOH) of chain 1>, <Residue 177 (HOH) of chain 1>, <Residue 178 (HOH) of chain 1>, <Residue 179 (HOH) of chain 1>, <Residue 180 (HOH) of chain 1>, <Residue 181 (HOH) of chain 1>, <Residue 182 (HOH) of chain 1>, <Residue 183 (HOH) of chain 1>, <Residue 184 (HOH) of chain 1>, <Residue 185 (HOH) of chain 1>, <Residue 186 (HOH) of chain 1>, <Residue 187 (HOH) of chain 1>, <Residue 188 (HOH) of chain 1>, <Residue 189 (HOH) of chain 1>, <Residue 190 (HOH) of chain 1>, <Residue 191 (HOH) of chain 1>, <Residue 192 (HOH) of chain 1>, <Residue 193 (HOH) of chain 1>, <Residue 194 (HOH) of chain 1>, <Residue 195 (HOH) of chain 1>, <Residue 196 (HOH) of chain 1>, <Residue 197 (HOH) of chain 1>, <Residue 198 (HOH) of chain 1>, <Residue 199 (HOH) of chain 1>, <Residue 200 (HOH) of chain 1>, <Residue 201 (HOH) of chain 1>, <Residue 202 (HOH) of chain 1>, <Residue 203 (HOH) of chain 1>, <Residue 204 (HOH) of chain 1>, <Residue 205 (HOH) of chain 1>, <Residue 206 (HOH) of chain 1>]
+
+
+
+User defined residue variants per chain:
+
+MODELLER TOPOLOGY - RESIDUES TABLE
+
+  ASH-resid   Resname      Chain-index  Chain-name   ResID-in-chain       User-modification
+----------------------------------------------------------------------------------------------------
+  0           LYS          0            A            1
+  1           VAL          0            A            2
+  2           PHE          0            A            3
+  3           GLY          0            A            4
+  4           ARG          0            A            5
+  5           CYS          0            A            6
+  6           GLU          0            A            7
+  7           LEU          0            A            8
+  8           ALA          0            A            9
+  9           ALA          0            A            10
+  10          ALA          0            A            11
+  11          MET          0            A            12
+  12          LYS          0            A            13
+  13          ARG          0            A            14
+  14          HIS          0            A            15
+  15          GLY          0            A            16
+  16          LEU          0            A            17
+  17          ASP          0            A            18
+  18          ASN          0            A            19
+  19          TYR          0            A            20
+  20          ARG          0            A            21
+  21          GLY          0            A            22
+  22          TYR          0            A            23
+  23          SER          0            A            24
+  24          LEU          0            A            25
+  25          GLY          0            A            26
+  26          ASN          0            A            27
+  27          TRP          0            A            28
+  28          VAL          0            A            29
+  29          CYS          0            A            30
+  30          ALA          0            A            31
+  31          ALA          0            A            32
+  32          LYS          0            A            33
+  33          PHE          0            A            34
+  34          GLU          0            A            35
+  35          SER          0            A            36
+  36          ASN          0            A            37
+  37          PHE          0            A            38
+  38          ASN          0            A            39
+  39          THR          0            A            40
+  40          GLN          0            A            41
+  41          ALA          0            A            42
+  42          THR          0            A            43
+  43          ASN          0            A            44
+  44          ARG          0            A            45
+  45          ASN          0            A            46
+  46          THR          0            A            47
+  47          ASP          0            A            48
+  48          GLY          0            A            49
+  49          SER          0            A            50
+  50          THR          0            A            51
+  51          ASP          0            A            52
+  52          TYR          0            A            53
+  53          GLY          0            A            54
+  54          ILE          0            A            55
+  55          LEU          0            A            56
+  56          GLN          0            A            57
+  57          ILE          0            A            58
+  58          ASN          0            A            59
+  59          SER          0            A            60
+  60          ARG          0            A            61
+  61          TRP          0            A            62
+  62          TRP          0            A            63
+  63          CYS          0            A            64
+  64          ASN          0            A            65
+  65          ASP          0            A            66
+  66          GLY          0            A            67
+  67          ARG          0            A            68
+  68          THR          0            A            69
+  69          PRO          0            A            70
+  70          GLY          0            A            71
+  71          SER          0            A            72
+  72          ARG          0            A            73
+  73          ASN          0            A            74
+  74          LEU          0            A            75
+  75          CYS          0            A            76
+  76          ASN          0            A            77
+  77          ILE          0            A            78
+  78          PRO          0            A            79
+  79          CYS          0            A            80
+  80          SER          0            A            81
+  81          ALA          0            A            82
+  82          LEU          0            A            83
+  83          LEU          0            A            84
+  84          SER          0            A            85
+  85          SER          0            A            86
+  86          ASP          0            A            87
+  87          ILE          0            A            88
+  88          THR          0            A            89
+  89          ALA          0            A            90
+  90          SER          0            A            91
+  91          VAL          0            A            92
+  92          ASN          0            A            93
+  93          CYS          0            A            94
+  94          ALA          0            A            95
+  95          LYS          0            A            96
+  96          LYS          0            A            97
+  97          ILE          0            A            98
+  98          VAL          0            A            99
+  99          SER          0            A            100
+  100         ASP          0            A            101
+  101         GLY          0            A            102
+  102         ASN          0            A            103
+  103         GLY          0            A            104
+  104         MET          0            A            105
+  105         ASN          0            A            106
+  106         ALA          0            A            107
+  107         TRP          0            A            108
+  108         VAL          0            A            109
+  109         ALA          0            A            110
+  110         TRP          0            A            111
+  111         ARG          0            A            112
+  112         ASN          0            A            113
+  113         ARG          0            A            114
+  114         CYS          0            A            115
+  115         LYS          0            A            116
+  116         GLY          0            A            117
+  117         THR          0            A            118
+  118         ASP          0            A            119
+  119         VAL          0            A            120
+  120         GLN          0            A            121
+  121         ALA          0            A            122
+  122         TRP          0            A            123
+  123         ILE          0            A            124
+  124         ARG          0            A            125
+  125         GLY          0            A            126
+  126         CYS          0            A            127
+  127         ARG          0            A            128
+  128         LEU          0            A            129
+------------------------------------------------------------
+  129         HOH          1            B            1
+  130         HOH          1            B            2
+  131         HOH          1            B            3
+  132         HOH          1            B            4
+  133         HOH          1            B            5
+  134         HOH          1            B            6
+  135         HOH          1            B            7
+  136         HOH          1            B            8
+  137         HOH          1            B            9
+  138         HOH          1            B            10
+  139         HOH          1            B            11
+  140         HOH          1            B            12
+  141         HOH          1            B            13
+  142         HOH          1            B            14
+  143         HOH          1            B            15
+  144         HOH          1            B            16
+  145         HOH          1            B            17
+  146         HOH          1            B            18
+  147         HOH          1            B            19
+  148         HOH          1            B            20
+  149         HOH          1            B            21
+  150         HOH          1            B            22
+  151         HOH          1            B            23
+  152         HOH          1            B            24
+  153         HOH          1            B            25
+  154         HOH          1            B            26
+  155         HOH          1            B            27
+  156         HOH          1            B            28
+  157         HOH          1            B            29
+  158         HOH          1            B            30
+  159         HOH          1            B            31
+  160         HOH          1            B            32
+  161         HOH          1            B            33
+  162         HOH          1            B            34
+  163         HOH          1            B            35
+  164         HOH          1            B            36
+  165         HOH          1            B            37
+  166         HOH          1            B            38
+  167         HOH          1            B            39
+  168         HOH          1            B            40
+  169         HOH          1            B            41
+  170         HOH          1            B            42
+  171         HOH          1            B            43
+  172         HOH          1            B            44
+  173         HOH          1            B            45
+  174         HOH          1            B            46
+  175         HOH          1            B            47
+  176         HOH          1            B            48
+  177         HOH          1            B            49
+  178         HOH          1            B            50
+  179         HOH          1            B            51
+  180         HOH          1            B            52
+  181         HOH          1            B            53
+  182         HOH          1            B            54
+  183         HOH          1            B            55
+  184         HOH          1            B            56
+  185         HOH          1            B            57
+  186         HOH          1            B            58
+  187         HOH          1            B            59
+  188         HOH          1            B            60
+  189         HOH          1            B            61
+  190         HOH          1            B            62
+  191         HOH          1            B            63
+  192         HOH          1            B            64
+  193         HOH          1            B            65
+  194         HOH          1            B            66
+  195         HOH          1            B            67
+  196         HOH          1            B            68
+  197         HOH          1            B            69
+  198         HOH          1            B            70
+  199         HOH          1            B            71
+  200         HOH          1            B            72
+  201         HOH          1            B            73
+  202         HOH          1            B            74
+  203         HOH          1            B            75
+  204         HOH          1            B            76
+  205         HOH          1            B            77
+  206         HOH          1            B            78
+
+Adding hydrogens for pH: 7.0
+Warning: OpenMM Modeller will fail in this step if residue information is missing
+residue_states: [None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+Wrote PDB-file: system_afterH.pdb
+System size: 2194 atoms
+
+implicit: False
+We are doing explicit solvation
+Setting periodic to True
+Adding solvent, modeller_solvent_name: tip3p
+Actual solvent name: tip3p
+Actual solvent file: charmm36/water.xml
+Using solvent padding (solvent_padding=X keyword): 10.0 Å
+Adding ionic strength: 0.1 M, using ions: Na+ and Cl-
+Wrote PDB-file: system_aftersolvent_ions.pdb
+System size: 25825 atoms
+
+
+[94m--------------------------------------------------------------------------------[0m
+[94m[1m                                New ASH fragment                                [0m
+[94m--------------------------------------------------------------------------------[0m
+
+Reading coordinates from PDB file 'system_aftersolvent_ions.pdb' into fragment.
+Number of atoms in PDB file: 25825
+Reading atom/residue info from PDB file 'system_aftersolvent_ions.pdb' into fragment.
+Number of atomnames found in PDB file: 25825
+Creating/Updating fragment attributes...
+Number of Atoms in fragment: 25825
+Formula: O8128C613Cl22N193H16845S10Na14
+Label: system_aftersolvent_ions
+Charge: None Mult: None
+
+[94m--------------------------------------------------------------------------------[0m
+Wrote PDB-file: finalsystem.pdb
+Printing fragment to disk:  finalsystem.ygg
+
+Wrote XYZ file:  finalsystem.xyz
+
+OpenMM_Modeller used the following XML-files to define system:
+General forcefield XML file: charmm36.xml
+Solvent forcefield XML file: charmm36/water.xml
+Extra forcefield XML file: None
+Creating OpenMMTheory object
+
+
+                       [92m#########################[0m
+                       [92m#                       #[0m
+                     [92m#     [1mOpenMM Theory     #[0m
+                       [92m#                       #[0m
+                       [92m#########################[0m
+OpenMM CPU threads set to: 1
+Topology provided as keyword
+
+
+Files written to disk:
+system_afteratlocfixes.pdb
+system_afterfixes.pdb
+system_afterfixes2.pdb
+system_afterH.pdb
+system_aftersolvent.pdb
+system_afterions.pdb and finalsystem.pdb (same)
+
+Final files:
+finalsystem.pdb  (PDB file)
+finalsystem.ygg  (ASH fragment file)
+finalsystem.xyz   (XYZ coordinate file)
+system_full.xml   (System XML file)
+[92m
+
+ OpenMM_Modeller done! System has been fully set up!
+ [0m
+[93m Strongly recommended: Check finalsystem.pdb carefully for correctness! [0m
+
+To use this system setup to define a future OpenMMTheory object you can either do:
+
+[95m 1. Define using separate forcefield XML files: [0m
+omm = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml"], pdbfile="finalsystem.pdb", periodic=True) [0m
+[95m 2. Use forcefield object file :
+ [0m omm = OpenMMTheory(topoforce=True, forcefield=forcefield_object, pdbfile="finalsystem.pdb", topology=modeller.topology, periodic=True) [0m
+[95m 3. Use full system XML-file (USUALLY NOT RECOMMENDED ):
+ [0m omm = OpenMMTheory(xmlsystemfile="system_full.xml", pdbfile="finalsystem.pdb", periodic=True) [0m
+
+
+Now running single-point MM job to check for bad contacts
+
+
+                       [92m#########################[0m
+                       [92m#                       #[0m
+                     [92m#     [1mOpenMM Theory     #[0m
+                       [92m#                       #[0m
+                       [92m#########################[0m
+OpenMM CPU threads set to: 1
+Topology provided as keyword
+Checking system total gradient for bad atoms
+Gradient threshold setting: 45000
+
+No atoms with gradients larger than threshold: 45000
+
+[94m---------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (OpenMM_Modeller): 10.85 seconds, 0.2 minutes.[0m
+[94m---------------------------------------------------------------------[0m
+
+
+                     [92m#############################[0m
+                     [92m#                           #[0m
+                   [92m#     [1mGentle_warm_up_MD     #[0m
+                     [92m#                           #[0m
+                     [92m#############################[0m
+Trajectory filename: warmup_MD
+check_gradient_first is True
+Will run singlepoint gradient calculation to check for large forces
+[91m OpenMM autoconstraints (HBonds,AllBonds,HAngles) in OpenMMTheory are not compatible with OpenMMTheory.run() [0m
+[93m Please redefine OpenMMTheory object: autoconstraints=None, rigidwater=False [0m
+force_run is True. Will continue
+[91m OpenMM constraints not zero. Exiting. [0m
+force_run is True. Will continue
+Checking system total gradient for bad atoms
+Gradient threshold setting: 100
+
+No atoms with gradients larger than threshold: 100
+
+initial_opt is True (default). Will attempt initial 10-step minimization first
+If this step runs forever something is wrong. Select initial_opt=False to avoid in this case
+
+
+                    [92m###############################[0m
+                    [92m#                             #[0m
+                  [92m#     [1mOpenMM Optimization     #[0m
+                    [92m#                             #[0m
+                    [92m###############################[0m
+
+[94m--------------------------------------------------------------------------------[0m
+[94m[1m                   Creating/updating OpenMM simulation object                   [0m
+[94m--------------------------------------------------------------------------------[0m
+
+Integrator name: VerletIntegrator
+Timestep: 0.001
+Temperature: 1
+Coupling frequency: 1
+Properties: {}
+Topology: <Topology; 4 chains, 8108 residues, 25825 atoms, 17870 bonds>
+
+[94m----------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (create integrator): 0.00 seconds, 0.0 minutes.[0m
+[94m----------------------------------------------------------------------[0m
+
+[94m---------------------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (creating/updating simulation): 0.06 seconds, 0.0 minutes.[0m
+[94m---------------------------------------------------------------------------------[0m
+Setting coordinates of OpenMM object
+Coordinates set
+
+Minimization done.
+OpenMM_Opt trajectory was written to: OpenMMOpt_traj.xyz
+
+Wrote PDB-file: frag-minimized.pdb
+
+[94m---------------------------------------------------------------[0m
+[94m[1mTime to calculate step (OpenMM_Opt): 2.82 seconds, 0.0 minutes.[0m
+[94m---------------------------------------------------------------[0m
+Minimization successful
+
+3 MD-runs have been defined
+MD-step 0 Number of simulation steps: 10 with timestep: 0.0005 and temperature: 1 K
+MD-step 1 Number of simulation steps: 50 with timestep: 0.001 and temperature: 10 K
+MD-step 2 Number of simulation steps: 200 with timestep: 0.004 and temperature: 300 K
+
+
+
+
+Now running MD-run 0. Number of steps: 10 with timestep:0.0005 and temperature: 1 K
+Will write trajectory to file: warmup_MD_cycle0.dcd
+
+
+                [92m######################################[0m
+                [92m#                                    #[0m
+              [92m#     [1mOpenMM MD wrapper function     #[0m
+                [92m#                                    #[0m
+                [92m######################################[0m
+
+
+         [92m####################################################[0m
+         [92m#                                                  #[0m
+       [92m#     [1mOpenMM Molecular Dynamics Initialization     #[0m
+         [92m#                                                  #[0m
+         [92m####################################################[0m
+
+[94m--------------------[0m
+[94m[1mMD system parameters[0m
+[94m--------------------[0m
+Temperature: 1 K
+OpenMM autoconstraints: HBonds
+OpenMM hydrogenmass: 1.5 Da
+OpenMM rigidwater constraints: True
+User Constraints: []
+User Restraints: []
+Number of atoms: 25825
+Number of frozen atoms: 0
+Frozen atoms []
+Integrator: LangevinMiddleIntegrator
+Timestep: 0.0005 ps
+Anderon Thermostat: False
+coupling_frequency: 1 ps^-1 (for Nose-Hoover and Langevin integrators)
+Barostat: None
+
+Will write trajectory in format: DCD
+Trajectory write frequency: 1
+enforcePeriodicBox: True
+
+
+Defining atom positions from fragment
+
+
+               [92m#########################################[0m
+               [92m#                                       #[0m
+             [92m#     [1mOpenMM Molecular Dynamics Run     #[0m
+               [92m#                                       #[0m
+               [92m#########################################[0m
+Restart false. This is a new simulation
+
+[94m--------------------------------------------------------------------------------[0m
+[94m[1m                   Creating/updating OpenMM simulation object                   [0m
+[94m--------------------------------------------------------------------------------[0m
+
+Integrator name: LangevinMiddleIntegrator
+Timestep: 0.0005
+Temperature: 1
+Coupling frequency: 1
+Properties: {}
+Topology: <Topology; 4 chains, 8108 residues, 25825 atoms, 17870 bonds>
+
+[94m----------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (create integrator): 0.00 seconds, 0.0 minutes.[0m
+[94m----------------------------------------------------------------------[0m
+
+[94m---------------------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (creating/updating simulation): 0.06 seconds, 0.0 minutes.[0m
+[94m---------------------------------------------------------------------------------[0m
+Simulation created.
+
+[94m-----------------[0m
+[94m[1mMD run parameters[0m
+[94m-----------------[0m
+Simulation time: 0.005 ps
+Simulation steps: 10
+Timestep: 0.0005 ps
+Set temperature: 1 K
+OpenMM integrator: LangevinMiddleIntegrator
+
+OpenMM System forces present before run: ['HarmonicBondForce', 'PeriodicTorsionForce', 'CustomTorsionForce', 'CMAPTorsionForce', 'NonbondedForce', 'CustomNonbondedForce', 'CMMotionRemover', 'HarmonicAngleForce', 'CustomBondForce']
+Checking Initial PBC vectors.
+A:  Vec3(x=6.414553919055703, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.414553919055703, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.414553919055703) nm
+Boxlength: 64.14553919055703 Angstrom
+Restart false
+Creating StateDataReporter that will write to stdout
+DCDReporter added
+Setting coordinates of OpenMM object
+Coordinates set
+
+Regular classical OpenMM MD option chosen.
+#"Step","Time (ps)","Potential Energy (kJ/mole)","Kinetic Energy (kJ/mole)","Temperature (K)"
+1,0.0005,-202075.35830588313,3520.48696632586,16.073846265934
+2,0.001,-213392.26455588313,12861.01822105494,58.720862109698906
+3,0.0015,-226630.98330588313,25392.65053667406,115.9378134091083
+4,0.002,-239822.47549338313,38715.23149221281,176.76607955328936
+5,0.0025,-251932.00674338313,51355.64580501814,234.47970790788955
+6,0.003,-262592.4520558831,62658.863741673194,286.08796243688073
+7,0.0035,-271805.0301808831,72480.5642779209,330.9319019258686
+8,0.004,-279726.8583058831,80921.82581518668,369.473030337475
+9,0.0045000000000000005,-286550.5223683831,88168.28109490385,402.55891000505454
+10,0.005000000000000001,-292470.6708058831,94413.42597309247,431.07300468589744
+
+[94m------------------------------[0m
+[94m[1mOpenMM MD simulation finished![0m
+[94m------------------------------[0m
+
+[94m------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (OpenMM_MD run): 1.51 seconds, 0.0 minutes.[0m
+[94m------------------------------------------------------------------[0m
+Finalizing simulation data
+Checking PBC vectors:
+A:  Vec3(x=6.414553919055703, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.414553919055703, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.414553919055703) nm
+a 0 6.414553919055703 nm
+Updating PBC vectors in simulation.context, OpenMM system and OpenMM topology
+Writing final frame to disk as PDB-file: warmup_MD_cycle0_lastframe.pdb
+Trajectory : warmup_MD_cycle0.DCD
+Updating coordinates in ASH fragment.
+Trying to load mdtraj for basic analysis of trajectory
+Imaging trajectory
+Importing mdtraj (https://www.mdtraj.org)
+Loading trajectory using mdtraj.
+Found 10 frames in trajectory.
+PBC information in trajectory:
+Unitcell lengths: [6.414554 6.414554 6.414554]
+Unitcell angles [90. 90. 90.]
+Saved reimaged trajectory: warmup_MD_cycle0_imaged.dcd
+Saved reimaged PDB-file: warmup_MD_cycle0_lastframe_imaged.pdb
+
+Running RMS Fluctuation analysis on trajectory
+Inside MDtraj_RMSF
+Importing mdtraj (https://www.mdtraj.org)
+Loading trajectory using mdtraj.
+Will print RMSF largest_values=10
+Printing atoms with high root-mean-square fluctuations:
+Index    Residue-atom           Coordinates                              RMSF
+ 10322 HOH2710-H1         1.907671     4.097829     6.378931          3.206912
+  5293 HOH1034-O          1.872045     1.010510     6.394815          3.206672
+ 10321 HOH2710-O          1.871837     4.010499     6.394792          3.206578
+  5295 HOH1034-H2         1.813224     1.021762     6.469486          3.206416
+  5294 HOH1034-H1         1.907728     1.097909     6.378990          3.206132
+ 10323 HOH2710-H2         1.813204     4.021840     6.469598          3.205799
+  7745 HOH1851-H1         0.866001     3.524603     3.233094          0.018835
+  2441 HOH83-H1           0.866002     0.524610     3.233100          0.018831
+   414 ASN27-HB2          2.737549     1.857076     0.852575          0.018755
+ 18602 HOH5470-H1         3.866013     3.524616     3.233109          0.018721
+
+
+Now running MD-run 1. Number of steps: 50 with timestep:0.001 and temperature: 10 K
+Will write trajectory to file: warmup_MD_cycle1.dcd
+
+
+                [92m######################################[0m
+                [92m#                                    #[0m
+              [92m#     [1mOpenMM MD wrapper function     #[0m
+                [92m#                                    #[0m
+                [92m######################################[0m
+
+
+         [92m####################################################[0m
+         [92m#                                                  #[0m
+       [92m#     [1mOpenMM Molecular Dynamics Initialization     #[0m
+         [92m#                                                  #[0m
+         [92m####################################################[0m
+
+[94m--------------------[0m
+[94m[1mMD system parameters[0m
+[94m--------------------[0m
+Temperature: 10 K
+OpenMM autoconstraints: HBonds
+OpenMM hydrogenmass: 1.5 Da
+OpenMM rigidwater constraints: True
+User Constraints: []
+User Restraints: []
+Number of atoms: 25825
+Number of frozen atoms: 0
+Frozen atoms []
+Integrator: LangevinMiddleIntegrator
+Timestep: 0.001 ps
+Anderon Thermostat: False
+coupling_frequency: 1 ps^-1 (for Nose-Hoover and Langevin integrators)
+Barostat: None
+
+Will write trajectory in format: DCD
+Trajectory write frequency: 1
+enforcePeriodicBox: True
+
+
+Defining atom positions from fragment
+
+
+               [92m#########################################[0m
+               [92m#                                       #[0m
+             [92m#     [1mOpenMM Molecular Dynamics Run     #[0m
+               [92m#                                       #[0m
+               [92m#########################################[0m
+Restart false. This is a new simulation
+
+[94m--------------------------------------------------------------------------------[0m
+[94m[1m                   Creating/updating OpenMM simulation object                   [0m
+[94m--------------------------------------------------------------------------------[0m
+
+Integrator name: LangevinMiddleIntegrator
+Timestep: 0.001
+Temperature: 10
+Coupling frequency: 1
+Properties: {}
+Topology: <Topology; 4 chains, 8108 residues, 25825 atoms, 17870 bonds>
+
+[94m----------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (create integrator): 0.00 seconds, 0.0 minutes.[0m
+[94m----------------------------------------------------------------------[0m
+
+[94m---------------------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (creating/updating simulation): 0.06 seconds, 0.0 minutes.[0m
+[94m---------------------------------------------------------------------------------[0m
+Simulation created.
+
+[94m-----------------[0m
+[94m[1mMD run parameters[0m
+[94m-----------------[0m
+Simulation time: 0.05 ps
+Simulation steps: 50
+Timestep: 0.001 ps
+Set temperature: 10 K
+OpenMM integrator: LangevinMiddleIntegrator
+
+OpenMM System forces present before run: ['HarmonicBondForce', 'PeriodicTorsionForce', 'CustomTorsionForce', 'CMAPTorsionForce', 'NonbondedForce', 'CustomNonbondedForce', 'CMMotionRemover', 'HarmonicAngleForce', 'CustomBondForce']
+Checking Initial PBC vectors.
+A:  Vec3(x=6.414553919055703, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.414553919055703, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.414553919055703) nm
+Boxlength: 64.14553919055703 Angstrom
+Restart false
+Creating StateDataReporter that will write to stdout
+DCDReporter added
+Setting coordinates of OpenMM object
+Coordinates set
+
+Regular classical OpenMM MD option chosen.
+#"Step","Time (ps)","Potential Energy (kJ/mole)","Kinetic Energy (kJ/mole)","Temperature (K)"
+1,0.001,-293914.4364308831,736.8498478816823,3.3643104744364276
+2,0.002,-296648.5301808831,2849.4598767917178,13.010069470104622
+3,0.003,-300437.0770558831,6135.2858746646425,28.01250022801184
+4,0.004,-305006.4989308831,10334.67931330427,47.18609899105791
+5,0.005,-310070.1004933831,15155.288217162284,69.19604453835643
+6,0.006,-315380.6161183831,20337.24818422245,92.85584747569807
+7,0.007,-320744.5692433831,25645.500412886147,117.09227586770254
+8,0.008,-325989.3426808831,30910.703808756545,141.13215181487024
+9,0.009000000000000001,-330941.6473683831,35958.587251912046,164.1797878975328
+10,0.010000000000000002,-335463.0614308831,40631.16963364577,185.5138736610384
+11,0.011000000000000003,-339459.2254933831,44818.18326480154,204.63094867489843
+12,0.012000000000000004,-342870.8036183831,48430.03448552542,221.12194603198617
+13,0.013000000000000005,-345662.8114308831,51429.78882005479,234.8182302307362
+14,0.014000000000000005,-347840.7567433831,53812.78427756553,245.6985155443394
+15,0.015000000000000006,-349446.7489308831,55598.35184831737,253.85106344587467
+16,0.016000000000000007,-350554.4989308831,56827.2763041485,259.46208912624866
+17,0.017000000000000008,-351255.5379933831,57598.335314157885,262.9825918599341
+18,0.01800000000000001,-351649.4676808831,58014.47433470178,264.88260021260237
+19,0.01900000000000001,-351835.1786183831,58176.01485445065,265.6201622331407
+20,0.02000000000000001,-351904.6004933831,58177.37700396095,265.626381538035
+21,0.02100000000000001,-351926.0926808831,58097.6783028066,265.2624930526626
+22,0.022000000000000013,-351941.3348683831,57997.26794863303,264.8040392614877
+23,0.023000000000000013,-351979.6864308831,57910.93684289015,264.4098685302926
+24,0.024000000000000014,-352045.5614308831,57851.677735536316,264.1393031822107
+25,0.025000000000000015,-352135.3270558831,57817.07024540531,263.98129223618633
+26,0.026000000000000016,-352242.2489308831,57807.42670975474,263.9372617622803
+27,0.027000000000000017,-352364.3817433831,57811.64355845306,263.9565150583021
+28,0.028000000000000018,-352492.2098683831,57822.53245258721,264.00623159240445
+29,0.02900000000000002,-352622.4754933831,57839.8843918785,264.08545711070684
+30,0.03000000000000002,-352744.9364308831,57862.62781909364,264.1892990951009
+31,0.03100000000000002,-352847.9364308831,57860.95624384601,264.18166701357086
+32,0.03200000000000002,-352918.9286183831,57840.15293932558,264.08668324516515
+33,0.03300000000000002,-352946.1395558831,57779.10578819021,263.8079540432936
+34,0.03400000000000002,-352927.9442433831,57676.17229008756,263.33798007663995
+35,0.035000000000000024,-352871.2723683831,57522.98017654725,262.63853522547197
+36,0.036000000000000025,-352795.8817433831,57343.75447911046,261.82022618610904
+37,0.037000000000000026,-352727.3504933831,57154.909764404845,260.9579986189154
+38,0.03800000000000003,-352695.9989308831,57000.159232667414,260.2514383388996
+39,0.03900000000000003,-352723.5848683831,56876.83292726183,259.6883548528375
+40,0.04000000000000003,-352819.7958058831,56833.90682101267,259.4923627530957
+41,0.04100000000000003,-352990.0692433831,56856.86423537976,259.59718176044595
+42,0.04200000000000003,-353220.8895558831,56959.192401873406,260.06439190285715
+43,0.04300000000000003,-353490.5692433831,57092.498907043424,260.67304300449376
+44,0.04400000000000003,-353776.6551808831,57261.785477492725,261.44597195844733
+45,0.04500000000000003,-354058.8114308831,57436.33875399409,262.24294764917863
+46,0.046000000000000034,-354319.8504933831,57599.08934424876,262.9860346119955
+47,0.047000000000000035,-354551.0614308831,57736.99772033736,263.61569694485917
+48,0.048000000000000036,-354749.0770558831,57840.92394180255,264.09020348978027
+49,0.04900000000000004,-354914.7489308831,57912.087642189814,264.41512285198246
+50,0.05000000000000004,-355047.9833058831,57952.087699061114,264.5977551897606
+
+[94m------------------------------[0m
+[94m[1mOpenMM MD simulation finished![0m
+[94m------------------------------[0m
+
+[94m------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (OpenMM_MD run): 5.68 seconds, 0.1 minutes.[0m
+[94m------------------------------------------------------------------[0m
+Finalizing simulation data
+Checking PBC vectors:
+A:  Vec3(x=6.414553919055703, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.414553919055703, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.414553919055703) nm
+a 0 6.414553919055703 nm
+Updating PBC vectors in simulation.context, OpenMM system and OpenMM topology
+Writing final frame to disk as PDB-file: warmup_MD_cycle1_lastframe.pdb
+Trajectory : warmup_MD_cycle1.DCD
+Updating coordinates in ASH fragment.
+Trying to load mdtraj for basic analysis of trajectory
+Imaging trajectory
+Importing mdtraj (https://www.mdtraj.org)
+Loading trajectory using mdtraj.
+Found 50 frames in trajectory.
+PBC information in trajectory:
+Unitcell lengths: [6.414554 6.414554 6.414554]
+Unitcell angles [90. 90. 90.]
+Saved reimaged trajectory: warmup_MD_cycle1_imaged.dcd
+Saved reimaged PDB-file: warmup_MD_cycle1_lastframe_imaged.pdb
+
+Running RMS Fluctuation analysis on trajectory
+Inside MDtraj_RMSF
+Importing mdtraj (https://www.mdtraj.org)
+Loading trajectory using mdtraj.
+Will print RMSF largest_values=10
+Printing atoms with high root-mean-square fluctuations:
+Index    Residue-atom           Coordinates                              RMSF
+  6312 HOH1373-H2         1.583538     6.393547     2.472883          3.207970
+  4789 HOH866-O           0.359396     0.026451     0.700295          3.207525
+ 13210 HOH3673-O          0.152411     5.592541     6.399687          3.204848
+  4790 HOH866-H1          0.317841    -0.058046     0.683100          3.204077
+ 13212 HOH3673-H2         0.099991     5.535665     6.456075          3.200898
+ 10821 HOH2876-H2         0.813950     4.611298     6.380381          3.200876
+  6310 HOH1373-O          1.574487     6.444065     2.553681          3.198177
+ 10267 HOH2692-O         -0.007665     2.571929     1.333761          3.196877
+ 10819 HOH2876-O          0.863609     4.555920     6.440628          3.196526
+  5472 HOH1093-H2         0.393984     6.415546     2.706783          3.196015
+
+
+Now running MD-run 2. Number of steps: 200 with timestep:0.004 and temperature: 300 K
+Will write trajectory to file: warmup_MD_cycle2.dcd
+
+
+                [92m######################################[0m
+                [92m#                                    #[0m
+              [92m#     [1mOpenMM MD wrapper function     #[0m
+                [92m#                                    #[0m
+                [92m######################################[0m
+
+
+         [92m####################################################[0m
+         [92m#                                                  #[0m
+       [92m#     [1mOpenMM Molecular Dynamics Initialization     #[0m
+         [92m#                                                  #[0m
+         [92m####################################################[0m
+
+[94m--------------------[0m
+[94m[1mMD system parameters[0m
+[94m--------------------[0m
+Temperature: 300 K
+OpenMM autoconstraints: HBonds
+OpenMM hydrogenmass: 1.5 Da
+OpenMM rigidwater constraints: True
+User Constraints: []
+User Restraints: []
+Number of atoms: 25825
+Number of frozen atoms: 0
+Frozen atoms []
+Integrator: LangevinMiddleIntegrator
+Timestep: 0.004 ps
+Anderon Thermostat: False
+coupling_frequency: 1 ps^-1 (for Nose-Hoover and Langevin integrators)
+Barostat: None
+
+Will write trajectory in format: DCD
+Trajectory write frequency: 100
+enforcePeriodicBox: True
+
+
+Defining atom positions from fragment
+
+
+               [92m#########################################[0m
+               [92m#                                       #[0m
+             [92m#     [1mOpenMM Molecular Dynamics Run     #[0m
+               [92m#                                       #[0m
+               [92m#########################################[0m
+Restart false. This is a new simulation
+
+[94m--------------------------------------------------------------------------------[0m
+[94m[1m                   Creating/updating OpenMM simulation object                   [0m
+[94m--------------------------------------------------------------------------------[0m
+
+Integrator name: LangevinMiddleIntegrator
+Timestep: 0.004
+Temperature: 300
+Coupling frequency: 1
+Properties: {}
+Topology: <Topology; 4 chains, 8108 residues, 25825 atoms, 17870 bonds>
+
+[94m----------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (create integrator): 0.00 seconds, 0.0 minutes.[0m
+[94m----------------------------------------------------------------------[0m
+
+[94m---------------------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (creating/updating simulation): 0.06 seconds, 0.0 minutes.[0m
+[94m---------------------------------------------------------------------------------[0m
+Simulation created.
+
+[94m-----------------[0m
+[94m[1mMD run parameters[0m
+[94m-----------------[0m
+Simulation time: 0.8 ps
+Simulation steps: 200
+Timestep: 0.004 ps
+Set temperature: 300 K
+OpenMM integrator: LangevinMiddleIntegrator
+
+OpenMM System forces present before run: ['HarmonicBondForce', 'PeriodicTorsionForce', 'CustomTorsionForce', 'CMAPTorsionForce', 'NonbondedForce', 'CustomNonbondedForce', 'CMMotionRemover', 'HarmonicAngleForce', 'CustomBondForce']
+Checking Initial PBC vectors.
+A:  Vec3(x=6.414553919055703, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.414553919055703, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.414553919055703) nm
+Boxlength: 64.14553919055703 Angstrom
+Restart false
+Creating StateDataReporter that will write to stdout
+DCDReporter added
+Setting coordinates of OpenMM object
+Coordinates set
+
+Regular classical OpenMM MD option chosen.
+#"Step","Time (ps)","Potential Energy (kJ/mole)","Kinetic Energy (kJ/mole)","Temperature (K)"
+100,0.4000000000000003,-379218.9286183831,46967.16720189917,214.44278373160333
+200,0.8000000000000006,-373414.2098683831,53465.37138199422,244.11229706728471
+
+[94m------------------------------[0m
+[94m[1mOpenMM MD simulation finished![0m
+[94m------------------------------[0m
+
+[94m------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (OpenMM_MD run): 1.32 seconds, 0.0 minutes.[0m
+[94m------------------------------------------------------------------[0m
+Finalizing simulation data
+Checking PBC vectors:
+A:  Vec3(x=6.414553919055703, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.414553919055703, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.414553919055703) nm
+a 0 6.414553919055703 nm
+Updating PBC vectors in simulation.context, OpenMM system and OpenMM topology
+Writing final frame to disk as PDB-file: warmup_MD_cycle2_lastframe.pdb
+Trajectory : warmup_MD_cycle2.DCD
+Updating coordinates in ASH fragment.
+Trying to load mdtraj for basic analysis of trajectory
+Imaging trajectory
+Importing mdtraj (https://www.mdtraj.org)
+Loading trajectory using mdtraj.
+Found 2 frames in trajectory.
+PBC information in trajectory:
+Unitcell lengths: [6.414554 6.414554 6.414554]
+Unitcell angles [90. 90. 90.]
+Saved reimaged trajectory: warmup_MD_cycle2_imaged.dcd
+Saved reimaged PDB-file: warmup_MD_cycle2_lastframe_imaged.pdb
+
+Running RMS Fluctuation analysis on trajectory
+Inside MDtraj_RMSF
+Importing mdtraj (https://www.mdtraj.org)
+Loading trajectory using mdtraj.
+Will print RMSF largest_values=10
+Printing atoms with high root-mean-square fluctuations:
+Index    Residue-atom           Coordinates                              RMSF
+  5993 HOH1267-H1         0.118304     0.010303    -0.042747          4.498775
+  5994 HOH1267-H2         0.068708     0.033018     0.098473          4.494554
+  5992 HOH1267-O          0.038156     0.017839     0.009039          4.486928
+  2572 HOH127-O           6.324858     1.058685     6.364351          4.481597
+  2573 HOH127-H1          6.365570     1.145100     6.370473          4.474497
+  2574 HOH127-H2          6.352792     1.024973     6.279230          4.452287
+  7413 HOH1740-H2         2.371494     6.401544     3.120997          3.233281
+  4316 HOH708-H1          1.210607     6.419795     4.733023          3.232719
+ 10128 HOH2645-H2         0.505491     3.999177     6.420578          3.227051
+  9791 HOH2533-H1        -0.003722     2.656055     5.209759          3.223102
+Gentle_warm_up_MD finished successfully!
+
+[94m-----------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (Gentle_warm_up_MD): 18.11 seconds, 0.3 minutes.[0m
+[94m-----------------------------------------------------------------------[0m
+
+
+              [92m###########################################[0m
+              [92m#                                         #[0m
+            [92m#     [1mPeriodic Box Size Equilibration     #[0m
+              [92m#                                         #[0m
+              [92m###########################################[0m
+
+[94m------------------------[0m
+[94m[1mEquilibration Parameters[0m
+[94m------------------------[0m
+Steps per NPT cycle: 10000
+Max NPT cycles: 10
+Timestep: 3.0 fs
+Density threshold: 0.005
+Volume threshold: 1.3
+Intermediate MD data file: nptsim.csv
+Number of datapoints used for convergence check in each cycle: 100
+
+
+         [92m####################################################[0m
+         [92m#                                                  #[0m
+       [92m#     [1mOpenMM Molecular Dynamics Initialization     #[0m
+         [92m#                                                  #[0m
+         [92m####################################################[0m
+
+[94m--------------------[0m
+[94m[1mMD system parameters[0m
+[94m--------------------[0m
+Temperature: 300 K
+OpenMM autoconstraints: HBonds
+OpenMM hydrogenmass: 1.5 Da
+OpenMM rigidwater constraints: True
+User Constraints: []
+User Restraints: []
+Number of atoms: 25825
+Number of frozen atoms: 0
+Frozen atoms []
+Integrator: LangevinMiddleIntegrator
+Timestep: 0.003 ps
+Anderon Thermostat: False
+coupling_frequency: 1 ps^-1 (for Nose-Hoover and Langevin integrators)
+Barostat: MonteCarloBarostat
+
+Will write trajectory in format: DCD
+Trajectory write frequency: 100
+enforcePeriodicBox: True
+
+
+Defining atom positions from fragment
+Checking for barostat
+Barostat added
+Barostat requires using integrator: LangevinMiddleIntegrator
+Will write data to file: nptsim.csv
+
+----------------------------------------------------------------------------------------------------
+Now starting  NPT cycle 0 with 10000 MD steps
+Simulation data (timestep, energy, temperature, volume,density etc.) is also written to nptsim.csv
+
+
+               [92m#########################################[0m
+               [92m#                                       #[0m
+             [92m#     [1mOpenMM Molecular Dynamics Run     #[0m
+               [92m#                                       #[0m
+               [92m#########################################[0m
+Restart false. This is a new simulation
+
+[94m--------------------------------------------------------------------------------[0m
+[94m[1m                   Creating/updating OpenMM simulation object                   [0m
+[94m--------------------------------------------------------------------------------[0m
+
+Integrator name: LangevinMiddleIntegrator
+Timestep: 0.003
+Temperature: 300
+Coupling frequency: 1
+Properties: {}
+Topology: <Topology; 4 chains, 8108 residues, 25825 atoms, 17870 bonds>
+
+[94m----------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (create integrator): 0.00 seconds, 0.0 minutes.[0m
+[94m----------------------------------------------------------------------[0m
+
+[94m---------------------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (creating/updating simulation): 0.06 seconds, 0.0 minutes.[0m
+[94m---------------------------------------------------------------------------------[0m
+Simulation created.
+
+[94m-----------------[0m
+[94m[1mMD run parameters[0m
+[94m-----------------[0m
+Simulation time: 30.0 ps
+Simulation steps: 10000
+Timestep: 0.003 ps
+Set temperature: 300 K
+OpenMM integrator: LangevinMiddleIntegrator
+
+OpenMM System forces present before run: ['HarmonicBondForce', 'PeriodicTorsionForce', 'CustomTorsionForce', 'CMAPTorsionForce', 'NonbondedForce', 'CustomNonbondedForce', 'CMMotionRemover', 'HarmonicAngleForce', 'CustomBondForce', 'MonteCarloBarostat']
+Checking Initial PBC vectors.
+A:  Vec3(x=6.414553919055703, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.414553919055703, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.414553919055703) nm
+Boxlength: 64.14553919055703 Angstrom
+Restart false
+Deleting old datafile: nptsim.csv
+Creating StateDataReporter that will write to stdout
+Creating StateDataReporter that will write to file: nptsim.csv
+restart: False
+DCDReporter added
+Setting coordinates of OpenMM object
+Coordinates set
+
+Regular classical OpenMM MD option chosen.
+#"Step","Time (ps)","Potential Energy (kJ/mole)","Kinetic Energy (kJ/mole)","Temperature (K)","Box Volume (nm^3)","Density (g/mL)"
+100,0.3000000000000002,-393957.4051808831,40158.78450130619,183.35705670129155,263.45962028145544,0.9990682424221118
+200,0.6000000000000004,-387216.2801808831,46102.56375973561,210.49517564690748,263.45962028145544,0.9990682424221118
+300,0.9000000000000007,-381173.4598683831,50564.65377181888,230.868194937997,262.1097506713989,1.0042134606193123
+400,1.1999999999999935,-377379.7020558831,54255.665685667744,247.72062434234604,258.90570294087763,1.016640949944223
+500,1.4999999999999827,-373845.0536183831,56937.83935757587,259.9668981315035,258.588042092334,1.0178898361038862
+600,1.7999999999999718,-371347.0223683831,59034.630938150454,269.5404332248702,257.67325429011373,1.0215035336474558
+700,2.0999999999999686,-367966.6317433831,59653.43195934425,272.36575613588,256.7129848137915,1.02532460512161
+800,2.39999999999998,-365597.5536183831,60645.73221768555,276.89640259325665,256.0619579651713,1.027931450167198
+900,2.6999999999999913,-363994.9754933831,61914.584916896245,282.689732725228,255.14084595933423,1.0316424984564925
+1000,3.0000000000000027,-362428.7098683831,62064.34369817964,283.3735016612724,255.14084595933423,1.0316424984564925
+1100,3.300000000000014,-361913.3270558831,63258.83630752214,288.8273183497074,254.8223944819865,1.0329317418073212
+1200,3.6000000000000254,-361232.3739308831,63298.37114319811,289.00782657964345,255.053423594385,1.0319961052645334
+1300,3.9000000000000368,-359966.4754933831,63368.83028045925,289.32952904614854,254.07754473968447,1.0359598682892939
+1400,4.200000000000048,-359966.1864308831,64043.30351695958,292.409040266526,253.8275668633556,1.0369801162120746
+1500,4.5000000000000595,-359372.6317433831,64524.485573349404,294.6060222392808,253.8275668633556,1.0369801162120746
+1600,4.800000000000071,-358454.3504933831,64587.561891304795,294.8940162149819,253.48743772013418,1.0383715349018414
+1700,5.100000000000082,-358171.4598683831,65524.109577904805,299.1701074714241,253.48743772013418,1.0383715349018414
+1800,5.400000000000094,-357381.9286183831,65034.36053512769,296.93401033549196,253.48743772013418,1.0383715349018414
+1900,5.700000000000105,-357087.2098683831,64713.391099149594,295.4685274578888,253.48743772013418,1.0383715349018414
+2000,6.000000000000116,-357042.3583058831,65125.465756196994,297.3499787317676,253.1388366595922,1.0398014909808058
+2100,6.300000000000128,-356081.6551808831,65118.05928217189,297.31616223819987,253.4054194643195,1.0387076185671404
+2200,6.600000000000139,-356372.3973683831,65191.799703305995,297.65284639701997,253.4054194643195,1.0387076185671404
+2300,6.9000000000001505,-357560.8036183831,65979.43770845758,301.2490455391025,253.4054194643195,1.0387076185671404
+2400,7.200000000000162,-357327.5458058831,65407.731458023714,298.63874802439864,253.0880300456557,1.0400102278100956
+2500,7.500000000000173,-356220.0536183831,65179.17415468593,297.59520064247437,253.00831984210865,1.040337882754413
+2600,7.800000000000185,-356584.4598683831,65430.691793541424,298.7435803691442,253.3386046159809,1.0389815645459144
+2700,8.100000000000195,-356479.1239308831,65494.47239143902,299.03478994758075,253.3760507742719,1.038828014642486
+2800,8.400000000000206,-356395.8036183831,66030.21662859176,301.4808920318162,253.20200742164087,1.0395420733986411
+2900,8.700000000000218,-356090.6004933831,65758.70561035734,300.24122649453346,253.20200742164087,1.0395420733986411
+3000,9.00000000000023,-355846.6786183831,65925.97212712839,301.0049322834579,253.20200742164087,1.0395420733986411
+3100,9.30000000000024,-355511.7958058831,65626.05088130618,299.63555127357307,253.70782996247047,1.0374695168955819
+3200,9.600000000000252,-355738.6083058831,66270.69473996549,302.5788674623509,253.70403334832775,1.0374850423540796
+3300,9.900000000000263,-354699.6786183831,65500.884682661854,299.0640671993684,253.9859184920737,1.036333594187053
+3400,10.200000000000275,-355245.3426808831,65800.39869221591,300.4315888491048,253.915700074927,1.0366201842033391
+3500,10.500000000000286,-355192.6551808831,65534.6679642183,299.21831497227345,253.89311237951395,1.0367124075045557
+3600,10.800000000000297,-355142.3426808831,65728.8418984506,300.1048747003894,253.10657632423096,1.039934021495403
+3700,11.100000000000309,-356008.5926808831,66473.83687084308,303.5063742002237,252.7142952887245,1.041548280769278
+3800,11.40000000000032,-355702.6317433831,66042.85923167923,301.5386156536824,252.7142952887245,1.041548280769278
+3900,11.700000000000331,-355760.8583058831,65867.4028147115,300.7375164024461,253.0927852433742,1.0399906877261782
+4000,12.000000000000343,-355543.5145558831,65569.1115104584,299.3755773829606,252.47336432790965,1.0425422122625616
+4100,12.300000000000354,-356005.0223683831,66179.4306240617,302.16217358372967,253.07505940896993,1.040063530552949
+4200,12.600000000000366,-355426.1786183831,65806.66194020759,300.4601855990166,253.07505940896993,1.040063530552949
+4300,12.900000000000377,-356516.4754933831,66543.07833052496,303.82251699205943,253.28439973677425,1.039203914877252
+4400,13.200000000000388,-355694.1161183831,64814.88875351427,295.9319456463997,252.2781876885102,1.043348781737655
+4500,13.5000000000004,-356186.8583058831,65210.01382941776,297.7360084895911,252.54934417540633,1.0422285618804743
+4600,13.800000000000411,-356718.1551808831,65734.96935445804,300.1328514509944,252.56671411888445,1.0421568839823223
+4700,14.100000000000422,-356271.2958058831,65522.887204926286,299.1645263584916,253.2549193299242,1.0393248845085303
+4800,14.400000000000434,-356948.6395558831,65581.33363897982,299.431381201232,253.46642704142874,1.0384576089864896
+4900,14.700000000000445,-356462.9754933831,65251.32391546632,297.9246221611452,253.46642704142874,1.0384576089864896
+5000,15.000000000000457,-355121.3973683831,65325.111052589025,298.26151961591734,253.46642704142874,1.0384576089864896
+5100,15.300000000000468,-355959.2958058831,65981.99341158825,301.26071437344746,253.16556644074194,1.0396917064367075
+5200,15.60000000000048,-355905.1629933831,65614.52675579456,299.5829343988069,253.16556644074194,1.0396917064367075
+5300,15.90000000000049,-355940.7098683831,65060.62769062607,297.05394096536304,253.16556644074194,1.0396917064367075
+5400,16.2000000000005,-356386.0536183831,65286.177529391134,298.083756859668,252.5419418330976,1.0422591109945063
+5500,16.50000000000051,-356597.1629933831,65683.35236165044,299.8971784844317,252.94501307201398,1.0405982572538524
+5600,16.800000000000523,-355987.9598683831,65286.699088741734,298.08613819636946,252.94501307201398,1.0405982572538524
+5700,17.100000000000534,-356823.7020558831,65803.99518448013,300.44800972050825,252.16112618855618,1.0438331386058668
+5800,17.400000000000546,-356483.3114308831,65612.37405759236,299.57310560515134,252.36046343344364,1.043008624261817
+5900,17.700000000000557,-356669.0458058831,66107.72648293013,301.8347866761216,252.36046343344364,1.043008624261817
+6000,18.00000000000057,-357247.5223683831,66208.83273997833,302.29641782200054,252.6664962957881,1.04174531899811
+6100,18.30000000000058,-356411.3817433831,65329.318468198995,298.28072984232597,253.14855534363608,1.0397615717241249
+6200,18.60000000000059,-356472.2333058831,66427.15240871726,303.29322219188055,253.14855534363608,1.0397615717241249
+6300,18.900000000000603,-356105.8583058831,65660.7333426245,299.79390452319086,253.00486501380823,1.0403520887609223
+6400,19.200000000000614,-356120.6395558831,65593.48003295774,299.48683923057683,253.56027501612616,1.0380732540499513
+6500,19.500000000000625,-355856.0692433831,65493.628455784696,299.03093670452216,253.79176743715496,1.0371263908273496
+6600,19.800000000000637,-355777.4286183831,65714.14573831696,300.03777494375146,253.40485698469493,1.038709924173585
+6700,20.100000000000648,-355987.8348683831,65324.86271649762,298.26038576250625,253.55935477127795,1.0380770215369168
+6800,20.40000000000066,-356482.8895558831,65442.40492235334,298.79706019554794,253.67279138224094,1.03761281747861
+6900,20.70000000000067,-356682.9129933831,65659.40673248237,299.78784748401324,253.67279138224094,1.03761281747861
+7000,21.000000000000682,-356672.8739308831,65822.81539432635,300.5339390713777,253.9444465006544,1.03650283914798
+7100,21.300000000000693,-356420.9989308831,65483.54658561351,298.98490488200594,252.98452848576792,1.0404357189716373
+7200,21.600000000000705,-356902.2567433831,66247.62944098195,302.47355587520815,253.15221614766412,1.0397465358559506
+7300,21.900000000000716,-356155.2879933831,65898.55328063067,300.8797432605729,252.5062659925251,1.042406368607037
+7400,22.200000000000728,-356604.4598683831,65715.89603696979,300.04576646075867,252.42382808090463,1.0427468032036484
+7500,22.50000000000074,-355855.4364308831,65682.33870519337,299.8925503298005,251.12826112256047,1.0481263184287004
+7600,22.80000000000075,-355685.3583058831,65728.55406538607,300.1035605116213,251.12826112256047,1.0481263184287004
+7700,23.10000000000076,-356884.0848683831,66318.66207830241,302.797876829404,251.12826112256047,1.0481263184287004
+7800,23.400000000000773,-357176.2098683831,65929.26581591007,301.0199706141294,251.90092358542992,1.0449113724449048
+7900,23.700000000000784,-355736.8661183831,64936.942059777095,296.4892168704897,252.49131883220835,1.0424680777191713
+8000,24.000000000000796,-356416.0770558831,66189.07681613485,302.2062161863351,252.85726076298315,1.0409593894577365
+8100,24.300000000000807,-355587.5614308831,65735.03715491388,300.13316101444804,252.7515199683337,1.0413948838636766
+8200,24.60000000000082,-356595.2567433831,66190.95702286682,302.2148008379037,252.4114784812219,1.0427978211116593
+8300,24.90000000000083,-356312.3895558831,66029.30465975462,301.4767281627186,252.4396006866437,1.0426816516419763
+8400,25.20000000000084,-356787.9442433831,66234.12712797555,302.4119069881151,252.44596974618565,1.0426553454128482
+8500,25.500000000000853,-356675.9911183831,65736.44349876756,300.1395821019616,252.634052010065,1.0418791041411317
+8600,25.800000000000864,-356791.0770558831,65202.562964537414,297.7019893161698,252.16576110273434,1.0438139525078312
+8700,26.100000000000875,-357198.7254933831,65659.91014074307,299.79014594643303,251.81846843497007,1.0452535170261483
+8800,26.400000000000887,-357197.8192433831,65885.426771336,300.81981021880085,252.72519143029825,1.0415033748481113
+8900,26.700000000000898,-357082.6004933831,65907.14651289867,300.91897825724374,252.51598924278147,1.0423662302458139
+9000,27.00000000000091,-356996.3583058831,65192.9820408863,297.65824471625314,252.8760828306459,1.040881908788773
+9100,27.30000000000092,-356744.4598683831,65504.05006496527,299.078519708071,252.970559627844,1.0404931711066157
+9200,27.600000000000932,-356311.1942433831,64747.875540985464,295.625976589767,252.970559627844,1.0404931711066157
+9300,27.900000000000944,-356788.9051808831,65208.15348494341,297.7275145251571,253.63174319393198,1.0377807464838176
+9400,28.200000000000955,-357279.4129933831,65907.7760065138,300.92185240042096,254.13124022232017,1.0357409799500625
+9500,28.500000000000966,-356303.6004933831,65263.4644216459,297.98005330796883,253.8790376565876,1.036769881489114
+9600,28.800000000000978,-356195.9442433831,65872.25779168862,300.75968326580943,253.62961381287562,1.0377894593096937
+9700,29.10000000000099,-355274.8895558831,64819.18714418239,295.9515712469064,253.62961381287562,1.0377894593096937
+9800,29.400000000001,-356093.5301808831,65897.53973457869,300.87511561002947,253.62961381287562,1.0377894593096937
+9900,29.700000000001012,-356051.8270558831,65973.10113271198,301.22011398918863,253.43460736010576,1.0385879912990301
+10000,30.000000000001023,-356490.0536183831,65975.46322196216,301.2308988209,252.7060403728256,1.0415823040694323
+
+[94m------------------------------[0m
+[94m[1mOpenMM MD simulation finished![0m
+[94m------------------------------[0m
+
+[94m-------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (OpenMM_MD run): 59.75 seconds, 1.0 minutes.[0m
+[94m-------------------------------------------------------------------[0m
+Total number of volume datapoints available: 100
+Total number of density datapoints available: 100
+Number of datapoints (last) used for convergence check in each cycle: 100
+
+[94m--------------------[0m
+[94m[1mEquilibration Status[0m
+[94m--------------------[0m
+Total steps taken: 10000
+Total simulation time: 30.0 ps
+Current Volume: 252.7060403728256
+Current Density: 1.0415823040694323
+
+Current Volume SD: 2.0534930840352232   (threshold: 1.3)
+Current Density SD: 0.00819171717436429 (threshold: 0.005)
+
+----------------------------------------------------------------------------------------------------
+Now starting  NPT cycle 1 with 10000 MD steps
+Simulation data (timestep, energy, temperature, volume,density etc.) is also written to nptsim.csv
+10100,30.300000000001035,-356506.2176808831,66193.28983235976,302.22545198404225,252.93832854669657,1.0406257576545856
+10200,30.600000000001046,-355830.8348683831,65599.4860813095,299.51426165787035,253.36073587821318,1.0388908086780813
+10300,30.900000000001057,-356644.7254933831,65905.72045338713,300.912467151941,252.74601329034994,1.0414175731484836
+10400,31.20000000000107,-356335.4833058831,65859.72430486215,300.7024578471807,252.74601329034994,1.0414175731484836
+10500,31.50000000000108,-356179.5848683831,66211.74537431542,302.3097163335449,252.74601329034994,1.0414175731484836
+10600,31.80000000000109,-356100.6629933831,65910.36059659848,300.933653126877,252.74601329034994,1.0414175731484836
+10700,32.1000000000011,-356153.4598683831,66108.95069180033,301.84037617137193,252.8637533470424,1.0409326615608006
+10800,32.400000000001114,-355400.0067433831,65781.51159793307,300.34535411714404,252.86330611480224,1.040934502629215
+10900,32.700000000001125,-356137.0770558831,66242.51018094964,302.45018234775534,252.82232174293176,1.0411032458258382
+11000,33.00000000000114,-356004.1786183831,66014.69397392613,301.41001866483,252.24513994880982,1.0434854754276213
+11100,33.30000000000115,-355999.6864308831,65991.93303092875,301.30609670684316,252.47475482543638,1.0425364704909987
+11200,33.60000000000116,-356384.9208058831,66722.89120026607,304.64350694387605,252.65862016826784,1.041777793326398
+11300,33.90000000000117,-355883.0614308831,66091.59531540773,301.76113495994565,252.50547798779525,1.0424096216895262
+11400,34.20000000000118,-356186.8036183831,65731.21096106886,300.1156913711184,253.18967494323613,1.0395927078890634
+11500,34.500000000001194,-356040.9286183831,65671.90069789917,299.84489245571245,253.18967494323613,1.0395927078890634
+11600,34.800000000001205,-356285.6317433831,65769.27906368964,300.2895027884067,253.90972413887457,1.0366445817562588
+11700,35.10000000000122,-356346.5770558831,66084.62189177645,301.7292956887117,253.90972413887457,1.0366445817562588
+11800,35.40000000000123,-356276.4598683831,65964.06041352882,301.17883585588675,253.63315204537014,1.0377749819420556
+11900,35.70000000000124,-356125.9989308831,65676.50896482659,299.86593288984903,253.63315204537014,1.0377749819420556
+12000,36.00000000000125,-356826.6317433831,66695.76889118738,304.519671852118,253.56721091768958,1.0380448593143716
+12100,36.30000000000126,-356695.8348683831,65727.85538304134,300.1003704664073,252.39607305210004,1.0428614700731
+12200,36.60000000000127,-356037.7645558831,65770.50588291482,300.29510420202087,251.5271767548931,1.0464640170484885
+12300,36.900000000001285,-356301.0458058831,65657.33740958179,299.77839936547264,252.5095604581326,1.0423927684410703
+12400,37.200000000001296,-356169.9676808831,65686.88196290508,299.913293944733,252.61139708551298,1.041972542888429
+12500,37.50000000000131,-356319.2958058831,65617.25974908355,299.59541270490297,252.08864104474375,1.0441332806307295
+12600,37.80000000000132,-356052.8426808831,65483.8487097295,298.9862843208847,252.08864104474375,1.0441332806307295
+12700,38.10000000000133,-356169.3895558831,65738.88284710654,300.1507196833715,252.52715541472426,1.0423201392005355
+12800,38.40000000000134,-356431.6395558831,66406.4524332222,303.19871020334074,252.52715541472426,1.0423201392005355
+12900,38.70000000000135,-356241.5067433831,66103.84217870282,301.817051712295,252.36919039004718,1.0429725568996047
+13000,39.000000000001364,-356058.3504933831,65533.558769355295,299.21325060820186,251.70723600004408,1.0457154270437603
+13100,39.300000000001376,-356425.5301808831,65894.41687691514,300.8608572604107,251.6778663631266,1.0458374571724127
+13200,39.60000000000139,-357145.7254933831,66630.60155104718,304.2221306832419,251.76765993728407,1.0454644565920734
+13300,39.9000000000014,-356212.7098683831,66199.01426944719,302.25158863007516,251.8248505480468,1.0452270266852428
+13400,40.20000000000141,-356339.9676808831,65793.82520911959,300.4015756271464,251.8248505480468,1.0452270266852428
+13500,40.50000000000142,-356214.3504933831,65852.76579295972,300.6706866599475,252.50404407813753,1.0424155412827323
+13600,40.80000000000143,-356502.8426808831,65874.45973240485,300.7697368910317,252.80264210214418,1.0411842914103713
+13700,41.100000000001444,-357576.2723683831,66163.9404108728,302.09144833810126,252.80264210214418,1.0411842914103713
+13800,41.400000000001455,-357262.1942433831,65528.1334090023,299.18847948730706,252.4032711091499,1.0428317296647305
+13900,41.70000000000147,-357578.7879933831,65365.238926943275,298.4447355430089,252.61084426514572,1.0419748231691726
+14000,42.00000000000148,-357298.9442433831,65236.62162569183,297.857494417781,252.04970918837157,1.0442945585272436
+14100,42.30000000000149,-357887.1551808831,65666.50244827563,299.8202451170391,252.04970918837157,1.0442945585272436
+14200,42.6000000000015,-358018.0067433831,65139.33608633053,297.41330791217837,251.8451831619817,1.045142640725023
+14300,42.90000000000151,-356479.8973683831,64789.257077228685,295.8149164887594,251.8451831619817,1.045142640725023
+14400,43.20000000000152,-356724.8583058831,65843.48159485092,300.62829685009143,251.8451831619817,1.045142640725023
+14500,43.500000000001535,-357332.0926808831,66607.29075885518,304.11569822272855,251.8415683622492,1.0451576421458078
+14600,43.800000000001546,-357189.6708058831,65891.84526265349,300.84911577899277,251.8415683622492,1.0451576421458078
+14700,44.10000000000156,-357011.8036183831,65525.8429345011,299.17802163435647,252.292136314938,1.0432910974887406
+14800,44.40000000000157,-357219.1629933831,65625.52508097992,299.63315057341663,252.3112991702277,1.0432118603067677
+14900,44.70000000000158,-356747.9754933831,65439.63633426023,298.78441937062564,251.87512972324168,1.045018379039678
+15000,45.00000000000159,-357034.4364308831,65446.267006572336,298.8146937072172,251.96797478133695,1.0446333110873052
+15100,45.3000000000016,-356866.3036183831,64952.60657494608,296.5607379444392,251.96797478133695,1.0446333110873052
+15200,45.600000000001614,-356956.5848683831,65300.10457828501,298.14734500670545,251.59872372945048,1.0461664347186057
+15300,45.900000000001626,-357053.3426808831,65675.61853832414,299.8618673787853,251.51789328014627,1.0465026418244399
+15400,46.20000000000164,-356737.3661183831,65477.455008922494,298.95709194925394,251.52252823405846,1.0464833573032963
+15500,46.50000000000165,-357297.9754933831,65624.11084034166,299.6266934307486,251.5021878713807,1.046567992157585
+15600,46.80000000000166,-358023.4989308831,65685.35999007875,299.9063449182304,251.5021878713807,1.046567992157585
+15700,47.10000000000167,-356979.4051808831,65209.40838973771,297.7332441719176,251.5021878713807,1.046567992157585
+15800,47.40000000000168,-357069.2176808831,65597.95274754774,299.50726075958653,250.27888456428596,1.0516833661058698
+15900,47.700000000001694,-356622.0692433831,65502.04574379133,299.0693683745408,250.5218677700305,1.0506633298192203
+16000,48.000000000001705,-356141.9129933831,65375.45166918286,298.4913649014706,250.80021382290388,1.0494972702441654
+16100,48.30000000000172,-355890.4364308831,65713.56892233409,300.0351413162104,250.4260388973633,1.0510653801926266
+16200,48.60000000000173,-356501.3583058831,66385.69380556198,303.10393042063055,250.4260388973633,1.0510653801926266
+16300,48.90000000000174,-356199.8817433831,65988.39671007916,301.28995056620215,250.4260388973633,1.0510653801926266
+16400,49.20000000000175,-356235.2567433831,65984.64436211763,301.2728180885515,250.2032109888957,1.0520014461184208
+16500,49.50000000000176,-356605.4833058831,66044.139964703,301.54446322702347,250.0705192497898,1.0525596562658868
+16600,49.80000000000177,-356736.3739308831,65859.39220371773,300.700941539127,250.3404236399251,1.0514248396510757
+16700,50.100000000001785,-356671.5379933831,65717.73118119314,300.0541453658375,250.80424805501687,1.0494803888889932
+16800,50.400000000001796,-357249.9208058831,66253.86041924122,302.5020052879126,250.80424805501687,1.0494803888889932
+16900,50.70000000000181,-356923.2254933831,66259.39643569398,302.5272816426438,250.80424805501687,1.0494803888889932
+17000,51.00000000000182,-356500.2723683831,65878.09329730974,300.78632702877036,250.4238634281282,1.0510745109534387
+17100,51.30000000000183,-356391.8426808831,65723.86486103143,300.0821505332214,250.7624115384301,1.0496554813337815
+17200,51.60000000000184,-356065.2958058831,66128.68435347878,301.9304761624008,250.7624115384301,1.0496554813337815
+17300,51.90000000000185,-356346.5770558831,66135.35601651669,301.96093765452827,251.66575163750346,1.0458878018607844
+17400,52.200000000001864,-356158.4129933831,66048.3539261066,301.5637033402294,251.66575163750346,1.0458878018607844
+17500,52.500000000001876,-355681.8114308831,65763.68858989907,300.26397779225624,251.96396760738315,1.0446499246826346
+17600,52.80000000000189,-356029.3270558831,65806.20780143584,300.4581120913257,252.8806341509912,1.0408631751003499
+17700,53.1000000000019,-355887.7879933831,66315.88868246973,302.785214053295,253.0986378617786,1.0399666391232665
+17800,53.40000000000191,-356651.4364308831,66847.96578682854,305.21457273545843,253.5703581426823,1.0380319754712095
+17900,53.70000000000192,-355336.3270558831,65427.56902295444,298.72932241709975,254.4561044532146,1.03441864894299
+18000,54.00000000000193,-355897.2333058831,65895.33624016895,300.8650548909503,253.70602579940373,1.0374768945846977
+18100,54.300000000001944,-355852.4989308831,65600.79681012483,299.5202461860551,252.92132680093346,1.0406957100575325
+18200,54.600000000001955,-356276.8348683831,66281.38996634097,302.62769974782253,252.65291558893819,1.0418013153350478
+18300,54.90000000000197,-355610.6786183831,65526.85907378953,299.182661125104,252.23166925127194,1.0435412038667438
+18400,55.20000000000198,-356247.6161183831,66411.76273461641,303.22295598781676,252.56735309875904,1.0421542473894814
+18500,55.50000000000199,-356021.7489308831,66045.47269157285,301.5505481939685,252.699636021375,1.0416087016505484
+18600,55.800000000002,-356534.7958058831,65933.94185709706,301.04132049211273,253.31264550518566,1.0390880378626906
+18700,56.10000000000201,-356351.9208058831,65565.26652086244,299.35802192195456,252.82396111346677,1.041096495065437
+18800,56.400000000002024,-356514.5926808831,65630.76907183579,299.65709359710723,252.82396111346677,1.041096495065437
+18900,56.700000000002035,-356886.5926808831,65996.39457290503,301.3264672239113,252.2949336406258,1.0432795299754944
+19000,57.000000000002046,-356429.9208058831,65642.71065715089,299.7116165106594,252.70827757909075,1.041573083024207
+19100,57.30000000000206,-356744.2098683831,65769.29680982296,300.2895838137369,252.78710557888002,1.041248283535004
+19200,57.60000000000207,-356210.0458058831,65948.88597387145,301.1095523696653,252.75622089629832,1.0413755153103947
+19300,57.90000000000208,-355974.6629933831,65773.4661432223,300.30862016431377,252.46340394885112,1.0425833434342728
+19400,58.20000000000209,-356157.4676808831,66280.44502746931,302.62338534407695,252.18609878873428,1.0437297735601794
+19500,58.5000000000021,-355799.5379933831,65987.60432740266,301.28633270383034,253.3517059644462,1.0389278366285342
+19600,58.800000000002115,-356418.0067433831,65659.44886047626,299.78803983209,252.9980747250297,1.0403800110726702
+19700,59.100000000002126,-356229.7333058831,65477.64382751391,298.9579540575474,252.5264245038333,1.0423231560853747
+19800,59.40000000000214,-356338.4833058831,65358.16793825256,298.412450809036,252.28402972003636,1.0433246213638
+19900,59.70000000000215,-356611.3348683831,65411.84885534161,298.6575472451135,252.69053507410544,1.0416462164148688
+20000,60.00000000000216,-356924.5848683831,65567.03597466485,299.36610089758113,252.69053507410544,1.0416462164148688
+Total number of volume datapoints available: 200
+Total number of density datapoints available: 200
+Number of datapoints (last) used for convergence check in each cycle: 100
+
+[94m--------------------[0m
+[94m[1mEquilibration Status[0m
+[94m--------------------[0m
+Total steps taken: 20000
+Total simulation time: 60.0 ps
+Current Volume: 252.69053507410544
+Current Density: 1.0416462164148688
+
+Current Volume SD: 0.927555136254145   (threshold: 1.3)
+Current Density SD: 0.0038440554082386116 (threshold: 0.005)
+Equilibration of periodic box finished after 20000 and 60.0 ps !
+
+Finalizing simulation data
+Checking PBC vectors:
+A:  Vec3(x=6.322123737765361, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.322123737765361, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.322123737765361) nm
+a 0 6.322123737765361 nm
+Updating PBC vectors in simulation.context, OpenMM system and OpenMM topology
+Writing final frame to disk as PDB-file: equilbox_NPT_lastframe.pdb
+Trajectory : equilbox_NPT.DCD
+Updating coordinates in ASH fragment.
+Final PDB file: equilbox_NPT.pdb
+NPT trajectory: equilbox_NPT.dcd
+Trying to load mdtraj for reimaging trajectory
+Imaging trajectory
+Importing mdtraj (https://www.mdtraj.org)
+Loading trajectory using mdtraj.
+Found 200 frames in trajectory.
+PBC information in trajectory:
+Unitcell lengths: [6.410689 6.410689 6.410689]
+Unitcell angles [90. 90. 90.]
+Saved reimaged trajectory: equilbox_NPT_imaged.dcd
+Saved reimaged PDB-file: equilbox_NPT_lastframe_imaged.pdb
+
+[94m-------------------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (OpenMM_box_equilibration): 122.05 seconds, 2.0 minutes.[0m
+[94m-------------------------------------------------------------------------------[0m
+
+
+                [92m######################################[0m
+                [92m#                                    #[0m
+              [92m#     [1mOpenMM MD wrapper function     #[0m
+                [92m#                                    #[0m
+                [92m######################################[0m
+
+
+         [92m####################################################[0m
+         [92m#                                                  #[0m
+       [92m#     [1mOpenMM Molecular Dynamics Initialization     #[0m
+         [92m#                                                  #[0m
+         [92m####################################################[0m
+
+[94m--------------------[0m
+[94m[1mMD system parameters[0m
+[94m--------------------[0m
+Temperature: 300 K
+OpenMM autoconstraints: HBonds
+OpenMM hydrogenmass: 1.5 Da
+OpenMM rigidwater constraints: True
+User Constraints: []
+User Restraints: []
+Number of atoms: 25825
+Number of frozen atoms: 0
+Frozen atoms []
+Integrator: LangevinMiddleIntegrator
+Timestep: 0.003 ps
+Anderon Thermostat: False
+coupling_frequency: 1 ps^-1 (for Nose-Hoover and Langevin integrators)
+Barostat: None
+
+Will write trajectory in format: DCD
+Trajectory write frequency: 1000
+enforcePeriodicBox: True
+
+
+Defining atom positions from fragment
+Removing old force: MonteCarloBarostat
+
+
+               [92m#########################################[0m
+               [92m#                                       #[0m
+             [92m#     [1mOpenMM Molecular Dynamics Run     #[0m
+               [92m#                                       #[0m
+               [92m#########################################[0m
+Restart false. This is a new simulation
+
+[94m--------------------------------------------------------------------------------[0m
+[94m[1m                   Creating/updating OpenMM simulation object                   [0m
+[94m--------------------------------------------------------------------------------[0m
+
+Integrator name: LangevinMiddleIntegrator
+Timestep: 0.003
+Temperature: 300
+Coupling frequency: 1
+Properties: {}
+Topology: <Topology; 4 chains, 8108 residues, 25825 atoms, 17870 bonds>
+
+[94m----------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (create integrator): 0.00 seconds, 0.0 minutes.[0m
+[94m----------------------------------------------------------------------[0m
+
+[94m---------------------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (creating/updating simulation): 0.07 seconds, 0.0 minutes.[0m
+[94m---------------------------------------------------------------------------------[0m
+Simulation created.
+
+[94m-----------------[0m
+[94m[1mMD run parameters[0m
+[94m-----------------[0m
+Simulation time: 999.999 ps
+Simulation steps: 333333
+Timestep: 0.003 ps
+Set temperature: 300 K
+OpenMM integrator: LangevinMiddleIntegrator
+
+OpenMM System forces present before run: ['HarmonicBondForce', 'PeriodicTorsionForce', 'CustomTorsionForce', 'CMAPTorsionForce', 'NonbondedForce', 'CustomNonbondedForce', 'CMMotionRemover', 'HarmonicAngleForce', 'CustomBondForce']
+Checking Initial PBC vectors.
+A:  Vec3(x=6.322123737765361, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.322123737765361, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.322123737765361) nm
+Boxlength: 63.22123737765361 Angstrom
+Restart false
+Creating StateDataReporter that will write to stdout
+DCDReporter added
+Setting coordinates of OpenMM object
+Coordinates set
+
+Regular classical OpenMM MD option chosen.
+#"Step","Time (ps)","Potential Energy (kJ/mole)","Kinetic Energy (kJ/mole)","Temperature (K)"
+1000,3.0000000000000027,-361342.4911183831,63525.07094670127,290.04289298519535
+2000,6.000000000000116,-356685.4676808831,65406.10470054427,298.6313205719222
+3000,9.00000000000023,-356747.7411183831,65747.20947940159,300.18873743736515
+4000,12.000000000000343,-356524.2489308831,66357.59340807598,302.9756295709123
+5000,15.000000000000457,-356209.8114308831,65328.233830984216,298.27577760361254
+6000,18.00000000000057,-356450.5848683831,65418.30900008045,298.687042986578
+7000,21.000000000000682,-356508.9833058831,65908.77740741451,300.92642459860906
+8000,24.000000000000796,-355343.9989308831,65498.601764241525,299.0536438459866
+9000,27.00000000000091,-356388.9051808831,65865.17852302291,300.7273607271106
+10000,30.000000000001023,-356191.4364308831,65548.47924127648,299.2813745280375
+11000,33.00000000000114,-356981.2098683831,66120.68717794097,301.8939626427128
+12000,36.00000000000125,-356270.7411183831,65978.4377877377,301.2444800991269
+13000,39.000000000001364,-356594.2879933831,65867.81589132792,300.73940242846805
+14000,42.00000000000148,-356446.7567433831,65954.85452947064,301.13680361247594
+15000,45.00000000000159,-356506.5301808831,65687.40596149513,299.9156864185188
+16000,48.000000000001705,-356432.0926808831,65885.54408740246,300.8203458607262
+17000,51.00000000000182,-355644.7098683831,65846.63219822152,300.6426818811137
+18000,54.00000000000193,-356456.5614308831,66348.34473386535,302.9334019561399
+19000,57.000000000002046,-356225.0379933831,65989.52319130686,301.2950938563914
+20000,60.00000000000216,-356424.1864308831,66085.53028244621,301.7334432206057
+21000,63.000000000002274,-356539.2567433831,66190.51811278868,302.2127968614118
+22000,66.00000000000239,-356329.8504933831,65110.455642416375,297.28144552495513
+23000,69.0000000000025,-357942.9051808831,65082.914913523826,297.15570001119386
+24000,72.00000000000261,-357239.9911183831,65878.97795895115,300.7903662186203
+25000,75.00000000000273,-357264.9364308831,65900.65211739205,300.8893261335568
+26000,78.00000000000284,-356684.9208058831,66568.65475534188,303.9392938824361
+27000,81.00000000000296,-356518.7801808831,65961.38505217875,301.16662068580996
+28000,84.00000000000307,-356581.1786183831,66539.59136892157,303.806596215961
+29000,87.00000000000318,-356017.0614308831,65794.36866145427,300.4040569228774
+30000,90.0000000000033,-356944.2176808831,65951.72489259276,301.1225143103071
+31000,93.00000000000341,-356877.8270558831,66125.11965448549,301.91420045277584
+32000,96.00000000000352,-357689.2020558831,65783.81416460668,300.355867180559
+33000,99.00000000000364,-356655.1629933831,66146.10191901331,302.0100013171328
+34000,102.00000000000375,-356466.3036183831,65790.78094143496,300.3876761038068
+35000,105.00000000000387,-356874.8661183831,65604.24656031432,299.53599706220723
+36000,108.00000000000398,-356786.8739308831,66837.90302590908,305.168628162001
+37000,111.00000000000409,-356562.7411183831,65662.04715908493,299.79990314895167
+38000,114.0000000000042,-356725.1473683831,65480.83143908309,298.972508060675
+39000,117.00000000000432,-355232.3661183831,65866.27684173477,300.73237543283005
+40000,120.00000000000443,-356518.1395558831,64929.59971356705,296.4556931718252
+41000,123.00000000000455,-356919.9911183831,65346.90495062852,298.3610262381469
+42000,126.00000000000466,-356138.4989308831,66009.49841364892,301.38629676556997
+43000,129.00000000000003,-356087.8036183831,65075.965071666986,297.12396840967165
+44000,131.99999999998593,-356584.4129933831,66148.5625475091,302.02123605952414
+45000,134.99999999997183,-356254.6551808831,65863.08351896121,300.71779535347434
+46000,137.99999999995774,-357664.9129933831,66513.33027790138,303.6866932752963
+47000,140.99999999994364,-356639.3739308831,65234.0123666093,297.8455810575665
+48000,143.99999999992954,-356033.9520558831,65872.58248667733,300.7611657588229
+49000,146.99999999991545,-356168.8036183831,65798.33393579931,300.4221615802257
+50000,149.99999999990135,-355797.7801808831,66413.19654855551,303.22950249829995
+51000,152.99999999988725,-356233.8192433831,65811.05566566077,300.4802464792711
+52000,155.99999999987315,-356099.0458058831,66054.84077114868,301.59332098999056
+53000,158.99999999985906,-355978.7411183831,65800.08240426122,300.43014474094366
+54000,161.99999999984496,-356050.0301808831,66016.1296164454,301.4165735242481
+55000,164.99999999983086,-356544.8192433831,65896.0973134574,300.868529800857
+56000,167.99999999981677,-355884.3583058831,65694.42817889864,299.94774847245327
+57000,170.99999999980267,-356554.2411183831,66092.17012784991,301.7637594397167
+58000,173.99999999978857,-355983.8192433831,66312.60321860097,302.77021327594696
+59000,176.99999999977447,-356444.0067433831,66052.6749292789,301.58343218495185
+60000,179.99999999976038,-356681.3895558831,65538.49480898434,299.23578758757964
+61000,182.99999999974628,-356653.0692433831,65864.53269639169,300.7244120106165
+62000,185.99999999973218,-355825.6864308831,66129.09129764122,301.9323341888524
+63000,188.99999999971809,-355986.6551808831,66014.31022852298,301.4082665593189
+64000,191.999999999704,-356333.2645558831,66432.31721789925,303.31680368772993
+65000,194.9999999996899,-355880.0301808831,65545.69815125258,299.2686766217752
+66000,197.9999999996758,-356752.0692433831,66635.22674801096,304.24324841657165
+67000,200.9999999996617,-356104.4676808831,65698.95949440286,299.96843756163156
+68000,203.9999999996476,-355747.7098683831,65980.43179466276,301.2535843398394
+69000,206.9999999996335,-356327.9989308831,65460.405971700675,298.8792494218119
+70000,209.9999999996194,-356153.9676808831,65778.03171687108,300.3294656693954
+71000,212.9999999996053,-356015.3270558831,65699.23650395108,299.9697023323678
+72000,215.9999999995912,-356470.5458058831,65601.33446768305,299.52270102398444
+73000,218.9999999995771,-356820.4442433831,66265.22043966857,302.5538728913646
+74000,221.99999999956302,-356112.8817433831,65932.17767464381,301.03326558442245
+75000,224.99999999954892,-356494.7098683831,66765.51924906392,304.83813817232465
+76000,227.99999999953482,-356057.9129933831,65825.83986857947,300.54774822182907
+77000,230.99999999952072,-355860.8895558831,65433.29952881846,298.7554867719647
+78000,233.99999999950663,-356328.9129933831,65495.72326362855,299.04050118226655
+79000,236.99999999949253,-356710.0379933831,66846.68175269937,305.2087100899239
+80000,239.99999999947843,-357175.6083058831,66451.40845992649,303.4039705178608
+81000,242.99999999946434,-356993.5848683831,65858.4500960469,300.6966400620837
+82000,245.99999999945024,-356754.6551808831,65634.89444062335,299.6759292139738
+83000,248.99999999943614,-356940.8817433831,66235.36707304692,302.41756833174344
+84000,251.99999999942204,-355912.9598683831,66474.73098454296,303.5104565463007
+85000,254.99999999940795,-355782.7645558831,65998.44530980475,301.33583048245293
+86000,257.9999999993939,-356335.7176808831,65868.16711528954,300.7410060475179
+87000,260.9999999993798,-356296.1551808831,65211.37576342333,297.7422268105334
+88000,263.9999999993657,-357385.1942433831,66346.4023182902,302.9245332713136
+89000,266.9999999993516,-355804.0692433831,66285.4974160043,302.64645354951676
+90000,269.9999999993375,-355712.3270558831,65859.32149359037,300.7006186906894
+91000,272.9999999993234,-355666.5301808831,66163.75758981431,302.0906136133554
+92000,275.9999999993093,-356786.9754933831,65183.38764856395,297.6144386210511
+93000,278.9999999992952,-356738.7411183831,65794.14683898917,300.40304412543304
+94000,281.9999999992811,-356308.2879933831,66155.91437593737,302.05480305211915
+95000,284.999999999267,-356220.1239308831,65965.8748730105,301.18712031853164
+96000,287.9999999992529,-356294.3661183831,65886.01105489326,300.8224779418076
+97000,290.9999999992388,-355908.9364308831,66240.9125415372,302.44288784260596
+98000,293.9999999992247,-356085.3583058831,65851.73515034589,300.66598094988854
+99000,296.9999999992106,-356390.9364308831,65820.97576447646,300.52553968581657
+100000,299.9999999991965,-355913.1786183831,66154.62223002146,302.0489033697729
+101000,302.9999999991824,-356183.2723683831,65609.6161661308,299.5605136189303
+102000,305.9999999991683,-356342.0379933831,65535.247563190496,299.22096130639267
+103000,308.9999999991542,-356425.8348683831,65945.13623730629,301.0924318151333
+104000,311.99999999914013,-356160.3504933831,65830.5479039643,300.56924417898335
+105000,314.99999999912603,-356496.2411183831,65300.47997748316,298.1490590050975
+106000,317.99999999911194,-356582.4598683831,65871.44404352712,300.7559678528645
+107000,320.99999999909784,-356202.7254933831,65817.32875345583,300.50888815577645
+108000,323.99999999908374,-356448.1942433831,65856.90265439963,300.6895747499886
+109000,326.99999999906964,-356319.9520558831,65808.9553349354,300.4706567851435
+110000,329.99999999905555,-357203.3270558831,65636.09408704052,299.68140656192804
+111000,332.99999999904145,-356241.7411183831,65274.25061008986,298.0293009082304
+112000,335.99999999902735,-357097.8114308831,65062.376431836805,297.0619253713981
+113000,338.99999999901326,-355757.0145558831,65233.80812190508,297.8446485166971
+114000,341.99999999899916,-355010.4676808831,65645.3479589633,299.7236579084248
+115000,344.99999999898506,-356258.8973683831,65695.63915361604,299.9532775431829
+116000,347.99999999897096,-357307.1317433831,66078.61377961889,301.70186383848954
+117000,350.99999999895687,-357022.0458058831,65517.252924124536,299.1388013482039
+118000,353.99999999894277,-356688.6786183831,65577.8930125013,299.41567198213727
+119000,356.9999999989287,-357168.1786183831,66376.3997139539,303.06149543901614
+120000,359.9999999989146,-356881.5770558831,65216.87290319393,297.7673256620333
+121000,362.9999999989005,-356592.0536183831,65985.45650491533,301.2765261717232
+122000,365.9999999988864,-355757.9129933831,66267.49913804932,302.5642769768814
+123000,368.9999999988723,-357259.2958058831,65926.03956226388,301.00524017893116
+124000,371.9999999988582,-355870.3348683831,65550.00928422861,299.28836040113634
+125000,374.9999999988441,-356898.5848683831,64997.31391211983,296.7648627918151
+126000,377.99999999883,-357119.6473683831,65343.018835157505,298.3432830045403
+127000,380.9999999988159,-356258.0536183831,65375.06459858315,298.4895976137705
+128000,383.9999999988018,-355764.9911183831,66478.93712377723,303.52966094503057
+129000,386.9999999987877,-355372.3270558831,65699.93199224875,299.9728777941955
+130000,389.9999999987736,-356145.3973683831,65750.89930820838,300.2055844649369
+131000,392.9999999987595,-356124.0848683831,65569.76754222647,299.3785726940884
+132000,395.9999999987454,-355832.6395558831,65708.64731062343,300.01267021185055
+133000,398.9999999987313,-355898.0536183831,65734.57267895341,300.13104030920067
+134000,401.9999999987172,-356976.3817433831,65671.55501325137,299.84331412807245
+135000,404.9999999987031,-355483.0458058831,65820.7032906625,300.52429562434463
+136000,407.999999998689,-355954.4286183831,65498.655213745835,299.05388788583775
+137000,410.9999999986749,-356733.6239308831,66305.86532702047,302.7394493974104
+138000,413.9999999986608,-357506.5692433831,65667.58399626333,299.8251832509536
+139000,416.99999999864673,-356076.2098683831,65335.8110583871,298.310373723286
+140000,419.99999999863263,-356544.0770558831,65990.19196652612,301.2981473515936
+141000,422.99999999861853,-355646.4286183831,66091.27517193212,301.75967324823955
+142000,425.99999999860444,-356543.5379933831,65401.69874774548,298.61120386402916
+143000,428.99999999859034,-356766.3192433831,66278.45596523944,302.61430367986344
+144000,431.99999999857624,-357113.8817433831,66051.70014700585,301.5789815221459
+145000,434.99999999856215,-354885.9911183831,66601.54522484413,304.0894652523206
+146000,437.99999999854805,-356637.9676808831,66153.01062319847,302.04154509219325
+147000,440.99999999853395,-357267.1708058831,65979.57342870743,301.2496652108843
+148000,443.99999999851985,-356861.3114308831,65764.82506592612,300.26916671671995
+149000,446.99999999850576,-356269.9286183831,65683.37955732504,299.89730265449595
+150000,449.99999999849166,-356563.9833058831,65857.08370312158,300.69040138259686
+151000,452.99999999847756,-356282.3583058831,65492.91184325004,299.02766479361196
+152000,455.99999999846347,-356542.4598683831,66061.3854034961,301.6232024851432
+153000,458.99999999844937,-356938.6239308831,66294.64273526147,302.68820926604076
+154000,461.99999999843527,-356305.9442433831,65027.35285408958,296.902014651723
+155000,464.9999999984212,-355980.4442433831,66126.67915677899,301.9213208313931
+156000,467.9999999984071,-355963.1317433831,65604.01305276633,299.5349309129886
+157000,470.999999998393,-355354.5614308831,65664.21383044997,299.8097957413014
+158000,473.9999999983789,-356056.8270558831,66096.45107693366,301.7833054054035
+159000,476.9999999983648,-355447.2176808831,66057.73882029906,301.60655290846086
+160000,479.9999999983507,-356048.5458058831,66016.75484480482,301.41942819311254
+161000,482.9999999983366,-356204.8739308831,65586.27343481325,299.4539353306951
+162000,485.9999999983225,-356620.1708058831,66060.51024705192,301.6192066941413
+163000,488.9999999983084,-356846.9051808831,66323.66937752231,302.82073916596084
+164000,491.9999999982943,-355925.2489308831,66091.69059426023,301.76156998431645
+165000,494.9999999982802,-357026.4989308831,65681.27451119712,299.88769143077417
+166000,497.9999999982661,-356403.0692433831,65257.260897192755,297.95172924390596
+167000,500.999999998252,-356485.1864308831,65771.84318837454,300.30121007390045
+168000,503.9999999982379,-356519.1083058831,65895.96586473251,300.8679296320122
+169000,506.9999999982238,-356193.9442433831,65864.75982899644,300.72544905310684
+170000,509.9999999982097,-356420.2020558831,65356.62050481909,298.4053855344435
+171000,512.9999999982145,-356799.2020558831,65675.12745187595,299.8596251753211
+172000,515.9999999982573,-356563.2176808831,66167.31762217486,302.1068680160595
+173000,518.9999999983,-356347.5067433831,66429.5103145683,303.30398792301986
+174000,521.9999999983428,-356095.6942433831,65418.55101038364,298.6881479576929
+175000,524.9999999983855,-356058.0926808831,66675.66543620755,304.42788345811147
+176000,527.9999999984283,-356513.9833058831,66279.92771415418,302.6210233939325
+177000,530.999999998471,-356792.1004933831,66206.55584551772,302.28602197282584
+178000,533.9999999985138,-356828.0536183831,65599.65740688238,299.51504389650563
+179000,536.9999999985565,-356515.6786183831,65771.49198709824,300.2996065584273
+180000,539.9999999985993,-356677.5926808831,65660.4969379945,299.79282514646957
+181000,542.999999998642,-356972.4208058831,65462.58446180273,298.8891959761742
+182000,545.9999999986848,-356741.8661183831,65969.1757878568,301.2021916419831
+183000,548.9999999987275,-355664.9598683831,66425.20652841963,303.2843376878175
+184000,551.9999999987702,-357271.3504933831,65608.43111251271,299.5551028988066
+185000,554.999999998813,-357255.2723683831,65740.20175568666,300.1567415587423
+186000,557.9999999988557,-357051.1629933831,65683.61315983254,299.89836923728086
+187000,560.9999999988985,-357102.9833058831,66464.99104991276,303.46598593374523
+188000,563.9999999989412,-357381.3036183831,65612.6753346558,299.57448117655593
+189000,566.999999998984,-356935.7098683831,66116.98750996374,301.8770706914374
+190000,569.9999999990267,-356591.1708058831,66069.50464621792,301.66027333941844
+191000,572.9999999990695,-356962.1239308831,65790.79369179206,300.3877343194122
+192000,575.9999999991122,-356213.8036183831,65561.71694029612,299.3418152400729
+193000,578.999999999155,-356875.2020558831,66491.47130382992,303.58688952879294
+194000,581.9999999991977,-356081.9364308831,65974.0688401981,301.2245323499186
+195000,584.9999999992405,-356088.5770558831,66533.85616657208,303.78041041787355
+196000,587.9999999992832,-356216.0145558831,65988.57707372122,301.29077407087124
+197000,590.999999999326,-357630.8895558831,65723.01897057518,300.0782883649244
+198000,593.9999999993687,-356617.1239308831,65869.17916861875,300.7456268825848
+199000,596.9999999994114,-356177.5614308831,65889.19926066836,300.83703465796174
+200000,599.9999999994542,-356081.8583058831,66084.37401482795,301.7281639316561
+201000,602.9999999994969,-357455.3504933831,65972.90777713797,301.21923116593126
+202000,605.9999999995397,-355572.3270558831,66096.72381611739,301.78455067850115
+203000,608.9999999995824,-355525.8426808831,65780.01632662839,300.33852700450103
+204000,611.9999999996252,-356111.9598683831,65704.16388469818,299.99219977700545
+205000,614.9999999996679,-356504.8192433831,66024.42165586702,301.4544333340327
+206000,617.9999999997107,-356695.7489308831,66768.03089197655,304.8496058364401
+207000,620.9999999997534,-356306.3192433831,66502.78707306093,303.63855509004617
+208000,623.9999999997962,-355694.1395558831,65920.58567410498,300.9803388057245
+209000,626.9999999998389,-356531.9442433831,66256.60293480987,302.5145270708517
+210000,629.9999999998817,-355819.7879933831,66451.1124798858,303.402619131613
+211000,632.9999999999244,-356480.4676808831,66124.55959108309,301.91164331419947
+212000,635.9999999999671,-356476.3114308831,65327.72282352834,298.27344444477257
+213000,639.0000000000099,-356844.5223683831,66136.72172199679,301.9671731952763
+214000,642.0000000000526,-356028.7645558831,66332.29728587926,302.86013248678626
+215000,645.0000000000954,-356042.5223683831,66185.88599145197,302.1916475127667
+216000,648.0000000001381,-356340.8973683831,66684.09954186995,304.4663919142156
+217000,651.0000000001809,-355963.6317433831,65512.9171909421,299.1190052491724
+218000,654.0000000002236,-356683.7567433831,65985.91985052289,301.2786417160031
+219000,657.0000000002664,-356108.7723683831,65931.7307715274,301.03122511330076
+220000,660.0000000003091,-356038.7723683831,66547.47383524524,303.8425859960951
+221000,663.0000000003519,-356037.9129933831,65453.61665729096,298.84825075682124
+222000,666.0000000003946,-356823.9754933831,66812.19986060915,305.05127259967946
+223000,669.0000000004374,-356914.8895558831,66128.91490248486,301.93152880350306
+224000,672.0000000004801,-356408.9442433831,65192.40045632189,297.6555893163132
+225000,675.0000000005228,-355998.9520558831,65355.66205912197,298.4010094612079
+226000,678.0000000005656,-355604.8036183831,65910.1631622067,300.93275168054544
+227000,681.0000000006083,-356797.0067433831,66235.12765563536,302.4164751992582
+228000,684.0000000006511,-356544.3270558831,66294.53063988677,302.6876974607601
+229000,687.0000000006938,-357076.9051808831,66015.53754055843,301.41387022300717
+230000,690.0000000007366,-356725.0692433831,65966.17176871496,301.18847588551887
+231000,693.0000000007793,-356112.3114308831,65033.859377075394,296.93172214707806
+232000,696.0000000008221,-356796.9598683831,65938.11626658717,301.0603800191148
+233000,699.0000000008648,-357056.4911183831,66331.20981943246,302.85516733035985
+234000,702.0000000009076,-356874.2411183831,65403.382576534525,298.6188918928025
+235000,705.0000000009503,-356965.5458058831,66207.69679975032,302.29123134388914
+236000,708.000000000993,-356069.9989308831,65568.27238728758,299.3717461127486
+237000,711.0000000010358,-356366.1083058831,65779.82297367987,300.3376441932311
+238000,714.0000000010785,-356187.7254933831,65947.45739008667,301.10302973903083
+239000,717.0000000011213,-356921.2098683831,65463.76036939374,298.8945649373496
+240000,720.000000001164,-357278.4364308831,65616.99276080074,299.5941936892799
+241000,723.0000000012068,-356795.9442433831,66086.76530375634,301.73908208331534
+242000,726.0000000012495,-356724.9364308831,65185.1138504399,297.6223201169473
+243000,729.0000000012923,-356528.3817433831,65430.92468377418,298.7446436998237
+244000,732.000000001335,-356480.8973683831,66094.84336514212,301.775964911766
+245000,735.0000000013778,-356034.9911183831,64941.960646015476,296.5121307413376
+246000,738.0000000014205,-356222.4364308831,65834.46359345136,300.58712244169027
+247000,741.0000000014633,-357076.3895558831,65763.65414283867,300.26382051380057
+248000,744.000000001506,-355916.3504933831,65777.08741672325,300.32515418193634
+249000,747.0000000015488,-356576.8739308831,65547.01008746878,299.2746666627132
+250000,750.0000000015915,-356783.8661183831,64627.73426180123,295.0774353026463
+251000,753.0000000016342,-356991.2723683831,65707.94725419313,300.009473892834
+252000,756.000000001677,-357259.0379933831,66058.36545407644,301.6094139941854
+253000,759.0000000017197,-356667.6239308831,65455.75931695895,298.85803371651775
+254000,762.0000000017625,-356348.9911183831,65572.73153751495,299.3921057095649
+255000,765.0000000018052,-356317.0301808831,66032.8930729758,301.4931121468116
+256000,768.000000001848,-356213.1864308831,65487.091499793576,299.001090258092
+257000,771.0000000018907,-356864.3739308831,65641.37598340318,299.7055226546556
+258000,774.0000000019335,-356592.6395558831,65464.65850696142,298.8986656556101
+259000,777.0000000019762,-356341.7098683831,65823.63864062261,300.5376978509249
+260000,780.000000002019,-356241.6161183831,65095.19373229274,297.211762665908
+261000,783.0000000020617,-356761.7098683831,65980.84055505542,301.25545065883847
+262000,786.0000000021045,-356737.0536183831,65221.53510457906,297.7886123502222
+263000,789.0000000021472,-356516.5145558831,65706.015337246,300.000653142664
+264000,792.00000000219,-356764.9129933831,65850.28498448455,300.6593597797668
+265000,795.0000000022327,-355943.1864308831,65812.96912202367,300.4889829420696
+266000,798.0000000022754,-356697.4129933831,65429.37721768196,298.73757827611786
+267000,801.0000000023182,-355487.1786183831,65684.08300233807,299.90051444511016
+268000,804.0000000023609,-357086.4208058831,65507.7086587525,299.09522412272946
+269000,807.0000000024037,-356849.5614308831,65809.25765573676,300.4720371220488
+270000,810.0000000024464,-356270.5692433831,66300.8702729562,302.7166429698091
+271000,813.0000000024892,-356674.8192433831,65552.02628021897,299.29756960536804
+272000,816.0000000025319,-356218.7333058831,65355.18826964521,298.3988462322896
+273000,819.0000000025747,-355691.7645558831,64798.46448583645,295.85695569296166
+274000,822.0000000026174,-356529.0770558831,65937.5454039707,301.0577735734657
+275000,825.0000000026602,-356298.4051808831,65446.07140885282,298.8138006467675
+276000,828.0000000027029,-356401.8973683831,65482.82158625951,298.9815946785396
+277000,831.0000000027457,-356745.0848683831,65624.69712298986,299.6293702812087
+278000,834.0000000027884,-355832.5926808831,66426.9472635669,303.2922855397524
+279000,837.0000000028311,-356668.4286183831,66302.0271226658,302.7219249164723
+280000,840.0000000028739,-355945.0770558831,66034.31495327293,301.499604170649
+281000,843.0000000029166,-356495.9520558831,65547.64635764784,299.27757174633933
+282000,846.0000000029594,-356390.4208058831,65965.39612261564,301.18493443904384
+283000,849.0000000030021,-356768.0926808831,65827.32554158184,300.5545315105246
+284000,852.0000000030449,-355712.5301808831,65447.74546413566,298.82144405164706
+285000,855.0000000030876,-355567.4520558831,65701.00687305105,299.9777854870618
+286000,858.0000000031304,-355822.3270558831,66425.44186807406,303.2854122020713
+287000,861.0000000031731,-356360.6708058831,66229.08507955942,302.38888599361024
+288000,864.0000000032159,-355126.8817433831,65653.89200494514,299.76266833025414
+289000,867.0000000032586,-356744.9051808831,66256.13386582513,302.5123853947652
+290000,870.0000000033014,-356034.8036183831,66544.29145485297,303.82805587748527
+291000,873.0000000033441,-356257.9520558831,65284.79903220665,298.077462914531
+292000,876.0000000033868,-356796.8504933831,65343.09644681764,298.3436373640096
+293000,879.0000000034296,-355850.0614308831,66380.9328111835,303.0821926631997
+294000,882.0000000034723,-355829.6317433831,65888.65257968311,300.8345386208517
+295000,885.0000000035151,-356609.6395558831,66253.84364204074,302.5019286865379
+296000,888.0000000035578,-355812.1551808831,66181.28275271016,302.1706300363298
+297000,891.0000000036006,-356120.0223683831,66350.66946506791,302.94401621840444
+298000,894.0000000036433,-356334.1004933831,65528.87264394446,299.19185468764965
+299000,897.0000000036861,-356828.8036183831,65694.31981490535,299.9472537039211
+300000,900.0000000037288,-357139.1004933831,66168.320279442,302.1114459505679
+301000,903.0000000037716,-356115.0536183831,65915.98794625513,300.95934649092885
+302000,906.0000000038143,-356409.2958058831,66068.08777730574,301.65380419657225
+303000,909.000000003857,-356075.5614308831,65822.40344194835,300.5320581784058
+304000,912.0000000038998,-356497.7567433831,66054.85088439417,301.5933671650665
+305000,915.0000000039425,-355650.1786183831,65140.568308147995,297.41893399295896
+306000,918.0000000039853,-355475.1786183831,65709.2164455122,300.01526876903716
+307000,921.000000004028,-356537.1161183831,66418.70376862574,303.2546473744515
+308000,924.0000000040708,-357308.6239308831,65955.65116409678,301.1404408884077
+309000,927.0000000041135,-356813.5379933831,65559.76225060457,299.33289051406206
+310000,930.0000000041563,-357025.3973683831,65874.0359125433,300.76780181348016
+311000,933.000000004199,-357118.5770558831,65500.38515652388,299.0617864619521
+312000,936.0000000042418,-356738.0536183831,66130.87360121461,301.9404718339884
+313000,939.0000000042845,-355899.3348683831,65390.299090580025,298.559155287081
+314000,942.0000000043273,-356755.8973683831,66267.2298382711,302.56304740742814
+315000,945.00000000437,-355948.1629933831,66021.01837672468,301.4388946354784
+316000,948.0000000044128,-356172.8504933831,65917.40764071967,300.96582853468755
+317000,951.0000000044555,-357062.3661183831,65585.7475546283,299.4515342659197
+318000,954.0000000044982,-356195.4364308831,66036.72525500972,301.51060913102583
+319000,957.000000004541,-356104.1395558831,66215.83454626589,302.328386682822
+320000,960.0000000045837,-355902.8583058831,65840.48244889453,300.61460334362675
+321000,963.0000000046265,-356534.1708058831,65411.06685487507,298.6539767858562
+322000,966.0000000046692,-356193.9364308831,66020.09448413498,301.43467632488813
+323000,969.000000004712,-356039.4989308831,66356.30818822363,302.96976151160055
+324000,972.0000000047547,-356407.3583058831,66329.23369661218,302.8461447449278
+325000,975.0000000047975,-355985.3348683831,65988.83427696908,301.29194840996263
+326000,978.0000000048402,-355581.8504933831,66271.10281528757,302.5807306534534
+327000,981.000000004883,-357400.0536183831,66167.08287059376,302.10579618683204
+328000,984.0000000049257,-357624.3661183831,65704.45046833431,299.99350826113096
+329000,987.0000000049685,-355917.8036183831,65838.81581813586,300.6069938376541
+330000,990.0000000050112,-356654.1083058831,66489.3452366679,303.5771823271926
+331000,993.000000005054,-357039.6004933831,65538.67549891115,299.23661258200036
+332000,996.0000000050967,-356169.7098683831,65746.90016105142,300.18732515103784
+333000,999.0000000051394,-356945.0770558831,66319.90807718062,302.80356581351543
+
+[94m------------------------------[0m
+[94m[1mOpenMM MD simulation finished![0m
+[94m------------------------------[0m
+
+[94m----------------------------------------------------------------------[0m
+[94m[1mTime to calculate step (OpenMM_MD run): 5274.04 seconds, 87.9 minutes.[0m
+[94m----------------------------------------------------------------------[0m
+Finalizing simulation data
+Checking PBC vectors:
+A:  Vec3(x=6.322123737765361, y=0.0, z=0.0) nm
+B:  Vec3(x=0.0, y=6.322123737765361, z=0.0) nm
+C:  Vec3(x=0.0, y=0.0, z=6.322123737765361) nm
+a 0 6.322123737765361 nm
+Updating PBC vectors in simulation.context, OpenMM system and OpenMM topology
+Writing final frame to disk as PDB-file: trajectory_lastframe.pdb
+Trajectory : trajectory.DCD
+Updating coordinates in ASH fragment.
+
+
+[94m--------------------------------------------------------------------------------[0m
+[94m[1m                          Total timings of all modules                          [0m
+[94m--------------------------------------------------------------------------------[0m
+
+To turn off timing output add to settings file: ~/ash_user_settings.ini
+print_full_timings = False
+
+Modulename                                   Time (sec) Percentage of total     Times called
+----------------------------------------------------------------------------------------------------
+Jobtype modules
+------------------------------
+OpenMM_Modeller                                   10.85       0.2                   1
+OpenMM_Opt                                         2.82       0.1                   1
+OpenMM_MD run                                   5342.30      98.5                   5
+Gentle_warm_up_MD                                 18.11       0.3                   1
+OpenMM_box_equilibration                         122.05       2.2                   1
+
+Theory-run modules
+------------------------------
+OpenMM run                                         1.67       0.0                   2
+
+Object creation
+------------------------------
+OpenMM object creation                             3.43       0.1                   2
+
+Other modules
+------------------------------
+create integrator                                  0.00       0.0                   8
+creating/updating simulation                       1.25       0.0                   8
+OpenMMTheory.run: const-check                      0.88       0.0                   2
+Creating pos array                                 0.02       0.0                   2
+Updating MM positions                              0.05       0.0                   2
+OpenMM getState                                    0.72       0.0                   2
+
+
+Sum of all moduletimes (flawed)                 5504.14
+Total walltime                                  5425.20     100.0
+
+[93m ------------------------------------------------------------------- [0m
+[93m ASH Total Walltime: 5425.2 seconds, 90.4 minutes. [0m
+[93m ------------------------------------------------------------------- [0m
