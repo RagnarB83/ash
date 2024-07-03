@@ -15,48 +15,52 @@ from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
 # Analytical frequencies function. For ORCAtheory and CFourTheory
-def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15,
+def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, masses=None,
            pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100,
            scaling_factor=1.0):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
 
-    #Checking for linearity. Determines how many Trans+Rot modes
+    # Checking for linearity. Determines how many Trans+Rot modes
     if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
         TRmodenum=5
     else:
         TRmodenum=6
-    #Hessian atoms
+    # Hessian atoms
     hessatoms=list(range(0,fragment.numatoms))
+
+    # Masses
+    if masses is None:
+        masses = fragment.list_of_masses
 
     if theory.__class__.__name__ == "ORCATheory" or theory.__class__.__name__ == "CFourTheory":
         print(f"Requesting analytical Hessian calculation from {theory.theorynamelabel}")
         print("")
-        #Check charge/mult
+        # Check charge/mult
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "AnFreq", theory=theory)
-        #Do single-point theory run with Hessian=True
+        # Do single-point theory run with Hessian=True
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True)
 
-        #Grab Hessian from theory object
+        # Grab Hessian from theory object
         print("Getting Hessian from theory object")
         hessian = theory.hessian
-        #Diagonalize
-        frequencies, nmodes, evectors, mode_order = diagonalizeHessian(fragment.coords,theory.hessian,fragment.masses,fragment.elems,
+        # Diagonalize
+        frequencies, nmodes, evectors, mode_order = diagonalizeHessian(fragment.coords,theory.hessian,masses,fragment.elems,
                                                             TRmodenum=TRmodenum,projection=True)
         print("Now scaling frequencies by scaling factor:", scaling_factor)
         frequencies = scaling_factor * frequencies
-        #Print out Freq output. Maybe print normal mode compositions here instead???
+        # Print out Freq output. Maybe print normal mode compositions here instead???
         printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
         print("\n\n")
         print("Normal mode composition factors by element")
         printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms,TRmodenum=TRmodenum)
         thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO=QRRHO, QRRHO_omega_0=QRRHO_omega_0)
 
-        #Add Hessian to fragment and write to file
+        # Add Hessian to fragment and write to file
         fragment.hessian=hessian
         write_hessian(hessian,hessfile="Hessian")
 
-        #Create dummy-ORCA file with frequencies and normal modes
+        # Create dummy-ORCA file with frequencies and normal modes
         printdummyORCAfile(fragment.elems, fragment.coords, frequencies, evectors, nmodes, "orcahessfile.hess")
         print("Wrote dummy ORCA outputfile with frequencies and normal modes: orcahessfile.hess_dummy.out")
         print("Can be used for visualization")
@@ -73,31 +77,31 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15,
         ashexit()
 
 
-#Numerical frequencies function
-#ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
+# Numerical frequencies function
+# ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial',
         temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, Raman=False,
         scaling_factor=1.0):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     ################
-    #Basic checks
+    # Basic checks
     ################
     if fragment is None or theory is None:
         print("NumFreq requires a fragment and a theory object")
         ashexit()
-    #Check charge/mult
+    # Check charge/mult
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "NumFreq", theory=theory)
     ################
-    #SETUP
+    # SETUP
     ################
-    #Setting variables
+    # Setting variables
     coords=fragment.coords
     elems=copy.deepcopy(fragment.elems)
     numatoms=len(elems)
     allatoms=list(range(0,numatoms))
 
-    #Hessatoms list is allatoms (if hessatoms list not provided). If hessatoms provided we do a partial Hessian
+    # Hessatoms list is allatoms (if hessatoms list not provided). If hessatoms provided we do a partial Hessian
     if hessatoms is None:
         print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
         hessatoms=allatoms
@@ -105,15 +109,15 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     else:
         print("Hessatoms list provided. This is assumed to be a partial Hessian. Turning off rot+trans projection")
         projection=False
-    #Making sure hessatoms list is sorted
+    # Making sure hessatoms list is sorted
     hessatoms.sort()
-    #If hessatoms_masses list was provided
+    # If hessatoms_masses list was provided
     if hessatoms_masses != None:
         if len(hessatoms_masses) != len(hessatoms):
             print(BC.FAIL,"Error: Number of provided masses (hessatoms_masses keyword) is not equal to number of Hessian-atoms.")
             print("Check input masses!",BC.END)
             ashexit()
-    #Checking for linearity. Determines how many Trans+Rot modes
+    # Checking for linearity. Determines how many Trans+Rot modes
     if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
         TRmodenum=5
     else:
@@ -439,15 +443,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     print()
 
 
-    #Symmetrize Hessian by taking average of matrix and transpose
+    # Symmetrize Hessian by taking average of matrix and transpose
     symm_hessian=(hessian+hessian.transpose())/2
     hessian=symm_hessian
 
-    #Diagonalize mass-weighted Hessian
+    # Diagonalize mass-weighted Hessian
+
     # Get partial matrix by deleting atoms not present in list.
     hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
-    #Use input masses if given, otherwise take from frament
 
+    # Use input masses if given, otherwise take from frament
     if hessatoms_masses == None:
         hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
@@ -722,7 +727,8 @@ def old_printfreqs(vfreq,numatoms,TRmodenum=6):
         #print("type of vib", type(vib))
 
 #
-def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100):
+def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100,
+                   use_full_geo_in_rotational_analysis=True):
     module_init_time=time.time()
     """[summary]
 
@@ -758,12 +764,21 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
             print("Structure is non-linear. 6 translational+rotational modes present")
             moltype="nonlinear"
             TRmodenum=6
-    coords=fragment.coords
-    elems=fragment.elems
 
-    masses=fragment.list_of_masses
-    totalmass=sum(masses)
+    #What coordinates to use for rotational analysis
+    if use_full_geo_in_rotational_analysis:
+        print("Using full geometry in rotational analysis")
+        #Using full coordinates in fragment
+        coords=fragment.coords
+        elems=fragment.elems
+    else:
+        print("Using Hessian-geometry in rotational analysis")
+        coords=np.take(fragment.coords,atoms,axis=0)
+        elems=[fragment.elems[i] for i in atoms]
 
+    #Masses to use for translational entropy
+    totalmass=sum(fragment.masses)
+    print("Total mass of molecule:", totalmass)
 
     ###################
     #ROTATIONAL PART
@@ -1457,17 +1472,11 @@ def normalmodecomp_all(mode,fragment,evectors, hessatoms=None):
 
 
 def normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, silent=False, hessatoms=None):
-    #print("normalmodecomp_permode_by_elems------------")
-    #print("mode:", mode)
-    #print(vfreq)
-    #print(evectors)
-    #print("hessatoms:", hessatoms)
+
     normcomplist = normalmodecomp_all(mode,fragment,evectors, hessatoms=hessatoms)
-    #print("normcomplist:", normcomplist)
     elementnormcomplist=[]
 
     # Sum components together
-
     if hessatoms != None:
         hesselems=[fragment.elems[i] for i in hessatoms]
     else:
@@ -1486,14 +1495,6 @@ def normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, silent=False, 
             elcompsum=float(elcompsum+float(normcomplist[h]))
         elementnormcomplist.append(elcompsum)
         normmodecompelemsdict[u] = elcompsum
-    #print(elementnormcomplist)
-    #allcomps.append(elementnormcomplist)
-    #print("allcomps:", allcomps)
-    #elementnormcomplist=['{:.6f}'.format(x) for x in elementnormcomplist]
-    #print("elementnormcomplist:", elementnormcomplist)
-    #exit()
-    #line = "{:>3d}   {:>9.4f}        {}".format(mode, vib, '   '.join(elementnormcomplist))
-    #print(line)
     return normmodecompelemsdict
 
 #Get atoms that contribute most to specific mode of Hessian

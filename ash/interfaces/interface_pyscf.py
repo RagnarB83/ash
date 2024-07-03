@@ -1819,9 +1819,6 @@ class PySCFTheory:
         self.mol.ecp = self.ecp
         #Memory settings
         self.mol.max_memory = self.memory
-        self.num_basis_functions=len(self.mol.ao_labels())
-        if self.printlevel >= 1:
-            print("Number of basis functions:", self.num_basis_functions)
         ###########
 
     #Create mf object (self.mf) via method
@@ -2321,10 +2318,11 @@ class PySCFTheory:
         #####################
         # BASIS
         #####################
-
         self.define_basis(elems=qm_elems)
-
         self.mol.build()
+        self.num_basis_functions=len(self.mol.ao_labels())
+        if self.printlevel >= 1:
+            print("Number of basis functions:", self.num_basis_functions)
 
         ############################
         # CREATE MF OBJECT
