@@ -554,6 +554,7 @@ class GeomeTRICOptimizerClass:
             #TODO: Return dictionary of energy, gradient, coordinates etc, coordinates along trajectory ??
             result = ASH_Results(label="Optimizer", energy=finalenergy, initial_geometry=None,
                     geometry=fragment.coords)
+            result.write_to_disk(filename="ASH_Optimizer.result")
             return result
 
 

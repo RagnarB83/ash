@@ -60,6 +60,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
             print("Energy: ", energy)
             print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         result = ASH_Results(label="Singlepoint", energy=energy, gradient=gradient, charge=charge, mult=mult)
+        result.write_to_disk(filename="ASH_SP.result")
         return result
     # Run a single-point energy job without gradient (default)
     else:
@@ -82,6 +83,7 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
         if printlevel >= 1:
             print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         result = ASH_Results(label="Singlepoint", energy=energy, charge=charge, mult=mult)
+        result.write_to_disk(filename="ASH_SP.result")
         return result
 
 
@@ -118,6 +120,7 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None, p
     #Printing final table
     print_theories_table(theories,energies,fragment)
     result = ASH_Results(label="Singlepoint_theories", energies=energies, charge=charge, mult=mult)
+    result.write_to_disk(filename="ASH_SP_theories.result")
     print_time_rel(module_init_time, modulename='Singlepoint_theories', moduleindex=1)
     return result
 
@@ -217,6 +220,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
         print("Stoichiometry provided:", stoichiometry)
         r = ReactionEnergy(list_of_energies=energies, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='ΔE')
         result.reaction_energy = r[0]
+    result.write_to_disk(filename="ASH_SP_fragments.result")
     print_time_rel(module_init_time, modulename='Singlepoint_fragments', moduleindex=1)
     return result
 
@@ -262,6 +266,7 @@ def Singlepoint_fragments_and_theories(theories=None, fragments=None, stoichiome
             r = ReactionEnergy(list_of_energies=elist, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='{}'.format(t.label))
             result.reaction_energies.append(r[0])
     print()
+    result.write_to_disk(filename="ASH_SP_fragments_theories.result")
     #return all_energies
     print_time_rel(module_init_time, modulename='Singlepoint_fragments_and_theories', moduleindex=1)
     return result
@@ -389,6 +394,7 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
             finaldict['delta_FCI_corr']=delta_FCI_corr
         result.energy_contributions = finaldict
     print_time_rel(module_init_time, modulename='Singlepoint_reaction', moduleindex=1)
+    result.write_to_disk(filename="ASH_SP_reaction.result")
     return result
     #return reaction.reaction_energy
 

@@ -307,6 +307,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     result = ASH_Results(label="NEBTS calc", energy=SP.energy, geometry=SP.coords,
         saddlepoint_fragment=SP, charge=charge, mult=mult, MEP_energies_dict=energies_dict,
         barrier_energy=SP_relenergy)
+    result.write_to_disk(filename="ASH_NEBTS.result")
     return result
 
 #ASH NEB function. Calls Knarr
@@ -541,6 +542,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         result = ASH_Results(label="NEB-IDPPonly calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
             saddlepoint_fragment=Saddlepoint_fragment, charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict,
             barrier_energy=None)
+        result.write_to_disk(filename="ASH_NEB.result")
         return result
 
     #REGULAR NEB
@@ -562,6 +564,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
             #Returning result object with all attributes None
             result = ASH_Results(label="NEB-CI calc (fail)")
+            result.write_to_disk(filename="ASH_NEB.result")
             return result
 
         else:
@@ -586,10 +589,12 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             result = ASH_Results(label="NEB-CI calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
                 saddlepoint_fragment=Saddlepoint_fragment, charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict,
                 barrier_energy=None)
+            result.write_to_disk(filename="ASH_NEB.result")
             return result
         else:
             #Returning result object
             result = ASH_Results(label="NEB calc", charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict)
+            result.write_to_disk(filename="ASH_NEB.result")
             return result
 
 

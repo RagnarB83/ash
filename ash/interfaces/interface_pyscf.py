@@ -2882,6 +2882,7 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
                                                             CCmethod='CCSD(T)', mo_coefficients=final_orbs)
 
     result = ASH_Results(label="pyscf_CCSD_T_natorb_selection", energy=CC_energy, charge=fragment.charge, mult=fragment.mult)
+    result.write_to_disk(filename="ASH_pyscf.result")
     return result
 
 #Standalone function for reading either pySCF-CHK file or Molden file and returning MO coefficients and occupations

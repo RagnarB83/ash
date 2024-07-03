@@ -70,6 +70,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
 
         result = ASH_Results(label="Anfreq", hessian=hessian, frequencies=frequencies,
                              vib_eigenvectors=evectors, normal_modes=nmodes, thermochemistry=thermodict)
+        result.write_to_disk(filename="ASH_AnFreq.result")
         return result
 
     else:
@@ -533,6 +534,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         freq_elems=hesselems, freq_coords=hesscoords,freq_masses=hessmasses, freq_TRmodenum=TRmodenum, freq_projection=projection,
         freq_scaling_factor=scaling_factor,  freq_dipole_derivs=dipole_derivs,
         normal_modes=nmodes, thermochemistry=thermodict, freq_Raman=Raman, freq_polarizability_derivs=polarizability_derivs)
+    result.write_to_disk(filename="ASH_NumFreq.result")
     return result
 
 
