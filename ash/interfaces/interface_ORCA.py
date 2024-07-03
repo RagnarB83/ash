@@ -333,13 +333,15 @@ end
         ash.modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='ORCA Opt-run', moduleindex=2)
         return
-    #Method to grab dipole moment from an ORCA outputfile (assumes run has been executed)
+    # Method to grab dipole moment from an ORCA outputfile (assumes run has been executed)
     def get_dipole_moment(self):
-        return grab_dipole_moment(self.filename+'.out')
+        dm = grab_dipole_moment(self.filename+'.out')
+        print("Dipole moment:", dm)
+        return dm
     def get_polarizability_tensor(self):
         polarizability,diag_pz = grab_polarizability_tensor(self.filename+'.out')
         return polarizability
-    #Run function. Takes coords, elems etc. arguments and computes E or E+G.
+    # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
         module_init_time=time.time()

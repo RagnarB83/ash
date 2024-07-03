@@ -181,6 +181,45 @@ class CP2KTheory:
         self.MM_radius_scaling=MM_radius_scaling #Scale the MM radii by this factor
         self.mm_radii=mm_radii #Optional dictionary of MM radii for GEEP. If not provided then element_radii_for_cp2k
 
+        print("CP2KTheory settings:\n")
+        print("")
+        print("CP2K directory:", self.cp2kdir)
+        print("CP2K binary name:", self.cp2k_bin_name)
+        print("Method:", self.method)
+        print("Functional:", self.functional)
+        print("Basis method:", self.basis_method)
+        print("Basis file:", self.basis_file)
+        print("Potential file:", self.potential_file)
+        print("Cutoff:", self.cutoff)
+        print("Relative cutoff:", self.rel_cutoff)
+        print("")
+        print("Periodic:", self.periodic)
+        print("Periodic type:", self.periodic_type)
+        print("QM periodic type:", self.qm_periodic_type)
+        print("XTB periodic:", self.xtb_periodic)
+        print("Cell dimensions:", self.cell_dimensions)
+        print("Cell vectors:", self.cell_vectors)
+        print("QM cell dimensions:", self.qm_cell_dims)
+        print("QM cell shift par:", self.qm_cell_shift_par)
+        print("Wavelet SCF type:", self.wavelet_scf_type)
+        print("")
+        print("Printlevel:", self.printlevel)
+        print("Parallelization:", self.parallelization)
+        print("Numcores:", self.numcores)
+        print("")
+        print("SCF convergence:", self.scf_convergence)
+        print("SCF maxiter:", self.scf_maxiter)
+        print("Outer SCF maxiter:", self.outer_scf_maxiter)
+        print("EPS default:", self.eps_default)
+        print("OT:", self.OT)
+        print("OT minimizer:", self.OT_minimizer)
+        print("OT preconditioner:", self.OT_preconditioner)
+        print("OT linesearch:", self.OT_linesearch)
+        print("Outer SCF:", self.outer_SCF)
+        print("Outer SCF optimizer:", self.outer_SCF_optimizer)
+        print("OT energy gap:", self.OT_energy_gap)
+
+
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores

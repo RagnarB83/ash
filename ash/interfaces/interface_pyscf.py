@@ -1720,7 +1720,7 @@ class PySCFTheory:
     #Method to grab dipole moment from pyscftheory object  (assumes run has been executed)
     def get_dipole_moment(self, dm=None, label=None):
         if self.printlevel >=1:
-            print("get_dipole_moment function:")
+            print("get_dipole_moment function.")
 
         if self.platform =="GPU":
             print("Dipole moment calculation not currently supported on GPU")
@@ -1733,6 +1733,8 @@ class PySCFTheory:
                 print("No DM provided. Using mean-field object dm")
             #MF dipole moment
             dipole = self.mf.dip_moment(unit='A.U.',verbose=self.printlevel)
+            if self.printlevel >=1:
+                print(f"MF Dipole moment ({label}): {dipole} A.U.")
         else:
             if self.printlevel >=1:
                 print("Using provided DM")
@@ -1776,7 +1778,12 @@ class PySCFTheory:
         if cartesian_basis is not None:
             print("Setting cartesian basis flag to:", cartesian_basis)
             self.mol.cart = cartesian_basis
-
+    #Update mol object with coordinates or charge/mult
+    #def update_mol(self, qm_elems, current_coords, charge, mult):
+    #    coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
+    #    self.mol.atom = coords_string
+    #    self.mol.charge = charge
+    #    self.mol.spin = mult-1
 
     #Define basis in mol object
     def define_basis(self,elems=None):
@@ -1812,8 +1819,6 @@ class PySCFTheory:
         self.mol.ecp = self.ecp
         #Memory settings
         self.mol.max_memory = self.memory
-        #BUILD mol object
-        self.mol.build()
         self.num_basis_functions=len(self.mol.ao_labels())
         if self.printlevel >= 1:
             print("Number of basis functions:", self.num_basis_functions)
@@ -2229,16 +2234,15 @@ class PySCFTheory:
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
             charge=None, mult=None):
 
-        # FIRST RUN
-        if self.runcalls == 0:
-            print("First run. Running prepare_run method")
-            #Prepare for run (create mol object, mf object, modify mf object etc.)
-            #Does not execute SCF, CC or anything
-            self.prepare_run(current_coords=current_coords, elems=elems, charge=charge, mult=mult,
+        self.runcalls += 1
+        #Note: We have to do prepare_run each time. Mol object (with coords,basis etc.) has to be created and built.
+        #Mf object then has to be built from that mol object.
+        #Prepare for run (create mol object, mf object, modify mf object etc.)
+        #Does not execute SCF, CC or anything
+        self.prepare_run(current_coords=current_coords, elems=elems, charge=charge, mult=mult,
                             current_MM_coords=current_MM_coords,
                             MMcharges=MMcharges, qm_elems=qm_elems, Grad=Grad, PC=PC,
                             numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label)
-            self.runcalls += 1
 
         #Actual run
         return self.actualrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
@@ -2319,6 +2323,8 @@ class PySCFTheory:
         #####################
 
         self.define_basis(elems=qm_elems)
+
+        self.mol.build()
 
         ############################
         # CREATE MF OBJECT
@@ -2584,7 +2590,7 @@ class PySCFTheory:
         ##############
         #GRADIENT
         ##############
-        if Grad==True:
+        if Grad:
             if self.printlevel >1:
                 print("Gradient requested")
 
