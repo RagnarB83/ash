@@ -22,7 +22,7 @@ from .functions.functions_general import create_ash_env_file,blankline, BC, list
     printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit, natural_sort
 
 #Results dataclass
-from .modules.module_results import ASH_Results
+from .modules.module_results import ASH_Results,read_results_from_file
 
 # Fragment class and coordinate functions
 import ash.modules.module_coords

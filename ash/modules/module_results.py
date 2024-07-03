@@ -78,11 +78,11 @@ class ASH_Results:
         f = open(filename,'w')
 
         newdict={}
-        #Looping over attributes, converting ndarrays to lists and skipping ASH objects
+        # Looping over attributes, converting ndarrays to lists and skipping ASH objects
         for k,v in self.__dict__.items():
-            #Deal with np array
+            # Deal with np array
             if isinstance(v,np.ndarray):
-                #Check for nans in array
+                # Check for nans in array
                 if np.any(np.isnan(v)):
                     print("Warning: nan in array: ", k)
                     print("Skipping writing to disk")
@@ -95,6 +95,8 @@ class ASH_Results:
                 if isinstance(v[0],np.ndarray):
                     newv=[i.tolist() for i in v]
                     newdict[k]=newv
+                else:
+                    newdict[k]=v
             elif isinstance(v,Fragment):
                 print("Warning: Fragment object is not included in ASH.result on disk")
             else:
@@ -103,3 +105,16 @@ class ASH_Results:
         # Dump new dict
         f.write(json.dumps(newdict, allow_nan=True))
         f.close()
+
+# Read ASH-Results data from disk
+def read_results_from_file(filename="ASH.result"):
+    import json
+
+    print("Reading ASH_Results data from file:", filename)
+    data = json.load(open(filename))
+    print("Data read from file:")
+    for k,v in data.items():
+        print(f"{k} : {v}")
+
+    r = ASH_Results(**data)
+    return r

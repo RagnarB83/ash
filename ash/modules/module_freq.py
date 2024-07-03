@@ -106,8 +106,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
         hessatoms=allatoms
         projection=True
+    elif len(hessatoms) == fragment.numatoms:
+        print("Hessatoms list provided but equal to number of fragment atoms. Rot+trans projection is on!")
+        projection=True
     else:
-        print("Hessatoms list provided. This is assumed to be a partial Hessian. Turning off rot+trans projection")
+        print("Hessatoms list provided, partial Hessian. Turning off rot+trans projection")
         projection=False
     # Making sure hessatoms list is sorted
     hessatoms.sort()
@@ -527,7 +530,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     result = ASH_Results(label="Numfreq", hessian=hessian, vib_eigenvectors=evectors,
         frequencies=frequencies, Raman_activities=Raman_activities, depolarization_ratios=depolarization_ratios,
         IR_intensities=IR_intens_values, freq_atoms=hessatoms,
-        freq_elems=hesselems,freq_coords=hesscoords,freq_masses=hessmasses, freq_TRmodenum=TRmodenum, freq_projection=projection,
+        freq_elems=hesselems, freq_coords=hesscoords,freq_masses=hessmasses, freq_TRmodenum=TRmodenum, freq_projection=projection,
         freq_scaling_factor=scaling_factor,  freq_dipole_derivs=dipole_derivs,
         normal_modes=nmodes, thermochemistry=thermodict, freq_Raman=Raman, freq_polarizability_derivs=polarizability_derivs)
     return result
@@ -2067,7 +2070,6 @@ def clean_frequencies(freqs):
 
 
 def project_rot_and_trans(coords,mass,Hessian):
-
     mass = np.array(mass)
     coords = np.array(coords)*ash.constants.ang2bohr
     coords = coords.copy().reshape(-1, 3)
