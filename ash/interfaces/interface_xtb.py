@@ -805,6 +805,27 @@ def grabatomcharges_xTB():
             charges.append(float(line.split()[0]))
     return charges
 
+
+#Grab xTB charges from outputfile. Choice between Mulliken and CM5
+def grabatomcharges_xTB_output(filename, chargemodel="CM5"):
+    if chargemodel== "Mulliken":
+        col=1
+    elif chargemodel == "CM5":
+        col=2
+    charges=[]
+    Grab=False
+    with open(filename) as file:
+        for line in file:
+            if Grab:
+                if len(line.split()) == 6:
+                    charges.append(float(line.split()[col]))
+            if 'Mulliken/CM5 charges' in line:
+                Grab=True
+            if 'Wiberg/Mayer' in line:
+                Grab=False
+
+    return charges
+
 def grab_dipole_moment(outfile):
     grab=False
     dipole_moment = []

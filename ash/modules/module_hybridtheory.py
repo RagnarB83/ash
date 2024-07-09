@@ -1,16 +1,19 @@
 """
-DualTheory module:
+HybridTheory module:
 
-class DualTheory
 
 """
-from ash.functions.functions_general import BC, ashexit, print_time_rel
-import ash.constants
-import ash.functions.functions_elstructure
 import time
 import numpy as np
 import os
 from collections import defaultdict
+
+from ash.functions.functions_general import BC, ashexit, print_time_rel,print_line_with_mainheader,listdiff
+from ash.modules.module_theory import Theory
+from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
+from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB_output
+import ash.constants
+import ash.functions.functions_elstructure
 
 class Correction_handler:
     def __init__(self):
@@ -146,7 +149,7 @@ class DualTheory:
         print(f"Setting new numcores {numcores} for theory 1 and theory2")
         self.theory1.set_numcores(numcores)
         self.theory2.set_numcores(numcores)
-    #Cleanup after run.
+    # Cleanup after run.
     def cleanup(self):
         self.theory1.cleanup()
         self.theory2.cleanup()
@@ -375,30 +378,311 @@ class WrapTheory:
         self.printlevel=printlevel
         self.label=label
         self.filename=""
+        self.theorynamelabel="WrapTheory"
+
+        print_line_with_mainheader(f"{self.theorynamelabel} initialization")
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
 
-        # Calculate Theory 1
-        e_theory1, g_theory1 = self.theory1.run(current_coords=current_coords,
-                                                current_MM_coords=current_MM_coords,
-                                                MMcharges=MMcharges, qm_elems=qm_elems,
-                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-                                                label=label, charge=charge, mult=mult)
+        print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
+        print("Running Theory 1:", self.theory1.theorynamelabel)
+        # Calculate Theory 1
+        if Grad:
+            e_theory1, g_theory1 = self.theory1.run(current_coords=current_coords,
+                                                    current_MM_coords=current_MM_coords,
+                                                    MMcharges=MMcharges, qm_elems=qm_elems,
+                                                    elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+                                                    label=label, charge=charge, mult=mult)
+        else:
+            e_theory1 = self.theory1.run(current_coords=current_coords,
+                                                    current_MM_coords=current_MM_coords,
+                                                    MMcharges=MMcharges, qm_elems=qm_elems,
+                                                    elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+                                                    label=label, charge=charge, mult=mult)
         # Calculate Theory 2
-        e_theory2, g_theory2 = self.theory2.run(current_coords=current_coords,
-                                                current_MM_coords=current_MM_coords,
-                                                MMcharges=MMcharges, qm_elems=qm_elems,
-                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-                                                label=label, charge=charge, mult=mult)
+        print("Running Theory 2:", self.theory2.theorynamelabel)
+        if Grad:
+            e_theory2, g_theory2 = self.theory2.run(current_coords=current_coords,
+                                                    current_MM_coords=current_MM_coords,
+                                                    MMcharges=MMcharges, qm_elems=qm_elems,
+                                                    elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+                                                    label=label, charge=charge, mult=mult)
+        else:
+            e_theory2 = self.theory2.run(current_coords=current_coords,
+                                                    current_MM_coords=current_MM_coords,
+                                                    MMcharges=MMcharges, qm_elems=qm_elems,
+                                                    elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+                                                    label=label, charge=charge, mult=mult)
 
         # Combine energy and gradient
         energy = e_theory1 + e_theory2
-        gradient = g_theory1 + g_theory2
+        if self.printlevel == 3:
+            print("Energy (Theory1):", e_theory1)
+            print("Energy (Theory2):", e_theory2)
+            print("Energy (Combined):", energy)
+        if Grad:
+            gradient = g_theory1 + g_theory2
+            if self.printlevel == 3:
+                print("Gradient (Theory1):", g_theory1)
+                print("Gradient (Theory2):", g_theory2)
+                print("Gradient (Combined):", gradient)
 
         if Grad:
             return energy, gradient
         else:
             return energy
+
+
+
+class ONIOMTheory(Theory):
+    def __init__(self, theory1=None, theory2=None, theories_N=None, regions_N=None, regions_chargemult=None,
+                 embedding=None, full_pointcharges=None, chargemodel="CM5",
+                 fullregion_charge=None, fullregion_mult=None, fragment=None, label=None,
+                 printlevel=2, numcores=1,):
+        super().__init__()
+        self.theorytype="ONIOM"
+        self.theory1=theory1
+        self.theory2=theory2
+        self.printlevel=printlevel
+        self.label=label
+        self.filename=""
+        self.theorynamelabel="ONIOMTheory"
+        print_line_with_mainheader("ONIOM Theory")
+        print("A N-layer ONIOM module")
+
+        # Early exits
+        # If fragment object has not been defined
+        if fragment is None:
+            print("Error: fragment= keyword has not been defined for QM/MM. Exiting")
+            ashexit()
+        if fullregion_charge is None or fullregion_mult is None:
+            print("Error: Full-region charge and multiplicity must be provided (fullregion_charge, fullregion_mult keywords)")
+            ashexit()
+
+        if type(theories_N) != list:
+            print("Error: theories_N should be a list")
+            ashexit()
+        print(f"{len(theories_N)} theories provided. This is a {len(theories_N)}-layer ONIOM.")
+        if regions_N is None:
+            print("Error: regions_N must be provided for N-layer ONIOM")
+            ashexit()
+        if regions_chargemult is None:
+            print("Error: regions_chargemult must be provided for N-layer ONIOM (list of lists of charge,mult for each region)")
+            ashexit()
+        if len(theories_N) != len(regions_N):
+            print("Error: Number of theories and regions must match")
+            ashexit()
+        if len(theories_N) != len(regions_chargemult):
+            print("Error: Number of theories and regions_chargemult must match")
+            ashexit()
+        # Full system
+        self.allatoms = fragment.allatoms
+        self.theories_N=theories_N
+        self.regions_N=regions_N
+        self.regions_chargemult=regions_chargemult # List of list of charge,mult combos
+
+        # Embedding
+        #Note: by default no embedding, meaning LL theory for everything
+        self.embedding=embedding
+        self.chargemodel=chargemodel
+        # Defining pointcharges for full system
+        self.full_pointcharges=full_pointcharges
+
+        # N-layer ONIOM
+        self.fullregion_charge=fullregion_charge
+        self.fullregion_mult=fullregion_mult
+
+        # Defining charge/mult here as well (ASH jobtypes stop otherwise)
+        self.charge = self.fullregion_charge
+        self.mult = self.fullregion_mult
+
+
+
+        #
+        print("Theories:")
+        for i,t in enumerate(self.theories_N):
+            print(f"Theory {i+1}:", t.theorynamelabel)
+        print("\nRegions provided:")
+        #
+        for i,r in enumerate(self.regions_N):
+            print(f"Region {i+1} ({len(r)} atoms):", r)
+        print("Allatoms:", self.allatoms)
+        print("\nRegion-chargemult info provided:")
+        #
+        for i,r in enumerate(self.regions_chargemult):
+            print(f"Region {i+1} Charge:{r[0]} Mult:{r[1]}")
+
+        if len(self.theories_N) > 3:
+            print("Error: N>3 layer ONIOM is not yet supported")
+            ashexit()
+
+    def run(self, current_coords=None, Grad=False, elems=None, charge=None, mult=None, label=None, numcores=None):
+
+        print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
+
+        # Charge/mult. Note: ignoring charge/mult from run keyword.
+        # Charge/mult definitions for full system and regions must have been provided on object creation
+
+        if numcores is None:
+            numcores = self.numcores
+
+        # Full coordinates
+        full_coords=current_coords
+        full_elems=elems
+
+
+        # Dicts to keep energy and gradient for each theory-region combo
+        E_dict={} # (theory,region) -> energy
+        G_dict={} # (theory,region) -> gradient
+        num_theories = len(self.theories_N)
+
+        # First doing LowLevel (LL) theory on Full region
+        ll_theory = self.theories_N[-1]
+        print(f"Running Theory LL ({ll_theory.theorynamelabel}) on Full-region ({len(full_elems)} atoms)")
+
+        # Derive pointcharges unless full_pointcharges were already provided
+        if self.full_pointcharges is None and self.embedding == "Elstat":
+            print("Full-system pointcharges were not made available initially")
+            print("This means that we must derive pointcharges for full system")
+            # TODO: How to do this in general
+            # Check if the low-level theory is compatible with some charge model
+            # Should probably this in init instad though
+            if isinstance(ll_theory, ash.ORCATheory):
+                print(f"Theory is ORCATheory. Using {self.chargemodel} charge model")
+                theory.extrakeyword+="\n! hirshfeld "
+            elif isinstance(ll_theory, ash.xTBTheory):
+                 print(f"Theory is xTBTheory. Using default xtb charge model")
+            else:
+                print("Problem: Theory-level not compatible with pointcharge-creation")
+                ashexit()
+
+
+        if Grad:
+            e_LL_full, g_LL_full = ll_theory.run(current_coords=full_coords,
+                                                    elems=full_elems, Grad=Grad, numcores=numcores,
+                                                    label=label, charge=self.fullregion_charge, mult=self.fullregion_mult)
+        else:
+            e_LL_full = ll_theory.run(current_coords=full_coords,
+                                    elems=full_elems, Grad=Grad, numcores=numcores,
+                                    label=label, charge=self.fullregion_charge, mult=self.fullregion_mult)
+
+        # Grabbing atom charges from ORCA output
+        # TODO: Remove theory-specific code
+        if self.full_pointcharges is None and self.embedding == "Elstat":
+            print("Grabbing atom charges for whole system")
+            if isinstance(ll_theory, ash.ORCATheory):
+                self.full_pointcharges = grabatomcharges_ORCA(self.chargemodel,"orca.out")
+            elif isinstance(ll_theory, ash.xTBTheory):
+                print(f"{ll_theory.filename}.out")
+                self.full_pointcharges = grabatomcharges_xTB_output(ll_theory.filename+'.out', chargemodel=self.chargemodel)
+            print("self.full_pointcharges:", self.full_pointcharges)
+
+        E_dict[(num_theories-1,-1)] = e_LL_full
+        if Grad:
+            G_dict[(num_theories-1,-1)] = g_LL_full
+
+        # Other theory-region combos
+        for j,region in enumerate(self.regions_N):
+            # Skipping last region
+            if j == len(self.regions_N)-1:
+                print("Last region always skipped")
+                continue
+            for i,theory in enumerate(self.theories_N):
+                # Skipping HL on everything but first region
+                if i == 0 and j>0:
+                    print("HL theory on non-first region. Skipping")
+                    continue
+                # 3-layer ONIOM case (LL theory on first region). Skipping
+                if i == 2 and j == 0:
+                    print("Case 3-layer ONIOM: LL theory on first region. Skipping")
+                    continue
+
+                # Taking coordinates for region
+                r_coords = np.take(current_coords,region,axis=0)
+                r_elems = [elems[x] for x in region]
+
+                # Activate embedding for HL region 1
+                #TODO: also embedding for LL theory region1
+                if i == 0 and self.embedding == "Elstat":
+                    print("Embedding activated for HL theory")
+                    PC=True
+                    # Which region?
+                    PCregion=listdiff(self.allatoms,region)
+                    print("PCregion:", PCregion)
+                    pointchargecoords = np.take(current_coords,PCregion,axis=0)
+                    # Pointcharges
+                    if self.full_pointcharges is None:
+                        print("Warning: Pointcharges for full system not available")
+                        ashexit()
+                    pointcharges=[self.full_pointcharges[x] for x in PCregion]
+                else:
+                    PC=False
+                    pointchargecoords=None
+                    pointcharges=None
+
+                # Running
+                print(f"Running Theory {i+1} ({theory.theorynamelabel}) on Region {j+1} ({len(r_elems)} atoms)")
+                res = theory.run(current_coords=r_coords, elems=r_elems, Grad=Grad, numcores=numcores,
+                                                PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges,
+                                                label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
+                if PC and Grad:
+                    e,g,pg = res
+                elif not PC and Grad:
+                    e,g = res
+                elif not PC and not Grad:
+                    e = res
+
+                E_dict[(i,j)] = e
+                if Grad:
+                    G_dict[(i,j)] = g
+
+        # 2-layer ONIOM Energy and Gradient expression
+        if len(self.theories_N) == 2:
+            # E_dict: {(1, -1): -14.73707412056, (0, 0): -115.486915570077, (1, 0): -8.9611505694}
+            self.energy = E_dict[(1,-1)] + E_dict[(0,0)] - E_dict[(1,0)]
+            if Grad:
+                # Gradient assembled
+                self.gradient = G_dict[(1,-1)]
+                for at, g in zip(self.regions_N[0], G_dict[(0,0)]):
+                    self.gradient[at] += g
+                for at, g in zip(self.regions_N[0], G_dict[(1,0)]):
+                    self.gradient[at] -= g
+                #Pointcharge gradient contribution
+                #TODO
+                if self.embedding == "Elstat":
+                    print("TODO pcgrad")
+                    ashexit()
+
+
+
+
+        # 3-layer ONIOM Energy and Gradient expression
+        elif len(self.theories_N) == 3:
+            self.energy = E_dict[(2,-1)] + E_dict[(0,0)] - E_dict[(1,0)] + E_dict[(1,1)] - E_dict[(2,1)]
+            # E(High,Real) = E(Low,Real) + [E(High,Model) - E(Medium,Model)]
+            #                +  [E(Medium,Inter) - E(Low,Inter)].
+            if Grad:
+                # Gradient assembled
+                self.gradient = G_dict[(2,-1)]
+                for at, g in zip(self.regions_N[0], G_dict[(0,0)]):
+                    self.gradient[at] += g
+                for at, g in zip(self.regions_N[0], G_dict[(1,0)]):
+                    self.gradient[at] -= g
+                for at, g in zip(self.regions_N[1], G_dict[(1,1)]):
+                    self.gradient[at] += g
+                for at, g in zip(self.regions_N[1], G_dict[(2,1)]):
+                    self.gradient[at] -= g
+        # 4-layer ONIOM
+        elif len(self.theories_N) == 4:
+            print("4-layer ONIOM not ready")
+            ashexit()
+
+        print("ONIOM energy:", self.energy)
+
+        if Grad:
+            return self.energy,self.gradient
+        else:
+            return self.energy

@@ -1769,10 +1769,10 @@ def print_coordinates(atoms, V, title=""):
 
 # Write XYZfile provided list of elements and list of list of coords and filename
 #Fast version. Note: list comprehension is bottleneck, unclear how to make this faster though
-def write_xyzfile(elems, coords, name, printlevel=2, writemode='w'):
+def write_xyzfile(elems, coords, name, printlevel=2, writemode='w', title="title"):
     #timestampA = time.time()
     #Adding headerlines to list
-    header=[str(len(elems)) + '\n',"title" + '\n']
+    header=[f"{len(elems)}\n", f"{title}\n"]
     #print("TimeA:", time.time() - timestampA)
     atomlines = [f"{el:4} {c[0]:16.12f} {c[1]:16.12f} {c[2]:16.12f}\n" for el, c in zip(elems, coords)]
     #print("TimeB:", time.time() - timestampA)
@@ -1842,6 +1842,8 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1,return_fragments=Fal
                         titlegrab = True
                         coordgrab = False
                         # ashexit()
+    print(f"Found {molcounter} geometries in file: {file}")
+
     if return_fragments is True:
         return fragments
     else:
@@ -3462,7 +3464,7 @@ def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, 
     elif theorytype=="QM/MM":
 
         #Note: theory needs to be set
-        if charge == None or mult == None:
+        if charge is None or mult is None:
             print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
             print("Checking if present in QM/MM object")
             if theory.qm_charge != None and theory.qm_mult != None:
@@ -3477,6 +3479,11 @@ def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, 
             else:
                 print(BC.FAIL,"No charge/mult information present in fragment either. Exiting.",BC.END)
                 ashexit()
+    elif theorytype=="ONIOM":
+        print("Checking if charge/mult information present in ONIOM object")
+        if theory.fullregion_charge != None and theory.fullregion_mult != None:
+            print("Found fullregion_charge and fullregion_mult attributes.")
+            print("All good, continuing\n")
     elif theorytype=="MM":
         #Setting charge/mult to None if MM
         charge=None; mult=None

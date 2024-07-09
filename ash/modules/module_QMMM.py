@@ -810,7 +810,7 @@ class QMMMTheory:
             used_qmcoords = np.append(used_qmcoords, np.array(linkatoms_coords), axis=0)
 
         # Update self.pointchargecoords based on new current_coords
-        #print("self.dipole_correction:", self.dipole_correction)
+        # print("self.dipole_correction:", self.dipole_correction)
         if self.dipole_correction:
             self.SetDipoleCharges(current_coords) # Note: running again
             self.pointchargecoords = np.append(used_mmcoords, np.array(self.dipole_coords), axis=0)

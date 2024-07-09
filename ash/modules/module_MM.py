@@ -2,15 +2,17 @@ import numpy as np
 import time
 
 from ash.modules.module_coords import distance
+from ash.modules.module_theory import Theory
 from ash.functions.functions_general import ashexit, blankline,print_time_rel,BC, load_julia_interface
 import ash.constants
 
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
-class NonBondedTheory:
+class NonBondedTheory(Theory):
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
                  codeversion=None, printlevel=2, numcores=1, nonbonded_type="Coulomb-LJ"):
-
+        super().__init__()
+        self.theorynamelabel="NonBondedTheory"
         if atomtypes is None:
             print("Error: NonBondedTheory needs atomtypes to be defined")
             ashexit()
@@ -254,21 +256,20 @@ class NonBondedTheory:
         print("Sum of charges:", sum(charges))
 
     # current_coords is now used for full_coords, charges for full coords
-    def run(self, current_coords=None, elems=None, charges=None, connectivity=None,
+    def run(self, current_coords=None, elems=None, charges=None, connectivity=None, numcores=1, label=None,
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None, charge=None, mult=None):
         module_init_time=time.time()
         if current_coords is None:
             print("No current_coords argument. Exiting...")
             ashexit()
         CheckpointTime = time.time()
-        #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
-        #QM-QM pairs will be skipped in LJ
-
-        #Testing if arrays assigned or not. If not calling calculate_LJ_pairpotentials
-        #Passing qmatoms over so pairs can be skipped
-        #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
-        #Todo: if actatoms have been defined this will be skipped in pairlist creation
-        #if frozenatoms passed frozen-frozen interactions will be skipped
+        # If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
+        # QM-QM pairs will be skipped in LJ
+        # Testing if arrays assigned or not. If not calling calculate_LJ_pairpotentials
+        # Passing qmatoms over so pairs can be skipped
+        # This sets self.sigmaij and self.epsij and also self.LJpairpotentials
+        # Todo: if actatoms have been defined this will be skipped in pairlist creation
+        # if frozenatoms passed frozen-frozen interactions will be skipped
         if 'LJ' in self.nonbonded_type:
             if self.pairarrays_assigned is False:
                 print("Calling LJ pairpot calc")
@@ -281,8 +282,9 @@ class NonBondedTheory:
             LJ=False
 
         # If charges not provided to run function. Use object charges
-        if charges == None:
-            charges=self.atom_charges
+        if charges is None:
+            print("Warning: No charges given to run. Using object atom_charges")
+            charges = self.atom_charges
 
         # If coords not provided to run function. Use object coords
         # HMM. I guess we are not keeping coords as part of MMtheory?
@@ -300,11 +302,14 @@ class NonBondedTheory:
         self.Coulombchargegradient=np.zeros((len(current_coords),3))
         self.LJgradient=np.zeros((len(current_coords),3))
 
+        # ACTIVE ATOMS
+
         # Slow-ish Python(numpy) version
+        print("Codeversion:", self.codeversion)
         if self.codeversion=='py':
             if self.printlevel >= 2:
                 print("Using slow Python MM code")
-            #Sending full coords and charges over. QM charges are set to 0.
+            # Sending full coords and charges over. QM charges are set to 0.
             if Coulomb:
                 self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, current_coords, mode="numpy")
                 if self.printlevel >= 2:
@@ -684,7 +689,6 @@ def coulombcharge_np(charges, coords):
     # Converting coordinates to Bohr
     coords_b = coords * ang2bohr
     charges = np.array(charges).flatten()
-
     # Calculate the distance matrix and coordinate differences
     dist_matrix, diff_matrix = distance_matrix(coords_b)
     np.fill_diagonal(dist_matrix, np.inf)  # Avoid division by zero

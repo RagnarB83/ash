@@ -41,11 +41,13 @@ class MLatomTheory(Theory):
         try:
             #
             import mlatom as ml
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as e:
             print("MLatom  requires installation of mlatom")
             print("See: http://mlatom.com/docs/installation.html")
             print("Try: pip install mlatom")
             print("You probably also have to do: pip install scipy torch torchani tqdm matplotlib statsmodels h5py pyh5md")
+            print()
+            print("Error message:", e)
             ashexit()
 
         # EARLY EXITS
@@ -66,6 +68,7 @@ class MLatomTheory(Theory):
         self.qm_program = qm_program
         self.ml_program = ml_program
         self.ml_model = ml_model
+        self.model_file=model_file
         self.device = device  # 'cpu' or 'cuda' (used by Torch-based models/methods)
         print("Checking if method or ml_model was selected")
         print("Method:", self.method)
@@ -110,6 +113,8 @@ class MLatomTheory(Theory):
         #############
         # ML_MODEL
         #############
+        #Boolean to check whether training of this object has been done or not
+        self.training_done=False
         if self.ml_model is not None:
             print("ml_model was selected:", ml_model)
             print("model_file:", model_file)
@@ -222,6 +227,8 @@ class MLatomTheory(Theory):
                             xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
                             hyperparameters=hyperparameters)
 
+        self.training_done=True
+
     # General run function
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
@@ -256,7 +263,18 @@ class MLatomTheory(Theory):
         elif self.ml_model is not None:
             print("A ml_model was selected: ", self.ml_model)
             model = self.model
-
+            if self.training_done is True:
+                print("Training of MLatom model has been performed. Running should work")
+            else:
+                print("No training of this object has been done.")
+                print("model file:", self.model_file)
+            if self.model_file is not None:
+                print("A modelfile was specified when MLatomTheory object was created. Checking if it exists")
+                file_present = os.path.isfile(self.model_file)
+                print("File exits:", file_present)
+                if file_present is False:
+                    print("File does not exist. Exiting.")
+                    ashexit()
         else:
             print("No method or ml-model was defined yet.")
             ashexit()

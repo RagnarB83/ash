@@ -62,8 +62,8 @@ import ash.interfaces.interface_multiwfn
 from .interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from .modules.module_spinprojection import SpinProjectionTheory
-#DualTheory and WrapTheory
-from .modules.module_dualtheory import DualTheory,WrapTheory
+# HybridTheory: DualTheory and WrapTheory
+from .modules.module_hybridtheory import DualTheory,WrapTheory, ONIOMTheory
 
 # Surface
 from .modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, write_surfacedict_to_file
@@ -169,6 +169,8 @@ from .modules.module_workflows import ReactionEnergy, thermochemprotocol_reactio
 import ash.modules.module_benchmarking
 from .modules.module_benchmarking import run_benchmark
 
+#Machine-learning tools
+from .modules.module_machine_learning import create_ML_training_data
 
 # Plotting
 import ash.modules.module_plotting

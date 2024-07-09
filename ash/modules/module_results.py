@@ -80,6 +80,8 @@ class ASH_Results:
         newdict={}
         # Looping over attributes, converting ndarrays to lists and skipping ASH objects
         for k,v in self.__dict__.items():
+            print(f"k: {k}, v: {v}")
+            print("Type of v: ", type(v))
             # Deal with np array
             if isinstance(v,np.ndarray):
                 # Check for nans in array
@@ -92,7 +94,10 @@ class ASH_Results:
                     newdict[k]=newv
             # Dealing with cases of lists of np arrays (e.g. pol derivs)
             elif isinstance(v,list):
-                if isinstance(v[0],np.ndarray):
+                # If list is empty, just add it
+                if len(v)==0:
+                    newdict[k]=v
+                elif isinstance(v[0],np.ndarray):
                     newv=[i.tolist() for i in v]
                     newdict[k]=newv
                 else:
