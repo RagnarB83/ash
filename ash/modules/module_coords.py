@@ -824,6 +824,22 @@ class Fragment:
                 line = "{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
 
+    #Function to get subset-coordinates with linkatoms
+    def get_subset_coords_with_linkatoms(self,qmatoms):
+        conn_scale = ash.settings_ash.settings_dict["scale"]
+        conn_tolerance = ash.settings_ash.settings_dict["tol"]+0.2
+        boundaryatoms = ash.modules.module_coords.get_boundary_atoms(qmatoms, self.coords, self.elems, conn_scale,
+                    conn_tolerance)
+        # Get linkatom coordinates
+        linkatoms_dict = ash.modules.module_coords.get_linkatom_positions(boundaryatoms,qmatoms, self.coords, self.elems)
+        linkatoms_coords = [linkatoms_dict[pair] for pair in sorted(linkatoms_dict.keys())]
+        qm_elems=[self.elems[i] for i in qmatoms]
+        qm_coords_with_linkatoms = np.concatenate((np.take(self.coords,qmatoms,axis=0), linkatoms_coords), axis=0)
+        qm_elems_with_linkatoms = qm_elems+ ['H' for i in qm_coords_with_linkatoms]
+
+        write_xyzfile(qm_elems_with_linkatoms, qm_coords_with_linkatoms, "qm_region_with_linkatoms.xyz")
+        return qm_coords_with_linkatoms, qm_elems_with_linkatoms
+
     # Print system-fragment information to file. Default name of file: "fragment.ygg
     def print_system(self, filename='fragment.ygg'):
         if self.printlevel >= 2:
