@@ -552,7 +552,7 @@ class ONIOMTheory(Theory):
             # Should probably this in init instad though
             if isinstance(ll_theory, ash.ORCATheory):
                 print(f"Theory is ORCATheory. Using {self.chargemodel} charge model")
-                theory.extrakeyword+="\n! hirshfeld "
+                ll_theory.extrakeyword+="\n! hirshfeld "
             elif isinstance(ll_theory, ash.xTBTheory):
                  print(f"Theory is xTBTheory. Using default xtb charge model")
             else:

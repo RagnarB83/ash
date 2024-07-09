@@ -4,7 +4,7 @@ import shutil
 import random
 
 from ash.modules.module_coords import write_xyzfile, split_multimolxyzfile
-from ash.functions.functions_general import natural_sort
+from ash.functions.functions_general import natural_sort,ashexit
 from ash import Singlepoint, Fragment
 
 # Collection of functions related to machine learning and data analysis
