@@ -19,7 +19,7 @@ import ash.functions.functions_parallel
 
 # ORCA Theory object.
 class ORCATheory:
-    def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
+    def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, atom_specific_basis_dict=None, ecp_dict=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
                  orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label="ORCA",
                  moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
@@ -144,13 +144,18 @@ class ORCATheory:
         self.basis_per_element=basis_per_element
         if self.basis_per_element is not None:
             print("Basis set dictionary for each element provided:", basis_per_element)
-        # Extrabasis
+
+        # Extrabasis: add specific basis set keyword to certain atoms
         if extrabasisatoms is not None:
             self.extrabasisatoms=extrabasisatoms
             self.extrabasis=extrabasis
         else:
             self.extrabasisatoms=[]
             self.extrabasis=""
+        # Atom-specific basis set options
+        # Within ORCA inputfile, define a basis set for each and every atom. Requires a dictionary with element as key and basis set as value
+        self.atom_specific_basis_dict=atom_specific_basis_dict
+        self.ecp_dict=ecp_dict #ECP dict that usually goes with atom_specific dict
 
         # Used in the case of counterpoise calculations
         self.ghostatoms = [] #Adds ":" in front of element in coordinate block. Have basis functions and grid points
@@ -399,7 +404,7 @@ end
         if numcores==None:
             numcores=self.numcores
 
-        #Basis set definition per element from input dict
+        # Basis set definition per element from input dict
         if self.basis_per_element != None:
             basisstring=""
             for el,b in self.basis_per_element.items():
@@ -410,6 +415,17 @@ end
 end"""
             self.orcablocks = self.orcablocks + basisblock
 
+        # If ECP-dict provided (often goes with atom_specific_basis_dict)
+        if self.ecp_dict != None:
+            bstring=""
+            for el,b in self.ecp_dict.items():
+                for x in b:
+                    bstring += f"{x}"
+            ecpbasisblock=f"""
+%basis
+{bstring}
+end"""
+            self.orcablocks = self.orcablocks + ecpbasisblock
         if self.printlevel >= 2:
             print("Running ORCA with {} cores available".format(numcores))
 
@@ -504,28 +520,28 @@ end"""
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         charge, mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
-                                     fragment_indices=fragment_indices)
+                                     fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
             else:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         charge, mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
-                                        fragment_indices=fragment_indices)
+                                        fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
         else:
             if self.brokensym == True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         charge,mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
                                      ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms,
-                                     fragment_indices=fragment_indices)
+                                     fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
             else:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         charge,mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
                                         ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms,
-                                        fragment_indices=fragment_indices)
+                                        fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
 
-        #Run inputfile using ORCA parallelization. Take numcores argument.
-        #print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
+        # Run inputfile using ORCA parallelization. Take numcores argument.
+        # print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
         if self.printlevel >= 2:
             print(BC.OKGREEN, "ORCA Calculation starting.", BC.END)
 
@@ -1677,7 +1693,7 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Create PC-embedded ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
-                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None,
+                         HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, atom_specific_basis_dict=None, extraspecialbasisatoms=None, extraspecialbasis=None,
                          moreadfile=None, propertyblock=None, fragment_indices=None):
     if extrabasisatoms is None:
         extrabasisatoms=[]
@@ -1711,6 +1727,13 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
         for i,(el,c) in enumerate(zip(elems,coords)):
             if i in extrabasisatoms:
                 orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))
+            #Atom-specific basis-dict option (new basis set definition for each atom)
+            elif atom_specific_basis_dict is not None:
+                print("Writing atom-specific basis for atom:", i)
+                #Regular line
+                orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
+                for bline in atom_specific_basis_dict[(el,i)]:
+                    orcafile.write(str(bline))
             #Adding fragment specification
             elif fragment_indices != None:
                 fragmentindex= search_list_of_lists_for_index(i,fragment_indices)
@@ -1726,7 +1749,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
                             HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None, propertyblock=None,
-                            ghostatoms=None, dummyatoms=None,fragment_indices=None):
+                            ghostatoms=None, dummyatoms=None,fragment_indices=None, atom_specific_basis_dict=None):
     if extrabasisatoms == None:
         extrabasisatoms=[]
     if ghostatoms == None:
@@ -1763,8 +1786,16 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             orcafile.write('*xyz {} {}\n'.format(charge,mult))
 
         for i,(el,c) in enumerate(zip(elems,coords)):
+            #Extra basis on each atom
             if i in extrabasisatoms:
                 orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))
+            #Atom-specific basis-dict option (new basis set definition for each atom)
+            elif atom_specific_basis_dict is not None:
+                print("Writing atom-specific basis for atom:", i)
+                #Regular line
+                orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
+                for bline in atom_specific_basis_dict[(el,i)]:
+                    orcafile.write(str(bline))
             #Setting atom to be a ghost atom
             elif i in ghostatoms:
                 orcafile.write('{}{} {} {} {} \n'.format(el,":", c[0], c[1], c[2]))

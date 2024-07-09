@@ -762,6 +762,10 @@ class Fragment:
             print("Error: OpenMM not installed. Cannot read PDB file.")
             ashexit()
 
+        #Adding extension
+        if '.pdb' not in filename:
+            filename += ".pdb"
+
         if pdb_topology is not None:
             print("Using input pdb_topology")
             self.pdb_topology = pdb_topology
@@ -780,8 +784,8 @@ class Fragment:
             print("Adding connectivity to PDB topology")
             ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology,connectivity_dict)
 
-        openmm.app.PDBFile.writeFile(self.pdb_topology, self.coords, file=open(filename, 'w'))
-        print("Wrote PDB-file:", filename)
+        openmm.app.PDBFile.writeFile(self.pdb_topology, self.coords, file=open(f"{filename}", 'w'))
+        print(f"Wrote PDB-file: {filename}")
 
     def write_xyzfile(self, xyzfilename="Fragment-xyzfile.xyz", writemode='w', write_chargemult=True, write_energy=True):
 

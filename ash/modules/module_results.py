@@ -80,8 +80,6 @@ class ASH_Results:
         newdict={}
         # Looping over attributes, converting ndarrays to lists and skipping ASH objects
         for k,v in self.__dict__.items():
-            print(f"k: {k}, v: {v}")
-            print("Type of v: ", type(v))
             # Deal with np array
             if isinstance(v,np.ndarray):
                 # Check for nans in array
