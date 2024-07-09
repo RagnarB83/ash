@@ -24,6 +24,9 @@ def create_adaptive_minimal_basis_set(directory=None, fragment=None, xyzfile=Non
     if charge is None:
         print("Error: you must provide a charge for the molecule")
         ashexit()
+
+    directory=check_program_location(directory,bin_name)
+
     if basisfile_path is None or ecpfile_path is None:
         print("Error: you must provide a basisfile_path and ecpfile_path (download from https://github.com/grimme-lab/qvSZP/)")
         ashexit()
@@ -31,7 +34,6 @@ def create_adaptive_minimal_basis_set(directory=None, fragment=None, xyzfile=Non
     print("Running qvSZP. Will write output to qvSZP.out")
     with open('qvSZP.out', 'w') as ofile:
 
-        directory=check_program_location(directory,bin_name)
         args_list = [directory+f'/{bin_name}', '--struc', xyzfile, '--chrg', str(charge), '--bfile', basisfile_path, '--efile', ecpfile_path]
         print("args_list:", args_list)
         sp.run(args_list, stdout=ofile)
