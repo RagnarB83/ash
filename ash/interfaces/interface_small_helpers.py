@@ -38,8 +38,9 @@ def create_adaptive_minimal_basis_set(directory=None, fragment=None, xyzfile=Non
         print("args_list:", args_list)
         sp.run(args_list, stdout=ofile)
     # Read the ORCA inputfile created and grab the basis set lines
-    grab_basis_from_ORCAinputfile('wb97xd4-qvszp.inp')
+    basis_dict, ecp_dict = grab_basis_from_ORCAinputfile('wb97xd4-qvszp.inp')
 
+    return basis_dict, ecp_dict
 
 
 def check_program_location(directory,bin_name):
