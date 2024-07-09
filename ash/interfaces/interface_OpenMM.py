@@ -227,6 +227,9 @@ class OpenMMTheory:
             "Note: OpenMM will fail in this step if parameters are missing in topology and\n"
             "      parameter files (e.g. nonbonded entries).\n")
 
+        # Initializing
+        pdb_pbc_vectors=None
+
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
             if self.printlevel > 0:
@@ -376,6 +379,8 @@ class OpenMMTheory:
                 print("Reading topology from PDB-file instead")
                 pdb = openmm.app.PDBFile(pdbfile)
                 self.topology = pdb.topology
+                # Check if PBC vectors in PDB-file
+                pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
             self.forcefield = forcefield
 
         elif ASH_FF_file is not None:
@@ -465,6 +470,8 @@ class OpenMMTheory:
                 print("Reading topology from PDBfile:", pdbfile)
             pdb = openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
+            # Check if PBC vectors in PDB-file
+            pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
         # Simple OpenMM system without any forcefield defined. Requires ASH fragment
         # Used for OpenMM_MD with QM Hamiltonian
         elif dummysystem is True:
@@ -495,9 +502,13 @@ class OpenMMTheory:
             # This would be regular OpenMM Forcefield definition requiring XML file
             # Topology from PDBfile annoyingly enough
             pdb = openmm.app.PDBFile(pdbfile)
+
+            # Check if PBC vectors in PDB-file
+            pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
+
             self.topology = pdb.topology
             self.forcefield = openmm.app.ForceField(*xmlfiles)
-            #Defining some things. resids is used by actregiondefine
+            # Defining some things. resids is used by actregiondefine
             self.resids = [i.residue.index for i in self.topology.atoms()]
             self.resnames = [i.residue.name for i in self.topology.atoms()]
             self.atomnames = [i.name for i in self.topology.atoms()]
@@ -513,7 +524,7 @@ class OpenMMTheory:
                     print_line_with_subheader1("Setting up periodicity.")
                     #Inspect and set PBC in self.topology and self.forcefield
                     #Necessary for system creation with periodics (otherwise failure)
-                    self.set_periodics_before_system_creation(PBCvectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed)
+                    self.set_periodics_before_system_creation(PBCvectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed,)
 
                 #Nonbonded method to use for PBC
                 if self.nonbondedMethod_PBC == 'PME':
@@ -901,13 +912,15 @@ class OpenMMTheory:
             ashexit()
 
     #Function that handles periodicity in forcefield objects (for Amber, CHARMM). TODO: Test GROMACS and XML
-    def set_periodics_before_system_creation(self,PBCvectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
+    def set_periodics_before_system_creation(self,PBCvectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
         import openmm
         from packaging import version
         if use_parmed is True:
             import parmed
         print("Inspecting periodicity input before system creation")
-
+        print("PBCVectors:", PBCvectors)
+        print("periodic_cell_dimensions:", periodic_cell_dimensions)
+        print("pdb_pbc_vectors:", pdb_pbc_vectors)
         #IF PBC vectors provided then we need to set them in the topology (otherwise system creation does not work)
         if PBCvectors is not None:
             print("\nPBC vectors provided by user (in Angstrom):", PBCvectors)
@@ -999,6 +1012,13 @@ class OpenMMTheory:
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][1] = periodic_cell_dimensions[0]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = periodic_cell_dimensions[1]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = periodic_cell_dimensions[2]
+        elif pdb_pbc_vectors is not None:
+            print("Warning: neither user keyword PBCvectors or periodic_cell_dimensions was set (None)")
+            print("However, we found PBC information inside PDB-topology of the PDB-file that was read in. Using this and continuing")
+            #Should work automatically
+        else:
+            print("Found no PBC information, yet periodicity is requested. Exiting!")
+            ashexit()
 
     #Get PBC vectors from topology of openmm object. Convenient in a script
     def get_PBC_vectors(self):
@@ -3024,7 +3044,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 #Too similar to create_nonbonded_model_xmlfile
 #TODO: Add option to symmetrize charges for similar atoms in residue
 def write_nonbonded_FF_for_ligand(fragment=None, charge=None, mult=None, coulomb14scale=1.0, lj14scale=1.0,
-    ff_type="CHARMM", charge_model="CM5", theory=None, LJ_model="UFF", resname="LIG", numcores=1):
+    ff_type="AMBER", charge_model="CM5", theory=None, LJ_model="UFF", resname="LIG", numcores=1):
     print_line_with_mainheader("write_nonbonded_FF_for_ligand")
 
     # Check if fragment is provided
