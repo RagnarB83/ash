@@ -835,7 +835,7 @@ class Fragment:
         linkatoms_coords = [linkatoms_dict[pair] for pair in sorted(linkatoms_dict.keys())]
         qm_elems=[self.elems[i] for i in qmatoms]
         qm_coords_with_linkatoms = np.concatenate((np.take(self.coords,qmatoms,axis=0), linkatoms_coords), axis=0)
-        qm_elems_with_linkatoms = qm_elems+ ['H' for i in qm_coords_with_linkatoms]
+        qm_elems_with_linkatoms = qm_elems+ ['H' for i in linkatoms_coords]
 
         write_xyzfile(qm_elems_with_linkatoms, qm_coords_with_linkatoms, "qm_region_with_linkatoms")
         return qm_coords_with_linkatoms, qm_elems_with_linkatoms
