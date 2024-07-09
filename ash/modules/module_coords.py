@@ -837,7 +837,7 @@ class Fragment:
         qm_coords_with_linkatoms = np.concatenate((np.take(self.coords,qmatoms,axis=0), linkatoms_coords), axis=0)
         qm_elems_with_linkatoms = qm_elems+ ['H' for i in qm_coords_with_linkatoms]
 
-        write_xyzfile(qm_elems_with_linkatoms, qm_coords_with_linkatoms, "qm_region_with_linkatoms.xyz")
+        write_xyzfile(qm_elems_with_linkatoms, qm_coords_with_linkatoms, "qm_region_with_linkatoms")
         return qm_coords_with_linkatoms, qm_elems_with_linkatoms
 
     # Print system-fragment information to file. Default name of file: "fragment.ygg
