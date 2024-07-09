@@ -57,7 +57,7 @@ def check_program_location(directory,bin_name):
             print(BC.WARNING,f"Checking for {bin_name} in PATH environment variable.",BC.END)
             try:
                 finaldirectory = os.path.dirname(shutil.which(f'{bin_name}'))
-                print(BC.OKGREEN,"Found {bin_name} binary in PATH. Using the following directory:", finaldirectory, BC.END)
+                print(BC.OKGREEN,f"Found {bin_name} binary in PATH. Using the following directory:", finaldirectory, BC.END)
             except TypeError:
                 print(BC.FAIL,f"Found no {bin_name} binary in PATH environment variable either. Giving up.", BC.END)
                 ashexit()

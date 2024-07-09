@@ -169,6 +169,9 @@ from .modules.module_workflows import ReactionEnergy, thermochemprotocol_reactio
 import ash.modules.module_benchmarking
 from .modules.module_benchmarking import run_benchmark
 
+#Small helper tools
+from .interfaces.interface_small_helpers import create_adaptive_minimal_basis_set
+
 #Machine-learning tools
 from .modules.module_machine_learning import create_ML_training_data
 
