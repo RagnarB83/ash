@@ -552,7 +552,7 @@ class GeomeTRICOptimizerClass:
 
             #Now returning final Results object
             #Note: could include the geometry in object but can be very large causing printing head-aches on screen, ignoring for now since the geometry is in the Fragment object anyway
-            result = ASH_Results(label="Optimizer", energy=finalenergy
+            result = ASH_Results(label="Optimizer", energy=finalenergy)
             result.write_to_disk(filename="ASH_Optimizer.result")
             return result
 
