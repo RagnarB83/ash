@@ -5177,21 +5177,21 @@ def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity,centroid)
     boxlength_half=boxlength/2
 
 
-    print("indices:", indices)
+    #print("indices:", indices)
 
     #Get indices of all whole molecules that have an atom outisde box
     all_mol_indices = [connectivity[connectivity_dict.get(i)] for i in indices]
-    print("all_mol_indices:",all_mol_indices)
+    #print("all_mol_indices:",all_mol_indices)
     #Removing duplicates
     trimmed_all_mol_indices = trim_list_of_lists(all_mol_indices)
-    print("trimmed_all_mol_indices:",trimmed_all_mol_indices)
+    #print("trimmed_all_mol_indices:",trimmed_all_mol_indices)
     #Get all molecule coordinates (that have an atom outside box)
     allmol_coords = np.take(allcoords, trimmed_all_mol_indices, axis=0)
-    print("allmol_coords:",allmol_coords)
+    #print("allmol_coords:",allmol_coords)
     #Check if all molecule members are outside
     #Get Boolean array of whole molecules outside (True) or inside (False) of box
     allmol_outside_bools_single = [len(get_atoms_outside_box(m, centroid, boxlength)) == len(m) for m in allmol_coords]
-    print("allmol_outside_bools_single:",allmol_outside_bools_single)
+    #print("allmol_outside_bools_single:",allmol_outside_bools_single)
 
     #Looping over indices
     #print(f"6Time:{time.time()-checkpoint}")
