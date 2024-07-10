@@ -413,7 +413,9 @@ end
 %basis
 {basisstring}
 end"""
-            self.orcablocks = self.orcablocks + basisblock
+
+            if basisblock not in self.orcablocks:
+                self.orcablocks = self.orcablocks + basisblock
 
         # If ECP-dict provided (often goes with atom_specific_basis_dict)
         if self.ecp_dict != None:
@@ -425,11 +427,13 @@ end"""
 %basis
 {bstring}
 end"""
-            self.orcablocks = self.orcablocks + ecpbasisblock
+            if ecpbasisblock not in self.orcablocks:
+                self.orcablocks = self.orcablocks + ecpbasisblock
+
         if self.printlevel >= 2:
             print("Running ORCA with {} cores available".format(numcores))
 
-        #MOREAD. Checking file provided exists and determining what to do if not
+        # MOREAD. Checking file provided exists and determining what to do if not
         if self.moreadfile != None:
             print_if_level(f"Moreadfile option active. File path: {self.moreadfile}", self.printlevel,2)
             if os.path.isfile(self.moreadfile) is True:
