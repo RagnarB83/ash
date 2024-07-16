@@ -3310,7 +3310,7 @@ def read_NPT_statefile(npt_output):
 
 
 # Wrapper function for OpenMM_MDclass
-def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
+def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
@@ -3348,7 +3348,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
     return
 
 class OpenMM_MDclass:
-    def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.004,
+    def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.001,
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
                  barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
                  energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
@@ -3637,7 +3637,7 @@ class OpenMM_MDclass:
         #    self.fragment.coords = change_origin_to_centroid(fragment.coords, subsetcoords=solutecoords)
         #    self.fragment.write_xyzfile(xyzfilename="fragment-after-centering.xyz")
 
-        # Adding center force acting on solute
+        # Adding (flat-bottom) center force acting on solute
         if add_centerforce is True:
             print("Centerforce option active")
             if centerforce_atoms is None:
@@ -3647,6 +3647,7 @@ class OpenMM_MDclass:
                 print("No center coordinates set. Using geometric center of whole fragment.")
                 # Get geometric center of system (Angstrom)
                 centerforce_center = self.fragment.get_coordinate_center()
+                print("centerforce_center:", centerforce_center)
             #Alternative (PBC wrapping issues, however)
             #rest_system = listdiff(fragment.allatoms, centerforce_atoms)
             #self.openmmobject.add_flatbottom_centerforce(molA_indices=centerforce_atoms, molB_indices=rest_system,
@@ -4264,7 +4265,7 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         volume_threshold (float, optional): [description]. Defaults to 1.0.
         density_threshold (float, optional): [description]. Defaults to 0.001.
         temperature (int, optional): [description]. Defaults to 300.
-        timestep (float, optional): [description]. Defaults to 0.004.
+        timestep (float, optional): [description]. Defaults to 0.001.
         traj_frequency (int, optional): [description]. Defaults to 100.
         trajectory_file_option (str, optional): [description]. Defaults to 'DCD'.
         coupling_frequency (int, optional): [description]. Defaults to 1.
@@ -4542,7 +4543,7 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
 # Metadynamics written as a wrapper function around OpenMM_MDclass
 #TODO: Decide units for CV biaswidth range and Gaussian height
 #NOTE: Restraints are in Angstrom and kcal/mol^2
-def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
+def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
