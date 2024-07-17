@@ -2103,6 +2103,7 @@ class PySCFTheory:
 
         #Polarizable embedding option
         elif self.pe is True:
+            import pyscf.solvent
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
             try:
