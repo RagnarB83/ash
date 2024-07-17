@@ -2083,9 +2083,9 @@ class PySCFTheory:
         return self.frozen_orbital_indices
 
     def set_embedding_options(self, PC=False, MM_coords=None, MMcharges=None):
+        import pyscf
         #QM/MM electrostatic embedding
         if PC is True:
-            import pyscf
             import pyscf.qmmm
             # QM/MM pointcharge embedding
             #TODO: Gaussian blur option
