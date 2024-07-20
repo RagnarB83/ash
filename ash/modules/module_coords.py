@@ -3836,7 +3836,7 @@ def bounding_box_dimensions(coordinates,shift=0.0):
 #some kind of solvent system (box,sphere etc.)
 #Use tolerance (tol) e.g. to control how many solvent molecules around get deleted
 #Currently using 0.4 as default based on threonine in acetonitrile example
-def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, write_pdb=False,
+def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, write_pdb=False, write_solute_connectivity=True,
                                        solute_pdb=None, solvent_pdb=None, outputname="solution.pdb"):
     print("\ninsert_solute_into_solvent\n")
     #Early exits
@@ -3902,6 +3902,18 @@ def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, wr
         toDelete = [r for j,r in enumerate(modeller.topology.atoms()) if j in delatoms]
         modeller.delete(toDelete)
         mergedPositions = new_frag.coords
+
+        #Delete solute connectivity if chosen so not printed in PDB
+        if write_solute_connectivity is True:
+            print("Will write solute connectivity to PDB-file. Necessary for OpenMM topology recognition when bonded MM parameters are used.")
+        else:
+            print("Will NOT write solute connectivity to PDB-file. Necessary for OpenMM topology recognition when bonded MM parameters are NOT used.")
+            print("Num bonds in topology:",  modeller.topology.getNumBonds())
+            solute_bonds = [i for i in modeller.topology.bonds() if i[0].residue.name == "MEO"]
+            print("Solute bonds:", solute_bonds)
+            print("Deleting solute bonds")
+            modeller.delete(solute_bonds)
+            print("Num bonds in topology:",  modeller.topology.getNumBonds())
 
         #Write merged topology and positions to new PDB file
         ash.interfaces.interface_OpenMM.write_pdbfile_openMM(modeller.topology, mergedPositions, outputname)

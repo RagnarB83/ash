@@ -2,7 +2,8 @@ import subprocess as sp
 import os
 import shutil
 
-from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
+from ash.functions.functions_general import ashexit, BC,print_time_rel, \
+        print_line_with_mainheader,listdiff, check_program_location
 import ash.settings_ash
 
 # Small helpers
@@ -25,7 +26,7 @@ def create_adaptive_minimal_basis_set(directory=None, fragment=None, xyzfile=Non
         print("Error: you must provide a charge for the molecule")
         ashexit()
 
-    directory=check_program_location(directory,bin_name)
+    directory=check_program_location(directory,"directory",bin_name)
 
     if basisfile_path is None or ecpfile_path is None:
         print("Error: you must provide a basisfile_path and ecpfile_path (download from https://github.com/grimme-lab/qvSZP/)")
@@ -42,26 +43,6 @@ def create_adaptive_minimal_basis_set(directory=None, fragment=None, xyzfile=Non
 
     return basis_dict, ecp_dict
 
-
-def check_program_location(directory,bin_name):
-    if directory != None:
-        finaldirectory = directory
-        print(BC.OKGREEN,f"Using directory path provided: {finaldirectory}", BC.END)
-    else:
-        print(BC.WARNING, f"No directory argument passed. Attempting to find {directory} variable in ASH settings file (~/ash_user_settings.ini)", BC.END)
-        try:
-            finaldirectory=ash.settings_ash.settings_dict[directory]
-            print(BC.OKGREEN,f"Using {directory} path provided from ASH settings file (~/ash_user_settings.ini): ", finaldirectory, BC.END)
-        except KeyError:
-            print(BC.WARNING,f"Found no {directory} variable in ASH settings file either.",BC.END)
-            print(BC.WARNING,f"Checking for {bin_name} in PATH environment variable.",BC.END)
-            try:
-                finaldirectory = os.path.dirname(shutil.which(f'{bin_name}'))
-                print(BC.OKGREEN,f"Found {bin_name} binary in PATH. Using the following directory:", finaldirectory, BC.END)
-            except TypeError:
-                print(BC.FAIL,f"Found no {bin_name} binary in PATH environment variable either. Giving up.", BC.END)
-                ashexit()
-    return finaldirectory
 
 def grab_basis_from_ORCAinputfile(infile):
     grab=False

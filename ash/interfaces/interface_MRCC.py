@@ -29,7 +29,7 @@ class MRCCTheory:
             print("MRCCTheory requires a mrccinput keyword")
             ashexit()
 
-        if mrccdir == None:
+        if mrccdir is None:
             print(BC.WARNING, "No mrccdir argument passed to MRCCTheory. Attempting to find mrccdir variable inside settings_ash", BC.END)
             try:
                 print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
