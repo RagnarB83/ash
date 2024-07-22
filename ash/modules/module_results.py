@@ -104,7 +104,17 @@ class ASH_Results:
                 print("Warning: Fragment object is not included in ASH.result on disk")
             else:
                 newdict[k]=v
-        print("Writing to disk: ", newdict)
+        print("Results object data:")
+        for k,v in newdict.items():
+            if type(v) is list or type(v) is np.ndarray:
+                if len(v) < 20:
+                    print(f"{k} : {len(v)}")
+                else:
+                    print(f"{k} : too long to print")
+            else:
+                if v is not None:
+                    print(f"{k} : {v}")
+                #print(f"{k} : {v}")
         # Dump new dict
         f.write(json.dumps(newdict, allow_nan=True))
         f.close()

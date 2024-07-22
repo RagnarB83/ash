@@ -6,8 +6,6 @@ from ash.functions.functions_parallel import check_OpenMPI
 # Interface to ccpy: https://github.com/piecuch-group/ccpy
 # Coupled cluster package in python
 
-
-
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, filename='input.dat', printlevel=2, label="ccpy",
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, tol=1e-10, numcores=1,

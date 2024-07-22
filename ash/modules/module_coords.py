@@ -10,7 +10,8 @@ import subprocess as sp
 from collections import defaultdict
 
 from ash.functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
-    print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, load_julia_interface
+    print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, load_julia_interface, \
+    search_list_of_lists_for_index
 #from ash.modules.module_singlepoint import ReactionEnergy
 import ash.dictionaries_lists
 import ash.settings_ash
@@ -442,6 +443,9 @@ class Fragment:
             line = " {:<4} {:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(i,el, c[0], c[1], c[2])
             print(line)
 
+    def print_coords_for_atoms(self,members, labels=None):
+        print_coords_for_atoms(self.coords, self.elems, members, labels=labels)
+
 
     # Read Amber coordinate file? Needs to read both INPCRD and PRMTOP file. Bit messy
     def read_amberfile(self, inpcrdfile=None, prmtopfile=None, conncalc=False):
@@ -591,7 +595,7 @@ class Fragment:
     def calc_connectivity(self, conndepth=99, scale=None, tol=None, codeversion=None):
         print("Calculating connectivity.")
         # If codeversion not requested we go to default
-        if codeversion == None:
+        if codeversion is None:
             codeversion = ash.settings_ash.settings_dict["connectivity_code"]
             print("Codeversion not set. Using default setting: ", codeversion)
 
@@ -754,7 +758,8 @@ class Fragment:
         ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology, connectivity_dict)
 
     # Write PDB-file via OpenMM
-    def write_pdbfile_openmm(self,filename="Fragment", calc_connectivity=False, pdb_topology=None):
+    def write_pdbfile_openmm(self,filename="Fragment", calc_connectivity=False, pdb_topology=None,
+                             skip_connectivity=False):
         print("write_pdbfile_openmm\n")
         try:
             import openmm.app
@@ -783,6 +788,15 @@ class Fragment:
             connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, 1.0,0.1)
             print("Adding connectivity to PDB topology")
             ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology,connectivity_dict)
+
+        # If no_connectivity is True, we skip adding connectivity to PDB-file
+        if skip_connectivity is True:
+            print("skip_connectivity True: this will not write connectivity lines to PDB-file")
+            # solute_resname= list(self.pdb_topology.residues())[0].name
+            print("Deleting molecule bond information")
+            # Setting list of bonds to empty list
+            self.pdb_topology._bonds=[]
+
 
         openmm.app.PDBFile.writeFile(self.pdb_topology, self.coords, file=open(f"{filename}", 'w'))
         print(f"Wrote PDB-file: {filename}")
@@ -1168,13 +1182,13 @@ def isElementList(list):
 
 # From lists of coords,elems and atom indices, print coords with elem
 def print_coords_for_atoms(coords, elems, members, labels=None):
-    if labels != None:
+    if labels is not None:
         if len(labels) != len(members):
             print("Problem. Length of Labels note equal to length of members list")
             ashexit()
     label=""
     for i,m in enumerate(members):
-        if labels != None:
+        if labels is not None:
             label=labels[i]
         print("{:>4} {:>4} {:>12.8f}  {:>12.8f}  {:>12.8f}".format(label,elems[m], coords[m][0], coords[m][1], coords[m][2]))
 
@@ -2225,6 +2239,10 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
 
             # Using last 4 letters of atomnmae
             atomnamestring = atomname[-4:]
+            #TODO: atomname should be unique so we should add a number here ideally
+
+            #print(atomnamestring)
+            #exit()
             # Using string format from: cupnet.net/pdb-format/
 
             #NOTE: Changed resid from integer to string so that we can support the hex notation for resids when resids go above 9999
@@ -2899,6 +2917,42 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
     atomlist = np.unique(atomlist).tolist()
     return atomlist
 
+#Function to do QM-region expansion based on QM/MM pointcharge gradient
+def QMPC_fragexpand(theory=None, fragment=None, thresh=5e-4):
+    if theory is None and fragment is None:
+        print("QMPC_fragexpand requires fragment and theory")
+        ashexit()
+    if not isinstance(theory,ash.QMMMTheory):
+        print("Theory is not a QMMMTheory")
+        ashexit()
+
+    #QM/MM run
+    ash.Singlepoint(theory=theory, fragment=fragment, Grad=True)
+
+    #Selection scheme based on pointcharge gradient
+    pcgrad = theory.PCgradient
+    large_force_indices = np.unique(np.argwhere(abs(pcgrad) > thresh)[:,0])
+    #Convert pcgrad indices to system indices
+    proper_largeforce_indices = large_force_indices+len(theory.qmatoms)
+    #Get whole molecules
+    fragment.calc_connectivity() #get connectivity
+
+    #New expansion
+    new_expansion=theory.qmatoms
+
+    for i in proper_largeforce_indices:
+        mol_index = search_list_of_lists_for_index(i,fragment.connectivity)
+        molmembers = fragment.connectivity[mol_index]
+        new_expansion = new_expansion + molmembers
+    new_expansion = np.unique(new_expansion)
+
+    #Print to output and disk
+    print("New QM-region expansion based on pointcharge gradient selection")
+    fragment.print_coords_for_atoms(new_expansion, labels=new_expansion)
+    print("Writing coordinates to file: QMPC_selection.xyz")
+    fragment.write_XYZ_for_atoms(xyzfilename="QMPC_selection.xyz", atoms=new_expansion)
+
+    return new_expansion
 
 #Function to determine the QM-MM boundary
 #Note: This function was dominating QMMMTheory creation (e.g. 9.67 s / 12.41 s => 78 % for 300K system)
@@ -3837,7 +3891,7 @@ def bounding_box_dimensions(coordinates,shift=0.0):
 #Use tolerance (tol) e.g. to control how many solvent molecules around get deleted
 #Currently using 0.4 as default based on threonine in acetonitrile example
 def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, write_pdb=False, write_solute_connectivity=True,
-                                       solute_pdb=None, solvent_pdb=None, outputname="solution.pdb"):
+                                       solute_pdb=None, solvent_pdb=None, outputname="solution.pdb", write_PBC_info=True):
     print("\ninsert_solute_into_solvent\n")
     #Early exits
     if write_pdb:
@@ -3893,7 +3947,11 @@ def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, wr
 
         #PDB-files
         pdb1 = openmm.app.PDBFile(solute_pdb)
+        solute_resname= list(pdb1.topology.residues())[0].name
+        print("solute_resname:", solute_resname)
         pdb2 = openmm.app.PDBFile(solvent_pdb)
+        solvent_box_vectors = pdb2.topology.getPeriodicBoxVectors()
+        print("Found PBC vectors in solvent PDB-file:", solvent_box_vectors)
 
         #Create modeller object
         modeller = openmm.app.Modeller(pdb1.topology, pdb1.positions) #Add pdbfile1
@@ -3909,11 +3967,19 @@ def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, wr
         else:
             print("Will NOT write solute connectivity to PDB-file. Necessary for OpenMM topology recognition when bonded MM parameters are NOT used.")
             print("Num bonds in topology:",  modeller.topology.getNumBonds())
-            solute_bonds = [i for i in modeller.topology.bonds() if i[0].residue.name == "MEO"]
+            solute_bonds = [i for i in modeller.topology.bonds() if i[0].residue.name == solute_resname]
             print("Solute bonds:", solute_bonds)
             print("Deleting solute bonds")
             modeller.delete(solute_bonds)
             print("Num bonds in topology:",  modeller.topology.getNumBonds())
+
+        #PBC info
+        if write_PBC_info:
+            print("write_PBC_info True: Writing PBC to header of PDB-file")
+            if solvent_box_vectors is not None:
+                print("PBC vectors found in solvent PDB-file:", solvent_box_vectors)
+                print("Adding to solution PDB-file")
+                modeller.topology.setPeriodicBoxVectors(solvent_box_vectors)
 
         #Write merged topology and positions to new PDB file
         ash.interfaces.interface_OpenMM.write_pdbfile_openMM(modeller.topology, mergedPositions, outputname)
