@@ -630,12 +630,18 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.properties['natural_orbitals'] = mo_coefficients
             self.properties['dipole'] = dipole
 
+        # Gradient
+        self.gradient = self.mch.nuc_grad_method().kernel()
 
         print("Block is finished")
-        #Cleanup Block scratch stuff (big files)
+        # Cleanup Block scratch stuff (big files)
         self.cleanup()
 
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
-        print_time_rel(module_init_time, modulename=f'{self.theorynamelabel}Theory run', moduleindex=2)
-        return self.energy
+        if Grad:
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel}Theory run', moduleindex=2)
+            return self.energy, self.gradient
+        else:
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel}Theory run', moduleindex=2)
+            return self.energy

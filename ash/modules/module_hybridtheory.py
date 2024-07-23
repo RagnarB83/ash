@@ -435,11 +435,9 @@ class WrapTheory:
         else:
             return energy
 
-
-
 class ONIOMTheory(Theory):
     def __init__(self, theory1=None, theory2=None, theories_N=None, regions_N=None, regions_chargemult=None,
-                 embedding=None, full_pointcharges=None, chargemodel="CM5",
+                 embedding="mechanical", full_pointcharges=None, chargemodel="CM5",
                  fullregion_charge=None, fullregion_mult=None, fragment=None, label=None,
                  printlevel=2, numcores=1,):
         super().__init__()
@@ -456,7 +454,7 @@ class ONIOMTheory(Theory):
         # Early exits
         # If fragment object has not been defined
         if fragment is None:
-            print("Error: fragment= keyword has not been defined for QM/MM. Exiting")
+            print("Error: fragment= keyword has not been defined for ONIOM. Exiting")
             ashexit()
         if fullregion_charge is None or fullregion_mult is None:
             print("Error: Full-region charge and multiplicity must be provided (fullregion_charge, fullregion_mult keywords)")
@@ -499,9 +497,8 @@ class ONIOMTheory(Theory):
         self.charge = self.fullregion_charge
         self.mult = self.fullregion_mult
 
-
-
         #
+        print("Embedding:", self.embedding)
         print("Theories:")
         for i,t in enumerate(self.theories_N):
             print(f"Theory {i+1}:", t.theorynamelabel)
@@ -533,7 +530,6 @@ class ONIOMTheory(Theory):
         full_coords=current_coords
         full_elems=elems
 
-
         # Dicts to keep energy and gradient for each theory-region combo
         E_dict={} # (theory,region) -> energy
         G_dict={} # (theory,region) -> gradient
@@ -544,12 +540,12 @@ class ONIOMTheory(Theory):
         print(f"Running Theory LL ({ll_theory.theorynamelabel}) on Full-region ({len(full_elems)} atoms)")
 
         # Derive pointcharges unless full_pointcharges were already provided
-        if self.full_pointcharges is None and self.embedding == "Elstat":
-            print("Full-system pointcharges were not made available initially")
+        if self.full_pointcharges is None and self.embedding.lower() == "elstat":
+            print("Electrostatic embedding but no full-system pointcharges provided yet")
             print("This means that we must derive pointcharges for full system")
             # TODO: How to do this in general
             # Check if the low-level theory is compatible with some charge model
-            # Should probably this in init instad though
+            # Should probably do this in init instad though
             if isinstance(ll_theory, ash.ORCATheory):
                 print(f"Theory is ORCATheory. Using {self.chargemodel} charge model")
                 ll_theory.extrakeyword+="\n! hirshfeld "
@@ -559,7 +555,7 @@ class ONIOMTheory(Theory):
                 print("Problem: Theory-level not compatible with pointcharge-creation")
                 ashexit()
 
-
+        # RUN FULL REGION
         if Grad:
             e_LL_full, g_LL_full = ll_theory.run(current_coords=full_coords,
                                                     elems=full_elems, Grad=Grad, numcores=numcores,
@@ -577,8 +573,13 @@ class ONIOMTheory(Theory):
                 self.full_pointcharges = grabatomcharges_ORCA(self.chargemodel,"orca.out")
             elif isinstance(ll_theory, ash.xTBTheory):
                 print(f"{ll_theory.filename}.out")
-                self.full_pointcharges = grabatomcharges_xTB_output(ll_theory.filename+'.out', chargemodel=self.chargemodel)
+                #Note: format issue
+                #self.full_pointcharges = grabatomcharges_xTB_output(ll_theory.filename+'.out', chargemodel=self.chargemodel)
+                #self.full_pointcharges = grabatomcharges_xTB()
+                #self.full_pointcharges = [-0.14694763, 0.04354154, 0.07669177, 0.07252396, 0.27177318, -0.45819965, -0.16872117, 0.16697614, -0.04781040, 0.08857328, 0.05067152, 0.05092744, -0.14285028,  0.06521348,  0.05413019,  0.05573540,  0.27118983, -0.46028381, -0.18504079,  0.21696679, -0.04008202,  0.07878930,  0.04626556,  0.03996635]
+                self.full_pointcharges = [-0.14285028,  0.06521348,  0.05413019,  0.05573540,  0.27118983, -0.46028381, -0.18504079,  0.21696679, -0.04008202,  0.07878930,  0.04626556,  0.03996635, -0.14694734,  0.04354141,  0.07669187,  0.07252365,  0.27177521, -0.45820150, -0.16872126,  0.16697404, -0.04781068,  0.08857382,  0.05067241,  0.05092835]
             print("self.full_pointcharges:", self.full_pointcharges)
+            print(len(self.full_pointcharges))
 
         E_dict[(num_theories-1,-1)] = e_LL_full
         if Grad:
@@ -604,9 +605,10 @@ class ONIOMTheory(Theory):
                 r_coords = np.take(current_coords,region,axis=0)
                 r_elems = [elems[x] for x in region]
 
-                # Activate embedding for HL region 1
-                #TODO: also embedding for LL theory region1
-                if i == 0 and self.embedding == "Elstat":
+                # Activate embedding for HL and LL theories in non-Full regions
+                if self.embedding == "Elstat":
+                    print("here. i:", i)
+                    print("region:", region)
                     print("Embedding activated for HL theory")
                     PC=True
                     # Which region?
@@ -617,6 +619,8 @@ class ONIOMTheory(Theory):
                     if self.full_pointcharges is None:
                         print("Warning: Pointcharges for full system not available")
                         ashexit()
+                    print(PCregion)
+                    print(len(PCregion))
                     pointcharges=[self.full_pointcharges[x] for x in PCregion]
                 else:
                     PC=False
