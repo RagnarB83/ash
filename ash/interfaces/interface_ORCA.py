@@ -906,7 +906,7 @@ def checkORCAOptfinished(file):
 #Grab Final single point energy. Ignoring possible encoding errors in file
 def ORCAfinalenergygrab(file, errors='ignore'):
     Energy=None
-    with open(file) as f:
+    with open(file, errors=errors) as f:
         for line in f:
             if 'FINAL SINGLE POINT ENERGY' in line:
                 if "Wavefunction not fully converged!" in line:
