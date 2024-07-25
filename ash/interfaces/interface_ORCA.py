@@ -453,7 +453,7 @@ end"""
             if os.path.isfile(f"{self.filename}.gbw") is False:
                 print_if_level(f"No {self.filename}.gbw file is present in dir.", self.printlevel,2)
                 if self.path_to_last_gbwfile_used != None:
-                    print_if_level("Found a path to last GBW-file used by this Theory object. Will try to copy this file do current dir", self.printlevel,2)
+                    print_if_level(f"Found a path ({self.path_to_last_gbwfile_used}) to last GBW-file used by this Theory object. Will try to copy this file do current dir", self.printlevel,2)
                     try:
                         shutil.copy(self.path_to_last_gbwfile_used, f"./{self.filename}.gbw")
                     except FileNotFoundError:
@@ -863,7 +863,7 @@ def grab_ORCA_errors(filename):
     #TODO: Write pygrep version that supports list of search-strings
     error_strings=['error', 'Error', 'ERROR', 'aborting']
     for errstring in error_strings:
-        error_l = pygrep2(errstring, filename)
+        error_l = pygrep2(errstring, filename, errors="ignore")
         for e in error_l:
             if e not in error_lines:
                 error_lines.append(e)
@@ -2843,8 +2843,18 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
 
     return alphalist, betalist
 
+#Reverse JSON to GBW
+def create_GBW_from_json_file(jsonfile, orcadir=None):
+
+    orcafile_basename = jsonfile.split('.')[0]
+    orcadir = check_ORCA_location(orcadir)
+    print("Calling orca_2json to convert JSON-file to GBW-file")
+    sp.call([orcadir+'/orca_2json', jsonfile, '-gbw'])
+
+    return f"{orcafile_basename}.json"
+
 #Using orca_2json to create JSON file from ORCA GBW file
-def create_ORCA_json_file(file, orcadir=None):
+def create_ORCA_json_file(file, orcadir=None, format="json"):
     print("create_ORCA_json_file")
     orcadir = check_ORCA_location(orcadir)
     orcafile_basename = file.split('.')[0]
@@ -2857,14 +2867,16 @@ def create_ORCA_json_file(file, orcadir=None):
 "S": true,
 "T": true,
 "Densities": ["all"],
-"JSONFormats": ["json", "bson"]
+"JSONFormats": ["json"]
 }
 """
+#"JSONFormats": ["json", "bson"]
     with open(f"{orcafile_basename}.json.conf", "w") as conffile:
         conffile.write(confstring)
 
     print("Calling orca_2json to get JSON file:")
-    sp.call([orcadir+'/orca_2json', orcafile_basename, '-format', '-json'])
+    #Note: ORCA6 changed from basename to file
+    sp.call([orcadir+'/orca_2json', file, f'-{format}'])
 
     print(f"Created file: {orcafile_basename}.json")
 

@@ -269,8 +269,8 @@ def timefn(fn):
 
 # Grep-style function to find a line in file and return a list of words
 # TODO: Make more advanced
-def pygrep(string, file):
-    with open(file) as f:
+def pygrep(string, file, errors=None):
+    with open(file, errors=errors) as f:
         for line in f:
             if string in line:
                 stringlist = line.split()
@@ -278,9 +278,9 @@ def pygrep(string, file):
 
 
 # Multiple match version. Replace pygrep ?
-def pygrep2(string, file, print_output=False):
+def pygrep2(string, file, print_output=False, errors=None):
     l = []
-    with open(file) as f:
+    with open(file, errors=errors) as f:
         for line in f:
             if string in line:
                 l.append(line)

@@ -63,7 +63,9 @@ from .interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from .modules.module_spinprojection import SpinProjectionTheory
 # HybridTheory: DualTheory and WrapTheory
-from .modules.module_hybridtheory import DualTheory,WrapTheory, ONIOMTheory
+from .modules.module_hybridtheory import DualTheory,WrapTheory
+#ONIOM
+from .modules.module_oniom import ONIOMTheory
 
 # Surface
 from .modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, write_surfacedict_to_file
