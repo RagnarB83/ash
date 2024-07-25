@@ -841,7 +841,7 @@ def grab_ORCA_warnings(filename):
     #TODO: Write pygrep version that supports list of search-strings
     warning_strings=['WARNING', 'warning', 'Warning']
     for warnstring in warning_strings:
-        warn_l = pygrep2(warnstring, filename)
+        warn_l = pygrep2(warnstring, filename, errors="ignore")
         warning_lines+=warn_l
 
     warnings=[]
@@ -884,7 +884,7 @@ def grab_ORCA_errors(filename):
 #Todo: Use reverse-read instead to speed up?
 def checkORCAfinished(file):
     iter=None
-    with open(file) as f:
+    with open(file, errors="ignore") as f:
         for line in f:
             if 'SCF CONVERGED AFTER' in line:
                 iter=line.split()[-3]
@@ -893,7 +893,7 @@ def checkORCAfinished(file):
     return False,None
 def checkORCAOptfinished(file):
     converged=False
-    with open(file) as f:
+    with open(file, errors="ignore") as f:
         for line in f:
             if 'THE OPTIMIZATION HAS CONVERGED' in line:
                 converged=True
@@ -929,7 +929,7 @@ def ORCAfinalenergygrab(file, errors='ignore'):
 def ORCAtimingsgrab(file):
     timings={} #in seconds
     try:
-        with open(file) as f:
+        with open(file, errors="ignore") as f:
             for line in f:
                 if 'Calculating one electron integrals' in line:
                     one_elec_integrals=float(line.split()[-2].replace("(",""))
