@@ -33,7 +33,8 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         numcores=1, memory=40000,label=None,
                         Initialstate_charge=None, Initialstate_mult=None,
                         Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5,
-                        initialorbitalfiles=None, densities='None', densgridvalue=100,
+                        initialorbitalfiles=None, densities='None', densgridvalue=40,
+                        deltaSCF_ionize=False, deltaSCF_PMOM=False,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None,
                         CASCI_Final=False,
@@ -54,6 +55,7 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates,
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
                         tda=tda,brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, check_stability=check_stability,
+                        deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_ionize,
                         CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
                         MRCI_CASCI_Final=MRCI_CASCI_Final, MRCI_SOC=MRCI_SOC, CASCI_Final=CASCI_Final,
                         btPNO=btPNO, DLPNO=DLPNO,
@@ -70,6 +72,7 @@ class PhotoElectronClass:
                         Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5,
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
+                        deltaSCF_ionize=False, deltaSCF_PMOM=False,
                         CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
                         MRCI_CASCI_Final=False, MRCI_SOC=False, CASCI_Final=False,
                         btPNO=False, DLPNO=False,
@@ -85,12 +88,16 @@ class PhotoElectronClass:
         ################
         self.TDDFT=False;self.CAS=False;self.NEVPT2=False;self.EOM=False;self.MRCI=False;self.F12=False
         if method is None:
-            print("You must choose a PES method (e.g. method=\"TDDFT\"). \nOptions are: TDDFT, CASSCF, EOM, MRCI and MREOM")
+            print("You must choose a PES method (e.g. method=\"TDDFT\"). \nOptions are: TDDFT, OODFT, CASSCF, EOM, MRCI and MREOM")
             ashexit()
         elif method == 'TDDFT':
             self.TDDFT=True
         elif method == 'SF-TDDFT':
             self.SF_TDDFT=True
+        elif method == "OODFT" or method == "DELTASCF":
+            print("Option OODFT/DELTASCF chosen")
+            self.method="OODFT"
+            self.OODFT=True
         #CASSCF for initial state and finalstates. if CASCI_Final is True then Finalstate uses Initstate orbitals
         elif method == 'CASSCF':
             self.CAS=True
@@ -187,7 +194,8 @@ class PhotoElectronClass:
         self.virt_offset=virt_offset
         self.vibrational_option=vibrational_option
         self.trajectory=trajectory
-
+        self.deltaSCF_ionize=deltaSCF_ionize #DeltaSCF whether to ionize from init-state instead of setting CFG
+        self.deltaSCF_PMOM=deltaSCF_PMOM #Whether to use PMOM or not
         print("PES method:", self.method)
         if self.method == 'MRCI' or self.method=='MREOM':
             print("MREOM:", self.MREOM)
@@ -314,6 +322,9 @@ class PhotoElectronClass:
         if 'NORMALPRINT' not in self.theory.orcasimpleinput.upper():
             self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' Normalprint'
 
+        if self.method == "OODFT":
+            if 'UKS' not in self.theory.orcasimpleinput.upper():
+                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
         if self.brokensym is True:
             self.theory.brokensym=True
             self.theory.HSmult=self.HSmult
@@ -372,10 +383,10 @@ class PhotoElectronClass:
                         tddftstring=tddftstring.replace('%tddft',f'%tddft\nOrbWin[1] = -1,-1,{homoindex_b+1},{homoindex_b+1+self.virt_offset}')
                         tddftstring=tddftstring.replace('%tddft',f'%tddft\nOrbWin[0] = -1,-1,{homoindex_a+1},{homoindex_a+1+self.virt_offset}')
 
-                #Modifying tddft string, adding owrb
+                # Modifying tddft string, adding
                 self.theory.extraline = tddftstring
 
-                #Turning off stability analysis. Not available for gradient run.
+                # Turning off stability analysis. Not available for gradient run.
                 if 'stabperform true' in self.theory.orcablocks:
                     print("Turning off stability analysis.")
                     self.theory.orcablocks=self.theory.orcablocks.replace("stabperform true", "stabperform false")
@@ -399,12 +410,14 @@ class PhotoElectronClass:
         self.theory.cleanup()
         os.chdir('..')
 
-    #General method for difference densities fore pre-calculated cube-files
+    # General method for difference densities fore pre-calculated cube-files
     def make_diffdensities(self, statetype='MRCI'):
+        print("Now making difference densities")
         os.chdir('Calculated_densities')
+        print("Looping over available cube-files and creating difference densities inside directory: Calculated_densities")
         self.stateI.cubedict= read_cube(f"{self.stateI.label}.eldens.cube")
         for fstate in self.Finalstates:
-            #For MRCI/CAS we have all files created
+            # For MRCI/CAS we have all files created
             if statetype == 'MRCI' or statetype=='CAS':
                 for numstate in range(0,fstate.numionstates):
                     print("numstate:", numstate)
@@ -413,7 +426,15 @@ class PhotoElectronClass:
                     write_cube_diff(self.stateI.cubedict,fcubedict,"Densdiff_Init-Finalmult" + str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
                     print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ",
                             "Densdiff_Init-Finalmult"+ str(fstate.mult)+f'_{statetype}State'+f'{numstate}')
-            #For statetype SCF, we have 1 file Init, and for each Final-multiplicity
+            # For statetype OODFT, we have Cubefiles for every single state
+            elif statetype == 'OODFT':
+                for numstate in range(0,fstate.numionstates):
+                    print("numstate:", numstate)
+                    fcubedict = read_cube(f"{fstate.label}_state{numstate}.eldens.cube")
+                    densdiff_filename="Densdiff_Init-Finalmult" + str(fstate.mult)+f'_{statetype}State{numstate}'
+                    write_cube_diff(self.stateI.cubedict,fcubedict,densdiff_filename)
+                    print(f"Wrote Cube file containing density difference between Initial State and Final {statetype} State: ",densdiff_filename)
+            # For statetype SCF, we have 1 file Init, and for each Final-multiplicity
             elif statetype == 'SCF':
                 #Only 2 states
                 fcubedict = read_cube(f"{fstate.label}_state0.eldens.cube")
@@ -944,6 +965,188 @@ end
             print("Mult: {} IPs: {}".format(fstate.mult,fstate.IPs))
             self.FinalIPs = self.FinalIPs + fstate.IPs
             self.Finalionstates = self.Finalionstates + fstate.ionstates
+        return IPs_all, Ionstates_energies_all
+
+    #Create SCF-configurations using IONIZEALPHA/BETA
+    # NOTE: only use with charge/mult of init-state
+    def create_ionized_SCF_CFGs(self):
+        print("\nNow creating excited SCF configurations")
+        self.stateI.occupations_alpha=[1 for i in range(len(self.stateI.occorbs_alpha))]
+        self.stateI.occupations_beta=[1 for i in range(len(self.stateI.occorbs_beta))]
+        print("Alpha occupations of Init state", self.stateI.occupations_alpha)
+        print("Beta occupations of Init state", self.stateI.occupations_beta)
+
+        #Lists of lists with alpha or beta MO numbers to ionize for each state
+        deltascfline_CFG_alphahole=[]
+        deltascfline_CFG_betahole=[]
+        for fstate in self.Finalstates:
+            if fstate.mult > self.stateI.mult:
+                print(f"\nMultiplicity: {fstate.mult}. Creating BETA-hole")
+                for i in range(fstate.numionstates):
+                    occ_beta = copy.copy(self.stateI.occupations_beta)
+                    num_orb = len(occ_beta)-i-1
+                    #Excited ion SCF, adding deltaSCF line
+                    scfline= f"IONIZEBETA {num_orb}"
+                    deltascfline_CFG_betahole.append(scfline)
+            elif fstate.mult < self.stateI.mult:
+                print(f"\nMultiplicity: {fstate.mult}. Creating ALPHA-hole")
+                for i in range(fstate.numionstates):
+                    occ_alpha = copy.copy(self.stateI.occupations_alpha)
+                    num_orb = len(occ_alpha)-i-1
+                    print("New ALPHA removal:", num_orb)
+                    #Excited ion SCF, adding deltaSCF line
+                    scfline= f"IONIZEALPHA {num_orb}"
+                    deltascfline_CFG_alphahole.append(scfline)
+
+        print("done")
+        #print("SCF_CFG_alphahole:", SCF_CFG_alphahole)
+        #print("SCF_CFG_betahole:", SCF_CFG_betahole)
+        print()
+        #print("deltascfline_CFG_alphahole:", deltascfline_CFG_alphahole)
+        #print("deltascfline_CFG_betahole:",deltascfline_CFG_betahole)
+
+        return deltascfline_CFG_alphahole, deltascfline_CFG_betahole
+    def create_SCF_configurations(self):
+        print("\nNow creating excited SCF configurations")
+        self.stateI.occupations_alpha=[1 for i in range(len(self.stateI.occorbs_alpha))]
+        self.stateI.occupations_beta=[1 for i in range(len(self.stateI.occorbs_beta))]
+        print("Alpha occupations of Init state", self.stateI.occupations_alpha)
+        print("Beta occupations of Init state", self.stateI.occupations_beta)
+
+        #Lists of lists with alpha-beta configurations for each state
+        SCF_CFG_alphahole=[]
+        SCF_CFG_betahole=[]
+        deltascfline_CFG_alphahole=[]
+        deltascfline_CFG_betahole=[]
+        #NOTE: we need ground-state ion configuration of each multiplicity too
+        for fstate in self.Finalstates:
+            if fstate.mult > self.stateI.mult:
+                print(f"\nMultiplicity: {fstate.mult}. Creating BETA-hole")
+                for i in range(fstate.numionstates):
+                    occ_beta = copy.copy(self.stateI.occupations_beta)
+                    reverse_ind_counter=-1-i
+                    occ_beta[reverse_ind_counter]=0
+                    print("New BETA Configuration:", occ_beta)
+                    SCF_CFG_betahole.append([self.stateI.occupations_alpha,occ_beta])
+                    if i == 0:
+                        #Ground-state ion SCF, no deltaSCF line
+                        deltascfline_CFG_betahole.append(f"")
+                    else:
+                        #Excited ion SCF, adding deltaSCF line
+                        occ_beta_line = ', '.join(str(q) for q in occ_beta)
+                        scfline= f"BETACONF {occ_beta_line}"
+                        deltascfline_CFG_betahole.append(scfline)
+            elif fstate.mult < self.stateI.mult:
+                print(f"\nMultiplicity: {fstate.mult}. Creating ALPHA-hole")
+                for i in range(fstate.numionstates):
+                    occ_alpha = copy.copy(self.stateI.occupations_alpha)
+                    reverse_ind_counter=-1-i
+                    occ_alpha[reverse_ind_counter]=0
+                    print("New ALPHA Configuration:", occ_alpha)
+                    SCF_CFG_alphahole.append([occ_alpha,self.stateI.occupations_beta])
+                    if i == 0:
+                        #Ground-state ion SCF, no deltaSCF line
+                        deltascfline_CFG_alphahole.append(f"")
+                    else:
+                        #Excited ion SCF, adding deltaSCF line
+                        occ_alpha_line = ', '.join(str(q) for q in occ_alpha)
+                        scfline= f"ALPHACONF {occ_alpha_line}"
+                        deltascfline_CFG_alphahole.append(scfline)
+
+        print("done")
+        #print("SCF_CFG_alphahole:", SCF_CFG_alphahole)
+        #print("SCF_CFG_betahole:", SCF_CFG_betahole)
+        print()
+        #print("deltascfline_CFG_alphahole:", deltascfline_CFG_alphahole)
+        #print("deltascfline_CFG_betahole:",deltascfline_CFG_betahole)
+
+        return deltascfline_CFG_alphahole, deltascfline_CFG_betahole
+
+    def run_DELTASCF(self,fragment,theory):
+        print("run_DELTASCF active")
+
+        #Run Initial SCF state
+        self.run_SCF_InitState(fragment,theory)
+        print("now done with initial state SCF")
+
+        #Create strings for the SCF configurations and deltaSCF lines
+        if self.deltaSCF_ionize is True:
+            print("deltaSCF_ionize option active!")
+            print("This means that ORCA will ionize specific orbitals of the initial state")
+            #TODO: check multiplicity output for multi-mult case
+            deltascfline_CFG_alphahole, deltascfline_CFG_betahole = self.create_ionized_SCF_CFGs()
+        else:
+            deltascfline_CFG_alphahole, deltascfline_CFG_betahole = self.create_SCF_configurations()
+
+        print(BC.OKGREEN, "\nCalculating Excited State SCF via DELTASCF feature in ORCA",BC.ENDC)
+        IPs_all=[]
+        Ionstates_energies_all=[]
+
+        #LOOPING over Finalstate-multiplicities
+        for fstate in self.Finalstates:
+            if self.deltaSCF_ionize:
+                print("deltaSCF_ionize option active. Note: this uses initial-state charge/multiplicity in ORCA input")
+                charge = self.Initialstate_charge
+                mult = self.Initialstate_mult
+            else:
+                charge=fstate.charge
+                mult=fstate.mult
+            for i in range(fstate.numionstates):
+                print("-"*70)
+                print(f"\nNow running Finalstate MULT {fstate.mult} state-number {i}")
+                label=f"{fstate.label}_state{i}"
+                print("Label:", label)
+                #Creating DELTASCF block
+                if fstate.mult > self.stateI.mult:
+                    deltascfblock=f"%SCF \n PMOM {self.deltaSCF_PMOM} \n{deltascfline_CFG_betahole[i]}\nEND"
+                else:
+                    deltascfblock=f"%SCF \n PMOM {self.deltaSCF_PMOM} \n{deltascfline_CFG_alphahole[i]}\nEND"
+
+                # Adding UKS if not
+                if 'UKS' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput += " UKS "
+
+                #Adding DELTASCF keyword to simpleinput (fine even for ground-state)
+                if 'DELTASCF' not in theory.extraline:
+                    theory.extraline="! DELTASCF"
+                #Adding ALPHACONF/BETACONF line as separate SCF block (empty if ground ion state)
+                theory.orcablocks = self.orig_orcablocks + deltascfblock
+                state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
+                finalsinglepointenergy = state_result.energy
+
+                ip = (finalsinglepointenergy-self.stateI.energy)*ash.constants.hartoeV
+                print("ip:", ip)
+                IPs_all.append(ip)
+                print("IPs_all:", IPs_all)
+                self.FinalIPs.append(ip)
+                self.Finalionstates.append(finalsinglepointenergy)
+                Ionstates_energies_all.append(finalsinglepointenergy)
+                print("Ionstates_energies_all:", Ionstates_energies_all)
+
+                #Read MO-energies in order to get number of orbitals (ORCA5 bug for general contracted basis sets requires this)
+                #mo_dict = ash.interfaces.interface_ORCA.MolecularOrbitalGrab(theory.filename+'.out')
+                #print("mo_dict:", mo_dict)
+                #self.totnumorbitals=mo_dict["totnumorbitals"]
+                #self.stateI.occorbs_alpha, self.stateI.occorbs_beta, self.stateI.hftyp = orbitalgrab(theory.filename+'.out')
+                #print("Initial state occupied MO energies (alpha):", self.stateI.occorbs_alpha)
+                #print("Initial state SCF-type:", self.stateI.hftyp)
+
+                #Keeping copy of input/outputfile and GBW file
+                shutil.copyfile(theory.filename + '.out', './' + label + '.out')
+                shutil.copyfile(theory.filename + '.inp', './' + label + '.inp')
+                shutil.copyfile(theory.filename + '.gbw', './' + label + '.gbw')
+
+                #Calculate SCF eldensity and spindensity if requested
+                if self.densities == 'SCF' or self.densities == 'All':
+                    #Electron density
+                    run_orca_plot(orcadir=theory.orcadir,filename=f"{theory.filename}.gbw", option='density', gridvalue=self.densgridvalue)
+                    #Move into Calculated_densities dir
+                    shutil.move(f"{theory.filename}.eldens.cube", 'Calculated_densities/' + f"{label}.eldens.cube")
+                    #Spin density (only if UHF). Otherwise orca_plot gets confused (takes difference between alpha-density and nothing)
+                    if self.stateI.hftyp == "UHF":
+                        run_orca_plot(orcadir=theory.orcadir,filename=f"{theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
+                        #Move into Calculated_densities dir
+                        shutil.move(f"{theory.filename}.spindens.cube", 'Calculated_densities/' + f"{label}.spindens.cube")
         return IPs_all, Ionstates_energies_all
 
     # Calculate Ionized state via SCF+TDDFT approach
@@ -1523,6 +1726,20 @@ end
                 else:
                     spinmult=self.stateF1.mult
                 print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))
+        elif self.method == 'OODFT':
+            stype='SCF'
+            print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
+            for i, (E, IE, dys) in enumerate(zip(Finalionstates,IPs,dysonnorms)):
+                #Getting spinmult
+                if self.MultipleSpinStates is True:
+                    #Change test. what mult we are in.. TODO: Check this for correctness
+                    if i < self.Finalstates[0].numionstates:
+                        spinmult=self.Finalstates[0].mult
+                    else:
+                        spinmult=self.Finalstates[1].mult
+                else:
+                    spinmult=self.stateF1.mult
+                print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))
         elif self.method == 'TDDFT':
             #Creating lists of all state labels and transition energies
             if self.tda is True:
@@ -1812,6 +2029,36 @@ end
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
                 #Printing final table for this geometry
                 self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
+
+        elif self.method =='OODFT' :
+            print("OODFT (DELTASCF) option is active")
+            self.setup_ORCA_object()
+
+            for i,fragment in enumerate(fragments):
+                print(f"\nRunning geometry {i+1} of {len(fragments)}")
+                frag_IPs,frag_Finalionstates = self.run_DELTASCF(fragment,self.theory)
+
+                # MO-spectrum
+                self.mo_spectrum()
+                #For wfoverlap
+
+                #Temp disabled. ORCA6 fix required TODO
+                #self.prepare_mos_file()
+                #Diff density
+                if self.densities == 'SCF' or self.densities == 'All':
+                    self.make_diffdensities(statetype='OODFT')
+                #For wfoverlap
+                #self.TDDFT_dets_prep()
+                #Dyson
+                frag_dysonnorms = self.run_dyson_calc(frag_IPs)
+                print("IPs calculated for this geometry:",frag_IPs)
+                print("Dyson norms calculated for this geometry:",frag_dysonnorms)
+                print(f"All IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
+                print(f"All Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
+                #Printing final table for this geometry
+
+                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
+                #TODO: Append to file on disk to keep track of tables for all geometries???
 
 
         elif self.method =='EOM':

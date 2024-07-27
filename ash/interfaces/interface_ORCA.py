@@ -2022,6 +2022,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
 def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=False,
     densityfilename=None, individual_file=False, mo_operator=0, mo_number=None,):
     print("Running run_orca_plot")
+    print("Gridvalue:", gridvalue)
     orcadir = check_ORCA_location(orcadir)
     def check_if_file_exists():
         if os.path.isfile(densityfilename) is True:
@@ -2049,21 +2050,22 @@ def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=
     else:
         plottype = 1
     if option=='density' or option=='spindensity':
+        print("Plotting density")
         if specify_density is True:
             print("specify_density: True. Picking density filename:", densityfilename)
             #Choosing e.g. MRCI density
             p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n10\n11\n\n', encoding='ascii')
+                input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n11\n12\n\n', encoding='ascii')
         else:
             p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                       input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\ny\n10\n11\n\n', encoding='ascii')
+                       input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\ny\n11\n12\n\n', encoding='ascii')
     elif option=='mo':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                       input=f'5\n7\n4\n{gridvalue}\n3\n{mo_operator}\n2\n{mo_number}\n10\n11\n\n', encoding='ascii')
+                       input=f'5\n7\n4\n{gridvalue}\n3\n{mo_operator}\n2\n{mo_number}\n11\n12\n\n', encoding='ascii')
     #If plotting CIS/TDDFT density then we tell orca_plot explicity.
     elif option == 'cisdensity' or option == 'cisspindensity':
         p = sp.run([orcadir + '/orca_plot', filename, '-i'], stdout=sp.PIPE,
-                       input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n10\n11\n\n', encoding='ascii')
+                       input=f'5\n7\n4\n{gridvalue}\n1\n{plottype}\nn\n{densityfilename}\n11\n12\n\n', encoding='ascii')
 
     #print(p.returncode)
 

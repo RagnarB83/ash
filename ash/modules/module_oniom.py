@@ -5,6 +5,7 @@ import os
 import copy
 from collections import defaultdict
 
+import ash
 from ash.functions.functions_general import BC, ashexit, print_time_rel,print_line_with_mainheader,listdiff
 from ash.modules.module_theory import Theory
 from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
