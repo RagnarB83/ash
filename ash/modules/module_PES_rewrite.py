@@ -1739,6 +1739,9 @@ end
         elif self.method == 'OODFT':
             stype='SCF'
             print("{:>6} {:>7} {:^20} {:8} {:10} {:>7}".format("State no.", "Mult", "TotalE (Eh)", "IE (eV)", "Dyson-norm", "State-type"))
+            print("Finalionstates:", Finalionstates)
+            print("IPs:", IPs)
+            print("dysonnorms:", dysonnorms)
             for i, (E, IE, dys) in enumerate(zip(Finalionstates,IPs,dysonnorms)):
                 #Getting spinmult
                 if self.MultipleSpinStates is True:
@@ -1749,6 +1752,12 @@ end
                         spinmult=self.Finalstates[1].mult
                 else:
                     spinmult=self.stateF1.mult
+                print("i:", i)
+                print("spinmult:", spinmult)
+                print("E:", E)
+                print("IE:", IE)
+                print("dys:", dys)
+                print("stype:", stype)
                 print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10}".format(i, spinmult, E, IE, dys,stype))
         elif self.method == 'TDDFT':
             #Creating lists of all state labels and transition energies
