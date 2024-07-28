@@ -2076,6 +2076,7 @@ end
                         run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory,self.numcores)
                         #Grabbing Dyson norms from wfovl.out
                         dyson_norm=grabDysonnorms()
+                        os.rename("wfovl.out",f"Final_State_mult{fstate.mult}_state{i}.wfovl.out")
                         dysonnorms.append(dyson_norm)
                         print(BC.OKBLUE,"\nDyson norm for state({}):".format(len(dyson_norm)),BC.ENDC)
                         if len(dyson_norm) == 0:
@@ -2084,6 +2085,7 @@ end
                             dysonnorms.append(0.0)
                         self.finaldysonnorms=self.finaldysonnorms+dyson_norm
                 #Dyson
+                frag_dysonnorms=dysonnorms
                 #frag_dysonnorms = self.run_dyson_calc(frag_IPs)
                 print("IPs calculated for this geometry:",frag_IPs)
                 print("Dyson norms calculated for this geometry:",frag_dysonnorms)
