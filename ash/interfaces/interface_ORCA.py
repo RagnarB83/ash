@@ -2856,7 +2856,7 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
     return f"{orcafile_basename}.json"
 
 #Using orca_2json to create JSON file from ORCA GBW file
-def create_ORCA_json_file(file, orcadir=None, format="json"):
+def create_ORCA_json_file(file, orcadir=None, format="json", mo_coeffs=True):
     print("create_ORCA_json_file")
     orcadir = check_ORCA_location(orcadir)
     orcafile_basename = file.split('.')[0]
@@ -2865,9 +2865,8 @@ def create_ORCA_json_file(file, orcadir=None, format="json"):
     confstring="""{
 "MOCoefficients": true,
 "Basisset": true,
-"H": true,
-"S": true,
-"T": true,
+"1elIntegrals": ["H","S", "T", "V", "HMO"],
+"1elIntegralsRel": ["H","S","T", "V"],
 "Densities": ["all"],
 "JSONFormats": ["json"]
 }
@@ -2897,6 +2896,7 @@ def read_ORCA_json_file(file):
     with open(f"{orcafile_basename}.json") as f:
         data = json.load(f)
     print("Looping over dictionary")
+    print("")
     for i in data["Molecule"]:
         print(i)
 
@@ -2910,9 +2910,7 @@ def read_ORCA_json_file(file):
     print("Molecule-CoordinateUnits:", data["Molecule"]["CoordinateUnits"])
     print("Molecule-HFTyp:", data["Molecule"]["HFTyp"])
     print()
-    print("Densities found:")
-    for d in data["Molecule"]["Densities"]:
-        print(d)
+    print("Densities found:", data["Molecule"]["Densities"])
     print("Dictionary keys of data", data["Molecule"].keys())
     return data["Molecule"]
 

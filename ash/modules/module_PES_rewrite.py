@@ -1614,19 +1614,9 @@ end
         else:
             self.stateI.energy=scfenergygrab(theory.filename+'.out')
 
-        #Read MO-energies in order to get number of orbitals (ORCA5 bug for general contracted basis sets requires this)
-        mo_dict = ash.interfaces.interface_ORCA.MolecularOrbitalGrab(theory.filename+'.out')
-        self.totnumorbitals=mo_dict["totnumorbitals"]
-        #self.numoccorbitals_alpha=mo_dict["occ_alpha"]
-        #self.numoccorbitals_beta=mo_dict["occ_beta"]
-        #self.numvirtorbitals_alpha=mo_dict["unocc_alpha"]
-        #self.numvirtorbitals_beta=mo_dict["unocc_beta"]
-        # Initial state orbitals for MO-DOSplot
-        #TODO: Replace this ??
         self.stateI.occorbs_alpha, self.stateI.occorbs_beta, self.stateI.hftyp = orbitalgrab(theory.filename+'.out')
         print("Initial state occupied MO energies (alpha):", self.stateI.occorbs_alpha)
         print("Initial state SCF-type:", self.stateI.hftyp)
-
         # Specify whether Initial state is restricted or not.
         if self.stateI.hftyp == "UHF":
             self.stateI.restricted = False
@@ -1782,44 +1772,6 @@ end
             fstate=self.Finalstates[0]
             for i, (E, IE, dys,statelabel,TDtransenergy,spinmult) in enumerate(zip(Finalionstates,IPs,dysonnorms,statelabels,tdtransitions,spinmults)):
                 print("{:>6d} {:>7d} {:20.11f} {:>10.3f} {:>10.5f} {:>10} {:>17.3f}".format(i, spinmult, E, IE, dys,statelabel, TDtransenergy))
-    def prepare_mos_file(self):
-        print("Inside prepare_mos_file")
-        print(BC.OKGREEN, "Grabbing AO matrix, MO coefficients and determinants from ORCA GBW file, CIS file (if TDDFT) or output (if CAS/MRCI)",
-        BC.ENDC)
-        # Specify frozencore or not.
-        self.frozencore = 0
-        print("")
-        ####################
-        # Initial State MOs
-        ####################
-        print("Doing initial state")
-        # Get AO matrix from init state calculation
-        saveAOmatrix(self.stateI.gbwfile, orcadir=self.theory.orcadir)
-
-
-        # Grab MO coefficients and write to files mos_init and mos_final
-
-        #Delete old mos_init file
-        try:
-            os.remove("mos_init")
-        except:
-            pass
-        print("StateI GBW-file: ", self.stateI.gbwfile)
-        print("StateI Restricted :", self.stateI.restricted)
-        print("Frozencore: ", self.frozencore)
-        mos_init = get_MO_from_gbw(self.stateI.gbwfile, self.stateI.restricted, self.frozencore,self.theory.orcadir)
-        writestringtofile(mos_init, "mos_init")
-        print("Created file mos_init")
-        ####################
-        # Final State MOs
-        ####################
-        print("Doing Final state")
-        for fstate in self.Finalstates:
-            print("StateF GBW-file: ", fstate.gbwfile)
-            print("StateF Restricted :", fstate.restricted)
-            print("Frozencore: ", self.frozencore)
-            mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, self.frozencore,self.theory.orcadir)
-            writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
 
     def TDDFT_dets_prep(self):
 
@@ -1906,7 +1858,7 @@ end
 
         # Run Wfoverlap to calculate Dyson norms. Will write to wfovl.out.
         # Check if binary exists
-        if self.path_wfoverlap == None:
+        if self.path_wfoverlap is None:
             print("path_wfoverlap is not set. Exiting")
             return
         elif os.path.exists(self.path_wfoverlap) is False:
@@ -2047,8 +1999,69 @@ end
                 #Diff density
                 if self.densities == 'SCF' or self.densities == 'All':
                     self.make_diffdensities(statetype='OODFT')
-                #For wfoverlap
-                #self.TDDFT_dets_prep()
+
+                ################
+                #WFOVERLAP PREP
+                ################
+
+                #INIT state: Get data from ORCA GBW-file via JSON
+                init_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(self.stateI.gbwfile, format="json")
+                init_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(init_jsonfile)
+                totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(init_state_data_dict)
+
+                #Write overlap matrix to  disk
+                create_wfoverlap_AO_file(init_state_data_dict, outputfile='AO_overl')
+                #Write Init-state MOs to disk in wfoverlap format
+                create_wfoverlap_MO_file(init_state_data_dict, "mos_init", mo_threshold=1e-12,frozencore=0)
+
+                # Creating determinant-string for Initial State from orbital information
+                init_determinant_string = get_dets_from_single(totnumorbitals,
+                                                               numocc_alpha, numocc_beta, restricted, 0)
+                writestringtofile(init_determinant_string, "dets_init")
+
+                #Loop over excited state SCFs, create mo-file, dets-file
+                for fstate in self.Finalstates:
+                    for i in range(fstate.numionstates):
+                        print(f"fstate:{fstate.mult} i:{i}")
+                        curr_gbwfile=f"Final_State_mult{fstate.mult}_state{i}.gbw"
+
+                        #CURRENT state: Get data from ORCA GBW-file via JSON
+                        curr_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(curr_gbwfile, format="json")
+                        curr_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(curr_jsonfile)
+                        totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(curr_state_data_dict)
+
+                        #Write CURRENT-state MOs to disk in wfoverlap format
+                        create_wfoverlap_MO_file(curr_state_data_dict, "mos_curr", mo_threshold=1e-12,frozencore=0)
+
+                        # Creating determinant-string for Current State from orbital information
+                        curr_determinant_string = get_dets_from_single(totnumorbitals,
+                                                                    numocc_alpha, numocc_beta, restricted, 0)
+                        writestringtofile(curr_determinant_string, "dets_curr")
+
+                        print("\nRunning WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
+                        # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
+                        wfoverlapinput = """
+                        mix_aoovl=AO_overl
+                        a_mo=mos_final
+                        b_mo=mos_curr
+                        a_det=dets_curr
+                        b_det=dets_init
+                        a_mo_read=0
+                        b_mo_read=0
+                        ao_read=0
+                        moprint=1
+                        """
+                        #Calling wfoverlap
+                        run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory,self.numcores)
+                        #Grabbing Dyson norms from wfovl.out
+                        dysonnorms=grabDysonnorms()
+                        print(BC.OKBLUE,"\nDyson norms ({}):".format(len(dysonnorms)),BC.ENDC)
+                        print(dysonnorms)
+                        if len(dysonnorms) == 0:
+                            print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
+                            print("Setting Dyson norms to zero and continuing.")
+                            dysonnorms=len(fstate.IPs)*[0.0]
+                        self.finaldysonnorms=self.finaldysonnorms+dysonnorms
                 #Dyson
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
                 print("IPs calculated for this geometry:",frag_IPs)
@@ -2304,6 +2317,7 @@ def get_MO_from_gbw(filename,restr,frozencore,orcadir):
       s=line.split()
       if len(s)>=1:
         NAO=int(line.split()[0])+1
+        print("NAO:", NAO)
         break
 
     #job=QMin['IJOB']
@@ -2326,6 +2340,7 @@ def get_MO_from_gbw(filename,restr,frozencore,orcadir):
     ndigits=16
     # get coefficients for alpha
     NMO_A=NAO
+    print("NMO_A:", NMO_A)
     MO_A=[ [ 0. for i in range(NAO) ] for j in range(NMO_A) ]
     for imo in range(NMO_A):
       #RB. Changed to floor division here
@@ -2371,6 +2386,7 @@ def get_MO_from_gbw(filename,restr,frozencore,orcadir):
         NMO=NMO_A+NMO_B-2*frozencore
 
     # make string
+    print("NMO:", NMO)
     string='''2mocoef
 header
  1
@@ -4174,3 +4190,94 @@ class MolState:
         self.outfile=None
         self.cisfile=None
         self.densitiesfile=None #New since ORCA5
+
+
+def create_wfoverlap_AO_file(data_moldict, outputfile='AO_overl'):
+    #########################
+    # AO matrix
+    #########################
+    numbasis=len(data_moldict["S-Matrix"])
+    #Overlap matrix to file
+    with open(outputfile, 'w') as ofile:
+        ofile.write(f"{numbasis} {numbasis}\n")
+        #data_moldict["S-Matrix"]
+        for g in data_moldict["S-Matrix"]:
+            ofile.write(" ".join([str(i) for i in g]) + "\n")
+
+#old def prepare_mos_file
+#TODO: frozencore
+def create_wfoverlap_MO_file(data_moldict, outputfile, mo_threshold=1e-12,frozencore=0):
+    #########################
+    # Write MOs
+    #########################
+    #Delete old mos_init file
+    print("Inside create_MO_file")
+    print(BC.OKGREEN, "Grabbing MO coefficients ORCA GBW/JSON file", BC.ENDC)
+
+    #
+    numbasis=len(data_moldict["S-Matrix"])
+    try:
+        os.remove(outputfile)
+    except:
+        pass
+
+    #Header
+    NAO=numbasis
+    NMO=numbasis*2
+    headerstring=f"""2mocoef
+header
+1
+MO-coefficients from Orca
+1
+{NAO}   {NMO}
+a
+mocoef
+(*)
+"""
+    #Write to file
+    occupancies=[]
+    with open(outputfile, 'w') as ofile:
+        ofile.write(headerstring)
+        for i,mo in enumerate(data_moldict["MolecularOrbitals"]["MOs"]):
+            moc=mo["MOCoefficients"]
+            occupancies.append(mo["Occupancy"])
+
+            for j in range(0, len(moc), 3):
+                #l = ' '.join(f'{x:.10e}' for x in moc[j:j+3])
+                l = ' '.join(f'{0.0:.12e}' if abs(x) < mo_threshold else f'{x:.12e}' for x in moc[j:j+3])
+                ofile.write(l + '\n')
+        #Orb occ
+        print("len occupancies", len(occupancies))
+        ofile.write("orbocc\n")
+        ofile.write("(*)\n")
+        for j in range(0, len(occupancies), 3):
+            l = ' '.join(f'{0.0:.12e}' if abs(x) < mo_threshold else f'{x:.12e}' for x in occupancies[j:j+3])
+            ofile.write(l + '\n')
+    print("occupancies:", occupancies)
+    print("Created file:", outputfile)
+
+    ####################
+    # Final State MOs
+    ####################
+    #print("Doing Final state")
+    #for fstate in self.Finalstates:
+    #    print("StateF GBW-file: ", fstate.gbwfile)
+    #    print("StateF Restricted :", fstate.restricted)
+    #    print("Frozencore: ", self.frozencore)
+    #    mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, self.frozencore,self.theory.orcadir)
+    #writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
+
+def get_orb_info_from_dict(moldict):
+    HFTyp= moldict["HFTyp"]
+    num_all_orbs = len(moldict["MolecularOrbitals"]["MOs"])
+    all_occs = [j["Occupancy"] for j in moldict["MolecularOrbitals"]["MOs"]]
+    if HFTyp == "UHF":
+        totnumorbitals = int(num_all_orbs/2)
+        num_occorbs_alpha=len(all_occs[0:all_occs.index(0.0)])
+        num_occorbs_beta = all_occs[all_occs.index(0.0):-1].count(1.0)
+        restricted=False
+    else:
+        totnumorbitals = num_all_orbs
+        num_occorbs_alpha=all_occs.count(2.0)
+        restricted=True
+    return totnumorbitals, num_occorbs_alpha, num_occorbs_beta, restricted
