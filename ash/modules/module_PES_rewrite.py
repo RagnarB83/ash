@@ -246,7 +246,7 @@ class PhotoElectronClass:
             if self.path_wfoverlap is None:
                 print("Warning: No path_wfoverlap given.")
                 wfoverlap_bin_names=["wfoverlap","wfoverlap.x"]
-                print("Search for possibly wfoverlap binary names:", wfoverlap_bin_names)
+                print("Searching for possibly wfoverlap binary names in PATH:", wfoverlap_bin_names)
                 for bin in wfoverlap_bin_names:
                     if shutil.which(bin) is not None:
                         print("")
@@ -2062,8 +2062,8 @@ end
                         # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
                         wfoverlapinput = """
                         mix_aoovl=AO_overl
-                        a_mo=mos_final
-                        b_mo=mos_curr
+                        a_mo=mos_curr
+                        b_mo=mos_init
                         a_det=dets_curr
                         b_det=dets_init
                         a_mo_read=0
