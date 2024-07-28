@@ -240,10 +240,30 @@ class PhotoElectronClass:
                 print("Provide ensemble traj file as trajectory keyword")
                 ashexit()
 
-        #Initizalign final list (necessary)
+        if noDyson is True:
+            print("noDyson True, skipping Dyson calculations")
+        else:
+            if self.path_wfoverlap is None:
+                print("Warning: No path_wfoverlap given.")
+                wfoverlap_bin_names=["wfoverlap","wfoverlap.x"]
+                print("Search for possibly wfoverlap binary names:", wfoverlap_bin_names)
+                for bin in wfoverlap_bin_names:
+                    if shutil.which(bin) is not None:
+                        print("")
+                        self.path_wfoverlap=shutil.which(bin)
+                        print("Found wfoverlap binary:", self.path_wfoverlap)
+                        break
+                if self.path_wfoverlap is None:
+                    print("No valid wfoverlap binary found, no Dyson orbital calculations possible.")
+                    print("Use noDyson=True if you wish to run without Dyson-orbital calculations")
+                    ashexit()
+            else:
+                print("Path to Wfoverlap given:", self.path_wfoverlap)
+
+        # Initializing final list (necessary)
         self.finaldysonnorms=[]
 
-        #Getting charge/mult of states from function argument
+        # Getting charge/mult of states from function argument
         self.totnuccharge=self.fragment.nuccharge
 
         # Always just one StateI object with one charge and one spin multiplicity
@@ -2043,7 +2063,7 @@ end
                         wfoverlapinput = """
                         mix_aoovl=AO_overl
                         a_mo=mos_final
-                        b_mo=mos_curr
+                        b_mo=mos_init
                         a_det=dets_curr
                         b_det=dets_init
                         a_mo_read=0
