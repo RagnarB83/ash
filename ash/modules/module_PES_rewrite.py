@@ -1962,8 +1962,13 @@ end
                 #Diff density
                 if self.densities == 'SCF' or self.densities == 'All':
                     self.make_diffdensities(statetype='SCF')
-                #For wfoverlap
+
+                ##############################
+                # PREPARE FILES FOR WFOVERLAP
+                ##############################
+                ################
                 #INIT state: Get data from ORCA GBW-file via JSON
+                ################
                 init_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(self.stateI.gbwfile, format="json")
                 init_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(init_jsonfile)
                 totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(init_state_data_dict)
@@ -1972,6 +1977,12 @@ end
                 #Write Init-state MOs to disk in wfoverlap format
                 create_wfoverlap_MO_file(init_state_data_dict, "mos_init", mo_threshold=1e-12,frozencore=0)
 
+                # Creating determinant-string for Initial State from orbital information
+                init_determinant_string = get_dets_from_single(totnumorbitals,
+                                                               numocc_alpha, numocc_beta, restricted, 0)
+                ################
+                # FINAL states
+                ################
                 #MO-files for each Finalstate multiplicity
                 for fstate in self.Finalstates:
                     #INIT state: Get data from ORCA GBW-file via JSON
@@ -1987,9 +1998,6 @@ end
                     #mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, self.frozencore,self.theory.orcadir)
                     #writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
 
-                # Creating determinant-string for Initial State from orbital information
-                init_determinant_string = get_dets_from_single(totnumorbitals,
-                                                               numocc_alpha, numocc_beta, restricted, 0)
                 writestringtofile(init_determinant_string, "dets_init")
                 #Creating determinant-files for TDDFT states
                 self.TDDFT_dets_prep()
