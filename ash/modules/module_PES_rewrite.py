@@ -2040,6 +2040,7 @@ end
                 writestringtofile(init_determinant_string, "dets_init")
 
                 #Loop over excited state SCFs, create mo-file, dets-file
+                dysonnorms=[]
                 for fstate in self.Finalstates:
                     for i in range(fstate.numionstates):
                         print(f"fstate:{fstate.mult} i:{i}")
@@ -2074,17 +2075,16 @@ end
                         #Calling wfoverlap
                         run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory,self.numcores)
                         #Grabbing Dyson norms from wfovl.out
-                        dysonnorms=grabDysonnorms()
-                        print(BC.OKBLUE,"\nDyson norms ({}):".format(len(dysonnorms)),BC.ENDC)
-                        print(dysonnorms)
-                        exit()
-                        if len(dysonnorms) == 0:
-                            print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
-                            print("Setting Dyson norms to zero and continuing.")
-                            dysonnorms=len(fstate.IPs)*[0.0]
-                        self.finaldysonnorms=self.finaldysonnorms+dysonnorms
+                        dyson_norm=grabDysonnorms()
+                        dysonnorms.append(dyson_norm)
+                        print(BC.OKBLUE,"\nDyson norm for state({}):".format(len(dyson_norm)),BC.ENDC)
+                        if len(dyson_norm) == 0:
+                            print("Dyson norm is empty. Something went wrong with WfOverlap calculation.")
+                            print("Setting Dyson norm to zero and continuing.")
+                            dysonnorms.append(0.0)
+                        self.finaldysonnorms=self.finaldysonnorms+dyson_norm
                 #Dyson
-                frag_dysonnorms = self.run_dyson_calc(frag_IPs)
+                #frag_dysonnorms = self.run_dyson_calc(frag_IPs)
                 print("IPs calculated for this geometry:",frag_IPs)
                 print("Dyson norms calculated for this geometry:",frag_dysonnorms)
                 print(f"All IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
