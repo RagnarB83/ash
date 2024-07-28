@@ -1818,16 +1818,6 @@ end
                     print("Warning: Dyson norms not ready for no_shakeup option yet")
                 writestringtofile(string, "dets_final_mult"+str(fstate.mult))
 
-        # Creating determinant-string for Initial State from orbital information
-        init_determinant_string = get_dets_from_single(self.totnumorbitals, len(self.stateI.occorbs_alpha), len(self.stateI.occorbs_beta),
-                                        self.stateI.restricted, self.frozencore)
-
-        writestringtofile(init_determinant_string, "dets_init")
-
-        # Printing to file
-        #for blockname, string in det_init.items():
-        #    writestringtofile(string, "dets_init")
-
     def CAS_dets_prep(self):
         #CASSCF: GETTING GETERMINANTS FROM DETERMINANT-PRINTING OPTION in OUTPUTFILE
         #Combining with internal and external orbitals: internal_orbs,active_orbs,external_orbs
