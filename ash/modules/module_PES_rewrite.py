@@ -4266,7 +4266,14 @@ def create_wfoverlap_MO_file(data_moldict, outputfile, mo_threshold=1e-12,frozen
 
     #Header
     NAO=numbasis
-    NMO=numbasis*2
+
+    # For closed-shell we write only alpha orbitals and NMO is same as NAO
+    # For open-shell we write all orbitals and NMO is double NAO
+    HFTyp= data_moldict["HFTyp"]
+    if HFTyp == "RHF":
+        NMO=numbasis
+    else:
+        NMO=numbasis*2
     headerstring=f"""2mocoef
 header
 1
