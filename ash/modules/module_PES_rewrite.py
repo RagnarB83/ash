@@ -4312,5 +4312,6 @@ def get_orb_info_from_dict(moldict):
     else:
         totnumorbitals = num_all_orbs
         num_occorbs_alpha=all_occs.count(2.0)
+        num_occorbs_beta=num_occorbs_alpha
         restricted=True
     return totnumorbitals, num_occorbs_alpha, num_occorbs_beta, restricted
