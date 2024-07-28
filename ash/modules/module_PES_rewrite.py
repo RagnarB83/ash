@@ -2077,6 +2077,7 @@ end
                         dysonnorms=grabDysonnorms()
                         print(BC.OKBLUE,"\nDyson norms ({}):".format(len(dysonnorms)),BC.ENDC)
                         print(dysonnorms)
+                        exit()
                         if len(dysonnorms) == 0:
                             print("List of Dyson norms is empty. Something went wrong with WfOverlap calculation.")
                             print("Setting Dyson norms to zero and continuing.")
