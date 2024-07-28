@@ -2063,7 +2063,7 @@ end
                         wfoverlapinput = """
                         mix_aoovl=AO_overl
                         a_mo=mos_final
-                        b_mo=mos_init
+                        b_mo=mos_curr
                         a_det=dets_curr
                         b_det=dets_init
                         a_mo_read=0
