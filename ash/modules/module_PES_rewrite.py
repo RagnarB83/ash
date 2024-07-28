@@ -1961,8 +1961,8 @@ end
             print("TDDFT option is active")
             self.setup_ORCA_object()
 
-            for i,fragment in enumerate(fragments):
-                print(f"\nRunning geometry {i+1} of {len(fragments)}")
+            for geonum,fragment in enumerate(fragments):
+                print(f"\nRunning geometry {geonum+1} of {len(fragments)}")
                 frag_IPs,frag_Finalionstates = self.run_TDDFT(fragment)
                 # MO-spectrum
                 self.mo_spectrum()
@@ -1981,14 +1981,14 @@ end
                 print(f"All Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
                 #Printing final table for this geometry
 
-                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
+                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{geonum}")
                 #TODO: Append to file on disk to keep track of tables for all geometries???
 
         elif self.method =='SF-TDDFT':
             print("SpinFlip TDDFT option is active")
             self.setup_ORCA_object()
-            for i,fragment in enumerate(fragments):
-                print(f"\nRunning geometry {i+1} of {len(fragments)}")
+            for geonum,fragment in enumerate(fragments):
+                print(f"\nRunning geometry {geonum+1} of {len(fragments)}")
                 frag_IPs, frag_Finalionstates = self.run_SF_TDDFT(fragment)
                 #Diff density
                 #if self.densities == 'SCF' or self.densities == 'All':
@@ -2000,14 +2000,14 @@ end
                 #Dyson
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
                 #Printing final table for this geometry
-                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
+                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{geonum}")
 
         elif self.method =='OODFT' :
             print("OODFT (DELTASCF) option is active")
             self.setup_ORCA_object()
 
-            for i,fragment in enumerate(fragments):
-                print(f"\nRunning geometry {i+1} of {len(fragments)}")
+            for geonum,fragment in enumerate(fragments):
+                print(f"\nRunning geometry {geonum+1} of {len(fragments)}")
                 frag_IPs,frag_Finalionstates = self.run_DELTASCF(fragment,self.theory)
 
                 # MO-spectrum
@@ -2039,7 +2039,7 @@ end
                                                                numocc_alpha, numocc_beta, restricted, 0)
                 writestringtofile(init_determinant_string, "dets_init")
 
-                #Loop over excited state SCFs, create mo-file, dets-file
+                #Loop over excited state SCFs, create mo-file, dets-file and run wfoverlap
                 dysonnorms=[]
                 for fstate in self.Finalstates:
                     for i in range(fstate.numionstates):
@@ -2093,15 +2093,14 @@ end
                 print(f"All Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
                 #Printing final table for this geometry
 
-                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
+                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{geonum}")
                 #TODO: Append to file on disk to keep track of tables for all geometries???
-
 
         elif self.method =='EOM':
             print("Calling EOM")
             self.setup_ORCA_object()
-            for i,fragment in enumerate(fragments):
-                print(f"\nRunning geometry {i+1} of {len(fragments)}")
+            for geonum,fragment in enumerate(fragments):
+                print(f"\nRunning geometry {geonum+1} of {len(fragments)}")
                 frag_IPs, frag_Finalionstates, frag_dysonnorms =  self.run_EOM(fragment)
                 print(f"IPs calculated ({len(self.FinalIPs)}):", self.FinalIPs)
                 print(f"Approximate Dyson norms calculated ({len(self.finaldysonnorms)}):", self.finaldysonnorms)
@@ -2111,7 +2110,7 @@ end
                 print("Skipping")
 
                 #Printing final table for this geometry
-                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
+                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{geonum}")
 
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
@@ -2119,8 +2118,8 @@ end
         elif self.method =='CASSCF' or self.method=='CASCI' or self.method == 'NEVPT2' or self.method == 'NEVPT2-F12':
             print("CASSCF/CASCI option active!")
             self.setup_ORCA_object()
-            for i,fragment in enumerate(fragments):
-                print(f"\nRunning geometry {i+1} of {len(fragments)}")
+            for geonum,fragment in enumerate(fragments):
+                print(f"\nRunning geometry {geonum+1} of {len(fragments)}")
                 frag_IPs,frag_Finalionstates = self.run_CAS(fragment)
                 #Diff density
                 if self.densities == 'SCF' or self.densities == 'All':
@@ -2134,7 +2133,7 @@ end
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
 
                 #Printing final table for this geometry
-                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
+                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{geonum}")
 
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
@@ -2142,8 +2141,8 @@ end
         elif self.method =='MRCI' or self.method=='MREOM':
             print("MRCI/MREOM option active!")
             self.setup_ORCA_object()
-            for i,fragment in enumerate(fragments):
-                print(f"\nRunning geometry {i+1} of {len(fragments)}")
+            for geonum,fragment in enumerate(fragments):
+                print(f"\nRunning geometry {geonum+1} of {len(fragments)}")
                 self.run_MRCI_Initial(fragment)
                 frag_IPs,frag_Finalionstates = self.run_MRCI_Final(fragment)
                 #Difference densities
@@ -2159,7 +2158,7 @@ end
 
                 #Printing final table for this geometry
                 #TODO: Make table for both non-SOC and SOC MRCI?
-                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{i}")
+                self.print_final_table(frag_IPs,frag_dysonnorms,frag_Finalionstates,label=f"Geometry_{geonum}")
 
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
