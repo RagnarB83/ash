@@ -1985,18 +1985,12 @@ end
                 ################
                 #MO-files for each Finalstate multiplicity
                 for fstate in self.Finalstates:
-                    #INIT state: Get data from ORCA GBW-file via JSON
+                    #FINAL state: Get data from ORCA GBW-file via JSON
                     final_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(fstate.gbwfile, format="json")
                     final_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(final_jsonfile)
                     totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(final_state_data_dict)
-                    print("totnumorbitals:", totnumorbitals)
-                    print("numocc_alpha:", numocc_alpha)
-                    print("numocc_beta:", numocc_beta)
-                    print("restricted:", restricted)
-                    #Write Init-state MOs to disk in wfoverlap format
+                    #Write Final-state MOs to disk in wfoverlap format
                     create_wfoverlap_MO_file(final_state_data_dict, "mos_final-mult"+str(fstate.mult), mo_threshold=1e-12,frozencore=0)
-                    #mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, self.frozencore,self.theory.orcadir)
-                    #writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
 
                 writestringtofile(init_determinant_string, "dets_init")
                 #Creating determinant-files for TDDFT states
@@ -2024,8 +2018,9 @@ end
                 #    self.make_diffdensities(statetype='SCF')
                 # MO-spectrum
                 self.mo_spectrum()
-                #For wfoverlap
-                self.prepare_mos_file()
+
+                #NO Dyson for now
+                self.noDyson=True
                 #Dyson
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
                 #Printing final table for this geometry
@@ -2041,10 +2036,7 @@ end
 
                 # MO-spectrum
                 self.mo_spectrum()
-                #For wfoverlap
 
-                #Temp disabled. ORCA6 fix required TODO
-                #self.prepare_mos_file()
                 #Diff density
                 if self.densities == 'SCF' or self.densities == 'All':
                     self.make_diffdensities(statetype='OODFT')
@@ -2156,8 +2148,33 @@ end
                     self.make_diffdensities(statetype='CAS')
                 #Prepare determinants and MOs for Wfoverlap Dyson calculations
                 self.CAS_dets_prep()
-                #For wfoverlap
-                self.prepare_mos_file()
+
+                ##############################
+                # PREPARE FILES FOR WFOVERLAP
+                ##############################
+                ################
+                #INIT state: Get data from ORCA GBW-file via JSON
+                ################
+                init_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(self.stateI.gbwfile, format="json")
+                init_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(init_jsonfile)
+                totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(init_state_data_dict)
+                #Write overlap matrix to  disk
+                create_wfoverlap_AO_file(init_state_data_dict, outputfile='AO_overl')
+                #Write Init-state MOs to disk in wfoverlap format
+                create_wfoverlap_MO_file(init_state_data_dict, "mos_init", mo_threshold=1e-12,frozencore=0)
+
+                ################
+                # FINAL states
+                ################
+                #MO-files for each Finalstate multiplicity
+                for fstate in self.Finalstates:
+                    #FINAL state: Get data from ORCA GBW-file via JSON
+                    final_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(fstate.gbwfile, format="json")
+                    final_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(final_jsonfile)
+                    totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(final_state_data_dict)
+                    #Write Final-state MOs to disk in wfoverlap format
+                    create_wfoverlap_MO_file(final_state_data_dict, "mos_final-mult"+str(fstate.mult), mo_threshold=1e-12,frozencore=0)
+
                 #Dyson
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
 
@@ -2166,7 +2183,7 @@ end
 
             #No MO-spectrum since WFT
             self.stk_alpha=[]; self.stk_beta=[]
-        #Simplifies things. MREOM uses MRCI so let's use same logic.
+        #MREOM uses MRCI so let's use same logic (simpler)
         elif self.method =='MRCI' or self.method=='MREOM':
             print("MRCI/MREOM option active!")
             self.setup_ORCA_object()
@@ -2179,9 +2196,36 @@ end
                     #Difference densities
                     print("Calling make_diffdensities")
                     self.make_diffdensities(statetype='MRCI')
+
+                ##############################
+                # PREPARE FILES FOR WFOVERLAP
+                ##############################
                 #Prepare determinants and MOs for Wfoverlap Dyson calculations
                 self.MRCI_prepare_determinants()
-                self.prepare_mos_file()
+
+                ################
+                #INIT state: Get data from ORCA GBW-file via JSON
+                ################
+                init_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(self.stateI.gbwfile, format="json")
+                init_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(init_jsonfile)
+                totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(init_state_data_dict)
+                #Write overlap matrix to  disk
+                create_wfoverlap_AO_file(init_state_data_dict, outputfile='AO_overl')
+                #Write Init-state MOs to disk in wfoverlap format
+                create_wfoverlap_MO_file(init_state_data_dict, "mos_init", mo_threshold=1e-12,frozencore=0)
+
+                ################
+                # FINAL states
+                ################
+                #MO-files for each Finalstate multiplicity
+                for fstate in self.Finalstates:
+                    #FINAL state: Get data from ORCA GBW-file via JSON
+                    final_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(fstate.gbwfile, format="json")
+                    final_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(final_jsonfile)
+                    totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(final_state_data_dict)
+                    #Write Final-state MOs to disk in wfoverlap format
+                    create_wfoverlap_MO_file(final_state_data_dict, "mos_final-mult"+str(fstate.mult), mo_threshold=1e-12,frozencore=0)
+
                 #Dyson
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
 
