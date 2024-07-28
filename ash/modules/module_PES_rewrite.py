@@ -1677,6 +1677,7 @@ end
 
     #TODO: Fix table for SOC-MRCI
     def print_final_table(self,IPs,dysonnorms,Finalionstates,label=None):
+
         if len(IPs) != len(dysonnorms) != len(Finalionstates):
             print("IPs", IPs)
             print("dysonnorms", dysonnorms)
@@ -1875,6 +1876,7 @@ end
             print("Path {} does NOT exist !".format(self.path_wfoverlap))
             ashexit()
         print("Looping over Finalstate multiplicities")
+        all_dysonnorms=[]
         for fstate in self.Finalstates:
             print("\nRunning WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
             # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
@@ -1897,6 +1899,7 @@ end
 
             #Grabbing Dyson norms from wfovl.out
             dysonnorms=grabDysonnorms()
+            all_dysonnorms = all_dysonnorms+dysonnorms
             print(BC.OKBLUE,"\nDyson norms ({}):".format(len(dysonnorms)),BC.ENDC)
             print(dysonnorms)
             if self.MRCI_SOC is True:
@@ -1910,7 +1913,8 @@ end
                 dysonnorms=len(fstate.IPs)*[0.0]
             self.finaldysonnorms=self.finaldysonnorms+dysonnorms
         print_time_rel(module_init_time, modulename='run_dyson_calc', moduleindex=2)
-        return dysonnorms
+        # Returning all dysonnorms (both multiplicities)
+        return all_dysonnorms
 
 
     def cleanup(self):
