@@ -1961,6 +1961,9 @@ end
             print("TDDFT option is active")
             self.setup_ORCA_object()
 
+            #Currently no frozencore allowed for TDDFT
+            self.frozencore=0
+
             for geonum,fragment in enumerate(fragments):
                 print(f"\nRunning geometry {geonum+1} of {len(fragments)}")
                 frag_IPs,frag_Finalionstates = self.run_TDDFT(fragment)
