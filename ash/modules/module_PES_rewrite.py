@@ -1978,8 +1978,12 @@ end
                     final_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(fstate.gbwfile, format="json")
                     final_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(final_jsonfile)
                     totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(final_state_data_dict)
+                    print("totnumorbitals:", totnumorbitals)
+                    print("numocc_alpha:", numocc_alpha)
+                    print("numocc_beta:", numocc_beta)
+                    print("restricted:", restricted)
                     #Write Init-state MOs to disk in wfoverlap format
-                    create_wfoverlap_MO_file(init_state_data_dict, "mos_final-mult"+str(fstate.mult), mo_threshold=1e-12,frozencore=0)
+                    create_wfoverlap_MO_file(final_state_data_dict, "mos_final-mult"+str(fstate.mult), mo_threshold=1e-12,frozencore=0)
                     #mos_final = get_MO_from_gbw(fstate.gbwfile, fstate.restricted, self.frozencore,self.theory.orcadir)
                     #writestringtofile(mos_final, "mos_final-mult"+str(fstate.mult))
 
@@ -4287,6 +4291,7 @@ mocoef
                 ofile.write(l + '\n')
         #Orb occ
         print("len occupancies", len(occupancies))
+        print("occupancies:", occupancies)
         ofile.write("orbocc\n")
         ofile.write("(*)\n")
         for j in range(0, len(occupancies), 3):
