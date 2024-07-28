@@ -1966,12 +1966,23 @@ end
                 frag_IPs,frag_Finalionstates = self.run_TDDFT(fragment)
                 # MO-spectrum
                 self.mo_spectrum()
-                #For wfoverlap
-                self.prepare_mos_file()
                 #Diff density
                 if self.densities == 'SCF' or self.densities == 'All':
                     self.make_diffdensities(statetype='SCF')
                 #For wfoverlap
+                #INIT state: Get data from ORCA GBW-file via JSON
+                init_jsonfile = ash.interfaces.interface_ORCA.create_ORCA_json_file(self.stateI.gbwfile, format="json")
+                init_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(init_jsonfile)
+                totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(init_state_data_dict)
+                #Write overlap matrix to  disk
+                create_wfoverlap_AO_file(init_state_data_dict, outputfile='AO_overl')
+                #Write Init-state MOs to disk in wfoverlap format
+                create_wfoverlap_MO_file(init_state_data_dict, "mos_init", mo_threshold=1e-12,frozencore=0)
+
+                # Creating determinant-string for Initial State from orbital information
+                init_determinant_string = get_dets_from_single(totnumorbitals,
+                                                               numocc_alpha, numocc_beta, restricted, 0)
+                writestringtofile(init_determinant_string, "dets_init")
                 self.TDDFT_dets_prep()
                 #Dyson
                 frag_dysonnorms = self.run_dyson_calc(frag_IPs)
