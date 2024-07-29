@@ -26,8 +26,9 @@ class ccpyTheory:
         # MAKING SURE WE HAVE ccpy
         try:
             import ccpy
-        except ModuleNotFoundError:
+        except ModuleNotFoundError as e:
             print("Error: ccpy module is not installed. Please install ccpy")
+            print("Error message:", e)
             ashexit()
 
         #Printlevel
@@ -205,9 +206,7 @@ class ccpyTheory:
                 driver.run_leftcc(method="left_ccsd")
                 driver.run_ccp3(method="crcc23")
 
-                print("driver.deltapq:", driver.deltapq)
-                print("driver.deltapq:[0]", driver.deltapq[0])
-                print("driver.deltapq[0] D", driver.deltapq[0]["D"])
+                print("driver:", driver)
                 HOC_energy=driver.deltapq[0]["D"]
                 total_corr_energy = CCSD_corr_energy + HOC_energy
             elif 'eom' in self.method.lower():

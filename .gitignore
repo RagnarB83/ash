@@ -21,4 +21,3 @@ TODO
 ash.egg-info
 build
 .pre-commit-config.yaml
-temp_det_overlap.py
