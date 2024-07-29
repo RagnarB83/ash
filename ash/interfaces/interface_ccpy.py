@@ -205,10 +205,8 @@ class ccpyTheory:
                 driver.run_hbar(method="ccsd")
                 driver.run_leftcc(method="left_ccsd")
                 driver.run_ccp3(method="crcc23")
-
-                print("driver:", driver)
                 print(driver.__dict__)
-                #HOC_energy=driver.deltapq[0]["D"]
+                HOC_energy=driver.deltap3[0]["D"]
                 total_corr_energy = CCSD_corr_energy + HOC_energy
             elif 'eom' in self.method.lower():
                 driver.run_eomcc(method=self.method.lower(), state_index=1)
