@@ -2866,6 +2866,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", mo_coeffs=True):
 "MOCoefficients": true,
 "Basisset": true,
 "1elIntegrals": ["H","S", "T", "V", "HMO"],
+"1elPropertyIntegrals": ["dipole"],
 "1elIntegralsRel": ["H","S","T", "V"],
 "Densities": ["all"],
 "JSONFormats": ["json"]

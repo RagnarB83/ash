@@ -134,7 +134,8 @@ class ccpyTheory:
             self.frozen_core_orbs=0
 
         #Create ccpy driver object
-        from ccpy.drivers.driver import Driver, AdaptDriver
+        from ccpy.drivers.driver import Driver
+        from ccpy.drivers.adaptive import AdaptDriver
         print("self.frozen_core_orbs:",self.frozen_core_orbs)
         print("self.pyscftheoryobject.mf:", self.pyscftheoryobject.mf)
         driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
