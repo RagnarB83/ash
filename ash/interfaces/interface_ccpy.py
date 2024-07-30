@@ -63,9 +63,12 @@ class ccpyTheory:
         # CIPSI-driven methods require civecs_file (file containing CI vectors)
         self.civecs_file=civecs_file
 
-        #EOM 
+        # EOM 
         self.states=states #List of states: states=[1, 2, 3, 4, 5, 6, 7]
-        self.roots_per_irrep=roots_per_irrep
+        if roots_per_irrep is None:
+            self.roots_per_irrep={}
+        else:
+            self.roots_per_irrep=roots_per_irrep
 
         ############################
         # METHODS available
@@ -180,7 +183,7 @@ class ccpyTheory:
 
         print(BC.OKBLUE, BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
         # Checking if charge and mult has been provided
-        if charge == None or mult == None:
+        if charge is None or mult is None:
             print(BC.FAIL, f"Error. charge and mult has not been defined for {self.theorynamelabel}Theory.run method", BC.END)
             ashexit()
 
