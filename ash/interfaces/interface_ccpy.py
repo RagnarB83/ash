@@ -323,7 +323,7 @@ class ccpyTheory:
             # CR-CC methods (CR-CC(2,3) or CR-CC(2,4))
             elif self.method in self.cr_cc_methods:
                 # Calling method
-                total_corr_energy, CCSD_corr_energy, HOC_energy = self.run_CRCC(self.method)
+                total_corr_energy, CCSD_corr_energy, HOC_energy = self.run_CRCC(driver)
             elif self.method in self.cipsi_methods:
                 print("CIPSI-driven CC chosen")
                 driver.run_eccc(method="eccc2", ci_vectors_file=self.civecs_file)
