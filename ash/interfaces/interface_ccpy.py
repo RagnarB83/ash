@@ -238,6 +238,12 @@ class ccpyTheory:
 
             driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
 
+        # Set active space in driver.system before if required
+        if self.method in self.activespace_methods:
+            driver.system.set_active_space(nact_occupied=self.nact_occupied, 
+                                    nact_unoccupied=self.nact_unoccupied)
+        # CIPSI-driven CC requires T3 and T4 excitations from CI-vectors file
+
         # Some DRIVER settings
         driver.options["maximum_iterations"] = self.cc_maxiter
         driver.options["energy_convergence"] = self.cc_tol
@@ -247,11 +253,6 @@ class ccpyTheory:
         # Print driver info
         driver.system.print_info()
 
-        # Set active space in driver.system before if required
-        if self.method in self.activespace_methods:
-            driver.system.set_active_space(nact_occupied=self.nact_occupied, 
-                                    nact_unoccupied=self.nact_unoccupied)
-        # CIPSI-driven CC requires T3 and T4 excitations from CI-vectors file
         if self.method in self.cipsi_methods:
             if self.method == "eccc23":
                 from ccpy.utilities.pspace import get_pspace_from_cipsi
