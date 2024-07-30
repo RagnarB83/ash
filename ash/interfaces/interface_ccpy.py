@@ -174,6 +174,13 @@ class ccpyTheory:
 
         return total_corr_energy, CCSD_corr_energy, HOC_energy
 
+    # Natural orbitals for driver
+    def run_natorbs(self, driver, istate):
+        driver.transform_to_natorb(istate)
+        driver.run_rdm1(stateindex=stateindex)
+    # RDM1 for driver. Populates driver.rdm1
+    def run_rdm1(self, driver, stateindex=[0]):
+        driver.run_rdm1(stateindex=stateindex)
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
