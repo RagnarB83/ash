@@ -10,8 +10,8 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
-                moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, tol=1e-10, numcores=1,
-                cc_maxiter=300, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
+                moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, cc_tol=1e-8, numcores=1,
+                cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None):
 
         self.theorynamelabel="ccpy"
@@ -43,11 +43,14 @@ class ccpyTheory:
         self.fcidumpfile=fcidumpfile
 
         self.moreadfile=moreadfile
-        self.tol=tol
         self.frozencore=frozencore
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
+        
+        #ccpy options
+        self.cc_tol=cc_tol
         self.cc_maxiter=cc_maxiter #Maximum number of iterations for CC calculation
+        self.cc_amp_convergence=cc_amp_convergence
 
         # Adaptive CC(P;Q)
         self.adaptive=False #Initially set to False
@@ -128,7 +131,7 @@ class ccpyTheory:
         print("Frozencore:", self.frozencore)
         print("moreadfile:", self.moreadfile)
         print("Initial orbitals:", self.initial_orbitals)
-        print("Tolerance", self.tol)
+        print("Tolerance", self.cc_tol)
 
     # Set numcores method
     def set_numcores(self,numcores):
@@ -233,6 +236,11 @@ class ccpyTheory:
 
         # Some DRIVER settings
         driver.options["maximum_iterations"] = self.cc_maxiter
+        driver.options["energy_convergence"] = self.cc_tol
+        driver.options["amp_convergence"] = self.cc_amp_convergence
+        driver.options["maximum_iterations"] = self.cc_maxiter
+
+        #Print driver info
         driver.system.print_info()
 
         # Set active space in driver before if required
@@ -261,9 +269,9 @@ class ccpyTheory:
             print("self.percentages:", self.percentages)
             from ccpy.drivers.adaptive import AdaptDriver
             adaptdriver = AdaptDriver(
-                    driver, percentage=self.percentages,
-                    perturbative=False, two_body_approx=True,
-                    pspace_analysis=False)
+                    driver, percentage=self.percentages)
+            adaptdriver.options["energy_tolerance"]= self.cc_tol
+            adaptdriver.options["two_body_approx"] = True
             adaptdriver.run()
 
             print("CC(P) Energies:", adaptdriver.ccp_energy)
@@ -281,8 +289,6 @@ class ccpyTheory:
             CCSDt_corr_energy=0.0
             HOC_energy=0.0
             total_corr_energy=0.0
-            # driver.options["maximum_iterations"] = 1000 # 4 Sigma state requires ~661 iterations in left-CCSD
-            # driver.options["davidson_max_subspace_size"] = 50
             if self.method in self.simple_methods:
                 driver.run_cc(method=self.method)
                 total_corr_energy=driver.correlation_energy
