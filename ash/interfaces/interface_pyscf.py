@@ -17,7 +17,6 @@ import copy
 #Easier now than before. However, each run calls both prepare_run and actual_run
 #Can we skip prepare_run (creates mf etc.) and update coordinates only?
 #TODO: PE: Polarizable embedding (CPPE). Revisit
-#TODO: Support for creating mf object from FCIDUMP: https://pyscf.org/_modules/pyscf/tools/fcidump.html
 #TODO: Dirac HF/KS
 #TODO: Gradient for post-SCF methods and TDDFT
 
@@ -373,9 +372,29 @@ class PySCFTheory:
             print("MC-PDFT:", self.mcpdft)
             print("mcpdft_functional:", self.mcpdft_functional)
 
+    # Create FCIDUMP file from either mf object (provided or internal)
+    def create_fcidump_file(self, mf=None, dump_from_mos=False, mo_coeff=None, 
+                            filename="FCIDUMP", tol=1e-15):
+        import pyscf.tools.fcidump
+
+        # Dump from MOs if selected (can be any MO-coefficients)
+        if dump_from_mos is True:
+            print("Creating FCIDUMP from MOs")
+            pyscf.tools.fcidump.from_mo(self.mol,filename, mo_coeff, tol=tol)
+        else:
+            print("Creating FCIDUMP from mf object")
+            # Otherwise mf object
+            if mf is None:
+                print("No mf object provided. Using internal mf (self.mf)")
+                mf=self.mf
+
+            pyscf.tools.fcidump.from_scf(mf, filename, tol=tol)
+
+            print("Created FCIDUMP file:", filename)
+
     def determine_frozen_core(self,elems):
         print("Determining frozen core")
-        #Main elements
+        # Main elements
         FC_elems={'H':0,'He':0,'Li':0,'Be':0,'B':2,'C':2,'N':2,'O':2,'F':2,'Ne':2,
         'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
         'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,'Co':10,'Ni':10,'Cu':10,'Zn':10,

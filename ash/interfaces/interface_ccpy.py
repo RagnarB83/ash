@@ -113,8 +113,8 @@ class ccpyTheory:
             self.adaptive=True
         if self.adaptive is True and self.percentages is None:
             print("Error. Adaptive is True but no percentages provided")
-            print("Setting percentages list to: [1.0]")
-            self.percentages=[1.0]
+            print("Setting percentages list to: [0.0,1.0]")
+            self.percentages=[0.0,1.0]
         # CIPSI-driven CC
         self.civecs_file = civecs_file
         if self.method in self.cipsi_methods and self.civecs_file is None:
@@ -317,7 +317,6 @@ class ccpyTheory:
 
                 # Run active-space CCSDt calculation via general CC(P) solver
                 driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
-                print("driver dict:", driver.__dict__)
             elif self.method == "cct3":
                 driver.run_cc(method="ccsdt1")
                 driver.run_hbar(method="ccsd")
@@ -458,7 +457,6 @@ class ccpyTheory:
 
             # Total energy: Ref_energy + total_corr_energy (all corr)
             self.energy =  reference_energy + total_corr_energy
-            print("driver dict:", driver.__dict__)
             print()
             print(f"Reference energy {reference_energy} Eh")
             print(f"Total correlation energy ({self.method}) {total_corr_energy} Eh")
