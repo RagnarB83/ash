@@ -175,21 +175,21 @@ class ccpyTheory:
             numcores = self.numcores
 
         print(BC.OKBLUE, BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
-        #Checking if charge and mult has been provided
+        # Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, f"Error. charge and mult has not been defined for {self.theorynamelabel}Theory.run method", BC.END)
             ashexit()
 
         print("Job label:", label)
 
-        #Coords provided to run
+        # Coords provided to run
         if current_coords is not None:
             pass
         else:
             print("no current_coords")
             ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
                 print("No elems provided")
@@ -197,36 +197,40 @@ class ccpyTheory:
             else:
                 qm_elems = elems
 
-        #Cleanup before run.
+        # Cleanup before run.
         self.cleanup()
 
-        #Get mean-field via PYSCF or FCIDUMP
-        if self.fcidumpfile is not None:
-            driver = Driver.from_fcidump(fcidumpfile, nfrozen=self.frozen_core_orbs, charge=charge, 
-                                         rohf_canonicalization="Roothaan")
-            fcidumpfile
-        #Run PySCF to get integrals and MOs. This would probably only be an SCF
-        elif self.pyscftheoryobject is not None:
-            self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
-
-        #Check symmetry in pyscf mol object
-        if self.pyscftheoryobject.mol.symmetry is None:
-            self.pyscftheoryobject.mol.symmetry='C1'
-
-        #Get frozen-core
+        # Get frozen-core
         if self.frozencore is True:
             self.determine_frozen_core(qm_elems)
         else:
             self.frozen_core_orbs=0
-
-        #Create ccpy driver object
-        from ccpy.drivers.driver import Driver
-        from ccpy.drivers.adaptive import AdaptDriver
         print("self.frozen_core_orbs:",self.frozen_core_orbs)
-        print("self.pyscftheoryobject.mf:", self.pyscftheoryobject.mf)
-        driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
-        print("driver:",driver)
-        # Some settings
+        
+        ##########################
+        # CREATE DRIVER
+        ##########################
+        # import ccpy Driver
+        from ccpy.drivers.driver import Driver
+
+        # OPTION 1: DRIVER via FCIDUMP meanfield
+        if self.fcidumpfile is not None:
+            driver = Driver.from_fcidump(self.fcidumpfile, nfrozen=self.frozen_core_orbs, charge=charge, 
+                                         rohf_canonicalization="Roothaan")
+
+        # OPTION 2: DRIVER via pyscftheoryobject
+        # Run PySCF to get integrals and MOs. This would probably only be an SCF
+        elif self.pyscftheoryobject is not None:
+            self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
+
+            print("self.pyscftheoryobject.mf:", self.pyscftheoryobject.mf)
+            # Check symmetry in pyscf mol object
+            if self.pyscftheoryobject.mol.symmetry is None:
+                self.pyscftheoryobject.mol.symmetry='C1'
+
+            driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
+
+        # Some DRIVER settings
         driver.options["maximum_iterations"] = self.cc_maxiter
         driver.system.print_info()
 
@@ -251,8 +255,10 @@ class ccpyTheory:
         # RUN
         ######################################
         if self.adaptive is True:
+
             print("Adaptive CC(P;Q) calculation.")
             print("self.percentages:", self.percentages)
+            from ccpy.drivers.adaptive import AdaptDriver
             adaptdriver = AdaptDriver(
                     driver, percentage=self.percentages,
                     full_storage=False, energy_tolerance=self.tol,
