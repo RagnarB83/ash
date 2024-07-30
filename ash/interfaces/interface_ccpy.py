@@ -85,7 +85,8 @@ class ccpyTheory:
         # CIPSI-driven methods
         self.cipsi_methods=["eccc23", "eccc24", ""]
         # EOM methods
-        self.eom_methods=["eomccsd", "eomcc3", "eomccsdt", "eomccsdt(a)_star", "creom23", "ipeom2", "ipeom3",
+        self.eom_methods=["eomccsd", "eomcc3", "eomccsdt", "eomccsdt(a)_star", 
+                          "creom23", "ipeom2", "ipeom3",
                           "ipeomccsdta_star"]
         if self.method is None:
             print("No valid method selected")
@@ -243,12 +244,12 @@ class ccpyTheory:
         driver.options["amp_convergence"] = self.cc_amp_convergence
         driver.options["maximum_iterations"] = self.cc_maxiter
 
-        #Print driver info
+        # Print driver info
         driver.system.print_info()
 
-        # Set active space in driver before if required
+        # Set active space in driver.system before if required
         if self.method in self.activespace_methods:
-            driver.set_active_space(nact_occupied=self.nact_occupied, 
+            driver.system.set_active_space(nact_occupied=self.nact_occupied, 
                                     nact_unoccupied=self.nact_unoccupied)
         # CIPSI-driven CC requires T3 and T4 excitations from CI-vectors file
         if self.method in self.cipsi_methods:
