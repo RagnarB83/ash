@@ -9,7 +9,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 #TODO: GAMESS option once GAMESS interface available
 
 class ccpyTheory:
-    def __init__(self, pyscftheoryobject=None, fcidumpfile=None, filename='input.dat', printlevel=2, label="ccpy",
+    def __init__(self, pyscftheoryobject=None, fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, tol=1e-10, numcores=1,
                 cc_maxiter=300, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None):
@@ -50,6 +50,7 @@ class ccpyTheory:
         self.cc_maxiter=cc_maxiter #Maximum number of iterations for CC calculation
 
         # Adaptive CC(P;Q)
+        self.adaptive=False #Initially set to False
         self.percentages=percentages #What triples percentages to loop through
 
         # Active space CC methods
