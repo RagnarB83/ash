@@ -479,7 +479,9 @@ class ccpyTheory:
             print(f"Total energy {self.energy} Eh")
 
         print("ccpy is finished")
-        #Cleanup scratch stuff (big files)
+
+        self.driver=driver
+        # Cleanup scratch stuff (big files)
         self.cleanup()
 
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
