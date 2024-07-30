@@ -262,7 +262,7 @@ class ccpyTheory:
             from ccpy.drivers.adaptive import AdaptDriver
             adaptdriver = AdaptDriver(
                     driver, percentage=self.percentages,
-                    full_storage=False, energy_tolerance=self.tol,
+                    energy_tolerance=self.tol,
                     perturbative=False, two_body_approx=True,
                     pspace_analysis=False)
             adaptdriver.run()
