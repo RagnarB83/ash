@@ -431,6 +431,8 @@ class ccpyTheory:
                 if run_GS:
                     driver.run_cc(method=gsmethod)
                     driver.run_hbar(method=hbarmethod)
+                
+                GS_CC_energy =  reference_energy + total_corr_energy
                 # Run Guess
                 driver.run_guess(method=guessmethod, multiplicity=mult, 
                                  nact_occupied=self.nact_occupied, nact_unoccupied=self.nact_unoccupied,
@@ -467,6 +469,9 @@ class ccpyTheory:
             # Total energy: Ref_energy + total_corr_energy (all corr)
             self.energy =  reference_energy + total_corr_energy
             print()
+            print("-"*70)
+            print("GROUND-STATE COUPLED CLUSTER RESULT")
+            print("-"*70)
             print(f"Reference energy {reference_energy} Eh")
             print(f"Total correlation energy ({self.method}) {total_corr_energy} Eh")
             # Print special contributions if defined
@@ -488,9 +493,11 @@ class ccpyTheory:
                 print("-"*80)
                 print(" State   Type       Total Energy (Eh)        Excitation energy (eV)")
                 print("-"*80)
-                print(f" {0:3d}      (GS)        {self.energy:<13.10f}")
-                for i,EE in enumerate(excitation_energies):
-                    print(f" {i+1:3d}      (ES)        {self.energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
+                print(f" {0:3d}      (GS)        {GS_CC_energy:<13.10f}")
+                for i in range(1,):
+                    EE=excitation_energies[i]
+                    if EE is != 0.0:
+                        print(f" {i+1:3d}      (ES)        {GS_CC_energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
 
         print("ccpy is finished")
 
