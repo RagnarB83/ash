@@ -450,8 +450,9 @@ class ccpyTheory:
                 if run_GS:
                     driver.run_cc(method=gsmethod)
                     driver.run_hbar(method=hbarmethod)
-                
-                GS_CC_energy =  reference_energy + total_corr_energy
+
+                print("driver dict", driver.__dict__)
+                GS_CC_energy =  driver.system.reference_energy + total_corr_energy
                 # Run Guess
                 driver.run_guess(method=guessmethod, multiplicity=mult, 
                                  nact_occupied=self.nact_occupied, nact_unoccupied=self.nact_unoccupied,
