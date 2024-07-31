@@ -504,6 +504,7 @@ class ccpyTheory:
 
             # PRINT EOM excitations
             if self.method in self.eom_methods:
+                print(driver.__dict__)
                 # Excitation energy
                 excitation_energies = driver.vertical_excitation_energy
                 print("EOM-CC excitation energies:", excitation_energies)
@@ -513,7 +514,7 @@ class ccpyTheory:
                 print(" State   Type       Total Energy (Eh)        Excitation energy (eV)")
                 print("-"*80)
                 print(f" {0:3d}      (GS)        {GS_CC_energy:<13.10f}")
-                for i in range(1,):
+                for i in range(1,3):
                     EE=excitation_energies[i]
                     if EE is != 0.0:
                         print(f" {i+1:3d}      (ES)        {GS_CC_energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
