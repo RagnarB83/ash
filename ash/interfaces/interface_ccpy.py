@@ -13,7 +13,8 @@ class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
                 frozencore=True, cc_tol=1e-8, numcores=1,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
-                method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False):
+                method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False,
+                two_body_approx=False):
 
         self.theorynamelabel="ccpy"
         self.theorytype="QM"
@@ -57,6 +58,10 @@ class ccpyTheory:
         # Active space CC methods
         self.nact_occupied=nact_occupied
         self.nact_unoccupied=nact_unoccupied
+
+        # Two-body approximation
+        # Can be used for both ccp3 and adaptive CC(P;Q)
+        self.two_body_approx=two_body_approx
 
         # CIPSI-driven methods require civecs_file (file containing CI vectors)
         self.civecs_file=civecs_file
@@ -274,7 +279,7 @@ class ccpyTheory:
             adaptdriver = AdaptDriver(
                     driver, percentage=self.percentages)
             adaptdriver.options["energy_tolerance"]= self.cc_tol
-            adaptdriver.options["two_body_approx"] = True
+            adaptdriver.options["two_body_approx"] = self.two_body_approx
             adaptdriver.run()
 
             print("CC(P) Energies:", adaptdriver.ccp_energy)
@@ -324,7 +329,7 @@ class ccpyTheory:
                 driver.run_cc(method="ccsdt1")
                 driver.run_hbar(method="ccsd")
                 driver.run_leftcc(method="left_ccsd")
-                driver.run_ccp3(method="cct3")
+                driver.run_ccp3(method="cct3", two_body_approx=self.two_body_approx)
                 # CC(t;3)_A
                 print("CC(t;3)_A:", driver.deltap3[0]["A"])
                 # CC(t;3)_D
@@ -353,7 +358,7 @@ class ccpyTheory:
                     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
                     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
                     driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
-                    driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
+                    driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations, two_body_approx=self.two_body_approx)
 
                 CCSD_corr_energy=driver.correlation_energy
 
