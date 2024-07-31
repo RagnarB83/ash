@@ -6,7 +6,8 @@ from ash.functions.functions_parallel import check_OpenMPI
 # Interface to ccpy: https://github.com/piecuch-group/ccpy
 # Coupled cluster package in python
 
-#TODO: GAMESS option once GAMESS interface available
+# TODO: GAMESS option once GAMESS interface available
+# TODO: 
 
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
@@ -383,7 +384,9 @@ class ccpyTheory:
                 ccp3_method=None
                 ipccp3_method=None
                 run_GS=True # Will be done except CR-CC below (done differently)
+                mult_for_guess=mult
                 # IP-EOM
+                #TODO EA
                 if 'ip' in self.method:
                     # IP-EOMCCSD(2h-1p) 
                     # IP-EOMCCSD(3h-2p)
@@ -391,6 +394,7 @@ class ccpyTheory:
                     gsmethod="ccsd"
                     GS_label="CCSD" #Label to use in final printing
                     guessmethod="ipcisd" #CIS is usually the guess
+                    mult_for_guess=-1 # for IP should be like this
 
                     if '3' in self.method:
                         hbarmethod="ccsd"
@@ -456,7 +460,7 @@ class ccpyTheory:
                 total_corr_energy=driver.correlation_energy
                 GS_CC_energy =  driver.system.reference_energy + driver.correlation_energy
                 # Run Guess
-                driver.run_guess(method=guessmethod, multiplicity=mult, use_symmetry=self.EOM_guess_symmetry,
+                driver.run_guess(method=guessmethod, multiplicity=mult_for_guess, use_symmetry=self.EOM_guess_symmetry,
                                  nact_occupied=self.nact_occupied, nact_unoccupied=self.nact_unoccupied,
                                  roots_per_irrep=self.roots_per_irrep) #roots_per_irrep={"A1": 1, "B1": 1, "B2": 0, "A2": 1}
 
