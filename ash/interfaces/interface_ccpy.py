@@ -488,9 +488,9 @@ class ccpyTheory:
                 print("-"*80)
                 print(" State   Type       Total Energy (Eh)        Excitation energy (eV)")
                 print("-"*80)
-                print(f" {0:3d}      (GS)        {energy:<13.10f}")
+                print(f" {0:3d}      (GS)        {self.energy:<13.10f}")
                 for i,EE in enumerate(excitation_energies):
-                    print(f" {i+1:3d}      (ES)        {energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
+                    print(f" {i+1:3d}      (ES)        {self.energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
 
         print("ccpy is finished")
 
