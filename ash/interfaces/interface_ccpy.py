@@ -10,7 +10,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
-                moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, cc_tol=1e-8, numcores=1,
+                frozencore=True, cc_tol=1e-8, numcores=1,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None):
 
@@ -42,10 +42,7 @@ class ccpyTheory:
         self.pyscftheoryobject=pyscftheoryobject
         self.fcidumpfile=fcidumpfile
 
-        self.moreadfile=moreadfile
         self.frozencore=frozencore
-        self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
-        self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
         
         #ccpy options
         self.cc_tol=cc_tol
@@ -83,7 +80,7 @@ class ccpyTheory:
         # Adaptive methods
         self.adaptive_methods=["adaptive-cc(p;q)"]
         # CIPSI-driven methods
-        self.cipsi_methods=["eccc23", "eccc24", ""]
+        self.cipsi_methods=["eccc23", "eccc24", "cipsi-cc(p;q)"]
         # EOM methods
         self.eom_methods=["eomccsd", "eomcc3", "eomccsdt", "eomccsdt(a)_star", 
                           "creom23", "ipeom2", "ipeom3",
@@ -131,10 +128,7 @@ class ccpyTheory:
         print("PySCF object:", self.pyscftheoryobject)
         print("FCIDUMP file:", self.fcidumpfile)
         print("Num cores:", self.numcores)
-        print("Memory (MB)", self.memory)
         print("Frozencore:", self.frozencore)
-        print("moreadfile:", self.moreadfile)
-        print("Initial orbitals:", self.initial_orbitals)
         print("Tolerance", self.cc_tol)
 
     # Set numcores method
@@ -223,15 +217,16 @@ class ccpyTheory:
 
         # OPTION 1: DRIVER via FCIDUMP meanfield
         if self.fcidumpfile is not None:
+            print("FCIDUMP file provided:", self.fcidumpfile)
             driver = Driver.from_fcidump(self.fcidumpfile, nfrozen=self.frozen_core_orbs, charge=charge, 
                                          rohf_canonicalization="Roothaan")
 
         # OPTION 2: DRIVER via pyscftheoryobject
         # Run PySCF to get integrals and MOs. This would probably only be an SCF
         elif self.pyscftheoryobject is not None:
+            print("PySCFTheory object provided")
             self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
-            print("self.pyscftheoryobject.mf:", self.pyscftheoryobject.mf)
             # Check symmetry in pyscf mol object
             if self.pyscftheoryobject.mol.symmetry is None:
                 self.pyscftheoryobject.mol.symmetry='C1'
@@ -254,7 +249,7 @@ class ccpyTheory:
         driver.system.print_info()
 
         if self.method in self.cipsi_methods:
-            if self.method == "eccc23":
+            if self.method == "eccc23" or self.method == "cipsi-cc(p;q)":
                 from ccpy.utilities.pspace import get_pspace_from_cipsi
                 _, t3_excitations, _ = get_pspace_from_cipsi(self.civecs_file, driver.system, nexcit=3)
             elif self.method == "eccc24":
@@ -310,7 +305,6 @@ class ccpyTheory:
                 total_corr_energy=driver.correlation_energy
             elif self.method == "ccsdt_p":
                 from ccpy import Driver, get_active_triples_space
-                # AKA: CCSDTp
                 # Obtain the list of triples excitations corresponding to the CCSDt truncation (ground-state symmetry adapted)
                 t3_excitations = get_active_triples_space(driver.system, 
                                                           target_irrep=driver.system.reference_symmetry)
@@ -335,17 +329,31 @@ class ccpyTheory:
                 total_corr_energy, CCSD_corr_energy, HOC_energy = self.run_CRCC(driver)
             elif self.method in self.cipsi_methods:
                 print("CIPSI-driven CC chosen")
-                driver.run_eccc(method="eccc2", ci_vectors_file=self.civecs_file)
-                driver.run_hbar(method="ccsd")
+                if "ec" in self.method:
+                    # Applies to both eccc23 and eccc24
+                    print("EC method chosen")
+                    driver.run_eccc(method="eccc2", ci_vectors_file=self.civecs_file)
+                    driver.run_hbar(method="ccsd")
+                    driver.run_leftcc(method="left_ccsd")
+                    driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
+                elif self.method == "cipsi-cc(p;q)":
+                    print("CIPSI CC(P;Q) method chosen")
+                    print("Note: Only T3 excitations")
+                    driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
+                    driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
+                    driver.run_leftccp(method="left_ccsdt_p", t3_excitations=t3_excitations)
+                    driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
+
                 CCSD_corr_energy=driver.correlation_energy
-                driver.run_leftcc(method="left_ccsd")
-                driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
 
                 if self.method == "eccc24":
                     driver.run_ccp4(method="ccp4", state_index=0, t4_excitations=t4_excitations)
                     HOC_energy = driver.deltap3[0]["D"] + driver.deltap4[0]["D"]
-                else:
+                elif self.method == "eccc23":
                     HOC_energy = driver.deltap3[0]["D"]
+                elif self.method == "cipsi-cc(p;q)":
+                    HOC_energy = driver.deltap3[0]["D"]
+
                 total_corr_energy = CCSD_corr_energy + HOC_energy
             ########################
             # EXCITED-STATE CC
@@ -353,7 +361,6 @@ class ccpyTheory:
 
             #TODO: missing EOM-CCT3
             #TODO: missing Active-space IP-EOMCCSD
-
             #TODO: Grab EOM contributions
 
             elif self.method in self.eom_methods:
@@ -361,7 +368,7 @@ class ccpyTheory:
                 left_method=None
                 ccp3_method=None
                 ipccp3_method=None
-                run_GS=True
+                run_GS=True # Will be done except CR-CC below (done differently)
                 # EOM-CCSDT
                 if 'ccsdt' in self.method:
                     gsmethod="ccsdt"
@@ -448,6 +455,8 @@ class ccpyTheory:
                 if ipccp3_method is not None:
                     # Compute IPEOMCCSDT(a)* excited-state corrections
                     driver.run_ipccp3(method=ipccp3_method, state_index=self.states)
+
+
             else:
                 print("Error. Method not recognized")
                 ashexit()
@@ -468,6 +477,20 @@ class ccpyTheory:
             if HOC_energy != 0.0:
                 print(f"   HOC correlation energy {HOC_energy} Eh")
             print(f"Total energy {self.energy} Eh")
+
+            # PRINT EOM excitations
+            if self.method in self.eom_methods:
+                # Excitation energy
+                excitation_energies = driver.vertical_excitation_energy
+                print("EOM-CC excitation energies:", excitation_energies)
+                print()
+                print("List of all CC states:")
+                print("-"*80)
+                print(" State   Type       Total Energy (Eh)        Excitation energy (eV)")
+                print("-"*80)
+                print(f" {0:3d}      (GS)        {energy:<13.10f}")
+                for i,EE in enumerate(excitation_energies):
+                    print(f" {i+1:3d}      (ES)        {energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
 
         print("ccpy is finished")
 
