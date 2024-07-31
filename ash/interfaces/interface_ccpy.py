@@ -452,6 +452,8 @@ class ccpyTheory:
                     driver.run_hbar(method=hbarmethod)
 
                 print("driver dict", driver.__dict__)
+                print("driver.system.reference_energy:", driver.system.reference_energy)
+                print("total_corr_energy:", total_corr_energy)
                 GS_CC_energy =  driver.system.reference_energy + total_corr_energy
                 # Run Guess
                 driver.run_guess(method=guessmethod, multiplicity=mult, 
@@ -515,10 +517,9 @@ class ccpyTheory:
                 print(" State   Type       Total Energy (Eh)        Excitation energy (eV)")
                 print("-"*80)
                 print(f" {0:3d}      (GS)        {GS_CC_energy:<13.10f}")
-                for i in range(1,3):
+                for i in range(0,driver.guess_energy):
                     EE=excitation_energies[i]
-                    if EE != 0.0:
-                        print(f" {i+1:3d}      (ES)        {GS_CC_energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
+                    print(f" {i+1:3d}      (ES)        {GS_CC_energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
 
         print("ccpy is finished")
 
