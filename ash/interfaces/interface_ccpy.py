@@ -12,7 +12,7 @@ class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
                 frozencore=True, cc_tol=1e-8, numcores=1,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
-                method=None, percentages=None, states=None, roots_per_irrep=None):
+                method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False):
 
         self.theorynamelabel="ccpy"
         self.theorytype="QM"
@@ -66,6 +66,7 @@ class ccpyTheory:
             self.roots_per_irrep={}
         else:
             self.roots_per_irrep=roots_per_irrep
+        self.EOM_guess_symmetry=EOM_guess_symmetry
 
         ############################
         # METHODS available
@@ -455,7 +456,7 @@ class ccpyTheory:
                 total_corr_energy=driver.correlation_energy
                 GS_CC_energy =  driver.system.reference_energy + driver.correlation_energy
                 # Run Guess
-                driver.run_guess(method=guessmethod, multiplicity=mult, 
+                driver.run_guess(method=guessmethod, multiplicity=mult, use_symmetry=self.EOM_guess_symmetry,
                                  nact_occupied=self.nact_occupied, nact_unoccupied=self.nact_unoccupied,
                                  roots_per_irrep=self.roots_per_irrep) #roots_per_irrep={"A1": 1, "B1": 1, "B2": 0, "A2": 1}
 
