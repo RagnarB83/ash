@@ -263,6 +263,7 @@ class ccpyTheory:
         ######################################
         # RUN
         ######################################
+        GS_label=self.method #Label to use in final printing. Updated below
         if self.adaptive is True:
 
             print("Adaptive CC(P;Q) calculation.")
@@ -279,6 +280,8 @@ class ccpyTheory:
             self.CC_PQ_energies=adaptdriver.ccpq_energy
             self.energy = float(adaptdriver.ccpq_energy[-1])
 
+            GS_label="CC(P;Q)" #Label to use in final printing
+            
         else:
             print("Non-adaptive CC calculation.")
 
@@ -294,6 +297,7 @@ class ccpyTheory:
                 total_corr_energy=driver.correlation_energy
             # Perturbative methods: CCSD(T)
             elif self.method == "ccsd(t)":
+                GS_label="CCSD(T)" #Label to use in final printing
                 driver.run_cc(method="ccsd")
                 CCSD_corr_energy=driver.correlation_energy
                 driver.run_ccp3(method="ccsd(t)")
@@ -301,9 +305,11 @@ class ccpyTheory:
                 total_corr_energy = CCSD_corr_energy + HOC_energy
             # Active-space CC methods
             elif self.method == "ccsdt1":
+                GS_label="CCSDt" #Label to use in final printing
                 driver.run_cc(method=self.method)
                 total_corr_energy=driver.correlation_energy
             elif self.method == "ccsdt_p":
+                GS_label="CCSDt (via CC(P))" #Label to use in final printing
                 from ccpy import Driver, get_active_triples_space
                 # Obtain the list of triples excitations corresponding to the CCSDt truncation (ground-state symmetry adapted)
                 t3_excitations = get_active_triples_space(driver.system, 
@@ -312,6 +318,7 @@ class ccpyTheory:
                 # Run active-space CCSDt calculation via general CC(P) solver
                 driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
             elif self.method == "cct3":
+                GS_label="CC(t;3)" #Label to use in final printing
                 driver.run_cc(method="ccsdt1")
                 driver.run_hbar(method="ccsd")
                 driver.run_leftcc(method="left_ccsd")
@@ -327,6 +334,7 @@ class ccpyTheory:
             elif self.method in self.cr_cc_methods:
                 # Calling method
                 total_corr_energy, CCSD_corr_energy, HOC_energy = self.run_CRCC(driver)
+                GS_label="CR-CC" #Label to use in final printing
             elif self.method in self.cipsi_methods:
                 print("CIPSI-driven CC chosen")
                 if "ec" in self.method:
@@ -338,6 +346,7 @@ class ccpyTheory:
                     driver.run_ccp3(method="ccp3", state_index=0, t3_excitations=t3_excitations)
                 elif self.method == "cipsi-cc(p;q)":
                     print("CIPSI CC(P;Q) method chosen")
+                    GS_label="CIPIS-CC(P;Q)" #Label to use in final printing
                     print("Note: Only T3 excitations")
                     driver.run_ccp(method="ccsdt_p", t3_excitations=t3_excitations)
                     driver.run_hbar(method="ccsdt_p", t3_excitations=t3_excitations)
@@ -347,14 +356,18 @@ class ccpyTheory:
                 CCSD_corr_energy=driver.correlation_energy
 
                 if self.method == "eccc24":
+                    GS_label="EC-CC(2,4)" #Label to use in final printing
                     driver.run_ccp4(method="ccp4", state_index=0, t4_excitations=t4_excitations)
                     HOC_energy = driver.deltap3[0]["D"] + driver.deltap4[0]["D"]
                 elif self.method == "eccc23":
+                    GS_label="EC-CC(2,3)" #Label to use in final printing
                     HOC_energy = driver.deltap3[0]["D"]
                 elif self.method == "cipsi-cc(p;q)":
                     HOC_energy = driver.deltap3[0]["D"]
 
                 total_corr_energy = CCSD_corr_energy + HOC_energy
+            
+
             ########################
             # EXCITED-STATE CC
             ########################
@@ -375,12 +388,14 @@ class ccpyTheory:
                     hbarmethod="ccsdt"
                     guessmethod="cis" #CIS is usually the guess
                     eomrunmethod="eomccsd"
+                    GS_label="CCSDT" #Label to use in final printing
                 # IP-EOM
                 elif 'ip' in self.method:
                     # IP-EOMCCSD(2h-1p) 
                     # IP-EOMCCSD(3h-2p)
                     # IP-EOMCCSDT(a)*
                     gsmethod="ccsd"
+                    GS_label="CCSD" #Label to use in final printing
                     guessmethod="ipcisd" #CIS is usually the guess
 
                     if '3' in self.method:
@@ -402,6 +417,7 @@ class ccpyTheory:
                     run_GS=False
                     # Running GS CR_CC problem first
                     total_corr_energy, CCSD_corr_energy, HOC_energy = self.run_CRCC(self.method)
+                    GS_label="CR-CC" #Label to use in final printing
                     guessmethod="cisd"
                     eomrunmethod="eomccsd"
                     left_method="left_ccsd"
@@ -409,6 +425,7 @@ class ccpyTheory:
                 # EOM-CCSDT(a)*
                 elif 'eomccsdt(a)_star' in self.method:
                     gsmethod="ccsd"
+                    GS_label="CCSD" #Label to use in final printing
                     hbarmethod="ccsdta"
                     guessmethod="cisd"
                     eomrunmethod="eomccsd" #correct
@@ -417,12 +434,14 @@ class ccpyTheory:
                 # EOM-CCSD
                 elif 'ccsd' in self.method:
                     gsmethod="ccsd"
+                    GS_label="CCSD" #Label to use in final printing
                     hbarmethod="ccsd"
                     guessmethod="cis" #CIS is usually the guess
                     eomrunmethod="eomccsd"
                 # EOM-CC3
                 elif 'cc3' in self.method:
                     gsmethod="cc3"
+                    GS_label="CC3" #Label to use in final printing
                     hbarmethod="cc3"
                     guessmethod="cisd"
                     eomrunmethod="eomcc3"
@@ -473,7 +492,7 @@ class ccpyTheory:
             print("GROUND-STATE COUPLED CLUSTER RESULT")
             print("-"*70)
             print(f"Reference energy {reference_energy} Eh")
-            print(f"Total correlation energy ({self.method}) {total_corr_energy} Eh")
+            print(f"Total correlation energy ({GS_label}) {total_corr_energy} Eh")
             # Print special contributions if defined
             if CCSD_corr_energy != 0.0:
                 print(f"   CCSD correlation energy {CCSD_corr_energy} Eh")
