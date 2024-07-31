@@ -517,7 +517,7 @@ class ccpyTheory:
                 print(" State   Type       Total Energy (Eh)        Excitation energy (eV)")
                 print("-"*80)
                 print(f" {0:3d}      (GS)        {GS_CC_energy:<13.10f}")
-                for i in range(0,driver.guess_energy):
+                for i in range(0,len(driver.guess_energy)):
                     EE=excitation_energies[i]
                     print(f" {i+1:3d}      (ES)        {GS_CC_energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
 
