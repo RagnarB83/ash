@@ -450,7 +450,7 @@ class ccpyTheory:
                 if run_GS:
                     driver.run_cc(method=gsmethod)
                     driver.run_hbar(method=hbarmethod)
-                
+
                 # Saving GS energy
                 total_corr_energy=driver.correlation_energy
                 GS_CC_energy =  driver.system.reference_energy + driver.correlation_energy
@@ -506,7 +506,6 @@ class ccpyTheory:
 
             # PRINT EOM excitations
             if self.method in self.eom_methods:
-                print(driver.__dict__)
                 # Excitation energy
                 excitation_energies = driver.vertical_excitation_energy
                 print("EOM-CC excitation energies:", excitation_energies)
