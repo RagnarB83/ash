@@ -516,7 +516,7 @@ class ccpyTheory:
                 print(f" {0:3d}      (GS)        {GS_CC_energy:<13.10f}")
                 for i in range(1,3):
                     EE=excitation_energies[i]
-                    if EE is != 0.0:
+                    if EE != 0.0:
                         print(f" {i+1:3d}      (ES)        {GS_CC_energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
 
         print("ccpy is finished")
