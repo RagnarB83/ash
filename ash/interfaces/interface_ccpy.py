@@ -382,15 +382,8 @@ class ccpyTheory:
                 ccp3_method=None
                 ipccp3_method=None
                 run_GS=True # Will be done except CR-CC below (done differently)
-                # EOM-CCSDT
-                if 'ccsdt' in self.method:
-                    gsmethod="ccsdt"
-                    hbarmethod="ccsdt"
-                    guessmethod="cis" #CIS is usually the guess
-                    eomrunmethod="eomccsd"
-                    GS_label="CCSDT" #Label to use in final printing
                 # IP-EOM
-                elif 'ip' in self.method:
+                if 'ip' in self.method:
                     # IP-EOMCCSD(2h-1p) 
                     # IP-EOMCCSD(3h-2p)
                     # IP-EOMCCSDT(a)*
@@ -431,6 +424,13 @@ class ccpyTheory:
                     eomrunmethod="eomccsd" #correct
                     left_method="left_ccsd"
                     ccp3_method="eomccsdta_star"
+                # EOM-CCSDT
+                elif 'ccsdt' in self.method:
+                    gsmethod="ccsdt"
+                    hbarmethod="ccsdt"
+                    guessmethod="cis" #CIS is usually the guess
+                    eomrunmethod="eomccsd"
+                    GS_label="CCSDT" #Label to use in final printing
                 # EOM-CCSD
                 elif 'ccsd' in self.method:
                     gsmethod="ccsd"
