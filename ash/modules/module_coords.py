@@ -278,6 +278,7 @@ class Fragment:
             print("self.coords is not a numpy array. Something is wrong. Exiting.")
             ashexit()
         self.nuccharge = nucchargelist(self.elems)
+        self.nuc_charges = elemstonuccharges(self.elems)
         self.numatoms = len(self.coords)
         self.atomlist = list(range(0, self.numatoms))
         # Unnecessary alias ? Todo: Delete
