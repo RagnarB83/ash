@@ -139,7 +139,6 @@ class PolEmbedTheory:
                     print("x")
                     print("self.PElabel_pyframe", self.PElabel_pyframe)
                     solventPol = system.get_fragments_by_name(names=[self.PElabel_pyframe])
-                    print("here1")
                     print("solventPol:", solventPol)
                     system.add_region(name='solventpol', fragments=solventPol, use_standard_potentials=True,
                           standard_potential_model='SEP')

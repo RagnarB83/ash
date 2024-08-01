@@ -8,7 +8,8 @@ import glob
 import copy
 
 import ash.modules.module_coords
-from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, pygrep, search_list_of_lists_for_index,print_if_level
+from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, \
+    pygrep, search_list_of_lists_for_index,print_if_level, writestringtofile, check_program_location
 from ash.modules.module_singlepoint import Singlepoint
 from ash.modules.module_coords import check_charge_mult
 import ash.functions.functions_elstructure
@@ -570,6 +571,8 @@ end"""
 
             if self.printlevel >= 1:
                 print(f"ORCA converged in {numiterations} iterations")
+        else:
+            print("There was an ORCA error that was ignored by user-input")
 
 
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
@@ -623,7 +626,13 @@ end"""
             self.energy=ORCAfinalenergygrab(outfile)
             if self.printlevel >= 1:
                 print("ORCA energy:", self.energy)
+        else:
+            self.energy=ORCAfinalenergygrab(outfile)
 
+            if self.energy is None:
+                print("No energy could be found in ORCA outputfile.")
+                print("Setting energy to 0.0 and returning")
+                return 0.0
         #NMF
         if self.NMF is True:
             print("NMF option is active.")
@@ -917,11 +926,11 @@ def ORCAfinalenergygrab(file, errors='ignore'):
                     #Changing: sometimes ORCA adds info to the right of energy
                     #Energy=float(line.split()[-1])
                     Energy=float(line.split()[4])
-    if Energy == None:
+    if Energy is None:
         print(BC.FAIL,"ASH found no energy in file:", file, BC.END)
         print(BC.FAIL,"Something went wrong with ORCA run. Check ORCA outputfile:", file, BC.END)
         print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
-        ashexit()
+        return None
     return Energy
 
 
@@ -2856,7 +2865,7 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
     return f"{orcafile_basename}.json"
 
 #Using orca_2json to create JSON file from ORCA GBW file
-def create_ORCA_json_file(file, orcadir=None, format="json", mo_coeffs=True):
+def create_ORCA_json_file(file, orcadir=None, format="json", mo_coeffs=True, two_el_integrals=None):
     print("create_ORCA_json_file")
     orcadir = check_ORCA_location(orcadir)
     orcafile_basename = file.split('.')[0]
@@ -2868,6 +2877,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", mo_coeffs=True):
 "1elIntegrals": ["H","S", "T", "V", "HMO"],
 "1elPropertyIntegrals": ["dipole"],
 "1elIntegralsRel": ["H","S","T", "V"],
+"2elIntegrals": [ "MO_IJKL", "RI_IAV", "RI_IJKL"],
 "Densities": ["all"],
 "JSONFormats": ["json"]
 }
@@ -3423,3 +3433,40 @@ def natocc_print(nat_occupations,orbitals_option,nmin,nmax):
             print("-"*40)
             final_flag=True
         print(f"{index:<9} {nocc:9.4f}")
+
+
+#TODO: fix once ORCA6 bugfix is done
+# https://orcaforum.kofo.mpg.de/viewtopic.php?f=11&t=11657&p=47529&hilit=vpot#p47529
+# Either use input-file option (vpot.inp) or other
+def orca_vpot_run(gbwfile, densityfile, orcadir=None, numcores=1, input_points_string=None):
+    
+    vpotinp=f"""{numcores}                 # Number of parallel processes
+       {gbwfile}        # GBW File
+       {densityfile}      # Density
+       input_points.xyz        # Coordinates
+       vpot.out        # Output File
+"""
+    #TODO: make more flexible
+    if input_points_string is None:
+        input_points="""
+    6
+    5.0 0.0 0.0
+    -5.0 0.0  0.0
+    0.0 5.0  0.0
+    0.0-5.0  0.0
+    0.0 0.0  5.0
+    0.0 0.0 -5.0
+    """
+    else:
+        input_points=input_points_string
+    writestringtofile(vpotinp, "vpot.inp")
+    writestringtofile("input_points.xyz", input_points)
+    orcadir = check_program_location(orcadir,"orcadir", "orca_vpot")
+
+    p = sp.run([orcadir + '/orca_vpot', "vpot.inp", ], stdout=sp.PIPE)
+
+    #vpot.out
+
+    #TODO: Move to module_plotting
+    def plot_electrostatic_potential(vpotfile="vpot.out"):
+        pass

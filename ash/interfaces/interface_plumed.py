@@ -69,7 +69,6 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         with open("plumed_ash.info") as pinfo:
             for line in pinfo:
                 if 'path_to_plumed' in line:
-                    print("here")
                     print(line)
                     path_to_plumed=line.split()[-1]
                 if 'CV1_type' in line:

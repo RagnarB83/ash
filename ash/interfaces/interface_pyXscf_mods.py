@@ -40,7 +40,6 @@ def qmmm_for_scf2(method, mm_mol, platform="CPU"):
         print("platform:", platform)
         if platform == 'GPU':
             import gpu4pyscf
-            print("here")
             if isinstance(method, (gpu4pyscf.scf.hf.RHF, gpu4pyscf.scf.uhf.UHF)):
                 print("Method is GPU object")
                 # Avoid to initialize QMMM twice
