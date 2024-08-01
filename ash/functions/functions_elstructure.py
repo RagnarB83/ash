@@ -2400,14 +2400,15 @@ def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_rep
         #MS2: TODO
         #isym: 
         #orbsym
+        isym=1
         orbsymstring=','.join(str(1) for i in range(0,basis_dim))
         ms2=0 #TODO
         uhf_option_string = ""
         if scf_type == "UHF":
             uhf_option_string = "UHF=.TRUE.,"
-        header=f"""&FCI NORB={basis_dim} NELEC={num_corr_el}, MS2={ms2},
-"ORBSYM={orbsymstring}
-ISYM=0,{uhf_option_string}
+        header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
+ORBSYM={orbsymstring},
+ISYM={isym},{uhf_option_string}
 &END
 """
         if filename is None:
