@@ -2346,6 +2346,7 @@ def write_trexio_file(fragment, filename="trexio", back_end_type="text"):
     #Write charges and coordinates
     print("Writing nuclear charges and coordinates")
     trexio.write_nucleus_label(open_file, fragment.elems)
+    print("here")
     trexio.write_nucleus_coord(open_file, fragment.coords)
-
+    print("dd")
     open_file.close()
