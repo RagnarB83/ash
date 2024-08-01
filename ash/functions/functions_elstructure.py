@@ -2351,3 +2351,156 @@ def write_trexio_file(fragment, filename="trexio", back_end_type="text"):
     trexio.write_nucleus_coord(open_file, fragment.coords)
 
     open_file.close()
+
+def yoshimine_sort(a,b,c,d):
+    if a > b:
+        ab = a*(a+1)/2 + b
+    else:
+        ab = b*(b+1)/2 + a
+    if c > d:
+        cd = c*(c+1)/2 + d
+    else:
+        cd = d*(d+1)/2 + c
+    if ab > cd:
+        abcd = ab*(ab+1)/2 + cd
+    else:
+        abcd = cd*(cd+1)/2 + ab
+    return math.floor(abcd)
+
+
+
+#General function to write FCIDUMP style integral file from Numpy arrays
+# Support for different headers
+# TODO: unrestricted case
+# TODO: symmetry
+# Confirmed to work for MRCC
+def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, header_format="MRCC",
+                            num_corr_el=None, filename=None, int_threshold=1e-16, scf_type="RHF", mult=1):
+
+    if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None or num_corr_el is None:
+        print("Error: two_el_integrals, one_el_integrals, num_corr_el or nuc_repulsion_energy not provided")
+        ashexit()
+
+    print(f"Header format: {header_format} (options: FCIDUMP, MRCC)")
+    print("SCF_type:", scf_type)
+    if scf_type == 'RHF':
+        pass
+    elif scf_type == 'ROHF':
+        print("Error: ROHF not yet implemented")
+        ashexit()
+    elif scf_type == 'UHF':
+        print("Error: UHF not yet implemented")
+        ashexit()
+    basis_dim = one_el_integrals[0].size
+
+    # Header
+    if header_format == "FCIDUMP":
+        #NORB: number of basis functions
+        #NELEC: number of correlated electrons
+        #MS2: TODO
+        #isym: 
+        #orbsym
+        orbsymstring=','.join(str(1) for i in range(0,basis_dim))
+        ms2=0 #TODO
+        uhf_option_string = ""
+        if scf_type == "UHF":
+            uhf_option_string = "UHF=.TRUE.,"
+        header=f"""&FCI NORB={basis_dim} NELEC={num_corr_el}, MS2={ms2},
+"ORBSYM={orbsymstring}
+ISYM=0,{uhf_option_string}
+&END
+"""
+        if filename is None:
+            filename="FCIDUMP"
+            print("FCIDUMP option:, filename set to:", filename)
+    elif header_format == "MRCC":
+        # Note: assuming no symmetry setting 1 as irrep for each orbital
+        header = f"""    {basis_dim}    {num_corr_el}
+    {'  '.join('1' for i in range(basis_dim))}
+    150000
+    """
+        filename="fort.55"
+        print("MRCC option:, filename set to:", filename)
+
+    print("Integral threshold:", int_threshold)
+    num_integrals = two_el_integrals.shape[0]**4
+    print("num_integrals:", num_integrals)
+
+    # Integral dict
+    from collections import OrderedDict
+    int_1el_dict=OrderedDict()
+
+    # 1-electron integrals (using 0 as dummy 3rd and 4th index)
+    for m in range(0,basis_dim):
+        for n in range(m,basis_dim):
+            int_value=one_el_integrals[m,n]
+            int_1el_dict[(m,n)] = [int_value,[m+1,n+1,0,0]]
+
+    # 2-electron integrals
+    npair = basis_dim*(basis_dim+1)//2
+    print("npair:", npair)
+
+    # Open file
+    f = open(filename, 'w')
+
+    # Write header
+    f.write(header)
+
+    # Set up 2-electron integrals
+    two_el_integral_string=""
+
+    print("two_el_integrals.ndim:", two_el_integrals.ndim)
+    print("two_el_integrals.size:", two_el_integrals.size)
+    print("npair:", npair)
+    print("npair**2:", npair**2)
+
+    # Tested with pyscf : eri = ao2mo.full(theory.mol, theory.mf.mo_coeff, verbose=0)
+    if two_el_integrals.ndim == 2:
+        print("ndim 2, assuming 4-fold symmetry")
+        xint_2el_dict=OrderedDict()
+        # 4-fold symmetry
+        assert (two_el_integrals.size == npair**2)
+        ij = 0
+        for i in range(basis_dim):
+            for j in range(0, i+1):
+                kl = 0
+                for k in range(0, basis_dim):
+                    for l in range(0, k+1):
+                        if abs(two_el_integrals[ij,kl]) > int_threshold:
+                            xint_2el_dict[(i+1, j+1, k+1, l+1)] = two_el_integrals[ij,kl]
+                        kl += 1
+                ij += 1
+        # Creating string for 2-el integrals
+        for k,v in xint_2el_dict.items():
+            two_el_integral_string+=f"{v:>29.20E}{k[0]:>5}{k[1]:>5}{k[2]:>5}{k[3]:>5}\n"
+
+    elif two_el_integrals.ndim == 4:
+        print("ndim 4")
+        int_2el_dict=OrderedDict() #yos_value : [int_value,[i,j,k,l ]]  Note, switching to 1-based indexing here
+        # 2-electron integrals
+        for i in range(0,basis_dim):
+            for j in range(0,basis_dim):
+                for k in range(0,basis_dim):
+                    for l in range(0,basis_dim):
+                        yos_val = yoshimine_sort(i,j,k,l)
+                        if yos_val not in int_2el_dict:
+                            int_value=two_el_integrals[i,j,k,l]
+                            if abs(int_value) > int_threshold:
+                                int_2el_dict[yos_val] = [int_value,[i+1,j+1,k+1,l+1]]
+        # Creating string
+        for k,v in int_2el_dict.items():
+            two_el_integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+
+    # Writing 2-electron integrals to file
+    f.write(two_el_integral_string)
+
+    # Writing 1-el integrals
+    one_el_string=""
+    for k,v in int_1el_dict.items():
+        one_el_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+    f.write(one_el_string)
+
+    # Nuclear repulsion energy as last line
+    f.write(f"{nuc_repulsion_energy:>29.20E}{0:>5}{0:>5}{0:>5}{0:>5}\n")
+
+    f.close()

@@ -2865,23 +2865,49 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
     return f"{orcafile_basename}.json"
 
 #Using orca_2json to create JSON file from ORCA GBW file
-def create_ORCA_json_file(file, orcadir=None, format="json", mo_coeffs=True, two_el_integrals=None):
+def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_coeffs=True, one_el_integrals=True,
+                          two_el_integrals=False, two_el_integrals_type="PQRS", dipole_integrals=False):
     print("create_ORCA_json_file")
     orcadir = check_ORCA_location(orcadir)
     orcafile_basename = file.split('.')[0]
 
     print(f"Creating {orcafile_basename}json.conf file")
-    confstring="""{
-"MOCoefficients": true,
-"Basisset": true,
-"1elIntegrals": ["H","S", "T", "V", "HMO"],
-"1elPropertyIntegrals": ["dipole"],
-"1elIntegralsRel": ["H","S","T", "V"],
-"2elIntegrals": [ "MO_IJKL", "RI_IAV", "RI_IJKL"],
+
+    prop_1e_integrals_line=""
+    two_el_integrals_line=""
+    basis_set_line=""
+    mo_coeff_line=""
+    if basis_set is True:
+        print("Requesting printout of basis set")
+        basis_set_line="\"Basisset\": true,"
+    if dipole_integrals is True:
+        print("Requesting printout of dipole integrals")
+        prop_1e_integrals_line="\"1elPropertyIntegrals\": [\"dipole\"],"
+    if one_el_integrals is True:
+        print("Requesting printout of 1-electron integrals")
+        one_el_integrals_line="\"1elIntegrals\": [\"H\",\"S\", \"T\", \"V\", \"HMO\"],"
+    if two_el_integrals is True:
+        print("Requesting printout of 2-electron integrals")
+        if two_el_integrals_type == "PQRS":
+            print("Warning: two_el_integrals_type set to PQRS. This means all 2-electron integrals (a lot!)")
+        
+        two_el_integrals_line=f"\"2elIntegrals\": [\"MO_{two_el_integrals_type}\"],"
+    if mo_coeffs is True:
+        print("Requesting printout of MO coefficients")
+        mo_coeff_line="\"MOCoefficients\": true,"
+    print("here")
+    confstring=f"""{{
+
+{mo_coeff_line}
+{basis_set_line}
+{one_el_integrals_line}
+{prop_1e_integrals_line}
+{two_el_integrals_line}
 "Densities": ["all"],
 "JSONFormats": ["json"]
-}
+}}
 """
+
 #"JSONFormats": ["json", "bson"]
     with open(f"{orcafile_basename}.json.conf", "w") as conffile:
         conffile.write(confstring)

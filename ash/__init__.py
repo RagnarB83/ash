@@ -31,7 +31,7 @@ from .modules.module_coords import get_molecules_from_trajectory, eldict_covrad,
     angle_between_atoms, dihedral_between_atoms, pdb_to_smiles, xyz_to_pdb_with_connectivity, writepdb_with_connectivity, mol_to_pdb, sdf_to_pdb
 from .modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_system_CHARMM, getwaterconstraintslist,\
     QMregionfragexpand, QMPC_fragexpand, read_xyzfiles, Reaction, define_XH_constraints, simple_get_water_constraints, print_internal_coordinate_table,\
-    flexible_align_pdb, flexible_align_xyz, flexible_align, insert_solute_into_solvent
+    flexible_align_pdb, flexible_align_xyz, flexible_align, insert_solute_into_solvent, nuc_nuc_repulsion
 
 # Singlepoint
 import ash.modules.module_singlepoint
@@ -55,7 +55,7 @@ import ash.constants
 import ash.functions.functions_elstructure
 from .functions.functions_elstructure import read_cube, write_cube, write_cube_diff, diffdens_tool, create_cubefile_from_orbfile, diffdens_of_cubefiles,  \
     NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb, make_molden_file, \
-    diagonalize_DM_AO, diagonalize_DM, DM_AO_to_MO, DM_AO_to_MO, DM_MO_to_AO, select_space_from_occupations,select_indices_from_occupations
+    diagonalize_DM_AO, diagonalize_DM, DM_AO_to_MO, DM_AO_to_MO, DM_MO_to_AO, select_space_from_occupations,select_indices_from_occupations, ASH_write_integralfile
 
 #multiwfn interface
 import ash.interfaces.interface_multiwfn
