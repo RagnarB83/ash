@@ -3508,11 +3508,11 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
 
     #Create JSON-file
     print("Now creating JSON-file from GBW-file:", gbwfile)
-    create_ORCA_json_file(gbwfile, two_el_integrals=True)
+    jsonfile = create_ORCA_json_file(gbwfile, two_el_integrals=True)
 
     #Get data from JSON-file as dict
     print("Now reading JSON-file")
-    datadict = read_ORCA_json_file(f"{orca_basename}.json")
+    datadict = read_ORCA_json_file(jsonfile)
 
     #Get coordinates from JSON (in Angstrom) and calculate repulsion
     coords = np.array([i["Coords"] for i in datadict["Atoms"]])
