@@ -2915,7 +2915,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
         conffile.write(confstring)
 
     #Creating copy of conf-file so that orca_2json picks up abnormal name
-    shutil.copy(f"{orcafile_basename}.json.conf", )
+    #shutil.copy(f"{orcafile_basename}.json.conf", )
 
     print("Calling orca_2json to get JSON file:")
     #Note: ORCA6 changed from basename to file
