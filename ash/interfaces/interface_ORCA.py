@@ -2869,7 +2869,8 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
                           two_el_integrals=False, two_el_integrals_type="ALL", dipole_integrals=False):
     print("create_ORCA_json_file")
     orcadir = check_ORCA_location(orcadir)
-    orcafile_basename = file.split('.')[0]
+    #orcafile_basename = file.split('.')[0]
+    orcafile_basename='.'.join(file.split(".")[0:-1])
 
     print(f"Creating {orcafile_basename}json.conf file")
 
@@ -2912,6 +2913,9 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
 #"JSONFormats": ["json", "bson"]
     with open(f"{orcafile_basename}.json.conf", "w") as conffile:
         conffile.write(confstring)
+
+    #Creating copy of conf-file so that orca_2json picks up abnormal name
+    shutil.copy(f"{orcafile_basename}.json.conf", )
 
     print("Calling orca_2json to get JSON file:")
     #Note: ORCA6 changed from basename to file
