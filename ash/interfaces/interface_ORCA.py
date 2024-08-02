@@ -3544,7 +3544,7 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     print("Total num orbitals:", num_tot_orbs)
     num_occ_orbs = len(np.nonzero(occupations)[0])
     print("Total num ccupied orbitals:", num_occ_orbs)
-    num_act_el= int(sum(occupations))
+    num_act_el= int(round(sum(occupations))) #Rounding up to deal with possible non-integer occupations
     print("Number of (active) electrons:", num_act_el)
     
     #MO coefficients
