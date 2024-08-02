@@ -2915,6 +2915,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
 
     print("Calling orca_2json to get JSON file:")
     #Note: ORCA6 changed from basename to file
+    print("file:", file)
     sp.call([orcadir+'/orca_2json', file, f'-{format}'])
 
     print(f"Created file: {orcafile_basename}.json")
@@ -3509,7 +3510,7 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     #Create JSON-file
     print("Now creating JSON-file from GBW-file:", gbwfile)
     jsonfile = create_ORCA_json_file(gbwfile, two_el_integrals=True)
-
+    print("jsonfile:", jsonfile)
     #Get data from JSON-file as dict
     print("Now reading JSON-file")
     datadict = read_ORCA_json_file(jsonfile)
