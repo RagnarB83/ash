@@ -2375,22 +2375,22 @@ def yoshimine_sort(a,b,c,d):
 # TODO: symmetry
 # Confirmed to work for MRCC
 def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, header_format="MRCC",
-                            num_corr_el=None, filename=None, int_threshold=1e-16, scf_type="RHF", mult=1):
+                            num_corr_el=None, filename=None, int_threshold=1e-16, scf_type="RHF", mult=None):
 
     print("\nASH_write_integralfile")
     print()
     if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None or num_corr_el is None:
         print("Error: two_el_integrals, one_el_integrals, num_corr_el or nuc_repulsion_energy not provided")
         ashexit()
+    if mult is None:
+        print("Please provide the spin multiplicity using the mult keyword")
+        ashexit()
 
     print(f"Header format: {header_format} (options: FCIDUMP, MRCC)")
     print("filename:", filename)
     print("SCF_type:", scf_type)
-    if scf_type == 'RHF':
+    if scf_type == 'RHF' or scf_type == "ROHF":
         pass
-    elif scf_type == 'ROHF':
-        print("Error: ROHF not yet implemented")
-        ashexit()
     elif scf_type == 'UHF':
         print("Error: UHF not yet implemented")
         ashexit()
