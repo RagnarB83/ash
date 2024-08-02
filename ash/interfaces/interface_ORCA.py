@@ -2866,7 +2866,7 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
 
 #Using orca_2json to create JSON file from ORCA GBW file
 def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_coeffs=True, one_el_integrals=True,
-                          two_el_integrals=False, two_el_integrals_type="ALL", dipole_integrals=False):
+                          two_el_integrals=False, two_el_integrals_type="ALL", dipole_integrals=False, full_int_transform=False):
     print("create_ORCA_json_file")
     orcadir = check_ORCA_location(orcadir)
     #orcafile_basename = file.split('.')[0]
@@ -2878,6 +2878,10 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
     two_el_integrals_line=""
     basis_set_line=""
     mo_coeff_line=""
+    if full_int_transform is True:
+        full_transform_integrals_line="\"FullTrafo\": true,"
+    else:
+        full_transform_integrals_line="\"FullTrafo\": false,"
     if basis_set is True:
         print("Requesting printout of basis set")
         basis_set_line="\"Basisset\": true,"
@@ -2905,6 +2909,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
 {one_el_integrals_line}
 {prop_1e_integrals_line}
 {two_el_integrals_line}
+{full_transform_integrals_line}
 "Densities": ["all"],
 "JSONFormats": ["json"]
 }}
@@ -3512,13 +3517,13 @@ def orca_vpot_run(gbwfile, densityfile, orcadir=None, numcores=1, input_points_s
 # Change header_format from FCIDUMP to MRCC to get MRCC fort.55 file
 # TODO: SCF-type beyond RHF
 def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA",
-                        int_threshold=1e-16, scf_type="RHF", mult=1):
+                        int_threshold=1e-16, scf_type="RHF", mult=1, full_int_transform=False):
 
     orca_basename=gbwfile.split('.')[0]
 
     #Create JSON-file
     print("Now creating JSON-file from GBW-file:", gbwfile)
-    jsonfile = create_ORCA_json_file(gbwfile, two_el_integrals=True)
+    jsonfile = create_ORCA_json_file(gbwfile, two_el_integrals=True, full_int_transform=full_int_transform)
     print("jsonfile:", jsonfile)
     #Get data from JSON-file as dict
     print("Now reading JSON-file")
