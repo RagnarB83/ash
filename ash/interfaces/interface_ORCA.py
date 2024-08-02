@@ -2928,10 +2928,13 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
 #Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
 def read_ORCA_json_file(file):
     print("read_ORCA_json_file")
+    print("File:", file)
     # Parsing of files
     import json
 
-    orcafile_basename = file.split('.')[0]
+    orcafile_basename='.'.join(file.split(".")[0:-1])
+    #orcafile_basename = file.split('.')[0]
+    print("orcafile_basename:", orcafile_basename)
     print("Opening file")
     print()
     with open(f"{orcafile_basename}.json") as f:
