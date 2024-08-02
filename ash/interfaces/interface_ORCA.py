@@ -3515,11 +3515,60 @@ def orca_vpot_run(gbwfile, densityfile, orcadir=None, numcores=1, input_points_s
     def plot_electrostatic_potential(vpotfile="vpot.out"):
         pass
 
+#Function to check occupations 
+def check_occupations(occ):
+    occ = list(occ)
+    length = len(occ)
+    print("\ncheck_occupations function")
+    print("Checking occupations array:", occ)
+    print("Length of occupations array:", length)
+
+    #RHF
+    if (occ.count(2.0) + occ.count(0.0)) == length:
+        two_count = occ.count(2.0)
+        num_el=two_count*2
+        print("Occupation array consists only of 2.0 and 0.0 values")
+        print("This is presumably a closed-shell RHF WF")
+        print("Number of electrons:", num_el)
+        label="RHF"
+    #Fractional
+    elif any(num not in [2.0,1.0,0.0] for num in occ):
+        print("Occupation array contains fractional values")
+        num_el=sum(occ)
+        print("This is some kind of fractional-occupation WF")
+        print("Could be CASSCF, WF NOs, UNO-transformation, smeared DFT etc.")
+        print("Number of electrons:", num_el)
+        label="FRACT"
+    #ROHF
+    elif occ.count(2.0) > 0 and occ.count(1.0) > 0:
+        two_count = occ.count(2.0)
+        one_count = occ.count(1.0)
+        num_el=two_count*2+one_count
+        print("Found 1.0 and 2.0 occupations")
+        print("This is presumably an open-shell ROHF WF")
+        print("Number of electrons:", num_el)
+        label="ROHF"
+    #UHF
+    elif occ.count(2.0) == 0 and occ.count(1.0) > 0:
+        print("Found no 2.0 occupations but some 1.0 occupations")
+        one_count = occ.count(1.0)
+        num_el=one_count
+        print("This is presumably an open-shell UHF WF")
+        print("Number of electrons:", num_el)
+        label="UHF"
+    else:
+        print("unclear case")
+        label="Unknown"
+
+    return label
+
+
 # Function to create FCIDUMP file 
 # Change header_format from FCIDUMP to MRCC to get MRCC fort.55 file
 # TODO: SCF-type beyond RHF
 def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA",
-                        int_threshold=1e-16, scf_type="RHF", mult=1, full_int_transform=False):
+                        int_threshold=1e-16,  mult=1, full_int_transform=False,
+                        convert_UHF_to_ROHF=True):
 
     orca_basename=gbwfile.split('.')[0]
 
@@ -3537,20 +3586,69 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     from ash.modules.module_coords import nuc_nuc_repulsion
     nuc_repulsion = nuc_nuc_repulsion(coords, nuc_charges)
 
+    #MO coefficients (used for 1-elec integrals)
+    mos = datadict["MolecularOrbitals"]["MOs"]
+    C = np.array([m["MOCoefficients"] for m in mos])
+
     #Electrons
     occupations = np.array([m["Occupancy"] for m in datadict["MolecularOrbitals"]["MOs"]])
     print("Occupations:", occupations)
+
     num_tot_orbs = len(occupations)
     print("Total num orbitals:", num_tot_orbs)
     num_occ_orbs = len(np.nonzero(occupations)[0])
     print("Total num ccupied orbitals:", num_occ_orbs)
     num_act_el= int(round(sum(occupations))) #Rounding up to deal with possible non-integer occupations
     print("Number of (active) electrons:", num_act_el)
-    
-    #MO coefficients
-    mos = datadict["MolecularOrbitals"]["MOs"]
-    C = np.array([m["MOCoefficients"] for m in mos])
+
+    WF_assignment = check_occupations(occupations)
+    print("WF_assignment:", WF_assignment)
+    conversion=False
+    if WF_assignment == "RHF":
+        print("Occupation assignment is RHF")
+        print("This is straightforward")
+    elif WF_assignment == "ROHF":
+        print("Occupation assignment is ROHF")
+        print("This should be straightforward")
+    elif WF_assignment == "UHF":
+        print("Occupation assignment is UHF")
+        print("We currently can not handle UHF")
+        if convert_UHF_to_ROHF:
+            print("convert_UHF_to_ROHF is True")
+            print("Will hack UHF WF into ROHF")
+            print("Warning: not guaranteed to work")
+            num_act_el= int(round(sum(occupations)))
+            rohf_num_orbs= int(len(occupations)/2)
+            alpha_occupations = occupations[0:rohf_num_orbs]
+            beta_occupations = occupations[rohf_num_orbs:]
+            excess_alpha = int(sum(alpha_occupations)-sum(beta_occupations))
+            #Hacking occupations
+            new_occupations = []
+            for i in range(0,rohf_num_orbs):
+                if beta_occupations[i] == 1.0:
+                    new_occupations.append(2.0)
+                elif alpha_occupations[i] == 1.0:
+                    new_occupations.append(1.0)
+                else:
+                    new_occupations.append(0.0)
+            print("New dummy ROHF occupations:", new_occupations)
+            occupations=new_occupations
+            WF_assignment="ROHF"
+            conversion=True
+            #Now proceeding as if were ROHF
+
+            #Half of MO coefficients
+            C = C[0:rohf_num_orbs]
+    elif WF_assignment == "FRACT":
+        print("Occupation assignment is FRACT")
+        print("This could be problematic")
+        print("We will continue, however")
+        #MO coefficients
+
+
+    #Transpose MO coefficients
     MO_coeffs = np.transpose(C)
+
     #1-electron integrals
     H = np.array(datadict["H-Matrix"])
     #1-elec
@@ -3559,6 +3657,8 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
 
     # 2-electron integrals
     twoint = datadict["2elIntegrals"]
+    #print("twoint:", twoint)
+    #exit()
     mo_COUL_aa = np.array(datadict["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
     mo_EXCH_aa = np.array(datadict["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
 
@@ -3578,4 +3678,4 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     ASH_write_integralfile(two_el_integrals=two_el_tensor, one_el_integrals=one_el,
             nuc_repulsion_energy=nuc_repulsion, header_format=header_format,
                                 num_corr_el=num_act_el, filename=filename,
-                            int_threshold=int_threshold, scf_type=scf_type, mult=mult)
+                            int_threshold=int_threshold, scf_type=WF_assignment, mult=mult)
