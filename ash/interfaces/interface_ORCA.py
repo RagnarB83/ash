@@ -2878,10 +2878,12 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
     two_el_integrals_line=""
     basis_set_line=""
     mo_coeff_line=""
+    #NOTE: problems with FullTrafo (orca_2json crashes)
     if full_int_transform is True:
         full_transform_integrals_line="\"FullTrafo\": true,"
     else:
-        full_transform_integrals_line="\"FullTrafo\": false,"
+        #Needs to be empty string
+        full_transform_integrals_line=""
     if basis_set is True:
         print("Requesting printout of basis set")
         basis_set_line="\"Basisset\": true,"
