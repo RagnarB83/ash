@@ -2866,7 +2866,7 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
 
 #Using orca_2json to create JSON file from ORCA GBW file
 def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_coeffs=True, one_el_integrals=True,
-                          two_el_integrals=False, two_el_integrals_type="PQRS", dipole_integrals=False):
+                          two_el_integrals=False, two_el_integrals_type="ALL", dipole_integrals=False):
     print("create_ORCA_json_file")
     orcadir = check_ORCA_location(orcadir)
     orcafile_basename = file.split('.')[0]
@@ -2888,10 +2888,11 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
         one_el_integrals_line="\"1elIntegrals\": [\"H\",\"S\", \"T\", \"V\", \"HMO\"],"
     if two_el_integrals is True:
         print("Requesting printout of 2-electron integrals")
-        if two_el_integrals_type == "PQRS":
-            print("Warning: two_el_integrals_type set to PQRS. This means all 2-electron integrals (a lot!)")
-        
-        two_el_integrals_line=f"\"2elIntegrals\": [\"MO_{two_el_integrals_type}\"],"
+        if two_el_integrals_type == "ALL":
+            print("Warning: two_el_integrals_type set to ALL. This means all 2-electron integrals (a lot!)")
+            two_el_integrals_line=f"\"2elIntegrals\": [\"MO_PQRS\", \"MO_PRQS\"],"
+        else:
+            two_el_integrals_line=f"\"2elIntegrals\": [\"MO_{ALL}\"],"
     if mo_coeffs is True:
         print("Requesting printout of MO coefficients")
         mo_coeff_line="\"MOCoefficients\": true,"
@@ -2947,7 +2948,7 @@ def read_ORCA_json_file(file):
     print("Molecule-CoordinateUnits:", data["Molecule"]["CoordinateUnits"])
     print("Molecule-HFTyp:", data["Molecule"]["HFTyp"])
     print()
-    print("Densities found:", data["Molecule"]["Densities"])
+    #print("Densities found:", data["Molecule"]["Densities"])
     print("Dictionary keys of data", data["Molecule"].keys())
     return data["Molecule"]
 
@@ -3496,3 +3497,68 @@ def orca_vpot_run(gbwfile, densityfile, orcadir=None, numcores=1, input_points_s
     #TODO: Move to module_plotting
     def plot_electrostatic_potential(vpotfile="vpot.out"):
         pass
+
+# Function to create FCIDUMP file 
+# Change header_format from FCIDUMP to MRCC to get MRCC fort.55 file
+# TODO: SCF-type beyond RHF
+def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA",
+                        int_threshold=1e-16, scf_type="RHF", mult=1):
+
+    orca_basename=gbwfile.split('.')[0]
+
+    #Create JSON-file
+    print("Now creating JSON-file from GBW-file:", gbwfile)
+    create_ORCA_json_file(gbwfile, two_el_integrals=True)
+
+    #Get data from JSON-file as dict
+    print("Now reading JSON-file")
+    datadict = read_ORCA_json_file(f"{orca_basename}.json")
+
+    #Get coordinates from JSON (in Angstrom) and calculate repulsion
+    coords = np.array([i["Coords"] for i in datadict["Atoms"]])
+    nuc_charges = np.array([i["ElementNumber"] for i in datadict["Atoms"]])
+    from ash.modules.module_coords import nuc_nuc_repulsion
+    nuc_repulsion = nuc_nuc_repulsion(coords, nuc_charges)
+
+    #Electrons
+    occupations = np.array([m["Occupancy"] for m in datadict["MolecularOrbitals"]["MOs"]])
+    print("Occupations:", occupations)
+    num_tot_orbs = len(occupations)
+    print("Total num orbitals:", num_tot_orbs)
+    num_occ_orbs = len(np.nonzero(occupations)[0])
+    print("Total num ccupied orbitals:", num_occ_orbs)
+    num_act_el= int(sum(occupations))
+    print("Number of (active) electrons:", num_act_el)
+    
+    #MO coefficients
+    mos = datadict["MolecularOrbitals"]["MOs"]
+    C = np.array([m["MOCoefficients"] for m in mos])
+    MO_coeffs = np.transpose(C)
+    #1-electron integrals
+    H = np.array(datadict["H-Matrix"])
+    #1-elec
+    from functools import reduce
+    one_el = reduce(np.dot, (MO_coeffs.T, H, MO_coeffs))
+
+    # 2-electron integrals
+    twoint = datadict["2elIntegrals"]
+    mo_COUL_aa = np.array(datadict["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
+    mo_EXCH_aa = np.array(datadict["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
+
+    # Creating integral tensor
+    orbind=num_tot_orbs
+    two_el_tensor=np.zeros((orbind,orbind,orbind,orbind))
+
+    #Processing Coulomb
+    for i in mo_COUL_aa:
+        two_el_tensor[int(i[0]), int(i[1]), int(i[2]), int(i[3])] = i[4]
+    #Processing Exchange,  NOTE: index swap because Exchange
+    for j in mo_EXCH_aa:
+        two_el_tensor[int(j[0]), int(j[2]), int(j[1]), int(j[3])] = j[4]
+    
+    #Write file
+    from ash.functions.functions_elstructure import ASH_write_integralfile
+    ASH_write_integralfile(two_el_integrals=two_el_tensor, one_el_integrals=one_el,
+            nuc_repulsion_energy=nuc_repulsion, header_format=header_format,
+                                num_corr_el=num_act_el, filename=filename,
+                            int_threshold=int_threshold, scf_type=scf_type, mult=mult)

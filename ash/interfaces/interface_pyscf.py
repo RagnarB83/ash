@@ -24,7 +24,7 @@ class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
                   scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry='C1',
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk',
-                  noautostart=False, autostart=True,
+                  noautostart=False, autostart=True, fcidumpfile=None,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, scf_noiter=False, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   NMF=False, NMF_sigma=None, NMF_distribution='FD', stability_analysis=False,
@@ -57,7 +57,7 @@ class PySCFTheory:
         if scf_type is None:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
             ashexit()
-        if basis is None and basis_file is None:
+        if basis is None and basis_file is None and fcidumpfile is None:
             print("Error: You must either provide a basis or a basis_file keyword . Basis can a name (string) or dict (elements as keys)")
             print("basis_file should be a string of the filename containing basis set for each element, in NWChem format")
             print("Best to download basis set from https://www.basissetexchange.org/")
@@ -169,6 +169,9 @@ class PySCFTheory:
         self.noautostart=noautostart
         if autostart is False:
             self.noautostart=True
+        #FCIDUMP file as read-in option
+        self.fcidumpfile=fcidumpfile
+
 
         #CAS
         self.CAS=CAS
@@ -371,6 +374,16 @@ class PySCFTheory:
             print()
             print("MC-PDFT:", self.mcpdft)
             print("mcpdft_functional:", self.mcpdft_functional)
+
+    def read_fcidump_file(self,fcidumpfile):
+        import pyscf.tools.fcidump
+        
+        #Read FCI dump and return dictionary with integrals etc
+        #result = pyscf.tools.fcidump.read(fcidumpfile, verbose=True)
+        #print("result:", result)
+        #H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
+
+        self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=False)
 
     # Create FCIDUMP file from either mf object (provided or internal)
     def create_fcidump_file(self, mf=None, dump_from_mos=False, mo_coeff=None, 
@@ -2193,6 +2206,7 @@ class PySCFTheory:
 
     #Independent method to run SCF using previously defined mf object and possible input dm
     def run_SCF(self,mf=None, dm=None, max_cycle=None):
+        import pyscf
         if self.printlevel >= 1:
             print("\nInside run_SCF")
         module_init_time=time.time()
@@ -2230,10 +2244,11 @@ class PySCFTheory:
                 print("E_xc:", E_xc)
 
         #Setting number of orbitals as attribute of object
-        if len(self.mf.mo_occ) == 2:
-            self.num_orbs = len(self.mf.mo_occ[0]) # Unrestricted
-        else:
+        if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS) :
             self.num_orbs = len(self.mf.mo_occ) # Restricted
+        else:
+            self.num_orbs = len(self.mf.mo_occ[0]) 
+            
         if self.printlevel >= 1:
             print("Number of orbitals:", self.num_orbs)
 
@@ -2338,7 +2353,8 @@ class PySCFTheory:
         #####################
         # BASIS
         #####################
-        self.define_basis(elems=qm_elems)
+        if self.fcidumpfile is None:
+            self.define_basis(elems=qm_elems)
         self.mol.build()
         self.num_basis_functions=len(self.mol.ao_labels())
         if self.printlevel >= 1:
@@ -2351,11 +2367,17 @@ class PySCFTheory:
         #    print("Platform is GPU")
         #    self.create_mf_for_gpu() #Creates self.mf
         #else:
-        self.create_mf() #Creates self.mf
+        if self.fcidumpfile is None:
+            self.create_mf() #Creates self.mf
+        else:
+            print("FCIDUMP file read-in")
+            print("Creating mf object from FCIDUMPfile")
+            self.read_fcidump_file(self.fcidumpfile)
 
         #GHF/GKS
         if self.scf_type == 'GHF' or self.scf_type == 'GKS':
             self.set_collinear_option()
+
 
         #####################
         # RELATIVITY
@@ -2508,8 +2530,12 @@ class PySCFTheory:
                 print(f"UHF/UKS spinmult: {spinmult}\n")
             if self.printlevel >=1:
                 print("SCF Dipole moment:")
-            self.get_dipole_moment()
-
+            try:
+                self.get_dipole_moment()
+            except ValueError as e:
+                print("Problem getting dipole moment from meanfield object")
+                print("Error message:", e)
+                print("Continuing.")
             #Dispersion correction
             if self.dispersion != None:
                 if self.dispersion == "D3" or self.dispersion == "D4":
