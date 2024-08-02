@@ -2918,9 +2918,11 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
     print("file:", file)
     sp.call([orcadir+'/orca_2json', file, f'-{format}'])
 
-    print(f"Created file: {orcafile_basename}.json")
+    # This is better when filename contains multiple .
+    jsonfile='.'.join(file.split(".")[0:-1])+'.json'
+    print(f"Created file:", jsonfile)
 
-    return f"{orcafile_basename}.json"
+    return jsonfile
 
 #Parse ORCA json file
 #Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
