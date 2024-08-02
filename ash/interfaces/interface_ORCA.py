@@ -2899,7 +2899,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
             print("Warning: two_el_integrals_type set to ALL. This means all 2-electron integrals (a lot!)")
             two_el_integrals_line=f"\"2elIntegrals\": [\"MO_PQRS\", \"MO_PRQS\"],"
         else:
-            two_el_integrals_line=f"\"2elIntegrals\": [\"MO_{ALL}\"],"
+            two_el_integrals_line=f"\"2elIntegrals\": [\"MO_{two_el_integrals_type}\"],"
     if mo_coeffs is True:
         print("Requesting printout of MO coefficients")
         mo_coeff_line="\"MOCoefficients\": true,"
