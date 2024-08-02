@@ -2405,7 +2405,7 @@ def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_rep
         #orbsym
         isym=1
         orbsymstring=','.join(str(1) for i in range(0,basis_dim))
-        ms2=0 #TODO
+        ms2=mult-1 # unpaired electrons
         uhf_option_string = ""
         if scf_type == "UHF":
             uhf_option_string = "UHF=.TRUE.,"
