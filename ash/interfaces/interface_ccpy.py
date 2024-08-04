@@ -15,7 +15,7 @@ import os
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_jsonformat="json",
                  fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
-                frozencore=True, cc_tol=1e-8, numcores=1, permut=None,
+                frozencore=True, cc_tol=1e-8, numcores=1, permut=None, normal_ordered=True, sorted=True,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False,
                 two_body_approx=False):
@@ -53,6 +53,8 @@ class ccpyTheory:
         self.frozencore=frozencore
 
         self.permut=permut
+        self.normal_ordered=normal_ordered
+        self.sorted=sorted
 
         # ccpy options
         self.cc_tol=cc_tol
@@ -259,7 +261,8 @@ class ccpyTheory:
             print("Creating JSON file")
             jsonfile = create_ORCA_json_file(self.orcatheoryobject.filename+'.gbw', two_el_integrals=True, format=self.orca_jsonformat)
             print("Loading integrals from JSON file")
-            system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, permut=self.permut)
+            system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, permut=self.permut,
+                                                      normal_ordered=self.normal_ordered, dump_integrals=True, sorted=self.sorted)
             print("Deleting JSON file")
             os.remove(jsonfile)
             driver = Driver(system, hamiltonian, max_number_states=50)
@@ -691,6 +694,10 @@ def load_orca_integrals(
     system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
     print("system.frozen_energy :", system.frozen_energy )
     if dump_integrals:
+        print("Dumping integrals")
         dumpIntegralstoPGFiles(e1int, e2int, system)
+
+    print("normal_ordered:", normal_ordered)
+    print("sorted:", sorted)
 
     return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
