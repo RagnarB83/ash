@@ -618,10 +618,8 @@ def load_orca_integrals(
     print("WF_assignment:", WF_assignment)
 
     # Orbital symmetries
-    orbital_symmetries = np.array([m["OrbitalSymmetry"] for m in json_data["MolecularOrbitals"]["MOs"]])
-    orbital_symmetries = ['A1' for i in orbital_symmetries]
-    print("orbital_symmetries:", orbital_symmetries)
-    # orbital_symmetries = [x.upper() for x in symm.label_orb_symm(molecule, molecule.irrep_name, molecule.symm_orb, mo_coeff)]
+    #symm_num_to_label_dict ={} #Dict
+    orbital_symmetries = np.array([m["OrbitalSymLabel"] for m in json_data["MolecularOrbitals"]["MOs"]])
 
     # 1-electron integrals
     H = np.array(json_data["H-Matrix"])
