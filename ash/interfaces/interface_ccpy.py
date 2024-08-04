@@ -658,14 +658,18 @@ def load_orca_integrals(
     )
 
     # Perform AO-to-MO transformation
+    print("mo_coeff:", mo_coeff)
+    print("H:", H)
     e1int = np.einsum(
         "pi,pq,qj->ij", mo_coeff, H, mo_coeff, optimize=True
     )
     # put integrals into Fortran order
+    print("e1int 1:", e1int)
     e1int = np.asfortranarray(e1int)
-
-    e2int = np.asfortranarray(e2int)
-
+    print("e1int 2:", e1int)
+    print("two_el_tensor 1:", two_el_tensor)
+    e2int = np.asfortranarray(two_el_tensor)
+    print("e2int 2:", e2int)
     # Check that the HF energy calculated using the integrals matches the PySCF result
     from ccpy.interfaces.pyscf_tools import get_hf_energy
     hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")
