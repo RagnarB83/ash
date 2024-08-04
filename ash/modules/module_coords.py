@@ -105,7 +105,7 @@ class Fragment:
             print_line_with_subheader1("New ASH fragment")
         # Minimal ASH Fragment
         if self.printlevel > 0:
-            print("ASH Fragment created")
+            print("ASH Fragment creation")
         self.energy = None
         self.elems = []
         # self.coords=np.empty_like([],shape=(0,3))
@@ -221,10 +221,15 @@ class Fragment:
             xyzfile=databasepath+databasefile
             if '.xyz' not in databasefile:
                 xyzfile=databasepath+databasefile+'.xyz'
+            print("Reading XYZ-file from database:", xyzfile)
             self.label = xyzfile.split('/')[-1].split('.')[0]
-            #Always read charge/mult
-            self.read_xyzfile(xyzfile, readchargemult=True, conncalc=conncalc)
-        #If all else fails, exit
+            try:
+                self.read_xyzfile(xyzfile, readchargemult=True, conncalc=conncalc)
+            except FileNotFoundError:
+                print(f"XYZ-file {self.label}.xyz not found in database location: {databasepath}")
+                print("Files in database location:", os.listdir(databasepath))
+                exit()
+        # If all else fails, exit
         else:
             ashexit(errormessage="Fragment requires some kind of valid coordinates input!")
         # Label for fragment (string). Useful for distinguishing different fragments

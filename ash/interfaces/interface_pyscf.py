@@ -850,33 +850,75 @@ class PySCFTheory:
                 return False
             try:
                 self.chkfileobject = pyscf.scf.chkfile.load(chkfile, 'scf')
-                #TODO: Check if orbitals read are correct
-                if len(self.chkfileobject["mo_occ"]) == 2:
-                    if self.printlevel >= 1:
-                        print("Reading unrestricted orbitals from checkpointfile")
-                    #unrestricted
-                    sum_occ = sum(self.chkfileobject["mo_occ"][0]) + sum(self.chkfileobject["mo_occ"][1])
-                else:
-                    if self.printlevel >= 1:
-                        print("Reading restricted orbitals from checkpointfile")
-                    #restricted
-                    try:
-                        sum_occ = sum(self.chkfileobject.mo_occ)
-                        if self.num_electrons != sum_occ:
-                            if self.printlevel >= 1:
-                                print(f"Number of electrons in checkpointfile ({sum_occ}) does not match number of electrons in molecule ({self.num_electrons})")
-                                print("Ignoring MOs in chkfile and continuing")
-                            return False
-                    except AttributeError:
-                        if self.printlevel >= 1:
-                            print("No occupations found in chkfile. Continuing")
-
-                return True
             except TypeError:
                 if self.printlevel >= 1:
-                    print("No SCF orbitals found. Could be checkpointfile from CASSCF?")
+                    print("No SCF orbitals found in chkfile. Could be checkpointfile from CASSCF?")
                     print("Ignoring and continuing")
                 return False
+            #Check information in chkfile
+            #Check if unrestricted or restricted information
+            if len(self.chkfileobject["mo_occ"]) == 2:
+                print("Chkfile mo occ length is 2 => Unrestricted")
+                chkfile_scftype="UHF"
+            elif 2.0 in self.chkfileobject["mo_occ"]:
+                chkfile_scftype="RHF"
+            #Checking if mismatch between chkfile info and chosen scf-type
+            #TODO: In principle we could convert RKS-info from chkfile to UKS-info and vice versa
+            if chkfile_scftype is "UHF":
+                if self.scf_type == "RHF" or self.scf_type == "RKS":
+                    print("Warning: Mismatch between SCF-type in chkfile and PySCFTheory object. Ignoring chkfile")
+                    return False
+            if chkfile_scftype == "RHF":
+                if self.scf_type == "UHF" or self.scf_type == "UKS":
+                    print("Warning: Mismatch between SCF-type in chkfile and PySCFTheory object. Ignoring chkfile")
+                    return False 
+            
+            if chkfile_scftype == "UHF":
+                #UNRESTRICTED
+                if self.printlevel >= 1:
+                    print("Reading unrestricted orbitals from checkpointfile")
+                #unrestricted
+                try:
+                    sum_occ = int(sum(self.chkfileobject["mo_occ"][0]) + sum(self.chkfileobject["mo_occ"][1]))
+                    num_occ = len(self.chkfileobject["mo_occ"][0])
+                except AttributeError:
+                    if self.printlevel >= 1:
+                        print("No occupations found in chkfile. Continuing")
+                    return False
+                if num_occ != self.num_basis_functions:
+                    print(f"Number of occupations ({num_occ}) in chkfile does not match number of basis functions ({self.num_basis_functions})")
+                    print("Ignoring MOs in chkfile and continuing")
+                    return False
+                print("self.num_electrons:", self.num_electrons)
+                print("int(sum_occ):", int(sum_occ))
+                if self.num_electrons != int(sum_occ):
+                    if self.printlevel >= 1:
+                        print(f"Number of electrons in checkpointfile ({sum_occ}) does not match number of electrons in molecule ({self.num_electrons})")
+                        print("Ignoring MOs in chkfile and continuing")
+                    return False
+            else:
+                #RESTRICTED
+                if self.printlevel >= 1:
+                    print("Reading restricted orbitals from checkpointfile")
+                
+                num_occ = len(self.chkfileobject["mo_occ"])
+                try:
+                    sum_occ = int(sum(self.chkfileobject["mo_occ"]))
+                except AttributeError:
+                    if self.printlevel >= 1:
+                        print("No occupations found in chkfile. Continuing")
+                    return False
+                if num_occ != self.num_basis_functions:
+                    print(f"Number of occupations ({num_occ}) in chkfile does not match number of basis functions ({self.num_basis_functions})")
+                    print("Ignoring MOs in chkfile and continuing")
+                    return False
+                if self.num_electrons != int(sum_occ):
+                    if self.printlevel >= 1:
+                        print(f"Number of electrons in checkpointfile ({sum_occ}) does not match number of electrons in molecule ({self.num_electrons})")
+                        print("Ignoring MOs in chkfile and continuing")
+                    return False
+            return True
+
 
     def setup_guess(self):
         if self.printlevel >= 1:
@@ -903,7 +945,7 @@ class PySCFTheory:
                     print("DM shape:", self.dm[0].shape) #DM is a tuple for unrestricted
                 if self.dm[0].shape[0] != self.num_basis_functions:
                     if self.dm[0].shape[0]*2 != self.num_basis_functions:
-                        print(f"Warning: The density matrix shape {self.dm.shape} does not match number of basis functions ({self.num_basis_functions}).")
+                        print(f"Warning: The density matrix shape {self.dm[0].shape[0]} does not match number of basis functions ({self.num_basis_functions}).")
                         print("This density matrix can not be correct. Ignoring")
                         self.dm=None
                     return None
@@ -2207,6 +2249,7 @@ class PySCFTheory:
     #Independent method to run SCF using previously defined mf object and possible input dm
     def run_SCF(self,mf=None, dm=None, max_cycle=None):
         import pyscf
+        import pyscf.dft
         if self.printlevel >= 1:
             print("\nInside run_SCF")
         module_init_time=time.time()
