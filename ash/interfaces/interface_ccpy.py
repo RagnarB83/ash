@@ -668,6 +668,7 @@ def load_orca_integrals(
     e2int = np.asfortranarray(e2int)
 
     # Check that the HF energy calculated using the integrals matches the PySCF result
+    from ccpy.interfaces.pyscf_tools import get_hf_energy
     hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")
     print("hf_energy:", hf_energy)
     hf_energy += nuclear_repulsion
