@@ -2505,3 +2505,50 @@ ISYM={isym},{uhf_option_string}
     f.write(f"{nuc_repulsion_energy:>29.20E}{0:>5}{0:>5}{0:>5}{0:>5}\n")
 
     f.close()
+
+#Function to check occupations 
+def check_occupations(occ):
+    occ = list(occ)
+    length = len(occ)
+    print("\ncheck_occupations function")
+    print("Checking occupations array:", occ)
+    print("Length of occupations array:", length)
+
+    #RHF
+    if (occ.count(2.0) + occ.count(0.0)) == length:
+        two_count = occ.count(2.0)
+        num_el=two_count*2
+        print("Occupation array consists only of 2.0 and 0.0 values")
+        print("This is presumably a closed-shell RHF WF")
+        print("Number of electrons:", num_el)
+        label="RHF"
+    #Fractional
+    elif any(num not in [2.0,1.0,0.0] for num in occ):
+        print("Occupation array contains fractional values")
+        num_el=sum(occ)
+        print("This is some kind of fractional-occupation WF")
+        print("Could be CASSCF, WF NOs, UNO-transformation, smeared DFT etc.")
+        print("Number of electrons:", num_el)
+        label="FRACT"
+    #ROHF
+    elif occ.count(2.0) > 0 and occ.count(1.0) > 0:
+        two_count = occ.count(2.0)
+        one_count = occ.count(1.0)
+        num_el=two_count*2+one_count
+        print("Found 1.0 and 2.0 occupations")
+        print("This is presumably an open-shell ROHF WF")
+        print("Number of electrons:", num_el)
+        label="ROHF"
+    #UHF
+    elif occ.count(2.0) == 0 and occ.count(1.0) > 0:
+        print("Found no 2.0 occupations but some 1.0 occupations")
+        one_count = occ.count(1.0)
+        num_el=one_count
+        print("This is presumably an open-shell UHF WF")
+        print("Number of electrons:", num_el)
+        label="UHF"
+    else:
+        print("unclear case")
+        label="Unknown"
+
+    return label

@@ -2,15 +2,18 @@ import time
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 from ash.functions.functions_parallel import check_OpenMPI
+from ash.interfaces.interface_ORCA import read_ORCA_json_file, read_ORCA_bson_file
+import numpy as np
 
 # Interface to ccpy: https://github.com/piecuch-group/ccpy
 # Coupled cluster package in python
 
 # TODO: GAMESS option once GAMESS interface available
-# TODO: 
+# TODO: Change pyscftheoryobject and orcatheoryobject to theory= ?
 
 class ccpyTheory:
-    def __init__(self, pyscftheoryobject=None, fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
+    def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_jsonformat="json",
+                 fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
                 frozencore=True, cc_tol=1e-8, numcores=1,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False,
@@ -23,8 +26,8 @@ class ccpyTheory:
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         # Check for PySCFTheory object
-        if pyscftheoryobject is None and fcidumpfile is None:
-            print("Error: No pyscftheoryobject was provided and fcidumpfile is none. Either option is required")
+        if pyscftheoryobject is None and orcatheoryobject is None and fcidumpfile is None:
+            print("Error: No pyscftheoryobject or orcatheoryobject was provided and fcidumpfile is none. Either option is required")
             ashexit()
 
         # MAKING SURE WE HAVE ccpy
@@ -42,11 +45,13 @@ class ccpyTheory:
         #
         self.method=method.lower() # Lower-case name of method
         self.pyscftheoryobject=pyscftheoryobject
+        self.orcatheoryobject=orcatheoryobject
+        self.orca_jsonformat=orca_jsonformat #json or bson
         self.fcidumpfile=fcidumpfile
 
         self.frozencore=frozencore
-        
-        #ccpy options
+
+        # ccpy options
         self.cc_tol=cc_tol
         self.cc_maxiter=cc_maxiter #Maximum number of iterations for CC calculation
         self.cc_amp_convergence=cc_amp_convergence
@@ -132,7 +137,8 @@ class ccpyTheory:
 
         # Print stuff
         print("Printlevel:", self.printlevel)
-        print("PySCF object:", self.pyscftheoryobject)
+        print("PySCFTheory object:", self.pyscftheoryobject)
+        print("ORCATheory object:", self.orcatheoryobject)
         print("FCIDUMP file:", self.fcidumpfile)
         print("Num cores:", self.numcores)
         print("Frozencore:", self.frozencore)
@@ -219,7 +225,6 @@ class ccpyTheory:
         ##########################
         # CREATE DRIVER
         ##########################
-        # import ccpy Driver
         from ccpy.drivers.driver import Driver
 
         # OPTION 1: DRIVER via FCIDUMP meanfield
@@ -239,6 +244,25 @@ class ccpyTheory:
                 self.pyscftheoryobject.mol.symmetry='C1'
 
             driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
+        # OPTION 3: DRIVER via orcatheoryobject
+        # Run ORCA to get integrals and MOs. 
+        elif self.orcatheoryobject is not None:
+            print("ORCA object provided")
+            self.orcatheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
+
+            #JSON-file create
+            from ash.interfaces.interface_ORCA import create_ORCA_json_file
+            jsonfile = create_ORCA_json_file(self.orcatheoryobject.filename+'.gbw', two_el_integrals=True, format=self.orca_jsonformat)
+
+            system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs)
+
+            driver = Driver(system, hamiltonian, max_number_states=50)
+            # Check symmetry
+            #TODO
+
+            #driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
+            #driver = 
+
 
         # Set active space in driver.system before if required
         if self.method in self.activespace_methods:
@@ -539,3 +563,120 @@ class ccpyTheory:
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel}Theory run', moduleindex=2)
         return self.energy
+
+
+# Load integrals directly from ORCA json-file
+# TODO: support bson
+def load_orca_integrals(
+        jsonfile, nfrozen=0, ndelete=0,
+        num_act_holes_alpha=0, num_act_particles_alpha=0,
+        num_act_holes_beta=0, num_act_particles_beta=0,
+        use_cholesky=False, cholesky_tol=1.0e-09,
+        normal_ordered=True, dump_integrals=False, sorted=True):
+
+    # import System
+    from ccpy.models.system import System
+    from ccpy.models.integrals import getHamiltonian
+    from ccpy.utilities.dumping import dumpIntegralstoPGFiles
+    from ccpy.energy.hf_energy import calc_hf_energy, calc_hf_frozen_core_energy
+
+    if '.json' in jsonfile:
+        json_data = read_ORCA_json_file(jsonfile)
+    elif '.bson' in jsonfile:
+        json_data = read_ORCA_bson_file(jsonfile)
+    else:
+        print(f"File {jsonfile} does not have .json or .bson ending. Unknown format")
+        ashexit()
+
+    # Nuc-repulsion
+    from ash.modules.module_coords import nuc_nuc_repulsion
+    coords = np.array([i["Coords"] for i in json_data["Atoms"]])
+    nuc_charges = np.array([i["ElementNumber"] for i in json_data["Atoms"]])
+    nuclear_repulsion = nuc_nuc_repulsion(coords, nuc_charges)
+
+    # Molecule charge and spin and symmetry 
+    molecule_charge = json_data["Charge"]
+    molecule_mult = json_data["Multiplicity"]
+    pointgroup_symmetry = json_data["PointGroup"]
+
+    # MO coefficients (used for 1-elec integrals)
+    mos = json_data["MolecularOrbitals"]["MOs"]
+    mo_coeff = np.array([m["MOCoefficients"] for m in mos])
+
+    # Electrons
+    occupations = np.array([m["Occupancy"] for m in json_data["MolecularOrbitals"]["MOs"]])
+    print("Occupations:", occupations)
+    mo_energies = np.array([m["OrbitalEnergy"] for m in json_data["MolecularOrbitals"]["MOs"]])
+    norbitals = len(occupations)
+    print("Total num orbitals:", norbitals)
+    num_occ_orbs = len(np.nonzero(occupations)[0])
+    print("Total num ccupied orbitals:", num_occ_orbs)
+    nelectrons= int(round(sum(occupations))) #Rounding up to deal with possible non-integer occupations
+    print("Number of (active) electrons:", nelectrons)
+    from ash.functions.functions_elstructure import check_occupations
+    WF_assignment = check_occupations(occupations)
+    print("WF_assignment:", WF_assignment)
+
+    # Orbital symmetries
+    orbital_symmetries = np.array([m["OrbitalSymmetry"] for m in json_data["MolecularOrbitals"]["MOs"]])
+    print("orbital_symmetries:", orbital_symmetries)
+    #orbital_symmetries = [x.upper() for x in symm.label_orb_symm(molecule, molecule.irrep_name, molecule.symm_orb, mo_coeff)]
+
+    # 1-electron integrals
+    H = np.array(json_data["H-Matrix"])
+    # 1-elec
+    from functools import reduce
+    one_el = reduce(np.dot, (mo_coeff.T, H, mo_coeff))
+
+    # 2-electron integrals
+    twoint = json_data["2elIntegrals"]
+    mo_COUL_aa = np.array(json_data["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
+    mo_EXCH_aa = np.array(json_data["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
+
+    # Creating integral tensor
+    two_el_tensor=np.zeros((norbitals,norbitals,norbitals,norbitals))
+
+    # Processing Coulomb
+    for i in mo_COUL_aa:
+        two_el_tensor[int(i[0]), int(i[1]), int(i[2]), int(i[3])] = i[4]
+    # Processing Exchange,  NOTE: index swap because Exchange
+    for j in mo_EXCH_aa:
+        two_el_tensor[int(j[0]), int(j[2]), int(j[1]), int(j[3])] = j[4]
+
+
+    system = System(
+        nelectrons,
+        norbitals,
+        molecule_mult,  # PySCF mol.spin returns 2S, not S
+        nfrozen,
+        ndelete=ndelete,
+        point_group=pointgroup_symmetry,
+        orbital_symmetries = orbital_symmetries,
+        charge=molecule_charge,
+        nuclear_repulsion=nuclear_repulsion,
+        mo_energies=mo_energies,
+        mo_occupation=occupations,
+    )
+
+    # Perform AO-to-MO transformation
+    e1int = np.einsum(
+        "pi,pq,qj->ij", mo_coeff, H, mo_coeff, optimize=True
+    )
+    # put integrals into Fortran order
+    e1int = np.asfortranarray(e1int)
+
+    e2int = np.asfortranarray(e2int)
+
+    # Check that the HF energy calculated using the integrals matches the PySCF result
+    hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")
+    print("hf_energy:", hf_energy)
+    hf_energy += nuclear_repulsion
+    print("hf_energy:", hf_energy)
+
+    system.reference_energy = hf_energy
+    system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
+    print("system.frozen_energy :", system.frozen_energy )
+    if dump_integrals:
+        dumpIntegralstoPGFiles(e1int, e2int, system)
+
+    return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)

@@ -4,12 +4,14 @@ import numpy as np
 import os
 import copy
 from collections import defaultdict
+import math
 
 import ash
-from ash.functions.functions_general import BC, ashexit, print_time_rel,print_line_with_mainheader,listdiff
+from ash.functions.functions_general import BC, ashexit, print_time_rel,print_line_with_mainheader,listdiff, printdebug
 from ash.modules.module_theory import Theory
 from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
 from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB_output
+from ash.modules.module_QMMM import linkatom_force_fix
 
 
 #TODO: deal with GBW file and ORCA autostart mismatching for different regions and theory-levels
@@ -17,7 +19,7 @@ from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB
 
 class ONIOMTheory(Theory):
     def __init__(self, theory1=None, theory2=None, theories_N=None, regions_N=None, regions_chargemult=None,
-                 embedding="mechanical", full_pointcharges=None, chargemodel="CM5",
+                 embedding="mechanical", full_pointcharges=None, chargemodel="CM5", dipole_correction=False,
                  fullregion_charge=None, fullregion_mult=None, fragment=None, label=None,
                  printlevel=2, numcores=1,):
         super().__init__()
@@ -72,6 +74,8 @@ class ONIOMTheory(Theory):
         self.chargemodel=chargemodel
         # Defining pointcharges for full system
         self.full_pointcharges=full_pointcharges
+        #Dipole correction for charge-shifting
+        self.dipole_correction=dipole_correction
 
         # N-layer ONIOM
         self.fullregion_charge=fullregion_charge
@@ -134,7 +138,10 @@ class ONIOMTheory(Theory):
     def create_linkatoms(self, current_coords,region_atoms, region_elems):
         checkpoint=time.time()
         # Get linkatom coordinates
-        self.linkatoms_dict = ash.modules.module_coords.get_linkatom_positions(self.boundaryatoms,region_atoms, current_coords, region_elems)
+        #NOTE: Option to change linkatom_distance, now 1.08736
+        self.linkatoms_dict = ash.modules.module_coords.get_linkatom_positions(self.boundaryatoms,region_atoms, 
+                                                                               current_coords, region_elems,
+                                                                               linkatom_distance=1.08736)
         print("linkatoms_dict:", self.linkatoms_dict)
         if self.printlevel > 1:
             print("Adding linkatom positions to region coords")
@@ -144,28 +151,97 @@ class ONIOMTheory(Theory):
 
         print_time_rel(checkpoint, modulename='create_linkatoms', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
         return linkatoms_coords
+    def ZeroQMCharges(self, atoms):
+        print("Setting Region charges to Zero")
+        # Looping over charges and setting region atoms to zero
+        # 1. Copy charges to charges_qmregionzeroed
+        charges_qmregionzeroed=copy.copy(self.charges)
+        # 2. change charge for QM-atom
+        for i, c in enumerate(charges_qmregionzeroed):
+            # Setting QMatom charge to 0
+            if i in atoms:
+                charges_qmregionzeroed[i] = 0.0
+        # 3. Flag that this has been done
+        self.ChargesZeroed = True
 
-    def ShiftMMCharges(self):
+        return charges_qmregionzeroed
+    
+    # Create dipole charge (twice) for each MM2 atom that gets fraction of MM1 charge
+    def get_dipole_charge(self,delq,direction,mm1index,mm2index,current_coords):
+
+        # Coordinates and distance
+        mm1coords=np.array(current_coords[mm1index])
+        mm2coords=np.array(current_coords[mm2index])
+        MM_distance = ash.modules.module_coords.distance(mm1coords,mm2coords) # Distance between MM1 and MM2
+
+        SHIFT=0.15
+        # Normalize vector
+        def vnorm(p1):
+            r = math.sqrt((p1[0]*p1[0])+(p1[1]*p1[1])+(p1[2]*p1[2]))
+            v1=np.array([p1[0] / r, p1[1] / r, p1[2] /r])
+            return v1
+        diffvector = mm2coords-mm1coords
+        normdiffvector = vnorm(diffvector)
+
+        # Dipole
+        d = delq*2.5
+        # Charge (abs value)
+        q0 = 0.5 * d / SHIFT
+        # Actual shift
+        shift = direction * SHIFT * ( MM_distance / 2.5 )
+        # Position
+        pos = mm2coords+np.array((shift*normdiffvector))
+        # Returning charge with sign based on direction and position
+        # Return coords as regular list
+        return -q0*direction,list(pos)
+
+    def SetDipoleCharges(self,current_coords):
+        checkpoint=time.time()
+        if self.printlevel > 1:
+            print("Adding extra charges to preserve dipole moment for charge-shifting")
+            print("MMboundarydict:", self.MMboundarydict)
+        # Adding 2 dipole pointcharges for each MM2 atom
+        dipole_charges = []
+        dipole_coords = []
+
+
+        for MM1,MMx in self.MMboundarydict.items():
+            # Getting original MM1 charge (before set to 0)
+            MM1charge = self.charges[MM1]
+            MM1charge_fract=MM1charge/len(MMx)
+
+            for MM in MMx:
+                q_d1, pos_d1 = self.get_dipole_charge(MM1charge_fract,1,MM1,MM,current_coords)
+                q_d2, pos_d2 = self.get_dipole_charge(MM1charge_fract,-1,MM1,MM,current_coords)
+                dipole_charges.append(q_d1)
+                dipole_charges.append(q_d2)
+                dipole_coords.append(pos_d1)
+                dipole_coords.append(pos_d2)
+        print_time_rel(checkpoint, modulename='SetDipoleCharges', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
+        return dipole_charges, dipole_coords
+    def ShiftMMCharges(self, charges_qmregionzeroed):
         if self.printlevel > 1:
             print("new. Shifting MM charges at ONIOM boundary.")
         # Convert lists to NumPy arrays for faster computations
-        self.pointcharges = np.array(self.charges_qmregionzeroed)
-        self.charges=np.array(self.charges)
+        pointcharges = np.array(charges_qmregionzeroed)
+        print("here")
+        print("self.pointcharges:", pointcharges)
+        self.charges = np.array(self.charges)
 
         # Extract charges for MM boundary atoms
         MM1_charges = self.charges[self.MMboundary_indices]
         # Set charges of MM boundary atoms to 0
-        self.pointcharges[self.MMboundary_indices] = 0.0
+        pointcharges[self.MMboundary_indices] = 0.0
 
         # Calculate charge fractions to distribute
         MM1charge_fract = MM1_charges / self.MMboundary_counts
 
         # Distribute charge fractions to neighboring MM atoms
         for indices, fract in zip(self.MMboundarydict.values(), MM1charge_fract):
-            self.pointcharges[[indices]] += fract
+            pointcharges[[indices]] += fract
 
         self.chargeshifting_done=True
-        return
+        return pointcharges
 
     # From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
     def get_MMboundary(self,scale,tol):
@@ -186,6 +262,42 @@ class ONIOMTheory(Theory):
         print("")
         print("MM boundary (MM1:MMx pairs):", self.MMboundarydict)
         print_time_rel(timeA, modulename="get_MMboundary")
+
+    def linkatom_force_projection(self,regiongradient,fullgradient,fullcoords,regionatoms,regioncoords):
+        # LINKATOM FORCE PROJECTION
+        # if self.linkatoms is True and Grad is True:
+        for pair in sorted(self.linkatoms_dict.keys()):
+            print("pair: ", pair)
+            # Grabbing linkatom data
+            linkatomindex=self.linkatom_indices.pop(0)
+            print("linkatomindex:", linkatomindex)
+            print("regiongradient:", regiongradient)
+            Lgrad=regiongradient[linkatomindex]
+            print("here")
+            Lcoord=self.linkatoms_dict[pair]
+            print("Lcoord:", Lcoord)
+            # Grabbing QMatom info
+            fullatomindex_qm=pair[0]
+            print("fullatomindex_qm:", fullatomindex_qm)
+            print("regionatoms:", regionatoms)
+            regionatomindex=regionatoms.index(fullatomindex_qm)
+            print("regionatomindex:", regionatomindex)
+            Qcoord=regioncoords[regionatomindex]
+            Qgrad=fullgradient[fullatomindex_qm]
+            # Grabbing MMatom info
+            fullatomindex_mm=pair[1]
+            Mcoord=fullcoords[fullatomindex_mm]
+            Mgrad=fullgradient[fullatomindex_mm]
+
+            # Now grabbed all components, calculating new projected gradient on QM atom and MM atom
+            newQgrad,newMgrad = linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
+            print("newQgrad:", newQgrad)
+            print("newMgrad:", newMgrad)
+            # Updating full QM_PC_gradient (used to be QM/MM gradient)
+            fullgradient[fullatomindex_qm] = newQgrad
+            fullgradient[fullatomindex_mm] = newMgrad
+
+            return fullgradient
 
     def run(self, current_coords=None, Grad=False, elems=None, charge=None, mult=None, label=None, numcores=None):
 
@@ -219,7 +331,11 @@ class ONIOMTheory(Theory):
             # Should probably do this in init instead though
             if isinstance(ll_theory, ash.ORCATheory):
                 print(f"Theory is ORCATheory. Using {self.chargemodel} charge model")
-                ll_theory.extraline+="\n! hirshfeld "
+                if self.chargemodel == "CM5" or self.chargemodel == "Hirshfeld":
+                    ll_theory.extraline+="\n! hirshfeld "
+                else:
+                    print("Unknown charge model")
+                    ashexit()
             elif isinstance(ll_theory, ash.xTBTheory):
                  print(f"Theory is xTBTheory. Using default xtb charge model")
             else:
@@ -229,19 +345,19 @@ class ONIOMTheory(Theory):
         ###############################################
         # RUN FULL REGION
         ###############################################
-        #Copying theory object for full-region to avoid interference with other regions
+        # Copying theory object for full-region to avoid interference with other regions
         ll_theory_full = copy.deepcopy(ll_theory)
-        #Changing filename here for GBW-file creation
-        label="LL_full"
+        # Changing filename here for GBW-file creation
+        label = "LL_full"
         ll_theory_full.filename = f"{label}"
-        if Grad:
-            e_LL_full, g_LL_full = ll_theory_full.run(current_coords=full_coords,
-                                                    elems=full_elems, Grad=Grad, numcores=numcores,
-                                                    label=label, charge=self.fullregion_charge, mult=self.fullregion_mult)
-        else:
-            e_LL_full = ll_theory_full.run(current_coords=full_coords,
+        # RUN FULL
+        res_full = ll_theory_full.run(current_coords=full_coords,
                                     elems=full_elems, Grad=Grad, numcores=numcores,
                                     label=label, charge=self.fullregion_charge, mult=self.fullregion_mult)
+        if Grad:
+            e_LL_full,g_LL_full = res_full
+        else:
+            e_LL_full = res_full
 
         # Grabbing atom charges from ORCA output
         # TODO: Remove theory-specific code
@@ -251,13 +367,19 @@ class ONIOMTheory(Theory):
                 self.full_pointcharges = grabatomcharges_ORCA(self.chargemodel,f"{ll_theory_full.filename}.out")
             elif isinstance(ll_theory_full, ash.xTBTheory):
                 print(f"{ll_theory_full.filename}.out")
-                #Note: format issue
-                #self.full_pointcharges = grabatomcharges_xTB_output(ll_theory.filename+'.out', chargemodel=self.chargemodel)
+                # Note: format issue
+                # self.full_pointcharges = grabatomcharges_xTB_output(ll_theory.filename+'.out', chargemodel=self.chargemodel)
                 self.full_pointcharges = grabatomcharges_xTB()
-                #Peptide example using charges as ORCA does it
-                #self.full_pointcharges = [-0.14285028,  0.06521348,  0.05413019,  0.05573540,  0.27118983, -0.46028381, -0.18504079,  0.21696679, -0.04008202,  0.07878930,  0.04626556,  0.03996635, -0.14694734,  0.04354141,  0.07669187,  0.07252365,  0.27177521, -0.45820150, -0.16872126,  0.16697404, -0.04781068,  0.08857382,  0.05067241,  0.05092835]
+                # Peptide example using charges as ORCA does it
+                # self.full_pointcharges = [-0.14285028,  0.06521348,  0.05413019,  0.05573540,  0.27118983, -0.46028381, -0.18504079,  0.21696679, -0.04008202,  0.07878930,  0.04626556,  0.03996635, -0.14694734,  0.04354141,  0.07669187,  0.07252365,  0.27177521, -0.45820150, -0.16872126,  0.16697404, -0.04781068,  0.08857382,  0.05067241,  0.05092835]
             print("self.full_pointcharges:", self.full_pointcharges)
             print(len(self.full_pointcharges))
+
+        if self.embedding == "Elstat":
+            # Defining charges for full system
+            self.charges=self.full_pointcharges
+            print("Num full system charges:", len(self.charges))
+            print("Full system charges:", self.charges)
 
         E_dict[(num_theories-1,-1)] = e_LL_full
         if Grad:
@@ -265,6 +387,8 @@ class ONIOMTheory(Theory):
 
         # LOOPING OVER OTHER THEORY-REGION COMBOS
         for j,region in enumerate(self.regions_N):
+            print("j:",j)
+            print("region:", region)
             # Skipping last region
             if j == len(self.regions_N)-1:
                 print("Last region always skipped")
@@ -282,6 +406,8 @@ class ONIOMTheory(Theory):
                 # Taking coordinates for region
                 r_coords = np.take(current_coords,region,axis=0)
                 r_elems = [elems[x] for x in region]
+
+                other_elems = listdiff(full_elems, r_elems)
 
                 #############
                 # Linkatoms
@@ -312,33 +438,69 @@ class ONIOMTheory(Theory):
                     if self.printlevel > 1:
                         print("Doing charge-shifting...")
 
-                    # Do Charge-shifting. MM1 charge distributed to MM2 atoms
-                    self.ShiftMMCharges() # Creates self.pointcharges
+                    # Zero region charges
+                    # This will set self.charges_qmregionzeroed
+                    charges_qmregionzeroed = self.ZeroQMCharges(region)
+                    print("Num charges_qmregionzeroedcharges:", len(charges_qmregionzeroed))
+                    print("charges_qmregionzeroedcharges:", charges_qmregionzeroed)
 
+                    # Do Charge-shifting. MM1 charge distributed to MM2 atoms
+                    pointcharges = self.ShiftMMCharges(charges_qmregionzeroed) # Creates pointcharges
+                    print("Num pointcharges after shift:", len(pointcharges))
+                    print("Pointcharges after shift:", pointcharges)
+
+                    pointcharges=[self.full_pointcharges[x] for x in PCregion]
+                    print("Region Num pointcharges after shift:", len(pointcharges))
+                    print("Region Pointcharges after shift:", pointcharges)
 
                     pointchargecoords = np.take(current_coords,PCregion,axis=0)
+                    print("Num pointchargecoords:", len(pointchargecoords))
+                    print("pointchargecoords:", pointchargecoords)
                     # Pointcharges
                     if self.full_pointcharges is None:
                         print("Warning: Pointcharges for full system not available")
                         ashexit()
-                    pointcharges=[self.full_pointcharges[x] for x in PCregion]
 
+                    if self.dipole_correction is True:
+                        print("Dipole correction is on. Adding dipole charges")
+                        dipole_charges, dipole_coords = self.SetDipoleCharges(current_coords) # Creates
 
+                        # Adding dipole charge coords to MM coords (given to QM code) and defining pointchargecoords
+                        if self.printlevel > 1:
+                            print("Adding {} dipole charges to PC environment".format(len(dipole_charges)))
 
-                    #TODO: dipole correction
+                        # Adding dipole charges to MM charges list (given to QM code)
+                        pointcharges = list(pointcharges)+list(dipole_charges)
+                        print("Num pointcharges after dipole addition", len(pointcharges))
+                        print("pointcharges after dipole addition:", pointcharges)
+
+                        pointchargecoords = np.append(pointchargecoords, np.array(dipole_coords), axis=0)
+                        print("Num pointchargecoords after dipole addition", len(pointchargecoords))
+                        print("pointchargecoords after dipole addition:", pointchargecoords)
+                        # Using element H for dipole charges. Only matters for CP2K GEEP
+                        print("other_elems:", other_elems)
+                        mm_elems_for_qmprogram = other_elems + ['H']*len(dipole_charges)
+
+                        if self.printlevel > 1: print("Number of pointcharges after dipole addition: ", len(pointcharges))
+
+                    else:
+                        print("Dipole correction is off. Not adding any dipole charges")
+                        mm_elems_for_qmprogram = other_elems
+                        if self.printlevel > 1: print("Number of pointcharges: ", len(pointcharges))
 
                 else:
                     PC=False
                     pointchargecoords=None
                     pointcharges=None
+                    mm_elems_for_qmprogram = other_elems
 
                 # Running
-                #Changing filename here for GBW-file creation
+                # Changing filename here for GBW-file creation
                 label=f"{self.theorylabels[i]}_region{j+1}"
                 theory.filename = f"{label}"
                 print(f"Running Theory {i+1} ({theory.theorynamelabel}) on Region {j+1} ({len(region_elems_final)} atoms)")
                 res = theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=numcores,
-                                                PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges,
+                                                PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges, mm_elems=mm_elems_for_qmprogram,
                                                 label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
                 if PC and Grad:
                     e,g,pg = res
@@ -363,6 +525,13 @@ class ONIOMTheory(Theory):
                     self.gradient[at] += g
                 for at, g in zip(self.regions_N[0], G_dict[(1,0)]):
                     self.gradient[at] -= g
+
+                combogradient = G_dict[(0,0)] -G_dict[(1,0)]
+                # Linkatom force projection
+                if self.linkatoms is True:
+                    print("Linkatom force projection now")
+                    self.gradient = self.linkatom_force_projection(combogradient,self.gradient,
+                                                   current_coords,self.regions_N[0],region_coords_final)
 
         # 3-layer ONIOM Energy and Gradient expression
         elif len(self.theories_N) == 3:
