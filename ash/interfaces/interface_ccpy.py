@@ -675,6 +675,10 @@ def load_orca_integrals(
     print("permut:", permut)
     e2int = np.transpose(two_el_tensor,permut)
     print("two_el_tensor transposed:", e2int)
+
+    print("MANUAL def")
+    e2int=np.array([[[[0.67475593,0.0],[0.0, 0.18121046]], [[0.0, 0.6637114],[0.18121046,0.0]]], [[[0.0,0.18121046],[0.6637114,0.0]],[[0.18121046,0.0],[0.0,0.6976515]]]])
+    print("e2int manual:", e2int)
     e2int = np.asfortranarray(two_el_tensor)
     # Check that the HF energy calculated using the integrals matches the PySCF result
     from ccpy.interfaces.pyscf_tools import get_hf_energy
