@@ -606,7 +606,7 @@ def load_orca_integrals(
     # MO coefficients (used for 1-elec integrals)
     mos = json_data["MolecularOrbitals"]["MOs"]
     mo_coeff = np.array([m["MOCoefficients"] for m in mos])
-
+    mo_coeff = np.transpose(mo_coeff)
     # Electrons
     occupations = np.array([m["Occupancy"] for m in json_data["MolecularOrbitals"]["MOs"]])
     print("Occupations:", occupations)
