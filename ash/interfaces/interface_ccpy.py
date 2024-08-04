@@ -4,6 +4,7 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 from ash.functions.functions_parallel import check_OpenMPI
 from ash.interfaces.interface_ORCA import read_ORCA_json_file, read_ORCA_bson_file
 import numpy as np
+import os
 
 # Interface to ccpy: https://github.com/piecuch-group/ccpy
 # Coupled cluster package in python
@@ -248,14 +249,17 @@ class ccpyTheory:
         # Run ORCA to get integrals and MOs. 
         elif self.orcatheoryobject is not None:
             print("ORCA object provided")
+            print("Now running ORCATheory object")
             self.orcatheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
-            #JSON-file create
+            # JSON-file create
             from ash.interfaces.interface_ORCA import create_ORCA_json_file
+            print("Creating JSON file")
             jsonfile = create_ORCA_json_file(self.orcatheoryobject.filename+'.gbw', two_el_integrals=True, format=self.orca_jsonformat)
-
+            print("Loading integrals from JSON file")
             system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs)
-
+            print("Deleting JSON file")
+            os.remove(jsonfile)
             driver = Driver(system, hamiltonian, max_number_states=50)
             # Check symmetry
             #TODO
@@ -626,7 +630,7 @@ def load_orca_integrals(
     # 1-elec
     from functools import reduce
     one_el = reduce(np.dot, (mo_coeff.T, H, mo_coeff))
-
+    print("one_el:", one_el)
     # 2-electron integrals
     twoint = json_data["2elIntegrals"]
     mo_COUL_aa = np.array(json_data["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
