@@ -573,9 +573,6 @@ class ccpyTheory:
 # TODO: support bson
 def load_orca_integrals(
         jsonfile, nfrozen=0, ndelete=0,
-        num_act_holes_alpha=0, num_act_particles_alpha=0,
-        num_act_holes_beta=0, num_act_particles_beta=0,
-        use_cholesky=False, cholesky_tol=1.0e-09,
         normal_ordered=True, dump_integrals=False, sorted=True):
 
     # import System
@@ -672,6 +669,7 @@ def load_orca_integrals(
     e1int = np.asfortranarray(e1int)
     print("e1int 2:", e1int)
     print("two_el_tensor 1:", two_el_tensor)
+    print("two_el_tensor transposed:", np.transpose(two_el_tensor))
     e2int = np.asfortranarray(two_el_tensor)
     print("e2int 2:", e2int)
     # Check that the HF energy calculated using the integrals matches the PySCF result
