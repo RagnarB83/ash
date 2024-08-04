@@ -15,7 +15,7 @@ import os
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_jsonformat="json",
                  fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
-                frozencore=True, cc_tol=1e-8, numcores=1,
+                frozencore=True, cc_tol=1e-8, numcores=1, permut=None,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False,
                 two_body_approx=False):
@@ -51,6 +51,8 @@ class ccpyTheory:
         self.fcidumpfile=fcidumpfile
 
         self.frozencore=frozencore
+
+        self.permut=permut
 
         # ccpy options
         self.cc_tol=cc_tol
@@ -257,7 +259,7 @@ class ccpyTheory:
             print("Creating JSON file")
             jsonfile = create_ORCA_json_file(self.orcatheoryobject.filename+'.gbw', two_el_integrals=True, format=self.orca_jsonformat)
             print("Loading integrals from JSON file")
-            system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs)
+            system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, permut=self.permut)
             print("Deleting JSON file")
             os.remove(jsonfile)
             driver = Driver(system, hamiltonian, max_number_states=50)
@@ -572,7 +574,7 @@ class ccpyTheory:
 # Load integrals directly from ORCA json-file
 # TODO: support bson
 def load_orca_integrals(
-        jsonfile, nfrozen=0, ndelete=0,
+        jsonfile, nfrozen=0, ndelete=0, permut=(0,1,2,3),
         normal_ordered=True, dump_integrals=False, sorted=True):
 
     # import System
@@ -669,9 +671,11 @@ def load_orca_integrals(
     e1int = np.asfortranarray(e1int)
     print("e1int 2:", e1int)
     print("two_el_tensor 1:", two_el_tensor)
-    print("two_el_tensor transposed:", np.transpose(two_el_tensor, (0, 2, 1, 3)))
+    print()
+    print("permut:", permut)
+    e2int = np.transpose(two_el_tensor,permut)
+    print("two_el_tensor transposed:", e2int)
     e2int = np.asfortranarray(two_el_tensor)
-    print("e2int 2:", e2int)
     # Check that the HF energy calculated using the integrals matches the PySCF result
     from ccpy.interfaces.pyscf_tools import get_hf_energy
     hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")
