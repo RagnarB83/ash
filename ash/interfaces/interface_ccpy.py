@@ -669,7 +669,7 @@ def load_orca_integrals(
     e1int = np.asfortranarray(e1int)
     print("e1int 2:", e1int)
     print("two_el_tensor 1:", two_el_tensor)
-    print("two_el_tensor transposed:", np.transpose(two_el_tensor))
+    print("two_el_tensor transposed:", np.transpose(two_el_tensor), (0, 2, 1, 3))
     e2int = np.asfortranarray(two_el_tensor)
     print("e2int 2:", e2int)
     # Check that the HF energy calculated using the integrals matches the PySCF result
