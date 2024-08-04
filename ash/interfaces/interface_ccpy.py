@@ -633,7 +633,6 @@ def load_orca_integrals(
     one_el = reduce(np.dot, (mo_coeff.T, H, mo_coeff))
     print("one_el:", one_el)
     # 2-electron integrals
-    twoint = json_data["2elIntegrals"]
     mo_COUL_aa = np.array(json_data["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
     mo_EXCH_aa = np.array(json_data["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
 
@@ -677,7 +676,7 @@ def load_orca_integrals(
     print("e2int 2:", e2int)
     # Check that the HF energy calculated using the integrals matches the PySCF result
     from ccpy.interfaces.pyscf_tools import get_hf_energy
-    hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")
+    hf_energy = get_hf_energy(e1int, e2int, system, notation="chemist")
     print("hf_energy:", hf_energy)
     hf_energy += nuclear_repulsion
     print("hf_energy:", hf_energy)
