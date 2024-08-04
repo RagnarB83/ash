@@ -3642,3 +3642,6 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
             nuc_repulsion_energy=nuc_repulsion, header_format=header_format,
                                 num_corr_el=num_act_el, filename=filename,
                             int_threshold=int_threshold, scf_type=WF_assignment, mult=mult)
+    
+
+    return filename
