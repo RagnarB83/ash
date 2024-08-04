@@ -627,6 +627,7 @@ def load_orca_integrals(
 
     # 1-electron integrals
     H = np.array(json_data["H-Matrix"])
+    print("H:", H)
     # 1-elec
     from functools import reduce
     one_el = reduce(np.dot, (mo_coeff.T, H, mo_coeff))
