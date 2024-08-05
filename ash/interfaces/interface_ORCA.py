@@ -2937,19 +2937,25 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
 
 #Parse ORCA json file
 #Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
-def read_ORCA_json_file(file):
+def read_ORCA_json_file(file, ):
     print("read_ORCA_json_file")
     print("File:", file)
     # Parsing of files
-    import json
+    try:
+        print("Trying to import ujson")
+        import ujson as jsonlib
+    except ModuleNotFoundError:
+        print("ujson library not found (recommended for fast reading)")
+        print("can be installed like this: pip install ujson")
+        print("Falling back to standard json library (slower)")
+        import json as jsonlib
 
     orcafile_basename='.'.join(file.split(".")[0:-1])
-    #orcafile_basename = file.split('.')[0]
     print("orcafile_basename:", orcafile_basename)
     print("Opening file")
     print()
     with open(f"{orcafile_basename}.json") as f:
-        data = json.load(f)
+        data = jsonlib.load(f)
     print("Looping over dictionary")
     print("")
     for i in data["Molecule"]:
