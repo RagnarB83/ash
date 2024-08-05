@@ -625,6 +625,8 @@ def load_orca_integrals(
     from ash.functions.functions_elstructure import check_occupations
     WF_assignment = check_occupations(occupations)
     print("WF_assignment:", WF_assignment)
+    # Orbital symmetries
+    orbital_symmetries = [m["OrbitalSymLabel"] for m in json_data["MolecularOrbitals"]["MOs"]]
 
     if WF_assignment == "UHF":
         if convert_UHF_to_ROHF:
@@ -633,6 +635,7 @@ def load_orca_integrals(
             print("Warning: not guaranteed to work")
             num_act_el= int(round(sum(occupations)))
             rohf_num_orbs= int(len(occupations)/2)
+            norbitals=rohf_num_orbs
             alpha_occupations = occupations[0:rohf_num_orbs]
             beta_occupations = occupations[rohf_num_orbs:]
             # Hacking occupations
@@ -650,12 +653,12 @@ def load_orca_integrals(
             # Now proceeding as if were ROHF
             # Half of MO coefficients
             mo_coeff = mo_coeff[0:rohf_num_orbs]
-
-    # Orbital symmetries
-    orbital_symmetries = [m["OrbitalSymLabel"] for m in json_data["MolecularOrbitals"]["MOs"]]
+            orbital_symmetries = orbital_symmetries[0:rohf_num_orbs]
+            mo_energies = mo_energies[0:rohf_num_orbs]
 
     # 1-electron integrals
     H = np.array(json_data["H-Matrix"])
+    print("len H", len(H))
 
     # Perform AO-to-MO transformation
     e1int = np.einsum("pi,pq,qj->ij", mo_coeff, H, mo_coeff, optimize=True)
