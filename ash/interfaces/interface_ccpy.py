@@ -580,6 +580,9 @@ def load_orca_integrals(
         jsonfile, nfrozen=0, ndelete=0, permut=(0,2,1,3), convert_UHF_to_ROHF=True,
         normal_ordered=True, dump_integrals=False, sorted=True):
 
+    if permut is None:
+        permut=(0,2,1,3)
+
     module_init_time=time.time()
     # import System
     from ccpy.models.system import System
