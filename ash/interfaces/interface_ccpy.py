@@ -15,7 +15,7 @@ import os
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_jsonformat="msgpack",
                  fcidumpfile=None, filename=None, printlevel=2, label="ccpy", delete_json=True,
-                frozencore=True, cc_tol=1e-8, numcores=1, permut=None, dump_integrals=False,
+                frozencore=True, cc_tol=1e-8, numcores=1, dump_integrals=False,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False,
                 two_body_approx=False):
@@ -52,7 +52,6 @@ class ccpyTheory:
 
         self.frozencore=frozencore
         self.dump_integrals=dump_integrals
-        self.permut=permut
         self.delete_json=delete_json
 
         # ccpy options
@@ -261,7 +260,7 @@ class ccpyTheory:
             jsonfile = create_ORCA_json_file(self.orcatheoryobject.filename+'.gbw', two_el_integrals=True, format=self.orca_jsonformat)
             print_time_rel(module_init_time, modulename='create json done', moduleindex=3)
             print("Loading integrals from JSON file")
-            system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, permut=self.permut,
+            system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, 
                                                       dump_integrals=self.dump_integrals)
             print("Deleting JSON file")
             if self.delete_json is True:
@@ -576,12 +575,11 @@ class ccpyTheory:
 
 
 # Load integrals directly from ORCA json-file
+# TODO: get json rohf bug fixed
+# TODO: add canonicalization ?
 def load_orca_integrals(
-        jsonfile, nfrozen=0, ndelete=0, permut=(0,2,1,3), convert_UHF_to_ROHF=True,
+        jsonfile, nfrozen=0, ndelete=0, convert_UHF_to_ROHF=True, 
         normal_ordered=True, dump_integrals=False, sorted=True):
-
-    if permut is None:
-        permut=(0,2,1,3)
 
     module_init_time=time.time()
     # import System
@@ -713,8 +711,7 @@ def load_orca_integrals(
         two_el_tensor[r, s, q, p] = j[4]
         two_el_tensor[s, r, q, p] = j[4]
 
-    print("permut:", permut)
-    e2int = np.transpose(two_el_tensor,permut)
+    e2int = np.transpose(two_el_tensor,(0,2,1,3))
     print("e2int transposed:", e2int)
     e2int = np.asfortranarray(e2int)
     print("final e2int:", e2int)
