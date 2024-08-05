@@ -649,7 +649,7 @@ def load_orca_integrals(
             WF_assignment="ROHF"
             # Now proceeding as if were ROHF
             # Half of MO coefficients
-            C = C[0:rohf_num_orbs]
+            mo_coeff = mo_coeff[0:rohf_num_orbs]
 
     # Orbital symmetries
     orbital_symmetries = [m["OrbitalSymLabel"] for m in json_data["MolecularOrbitals"]["MOs"]]
