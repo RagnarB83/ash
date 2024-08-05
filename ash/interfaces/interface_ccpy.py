@@ -14,7 +14,7 @@ import os
 
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_jsonformat="json",
-                 fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
+                 fcidumpfile=None, filename=None, printlevel=2, label="ccpy", delete_json=True,
                 frozencore=True, cc_tol=1e-8, numcores=1, permut=None, dump_integrals=False,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False,
@@ -53,6 +53,7 @@ class ccpyTheory:
         self.frozencore=frozencore
         self.dump_integrals=dump_integrals
         self.permut=permut
+        self.delete_json=delete_json
 
         # ccpy options
         self.cc_tol=cc_tol
@@ -263,7 +264,8 @@ class ccpyTheory:
             system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, permut=self.permut,
                                                       dump_integrals=self.dump_integrals)
             print("Deleting JSON file")
-            os.remove(jsonfile)
+            if self.delete_json is True:
+                os.remove(jsonfile)
             driver = Driver(system, hamiltonian, max_number_states=50)
             # Check symmetry
             #TODO
