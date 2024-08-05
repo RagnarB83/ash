@@ -2969,7 +2969,8 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
     # This is better when filename contains multiple .
     jsonfile='.'.join(file.split(".")[0:-1])+f'.{format}'
     print(f"Created file:", jsonfile)
-
+    mb_size = (os.path.getsize(jsonfile))/(1024*1024)
+    print(f"Size: {mb_size:7.1f} MB")
     return jsonfile
 
 #Parse ORCA json file
