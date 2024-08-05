@@ -2978,18 +2978,31 @@ def read_ORCA_json_file(file):
     return data["Molecule"]
 
 def read_ORCA_msgpack_file(file):
+    print("read_ORCA_msgpack_file function")
+    print("Trying to import msgspec")
     try:
-        import msgpack
+        import msgspec
+        msgspec_loaded=True
+        print("Imported msgspec successfully")
     except ModuleNotFoundError:
-        print("msgpack not found.")
-        print("Install like this: pip install msgpack")
-        ashexit()
+        print("Problem importing msgspec (pip install msgspec)")
+        print("Trying msgpack library")
+        try:
+            import msgpack
+            msgpack_loaded=True
+            print("Imported msgpack successfully")
+        except ModuleNotFoundError:
+            print("msgpack not found.")
+            print("Install like this: pip install msgpack")
+            ashexit()
     
     # Read msgpack file
     with open(file, "rb") as data_file:
-        byte_data = data_file.read()
-
-    data = msgpack.unpackb(byte_data)
+        if msgspec_loaded:
+            data = msgspec.msgpack.decode(data_file.read())
+        elif msgpack_loaded:
+            byte_data = data_file.read()
+            data = msgpack.unpackb(byte_data)
 
     return data["Molecule"]
 
