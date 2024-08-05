@@ -634,7 +634,7 @@ def load_orca_integrals(
     # put integrals in Fortran order
     e1int = np.asfortranarray(e1int)
 
-    print_time_rel(module_init_time, modulename='load_orca_integrals until integrals', moduleindex=3)
+    print_time_rel(module_init_time, modulename='load_orca_integrals: 1-el int done', moduleindex=3)
     # 2-electron integrals
     mo_COUL_aa = np.array(json_data["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
     mo_EXCH_aa = np.array(json_data["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
@@ -673,14 +673,12 @@ def load_orca_integrals(
         two_el_tensor[r, s, q, p] = j[4]
         two_el_tensor[s, r, q, p] = j[4]
 
-    print_time_rel(module_init_time, modulename='load_orca_integrals until intprocd', moduleindex=3)
-    #
     print("permut:", permut)
     e2int = np.transpose(two_el_tensor,permut)
     print("e2int transposed:", e2int)
     e2int = np.asfortranarray(e2int)
     print("final e2int:", e2int)
-
+    print_time_rel(module_init_time, modulename='load_orca_integrals 2elint done', moduleindex=3)
     # Creating ccpy system
     system = System(
         nelectrons,
