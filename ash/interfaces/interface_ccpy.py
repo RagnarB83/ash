@@ -13,7 +13,7 @@ import os
 # TODO: Change pyscftheoryobject and orcatheoryobject to theory= ?
 
 class ccpyTheory:
-    def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_jsonformat="json",
+    def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_jsonformat="msgpack",
                  fcidumpfile=None, filename=None, printlevel=2, label="ccpy", delete_json=True,
                 frozencore=True, cc_tol=1e-8, numcores=1, permut=None, dump_integrals=False,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
@@ -47,7 +47,7 @@ class ccpyTheory:
         self.method=method.lower() # Lower-case name of method
         self.pyscftheoryobject=pyscftheoryobject
         self.orcatheoryobject=orcatheoryobject
-        self.orca_jsonformat=orca_jsonformat #json or bson
+        self.orca_jsonformat=orca_jsonformat #json, bson or msgpack
         self.fcidumpfile=fcidumpfile
 
         self.frozencore=frozencore
@@ -577,7 +577,7 @@ class ccpyTheory:
 
 # Load integrals directly from ORCA json-file
 def load_orca_integrals(
-        jsonfile, nfrozen=0, ndelete=0, permut=(0,2,1,3),
+        jsonfile, nfrozen=0, ndelete=0, permut=(0,2,1,3), convert_UHF_to_ROHF=True,
         normal_ordered=True, dump_integrals=False, sorted=True):
 
     module_init_time=time.time()
@@ -626,6 +626,31 @@ def load_orca_integrals(
     WF_assignment = check_occupations(occupations)
     print("WF_assignment:", WF_assignment)
 
+    if WF_assignment == "UHF":
+        if convert_UHF_to_ROHF:
+            print("convert_UHF_to_ROHF is True")
+            print("Will hack UHF WF into ROHF")
+            print("Warning: not guaranteed to work")
+            num_act_el= int(round(sum(occupations)))
+            rohf_num_orbs= int(len(occupations)/2)
+            alpha_occupations = occupations[0:rohf_num_orbs]
+            beta_occupations = occupations[rohf_num_orbs:]
+            # Hacking occupations
+            new_occupations = []
+            for i in range(0,rohf_num_orbs):
+                if beta_occupations[i] == 1.0:
+                    new_occupations.append(2.0)
+                elif alpha_occupations[i] == 1.0:
+                    new_occupations.append(1.0)
+                else:
+                    new_occupations.append(0.0)
+            print("New dummy ROHF occupations:", new_occupations)
+            occupations=new_occupations
+            WF_assignment="ROHF"
+            # Now proceeding as if were ROHF
+            # Half of MO coefficients
+            C = C[0:rohf_num_orbs]
+
     # Orbital symmetries
     orbital_symmetries = [m["OrbitalSymLabel"] for m in json_data["MolecularOrbitals"]["MOs"]]
 
@@ -644,6 +669,7 @@ def load_orca_integrals(
 
     # integral tensor
     two_el_tensor=np.zeros((norbitals,norbitals,norbitals,norbitals))
+    
     # Processing Coulomb
     for i in mo_COUL_aa:
         p = int(i[0])
