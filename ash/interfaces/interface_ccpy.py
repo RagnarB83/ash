@@ -253,11 +253,12 @@ class ccpyTheory:
             print("ORCA object provided")
             print("Now running ORCATheory object")
             self.orcatheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
-
+            print_time_rel(module_init_time, modulename='orcatheory run done', moduleindex=3)
             # JSON-file create
             from ash.interfaces.interface_ORCA import create_ORCA_json_file
             print("Creating JSON file")
             jsonfile = create_ORCA_json_file(self.orcatheoryobject.filename+'.gbw', two_el_integrals=True, format=self.orca_jsonformat)
+            print_time_rel(module_init_time, modulename='create json done', moduleindex=3)
             print("Loading integrals from JSON file")
             system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, permut=self.permut,
                                                       dump_integrals=self.dump_integrals)
@@ -578,6 +579,7 @@ def load_orca_integrals(
         jsonfile, nfrozen=0, ndelete=0, permut=(0,2,1,3),
         normal_ordered=True, dump_integrals=False, sorted=True):
 
+    module_init_time=time.time()
     # import System
     from ccpy.models.system import System
     from ccpy.models.integrals import getHamiltonian
@@ -591,7 +593,7 @@ def load_orca_integrals(
     else:
         print(f"File {jsonfile} does not have .json or .bson ending. Unknown format")
         ashexit()
-
+    print_time_rel(module_init_time, modulename='load_orca_integrals until after readjson complete', moduleindex=3)
     # Nuc-repulsion
     from ash.modules.module_coords import nuc_nuc_repulsion
     coords = np.array([i["Coords"] for i in json_data["Atoms"]])
@@ -632,6 +634,7 @@ def load_orca_integrals(
     # put integrals in Fortran order
     e1int = np.asfortranarray(e1int)
 
+    print_time_rel(module_init_time, modulename='load_orca_integrals until integrals', moduleindex=3)
     # 2-electron integrals
     mo_COUL_aa = np.array(json_data["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
     mo_EXCH_aa = np.array(json_data["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
@@ -670,6 +673,7 @@ def load_orca_integrals(
         two_el_tensor[r, s, q, p] = j[4]
         two_el_tensor[s, r, q, p] = j[4]
 
+    print_time_rel(module_init_time, modulename='load_orca_integrals until intprocd', moduleindex=3)
     #
     print("permut:", permut)
     e2int = np.transpose(two_el_tensor,permut)
@@ -706,4 +710,5 @@ def load_orca_integrals(
         print("Dumping integrals")
         dumpIntegralstoPGFiles(e1int, e2int, system)
 
+    print_time_rel(module_init_time, modulename='load_orca_integrals complete', moduleindex=3)
     return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
