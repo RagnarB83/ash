@@ -650,34 +650,39 @@ def load_orca_integrals(
     for i in mo_COUL_aa:
         print("i:",i)
         p = int(i[0])
-        q = int(i[2])
-        r = int(i[1])
+        q = int(i[1])
+        r = int(i[2])
         s = int(i[3])
         val = i[4]
-        two_el_tensor[p, q, r, s] = val
-        two_el_tensor[r, q, p, s] = val
-        two_el_tensor[p, s, r, q] = val
-        two_el_tensor[r, s, p, q] = val
-        two_el_tensor[q, p, s, r] = val
-        two_el_tensor[q, r, s, p] = val
-        two_el_tensor[s, p, q, r] = val
-        two_el_tensor[s, r, q, p] = val
+        two_el_tensor[p, q, r, s] = val #
+        two_el_tensor[p, q, s, r] = val #
+        two_el_tensor[q, p, r, s] = val #
+        two_el_tensor[q, p, s, r] = val #
+        #
+        two_el_tensor[r, s, p, q] = val #
+        two_el_tensor[s, r, p, q] = val #
+        two_el_tensor[r, s, q, p] = val #
+        two_el_tensor[s, r, q, p] = val #
+
     # Processing Exchange,  NOTE: index swap because Exchange
     for j in mo_EXCH_aa:
         print("j:",j)
         p = int(j[0])
+        r = int(j[1]) #note swap
         q = int(j[2])
-        r = int(j[1])
         s = int(j[3])
         val = j[4]
-        two_el_tensor[p, q, r, s] = val
-        two_el_tensor[r, q, p, s] = val
-        two_el_tensor[p, s, r, q] = val
-        two_el_tensor[r, s, p, q] = val
-        two_el_tensor[q, p, s, r] = val
-        two_el_tensor[q, r, s, p] = val
-        two_el_tensor[s, p, q, r] = val
-        two_el_tensor[s, r, q, p] = val
+
+        two_el_tensor[p, q, r, s] = val #
+        two_el_tensor[p, q, s, r] = val #
+        two_el_tensor[q, p, r, s] = val #
+        two_el_tensor[q, p, s, r] = val #
+        #
+        two_el_tensor[r, s, p, q] = val #
+        two_el_tensor[s, r, p, q] = val #
+        two_el_tensor[r, s, q, p] = val #
+        two_el_tensor[s, r, q, p] = val #
+
 
     system = System(
         nelectrons,
