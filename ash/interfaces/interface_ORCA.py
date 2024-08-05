@@ -2980,6 +2980,9 @@ def read_ORCA_json_file(file):
 def read_ORCA_msgpack_file(file):
     print("read_ORCA_msgpack_file function")
     print("Trying to import msgspec")
+    msgspec_loaded=False
+    msgpack_loaded=False
+
     try:
         import msgspec
         msgspec_loaded=True
