@@ -577,7 +577,7 @@ class ccpyTheory:
 # Load integrals directly from ORCA json-file
 # TODO: support bson
 def load_orca_integrals(
-        jsonfile, nfrozen=0, ndelete=0, permut=(0,1,2,3),
+        jsonfile, nfrozen=0, ndelete=0, permut=(0,2,1,3),
         normal_ordered=True, dump_integrals=False, sorted=True):
 
     # import System
@@ -642,12 +642,42 @@ def load_orca_integrals(
     two_el_tensor=np.zeros((norbitals,norbitals,norbitals,norbitals))
 
     # Processing Coulomb
+    #for i in mo_COUL_aa:
+    #    two_el_tensor[int(i[0]), int(i[1]), int(i[2]), int(i[3])] = i[4]
+    # Processing Exchange,  NOTE: index swap because Exchange
+    #for j in mo_EXCH_aa:
+    #    two_el_tensor[int(j[0]), int(j[2]), int(j[1]), int(j[3])] = j[4]
     for i in mo_COUL_aa:
-        two_el_tensor[int(i[0]), int(i[1]), int(i[2]), int(i[3])] = i[4]
+        print("i:",i)
+        p = int(i[0])
+        q = int(i[2])
+        r = int(i[1])
+        s = int(i[3])
+        val = i[4]
+        two_el_tensor[p, q, r, s] = val
+        two_el_tensor[r, q, p, s] = val
+        two_el_tensor[p, s, r, q] = val
+        two_el_tensor[r, s, p, q] = val
+        two_el_tensor[q, p, s, r] = val
+        two_el_tensor[q, r, s, p] = val
+        two_el_tensor[s, p, q, r] = val
+        two_el_tensor[s, r, q, p] = val
     # Processing Exchange,  NOTE: index swap because Exchange
     for j in mo_EXCH_aa:
-        two_el_tensor[int(j[0]), int(j[2]), int(j[1]), int(j[3])] = j[4]
-
+        print("j:",j)
+        p = int(j[0])
+        q = int(j[2])
+        r = int(j[1])
+        s = int(j[3])
+        val = j[4]
+        two_el_tensor[p, q, r, s] = val
+        two_el_tensor[r, q, p, s] = val
+        two_el_tensor[p, s, r, q] = val
+        two_el_tensor[r, s, p, q] = val
+        two_el_tensor[q, p, s, r] = val
+        two_el_tensor[q, r, s, p] = val
+        two_el_tensor[s, p, q, r] = val
+        two_el_tensor[s, r, q, p] = val
 
     system = System(
         nelectrons,
@@ -677,7 +707,7 @@ def load_orca_integrals(
     print()
     print("permut:", permut)
     e2int = np.transpose(two_el_tensor,permut)
-    print("two_el_tensor transposed:", e2int)
+    print("e2int transposed:", e2int)
 
     #print("MANUAL def")
     #e2int=np.array([[[[0.67475593,0.0],[0.0, 0.18121046]], [[0.0, 0.6637114],[0.18121046,0.0]]], [[[0.0,0.18121046],[0.6637114,0.0]],[[0.18121046,0.0],[0.0,0.6976515]]]])

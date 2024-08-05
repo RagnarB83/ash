@@ -2973,6 +2973,7 @@ def read_ORCA_json_file(file):
 #TODO
 def read_ORCA_bson_file(file):
     print("not ready")
+    data=None
     exit()
 
     return data
