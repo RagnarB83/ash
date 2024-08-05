@@ -659,7 +659,7 @@ def load_orca_integrals(
     # 1-electron integrals
     H = np.array(json_data["H-Matrix"])
     print("len H", len(H))
-
+    print("len mo_coeff:", len(mo_coeff))
     # Perform AO-to-MO transformation
     e1int = np.einsum("pi,pq,qj->ij", mo_coeff, H, mo_coeff, optimize=True)
     print("e1int:", e1int)
