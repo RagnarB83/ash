@@ -652,7 +652,10 @@ def load_orca_integrals(
             WF_assignment="ROHF"
             # Now proceeding as if were ROHF
             # Half of MO coefficients
+            print("mo_coeff:", mo_coeff)
             mo_coeff = mo_coeff[0:rohf_num_orbs]
+            print("mo_coeff:", mo_coeff)
+            exit()
             orbital_symmetries = orbital_symmetries[0:rohf_num_orbs]
             mo_energies = mo_energies[0:rohf_num_orbs]
 
