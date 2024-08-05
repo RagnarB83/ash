@@ -3553,7 +3553,8 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
 
     #Create JSON-file
     print("Now creating JSON-file from GBW-file:", gbwfile)
-    jsonfile = create_ORCA_json_file(gbwfile, two_el_integrals=True, full_int_transform=full_int_transform)
+    jsonfile = create_ORCA_json_file(gbwfile, two_el_integrals=True, format=orca_json_format,
+                                     full_int_transform=full_int_transform, )
     print("jsonfile:", jsonfile)
     print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: jsoncreate done', moduleindex=3)
     #Get data from JSON-file as dict
