@@ -3533,17 +3533,18 @@ def orca_vpot_run(gbwfile, densityfile, orcadir=None, numcores=1, input_points_s
 def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA",
                         int_threshold=1e-16,  mult=1, full_int_transform=False,
                         convert_UHF_to_ROHF=True):
-
+    module_init_time=time.time()
     orca_basename=gbwfile.split('.')[0]
 
     #Create JSON-file
     print("Now creating JSON-file from GBW-file:", gbwfile)
     jsonfile = create_ORCA_json_file(gbwfile, two_el_integrals=True, full_int_transform=full_int_transform)
     print("jsonfile:", jsonfile)
+    print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: jsoncreate done', moduleindex=3)
     #Get data from JSON-file as dict
     print("Now reading JSON-file")
     datadict = read_ORCA_json_file(jsonfile)
-
+    print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: jsonread done', moduleindex=3)
     #Get coordinates from JSON (in Angstrom) and calculate repulsion
     coords = np.array([i["Coords"] for i in datadict["Atoms"]])
     nuc_charges = np.array([i["ElementNumber"] for i in datadict["Atoms"]])
@@ -3613,6 +3614,7 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     #Transpose MO coefficients
     MO_coeffs = np.transpose(C)
 
+    print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: before int', moduleindex=3)
     #1-electron integrals
     H = np.array(datadict["H-Matrix"])
     #1-elec
@@ -3626,6 +3628,7 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     mo_COUL_aa = np.array(datadict["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
     mo_EXCH_aa = np.array(datadict["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
 
+    print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: after int', moduleindex=3)
     # Creating integral tensor
     orbind=num_tot_orbs
     two_el_tensor=np.zeros((orbind,orbind,orbind,orbind))
@@ -3637,6 +3640,7 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     for j in mo_EXCH_aa:
         two_el_tensor[int(j[0]), int(j[2]), int(j[1]), int(j[3])] = j[4]
     
+    print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: intproc done', moduleindex=3)
     #Write file
     from ash.functions.functions_elstructure import ASH_write_integralfile
     ASH_write_integralfile(two_el_integrals=two_el_tensor, one_el_integrals=one_el,
@@ -3644,5 +3648,5 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
                                 num_corr_el=num_act_el, filename=filename,
                             int_threshold=int_threshold, scf_type=WF_assignment, mult=mult)
     
-
+    print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP', moduleindex=2)
     return filename
