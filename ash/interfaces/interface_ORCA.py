@@ -2865,6 +2865,7 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
     return f"{orcafile_basename}.json"
 
 #Using orca_2json to create JSON file from ORCA GBW file
+#Format options: json, bson, ubjson, msgpack
 def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_coeffs=True, one_el_integrals=True,
                           two_el_integrals=False, two_el_integrals_type="ALL", dipole_integrals=False, full_int_transform=False):
     print("create_ORCA_json_file")
@@ -2937,7 +2938,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
 
 #Parse ORCA json file
 #Good for getting MO-coefficients, MO-energies, basis set, H,S,T matrices, densities etc.
-def read_ORCA_json_file(file, ):
+def read_ORCA_json_file(file):
     print("read_ORCA_json_file")
     print("File:", file)
     # Parsing of files
@@ -2976,6 +2977,35 @@ def read_ORCA_json_file(file, ):
     #Note: only returning sub-dict Molecule
     return data["Molecule"]
 
+def read_ORCA_msgpack_file(file):
+    try:
+        import msgpack
+    except ModuleNotFoundError:
+        print("msgpack not found.")
+        print("Install like this: pip install msgpack")
+        ashexit()
+    
+    # Read msgpack file
+    with open(file, "rb") as data_file:
+        byte_data = data_file.read()
+
+    data = msgpack.unpackb(byte_data)
+
+    return data["Molecule"]
+
+def read_ORCA_ubjson_file(ubjsonfile):
+    try:
+        print("Trying to import ujson")
+        import ujson as jsonlib
+    except ModuleNotFoundError:
+        print("ujson library not found (recommended for fast reading)")
+        print("can be installed like this: pip install ujson")
+        print("Falling back to standard json library (slower)")
+        import json as jsonlib
+
+    print("reading ubjson file:", ubjsonfile)
+
+    return data["Molecule"]
 # Read BSON files using independent BSON codec for Python (not MongoDB)
 def read_ORCA_bson_file(bsonfile):
     try:
@@ -3560,7 +3590,7 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     #Create JSON-file
     print("Now creating JSON-file from GBW-file:", gbwfile)
     jsonfile = create_ORCA_json_file(gbwfile, two_el_integrals=True, format=orca_json_format,
-                                     full_int_transform=full_int_transform, )
+                                     full_int_transform=full_int_transform)
     print("jsonfile:", jsonfile)
     print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: jsoncreate done', moduleindex=3)
     #Get data from JSON-file as dict
@@ -3569,6 +3599,8 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
         datadict = read_ORCA_json_file(jsonfile)
     elif orca_json_format == "bson":
         datadict = read_ORCA_bson_file(jsonfile)
+    elif orca_json_format == "msgpack":
+        datadict = read_ORCA_msgpack_file(jsonfile)
     print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: jsonread done', moduleindex=3)
     #Get coordinates from JSON (in Angstrom) and calculate repulsion
     coords = np.array([i["Coords"] for i in datadict["Atoms"]])
