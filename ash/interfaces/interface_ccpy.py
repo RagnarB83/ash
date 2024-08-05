@@ -662,6 +662,9 @@ def load_orca_integrals(
 
     # Perform AO-to-MO transformation
     e1int = np.einsum("pi,pq,qj->ij", mo_coeff, H, mo_coeff, optimize=True)
+    print("e1int:", e1int)
+    print("len e1int:", len(e1int))
+    exit()
     # put integrals in Fortran order
     e1int = np.asfortranarray(e1int)
 
