@@ -652,10 +652,9 @@ def load_orca_integrals(
             WF_assignment="ROHF"
             # Now proceeding as if were ROHF
             # Half of MO coefficients
-            print("mo_coeff:", mo_coeff)
-            mo_coeff = mo_coeff[0:rohf_num_orbs]
-            print("mo_coeff:", mo_coeff)
-            exit()
+            print("mo_coeff shape:", mo_coeff.shape)
+            mo_coeff = mo_coeff[:rohf_num_orbs,:rohf_num_orbs]
+            print("mo_coeff shape", mo_coeff.shape)
             orbital_symmetries = orbital_symmetries[0:rohf_num_orbs]
             mo_energies = mo_energies[0:rohf_num_orbs]
 
@@ -667,7 +666,6 @@ def load_orca_integrals(
     e1int = np.einsum("pi,pq,qj->ij", mo_coeff, H, mo_coeff, optimize=True)
     print("e1int:", e1int)
     print("len e1int:", len(e1int))
-    exit()
     # put integrals in Fortran order
     e1int = np.asfortranarray(e1int)
 

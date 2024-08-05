@@ -3684,7 +3684,8 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
             #Now proceeding as if were ROHF
 
             #Half of MO coefficients
-            C = C[0:rohf_num_orbs]
+            #C = C[0:rohf_num_orbs]
+            C = C[:rohf_num_orbs,:rohf_num_orbs]
     elif WF_assignment == "FRACT":
         print("Occupation assignment is FRACT")
         print("This could be problematic")
