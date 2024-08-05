@@ -2,7 +2,7 @@ import time
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 from ash.functions.functions_parallel import check_OpenMPI
-from ash.interfaces.interface_ORCA import read_ORCA_json_file, read_ORCA_bson_file
+from ash.interfaces.interface_ORCA import read_ORCA_json_file, read_ORCA_bson_file,read_ORCA_msgpack_file
 import numpy as np
 import os
 
@@ -576,7 +576,6 @@ class ccpyTheory:
 
 
 # Load integrals directly from ORCA json-file
-# TODO: support bson
 def load_orca_integrals(
         jsonfile, nfrozen=0, ndelete=0, permut=(0,2,1,3),
         normal_ordered=True, dump_integrals=False, sorted=True):
@@ -592,6 +591,8 @@ def load_orca_integrals(
         json_data = read_ORCA_json_file(jsonfile)
     elif '.bson' in jsonfile:
         json_data = read_ORCA_bson_file(jsonfile)
+    elif '.msgpack' in jsonfile:
+        json_data = read_ORCA_msgpack_file(jsonfile)
     else:
         print(f"File {jsonfile} does not have .json or .bson ending. Unknown format")
         ashexit()
