@@ -2970,13 +2970,24 @@ def read_ORCA_json_file(file):
     #Note: only returning sub-dict Molecule
     return data["Molecule"]
 
-#TODO
-def read_ORCA_bson_file(file):
-    print("not ready")
-    data=None
-    exit()
+# Read BSON files using independent BSON codec for Python (not MongoDB)
+def read_ORCA_bson_file(bsonfile):
+    try:
+        print("Importing bson")
+        import bson
+    except ImportError:
+        print("Error: bson module not found. Please install bson module")
+        print("See: https://pypi.org/project/bson/ and https://github.com/py-bson/bson")
+        print("pip install bson")
+        ashexit()
 
-    return data
+    print("reading BSON file:", bsonfile)
+    with open(bsonfile, 'rb') as f:
+        content = f.read()
+        base = 0
+        while base < len(content):
+            base, data = bson.decode_document(content, base)
+    return data["Molecule"]
 
 def get_densities_from_ORCA_json(data):
     DMs={}
@@ -2987,7 +2998,7 @@ def get_densities_from_ORCA_json(data):
     return DMs
 
 #Grab ORCA wfn from jsonfile or data-dictionary
-def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
+def grab_ORCA_wfn(data=None, jsonfile=None, orca_json_format="json", density=None):
     print_line_with_mainheader("grab_ORCA_wfn")
 
     #If neither data object or dictionary was provided
@@ -3002,7 +3013,11 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
         pass
     elif jsonfile != None:
         print("JSON file provided. Reading")
-        data = read_ORCA_json_file(jsonfile)
+        if orca_json_format == "json":
+            data = read_ORCA_json_file(jsonfile)
+        elif orca_json_format == "bson":
+            print("BSON file provided. Reading")
+            data = read_ORCA_bson_file(jsonfile)
 
     if density == None:
         print("Error: You must pick a density option")
@@ -3530,7 +3545,7 @@ def orca_vpot_run(gbwfile, densityfile, orcadir=None, numcores=1, input_points_s
 # Function to create FCIDUMP file 
 # Change header_format from FCIDUMP to MRCC to get MRCC fort.55 file
 # TODO: SCF-type beyond RHF
-def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA",
+def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA", orca_json_format="json",
                         int_threshold=1e-16,  mult=1, full_int_transform=False,
                         convert_UHF_to_ROHF=True):
     module_init_time=time.time()
@@ -3543,7 +3558,10 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: jsoncreate done', moduleindex=3)
     #Get data from JSON-file as dict
     print("Now reading JSON-file")
-    datadict = read_ORCA_json_file(jsonfile)
+    if orca_json_format == "json":
+        datadict = read_ORCA_json_file(jsonfile)
+    elif orca_json_format == "bson":
+        datadict = read_ORCA_bson_file(jsonfile)
     print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: jsonread done', moduleindex=3)
     #Get coordinates from JSON (in Angstrom) and calculate repulsion
     coords = np.array([i["Coords"] for i in datadict["Atoms"]])
