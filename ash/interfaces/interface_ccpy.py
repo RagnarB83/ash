@@ -670,11 +670,7 @@ def load_orca_integrals(
     mo_COUL_aa = np.array(json_data["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
     mo_EXCH_aa = np.array(json_data["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
     print("mo_COUL_aa:", mo_COUL_aa)
-    print(len(mo_COUL_aa))
-    print("mo_COUL_aa 0", mo_COUL_aa[0])
-    print(len(mo_COUL_aa[0]))
-    print("norbitals:", norbitals)
-    exit()
+    print(mo_EXCH_aa)
     # integral tensor
     two_el_tensor=np.zeros((norbitals,norbitals,norbitals,norbitals))
 
