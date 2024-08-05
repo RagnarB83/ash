@@ -669,10 +669,15 @@ def load_orca_integrals(
     # 2-electron integrals
     mo_COUL_aa = np.array(json_data["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
     mo_EXCH_aa = np.array(json_data["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
-
+    print("mo_COUL_aa:", mo_COUL_aa)
+    print(len(mo_COUL_aa))
+    print("mo_COUL_aa 0", mo_COUL_aa[0])
+    print(len(mo_COUL_aa[0]))
+    print("norbitals:", norbitals)
+    exit()
     # integral tensor
     two_el_tensor=np.zeros((norbitals,norbitals,norbitals,norbitals))
-    
+
     # Processing Coulomb
     for i in mo_COUL_aa:
         p = int(i[0])
