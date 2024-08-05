@@ -25,7 +25,7 @@ class ORCATheory:
                  moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None,
-                 cpcm_radii=None):
+                 cpcm_radii=None, ROHF_UHF_swap=False):
         print_line_with_mainheader("ORCATheory initialization")
 
 
@@ -200,6 +200,9 @@ nroots {self.TDDFTroots}
 IRoot {self.FollowRoot}
 end
 """
+        #ROHF-UHF swap
+        self.ROHF_UHF_swap=ROHF_UHF_swap
+
         #Specific CPCM radii. e.g. to use DRACO radii
         if cpcm_radii is not None:
             print("CPCM radii provided:", cpcm_radii)
@@ -517,7 +520,8 @@ end"""
         if self.fragment_indices:
             if self.printlevel >= 2:
                 print("List of fragment indices defined:", fragment_indices)
-        if PC==True:
+
+        if PC is True:
             if self.printlevel >= 2:
                 print("Pointcharge embedding is on!")
             create_orca_pcfile(self.filename, current_MM_coords, MMcharges)
@@ -525,24 +529,24 @@ end"""
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         charge, mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
-                                     fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
+                                     fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict, ROHF_UHF_swap=self.ROHF_UHF_swap)
             else:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         charge, mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
-                                        fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
+                                        fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict, ROHF_UHF_swap=self.ROHF_UHF_swap)
         else:
             if self.brokensym == True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         charge,mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
-                                     ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms,
+                                     ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms, ROHF_UHF_swap=self.ROHF_UHF_swap,
                                      fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
             else:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         charge,mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
-                                        ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms,
+                                        ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms,ROHF_UHF_swap=self.ROHF_UHF_swap,
                                         fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
 
         # Run inputfile using ORCA parallelization. Take numcores argument.
@@ -574,6 +578,14 @@ end"""
         else:
             print("There was an ORCA error that was ignored by user-input")
 
+        if self.ROHF_UHF_swap:
+            print("\nROHF UHF swap feature active.")
+            print("This means that a $new_job ORCA job was run with a ROHF-UHF noiter switch")
+            print(f"Note that the relevant GBW file is then: {self.filename}_job2.gbw\n")
+            print("Stored as self.gbwfile of this ORCATheory object")
+            self.gbwfile=self.filename+'_job2.gbw'
+        else:
+            self.gbwfile=self.filename+'.gbw'
 
         #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
         # using this theory object
@@ -1707,7 +1719,7 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
                          HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, atom_specific_basis_dict=None, extraspecialbasisatoms=None, extraspecialbasis=None,
-                         moreadfile=None, propertyblock=None, fragment_indices=None):
+                         moreadfile=None, propertyblock=None, fragment_indices=None, ROHF_UHF_swap=False):
     if extrabasisatoms is None:
         extrabasisatoms=[]
     pcfile=name+'.pc'
@@ -1758,11 +1770,24 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
         orcafile.write('*\n')
         if propertyblock != None:
             orcafile.write(propertyblock)
+        # For ROHF job, add newjob and switch to UHF noiter
+        if ROHF_UHF_swap:
+            newjobline=f"""\n$new_job
+{orcasimpleinput.replace("ROHF","UHF noiter ")}
+{orcablockinput}
+* xyz {charge} {mult}
+"""
+            orcafile.write(newjobline)
+            for i,(el,c) in enumerate(zip(elems,coords)):
+                orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
+            orcafile.write('*\n')
+        
+        
 #Create simple ORCA inputfile from elems,coords, input, charge, mult,pointcharges
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
                             HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None, propertyblock=None,
-                            ghostatoms=None, dummyatoms=None,fragment_indices=None, atom_specific_basis_dict=None):
+                            ghostatoms=None, dummyatoms=None,fragment_indices=None, atom_specific_basis_dict=None, ROHF_UHF_swap=False):
     if extrabasisatoms == None:
         extrabasisatoms=[]
     if ghostatoms == None:
@@ -1823,6 +1848,17 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
         orcafile.write('*\n')
         if propertyblock != None:
             orcafile.write(propertyblock)
+        # For ROHF job, add newjob and switch to UHF noiter
+        if ROHF_UHF_swap:
+            newjobline=f"""\n$new_job
+{orcasimpleinput.replace("ROHF","UHF noiter ")}
+{orcablockinput}
+* xyz {charge} {mult}
+"""
+            orcafile.write(newjobline)
+            for i,(el,c) in enumerate(zip(elems,coords)):
+                orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
+            orcafile.write('*\n')
 # Create ORCA pointcharge file based on provided list of elems and coords (MM region elems and coords)
 # and list of point charges of MM atoms
 def create_orca_pcfile(name,coords,listofcharges):

@@ -257,7 +257,7 @@ class ccpyTheory:
             # JSON-file create
             from ash.interfaces.interface_ORCA import create_ORCA_json_file
             print("Creating JSON file")
-            jsonfile = create_ORCA_json_file(self.orcatheoryobject.filename+'.gbw', two_el_integrals=True, format=self.orca_jsonformat)
+            jsonfile = create_ORCA_json_file(self.orcatheoryobject.gbwfile, two_el_integrals=True, format=self.orca_jsonformat)
             print_time_rel(module_init_time, modulename='create json done', moduleindex=3)
             print("Loading integrals from JSON file")
             system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, 
