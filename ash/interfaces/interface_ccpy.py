@@ -15,7 +15,7 @@ import os
 class ccpyTheory:
     def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_jsonformat="json",
                  fcidumpfile=None, filename=None, printlevel=2, label="ccpy",
-                frozencore=True, cc_tol=1e-8, numcores=1, permut=None, normal_ordered=True, sorted=True,
+                frozencore=True, cc_tol=1e-8, numcores=1, permut=None, dump_integrals=False,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False,
                 two_body_approx=False):
@@ -51,10 +51,8 @@ class ccpyTheory:
         self.fcidumpfile=fcidumpfile
 
         self.frozencore=frozencore
-
+        self.dump_integrals=dump_integrals
         self.permut=permut
-        self.normal_ordered=normal_ordered
-        self.sorted=sorted
 
         # ccpy options
         self.cc_tol=cc_tol
@@ -262,7 +260,7 @@ class ccpyTheory:
             jsonfile = create_ORCA_json_file(self.orcatheoryobject.filename+'.gbw', two_el_integrals=True, format=self.orca_jsonformat)
             print("Loading integrals from JSON file")
             system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, permut=self.permut,
-                                                      normal_ordered=self.normal_ordered, dump_integrals=True, sorted=self.sorted)
+                                                      dump_integrals=self.dump_integrals)
             print("Deleting JSON file")
             os.remove(jsonfile)
             driver = Driver(system, hamiltonian, max_number_states=50)
@@ -624,66 +622,62 @@ def load_orca_integrals(
     print("WF_assignment:", WF_assignment)
 
     # Orbital symmetries
-    #symm_num_to_label_dict ={} #Dict
     orbital_symmetries = [m["OrbitalSymLabel"] for m in json_data["MolecularOrbitals"]["MOs"]]
 
     # 1-electron integrals
     H = np.array(json_data["H-Matrix"])
-    print("H:", H)
-    # 1-elec
-    from functools import reduce
-    one_el = reduce(np.dot, (mo_coeff.T, H, mo_coeff))
-    print("one_el:", one_el)
+
+    # Perform AO-to-MO transformation
+    e1int = np.einsum("pi,pq,qj->ij", mo_coeff, H, mo_coeff, optimize=True)
+    # put integrals in Fortran order
+    e1int = np.asfortranarray(e1int)
+
     # 2-electron integrals
     mo_COUL_aa = np.array(json_data["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
     mo_EXCH_aa = np.array(json_data["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
 
-    # Creating integral tensor
+    # integral tensor
     two_el_tensor=np.zeros((norbitals,norbitals,norbitals,norbitals))
-
     # Processing Coulomb
-    #for i in mo_COUL_aa:
-    #    two_el_tensor[int(i[0]), int(i[1]), int(i[2]), int(i[3])] = i[4]
-    # Processing Exchange,  NOTE: index swap because Exchange
-    #for j in mo_EXCH_aa:
-    #    two_el_tensor[int(j[0]), int(j[2]), int(j[1]), int(j[3])] = j[4]
     for i in mo_COUL_aa:
-        print("i:",i)
         p = int(i[0])
         q = int(i[1])
         r = int(i[2])
         s = int(i[3])
-        val = i[4]
-        two_el_tensor[p, q, r, s] = val #
-        two_el_tensor[p, q, s, r] = val #
-        two_el_tensor[q, p, r, s] = val #
-        two_el_tensor[q, p, s, r] = val #
+        two_el_tensor[p, q, r, s] = i[4]
+        two_el_tensor[p, q, s, r] = i[4]
+        two_el_tensor[q, p, r, s] = i[4]
+        two_el_tensor[q, p, s, r] = i[4]
         #
-        two_el_tensor[r, s, p, q] = val #
-        two_el_tensor[s, r, p, q] = val #
-        two_el_tensor[r, s, q, p] = val #
-        two_el_tensor[s, r, q, p] = val #
+        two_el_tensor[r, s, p, q] = i[4]
+        two_el_tensor[s, r, p, q] = i[4]
+        two_el_tensor[r, s, q, p] = i[4]
+        two_el_tensor[s, r, q, p] = i[4]
 
     # Processing Exchange,  NOTE: index swap because Exchange
     for j in mo_EXCH_aa:
-        print("j:",j)
         p = int(j[0])
-        r = int(j[1]) #note swap
+        r = int(j[1]) #index swap because Exchange (PRQS)
         q = int(j[2])
         s = int(j[3])
-        val = j[4]
-
-        two_el_tensor[p, q, r, s] = val #
-        two_el_tensor[p, q, s, r] = val #
-        two_el_tensor[q, p, r, s] = val #
-        two_el_tensor[q, p, s, r] = val #
+        two_el_tensor[p, q, r, s] = j[4]
+        two_el_tensor[p, q, s, r] = j[4]
+        two_el_tensor[q, p, r, s] = j[4]
+        two_el_tensor[q, p, s, r] = j[4]
         #
-        two_el_tensor[r, s, p, q] = val #
-        two_el_tensor[s, r, p, q] = val #
-        two_el_tensor[r, s, q, p] = val #
-        two_el_tensor[s, r, q, p] = val #
+        two_el_tensor[r, s, p, q] = j[4]
+        two_el_tensor[s, r, p, q] = j[4]
+        two_el_tensor[r, s, q, p] = j[4]
+        two_el_tensor[s, r, q, p] = j[4]
 
+    #
+    print("permut:", permut)
+    e2int = np.transpose(two_el_tensor,permut)
+    print("e2int transposed:", e2int)
+    e2int = np.asfortranarray(e2int)
+    print("final e2int:", e2int)
 
+    # Creating ccpy system
     system = System(
         nelectrons,
         norbitals,
@@ -698,33 +692,12 @@ def load_orca_integrals(
         mo_occupation=occupations,
     )
 
-    # Perform AO-to-MO transformation
-    print("mo_coeff:", mo_coeff)
-    print("H:", H)
-    e1int = np.einsum(
-        "pi,pq,qj->ij", mo_coeff, H, mo_coeff, optimize=True
-    )
-    # put integrals into Fortran order
-    print("e1int 1:", e1int)
-    e1int = np.asfortranarray(e1int)
-    print("e1int 2:", e1int)
-    print("two_el_tensor 1:", two_el_tensor)
-    print()
-    print("permut:", permut)
-    e2int = np.transpose(two_el_tensor,permut)
-    print("e2int transposed:", e2int)
-
-    #print("MANUAL def")
-    #e2int=np.array([[[[0.67475593,0.0],[0.0, 0.18121046]], [[0.0, 0.6637114],[0.18121046,0.0]]], [[[0.0,0.18121046],[0.6637114,0.0]],[[0.18121046,0.0],[0.0,0.6976515]]]])
-    #print("e2int manual:", e2int)
-    e2int = np.asfortranarray(e2int)
-    print("final e2int:", e2int)
     # Check that the HF energy calculated using the integrals matches the PySCF result
     from ccpy.interfaces.pyscf_tools import get_hf_energy
     hf_energy = get_hf_energy(e1int, e2int, system, notation="physics")
     print("hf_energy:", hf_energy)
     hf_energy += nuclear_repulsion
-    print("hf_energy:", hf_energy)
+    print("hf_energy (with nuc_repuls):", hf_energy)
 
     system.reference_energy = hf_energy
     system.frozen_energy = calc_hf_frozen_core_energy(e1int, e2int, system)
@@ -732,8 +705,5 @@ def load_orca_integrals(
     if dump_integrals:
         print("Dumping integrals")
         dumpIntegralstoPGFiles(e1int, e2int, system)
-
-    print("normal_ordered:", normal_ordered)
-    print("sorted:", sorted)
 
     return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)

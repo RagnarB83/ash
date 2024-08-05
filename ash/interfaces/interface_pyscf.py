@@ -864,7 +864,7 @@ class PySCFTheory:
                 chkfile_scftype="RHF"
             #Checking if mismatch between chkfile info and chosen scf-type
             #TODO: In principle we could convert RKS-info from chkfile to UKS-info and vice versa
-            if chkfile_scftype is "UHF":
+            if chkfile_scftype == "UHF":
                 if self.scf_type == "RHF" or self.scf_type == "RKS":
                     print("Warning: Mismatch between SCF-type in chkfile and PySCFTheory object. Ignoring chkfile")
                     return False
