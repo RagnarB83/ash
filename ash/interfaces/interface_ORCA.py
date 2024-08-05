@@ -2942,21 +2942,36 @@ def read_ORCA_json_file(file):
     print("read_ORCA_json_file")
     print("File:", file)
     # Parsing of files
+    orjson_loaded=False
     try:
-        print("Trying to import ujson")
-        import ujson as jsonlib
+        print("Trying to import orjson")
+        import orjson as jsonlib
+        print("orjson loaded")
+        orjson_loaded=True
     except ModuleNotFoundError:
-        print("ujson library not found (recommended for fast reading)")
-        print("can be installed like this: pip install ujson")
-        print("Falling back to standard json library (slower)")
-        import json as jsonlib
+        print("orjson library not found (recommended for fast reading)")
+        print("Trying ujson instead")
+        try:
+            import ujson as jsonlib
+            print("ujson loaded")
+        except ModuleNotFoundError:
+            print("ujson library not found either")
+            print("can be installed like this: pip install ujson")
+            print("Falling back to standard json library (slower)")
+            import json as jsonlib
 
     orcafile_basename='.'.join(file.split(".")[0:-1])
     print("orcafile_basename:", orcafile_basename)
     print("Opening file")
     print()
+    #Loading
     with open(f"{orcafile_basename}.json") as f:
-        data = jsonlib.load(f)
+        if orjson_loaded:
+            print("here")
+            data = jsonlib.loads(f.read())
+        else:
+            print("here2")
+            data = jsonlib.load(f)
     print("Looping over dictionary")
     print("")
     for i in data["Molecule"]:
@@ -3009,19 +3024,6 @@ def read_ORCA_msgpack_file(file):
 
     return data["Molecule"]
 
-def read_ORCA_ubjson_file(ubjsonfile):
-    try:
-        print("Trying to import ujson")
-        import ujson as jsonlib
-    except ModuleNotFoundError:
-        print("ujson library not found (recommended for fast reading)")
-        print("can be installed like this: pip install ujson")
-        print("Falling back to standard json library (slower)")
-        import json as jsonlib
-
-    print("reading ubjson file:", ubjsonfile)
-
-    return data["Molecule"]
 # Read BSON files using independent BSON codec for Python (not MongoDB)
 def read_ORCA_bson_file(bsonfile):
     try:
