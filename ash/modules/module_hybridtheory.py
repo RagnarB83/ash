@@ -371,7 +371,7 @@ class WrapTheory(Theory):
     """ASH WrapTheory theory.
     Combines 2 theories to give a modified energy and modified gradient
     """
-    def __init__(self, theory1=None, theory2=None, printlevel=1, label=None):
+    def __init__(self, theory1=None, theory2=None, printlevel=2, label=None):
         super().__init__()
         self.theorytype="QM"
         self.theory1=theory1
