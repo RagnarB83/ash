@@ -13,7 +13,7 @@ import os
 # TODO: Change pyscftheoryobject and orcatheoryobject to theory= ?
 
 class ccpyTheory:
-    def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_jsonformat="msgpack",
+    def __init__(self, pyscftheoryobject=None, orcatheoryobject=None, orca_gbwfile=None, orca_jsonformat="msgpack",
                  fcidumpfile=None, filename=None, printlevel=2, label="ccpy", delete_json=True,
                 frozencore=True, cc_tol=1e-8, numcores=1, dump_integrals=False,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
@@ -29,6 +29,11 @@ class ccpyTheory:
         # Check for PySCFTheory object
         if pyscftheoryobject is None and orcatheoryobject is None and fcidumpfile is None:
             print("Error: No pyscftheoryobject or orcatheoryobject was provided and fcidumpfile is none. Either option is required")
+            ashexit()
+
+        # orcatheoryobject vs orca_gbwfile
+        if orcatheoryobject is not None and orca_gbwfile is not None:
+            print("Error: Both orcatheoryobject and orca_gbwfile provided. Only one option is allowed")
             ashexit()
 
         # MAKING SURE WE HAVE ccpy
@@ -47,6 +52,7 @@ class ccpyTheory:
         self.method=method.lower() # Lower-case name of method
         self.pyscftheoryobject=pyscftheoryobject
         self.orcatheoryobject=orcatheoryobject
+        self.orca_gbwfile=orca_gbwfile
         self.orca_jsonformat=orca_jsonformat #json, bson or msgpack
         self.fcidumpfile=fcidumpfile
 
@@ -247,7 +253,22 @@ class ccpyTheory:
                 self.pyscftheoryobject.mol.symmetry='C1'
 
             driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
-        # OPTION 3: DRIVER via orcatheoryobject
+        # OPTION 3: DRIVER via ORCA GBW file
+        elif self.orca_gbwfile is not None:
+            print("ORCA GBW file provided")
+            # JSON-file create
+            from ash.interfaces.interface_ORCA import create_ORCA_json_file
+            print("Creating JSON file")
+            jsonfile = create_ORCA_json_file(self.orca_gbwfile, two_el_integrals=True, format=self.orca_jsonformat)
+            print_time_rel(module_init_time, modulename='create json done', moduleindex=3)
+            print("Loading integrals from JSON file")
+            system, hamiltonian = load_orca_integrals(jsonfile, nfrozen=self.frozen_core_orbs, 
+                                                      dump_integrals=self.dump_integrals)
+            print("Deleting JSON file")
+            if self.delete_json is True:
+                os.remove(jsonfile)
+            driver = Driver(system, hamiltonian, max_number_states=50)
+        # OPTION 4: DRIVER via orcatheoryobject
         # Run ORCA to get integrals and MOs. 
         elif self.orcatheoryobject is not None:
             print("ORCA object provided")
@@ -260,18 +281,12 @@ class ccpyTheory:
             jsonfile = create_ORCA_json_file(self.orcatheoryobject.gbwfile, two_el_integrals=True, format=self.orca_jsonformat)
             print_time_rel(module_init_time, modulename='create json done', moduleindex=3)
             print("Loading integrals from JSON file")
-            system, hamiltonian = load_orca_integrals( jsonfile, nfrozen=self.frozen_core_orbs, 
+            system, hamiltonian = load_orca_integrals(jsonfile, nfrozen=self.frozen_core_orbs, 
                                                       dump_integrals=self.dump_integrals)
             print("Deleting JSON file")
             if self.delete_json is True:
                 os.remove(jsonfile)
             driver = Driver(system, hamiltonian, max_number_states=50)
-            # Check symmetry
-            #TODO
-
-            #driver = Driver.from_pyscf(self.pyscftheoryobject.mf, nfrozen=self.frozen_core_orbs)
-            #driver = 
-
 
         # Set active space in driver.system before if required
         if self.method in self.activespace_methods:
@@ -633,8 +648,6 @@ def load_orca_integrals(
         if convert_UHF_to_ROHF:
             print("convert_UHF_to_ROHF is True")
             print("Will hack UHF WF into ROHF")
-            print("Warning: not guaranteed to work")
-            num_act_el= int(round(sum(occupations)))
             rohf_num_orbs= int(len(occupations)/2)
             norbitals=rohf_num_orbs
             alpha_occupations = occupations[0:rohf_num_orbs]
@@ -661,12 +674,8 @@ def load_orca_integrals(
 
     # 1-electron integrals
     H = np.array(json_data["H-Matrix"])
-    print("len H", len(H))
-    print("len mo_coeff:", len(mo_coeff))
     # Perform AO-to-MO transformation
     e1int = np.einsum("pi,pq,qj->ij", mo_coeff, H, mo_coeff, optimize=True)
-    print("e1int:", e1int)
-    print("len e1int:", len(e1int))
     # put integrals in Fortran order
     e1int = np.asfortranarray(e1int)
 
@@ -674,22 +683,15 @@ def load_orca_integrals(
     # 2-electron integrals
     mo_COUL_aa = np.array(json_data["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
     mo_EXCH_aa = np.array(json_data["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
-    print("mo_COUL_aa:", mo_COUL_aa)
-    print(mo_EXCH_aa)
-    # integral tensor
     two_el_tensor=np.zeros((norbitals,norbitals,norbitals,norbitals))
 
     # Processing Coulomb
     for i in mo_COUL_aa:
-        p = int(i[0])
-        q = int(i[1])
-        r = int(i[2])
-        s = int(i[3])
+        p = int(i[0]); q = int(i[1]); r = int(i[2]); s = int(i[3])
         two_el_tensor[p, q, r, s] = i[4]
         two_el_tensor[p, q, s, r] = i[4]
         two_el_tensor[q, p, r, s] = i[4]
         two_el_tensor[q, p, s, r] = i[4]
-        #
         two_el_tensor[r, s, p, q] = i[4]
         two_el_tensor[s, r, p, q] = i[4]
         two_el_tensor[r, s, q, p] = i[4]
@@ -705,16 +707,13 @@ def load_orca_integrals(
         two_el_tensor[p, q, s, r] = j[4]
         two_el_tensor[q, p, r, s] = j[4]
         two_el_tensor[q, p, s, r] = j[4]
-        #
         two_el_tensor[r, s, p, q] = j[4]
         two_el_tensor[s, r, p, q] = j[4]
         two_el_tensor[r, s, q, p] = j[4]
         two_el_tensor[s, r, q, p] = j[4]
 
     e2int = np.transpose(two_el_tensor,(0,2,1,3))
-    print("e2int transposed:", e2int)
     e2int = np.asfortranarray(e2int)
-    print("final e2int:", e2int)
     print_time_rel(module_init_time, modulename='load_orca_integrals 2elint done', moduleindex=3)
     # Creating ccpy system
     system = System(
@@ -728,8 +727,7 @@ def load_orca_integrals(
         charge=molecule_charge,
         nuclear_repulsion=nuclear_repulsion,
         mo_energies=mo_energies,
-        mo_occupation=occupations,
-    )
+        mo_occupation=occupations)
 
     # Check that the HF energy calculated using the integrals matches the PySCF result
     from ccpy.interfaces.pyscf_tools import get_hf_energy
@@ -745,5 +743,5 @@ def load_orca_integrals(
         print("Dumping integrals")
         dumpIntegralstoPGFiles(e1int, e2int, system)
 
-    print_time_rel(module_init_time, modulename='load_orca_integrals complete', moduleindex=3)
+    print_time_rel(module_init_time, modulename='load_orca_integrals', moduleindex=3)
     return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
