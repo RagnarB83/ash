@@ -223,6 +223,13 @@ class MLatomTheory(Theory):
                             property_to_learn=property_to_learn,
                             xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
                             hyperparameters=hyperparameters)
+        elif self.ml_model.lower() == 'gap':
+            print("GAP selected, no splitting")
+            print("\nNow training...")
+            self.model.train(molecular_database=molDB,
+                            property_to_learn=property_to_learn,
+                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
+                            hyperparameters=hyperparameters)
         else:
             print("Splitting molDB into subtraining database (subtrainDB) and validation database (valDB).")
             print("Split fraction:", split_fraction)
