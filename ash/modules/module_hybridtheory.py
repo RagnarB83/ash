@@ -420,7 +420,7 @@ class WrapTheory(Theory):
 
         # Combine energy and gradient
         energy = e_theory1 + e_theory2
-        if self.printlevel == 3:
+        if self.printlevel == 2:
             print("Energy (Theory1):", e_theory1)
             print("Energy (Theory2):", e_theory2)
             print("Energy (Combined):", energy)
