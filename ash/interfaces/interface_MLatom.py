@@ -152,6 +152,15 @@ class MLatomTheory(Theory):
                 ashexit()
             print("MLatomTheory model created:", self.model)
 
+            # model_file
+            if self.model_file is not None:
+                print("model_file:", self.model_file)
+                file_present = os.path.isfile(self.model_file)
+                print("File exits:", file_present)
+                # Storing absolute path of file
+                self.model_file=os.path.abspath(self.model_file)
+                print("Absolute path to model_file:", self.model_file)
+
         # Initialization done
         print_time_rel(module_init_time, modulename='MLatom creation', moduleindex=2)
 
