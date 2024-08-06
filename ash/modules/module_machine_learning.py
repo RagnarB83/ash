@@ -56,7 +56,7 @@ def create_ML_training_data(xyzdir=None, xyz_trajectory=None, num_snapshots=100,
     elif xyz_trajectory is not None:
         print("XYZ-trajectory specified.")
         #Getting absolute path of file
-        xyz_trajectory=os.path.abspath("your_data.csv")
+        xyz_trajectory=os.path.abspath(xyz_trajectory)
         print("Absolute path of XYZ-trajectory:", xyz_trajectory)
         print("Now splitting the trajectory into individual XYZ-files.")
         try:
