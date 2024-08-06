@@ -367,7 +367,7 @@ class DualTheory:
 # Similar in a way to DualTheory but we simply want to combine a regular Theory with a basic correction
 # Intended to be used for simple corrections like DFTD4.
 
-class WrapTheory:
+class WrapTheory(Theory):
     """ASH WrapTheory theory.
     Combines 2 theories to give a modified energy and modified gradient
     """
