@@ -27,8 +27,8 @@ class ccpyTheory:
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         # Check for PySCFTheory object
-        if pyscftheoryobject is None and orcatheoryobject is None and fcidumpfile is None:
-            print("Error: No pyscftheoryobject or orcatheoryobject was provided and fcidumpfile is none. Either option is required")
+        if pyscftheoryobject is None and orcatheoryobject is None and fcidumpfile is None and orca_gbwfile is None:
+            print("Error: No pyscftheoryobject, orcatheoryobject, orca_gbwfile or fcidumpfile was provided. One of these options is required")
             ashexit()
 
         # orcatheoryobject vs orca_gbwfile
