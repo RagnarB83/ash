@@ -82,7 +82,6 @@ class ASH_Results:
         for k,v in self.__dict__.items():
             # Deal with np array
             if isinstance(v,np.ndarray):
-                print("case ndarray")
                 # Check for nans in array
                 if np.any(np.isnan(v)):
                     print("Warning: nan in array: ", k)
@@ -93,7 +92,6 @@ class ASH_Results:
                     newdict[k]=newv
             # Dealing with cases of lists of np arrays (e.g. pol derivs)
             elif isinstance(v,list):
-                print("case list")
                 # If list is empty, just add it
                 if len(v)==0:
                     newdict[k]=v
@@ -105,7 +103,6 @@ class ASH_Results:
             elif isinstance(v,Fragment):
                 print("Warning: Fragment object is not included in ASH.result on disk")
             else:
-                print("case other")
                 newdict[k]=v
         print("Results object data:")
         for k,v in newdict.items():

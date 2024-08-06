@@ -314,8 +314,8 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     #And dictionary with dirnames used (so we can look up stuff)
     final_result.worker_dirnames = worker_dirnames_dict
     
-    #test
-    final_result.write_to_disk(filename="ASH_Job_parallel.result")
+    #TODO: JSON-array problem, reenable later
+    #final_result.write_to_disk(filename="ASH_Job_parallel.result")
     return final_result
 
 #Worker_par for both Singlepoint-type and Opt-type jobs
