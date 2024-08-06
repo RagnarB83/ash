@@ -372,7 +372,7 @@ class WrapTheory(Theory):
     Combines 2 theories to give a modified energy and modified gradient
     """
     def __init__(self, theory1=None, theory2=None, printlevel=1, label=None):
-
+        super().__init__()
         self.theorytype="QM"
         self.theory1=theory1
         self.theory2=theory2
