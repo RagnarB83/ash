@@ -2259,6 +2259,22 @@ def MRCI_natocc_grab(filename):
                 natoccgrab=True
     return natoccupations
 
+def FIC_natocc_grab(filename):
+    natoccgrab=False
+    natoccupations=[]
+    with open(filename) as f:
+        for line in f:
+            if natoccgrab:
+                if 'N[' in line:
+                    natoccupations.append(float(line.split()[-1]))
+                if ' --- Storing natural' in line:
+                    natoccgrab=False
+                    return natoccupations
+            if 'Natural Orbital Occupation Numbers:' in line:
+                natoccgrab=True
+    return natoccupations
+
+
 def QRO_occ_energies_grab(filename):
     occgrab=False
     occupations=[]
@@ -3152,7 +3168,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 #Function to prepare ORCA orbitals for another ORCA calculation
 #Mainly for getting natural orbitals
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="", label="frag",
-        MP2_density=None, MDCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None,
+        MP2_density=None, MDCI_density=None, AutoCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None,
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False, natorb_iterations=None,
         FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6,
         ROHF=False, ROHF_case=None, MP2_nat_step=False, MREOMtype="MR-EOM",
@@ -3172,7 +3188,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
 
     if orbitals_option is None:
         print("Error: No orbitals_option keyword provided to ORCA_orbital_setup. This is necessary")
-        print("orbitals_option: MP2, RI-MP2, CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
+        print("orbitals_option: MP2, RI-MP2, CCSD, CCSD(T), QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
         ashexit()
 
     #Check charge/mult
@@ -3197,6 +3213,14 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
     if 'CCSD' in orbitals_option:
         MDCIkeyword="CCSD"
         print("CCSD-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density ")
+        if MDCI_density is None:
+            print("Error: MDCI_density must be provided")
+            print("Options: linearized, unrelaxed or orbopt")
+            ashexit()
+        print("MDCI_density option:", MDCI_density)
+    if 'CCSD(T)' in orbitals_option:
+        MDCIkeyword="CCSD(T)"
+        print("CCSD(T)-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density ")
         if MDCI_density is None:
             print("Error: MDCI_density must be provided")
             print("Options: linearized, unrelaxed or orbopt")
@@ -3276,8 +3300,15 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             print("Warning: CAS-CI is True. No CASSCF orbital optimization will be carried out.")
             print("Warning: To get natural orbitals from CAS-CI calculation we modify gtol instead of using noiter")
             gtol=9999999
-
-
+    if 'FIC' in orbitals_option:
+        if 'DDCI1' in orbitals_option:
+            MRCIkeyword="FIC-DDCI1"
+        AUTOCIkeyword="FIC-DDCI3"
+        print("AUTOCIkeyword:", AUTOCIkeyword)
+        print("AUTOCI-type orbitals requested. This means that natural orbitals will be created from the chosen AUTOCI density")
+        if CAS_nel is None or CAS_nel is None:
+            print("AUTOCI natural orbitals required CAS_nel and CAS_norb keywords for CAS active space calculation")
+            ashexit()
     if natorb_iterations is not None:
         print("Natural orbital iterations will be performed!")
 
@@ -3437,7 +3468,7 @@ end
                                  label='OO-RI-MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
-    elif orbitals_option =="CCSD" or orbitals_option =="QCISD" or orbitals_option =="CEPA/1" or orbitals_option =="CPF/1":
+    elif orbitals_option =="CCSD" or orbitals_option =="CCSD(T)" or orbitals_option =="QCISD" or orbitals_option =="CEPA/1" or orbitals_option =="CPF/1":
         ccsdblocks=f"""
         %maxcore {memory}
         {basisblock}
@@ -3489,6 +3520,26 @@ end
         def dummy(f): return f
         natoccgrab=dummy
         print("Warning: can not get full natural occupations from MRCI+Q calculation")
+    elif 'FIC' in orbitals_option:
+        autociblocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %casscf
+        gtol {gtol}
+        nel {CAS_nel}
+        norb {CAS_norb}
+        end
+        %autoci
+        density {AutoCI_density}
+        natorbs true
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {AUTOCIkeyword} {basis} autoaux tightscf", orcablocks=autociblocks, numcores=numcores,
+                                 label=AUTOCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"ficddci3.mult.{mult}.root.0.FIC-DDCI3.nat"
+        natoccgrab=FIC_natocc_grab
+
     elif 'FOBO' in orbitals_option:
         #Defining a ROHF-type CASSCF
         if CAS_nel is None or CAS_norb is None:
