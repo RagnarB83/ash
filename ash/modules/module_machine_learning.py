@@ -100,7 +100,9 @@ def create_ML_training_data(xyzdir=None, xyz_trajectory=None, num_snapshots=100,
     gradients_file=open("train_data.gradients", "w")
 
     # LOOP
+    print("Starting loop over XYZ-files")
     for file in list_of_xyz_files:
+        print("Now running file:", file)
         basefile=os.path.basename(file)
         label=basefile.split(".")[0]
 
