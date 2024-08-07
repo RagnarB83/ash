@@ -3152,7 +3152,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
     #Grabbing C (MO coefficients)
     mos = data["MolecularOrbitals"]["MOs"]
     C = np.array([m["MOCoefficients"] for m in mos])
-    C = np.transpose(C)
+    #C = np.transpose(C)
 
     #MO energies and occupations
     MO_energies = np.array([m["OrbitalEnergy"] for m in mos])
@@ -3162,7 +3162,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
     print("MO_occs:", MO_occs)
     print("MO coeffs:", C)
 
-    return DM_AO,C,S, AO_basis, AO_order
+    return DM_AO,C,S, MO_occs, MO_energies, AO_basis, AO_order
 
 
 #Function to prepare ORCA orbitals for another ORCA calculation
@@ -3219,13 +3219,14 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             ashexit()
         print("MDCI_density option:", MDCI_density)
     if 'CCSD(T)' in orbitals_option:
-        MDCIkeyword="CCSD(T)"
-        print("CCSD(T)-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density ")
-        if MDCI_density is None:
-            print("Error: MDCI_density must be provided")
+        AUTOCIkeyword="AUTOCI-CCSD(T)"
+        print("CCSD(T)-type natural orbitals requested.")
+        print("Since ORCA 6.0 this is available in the AUTOCI module only")
+        if AutoCI_density is None:
+            print("Error: AutoCI_density must be provided")
             print("Options: linearized, unrelaxed or orbopt")
             ashexit()
-        print("MDCI_density option:", MDCI_density)
+        print("AutoCI_density option:", AutoCI_density)
     if 'QCISD' in orbitals_option:
         MDCIkeyword="QCISD"
         print("QCISD-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density")
@@ -3468,7 +3469,7 @@ end
                                  label='OO-RI-MP2', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mp2nat"
         natoccgrab=MP2_natocc_grab
-    elif orbitals_option =="CCSD" or orbitals_option =="CCSD(T)" or orbitals_option =="QCISD" or orbitals_option =="CEPA/1" or orbitals_option =="CPF/1":
+    elif orbitals_option =="CCSD" or orbitals_option =="QCISD" or orbitals_option =="CEPA/1" or orbitals_option =="CPF/1":
         ccsdblocks=f"""
         %maxcore {memory}
         {basisblock}
@@ -3520,6 +3521,20 @@ end
         def dummy(f): return f
         natoccgrab=dummy
         print("Warning: can not get full natural occupations from MRCI+Q calculation")
+    elif 'CCSD(T)' in orbitals_option:
+        autociblocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %autoci
+        density {AutoCI_density}
+        natorbs true
+        end
+        """
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {AUTOCIkeyword} {basis} autoaux tightscf", orcablocks=autociblocks, numcores=numcores,
+                                 label=AUTOCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"ficddci3.mult.{mult}.root.0.FIC-DDCI3.nat"
+        natoccgrab=FIC_natocc_grab
     elif 'FIC' in orbitals_option:
         autociblocks=f"""
         %maxcore {memory}

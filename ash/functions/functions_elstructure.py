@@ -1800,17 +1800,17 @@ def create_cubefile_from_orbfile(orbfile, option='density', grid=3, delete_temp_
     orcafile=False
     #First checking if input is a Molden file
     if '.molden' in orbfile or 'MOLDEN' in orbfile:
-        print("Orbfile recognized as a Molden-file")
+        print(f"Orbfile ({orbfile}) recognized as a Molden-file")
         moldenfile=True
         mfile=orbfile
     elif '.gbw' in orbfile:
-        print("Orbfile recognized as ORCA GBW file")
+        print(f"Orbfile ({orbfile}) recognized as ORCA GBW file")
         orcafile=True
     elif '.nat' in orbfile:
-        print("Orbfile recognized as ORCA natural-orbital file")
+        print(f"Orbfile ({orbfile}) recognized as ORCA natural-orbital file")
         orcafile=True
     elif 'mp2nat' in orbfile:
-        print("Orbfile recognized as ORCA natural-orbital file")
+        print(f"Orbfile ({orbfile}) recognized as ORCA natural-orbital file")
         orcafile=True
 
 
@@ -2039,9 +2039,11 @@ Molden file created by ASH (using orca format)
     gtostring="""[GTO]
 """
     #Looping over each atom in AO_basis object
+    print("AO_basis:", AO_basis)
+    #exit()
     for i,atom in enumerate(AO_basis):
         gtostring+=f"  {i+1} 0\n"
-        bfs = atom["BasisFunctions"]
+        bfs = atom["Basis"]
         for bf in bfs:
             coeffs=bf["Coefficients"]
             exponents=bf["Exponents"]
@@ -2079,6 +2081,9 @@ Molden file created by ASH (using orca format)
     mostring="""[MO]
 """
     #Loop over MOs
+    #print("mo_coeffs:",MO_coeffs)
+    #print("mo_coeffs:",MO_coeffs[0])
+    #exit()
     for i,(mo_coeffs,mo_en,mo_occ) in enumerate(zip(MO_coeffs,MO_energies,MO_occs)):
         moheader=f""" Sym=     1a
  Ene= {mo_en}
@@ -2086,9 +2091,11 @@ Molden file created by ASH (using orca format)
  Occup= {mo_occ}\n"""
         mostring+=moheader
         #Reorder according to AO_order_object
-        print("mostring:",mostring)
+        #print("mostring:",mostring)
+        factor=-1 #Sign change
         mo_coeffs_reordered =  reorder_AOs_in_MO_ORCA_to_Molden(mo_coeffs,AO_order)
         for i,mo_coeff in enumerate(mo_coeffs_reordered):
+            mo_coeff=mo_coeff*factor
             mostring+=f" {i+1}      {mo_coeff:15.12f}\n"
 
     #Combine and write out
@@ -2120,9 +2127,9 @@ def reorder_AOs_in_MO_ORCA_to_Molden(coeffs,order):
     new_order = np.empty(len(order), dtype=object)
 
     for i,(c,o) in enumerate(zip(coeffs,order)):
-        print("i:",i)
-        print("c:",c)
-        print("o:",o)
+        #print("i:",i)
+        #print("c:",c)
+        #print("o:",o)
         #exit()
         if "pz" in o:
             new_coeffs[i+2] = c
