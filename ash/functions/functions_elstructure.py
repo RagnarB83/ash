@@ -1965,6 +1965,8 @@ def diagonalize_DM_AO(D, S):
     import scipy
     from functools import reduce
     # Diagonalize the DM in AO basis
+    print("Trace of input DM_AO:", np.trace(D))
+    print("Trace of input DM_AO*S:", np.trace(np.dot(D,S)))
     A = reduce(np.dot, (S, D, S))
     w, v = scipy.linalg.eigh(A, b=S)
     # Flip NOONs (and NOs) since they're in increasing order
@@ -2084,6 +2086,9 @@ Molden file created by ASH (using orca format)
     #print("mo_coeffs:",MO_coeffs)
     #print("mo_coeffs:",MO_coeffs[0])
     #exit()
+    print("Warning: transposing MO_coeffs for convenience")
+    MO_coeffs=np.transpose(MO_coeffs)
+
     for i,(mo_coeffs,mo_en,mo_occ) in enumerate(zip(MO_coeffs,MO_energies,MO_occs)):
         moheader=f""" Sym=     1a
  Ene= {mo_en}

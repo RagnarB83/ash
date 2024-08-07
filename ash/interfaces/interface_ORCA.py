@@ -3152,7 +3152,9 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
     #Grabbing C (MO coefficients)
     mos = data["MolecularOrbitals"]["MOs"]
     C = np.array([m["MOCoefficients"] for m in mos])
-    #C = np.transpose(C)
+    #Transposing C so that rows are AOs and columns are MOs
+    C = np.transpose(C) #NOTE IMPORTANT
+    print("Warning: matrix C was transposed so that rows are AOs and columns are MOs")
 
     #MO energies and occupations
     MO_energies = np.array([m["OrbitalEnergy"] for m in mos])
