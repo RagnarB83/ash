@@ -190,6 +190,11 @@ class ccpyTheory:
 
         return total_corr_energy, CCSD_corr_energy, HOC_energy
 
+    def run_density(self, state_index=0):
+        print("Now running rdm1 calc for state:", state_index)
+        # Run RDM1 calc
+        self.driver.run_rdm1(state_index=[state_index])
+
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
@@ -580,6 +585,7 @@ class ccpyTheory:
         print("ccpy is finished")
 
         self.driver=driver
+        print("Driver object:", driver.__dict__)
         # Cleanup scratch stuff (big files)
         self.cleanup()
 

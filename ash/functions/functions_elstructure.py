@@ -2013,7 +2013,7 @@ def make_molden_file(fragment, AO_basis, MO_coeffs, MO_energies=None, MO_occs=No
     print("WARNING: ORDER has only been checked for s,p,d and f")
 
     if AO_order is None:
-        print("Warning: no AO_order given. Don't know what to do")
+        print("Error: no AO_order given.")
         ashexit()
     else:
          print("AO_order_object given. Will use this to order AOs")

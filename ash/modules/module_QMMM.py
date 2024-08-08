@@ -1242,14 +1242,17 @@ def microiter_QM_MM_OPT_v2(theory=None, fragment=None, maxiter=500, qmregion=Non
 
 #This projects the linkatom force onto the respective QM atom and MM atom
 def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
-    printdebug("Qcoord:", Qcoord)
-    printdebug("Mcoord:", Mcoord)
-    printdebug("Lcoord:", Lcoord)
+    #print("Qcoord:", Qcoord)
+    #print("Mcoord:", Mcoord)
+    #print("Lcoord:", Lcoord)
+    #print("Qgrad:", Qgrad)
+    #print("Mgrad:", Mgrad)
+    #print("Lgrad:", Lgrad)
     #QM1-L and QM1-MM1 distances
     QLdistance=ash.modules.module_coords.distance(Qcoord,Lcoord)
-    printdebug("QLdistance:", QLdistance)
+    #print("QLdistance:", QLdistance)
     MQdistance=ash.modules.module_coords.distance(Mcoord,Qcoord)
-    printdebug("MQdistance:", MQdistance)
+    #print("MQdistance:", MQdistance)
     #B and C: a 3x3 arrays
     B=np.zeros([3,3])
     C=np.zeros([3,3])
@@ -1270,23 +1273,23 @@ def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
     g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
     g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
 
-    printdebug("g_x:", g_x)
-    printdebug("g_y:", g_y)
-    printdebug("g_z:", g_z)
+    #print("g_x:", g_x)
+    #print("g_y:", g_y)
+    #print("g_z:", g_z)
 
     #Multiplying B matrix with Linkatom gradient
     gg_x=B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2]
     gg_y=B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2]
     gg_z=B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2]
 
-    printdebug("gg_x:", gg_x)
-    printdebug("gg_y:", gg_y)
-    printdebug("gg_z:", gg_z)
+    #print("gg_x:", gg_x)
+    #print("gg_y:", gg_y)
+    #print("gg_z:", gg_z)
     #QM atom gradient
-    printdebug("Qgrad before:", Qgrad)
-    printdebug("Lgrad:", Lgrad)
-    printdebug("C: ", C)
-    printdebug("B:", B)
+    #print("Qgrad before:", Qgrad)
+    #print("Lgrad:", Lgrad)
+    #print("C: ", C)
+    #print("B:", B)
     #Multiply grad by C-diagonal
     #Qgrad[0] = Qgrad[0]*C[0][0]
     #Qgrad[1] = Qgrad[1]*C[1][1]
@@ -1294,16 +1297,16 @@ def linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad):
     Qgrad[0]=Qgrad[0]+g_x
     Qgrad[1]=Qgrad[1]+g_y
     Qgrad[2]=Qgrad[2]+g_z
-    printdebug("Qgrad after:", Qgrad)
+    #print("Qgrad after:", Qgrad)
     #MM atom gradient
-    printdebug("Mgrad before", Mgrad)
+    #print("Mgrad before", Mgrad)
     #Mgrad[0] = Mgrad[0]*B[0][0]
     #Mgrad[1] = Mgrad[1]*B[1][1]
     #Mgrad[2] = Mgrad[2]*B[2][2]
     Mgrad[0]=Mgrad[0]+gg_x
     Mgrad[1]=Mgrad[1]+gg_y
     Mgrad[2]=Mgrad[2]+gg_z
-    printdebug("Mgrad after:", Mgrad)
+    #print("Mgrad after:", Mgrad)
 
     return Qgrad,Mgrad
 

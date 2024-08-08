@@ -11,7 +11,6 @@ from ash.functions.functions_general import BC, ashexit, print_time_rel,print_li
 from ash.modules.module_theory import Theory
 from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
 from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB_output
-from ash.modules.module_QMMM import linkatom_force_fix
 
 
 #TODO: deal with GBW file and ORCA autostart mismatching for different regions and theory-levels
@@ -20,7 +19,7 @@ from ash.modules.module_QMMM import linkatom_force_fix
 class ONIOMTheory(Theory):
     def __init__(self, theory1=None, theory2=None, theories_N=None, regions_N=None, regions_chargemult=None,
                  embedding="mechanical", full_pointcharges=None, chargemodel="CM5", dipole_correction=False,
-                 fullregion_charge=None, fullregion_mult=None, fragment=None, label=None,
+                 fullregion_charge=None, fullregion_mult=None, fragment=None, label=None, linkatom_projection=False,
                  printlevel=2, numcores=1,):
         super().__init__()
         self.theorytype="ONIOM"
@@ -76,6 +75,9 @@ class ONIOMTheory(Theory):
         self.full_pointcharges=full_pointcharges
         #Dipole correction for charge-shifting
         self.dipole_correction=dipole_correction
+
+        #Temp variable for turning linkatom_projection on/off
+        self.linkatom_projection=linkatom_projection
 
         # N-layer ONIOM
         self.fullregion_charge=fullregion_charge
@@ -263,41 +265,6 @@ class ONIOMTheory(Theory):
         print("MM boundary (MM1:MMx pairs):", self.MMboundarydict)
         print_time_rel(timeA, modulename="get_MMboundary")
 
-    def linkatom_force_projection(self,regiongradient,fullgradient,fullcoords,regionatoms,regioncoords):
-        # LINKATOM FORCE PROJECTION
-        # if self.linkatoms is True and Grad is True:
-        for pair in sorted(self.linkatoms_dict.keys()):
-            print("pair: ", pair)
-            # Grabbing linkatom data
-            linkatomindex=self.linkatom_indices.pop(0)
-            print("linkatomindex:", linkatomindex)
-            print("regiongradient:", regiongradient)
-            Lgrad=regiongradient[linkatomindex]
-            print("here")
-            Lcoord=self.linkatoms_dict[pair]
-            print("Lcoord:", Lcoord)
-            # Grabbing QMatom info
-            fullatomindex_qm=pair[0]
-            print("fullatomindex_qm:", fullatomindex_qm)
-            print("regionatoms:", regionatoms)
-            regionatomindex=regionatoms.index(fullatomindex_qm)
-            print("regionatomindex:", regionatomindex)
-            Qcoord=regioncoords[regionatomindex]
-            Qgrad=fullgradient[fullatomindex_qm]
-            # Grabbing MMatom info
-            fullatomindex_mm=pair[1]
-            Mcoord=fullcoords[fullatomindex_mm]
-            Mgrad=fullgradient[fullatomindex_mm]
-
-            # Now grabbed all components, calculating new projected gradient on QM atom and MM atom
-            newQgrad,newMgrad = linkatom_force_fix(Qcoord, Mcoord, Lcoord, Qgrad,Mgrad,Lgrad)
-            print("newQgrad:", newQgrad)
-            print("newMgrad:", newMgrad)
-            # Updating full QM_PC_gradient (used to be QM/MM gradient)
-            fullgradient[fullatomindex_qm] = newQgrad
-            fullgradient[fullatomindex_mm] = newMgrad
-
-            return fullgradient
 
     def run(self, current_coords=None, Grad=False, elems=None, charge=None, mult=None, label=None, numcores=None):
 
@@ -516,8 +483,10 @@ class ONIOMTheory(Theory):
         # COMBINING ENERGY AND GRADIENTS
         # 2-layer ONIOM Energy and Gradient expression
         if len(self.theories_N) == 2:
-            # E_dict: {(1, -1): -14.73707412056, (0, 0): -115.486915570077, (1, 0): -8.9611505694}
             self.energy = E_dict[(1,-1)] + E_dict[(0,0)] - E_dict[(1,0)]
+            print(f"Energy (Full-LL): {E_dict[(1,-1)]} Eh")
+            print(f"Energy (Region1-HL): {E_dict[(0,0)]} Eh")
+            print(f"Energy (Region1-LL): {E_dict[(1,0)]} Eh")
             if Grad:
                 # Gradient assembled
                 self.gradient = G_dict[(1,-1)]
@@ -526,18 +495,52 @@ class ONIOMTheory(Theory):
                 for at, g in zip(self.regions_N[0], G_dict[(1,0)]):
                     self.gradient[at] -= g
 
-                combogradient = G_dict[(0,0)] -G_dict[(1,0)]
                 # Linkatom force projection
                 if self.linkatoms is True:
                     print("Linkatom force projection now")
-                    self.gradient = self.linkatom_force_projection(combogradient,self.gradient,
-                                                   current_coords,self.regions_N[0],region_coords_final)
-
+                    if self.linkatom_projection is True:
+                        print("Looping over linkatoms")
+                        for i,linkatomindex in enumerate(self.linkatom_indices):
+                            pair = sorted(self.linkatoms_dict.keys())[i]
+                            Lcoord=self.linkatoms_dict[pair]
+                            print("Lcoord:", Lcoord)
+                            # Looping over both theory-levels calculated
+                            for theory_grad in [G_dict[(0,0)]]:
+                                # Region gradient
+                                Lgrad=theory_grad[linkatomindex]
+                                print("Lgrad:", Lgrad)
+                                # Getting QM1 info
+                                fullatomindex_qm=pair[0]
+                                regionatomindex=self.regions_N[0].index(fullatomindex_qm)
+                                r_coords = np.take(current_coords,self.regions_N[0],axis=0)
+                                Qcoord=r_coords[regionatomindex]
+                                # Grabbing MMatom info
+                                fullatomindex_mm=pair[1]
+                                Mcoord=full_coords[fullatomindex_mm]
+                                # Get new Qgrad and Mgrad
+                                QM1grad_contr,MM1grad_contr = linkatom_force_contribution(Qcoord, Mcoord, Lcoord, Lgrad)
+                                print("QM1grad_contr:", QM1grad_contr)
+                                print("MM1grad_contr:", MM1grad_contr)
+                                print("-------------------------------------------")
+                                print()
+                                self.gradient[fullatomindex_qm] += QM1grad_contr
+                                self.gradient[fullatomindex_mm] += MM1grad_contr
+                    else:
+                        print("Linkatom projection is turned off. Gradient is untouched")
         # 3-layer ONIOM Energy and Gradient expression
         elif len(self.theories_N) == 3:
             self.energy = E_dict[(2,-1)] + E_dict[(0,0)] - E_dict[(1,0)] + E_dict[(1,1)] - E_dict[(2,1)]
             # E(High,Real) = E(Low,Real) + [E(High,Model) - E(Medium,Model)]
             #                +  [E(Medium,Inter) - E(Low,Inter)].
+            print(f"Energy (Full-LL): {E_dict[(2,-1)]} Eh")
+            print(f"Energy (Region1-HL): {E_dict[(0,0)]} Eh")
+            print(f"Energy (Region1-IL): {E_dict[(1,0)]} Eh")
+            print(f"Energy (Region2-IL): {E_dict[(1,1)]} Eh")
+            print(f"Energy (Region2-LL): {E_dict[(2,1)]} Eh")
+
+            if self.linkatoms is True:
+                print("Linkatom projection for ONIOM-3 not ready")
+                ashexit()
             if Grad:
                 # Gradient assembled
                 self.gradient = G_dict[(2,-1)]
@@ -554,9 +557,58 @@ class ONIOMTheory(Theory):
             print("4-layer ONIOM not yet available")
             ashexit()
 
-        print("ONIOM energy:", self.energy)
+        print("Final ONIOM energy:", self.energy)
 
         if Grad:
             return self.energy,self.gradient
         else:
             return self.energy
+
+
+#This projects the linkatom force onto the respective QM atom and MM atom
+# NOTE: Modified version originally made for QM/MM
+# Simpler
+def linkatom_force_contribution(Qcoord, Mcoord, Lcoord, Lgrad):
+    print("Qcoord:", Qcoord)
+    print("Mcoord:", Mcoord)
+    print("Lcoord:", Lcoord)
+    print("Lgrad:", Lgrad)
+    # QM1-L and QM1-MM1 distances
+    QLdistance=ash.modules.module_coords.distance(Qcoord,Lcoord)
+    print("QLdistance:", QLdistance)
+    MQdistance=ash.modules.module_coords.distance(Mcoord,Qcoord)
+    print("MQdistance:", MQdistance)
+    # B and C: a 3x3 arrays
+    B=np.zeros([3,3])
+    C=np.zeros([3,3])
+    for i in range(0,3):
+        for j in range(0,3):
+            B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
+    for i in range(0,3):
+        B[i,i] = B[i,i] + QLdistance / MQdistance
+    for i in range(0,3):
+        for j in range(0,3):
+            C[i,j]= -1 * B[i,j]
+    for i in range(0,3):
+        C[i,i] = C[i,i] + 1.0
+
+    # Multiplying C matrix with Linkatom gradient
+    # temp
+    g_x=C[0,0]*Lgrad[0]+C[0,1]*Lgrad[1]+C[0,2]*Lgrad[2]
+    g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
+    g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
+
+    print("g_x:", g_x)
+    print("g_y:", g_y)
+    print("g_z:", g_z)
+
+    # Multiplying B matrix with Linkatom gradient
+    gg_x=B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2]
+    gg_y=B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2]
+    gg_z=B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2]
+
+    print("gg_x:", gg_x)
+    print("gg_y:", gg_y)
+    print("gg_z:", gg_z)
+    # Return QM1_gradient and MM1_gradient contribution (to be added)
+    return [g_x,g_y,g_z],[gg_x,gg_y,gg_z]
