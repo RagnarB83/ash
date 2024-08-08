@@ -505,7 +505,7 @@ class ONIOMTheory(Theory):
                             Lcoord=self.linkatoms_dict[pair]
                             print("Lcoord:", Lcoord)
                             # Looping over both theory-levels calculated
-                            for theory_grad in [G_dict[(0,0)]]:
+                            for theory_grad in [G_dict[(0,0)],G_dict[(1,0)]]:
                                 # Region gradient
                                 Lgrad=theory_grad[linkatomindex]
                                 print("Lgrad:", Lgrad)
