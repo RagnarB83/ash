@@ -216,6 +216,12 @@ class ccpyTheory:
                 print("orca_mo_coeff found. Taking...")
                 mo_coeffs = self.orca_mo_coeff
 
+        if self.self.frozen_core_orbs > 0:
+            print("Found frozen core")
+            print("mo_coeffs shape:", mo_coeffs.shape)
+            mo_coeffs = mo_coeffs[self.frozen_core_orbs:, self.frozen_core_orbs:]
+            print("Deleting frozen-orbs, mo_coeffs shape:", mo_coeffs.shape)
+
         # Diagonalize RDM in MO basis
         print("Diagonalizing RDM to get natural orbitals")
         natocc, natorb_MO = np.linalg.eigh(rdm_matrix)
@@ -226,7 +232,7 @@ class ccpyTheory:
         print("NO-index      Occupation")
         print("-"*30)
         for i,nocc in enumerate(natocc):
-            print(f"{i}       {nocc:7.2f}")
+            print(f"    {i}         {nocc:7.2f}")
         print()
         print("natorb in MO:", natorb_MO)
         natorb_AO = np.dot(mo_coeffs, natorb_MO)
