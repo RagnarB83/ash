@@ -216,7 +216,7 @@ class ccpyTheory:
                 print("orca_mo_coeff found. Taking...")
                 mo_coeffs = self.orca_mo_coeff
 
-        if self.self.frozen_core_orbs > 0:
+        if self.frozen_core_orbs > 0:
             print("Found frozen core")
             print("mo_coeffs shape:", mo_coeffs.shape)
             mo_coeffs = mo_coeffs[self.frozen_core_orbs:, self.frozen_core_orbs:]
