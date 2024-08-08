@@ -55,6 +55,7 @@ class ccpyTheory:
         self.orca_gbwfile=orca_gbwfile
         self.orca_jsonformat=orca_jsonformat #json, bson or msgpack
         self.fcidumpfile=fcidumpfile
+        self.orca_mo_coeff=None #Populated later
 
         self.frozencore=frozencore
         self.dump_integrals=dump_integrals
@@ -195,6 +196,64 @@ class ccpyTheory:
         # Run RDM1 calc
         self.driver.run_rdm1(state_index=[state_index])
 
+        rdm1 = self.driver.rdm1[0][0]
+        rdm1a_matrix = np.concatenate( (np.concatenate( (rdm1.a.oo, rdm1.a.ov * 0.0), axis=1),
+                                            np.concatenate( (rdm1.a.vo * 0.0, rdm1.a.vv), axis=1)), axis=0)
+        rdm1b_matrix = np.concatenate( (np.concatenate( (rdm1.b.oo, rdm1.b.ov * 0.0), axis=1),
+                                            np.concatenate( (rdm1.b.vo * 0.0, rdm1.b.vv), axis=1)), axis=0)
+        rdm_matrix = rdm1a_matrix + rdm1b_matrix
+
+        return rdm_matrix
+
+    def get_natural_orbitals(self,rdm_matrix, mo_coeffs=None):
+        if mo_coeffs is None:
+            print("No mo_coeffs provided to get_natural_orbitals")
+            print("Attempting to find some")
+            if self.pyscftheoryobject is not None:
+                print("pyscftheoryobject found. Taking...")
+                mo_coeffs = self.pyscftheoryobject.mf.mo_coeff
+            elif self.orca_mo_coeff is not None:
+                print("orca_mo_coeff found. Taking...")
+                mo_coeffs = self.orca_mo_coeff
+
+        # Diagonalize RDM in MO basis
+        print("Diagonalizing RDM to get natural orbitals")
+        natocc, natorb_MO = np.linalg.eigh(rdm_matrix)
+        natocc = np.flip(natocc)
+        natorb_MO = np.flip(natorb_MO, axis=1)
+        print("Natural orbitals")
+        print("-"*30)
+        print("NO-index      Occupation")
+        print("-"*30)
+        for i,nocc in enumerate(natocc):
+            print(f"{i}       {nocc:7.2f}")
+        print()
+        print("natorb in MO:", natorb_MO)
+        natorb_AO = np.dot(mo_coeffs, natorb_MO)
+        print("natorb in AO", natorb_AO)
+
+        self.natorb_AO = natorb_AO
+        self.natorb_MO = natorb_MO
+
+        return natocc, natorb_AO
+
+    # Writing Molden file
+    def write_molden_file(self,occupations,mo_coeffs,mo_energies=None,label="molden"):
+        print("write_molden_file function")
+        if self.pyscftheoryobject is not None:
+            print("Pyscftheoryobject found. Using pyscf functionality")
+            from pyscf.tools import molden
+            print("Writing orbitals to disk as Molden file")
+            if mo_energies is None:
+                print("No MO energies. Setting to 0.0")
+                mo_energies = np.array([0.0 for i in occupations])
+
+            with open(f'{label}.molden', 'w') as f1:
+                molden.header(self.pyscftheoryobject.mol, f1)
+                molden.orbital_coeff(self.pyscftheoryobject.mol, f1, mo_coeffs, 
+                                     ene=mo_energies, occ=occupations)
+            return f'{label}.molden'
+
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
@@ -267,8 +326,10 @@ class ccpyTheory:
             jsonfile = create_ORCA_json_file(self.orca_gbwfile, two_el_integrals=True, format=self.orca_jsonformat)
             print_time_rel(module_init_time, modulename='create json done', moduleindex=3)
             print("Loading integrals from JSON file")
-            system, hamiltonian = load_orca_integrals(jsonfile, nfrozen=self.frozen_core_orbs, 
+            system, hamiltonian, mo_coeff = load_orca_integrals(jsonfile, nfrozen=self.frozen_core_orbs, 
                                                       dump_integrals=self.dump_integrals)
+            # Saving MO coefficients from ORCA
+            self.orca_mo_coeff = mo_coeff
             print("Deleting JSON file")
             if self.delete_json is True:
                 os.remove(jsonfile)
@@ -750,4 +811,4 @@ def load_orca_integrals(
         dumpIntegralstoPGFiles(e1int, e2int, system)
 
     print_time_rel(module_init_time, modulename='load_orca_integrals', moduleindex=3)
-    return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted)
+    return system, getHamiltonian(e1int, e2int, system, normal_ordered, sorted), mo_coeff

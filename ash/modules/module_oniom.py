@@ -515,9 +515,11 @@ class ONIOMTheory(Theory):
                                 regionatomindex=self.regions_N[0].index(fullatomindex_qm)
                                 r_coords = np.take(current_coords,self.regions_N[0],axis=0)
                                 Qcoord=r_coords[regionatomindex]
+                                print("Qcoord:", Qcoord)
                                 # Grabbing MMatom info
                                 fullatomindex_mm=pair[1]
                                 Mcoord=full_coords[fullatomindex_mm]
+                                print("Mcoord:", Mcoord)
                                 # Get new Qgrad and Mgrad
                                 QM1grad_contr,MM1grad_contr = linkatom_force_contribution(Qcoord, Mcoord, Lcoord, Lgrad)
                                 print("QM1grad_contr:", QM1grad_contr)
