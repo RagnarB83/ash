@@ -18,7 +18,7 @@ class ccpyTheory:
                 frozencore=True, cc_tol=1e-8, numcores=1, dump_integrals=False,
                 cc_maxiter=300, cc_amp_convergence=1e-7, nact_occupied=None, nact_unoccupied=None, civecs_file=None, 
                 method=None, percentages=None, states=None, roots_per_irrep=None, EOM_guess_symmetry=False,
-                two_body_approx=False):
+                two_body_approx=False, parallelization="OMP-and_MKL"):
 
         self.theorynamelabel="ccpy"
         self.theorytype="QM"
@@ -144,6 +144,24 @@ class ccpyTheory:
             print("EOM-method selected but states keyword not set")
             print("Set states to be list of states to calcualate")
             ashexit()
+
+        self.parallelization=parallelization
+        print("Setting up parallelization (options are: 'MKL', 'OMP' 'OMP-and-MKL)")
+        if self.parallelization == 'MKL':
+            print(f"Setting MKL threads to {self.numcores} and OMP threads to 1")
+            os.environ['MKL_NUM_THREADS'] = str(self.numcores)
+            os.environ['OMP_NUM_THREADS'] = str(1)
+        elif self.parallelization == 'OMP':
+            print(f"Setting OMP threads to {self.numcores} and MKL threads to 1")
+            os.environ['MKL_NUM_THREADS'] = str(1)
+            os.environ['OMP_NUM_THREADS'] = str(self.numcores) 
+        elif self.parallelization == 'OMP-and-MKL':
+            print(f"Setting MKL and OMP threads to {self.numcores}")
+            os.environ['MKL_NUM_THREADS'] = str(self.numcores)
+            os.environ['OMP_NUM_THREADS'] = str(self.numcores)
+        else:
+            print("Unknown parallelization method choice.")
+            print("Exiting")
 
         # Print stuff
         print("Printlevel:", self.printlevel)
