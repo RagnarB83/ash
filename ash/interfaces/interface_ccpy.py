@@ -263,6 +263,9 @@ class ccpyTheory:
                 # Replace with 
                 new_natorbs_AO[self.frozen_core_orbs:, self.frozen_core_orbs:] = natorb_AO_active
                 self.natorb_AO = new_natorbs_AO
+                # Adding frozen core occupations to natoccs
+                natocc = np.array([2.0]*self.frozen_core_orbs+list(natocc))
+
             else:
                 self.natorb_AO=natorb_AO_active
 
