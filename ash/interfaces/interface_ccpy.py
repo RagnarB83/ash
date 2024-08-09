@@ -194,6 +194,18 @@ class ccpyTheory:
 
     def run_density(self, state_index=0):
         print("Now running rdm1 calc for state:", state_index)
+
+        # Check if hbar has been run
+        if self.driver.flag_hbar is False:
+            print("Error: Hbar calculation has not been run")
+            print("Call theory.driver.run_hbar(method=\"ccsd\")")
+            ashexit()
+        # Check if L-list is only None 
+        if all(x is None for x in self.driver.L):
+            print("Error: No L-vector found in driver. Cannot run RDM1 calculation")
+            print("Call theory.driver.run_leftcc(method=\"left_ccsd\", state_index=[0])")
+            ashexit()
+
         # Run RDM1 calc
         self.driver.run_rdm1(state_index=[state_index])
 
