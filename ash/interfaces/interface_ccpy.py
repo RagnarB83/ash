@@ -391,6 +391,7 @@ class ccpyTheory:
         # RUN
         ######################################
         GS_label=self.method #Label to use in final printing. Updated below
+        
         if self.adaptive is True:
 
             print("Adaptive CC(P;Q) calculation.")
@@ -408,7 +409,8 @@ class ccpyTheory:
             self.energy = float(adaptdriver.ccpq_energy[-1])
 
             GS_label="CC(P;Q)" #Label to use in final printing
-            
+
+            self.driver=adaptdriver
         else:
             print("Non-adaptive CC calculation.")
 
@@ -493,7 +495,6 @@ class ccpyTheory:
                     HOC_energy = driver.deltap3[0]["D"]
 
                 total_corr_energy = CCSD_corr_energy + HOC_energy
-            
 
             ########################
             # EXCITED-STATE CC
@@ -609,7 +610,6 @@ class ccpyTheory:
                     # Compute IPEOMCCSDT(a)* excited-state corrections
                     driver.run_ipccp3(method=ipccp3_method, state_index=self.states)
 
-
             else:
                 print("Error. Method not recognized")
                 ashexit()
@@ -649,10 +649,10 @@ class ccpyTheory:
                     EE=excitation_energies[i]
                     print(f" {i+1:3d}      (ES)        {GS_CC_energy+EE:<13.10f}             {EE*27.211386245988:>7.4f}")
 
+        if self.adaptive is False:
+            self.driver=driver
         print("ccpy is finished")
 
-        self.driver=driver
-        print("Driver object:", driver.__dict__)
         # Cleanup scratch stuff (big files)
         self.cleanup()
 
