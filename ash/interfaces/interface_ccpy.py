@@ -206,24 +206,7 @@ class ccpyTheory:
 
         return rdm_matrix
 
-    def get_natural_orbitals(self,rdm_matrix, mo_coeffs=None):
-        if mo_coeffs is None:
-            print("No mo_coeffs provided to get_natural_orbitals")
-            print("Attempting to find some")
-            if self.pyscftheoryobject is not None:
-                print("pyscftheoryobject found. Taking...")
-                mo_coeffs = self.pyscftheoryobject.mf.mo_coeff
-            elif self.orca_mo_coeff is not None:
-                print("orca_mo_coeff found. Taking...")
-                mo_coeffs = self.orca_mo_coeff
-
-        if self.frozen_core_orbs > 0:
-            print("Found frozen core")
-            # Means that rdm_matrix will only be active orbitals while mo_coeffs is all orbitals
-            # Need to either trim mo_coeffs or add block to rdm matrix
-            print("mo_coeffs shape:", mo_coeffs.shape)
-            mo_coeffs = mo_coeffs[self.frozen_core_orbs:, self.frozen_core_orbs:]
-            print("Deleting frozen-orbs, mo_coeffs shape:", mo_coeffs.shape)
+    def get_natural_orbitals(self,rdm_matrix, mo_coeffs=None, get_AO_basis=True):
 
         # Diagonalize RDM in MO basis
         print("Diagonalizing RDM to get natural orbitals")
@@ -237,14 +220,53 @@ class ccpyTheory:
         for i,nocc in enumerate(natocc):
             print(f"    {i}         {nocc:7.2f}")
         print()
-        print("natorb in MO:", natorb_MO)
-        natorb_AO = np.dot(mo_coeffs, natorb_MO)
-        print("natorb in AO", natorb_AO)
-
-        self.natorb_AO = natorb_AO
+        print("Natural orbitals in MO basis:", natorb_MO)
         self.natorb_MO = natorb_MO
+        self.natorb_AO=None
 
-        return natocc, natorb_AO
+        if get_AO_basis:
+            print("get_AO_basis True")
+            print("Will convert NOs from MO-basis into AO-basis")
+            if mo_coeffs is None:
+                print("No mo_coeffs provided to get_natural_orbitals")
+                print("Attempting to find some")
+                if self.pyscftheoryobject is not None:
+                    print("pyscftheoryobject found. Taking...")
+                    mo_coeffs = self.pyscftheoryobject.mf.mo_coeff
+                elif self.orca_mo_coeff is not None:
+                    print("orca_mo_coeff found. Taking...")
+                    mo_coeffs = self.orca_mo_coeff
+
+            if self.frozen_core_orbs > 0:
+                print("Found frozen core")
+                print("Warning: Final natural orbitals in AO basis will contain untouched mean-field frozen-core MOs")
+                # print("Will use active ")
+                # Means that rdm_matrix will only be active orbitals while mo_coeffs is all orbitals
+                # Need to either trim mo_coeffs or add block to final natorb_matrix
+                print("mo_coeffs shape:", mo_coeffs.shape)
+                mo_coeffs_active = mo_coeffs[self.frozen_core_orbs:, self.frozen_core_orbs:]
+                # mo_coeffs_fc = mo_coeffs[0:self.frozen_core_orbs, 0:self.frozen_core_orbs]
+                # mo_coeffs_fc_cols = mo_coeffs[0:self.frozen_core_orbs, self.frozen_core_orbs:]
+                # mo_coeffs_fc_rows = mo_coeffs[self.frozen_core_orbs:,0:self.frozen_core_orbs]
+                # print("Deleting frozen-orbs, mo_coeffs shape:", mo_coeffs.shape)
+            else:
+                mo_coeffs_active=mo_coeffs
+
+            # Get the active natorbs in AO basis
+            natorb_AO_active = np.dot(mo_coeffs_active, natorb_MO)
+            print("natorb in AO", natorb_AO_active)
+
+            # Combining frozen core MOs with new natorb_AOs
+            if self.frozen_core_orbs > 0:
+                print("Warning: frozen core found. Adding frozen core MOs to natorb_AO")
+                new_natorbs_AO = mo_coeffs
+                # Replace with 
+                new_natorbs_AO[self.frozen_core_orbs:, self.frozen_core_orbs:] = natorb_AO_active
+                self.natorb_AO = new_natorbs_AO
+            else:
+                self.natorb_AO=natorb_AO_active
+
+        return natocc, self.natorb_AO
 
     # Writing Molden file
     def write_molden_file(self,occupations,mo_coeffs,mo_energies=None,label="molden"):
