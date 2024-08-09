@@ -1045,7 +1045,7 @@ class PySCFTheory:
             #Final
             loscmf = pyscf_losc.scf_losc(losc_func, self.mf, orbital_energy_unit='eV', window=self.LOSC_window)
             print("loscmf:", loscmf)
-            self.loscmf=loscmfself
+            self.loscmf=loscmf
             self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
     def run_hessian(self):
