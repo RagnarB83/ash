@@ -704,6 +704,8 @@ end"""
             print("Reading Hessian from file:", self.filename+".hess")
             self.hessian = Hessgrab(self.filename+".hess")
 
+            self.ir_intensities = grab_IR_intensities(self.filename+'.hess')
+
         if Grad == True:
             grad =ORCAgradientgrab(engradfile)
             self.grad = self.grad + grad
@@ -1223,6 +1225,20 @@ def tddft_orbitalpairs_grab(file):
                 if 'the weight of the individual excitations' in line:
                     tddftgrab=True
     return states_dict
+
+def grab_IR_intensities(filename):
+    grab=False
+    intensities=[]
+    with open(filename) as f:
+        for line in f:
+            print(line)
+            if grab:
+                if len(line.split()) == 6:
+                    intens = float(line.split()[2])
+                    intensities.append(intens)
+            if '$ir_spectrum' in line:
+                grab=True
+    return intensities
 
 #Grab energies from unrelaxed scan in ORCA (paras block type)
 def grabtrajenergies(filename):

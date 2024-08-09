@@ -46,7 +46,7 @@ class PySCFTheory:
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
-        self.analytic_hessian=False
+        self.analytic_hessian=True
         self.printlevel=printlevel
         #if self.printlevel >= 2:
         print_line_with_mainheader("PySCFTheory initialization")
@@ -1045,9 +1045,15 @@ class PySCFTheory:
             #Final
             loscmf = pyscf_losc.scf_losc(losc_func, self.mf, orbital_energy_unit='eV', window=self.LOSC_window)
             print("loscmf:", loscmf)
-            self.loscmf=loscmf
+            self.loscmf=loscmfself
             self.write_orbitals_to_Moldenfile(self.mol, self.loscmf.mo_coeff, self.loscmf.mo_occ, self.loscmf.mo_energy, label="LOSC-SCF-orbs")
 
+    def run_hessian(self):
+        print("Running meanfield Hessian")
+        import pyscf.hessian
+        self.hessian_obj = self.mf.Hessian()
+        hessian = self.hessian_obj.kernel()
+        return hessian
 
     def run_MP2(self,frozen_orbital_indices=None, MP2_DF=None):
         print("\nInside run_MP2")
@@ -2307,7 +2313,7 @@ class PySCFTheory:
     #General run function to distinguish  possible specialrun (disabled) and mainrun
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
-            charge=None, mult=None):
+            charge=None, mult=None, Hessian=False):
 
         self.runcalls += 1
         #Note: We have to do prepare_run each time. Mol object (with coords,basis etc.) has to be created and built.
@@ -2322,7 +2328,7 @@ class PySCFTheory:
         #Actual run
         return self.actualrun(current_coords=current_coords, current_MM_coords=current_MM_coords, MMcharges=MMcharges, qm_elems=qm_elems,
         elems=elems, Grad=Grad, PC=PC, numcores=numcores, pe=pe, potfile=potfile, restart=restart, label=label,
-        charge=charge, mult=mult)
+        charge=charge, mult=mult, Hessian=Hessian)
 
     def prepare_run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
@@ -2486,7 +2492,7 @@ class PySCFTheory:
     #Assumes prepare_run has been executed
     def actualrun(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
-            charge=None, mult=None,pyscf=None ):
+            charge=None, mult=None,pyscf=None, Hessian=False ):
 
         module_init_time=time.time()
         #############################################################
@@ -2723,6 +2729,36 @@ class PySCFTheory:
 
             if self.printlevel >1:
                 print("Gradient calculation done")
+
+        ##############
+        #HESSIAN
+        ##############
+        if Hessian:
+            hessinfo = self.run_hessian()
+            print("hessinfo:", hessinfo)
+            hessian = hessinfo.transpose(0,2,1,3).reshape(3*3,3*3)
+            self.hessian=hessian
+            try:
+                print("Attempting IR intensity calculation (requires pyscf.prop library)")
+                
+                from pyscf.prop.infrared.rhf import Infrared, kernel_dipderiv
+                
+            except ModuleNotFoundError:
+                print("pyscf IR intensity requires installation of pyscf.prop module")
+                print("See: https://github.com/pyscf/properties")
+                print("You can install with: pip install git+https://github.com/pyscf/properties")
+                ashexit()
+
+            mf_ir = Infrared(self.mf)
+            mf_ir.mf_hess=self.hessian_obj
+            mf_ir.run()
+            #Could run dipole derivatives directly also
+            #dipderiv = kernel_dipderiv(mf_ir)
+            #print("dipderiv:", dipderiv)
+            #mf_ir.summary()
+            #mf_ir.ir_inten
+            print("mf_ir.ir_inten:", mf_ir.ir_inten)
+            self.ir_intensities=mf_ir.ir_inten
 
         if self.printlevel >= 1:
             print()

@@ -14,7 +14,9 @@ import ash.interfaces.interface_ORCA
 from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
-# Analytical frequencies function. For ORCAtheory and CFourTheory
+# Analytical frequencies function. Only for theories with this option added (e.g. ORCATheory and CFourTheory)
+# Checked by analytic_hessian attribute True
+#TODO: IR/Raman intensities
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, masses=None,
            pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100,
            scaling_factor=1.0):
@@ -33,7 +35,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
     if masses is None:
         masses = fragment.list_of_masses
 
-    if theory.__class__.__name__ == "ORCATheory" or theory.__class__.__name__ == "CFourTheory":
+    if theory.analytic_hessian:
         print(f"Requesting analytical Hessian calculation from {theory.theorynamelabel}")
         print("")
         # Check charge/mult
@@ -42,15 +44,38 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
         energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True)
 
         # Grab Hessian from theory object
-        print("Getting Hessian from theory object")
+        print("Getting analytic Hessian from theory object")
         hessian = theory.hessian
         # Diagonalize
         frequencies, nmodes, evectors, mode_order = diagonalizeHessian(fragment.coords,theory.hessian,masses,fragment.elems,
                                                             TRmodenum=TRmodenum,projection=True)
         print("Now scaling frequencies by scaling factor:", scaling_factor)
         frequencies = scaling_factor * frequencies
-        # Print out Freq output. Maybe print normal mode compositions here instead???
-        printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum)
+
+        # NOTE:
+        # For IR intensities it might be preferable to get dipole derivatives from theory
+        # and then calculate IR intensities directly using calc_IR_Intensities function
+        # Would ensure completely correct masses at least
+        # For now grabbing directly from theory object
+        # Tested with pyscf, ORCA
+
+        try:
+            IR_intens_values=theory.ir_intensities
+            if len(IR_intens_values) == 0:
+                print("Found no IR intensities")
+                IR_intens_values=None
+            elif len(IR_intens_values) < len(frequencies):
+                print("Found IR intensities, zero-capping needed")
+                IR_intens_values=[0.0]*6+list(IR_intens_values)
+                print("Found IR intensities")
+        except:
+            print("Found no IR intensities in theory object")
+            IR_intens_values=None
+        Raman_activities=None
+
+        # Print out Freq output. 
+        printfreqs(frequencies,len(hessatoms),TRmodenum=TRmodenum, intensities=IR_intens_values,
+               Raman_activities=Raman_activities)
         print("\n\n")
         print("Normal mode composition factors by element")
         printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms,TRmodenum=TRmodenum)
