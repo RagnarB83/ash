@@ -83,7 +83,7 @@ class Reaction:
 # ASH Fragment class
 class Fragment:
     def __init__(self, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, grofile=None,
-                 amber_inpcrdfile=None, amber_prmtopfile=None, smiles=None,
+                 amber_inpcrdfile=None, amber_prmtopfile=None, trexiofile=None, smiles=None,
                  chemshellfile=None, coords=None, elems=None, connectivity=None, atom=None, diatomic=None, diatomic_bondlength=None,
                  bondlength=None,
                  atomcharges=None, atomtypes=None, conncalc=False, scale=None, tol=None, printlevel=2, charge=None,
@@ -215,6 +215,26 @@ class Fragment:
         elif fragfile is not None:
             self.label = fragfile.split('/')[-1].split('.')[0]
             self.read_fragment_from_file(fragfile)
+        # Trexio
+        elif trexiofile is not None:
+            from ash.functions.functions_elstructure import read_trexio_file
+            print("Reading TREXIO file:", trexiofile)
+            if 'h5' in trexiofile or 'hdf5' in trexiofile:
+                print("Assuming TREXIO HDF5 format based on file suffix")
+                charges, coords, labels = read_trexio_file(filename=trexiofile, back_end_type="hdf5")
+            elif '.text' in trexiofile:
+                print("Assuming TREXIO TEXT format based on file suffix")
+                charges, coords, labels = read_trexio_file(filename=trexiofile, back_end_type="text")
+            else:
+                print("No recognized suffix in TREXIO file found. Exiting")
+                ashexit()
+
+            self.coords = np.array(coords)
+            elems = [reformat_element(el) for el in labels]
+            # Converting charges to elements
+            self.elems = nucchargestoelems(charges)
+            # NOTE: Labels not currently used
+
         # Reading an XYZ-file from the ASH database
         elif databasefile is not None:
             databasepath=ashpath+"/databases/fragments/"
@@ -231,7 +251,7 @@ class Fragment:
                 exit()
         # If all else fails, exit
         else:
-            ashexit(errormessage="Fragment requires some kind of valid coordinates input!")
+            ashexit(errormessage="Fragment requires some kind of valid coordinate input!")
         # Label for fragment (string). Useful for distinguishing different fragments
         # This overrides label-definitions above (self.label=xyzfile etc)
         if label is not None:
@@ -242,7 +262,6 @@ class Fragment:
             self.charge = charge
         if mult != None:
             self.mult = mult
-
 
         # Now update attributes after defining coordinates, getting charge, mult
         self.update_attributes()
@@ -843,6 +862,10 @@ class Fragment:
             for el, c in zip(subset_elems, subset_coords):
                 line = "{:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(el, c[0], c[1], c[2])
                 ofile.write(line + '\n')
+
+    def write_trexio(self,filename=None,format="text"):
+        from ash.functions.functions_elstructure import write_trexio_file
+        write_trexio_file(self, filename=filename, back_end_type=format)
 
     #Function to get subset-coordinates with linkatoms
     def get_subset_coords_with_linkatoms(self,qmatoms):
@@ -2317,6 +2340,14 @@ def elemstonuccharges(ellist):
         atcharge = elematomnumbers[e.lower()]
         nuccharges.append(atcharge)
     return nuccharges
+
+def nucchargestoelems(chargelist):
+    elems = []
+    for c in chargelist:
+        for key, value in elematomnumbers.items():
+            if value == c:
+                elems.append(key.upper())
+    return elems
 
 
 # Calculate molecular mass from list of atoms

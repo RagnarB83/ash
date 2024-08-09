@@ -2333,6 +2333,7 @@ def read_trexio_file(filename="trexio", back_end_type="text"):
 
     return charges_r, coords_r, labels_r
 
+#Very basic trexio file writer, only molecule info for the moment
 def write_trexio_file(fragment, filename="trexio", back_end_type="text"):
     try:
         import trexio
@@ -2363,6 +2364,10 @@ def write_trexio_file(fragment, filename="trexio", back_end_type="text"):
     trexio.write_nucleus_coord(open_file, fragment.coords)
 
     open_file.close()
+
+    print("Wrote trexio file:", filename)
+
+
 
 def yoshimine_sort(a,b,c,d):
     if a > b:
