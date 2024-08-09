@@ -162,11 +162,12 @@ class ccpyTheory:
 
     def determine_frozen_core(self,elems):
         print("Determining frozen core based on system list of elements")
-        #Main elements
+        # Main elements
         FC_elems={'H':0,'He':0,'Li':0,'Be':0,'B':2,'C':2,'N':2,'O':2,'F':2,'Ne':2,
-        'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
-        'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,'Co':10,'Ni':10,'Cu':10,'Zn':10,
-        'Ga':18,'Ge':18,'As':18,'Se':18, 'Br':18, 'Kr':18}
+                        'Na':2,'Mg':2,'Al':10,'Si':10,'P':10,'S':10,'Cl':10,'Ar':10,
+                        'K':10,'Ca':10,'Sc':10,'Ti':10,'V':10,'Cr':10,'Mn':10,'Fe':10,
+                        'Co':10,'Ni':10,'Cu':10,'Zn':10,
+                        'Ga':18,'Ge':18,'As':18,'Se':18, 'Br':18, 'Kr':18}
         #NOTE: To be updated for 4d TM row etc
         num_el=0
         for el in elems:
@@ -218,6 +219,8 @@ class ccpyTheory:
 
         if self.frozen_core_orbs > 0:
             print("Found frozen core")
+            # Means that rdm_matrix will only be active orbitals while mo_coeffs is all orbitals
+            # Need to either trim mo_coeffs or add block to rdm matrix
             print("mo_coeffs shape:", mo_coeffs.shape)
             mo_coeffs = mo_coeffs[self.frozen_core_orbs:, self.frozen_core_orbs:]
             print("Deleting frozen-orbs, mo_coeffs shape:", mo_coeffs.shape)
@@ -300,7 +303,7 @@ class ccpyTheory:
         else:
             self.frozen_core_orbs=0
         print("self.frozen_core_orbs:",self.frozen_core_orbs)
-        
+
         ##########################
         # CREATE DRIVER
         ##########################
@@ -391,7 +394,7 @@ class ccpyTheory:
         # RUN
         ######################################
         GS_label=self.method #Label to use in final printing. Updated below
-        
+
         if self.adaptive is True:
 
             print("Adaptive CC(P;Q) calculation.")
@@ -410,7 +413,7 @@ class ccpyTheory:
 
             GS_label="CC(P;Q)" #Label to use in final printing
 
-            self.driver=adaptdriver
+            self.driver=adaptdriver.driver
         else:
             print("Non-adaptive CC calculation.")
 
