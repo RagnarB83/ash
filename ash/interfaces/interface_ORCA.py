@@ -2930,7 +2930,7 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
     print("Calling orca_2json to convert JSON-file to GBW-file")
     sp.call([orcadir+'/orca_2json', jsonfile, '-gbw'])
 
-    return f"{orcafile_basename}.json"
+    return f"{orcafile_basename}.gbw"
 
 #Using orca_2json to create JSON file from ORCA GBW file
 #Format options: json, bson, ubjson, msgpack
@@ -3206,7 +3206,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
 
     if orbitals_option is None:
         print("Error: No orbitals_option keyword provided to ORCA_orbital_setup. This is necessary")
-        print("orbitals_option: MP2, RI-MP2, CCSD, CCSD(T), QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
+        print("orbitals_option: MP2, RI-MP2, CCSD, CCSD(T), DLPNO-CCSD, QCISD, CEPA/1, NCPF/1, HF, MRCI, CEPA2")
         ashexit()
 
     #Check charge/mult
@@ -3236,6 +3236,14 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             print("Options: linearized, unrelaxed or orbopt")
             ashexit()
         print("MDCI_density option:", MDCI_density)
+    if 'DLPNO-CCSD' in orbitals_option:
+        MDCIkeyword="DLPNO-CCSD"
+        print("DLPNO-CCSD-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density ")
+        if MDCI_density is None:
+            print("Error: MDCI_density must be provided")
+            print("Options: linearized, unrelaxed or orbopt")
+            ashexit()
+        print("MDCI_density option:", MDCI_density) 
     if 'CCSD(T)' in orbitals_option:
         AUTOCIkeyword="AUTOCI-CCSD(T)"
         print("CCSD(T)-type natural orbitals requested.")
@@ -3502,6 +3510,22 @@ end
                                  label=mdcilabel, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mdci.nat"
         natoccgrab=CCSD_natocc_grab
+    elif orbitals_option =="DLPNO-CCSD":
+        #NOTE: Due to a bug in ORCA version 5 and 6.0.0
+        # Requesting DLPNO-CCSD natural orbitals from any density results in a wrong coupled cluster problem
+        # Hence we have to request density calculation alone and then diagonalize to get the natural orbitals manually
+        ccsdblocks=f"""
+        %maxcore {memory}
+        {basisblock}
+        {extrablock}
+        %mdci
+        density {MDCI_density}
+        end
+        """
+        mdcilabel = MDCIkeyword.replace("/","") #To avoid / in CEPA/1 etc
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores,
+                                 label=mdcilabel, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        
     elif 'CASSCF' in orbitals_option:
         casscfblocks=f"""
         %maxcore {memory}
@@ -3654,6 +3678,15 @@ end
                 nat_occupations=natoccgrab(natorbs.filename+'.out')
                 if orbitals_option not in ['MRCI','FOBO']:
                     natocc_print(nat_occupations,orbitals_option,nmin,nmax)
+            elif orbitals_option == "DLPNO-CCSD":
+                # Due to ORCA bug we have to get natural orbitals in a special ways
+                natorb, nat_occupations = calculate_ORCA_natorbs_from_density(natorbs.gbwfile,densityname="mdcip")
+
+                #TODO: Need to write natural orbitals to a new GBW-file
+                # Requires JSON-update and then JSON->GBW conversion
+                # Not yet ready, due to an ORCA bug in orca_2json
+                ashexit()
+
             else:
                 nat_occupations=[]
 
@@ -3853,3 +3886,18 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     
     print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP', moduleindex=2)
     return filename
+
+
+
+# calculate_natorbs_from_density
+# Convenient function to get natural orbitals from any density even if ORCA did create the natural orbitals
+
+def calculate_ORCA_natorbs_from_density(gbwfile,densityname="mdcip"):
+    from ash.functions.functions_elstructure import diagonalize_DM_AO
+    #JSON file from GBW-file (NOTE: can be regular GBW-file even if we want the MDCI)
+    jsonfile = create_ORCA_json_file(gbwfile, format="json", basis_set=True, mo_coeffs=True)
+    DM_AO,C,S, MO_occs, MO_energies, AO_basis, AO_order = grab_ORCA_wfn(jsonfile=jsonfile, density=densityname)
+    natorb, natocc = diagonalize_DM_AO(DM_AO, S)
+
+    return natorb, natocc
+

@@ -279,6 +279,7 @@ class NonBondedTheory(Theory):
             if len(self.LJpairpotentials) > 0:
                 LJ=True
         else:
+            print("No LJ")
             LJ=False
 
         # If charges not provided to run function. Use object charges
@@ -311,6 +312,7 @@ class NonBondedTheory(Theory):
                 print("Using slow Python MM code")
             # Sending full coords and charges over. QM charges are set to 0.
             if Coulomb:
+                print("here")
                 self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, current_coords, mode="numpy")
                 if self.printlevel >= 2:
                     print("Coulomb Energy (au):", self.Coulombchargeenergy)

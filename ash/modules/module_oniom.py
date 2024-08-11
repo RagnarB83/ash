@@ -11,6 +11,7 @@ from ash.functions.functions_general import BC, ashexit, print_time_rel,print_li
 from ash.modules.module_theory import Theory
 from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
 from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB_output
+from ash.modules.module_QMMM import linkatom_force_contribution
 
 
 #TODO: deal with GBW file and ORCA autostart mismatching for different regions and theory-levels
@@ -566,52 +567,3 @@ class ONIOMTheory(Theory):
             return self.energy,self.gradient
         else:
             return self.energy
-
-
-#This projects the linkatom force onto the respective QM atom and MM atom
-# NOTE: Modified version originally made for QM/MM
-# Simpler
-def linkatom_force_contribution(Qcoord, Mcoord, Lcoord, Lgrad):
-    print("Qcoord:", Qcoord)
-    print("Mcoord:", Mcoord)
-    print("Lcoord:", Lcoord)
-    print("Lgrad:", Lgrad)
-    # QM1-L and QM1-MM1 distances
-    QLdistance=ash.modules.module_coords.distance(Qcoord,Lcoord)
-    print("QLdistance:", QLdistance)
-    MQdistance=ash.modules.module_coords.distance(Mcoord,Qcoord)
-    print("MQdistance:", MQdistance)
-    # B and C: a 3x3 arrays
-    B=np.zeros([3,3])
-    C=np.zeros([3,3])
-    for i in range(0,3):
-        for j in range(0,3):
-            B[i,j]=-1*QLdistance*(Mcoord[i]-Qcoord[i])*(Mcoord[j]-Qcoord[j]) / (MQdistance*MQdistance*MQdistance)
-    for i in range(0,3):
-        B[i,i] = B[i,i] + QLdistance / MQdistance
-    for i in range(0,3):
-        for j in range(0,3):
-            C[i,j]= -1 * B[i,j]
-    for i in range(0,3):
-        C[i,i] = C[i,i] + 1.0
-
-    # Multiplying C matrix with Linkatom gradient
-    # temp
-    g_x=C[0,0]*Lgrad[0]+C[0,1]*Lgrad[1]+C[0,2]*Lgrad[2]
-    g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
-    g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
-
-    print("g_x:", g_x)
-    print("g_y:", g_y)
-    print("g_z:", g_z)
-
-    # Multiplying B matrix with Linkatom gradient
-    gg_x=B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2]
-    gg_y=B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2]
-    gg_z=B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2]
-
-    print("gg_x:", gg_x)
-    print("gg_y:", gg_y)
-    print("gg_z:", gg_z)
-    # Return QM1_gradient and MM1_gradient contribution (to be added)
-    return [g_x,g_y,g_z],[gg_x,gg_y,gg_z]
