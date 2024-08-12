@@ -3525,8 +3525,11 @@ end
         mdcilabel = MDCIkeyword.replace("/","") #To avoid / in CEPA/1 etc
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores,
                                  label=mdcilabel, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
-        mofile=f"{natorbs.filename}.mdci.nat"
-        natoccgrab=CCSD_natocc_grab
+        #mofile=f"{natorbs.filename}.mdci.nat"
+        #natoccgrab=CCSD_natocc_grab
+        #For open-shell systems we get unrestricted natorbs it seems
+        #Now diagonalizing manually
+        natoccgrab=None
     elif orbitals_option =="DLPNO-CCSD":
         #NOTE: Due to a bug in ORCA version 5 and 6.0.0
         # Requesting DLPNO-CCSD natural orbitals from any density results in a wrong coupled cluster problem
@@ -3701,6 +3704,12 @@ end
                 mofile,nat_occupations = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="mdcip",
                     result_file="ORCA_DLPNOCCSD_nat_ASH", ORCA_version="6.0.0", change_from_UHF_to_ROHF=True)
                 natocc_print(nat_occupations,orbitals_option,nmin,nmax)
+            elif orbitals_option =="CCSD" or orbitals_option =="QCISD" or orbitals_option =="CEPA/1" or orbitals_option =="CPF/1":
+                print("Warning: open-shell MDCI natural orbitals give 2 sets of natural orbitals")
+                print("Undesirable so we do diagonalization manually")
+                mofile,nat_occupations = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="mdcip",
+                    result_file=f"ORCA_MDCI{orbitals_option}_nat_ASH", ORCA_version="6.0.0", change_from_UHF_to_ROHF=True)
+                natocc_print(nat_occupations,orbitals_option,nmin,nmax)                
             elif orbitals_option == "CCSD(T)":
                 print("Warning: CCSD(T) natural orbitals requested (things can go wrong).")
                 print("Natural orbitals not directly available and have to be manually diagonalized from density")
