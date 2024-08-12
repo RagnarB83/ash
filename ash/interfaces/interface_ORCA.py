@@ -35,7 +35,7 @@ class ORCATheory:
 
         # Making sure we have a working ORCA location
         print("Checking for ORCA location")
-        self.orcadir = check_ORCA_location(orcadir)
+        self.orcadir = check_ORCA_location(orcadir, modulename="ORCATheory")
         # Making sure ORCA binary works (and is not orca the screenreader)
         check_ORCAbinary(self.orcadir)
         # Checking OpenMPI
@@ -743,12 +743,12 @@ end"""
 #CHECKS FOR ORCA program
 ###############################################
 
-def check_ORCA_location(orcadir):
+def check_ORCA_location(orcadir, modulename="ORCATheory"):
     if orcadir != None:
         finalorcadir = orcadir
         print(BC.OKGREEN,f"Using orcadir path provided: {finalorcadir}", BC.END)
     else:
-        print(BC.WARNING, "No orcadir argument passed to ORCATheory. Attempting to find orcadir variable in ASH settings file (~/ash_user_settings.ini)", BC.END)
+        print(BC.WARNING, f"No orcadir argument passed to {modulename}. Attempting to find orcadir variable in ASH settings file (~/ash_user_settings.ini)", BC.END)
         try:
             finalorcadir=ash.settings_ash.settings_dict["orcadir"]
             print(BC.OKGREEN,"Using orcadir path provided from ASH settings file (~/ash_user_settings.ini): ", finalorcadir, BC.END)
@@ -2084,7 +2084,7 @@ def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=
     densityfilename=None, individual_file=False, mo_operator=0, mo_number=None,):
     print("Running run_orca_plot")
     print("Gridvalue:", gridvalue)
-    orcadir = check_ORCA_location(orcadir)
+    orcadir = check_ORCA_location(orcadir, modulename="run_orca_plot")
     def check_if_file_exists():
         if os.path.isfile(densityfilename) is True:
             print("File exists")
@@ -2579,7 +2579,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
 
     #Making sure we have a working ORCA location
     print("Checking for ORCA location")
-    orcadir = check_ORCA_location(orcadir)
+    orcadir = check_ORCA_location(orcadir, modulename="ORCA_External_Optimizer")
     #Making sure ORCA binary works (and is not orca the screenreader)
     check_ORCAbinary(orcadir)
     #Adding orcadir to PATH. Only required if ORCA not in PATH already
@@ -2640,7 +2640,7 @@ def make_molden_file_ORCA(GBWfile, orcadir=None, printlevel=2):
     print_line_with_mainheader("make_molden_file_ORCA")
 
     #Check for ORCA dir
-    orcadir = check_ORCA_location(orcadir)
+    orcadir = check_ORCA_location(orcadir, modulename="make_molden_file_ORCA")
 
     print("Inputfile:", GBWfile)
     #GBWfile should be ORCA file. Can be SCF GBW (.gbw) or natural orbital WF file (.nat)
@@ -2687,7 +2687,7 @@ def run_orca_mapspc(filename, option, start=0.0, end=100, unit='eV', broadening=
     print(f"points: {points}")
     print(f"orcadir: {orcadir}")
 
-    orcadir = check_ORCA_location(orcadir)
+    orcadir = check_ORCA_location(orcadir, modulename="run_orca_mapspc")
     p = sp.run([orcadir + '/orca_mapspc', filename, option, f"-{unit}" f"-w{broadening}", f"-n{points}"], encoding='ascii')
 
 #Simple function to get elems and coordinates from ORCA outputfile
@@ -2926,7 +2926,7 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
 def create_GBW_from_json_file(jsonfile, orcadir=None):
 
     orcafile_basename = jsonfile.split('.')[0]
-    orcadir = check_ORCA_location(orcadir)
+    orcadir = check_ORCA_location(orcadir, modulename="create_GBW_from_json_file)
     print("Calling orca_2json to convert JSON-file to GBW-file")
     sp.call([orcadir+'/orca_2json', jsonfile, '-gbw'])
 
@@ -2937,7 +2937,7 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
 def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_coeffs=True, one_el_integrals=True,
                           two_el_integrals=False, two_el_integrals_type="ALL", dipole_integrals=False, full_int_transform=False):
     print("create_ORCA_json_file")
-    orcadir = check_ORCA_location(orcadir)
+    orcadir = check_ORCA_location(orcadir, modulename="create_ORCA_json_file")
     #orcafile_basename = file.split('.')[0]
     orcafile_basename='.'.join(file.split(".")[0:-1])
 
@@ -3054,7 +3054,7 @@ def read_ORCA_json_file(file):
     print("Molecule-CoordinateUnits:", data["Molecule"]["CoordinateUnits"])
     print("Molecule-HFTyp:", data["Molecule"]["HFTyp"])
     print()
-    #print("Densities found:", data["Molecule"]["Densities"])
+    print("Densities found:", data["Molecule"]["Densities"].keys())
     print("Dictionary keys of data", data["Molecule"].keys())
     #Note: only returning sub-dict Molecule
     return data["Molecule"]
@@ -3918,3 +3918,26 @@ def calculate_ORCA_natorbs_from_density(gbwfile,densityname="mdcip"):
 
     return natorb, natocc
 
+
+def new_ORCA_natorbsfile_from_density(gbwfile,densityname="mdcip", result_file="ORCA_ASH", ORCA_version="6.0.0"):
+    from ash.functions.functions_elstructure import diagonalize_DM_AO
+    #JSON file from GBW-file (NOTE: can be regular GBW-file even if we want the MDCI)
+    jsonfile = create_ORCA_json_file(gbwfile, format="json", basis_set=True, mo_coeffs=True)
+    #Read all molecular data from GBW
+    mol_data = read_ORCA_json_file(jsonfile)
+    #Get Wfn data only
+    DM_AO,C,S, MO_occs, MO_energies, AO_basis, AO_order = grab_ORCA_wfn(jsonfile=jsonfile, density=densityname)
+    #Diagonalize to get natural orbitals
+    natorb, natocc = diagonalize_DM_AO(DM_AO, S)
+
+    #Loop over MOs and replace canonical MOs with NOs
+    for i,mo in enumerate(mol_data["MolecularOrbitals"]["MOs"]):
+        mo["Occupancy"] = natocc[i]
+        mo["MOCoefficients"] = list(natorb[i])
+    jsonfile = write_ORCA_json_file(mol_data,filename=f"{result_file}.json", ORCA_version=ORCA_version)
+    create_GBW_from_json_file(jsonfile)
+
+    #orca_basename=jsonfile.split('.')[0:-1]
+    #print("orca_basename:", orca_basename)
+
+    return f"{result_file}_copy.gbw"
