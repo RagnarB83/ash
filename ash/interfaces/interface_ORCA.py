@@ -2926,7 +2926,7 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
 def create_GBW_from_json_file(jsonfile, orcadir=None):
 
     orcafile_basename = jsonfile.split('.')[0]
-    orcadir = check_ORCA_location(orcadir, modulename="create_GBW_from_json_file)
+    orcadir = check_ORCA_location(orcadir, modulename="create_GBW_from_json_file")
     print("Calling orca_2json to convert JSON-file to GBW-file")
     sp.call([orcadir+'/orca_2json', jsonfile, '-gbw'])
 
