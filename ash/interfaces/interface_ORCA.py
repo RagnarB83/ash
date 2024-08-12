@@ -3962,9 +3962,9 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
 
     jsonfile = write_ORCA_json_file(mol_data,filename=f"{result_file}_mod.json", ORCA_version=ORCA_version)
     print("New JSON-file created:", jsonfile)
-    create_GBW_from_json_file(jsonfile)
+    newgbwfile = create_GBW_from_json_file(jsonfile)
 
     #orca_basename=jsonfile.split('.')[0:-1]
     #print("orca_basename:", orca_basename)
 
-    return f"{result_file}_copy.gbw", natocc
+    return newgbwfile, natocc
