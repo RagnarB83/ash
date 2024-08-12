@@ -3956,7 +3956,9 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
                 break
     print("XX mol_data orblabels new", mol_data["MolecularOrbitals"]["OrbitalLabels"])
 
-    jsonfile = write_ORCA_json_file(mol_data,filename=f"{result_file}.json", ORCA_version=ORCA_version)
+    jsonfile = write_ORCA_json_file(mol_data,filename=f"{result_file}_xx.json", ORCA_version=ORCA_version)
+    print("New JSON-file created:", jsonfile)
+    exit()
     create_GBW_from_json_file(jsonfile)
 
     #orca_basename=jsonfile.split('.')[0:-1]
