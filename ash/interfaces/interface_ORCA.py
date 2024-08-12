@@ -3699,13 +3699,13 @@ end
                 print("Warning: DLPNO-CCSD natural orbitals requested (things can go wrong).")
                 print("Due to ORCA bug, DLPNO-CCSD natural orbitals come from ASH diagonalization of density")
                 mofile,nat_occupations = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="mdcip",
-                    result_file="ORCA_DLPNOCCSD_nat_ASH", ORCA_version="6.0.0")
+                    result_file="ORCA_DLPNOCCSD_nat_ASH", ORCA_version="6.0.0", change_from_UHF_to_ROHF=True)
                 natocc_print(nat_occupations,orbitals_option,nmin,nmax)
             elif orbitals_option == "CCSD(T)":
                 print("Warning: CCSD(T) natural orbitals requested (things can go wrong).")
                 print("Natural orbitals not directly available and have to be manually diagonalized from density")
                 mofile, nat_occupations = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="autocipur",
-                    result_file="ORCA_CCSD_T_nat_ASH", ORCA_version="6.0.0")
+                    result_file="ORCA_CCSD_T_nat_ASH", ORCA_version="6.0.0", change_from_UHF_to_ROHF=True)
                 natocc_print(nat_occupations,orbitals_option,nmin,nmax)
             else:
                 nat_occupations=[]
@@ -3924,7 +3924,8 @@ def calculate_ORCA_natorbs_from_density(gbwfile,densityname="mdcip"):
 # Get natural orbitals of any calculated density of an ORCA calculation
 # Convenient when ORCA natural orbital printing is buggy
 # NOTE: Not fully tested
-def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file="ORCA_ASH", ORCA_version="6.0.0"):
+def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file="ORCA_ASH", ORCA_version="6.0.0",
+                                      change_from_UHF_to_ROHF=False):
     from ash.functions.functions_elstructure import diagonalize_DM_AO
     #JSON file from GBW-file (NOTE: can be regular GBW-file even if we want the MDCI)
     jsonfile = create_ORCA_json_file(gbwfile, format="json", basis_set=True, mo_coeffs=True)
@@ -3942,7 +3943,13 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
     for i,mo in enumerate(mol_data["MolecularOrbitals"]["MOs"]):
         mo["Occupancy"] = natocc[i]
         mo["MOCoefficients"] = list(natorb_transposed[i])
+        if i == len(natorb_transposed) and change_from_UHF_to_ROHF is True:
+            print("Changing UHF to ROHF")
+            print("Skipping beta")
+            mol_data["HFTyp"] = "ROHF"
+            break
     
+
     jsonfile = write_ORCA_json_file(mol_data,filename=f"{result_file}.json", ORCA_version=ORCA_version)
     create_GBW_from_json_file(jsonfile)
 
