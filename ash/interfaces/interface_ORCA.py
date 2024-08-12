@@ -3947,7 +3947,7 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
         oldmo = mol_data["MolecularOrbitals"]["MOs"][i]
         #Creating new MO using natorb MO coeffs and occupations. Setting orb energy to 0.0
         #Note: This will delete any beta information
-        newmo = {"MOCoefficients":natorb_transposed[i], "Occupancy":natocc[i], "OrbitalEnergy":0.0,
+        newmo = {"MOCoefficients":list(natorb_transposed[i]), "Occupancy":natocc[i], "OrbitalEnergy":0.0,
                     "OrbitalSymLabel":oldmo["OrbitalSymLabel"], "OrbitalSymmetry":oldmo["OrbitalSymmetry"]}   
         new_mos_sublist.append(newmo)
 
