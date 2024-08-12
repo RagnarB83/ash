@@ -3940,10 +3940,12 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
     print("Natural orbital occupations:", natocc)
     natorb_transposed=natorb.T
     #Loop over MOs and replace canonical MOs with NOs
+    print("len(natorb_transposed):", len(natorb_transposed))
     for i,mo in enumerate(mol_data["MolecularOrbitals"]["MOs"]):
+        print("i:", i)
         mo["Occupancy"] = natocc[i]
         mo["MOCoefficients"] = list(natorb_transposed[i])
-        if i == len(natorb_transposed) and change_from_UHF_to_ROHF is True:
+        if i == len(natorb_transposed)-1 and change_from_UHF_to_ROHF is True:
             print("Changing UHF to ROHF")
             print("Skipping beta")
             mol_data["HFTyp"] = "ROHF"
