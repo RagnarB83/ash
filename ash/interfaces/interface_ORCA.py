@@ -2961,7 +2961,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
         prop_1e_integrals_line="\"1elPropertyIntegrals\": [\"dipole\"],"
     if one_el_integrals is True:
         print("Requesting printout of 1-electron integrals")
-        one_el_integrals_line="\"1elIntegrals\": [\"H\",\"S\", \"T\", \"V\", \"HMO\"],"
+        one_el_integrals_line="\"1elIntegrals\": [\"H\",\"S\", \"T\", \"V\"],"
     if two_el_integrals is True:
         print("Requesting printout of 2-electron integrals")
         if two_el_integrals_type == "ALL":
