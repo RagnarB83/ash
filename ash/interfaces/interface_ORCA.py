@@ -3698,7 +3698,7 @@ end
             elif orbitals_option == "DLPNO-CCSD":
                 print("Warning: DLPNO-CCSD natural orbitals requested (things can go wrong).")
                 print("Due to ORCA bug, DLPNO-CCSD natural orbitals come from ASH diagonalization of density")
-                mofile,nat_occupations = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="autocipur",
+                mofile,nat_occupations = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="mdcip",
                     result_file="ORCA_DLPNOCCSD_nat_ASH", ORCA_version="6.0.0")
                 natocc_print(nat_occupations,orbitals_option,nmin,nmax)
             elif orbitals_option == "CCSD(T)":
