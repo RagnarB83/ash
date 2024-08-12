@@ -3036,10 +3036,8 @@ def read_ORCA_json_file(file):
     #Loading
     with open(f"{orcafile_basename}.json") as f:
         if orjson_loaded:
-            print("here")
             data = jsonlib.loads(f.read())
         else:
-            print("here2")
             data = jsonlib.load(f)
     print("Looping over dictionary")
     print("")

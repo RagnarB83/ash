@@ -1962,7 +1962,7 @@ def DM_MO_to_AO(DM_MO, C):
 #Diagonalize density matrix in AO basis
 def diagonalize_DM_AO(D, S):
     print("Diagonalizing density matrix")
-    import scipy
+    import scipy.linalg
     from functools import reduce
     # Diagonalize the DM in AO basis
     print("Trace of input DM_AO:", np.trace(D))
@@ -1980,7 +1980,7 @@ def diagonalize_DM_AO(D, S):
 #Diagonalize density matrix in MO basis
 def diagonalize_DM(D):
     print("Diagonalizing density matrix directly")
-    import scipy
+    import scipy.linalg
     #Diagonalize
     w, v = scipy.linalg.eigh(D)
     # Flip NOONs (and NOs) since they're in increasing order
