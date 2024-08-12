@@ -3245,7 +3245,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             print("Options: unrelaxed or relaxed")
             ashexit()
         print("MP2_density option:", MP2_density)
-    if 'CCSD' in orbitals_option:
+    if orbitals_option == 'CCSD':
         MDCIkeyword="CCSD"
         print("CCSD-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density ")
         if MDCI_density is None:
@@ -3253,7 +3253,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             print("Options: linearized, unrelaxed or orbopt")
             ashexit()
         print("MDCI_density option:", MDCI_density)
-    if 'DLPNO-CCSD' in orbitals_option:
+    if orbitals_option == "DLPNO-CCSD":
         MDCIkeyword="DLPNO-CCSD"
         print("DLPNO-CCSD-type orbitals requested. This means that natural orbitals will be created from the chosen MDCI_density ")
         if MDCI_density is None:
@@ -3261,7 +3261,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
             print("Options: linearized, unrelaxed or orbopt")
             ashexit()
         print("MDCI_density option:", MDCI_density) 
-    if 'CCSD(T)' in orbitals_option:
+    if orbitals_option == "CCSD(T)":
         AUTOCIkeyword="AUTOCI-CCSD(T)"
         print("CCSD(T)-type natural orbitals requested.")
         print("Since ORCA 6.0 this is available in the AUTOCI module only")
