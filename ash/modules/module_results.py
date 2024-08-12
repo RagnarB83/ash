@@ -10,6 +10,9 @@ class ASH_Results:
     label: str = None
     # Single-job: Energy and gradient
     energy: float = None
+    qm_energy: float = None
+    mm_energy: float = None
+    qmmm_energy: float = None
     gradient: np.array = None
     reaction_energy: float = None
     # Energy contributions if e.g. ORCA_CC_CBS_Theory

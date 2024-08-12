@@ -15,12 +15,14 @@ from ash.functions.functions_general import ashexit, BC,print_time_rel,print_lin
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_results import ASH_Results
 
-#Single-point energy function
+
+# Single-point energy function
 def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
     result = Singlepoint(fragment=fragment, theory=theory, Grad=True, charge=charge, mult=mult)
     return result
 
-#Single-point energy function
+
+# Single-point energy function
 def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, printlevel=2):
     """Singlepoint function: runs a single-point energy calculation using ASH theory and ASH fragment.
 
@@ -38,19 +40,18 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
     """
     if printlevel >= 1:
         print_line_with_mainheader("Singlepoint function")
-    module_init_time=time.time()
+    module_init_time = time.time()
     if fragment is None or theory is None:
         print(BC.FAIL,"Singlepoint requires a fragment and a theory object",BC.END)
         ashexit()
-    coords=fragment.coords
-    elems=fragment.elems
+    coords = fragment.coords
+    elems = fragment.elems
 
-    #Check charge/mult
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint", theory=theory, printlevel=printlevel)
-
+    # Check charge/mult
+    charge, mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint", theory=theory, printlevel=printlevel)
 
     # Run a single-point energy job with gradient
-    if Grad ==True:
+    if Grad:
         if printlevel >= 1:
             print()
             print(BC.WARNING,"Doing single-point Energy+Gradient job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label), BC.END)
@@ -60,6 +61,10 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
             print("Energy: ", energy)
             print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         result = ASH_Results(label="Singlepoint", energy=energy, gradient=gradient, charge=charge, mult=mult)
+        if theory.theorytype == "QM/MM":
+            result.qmmm_energy = theory.QM_MM_energy
+            result.mm_energy = theory.MMenergy
+            result.qm_energy = theory.QMenergy
         result.write_to_disk(filename="ASH_SP.result")
         return result
     # Run a single-point energy job without gradient (default)
@@ -68,28 +73,26 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
             print()
             print("Doing single-point Energy job on fragment. Formula: {} Label: {} ".format(fragment.prettyformula,fragment.label))
             print(f"Charge: {charge} Mult: {mult}") #Charge/mult should have been defined so we print
-        #Run
+        # Run
         energy = theory.run(current_coords=coords, elems=elems, charge=charge, mult=mult)
 
-        #Previously some theories like CC_CBS_Theory returned energy and componentsdict as a tuple
-        #TODO: This can probably be deleted soon.
-        if type(energy) is tuple:
-            componentsdict=energy[1]
-            energy=energy[0]
         if printlevel >= 1:
             print("Energy: ", energy)
-        #Now adding total energy to fragment
+        # Now adding total energy to fragment
         fragment.set_energy(energy)
         if printlevel >= 1:
             print_time_rel(module_init_time, modulename='Singlepoint', moduleindex=1)
         result = ASH_Results(label="Singlepoint", energy=energy, charge=charge, mult=mult)
+        if theory.theorytype == "QM/MM":
+            result.qmmm_energy = theory.QM_MM_energy
+            result.mm_energy = theory.MMenergy
+            result.qm_energy = theory.QMenergy
         result.write_to_disk(filename="ASH_SP.result")
         return result
 
 
-
-#Single-point energy function that runs calculations on 1 fragment using multiple theories. Returns a list of energies.
-#TODO: allow Grad option?
+# Single-point energy function that runs calculations on 1 fragment using multiple theories. Returns a list of energies.
+# TODO: allow Grad option?
 def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None, printlevel=2):
     print_line_with_mainheader("Singlepoint_theories function")
     module_init_time=time.time()
@@ -97,16 +100,16 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None, p
 
     energies=[]
 
-    #Looping through fragmengs
+    # Looping through fragmengs
     for theory in theories:
         #Check charge/mult
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Singlepoint_theories", theory=theory,
                                         printlevel=printlevel)
 
-        #Running single-point.
+        # Running single-point.
         result = Singlepoint(theory=theory, fragment=fragment, charge=charge, mult=mult)
 
-        #Preserve outputfile
+        # Preserve outputfile
         calc_label = "Frag_" + theory.__class__.__name__+"_"
         try:
             shutil.copyfile(theory.filename+'.out', f'./{calc_label}.out')
@@ -124,7 +127,7 @@ def Singlepoint_theories(theories=None, fragment=None, charge=None, mult=None, p
     print_time_rel(module_init_time, modulename='Singlepoint_theories', moduleindex=1)
     return result
 
-#Pretty table of fragments and theories
+# Pretty table of fragments and theories
 def print_theories_table(theories,energies,fragment):
     print()
     print("="*70)

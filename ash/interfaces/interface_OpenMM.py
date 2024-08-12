@@ -1919,11 +1919,7 @@ class OpenMMTheory:
         print("Updating LJ interaction strengths in OpenMM object.")
         assert len(atomlist) == len(epsilons)
         for atomindex, newepsilon in zip(atomlist, epsilons):
-            print("atomindex:", atomindex)
-            print("newepsilon:", newepsilon)
             charge, sigma, oldepsilon = self.nonbonded_force.getParticleParameters(atomindex)
-            print("charge:", charge)
-            print("oldepsilon", oldepsilon)
             # Different depending on type of NonbondedForce
             if isinstance(self.nonbonded_force, openmm.CustomNonbondedForce):
                 self.nonbonded_force.setParticleParameters(atomindex, [charge, sigma, newepsilon])
@@ -1931,8 +1927,8 @@ class OpenMMTheory:
                 # print("bla1,bla2,bla3", bla1,bla2,bla3)
             elif isinstance(self.nonbonded_force, openmm.NonbondedForce):
                 self.nonbonded_force.setParticleParameters(atomindex, charge, sigma, newepsilon)
-                bla1,bla2,bla3 = self.nonbonded_force.getParticleParameters(atomindex)
-                print("bla1,bla2,bla3", bla1,bla2,bla3)
+                #bla1,bla2,bla3 = self.nonbonded_force.getParticleParameters(atomindex)
+                #print("bla1,bla2,bla3", bla1,bla2,bla3)
 
         printdebug("done here")
         print_time_rel(timeA, modulename="update_LJ_epsilons")
