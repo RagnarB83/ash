@@ -3949,7 +3949,7 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
             if change_from_UHF_to_ROHF is True:
                 print("Changing UHF to ROHF")
                 print("Skipping beta")
-                mol_data["HFTyp"] = "ROHF"
+                mol_data["HFTyp"] = "RHF"
                 mol_data["MolecularOrbitals"]["OrbitalLabels"] = mol_data["MolecularOrbitals"]["OrbitalLabels"][0:int(len(mol_data["MolecularOrbitals"]["OrbitalLabels"])/2)]
                 mol_data["Densities"] = ""
                 break
