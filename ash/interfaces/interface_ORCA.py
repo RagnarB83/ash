@@ -2930,7 +2930,7 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
     print("Calling orca_2json to convert JSON-file to GBW-file")
     sp.call([orcadir+'/orca_2json', jsonfile, '-gbw'])
 
-    return f"{orcafile_basename}.gbw"
+    return f"{orcafile_basename}_copy.gbw"
 
 #Using orca_2json to create JSON file from ORCA GBW file
 #Format options: json, bson, ubjson, msgpack
