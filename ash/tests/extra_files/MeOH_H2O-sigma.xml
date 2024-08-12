@@ -1,6 +1,6 @@
-# Basic OpenMM XML-file for a simple nonbonded ForceField
-# MeOH...H2O system. defined as one residue here for convenience
-# LJ parameters match MeOH_H2O-sigma.ff (note unit changes)
+<!--Basic OpenMM XML-file for a simple nonbonded ForceField-->
+<!--MeOH...H2O system. defined as one residue here for convenience-->
+<!--LJ parameters match MeOH_H2O-sigma.ff (note unit changes)-->
 <ForceField>
 <AtomTypes>
 <Type name="CX" class="C" element="C" mass="12.0110"/>
@@ -22,7 +22,7 @@
 </Residue>
 </Residues>
 <NonbondedForce coulomb14scale="1.0" lj14scale="1.0">
-#Units: epsilon in kJ/mol (positive number), sigma in nm.
+<!--Units: epsilon in kJ/mol (positive number), sigma in nm.-->
 <Atom type="CX" charge="0.0" sigma="0.3550053212" epsilon="0.29288"/>
 <Atom type="HX" charge="0.0" sigma="0.0" epsilon="0.0"/>
 <Atom type="OT" charge="-0.834" sigma="0.31507524065751241" epsilon="0.6363864"/>
