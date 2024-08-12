@@ -3953,7 +3953,7 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
                 print("mol_data orblabels old", mol_data["MolecularOrbitals"]["OrbitalLabels"])
                 mol_data["MolecularOrbitals"]["OrbitalLabels"] = mol_data["MolecularOrbitals"]["OrbitalLabels"][0:int(len(mol_data["MolecularOrbitals"]["OrbitalLabels"])/2)]
                 print("mol_data orblabels new", mol_data["MolecularOrbitals"]["OrbitalLabels"])
-                continue
+                break
     print("XX mol_data orblabels new", mol_data["MolecularOrbitals"]["OrbitalLabels"])
 
     jsonfile = write_ORCA_json_file(mol_data,filename=f"{result_file}.json", ORCA_version=ORCA_version)
