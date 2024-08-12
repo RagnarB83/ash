@@ -3918,8 +3918,10 @@ def calculate_ORCA_natorbs_from_density(gbwfile,densityname="mdcip"):
 
     return natorb, natocc
 
-
-def new_ORCA_natorbsfile_from_density(gbwfile,densityname="mdcip", result_file="ORCA_ASH", ORCA_version="6.0.0"):
+# Get natural orbitals of any calculated density of an ORCA calculation
+# Convenient when ORCA natural orbital printing is buggy
+# NOTE: Not fully tested
+def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file="ORCA_ASH", ORCA_version="6.0.0"):
     from ash.functions.functions_elstructure import diagonalize_DM_AO
     #JSON file from GBW-file (NOTE: can be regular GBW-file even if we want the MDCI)
     jsonfile = create_ORCA_json_file(gbwfile, format="json", basis_set=True, mo_coeffs=True)
@@ -3930,10 +3932,12 @@ def new_ORCA_natorbsfile_from_density(gbwfile,densityname="mdcip", result_file="
     #Diagonalize to get natural orbitals
     natorb, natocc = diagonalize_DM_AO(DM_AO, S)
 
+    natorb_transposed=natorb.T
     #Loop over MOs and replace canonical MOs with NOs
     for i,mo in enumerate(mol_data["MolecularOrbitals"]["MOs"]):
         mo["Occupancy"] = natocc[i]
-        mo["MOCoefficients"] = list(natorb[i])
+        mo["MOCoefficients"] = list(natorb_transposed[i])
+    
     jsonfile = write_ORCA_json_file(mol_data,filename=f"{result_file}.json", ORCA_version=ORCA_version)
     create_GBW_from_json_file(jsonfile)
 
