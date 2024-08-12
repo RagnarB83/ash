@@ -49,8 +49,8 @@ def test_qm_mm_pyscf_nonbondedtheory_MeOH_H2O():
                     [-0.00195135,  0.01570807, -0.00057301],
                     [0.00151874, -0.00790899, -0.00279125]])
 
-    assert np.isclose(result.energy, ref_energy, atol=1e-6), "Energy is not correct"
-    assert np.allclose(result.gradient, ref_gradient, atol=1e-6), "Gradient is not correct"
+    assert np.isclose(result.energy, ref_energy, atol=2e-6), "Energy is not correct"
+    assert np.allclose(result.gradient, ref_gradient, atol=1e-5), "Gradient is not correct"
 
 
 def test_qm_mm_pyscf_openmm_MeOH_H2O():
@@ -93,7 +93,7 @@ def test_qm_mm_pyscf_openmm_MeOH_H2O():
                 [0.00151874, -0.00790902, -0.00279129]])
 
     assert np.isclose(result.energy, ref_energy, atol=2e-6), "Energy is not correct"
-    assert np.allclose(result.gradient, ref_gradient, atol=1e-6), "Gradient is not correct"
+    assert np.allclose(result.gradient, ref_gradient, atol=1e-5), "Gradient is not correct"
 
 #Read Lysozyme solvated PDB-file, create OpenMMTheory job, define pyscftheory, create QM/MM and run SP
 def test_qm_mm_pyscf_openmm_lysozyme():

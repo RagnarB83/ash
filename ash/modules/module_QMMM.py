@@ -15,7 +15,7 @@ from ash.modules.module_MM import coulombcharge
 
 class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None, charges=None,
-                 embedding="Elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
+                 embedding="elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
                  unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
                 qm_charge=None, qm_mult=None, dipole_correction=True):
 
@@ -132,14 +132,19 @@ class QMMMTheory:
             self.numcores=1
         print("QM/MM object selected to use {} cores".format(self.numcores))
 
-        #Embedding type: mechanical, electrostatic etc.
+        # Embedding type: mechanical, electrostatic etc.
         self.embedding=embedding
-        print("Embedding:", self.embedding)
-        if self.embedding == "Elstat":
-            self.PC = True
-        else:
-            self.PC = False
 
+        if self.embedding.lower() == "elstat" or self.embedding.lower() == "electrostatic" or self.embedding.lower() == "electronic":
+            self.embedding="elstat"
+            self.PC = True
+        elif self.embedding.lower() == "mechanical" or self.embedding.lower() == "mech":
+            self.embedding="mech"
+            self.PC = False
+        else:
+            print("Unknown embedding. Valid options are: elstat (synonyms: electrostatic, electronic), mech (synonym: mechanical)")
+            ashexit()
+        print("Embedding:", self.embedding)
         # Whether to do dipole correction or not
         # Note: For regular electrostatic embedding this should be True
         # Turn off for charge-shifting
@@ -278,7 +283,7 @@ class QMMMTheory:
 
             # Zero QM charges for electrostatic embedding
             # TODO: DO here or inside run instead?? Needed for MM code.
-            if self.embedding=="Elstat":
+            if self.embedding.lower() == "elstat":
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
                 # print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
@@ -299,7 +304,7 @@ class QMMMTheory:
             if self.printlevel > 2:
                 for i in self.allatoms:
                     if i in self.qmatoms:
-                        if self.embedding=="Elstat":
+                        if self.embedding.lower() == "elstat":
                             print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges_qmregionzeroed[i]))
                         else:
                             print("QM atom {} ({}) charge: {}".format(i, self.elems[i], self.charges[i]))
@@ -310,7 +315,7 @@ class QMMMTheory:
         else:
             # Case: No actual MM theory but we still want to zero charges for QM elstate embedding calculation
             # TODO: Remove option for no MM theory or keep this ??
-            if self.embedding=="Elstat":
+            if self.embedding.lower() == "elstat":
                 self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
             self.linkatoms=False
             self.dipole_correction=False
@@ -353,12 +358,14 @@ class QMMMTheory:
         # 3. Flag that this has been done
         self.QMChargesZeroed = True
         print_time_rel(timeA, modulename="ZeroQMCharges")
+
     def ShiftMMCharges(self):
         if self.chargeshifting_done is False:
             self.ShiftMMCharges_new2()
         else:
             print("Charge shifting already done. Using previous charges")
     #TODO: Delete old version below
+
     def ShiftMMCharges_old(self):
         timeA=time.time()
         if self.printlevel > 1:
@@ -661,10 +668,10 @@ class QMMMTheory:
         if self.printlevel >1 :
             print("QM-region Charge: {} Mult: {}".format(charge,mult))
 
-        if self.embedding.lower() == "mechanical" or self.embedding.lower() == "mech":
+        if self.embedding.lower() == "mech":
             return self.mech_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
                 label=label, charge=charge, mult=mult)
-        elif self.embedding.lower() == "elstat" or self.embedding.lower() == "electrostatic" or self.embedding.lower() == "electronic":
+        elif self.embedding.lower() == "elstat":
             return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
                 label=label, charge=charge, mult=mult)
         else:
@@ -904,7 +911,7 @@ class QMMMTheory:
                 print("Number of MM atoms:", len(self.mmatoms))
                 print(f"There are {self.num_linkatoms} linkatoms")
             # Do possible Charge-shifting. MM1 charge distributed to MM2 atoms
-            if self.embedding == "Elstat":
+            if self.embedding.lower() == "elstat":
                 if self.printlevel > 1:
                     print("Doing charge-shifting...")
                 self.ShiftMMCharges() # Creates self.pointcharges
@@ -940,7 +947,7 @@ class QMMMTheory:
             # If no linkatoms then use original self.qmelems
             self.current_qmelems = self.qmelems
             # If no linkatoms then self.pointcharges are just original charges with QM-region zeroed
-            if self.embedding == "Elstat":
+            if self.embedding.lower() == "elstat":
                 self.pointcharges = [self.charges_qmregionzeroed[i] for i in self.mmatoms]
 
         # NOTE: Now we have updated MM-coordinates (if doing linkatoms, with dipolecharges etc) and updated mm-charges (more, due to dipolecharges if linkatoms)
@@ -956,7 +963,7 @@ class QMMMTheory:
         self.pointcharges_original=copy.copy(self.pointcharges)
 
         # Populate QM_PC_gradient for efficiency
-        if self.embedding == "Elstat":
+        if self.embedding.lower() == "elstat":
             self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
 
         print_time_rel(init_time_runprep, modulename='runprep', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
@@ -1120,7 +1127,7 @@ class QMMMTheory:
                 self.QMenergy = QMenergy
                 #No TruncPC approximation active. No change to original QM and PCgradient from QMcode
                 self.QMgradient_wo_linkatoms = QMgradient_wo_linkatoms
-                if self.embedding=="Elstat":
+                if self.embedding.lower() == "elstat":
                     self.PCgradient = PCgradient
 
             # Populate QM_PC gradient (has full system size)
@@ -1278,7 +1285,7 @@ class QMMMTheory:
         self.QM_MM_energy= self.QMenergy+self.MMenergy-self.extforce_energy
         if self.printlevel >= 2:
             blankline()
-            if self.embedding=="Elstat":
+            if self.embedding.lower() == "elstat":
                 print("Note: You are using electrostatic embedding. This means that the QM-energy is actually the polarized QM-energy")
                 print("Note: MM energy also contains the QM-MM Lennard-Jones interaction\n")
             energywarning=""
