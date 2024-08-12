@@ -3952,7 +3952,7 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
                 mol_data["HFTyp"] = "ROHF"
                 print("mol_data orblabels old", mol_data["MolecularOrbitals"]["OrbitalLabels"])
                 mol_data["MolecularOrbitals"]["OrbitalLabels"] = mol_data["MolecularOrbitals"]["OrbitalLabels"][0:int(len(mol_data["MolecularOrbitals"]["OrbitalLabels"])/2)]
-                print("mol_data orblabels new", mol_data["OrbitalLabels"])
+                print("mol_data orblabels new", mol_data["MolecularOrbitals"]["OrbitalLabels"])
                 break
     
 
