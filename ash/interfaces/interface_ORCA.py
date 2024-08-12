@@ -3266,7 +3266,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
         print("CCSD(T)-type natural orbitals requested.")
         print("Since ORCA 6.0 this is available in the AUTOCI module only")
         if AutoCI_density is None:
-            print("Error: AutoCI_density must be provided")
+            print("Error: AutoCI_density keyword must be provided (not MDCI_density)")
             print("Options: linearized, unrelaxed or orbopt")
             ashexit()
         print("AutoCI_density option:", AutoCI_density)
@@ -3592,8 +3592,6 @@ end
         """
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {AUTOCIkeyword} {basis} autoaux tightscf", orcablocks=autociblocks, numcores=numcores,
                                  label=AUTOCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
-        mofile=f"ficddci3.mult.{mult}.root.0.FIC-DDCI3.nat"
-        natoccgrab=FIC_natocc_grab
     elif 'FIC' in orbitals_option:
         autociblocks=f"""
         %maxcore {memory}
@@ -3695,15 +3693,17 @@ end
                 nat_occupations=natoccgrab(natorbs.filename+'.out')
                 if orbitals_option not in ['MRCI','FOBO']:
                     natocc_print(nat_occupations,orbitals_option,nmin,nmax)
+            #Special issues
             elif orbitals_option == "DLPNO-CCSD":
-                # Due to ORCA bug we have to get natural orbitals in a special ways
-                natorb, nat_occupations = calculate_ORCA_natorbs_from_density(natorbs.gbwfile,densityname="mdcip")
-
-                #TODO: Need to write natural orbitals to a new GBW-file
-                # Requires JSON-update and then JSON->GBW conversion
-                # Not yet ready, due to an ORCA bug in orca_2json
-                ashexit()
-
+                print("Warning: DLPNO-CCSD natural orbitals requested (things can go wrong).")
+                print("Due to ORCA bug, DLPNO-CCSD natural orbitals come from ASH diagonalization of density")
+                mofile = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="autocipur",
+                    result_file="ORCA_DLPNOCCSD_nat_ASH", ORCA_version="6.0.0")
+            elif orbitals_option == "CCSD(T)":
+                print("Warning: CCSD(T) natural orbitals requested (things can go wrong).")
+                print("Natural orbitals not directly available and have to be manually diagonalized from density")
+                mofile = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="autocipur",
+                    result_file="ORCA_CCSD_T_nat_ASH", ORCA_version="6.0.0")
             else:
                 nat_occupations=[]
 
