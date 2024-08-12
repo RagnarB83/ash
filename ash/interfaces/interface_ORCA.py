@@ -3059,6 +3059,25 @@ def read_ORCA_json_file(file):
     #Note: only returning sub-dict Molecule
     return data["Molecule"]
 
+def write_ORCA_json_file(data,filename="ORCA_ASH.json", ORCA_version="6.0.0"):
+    print("write_ORCA_json_file")
+    print("Filename:", filename)
+    import json as jsonlib
+
+    #Add header if missing from datadict
+    final_data={}
+    if "ORCA Header" not in data:
+        final_data["ORCA Header"] = {"Version":ORCA_version}
+        final_data["Molecule"]=data
+    else:
+        final_data=data
+    #print("data:", data)
+    with open(filename, "w") as f:
+        #f.write(jsonlib.dumps(data))
+        jsonlib.dump(final_data, f,indent=2)
+
+    return filename
+
 def read_ORCA_msgpack_file(file):
     print("read_ORCA_msgpack_file function")
     print("Trying to import msgspec")
