@@ -6,7 +6,7 @@ from ash import *
 def test_qm_mm_pyscf_nonbondedtheory_MeOH_H2O():
 
     # H2O...MeOH fragment defined. Reading XYZ file
-    H2O_MeOH = Fragment(xyzfile=f"{ashpath}/tests/xyzfile/h2o_MeOH.xyz")
+    H2O_MeOH = Fragment(xyzfile=f"{ashpath}/tests/xyzfiles/h2o_MeOH.xyz")
 
     # Specifying the QM atoms (3-8) by atom indices (MeOH). The other atoms (0,1,2) is the H2O and MM.
     # IMPORTANT: atom indices begin at 0.
@@ -56,7 +56,7 @@ def test_qm_mm_pyscf_nonbondedtheory_MeOH_H2O():
 def test_qm_mm_pyscf_openmm_MeOH_H2O():
 
     # H2O...MeOH fragment defined. Reading XYZ file
-    H2O_MeOH = Fragment(xyzfile=f"{ashpath}/tests/xyzfile/h2o_MeOH.xyz")
+    H2O_MeOH = Fragment(xyzfile=f"{ashpath}/tests/xyzfiles/h2o_MeOH.xyz")
 
     # Write PDB-file for OpenMM (used for topology)
     H2O_MeOH.write_pdbfile_openmm(filename="h2o_MeOH.pdb", skip_connectivity=True)

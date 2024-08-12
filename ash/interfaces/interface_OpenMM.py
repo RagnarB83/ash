@@ -1911,6 +1911,32 @@ class OpenMMTheory:
     #     print_time_rel(timeA, modulename="zero_nonbondedforce")
     #     # self.create_simulation()
 
+    # Updating LJ interactions in OpenMM object. Used to set LJ sites to zero e.g. so that they do not contribute
+    # Can be used to get QM-MM LJ interaction energy
+    def update_LJ_epsilons(self, atomlist, epsilons):
+        import openmm
+        timeA = time.time()
+        print("Updating LJ interaction strengths in OpenMM object.")
+        assert len(atomlist) == len(epsilons)
+        for atomindex, newepsilon in zip(atomlist, epsilons):
+            print("atomindex:", atomindex)
+            print("newepsilon:", newepsilon)
+            charge, sigma, oldepsilon = self.nonbonded_force.getParticleParameters(atomindex)
+            print("charge:", charge)
+            print("oldepsilon", oldepsilon)
+            # Different depending on type of NonbondedForce
+            if isinstance(self.nonbonded_force, openmm.CustomNonbondedForce):
+                self.nonbonded_force.setParticleParameters(atomindex, [charge, sigma, newepsilon])
+                # bla1,bla2,bla3 = self.nonbonded_force.getParticleParameters(i)
+                # print("bla1,bla2,bla3", bla1,bla2,bla3)
+            elif isinstance(self.nonbonded_force, openmm.NonbondedForce):
+                self.nonbonded_force.setParticleParameters(atomindex, charge, sigma, newepsilon)
+                bla1,bla2,bla3 = self.nonbonded_force.getParticleParameters(atomindex)
+                print("bla1,bla2,bla3", bla1,bla2,bla3)
+
+        printdebug("done here")
+        print_time_rel(timeA, modulename="update_LJ_epsilons")
+
     # Updating charges in OpenMM object. Used to set QM charges to 0 for example
     # Taking list of atom-indices and list of charges (usually zero) and setting new charge
     # Note: Exceptions also needs to be dealt with (see delete_exceptions)
