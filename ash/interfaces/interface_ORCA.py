@@ -3542,7 +3542,7 @@ end
         mdcilabel = MDCIkeyword.replace("/","") #To avoid / in CEPA/1 etc
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {MDCIkeyword} {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores,
                                  label=mdcilabel, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
-        
+        natoccgrab=None
     elif 'CASSCF' in orbitals_option:
         casscfblocks=f"""
         %maxcore {memory}
@@ -3592,6 +3592,7 @@ end
         """
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} {AUTOCIkeyword} {basis} autoaux tightscf", orcablocks=autociblocks, numcores=numcores,
                                  label=AUTOCIkeyword, save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        natoccgrab=None
     elif 'FIC' in orbitals_option:
         autociblocks=f"""
         %maxcore {memory}
@@ -3697,13 +3698,15 @@ end
             elif orbitals_option == "DLPNO-CCSD":
                 print("Warning: DLPNO-CCSD natural orbitals requested (things can go wrong).")
                 print("Due to ORCA bug, DLPNO-CCSD natural orbitals come from ASH diagonalization of density")
-                mofile = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="autocipur",
+                mofile,nat_occupations = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="autocipur",
                     result_file="ORCA_DLPNOCCSD_nat_ASH", ORCA_version="6.0.0")
+                natocc_print(nat_occupations,orbitals_option,nmin,nmax)
             elif orbitals_option == "CCSD(T)":
                 print("Warning: CCSD(T) natural orbitals requested (things can go wrong).")
                 print("Natural orbitals not directly available and have to be manually diagonalized from density")
-                mofile = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="autocipur",
+                mofile, nat_occupations = new_ORCA_natorbsfile_from_density(natorbs.gbwfile,densityname="autocipur",
                     result_file="ORCA_CCSD_T_nat_ASH", ORCA_version="6.0.0")
+                natocc_print(nat_occupations,orbitals_option,nmin,nmax)
             else:
                 nat_occupations=[]
 
@@ -3932,6 +3935,8 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
     #Diagonalize to get natural orbitals
     natorb, natocc = diagonalize_DM_AO(DM_AO, S)
 
+    print(f"Density {densityname} diagonalized by ASH")
+    print("Natural orbital occupations:", natocc)
     natorb_transposed=natorb.T
     #Loop over MOs and replace canonical MOs with NOs
     for i,mo in enumerate(mol_data["MolecularOrbitals"]["MOs"]):
@@ -3944,4 +3949,4 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
     #orca_basename=jsonfile.split('.')[0:-1]
     #print("orca_basename:", orca_basename)
 
-    return f"{result_file}_copy.gbw"
+    return f"{result_file}_copy.gbw", natocc
