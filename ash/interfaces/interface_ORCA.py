@@ -3945,11 +3945,15 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
         print("i:", i)
         mo["Occupancy"] = natocc[i]
         mo["MOCoefficients"] = list(natorb_transposed[i])
-        if i == len(natorb_transposed)-1 and change_from_UHF_to_ROHF is True:
-            print("Changing UHF to ROHF")
-            print("Skipping beta")
-            mol_data["HFTyp"] = "ROHF"
-            break
+        if i == len(natorb_transposed)-1 and mol_data["HFTyp"] == "UHF":
+            if change_from_UHF_to_ROHF is True:
+                print("Changing UHF to ROHF")
+                print("Skipping beta")
+                mol_data["HFTyp"] = "ROHF"
+                print("mol_data orblabels old", mol_data["OrbitalLabels"])
+                mol_data["OrbitalLabels"] = mol_data["OrbitalLabels"][0:len(mol_data["OrbitalLabels"])/2]
+                print("mol_data orblabels new", mol_data["OrbitalLabels"])
+                break
     
 
     jsonfile = write_ORCA_json_file(mol_data,filename=f"{result_file}.json", ORCA_version=ORCA_version)
