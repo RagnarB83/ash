@@ -20,7 +20,7 @@ def test_qm_mm_pyscf_nonbondedtheory_MeOH_H2O():
     atomtypes=['OT','HT','HT','CX','HX', 'HX', 'HX', 'OT', 'HT']
 
     # Read forcefield (here containing LJ-part only) from file
-    MM_forcefield=MMforcefield_read('MeOH_H2O-sigma.ff')
+    MM_forcefield=MMforcefield_read(f"{ashpath}/tests/extra_files/MeOH_H2O-sigma.ff")
 
     # QM object (RI off for less numerical noise)
     qm = PySCFTheory(scf_type="RKS", functional="PBE", basis="def2-SVP", densityfit=False)
@@ -70,7 +70,7 @@ def test_qm_mm_pyscf_openmm_MeOH_H2O():
     qm = PySCFTheory(scf_type="RKS", functional="PBE", basis="def2-SVP", densityfit=False)
 
     # MM: OpenMMTheory using XML-file
-    MMpart = OpenMMTheory(xmlfiles=["MeOH_H2O-sigma.xml"], pdbfile=pdbfile, autoconstraints=None, rigidwater=False)
+    MMpart = OpenMMTheory(xmlfiles=[f"{ashpath}/tests/extra_files/MeOH_H2O-sigma.xml"], pdbfile=pdbfile, autoconstraints=None, rigidwater=False)
 
     # Creating QM/MM object
     QMMMobject = QMMMTheory(fragment=H2O_MeOH, qm_theory=qm, mm_theory=MMpart, qmatoms=qmatoms,
