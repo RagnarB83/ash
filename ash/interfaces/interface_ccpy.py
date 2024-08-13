@@ -238,18 +238,14 @@ class ccpyTheory:
         if self.frozen_core_orbs > 0:
             print("Found frozen core")
             nmo = self.frozen_core_orbs + rdm_matrix.shape[0]
-            print("nmo:", nmo)
             active_indices = list(range(self.frozen_core_orbs, nmo))
-            print("active_indices:", active_indices)
             final_rdm_matrix=np.zeros((nmo,nmo))
-            print("1 final_rdm_matrix:", final_rdm_matrix)
             # frozen core diagonal is 2.0
             for i in range(self.frozen_core_orbs):
                 final_rdm_matrix[i,i]=2.0
             print("2 final_rdm_matrix:", final_rdm_matrix)
-            final_rdm_matrix[active_indices] = rdm_matrix
+            final_rdm_matrix[self.frozen_core_orbs:,self.frozen_core_orbs:] = rdm_matrix
             print("3 final_rdm_matrix:", final_rdm_matrix)
-
         else:
             final_rdm_matrix=rdm_matrix
         return final_rdm_matrix
