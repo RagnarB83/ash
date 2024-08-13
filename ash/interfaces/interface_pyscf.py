@@ -2149,7 +2149,7 @@ class PySCFTheory:
             self.determine_frozen_core(elems)
         elif self.frozen_core_setting == None or self.frozen_core_setting == 'None':
             print("Warning: No core-orbitals will be frozen in the CC/MP2 calculation.")
-            self.frozen_core_orbital_indices=None
+            self.frozen_core_orbital_indices=[]
         else:
             print("Manual user frozen core:", self.frozen_core_setting)
             self.frozen_core_orbital_indices=self.frozen_core_setting

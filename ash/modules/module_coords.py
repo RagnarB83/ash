@@ -217,7 +217,7 @@ class Fragment:
             self.read_fragment_from_file(fragfile)
         # Trexio
         elif trexiofile is not None:
-            from ash.functions.functions_elstructure import read_trexio_file
+            from ash.interfaces.interface_TREXIO import read_trexio_file
             print("Reading TREXIO file:", trexiofile)
             if 'h5' in trexiofile or 'hdf5' in trexiofile:
                 print("Assuming TREXIO HDF5 format based on file suffix")
@@ -864,10 +864,10 @@ class Fragment:
                 ofile.write(line + '\n')
 
     def write_trexio(self,filename=None,format="text"):
-        from ash.functions.functions_elstructure import write_trexio_file
+        from ash.interfaces.interface_TREXIO import write_trexio_file
         write_trexio_file(self, filename=filename, back_end_type=format)
 
-    #Function to get subset-coordinates with linkatoms
+    # Function to get subset-coordinates with linkatoms
     def get_subset_coords_with_linkatoms(self,qmatoms):
         conn_scale = ash.settings_ash.settings_dict["scale"]
         conn_tolerance = ash.settings_ash.settings_dict["tol"]+0.2
