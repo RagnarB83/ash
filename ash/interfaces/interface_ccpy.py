@@ -236,16 +236,13 @@ class ccpyTheory:
 
         # For frozen-core case we manually add the frozen-core part to RDM
         if self.frozen_core_orbs > 0:
-            print("Found frozen core")
+            print("Found frozen core, adding rdm contribution")
             nmo = self.frozen_core_orbs + rdm_matrix.shape[0]
-            active_indices = list(range(self.frozen_core_orbs, nmo))
             final_rdm_matrix=np.zeros((nmo,nmo))
             # frozen core diagonal is 2.0
             for i in range(self.frozen_core_orbs):
                 final_rdm_matrix[i,i]=2.0
-            print("2 final_rdm_matrix:", final_rdm_matrix)
             final_rdm_matrix[self.frozen_core_orbs:,self.frozen_core_orbs:] = rdm_matrix
-            print("3 final_rdm_matrix:", final_rdm_matrix)
         else:
             final_rdm_matrix=rdm_matrix
         return final_rdm_matrix
@@ -281,37 +278,9 @@ class ccpyTheory:
                     print("orca_mo_coeff found. Taking...")
                     mo_coeffs = self.orca_mo_coeff
 
-            #if self.frozen_core_orbs > 0:
-            #   print("Found frozen core")
-            #    print("Warning: Final natural orbitals in AO basis will contain untouched mean-field frozen-core MOs")
-            #    # print("Will use active ")
-            #    # Means that rdm_matrix will only be active orbitals while mo_coeffs is all orbitals
-            #    # Need to either trim mo_coeffs or add block to final natorb_matrix
-            #    print("mo_coeffs shape:", mo_coeffs.shape)
-            #    mo_coeffs_active = mo_coeffs[self.frozen_core_orbs:, self.frozen_core_orbs:]
-            #    # mo_coeffs_fc = mo_coeffs[0:self.frozen_core_orbs, 0:self.frozen_core_orbs]
-            #    # mo_coeffs_fc_cols = mo_coeffs[0:self.frozen_core_orbs, self.frozen_core_orbs:]
-            #    # mo_coeffs_fc_rows = mo_coeffs[self.frozen_core_orbs:,0:self.frozen_core_orbs]
-            #    # print("Deleting frozen-orbs, mo_coeffs shape:", mo_coeffs.shape)
-            #else:
-            #mo_coeffs_active=mo_coeffs
-
             # Get the active natorbs in AO basis
             self.natorb_AO = np.dot(mo_coeffs, natorb_MO)
             print("natorb in AO", self.natorb_AO)
-
-            # Combining frozen core MOs with new natorb_AOs
-            #if self.frozen_core_orbs > 0:
-            #   print("Warning: frozen core found. Adding frozen core MOs to natorb_AO")
-            #    new_natorbs_AO = mo_coeffs
-            #    # Replace with 
-            #    new_natorbs_AO[self.frozen_core_orbs:, self.frozen_core_orbs:] = natorb_AO_active
-            #    self.natorb_AO = new_natorbs_AO
-            #    # Adding frozen core occupations to natoccs
-            #    natocc = np.array([2.0]*self.frozen_core_orbs+list(natocc))
-            #
-            #else:
-            #    self.natorb_AO=natorb_AO_active
 
         return natocc, self.natorb_AO
 
