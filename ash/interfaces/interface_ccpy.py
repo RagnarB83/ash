@@ -307,7 +307,7 @@ class ccpyTheory:
         if self.pyscftheoryobject is not None:
             print("Pyscftheoryobject found. Using pyscf functionality")
             from pyscf.tools import molden
-            print("Writing orbitals to disk as Molden file")
+            print("Writing orbitals to disk as Molden file", f'{label}.molden')
             if mo_energies is None:
                 print("No MO energies. Setting to 0.0")
                 mo_energies = np.array([0.0 for i in occupations])
