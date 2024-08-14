@@ -1700,7 +1700,6 @@ def General_QM_PC_gradient(qm_coords,qm_nuc_charges,mol,mm_coords,mm_charges,dm)
 
 
 # This projects the linkatom force onto the respective QM atom and MM atom
-# NOTE: This is a simpler version of what (calculates contribution only)
 def linkatom_force_contribution(Qcoord, Mcoord, Lcoord, Lgrad):
     print("Qcoord:", Qcoord)
     print("Mcoord:", Mcoord)
@@ -1745,3 +1744,42 @@ def linkatom_force_contribution(Qcoord, Mcoord, Lcoord, Lgrad):
     print("gg_z:", gg_z)
     # Return QM1_gradient and MM1_gradient contribution (to be added)
     return [g_x,g_y,g_z],[gg_x,gg_y,gg_z]
+
+def linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad):
+    print("Qcoord:", Qcoord)
+    print("Mcoord:", Mcoord)
+    print("Lcoord:", Lcoord)
+    print("Lgrad:", Lgrad)
+    # QM1-L and QM1-MM1 distances
+    print("ang2bohr:", ash.constants.ang2bohr)
+    QLdistance=ash.modules.module_coords.distance(Qcoord,Lcoord)*ash.constants.ang2bohr
+
+    vec = (Mcoord - Qcoord)*ash.constants.ang2bohr
+    print("vec:", vec)
+    R2 = vec[0]*vec[0]+vec[1]*vec[1]+vec[2]*vec[2]
+    oneR = 1.0 / math.sqrt(R2)
+    print("oneR:", oneR)
+    lnk_dis_oneR = QLdistance*oneR
+    print("lnk_dis_oneR:", lnk_dis_oneR)
+    vec = vec*oneR
+    print("vec:", vec)
+    print("Lgrad[0]:", Lgrad[0])
+    print("Lgrad[0]*(-1)", Lgrad[0]*(-1))
+    print("Lgrad[0]*(-1)*vec[0]:", Lgrad[0]*(-1)*vec[0])
+    print("Lgrad[1]:", Lgrad[1])
+    print("Lgrad[1]*(-1)", Lgrad[1]*(-1))
+    print("Lgrad[1]*(-1)*vec[1]:", Lgrad[1]*(-1)*vec[1])
+    print("Lgrad[2]:", Lgrad[2])
+    print("Lgrad[2]*(-1)", Lgrad[2]*(-1))
+    print("Lgrad[2]*(-1)*vec[2]:", Lgrad[2]*(-1)*vec[2])
+    dotprod = Lgrad[0]*(-1)*vec[0]+Lgrad[1]*(-1)*vec[1]+Lgrad[2]*(-1)*vec[2]
+    print("dotprod:", dotprod)
+    forcemod=np.zeros(3)
+    print("forcemod:", forcemod)
+    forcemod[0] = lnk_dis_oneR*(-1*Lgrad[0]-(dotprod*vec[0])) 
+    forcemod[1] = lnk_dis_oneR*(-1*Lgrad[1]-(dotprod*vec[1])) 
+    forcemod[2] = lnk_dis_oneR*(-1*Lgrad[2]-(dotprod*vec[2])) 
+
+    print("forcemod:", forcemod)
+
+    return forcemod

@@ -5391,9 +5391,10 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
         import openff
         from openff.toolkit.topology import Molecule
         from openmmforcefields.generators import GAFFTemplateGenerator
-    except:
+    except ImportError as errormessage:
         print("OpenFF and openmmforcefields libraries are required but could not be imported")
         print("You can install like this:   conda install --yes -c conda-forge openmmforcefields")
+        print("Python import error message:", errormessage)
         ashexit()
     print()
 

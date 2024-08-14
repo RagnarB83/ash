@@ -11,7 +11,7 @@ from ash.functions.functions_general import BC, ashexit, print_time_rel,print_li
 from ash.modules.module_theory import Theory
 from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
 from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB_output
-from ash.modules.module_QMMM import linkatom_force_contribution
+from ash.modules.module_QMMM import linkatom_force_contribution, linkatom_force_chainrule
 
 
 #TODO: deal with GBW file and ORCA autostart mismatching for different regions and theory-levels
@@ -20,7 +20,7 @@ from ash.modules.module_QMMM import linkatom_force_contribution
 class ONIOMTheory(Theory):
     def __init__(self, theory1=None, theory2=None, theories_N=None, regions_N=None, regions_chargemult=None,
                  embedding="mechanical", full_pointcharges=None, chargemodel="CM5", dipole_correction=False,
-                 fullregion_charge=None, fullregion_mult=None, fragment=None, label=None, linkatom_projection=False,
+                 fullregion_charge=None, fullregion_mult=None, fragment=None, label=None, linkatom_projection=True,
                  printlevel=2, numcores=1,):
         super().__init__()
         self.theorytype="ONIOM"
@@ -508,6 +508,7 @@ class ONIOMTheory(Theory):
                             # Looping over theory-levels calculated
                             diffgrad=G_dict[(0,0)]-G_dict[(1,0)]
                             for theory_grad in [diffgrad]:
+                            #for theory_grad in [G_dict[(0,0)], G_dict[(1,0)]]:
                                 # Region gradient
                                 Lgrad=theory_grad[linkatomindex]
                                 print("Lgrad:", Lgrad)
@@ -523,8 +524,12 @@ class ONIOMTheory(Theory):
                                 print("Mcoord:", Mcoord)
                                 # Get new Qgrad and Mgrad
                                 QM1grad_contr,MM1grad_contr = linkatom_force_contribution(Qcoord, Mcoord, Lcoord, Lgrad)
+                                forcemod = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
+
                                 print("QM1grad_contr:", QM1grad_contr)
                                 print("MM1grad_contr:", MM1grad_contr)
+                                print("forcemod:", forcemod)
+                                #exit()
                                 print("-------------------------------------------")
                                 print()
                                 self.gradient[fullatomindex_qm] += QM1grad_contr
