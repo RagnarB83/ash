@@ -254,8 +254,7 @@ class MLatomTheory(Theory):
             print("\nNow training...")
             self.model.train(molecular_database=molDB,
                             property_to_learn=property_to_learn,
-                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
-                            hyperparameters=hyperparameters)
+                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn)
         else:
             print("Splitting molDB into subtraining database (subtrainDB) and validation database (valDB).")
             print("Split fraction:", split_fraction)
@@ -266,8 +265,7 @@ class MLatomTheory(Theory):
             print("\nNow training...")
             self.model.train(molecular_database=molDB, validation_molecular_database=valDB,
                             property_to_learn=property_to_learn,
-                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
-                            hyperparameters=hyperparameters)
+                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn)
 
         self.training_done=True
 
