@@ -247,8 +247,7 @@ class MLatomTheory(Theory):
             print("\nNow training...")
             self.model.train(molecular_database=molDB,
                             property_to_learn=property_to_learn,
-                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
-                            hyperparameters=hyperparameters)
+                            xyz_derivative_property_to_learn=xyz_derivative_property_to_learn)
 
         elif self.ml_model.lower() == 'gap':
             print("GAP selected, no splitting")
