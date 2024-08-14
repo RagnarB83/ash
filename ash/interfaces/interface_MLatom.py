@@ -308,7 +308,7 @@ class MLatomTheory(Theory):
                 model.predict(molecule=molecule,calculate_energy=True,
                             calculate_energy_gradients=True,
                             calculate_hessian=False)
-                self.energy = molecule.energy
+                self.energy = float(molecule.energy)
                 self.gradient = molecule.get_energy_gradients()
                 print("Single-point MLatom energy:", self.energy)
 
