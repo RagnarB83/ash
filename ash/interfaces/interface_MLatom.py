@@ -213,17 +213,38 @@ class MLatomTheory(Theory):
         if xyz_derivative_property_to_learn == 'energy_gradients':
             molDB.add_xyz_vectorial_properties_from_file(molDB_xyzvecproperty_file, xyz_derivative_property_to_learn)
 
-        if hyperparameters is None:
-            hyperparameters={}
-
         # Split
         if self.ml_model.lower() == 'kreg':
-            print("KREG selected, no splitting")
+            print("KREG selected")
+            print("Splitting molDB into subtraining database (subtrainDB) and validation database (valDB).")
+            print("Split fraction:", split_fraction)
+            subtrainDB, valDB = molDB.split(fraction_of_points_in_splits=split_fraction)
+            print(f"subtrainDB {len(subtrainDB)}):", subtrainDB)
+            print(f"valDB (size: {len(valDB)}):", valDB)
+
+            if hyperparameters is not None:
+                print("Hyperparameters provided:", hyperparameters)
+                # optimize its hyperparameters
+                self.model.hyperparameters['sigma'].minval = 2**-5 # modify the default lower bound of the hyperparameter sigma
+                self.model.optimize_hyperparameters(subtraining_molecular_database=subtrainDB,
+                                                validation_molecular_database=valDB,
+                                                optimization_algorithm='grid',
+                                                hyperparameters=['lambda', 'sigma'],
+                                                training_kwargs={'property_to_learn': property_to_learn, 'prior': 'mean'},
+                                                prediction_kwargs={'property_to_predict': 'estimated_energy'})
+                lmbd = self.model.hyperparameters['lambda'].value
+                sigma = self.model.hyperparameters['sigma'].value
+                valloss = self.model.validation_loss
+                print('Optimized sigma:', sigma)
+                print('Optimized lambda:', lmbd)
+                print('Optimized validation loss:', valloss)
+
             print("\nNow training...")
             self.model.train(molecular_database=molDB,
                             property_to_learn=property_to_learn,
                             xyz_derivative_property_to_learn=xyz_derivative_property_to_learn,
                             hyperparameters=hyperparameters)
+
         elif self.ml_model.lower() == 'gap':
             print("GAP selected, no splitting")
             print("\nNow training...")
