@@ -199,7 +199,6 @@ class MLatomTheory(Theory):
             print("Found no sparrow executable in your environment. Exiting.")
             ashexit()
 
-    # TODO: Add hyper-parameter optimize option
     def train(self, molDB_xyzfile=None, molDB_scalarproperty_file=None,
               molDB_xyzvecproperty_file=None, split_DB=False, split_fraction=[0.9, 0.1],
               property_to_learn='energy', xyz_derivative_property_to_learn='energy_gradients',
@@ -225,18 +224,24 @@ class MLatomTheory(Theory):
             if hyperparameters is not None:
                 print("Hyperparameters provided:", hyperparameters)
                 # optimize its hyperparameters
-                self.model.hyperparameters['sigma'].minval = 2**-5 # modify the default lower bound of the hyperparameter sigma
+                if 'sigma' in hyperparameters:
+                    self.model.hyperparameters['sigma'].minval = 2**-5 # modify the default lower bound of the hyperparameter sigma
                 self.model.optimize_hyperparameters(subtraining_molecular_database=subtrainDB,
                                                 validation_molecular_database=valDB,
                                                 optimization_algorithm='grid',
-                                                hyperparameters=['lambda', 'sigma'],
+                                                hyperparameters=hyperparameters,
                                                 training_kwargs={'property_to_learn': property_to_learn, 'prior': 'mean'},
                                                 prediction_kwargs={'property_to_predict': 'estimated_energy'})
-                lmbd = self.model.hyperparameters['lambda'].value
-                sigma = self.model.hyperparameters['sigma'].value
+                if 'lambda' in hyperparameters:
+                    lmbd = self.model.hyperparameters['lambda'].value
+                if 'sigma' in hyperparameters:
+                    sigma = self.model.hyperparameters['sigma'].value
                 valloss = self.model.validation_loss
-                print('Optimized sigma:', sigma)
-                print('Optimized lambda:', lmbd)
+
+                if 'sigma' in hyperparameters:
+                    print('Optimized sigma:', sigma)
+                if 'lambda' in hyperparameters:
+                    print('Optimized lambda:', lmbd)
                 print('Optimized validation loss:', valloss)
 
             print("\nNow training...")
