@@ -3129,7 +3129,6 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
 
     # Get boundary atoms
     print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
-    print("elems:", elems)
     # Get coordinates for QMX and MMX pair. Create new L coordinate that has a modified distance to QMX
     linkatoms_dict = {}
     for dict_item in qm_mm_boundary_dict.items():

@@ -16,7 +16,7 @@ class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None, charges=None,
                 embedding="elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
-                qm_charge=None, qm_mult=None, chargeboundary_method="chargeshift",
+                qm_charge=None, qm_mult=None, chargeboundary_method="shift",
                 dipole_correction=True, linkatom_method='simple', linkatom_simple_distance=None,
                 linkatom_forceproj_method="adv", linkatom_ratio=0.723):
 
