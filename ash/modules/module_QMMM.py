@@ -1020,7 +1020,7 @@ class QMMMTheory:
                 # RCD
                 elif self.chargeboundary_method == "rcd":
                     print("Chargeboundary method is:  rcd  ")
-                    self.pointcharges, RCD_additional_charges = self.RCD_shifting_prep(self.charges_qmregionzeroed, PCregion)
+                    self.pointcharges, RCD_additional_charges = self.RCD_shifting_prep(self.charges_qmregionzeroed)
                     self.mm_elems_for_qmprogram = self.mmelems + ['H']*len(RCD_additional_charges)
                 else:
                     print("Unknown chargeboundary_method. Exiting")
