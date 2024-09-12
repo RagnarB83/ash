@@ -9,7 +9,7 @@ import shutil
 ##########################
 # MLatom Theory interface
 ##########################
-# NOTE: we only intend to support mostly ML functionality in MLatom (not all basic QM methods)
+# NOTE: we mostly intend to support - ML functionality in MLatom (not all basic QM methods)
 
 # MLatom has 3 types of models:
 # 1) methods: these are pre-trained or at least standalone electronic structure methods
@@ -55,8 +55,6 @@ class MLatomTheory(Theory):
         if method is None and ml_model is None:
             print("Neither a method or ml_model was selected for MLatomTheory interface. Exiting.")
             ashexit()
-
-
 
         # METHODS: pre-trained models
         # Note: useful method keywords in MLAatom below
@@ -243,7 +241,8 @@ class MLatomTheory(Theory):
                 if 'lambda' in hyperparameters:
                     print('Optimized lambda:', lmbd)
                 print('Optimized validation loss:', valloss)
-
+            else:
+                print("No hyperparameters provided (NOT recommended)")
             print("\nNow training...")
             self.model.train(molecular_database=molDB,
                             property_to_learn=property_to_learn,

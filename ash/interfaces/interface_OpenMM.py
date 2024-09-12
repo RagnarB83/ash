@@ -150,7 +150,7 @@ class OpenMMTheory:
         # Platform (CPU, CUDA, OpenCL) and Parallelization
         self.platform_choice = platform
 
-        if properties == None:
+        if properties is None:
             self.properties = {}
         else:
             self.properties = properties
@@ -5331,7 +5331,7 @@ def trim_list_of_lists(k):
 def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     import openmm.app
 
-    #Funciton to merge PDB-files (e.g. protein and ligand) while preserving and updating connectivity records
+    #Function to merge PDB-files (e.g. protein and ligand) while preserving and updating connectivity records
     #PDB inputfiles
     pdb1 = openmm.app.PDBFile(pdbfile_1)
     pdb2 = openmm.app.PDBFile(pdbfile_2)
@@ -5339,8 +5339,8 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     #Create modeller object
     modeller = openmm.app.Modeller(pdb1.topology, pdb1.positions) #Add pdbfile1
     modeller.add(pdb2.topology, pdb2.positions) #Add pdbfile2
-    mergedTopology = modeller.topology #Merging topology files
-    mergedPositions = modeller.positions #merging ositions
+    mergedTopology = modeller.topology #Merging topology
+    mergedPositions = modeller.positions #merging positions
 
     #Write merged topology and positions to new PDB file
     write_pdbfile_openMM(modeller.topology, mergedPositions, outputname)

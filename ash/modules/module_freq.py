@@ -321,7 +321,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                     print("Warning: Problem getting polarizability tensor from theory interface. Skipping")
                     pass
 
-    #TODO: Dipole moment/polarizability grab for parallel mode
+    # TODO: Dipole moment/polarizability grab for parallel mode
     elif runmode == 'parallel':
 
         if isinstance(theory,ash.QMMMTheory):
@@ -329,23 +329,22 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
         print(f"Starting Numfreq calculations in parallel mode (numcores={numcores}) using Singlepoint_parallel")
         print(f"There are {len(all_disp_fragments)} displacements")
-        #Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
+        # Launching multiple ASH E+Grad calculations in parallel on list of ASH fragments: all_image_fragments
         print("Looping over fragments")
         result = ash.Job_parallel(fragments=all_disp_fragments, theories=[theory], numcores=numcores,
             allow_theory_parallelization=True, Grad=True, printlevel=printlevel, copytheory=True)
-        #result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores,
+        # result_par = ash.Singlepoint_parallel(fragments=all_image_fragments, theories=[self.theory], numcores=self.numcores,
         #    allow_theory_parallelization=True, Grad=True, printlevel=self.printlevel, copytheory=False)
         en_dict = result.energies_dict
         gradient_dict = result.gradients_dict
-        #Gradient_dict is already correctly formatted
+        # Gradient_dict is already correctly formatted
         displacement_grad_dictionary = gradient_dict
 
         displacement_dipole_dictionary = result.displacement_dipole_dictionary
-        #print("displacement_dipole_dictionary:",displacement_dipole_dictionary)
+        # print("displacement_dipole_dictionary:",displacement_dipole_dictionary)
         displacement_polarizability_dictionary = result.displacement_polarizability_dictionary
-        #print("displacement_polarizability_dictionary:",displacement_polarizability_dictionary)
-
-        #print("displacement_grad_dictionary:", displacement_grad_dictionary)
+        # print("displacement_polarizability_dictionary:",displacement_polarizability_dictionary)
+        # print("displacement_grad_dictionary:", displacement_grad_dictionary)
     else:
         print("Unknown runmode.")
         ashexit()
@@ -713,13 +712,14 @@ def printfreqs(vfreq,numatoms,TRmodenum=6, intensities=None, Raman_activities=No
 
 
 #Function to print frequencies and also elemental normal mode composition
-def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms=None, TRmodenum=6):
+def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms=None, TRmodenum=6, numdigits=3):
+    f = open("normalmodecomposition_factors.txt","w")
     numatoms=len(hessatoms)
     print("{:>6}{:>16}  {:<18}".format("Mode", "Freq(cm**-1)", "Elemental composition factors"))
     for mode in range(0,3*numatoms):
         #Get elemental normalmode comps
         normmodecompelemsdict = normalmodecomp_permode_by_elems(mode,fragment,vfreq,evectors, hessatoms=hessatoms)
-        normmodecompelemsdict_list=[f'{k}: {v:.2f}' for k,v in normmodecompelemsdict.items()]
+        normmodecompelemsdict_list=[f'{k}: {v:.{numdigits}f}' for k,v in normmodecompelemsdict.items()]
         normmodecompelemsdict_string='   '.join(normmodecompelemsdict_list)
         vib=vfreq[mode]
         line = "  {:<4d}{:>14.4f}    {}".format(mode, vib, normmodecompelemsdict_string)
@@ -727,7 +727,8 @@ def printfreqs_and_nm_elem_comps(vfreq,fragment,evectors,hessatoms=None, TRmoden
         if mode < TRmodenum:
             line=line+" (TR mode)"
         print(line)
-
+        f.write(line+'\n')
+    f.close()
 
 #NOTE: THIS IS NOT CORRECT
 #TODO: Need to identify SP mode

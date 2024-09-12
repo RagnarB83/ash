@@ -342,7 +342,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     elif runmode == 'serial' and numcores == 1:
         print(BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
         print("theory:", theory)
-        print("theory.numcors:", theory.numcores)
+        print("Theory.numcores:", theory.numcores)
         if theory.numcores > 1:
             print(BC.WARNING,f"Theory parallelization is active and will utilize: {theory.numcores} CPU cores per image.",BC.END)
         else:

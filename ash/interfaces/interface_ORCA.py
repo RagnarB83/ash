@@ -1954,6 +1954,10 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
     charges=[]
     BS=False #if broken-symmetry job
     column=None
+
+    numatoms = int(pygrep('Number of atoms                             ...', outputfile)[-1])
+    print("numatoms:", numatoms)
+
     #if
     if len(pygrep2("WARNING: Broken symmetry calculations", outputfile)):
         BS=True
@@ -1970,7 +1974,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                         charges.append(float(line.split()[2]))
                 if 'Atom No    Charge        Core      Valence    Rydberg      Total' in line:
                     grab=True
-    elif chargemodel=="CHELPG":
+    elif chargemodel.upper() =="CHELPG":
         with open(outputfile) as ofile:
             for line in ofile:
                 if grab==True:
@@ -1982,7 +1986,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     grab=True
                     #Setting charges list to zero in case of multiple charge-tables. Means we grab second table
                     charges=[]
-    elif chargemodel=="Hirshfeld":
+    elif chargemodel.upper() =="HIRSHFELD":
         with open(outputfile) as ofile:
             for line in ofile:
                 if grab==True:
@@ -1994,7 +1998,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     grab=True
                     #Setting charges list to zero in case of multiple charge-tables. Means we grab second table
                     charges=[]
-    elif chargemodel=="CM5":
+    elif chargemodel.upper()=="CM5":
         elems = []
         coords = []
         with open(outputfile) as ofile:
@@ -2023,7 +2027,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
         atomicnumbers=ash.modules.module_coords.elemstonuccharges(elems)
         charges = ash.functions.functions_elstructure.calc_cm5(atomicnumbers, coords, charges)
         print("CM5 charges :", list(charges))
-    elif chargemodel == "Mulliken":
+    elif chargemodel.upper() == "MULLIKEN":
         with open(outputfile) as ofile:
             for line in ofile:
                 if grab==True:
@@ -2038,7 +2042,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                     else:
                         column=-1
 
-    elif chargemodel == "Loewdin":
+    elif chargemodel.upper() == "LOEWDIN":
         with open(outputfile) as ofile:
             for line in ofile:
                 if grab==True:
@@ -2054,7 +2058,7 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
                         column=-2
                     else:
                         column=-1
-    elif chargemodel == "IAO":
+    elif chargemodel.upper() == "IAO":
         with open(outputfile) as ofile:
             for line in ofile:
                 if grab==True:
@@ -2073,8 +2077,9 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
     #If BS then we have grabbed charges for both high-spin and BS solution
     if BS is True:
         print("Broken-symmetry job detected. Only taking BS-state populations")
-        charges=charges[int(len(charges)/2):]
-
+        if len(charges) != numatoms:
+            charges=charges[numatoms:]
+        print("charges:", charges)
     return charges
 
 
@@ -2552,8 +2557,8 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None, charge
         #otool.write("theory=ZeroTheory()\n")
         #otool.write("theory=ZeroTheory()\n")
         otool.write("result=Singlepoint(theory=theory,fragment=frag,Grad=True, charge={}, mult={})\n".format(charge,mult))
-        otool.write("energy = result.energy")
-        otool.write("gradient = result.gradient")
+        otool.write("energy = result.energy\n")
+        otool.write("gradient = result.gradient\n")
         otool.write("print(gradient)\n")
         otool.write("ash.interfaces.interface_ORCA.print_gradient_in_ORCAformat(energy,gradient,\"{}\")\n".format(basename))
     st = os.stat(scriptlocation+"/otool_external")
@@ -2561,7 +2566,8 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None, charge
 
 # Using ORCA as External Optimizer for ASH
 #Will only work for theories that can be pickled: not OpenMMTheory, probably not QMMMTheory
-def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=None, mult=None):
+def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=None, mult=None,
+                            ORCA_jobkeyword="Opt"):
     print_line_with_mainheader("ORCA_External_Optimizer")
     if fragment == None or theory == None:
         print("ORCA_External_Optimizer requires fragment and theory keywords")
@@ -2607,7 +2613,7 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
 
     #ORCA input file
     with open(basename+".inp", 'w') as o:
-        o.write("! ExtOpt Opt\n")
+        o.write(f"! ExtOpt {ORCA_jobkeyword}\n")
         o.write("\n")
         o.write("*xyzfile {} {} {}\n".format(charge,mult,xyzfile))
 
@@ -2631,7 +2637,10 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
     fragment.coords=coords
 
     #Grabbing final energy
-    energy = ORCAfinalenergygrab(basename+".out")
+    #energy = ORCAfinalenergygrab(basename+".out")
+    #energy = pygrep(,f"{basename}.out")
+    energylines = pygrep2("FINAL SINGLE POINT ENERGY (From external program)",f"{basename}.out", errors="ignore")
+    energy = float(energylines[-1].split()[-1])
     print("Final energy from external ORCA optimization:", energy)
 
     return energy

@@ -545,7 +545,6 @@ class Fragment:
         if len(self.coords) != len(self.pdb_atomnames):
             print("Warning: Number of coords found in PDB file does not match number of atomnames found.")
 
-    # TODO: Switch to using OpenMM for PDB-file reading instead ?
     def read_pdbfile_openmm(self,filename):
         if self.printlevel >= 2:
             print("read_pdbfile_openmm: Reading coordinates from PDB file '{}' into fragment.".format(filename))
@@ -868,6 +867,7 @@ class Fragment:
         write_trexio_file(self, filename=filename, back_end_type=format)
 
     # Function to get subset-coordinates with linkatoms
+    #TODO: add more options for linkatoms
     def get_subset_coords_with_linkatoms(self,qmatoms):
         conn_scale = ash.settings_ash.settings_dict["scale"]
         conn_tolerance = ash.settings_ash.settings_dict["tol"]+0.2
@@ -2487,10 +2487,58 @@ def flexible_align(fragmentA, fragmentB, rotate_only=False, translate_only=False
         Anew = np.dot(fragmentA.coords, rot) + trans
 
     #Create new frag
-    newfrag = Fragment(elems=fragmentA.elems, coords=Anew)
+    newfrag = Fragment(elems=fragmentA.elems, coords=Anew, printlevel=0)
+    print("New aligned structure")
     newfrag.print_coords()
 
     return newfrag
+
+
+# Recommended RMSD-calc wrapper function for ASH fragments using kabsch
+# Allows subset match (same set of indices or 2 sets of indices for each fragment)
+# Also simpler option: heavyatomsonly=True (ignores H-atoms)
+#NOTE: no reordering
+def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, printlevel=2):
+    print("calculate_RMSD function")
+
+    #Do chosen subset
+    if subset is not None:
+        print("Subset option chosen")
+        if any(isinstance(el, list) for el in subset) is True:
+            print("Subset is a list of lists")
+            print("Subset for A:", subset[0])
+            print("Subset for B:", subset[1])
+            if len(subset[0]) != len(subset[1]):
+                print("Length of subsets not equal. This is not allowed. Exiting.")
+                ashexit()
+            print("Will align using each list of indices for each fragment")
+            subsetA_coords, subsetA_elems =fragmentA.get_coords_for_atoms(subset[0])
+            subsetB_coords, subsetB_elems =fragmentB.get_coords_for_atoms(subset[1])
+
+        else:
+            print("Subset is a list of indices")
+            print("Will align using the same indices in both fragments (will only work if both fragments have the same atom order)")
+            subsetA_coords, subsetA_elems =fragmentA.get_coords_for_atoms(subset)
+            subsetB_coords, subsetB_elems =fragmentB.get_coords_for_atoms(subset)
+
+        if printlevel > 2:
+            print("subsetA_elems:", subsetA_elems)
+            print("subsetA_coords:", subsetA_coords)
+
+            print("subsetB_elems:", subsetB_elems)
+            print("subsetB_coords:", subsetB_coords)
+    elif heavyatomsonly is True:
+        subsetA_coords=fragmentA.coords[fragmentA.get_nonH_atomindices()]
+        subsetB_coords=fragmentB.coords[fragmentB.get_nonH_atomindices()]
+
+    else:
+        subsetA_coords=fragmentA.coords
+        subsetB_coords=fragmentB.coords
+
+    rmsdval = kabsch_rmsd(subsetA_coords, subsetB_coords)
+
+
+    return rmsdval
 
 
 #####################################
@@ -3059,20 +3107,76 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
 
 
 # Get linkatom positions for a list of qmatoms and the current set of coordinates
+# Two methods: simple method (default) and ratio method.
+# Simple method: Just use a fixed distance (default 1.09 Å)
+# Ratio method: Determine by scaling QM1-MM1 distance with a ratio. Ratio can be fixed value (e.g. 0.723) or determined from equilibrium distances (not ready)
 # Using linkatom distance of 1.09 Å for now as default. Makes sense for C-H link atoms.
-def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom_distance=1.09):
+def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom_dict=None, linkatom_method='simple',
+                           linkatom_simple_distance=None, bondpairs_eq_dict=None, linkatom_ratio=0.723):
     timeA = time.time()
+    print("Inside get_linkatom_positions")
+    print("linkatom_method:", linkatom_method)
+
+    #Dict of linkatom distances for different elements
+    linkdistances_dict = {('C', 'H'): 1.09, ('O', 'H'): 0.98, ('N', 'H'): 0.99}
+
+    # If dictionary of linkatom-distances provided then use that instead
+    if linkatom_method == 'ratio':
+        if linkatom_ratio == 'Auto' and bondpairs_eq_dict is None:
+            #TODO: Determine automatically somehow  
+            bondpairs_eq_dict = {('C', 'H'): 1.09, ('C', 'C'): 1.522269, ('C', 'N'): 1.47, 
+                                 ('C', 'O'): 1.43, ('C', 'S'): 1.81}
+
     # Get boundary atoms
-
-
+    print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
+    print("elems:", elems)
     # Get coordinates for QMX and MMX pair. Create new L coordinate that has a modified distance to QMX
     linkatoms_dict = {}
     for dict_item in qm_mm_boundary_dict.items():
         qmatom_coords = np.array(coords[dict_item[0]])
         mmatom_coords = np.array(coords[dict_item[1]])
 
-        linkatom_coords = list(qmatom_coords + (mmatom_coords - qmatom_coords) * (
-                    linkatom_distance / distance(qmatom_coords, mmatom_coords)))
+        #Determine linkatom distance
+        if linkatom_method == 'ratio':
+            print("Linkatom method: ratio")
+
+            if linkatom_ratio == 'Auto':
+                print("Automatic ratio. Determining ratio based on dict of equilibrium distances")
+                #TODO
+                R_eq_QM_H = bondpairs_eq_dict[(elems[dict_item[0]], 'H')]
+                R_eq_QM_MM = bondpairs_eq_dict[(elems[dict_item[0]], elems[dict_item[1]])]
+                print("R_eq_QM_H:", R_eq_QM_H)
+                print("R_eq_QM_MM:", R_eq_QM_MM)
+                linkatom_ratio = R_eq_QM_H / R_eq_QM_MM
+                print("Determined ratio:", linkatom_ratio)
+                print("not yet ready")
+                ashexit()
+
+            print("Ratio used:", linkatom_ratio)
+            r_QM1_MM1 = distance(qmatom_coords, mmatom_coords)
+            # See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
+            linkatom_coords = linkatom_ratio *(mmatom_coords - qmatom_coords) + qmatom_coords
+            #linkatom_distance =  r_QM1_MM1 * (bondpairs_eq_dict[(elems[dict_item[0]], 'H')] / bondpairs_eq_dict[(elems[dict_item[0]], elems[dict_item[1]])])
+            linkatom_distance = distance(qmatom_coords, linkatom_coords)
+            print("Linkatom distance (QM1-L) determined to be:", linkatom_distance)
+        elif linkatom_method == 'simple':
+            print("Linkatom method: simple")
+            if linkatom_simple_distance is None:
+                print("linkatom_simple_distance not set. Getting standard distance from dictionary for element:", elems[dict_item[0]])
+                #Getting from dict
+                linkatom_distance = linkdistances_dict[(elems[dict_item[0]], 'H')]
+            else:
+                print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
+                #Getting from user
+                linkatom_distance = linkatom_simple_distance
+            print("Linkatom distance (QM1-L) is:", linkatom_distance)
+            #Determining coords
+            linkatom_coords = list(qmatom_coords + (mmatom_coords - qmatom_coords) * (
+                        linkatom_distance / distance(qmatom_coords, mmatom_coords)))
+        else:
+            print("Invalid linkatom_method. Exiting.")
+            ashexit()
+        
         linkatoms_dict[(dict_item[0], dict_item[1])] = linkatom_coords
     #print_time_rel(timeA, modulename="get_linkatom_positions")
     return linkatoms_dict
