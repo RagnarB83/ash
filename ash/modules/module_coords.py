@@ -3117,9 +3117,13 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
     print("Inside get_linkatom_positions")
     print("linkatom_method:", linkatom_method)
 
+    if linkatom_simple_distance is None:
+        print("linkatom_simple_distance not set. Getting standard distance from dictionary for each element:")
+    else:
+        print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
     #Dict of linkatom distances for different elements
     linkdistances_dict = {('C', 'H'): 1.09, ('O', 'H'): 0.98, ('N', 'H'): 0.99}
-
+    print("Linkdatom distance dictionary:", linkdistances_dict)
     # If dictionary of linkatom-distances provided then use that instead
     if linkatom_method == 'ratio':
         if linkatom_ratio == 'Auto' and bondpairs_eq_dict is None:
@@ -3161,11 +3165,11 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
         elif linkatom_method == 'simple':
             print("Linkatom method: simple")
             if linkatom_simple_distance is None:
-                print("linkatom_simple_distance not set. Getting standard distance from dictionary for element:", elems[dict_item[0]])
+                #print("linkatom_simple_distance not set. Getting standard distance from dictionary for element:", elems[dict_item[0]])
                 #Getting from dict
                 linkatom_distance = linkdistances_dict[(elems[dict_item[0]], 'H')]
             else:
-                print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
+                #print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
                 #Getting from user
                 linkatom_distance = linkatom_simple_distance
             print("Linkatom distance (QM1-L) is:", linkatom_distance)

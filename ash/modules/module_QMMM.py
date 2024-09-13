@@ -1259,8 +1259,8 @@ class QMMMTheory:
                     else:
                         print("Unknown linkatom_forceproj_method. Exiting")
                         ashexit()
-                    print("QM1grad contrib:", QM1grad_contrib)
-                    print("MM1grad contrib:", MM1grad_contrib)
+                    #print("QM1grad contrib:", QM1grad_contrib)
+                    #print("MM1grad contrib:", MM1grad_contrib)
 
                     self.QM_PC_gradient[fullatomindex_qm] = QM1grad_contrib
                     self.QM_PC_gradient[fullatomindex_mm] = MM1grad_contrib
