@@ -4,6 +4,7 @@ import numpy as np
 from ash.modules.module_coords import elemstonuccharges
 from ash.functions.functions_general import ashexit, BC,print_time_rel
 from ash.functions.functions_general import print_line_with_mainheader
+import ash.constants
 
 # TODO: Make sure energy is a general thing in PyTorch model
 
@@ -60,13 +61,20 @@ class TorchTheory():
 
         if model_file is not None:
             print("model_file:", model_file)
-            self.load_model(model_file)
+            if 'aimnet2' in str(model_file).lower():
+                print("AIMNet2 model selected")
+                self.load_aimnet2_model(model_file=model_file)
+            else:
+                self.load_model(model_file)
             print("Model:", self.model)
         elif model_name is not None:
             print("model_name:", model_name)
             if 'ani' in str(model_name).lower():
                 print("ANI type model selected")
                 self.load_ani_model(model_name)
+            elif 'aimnet2' in str(model_name).lower():
+                print("AIMNet2 model selected")
+                self.load_aimnet2_model(model_name=model_name)
             else:
                 print("Error: Unknown model_name")
                 ashexit()
@@ -113,14 +121,38 @@ class TorchTheory():
         torch.jit.save(compiled_model, filename)
         print("Torch saved model to file:", filename)
 
+    def load_aimnet2_model(self,model_name=None, model_file=None):
+        print("Aimnet2-type model requested")
+        print("Models available: aimnet2")
+        try:
+            from aimnet2calc import AIMNet2Calculator
+        except ImportError as e:
+            print("Import error message:", e)
+            print("Problem importing AIMNet2Calculator or torch libraries. Make sure you have installed AIMNet2 correctly")
+            ashexit()
+
+        # Model selection
+        print("Model:", model_name)
+        print("File:", model_file)
+        if model_name is not None:
+            if model_name == 'aimnet2':
+                self.model = AIMNet2Calculator('aimnet2')
+            else:
+                print("Error: Unknown model and no model_file selected")
+                ashexit()
+        elif model_file is not None:
+            print("Loading file:", model_file)
+            self.model = AIMNet2Calculator(model_file)
+
     def load_ani_model(self,model):
         print("ANI-type model requested")
         print("Models available: ANI1ccx, ANI1x and ANI2x")
         try:
             import torchani
             import torch
-        except ImportError:
+        except ImportError as e:
             print("Problem importing torchani libraries. Make sure you have installed torchani correctly")
+            print("Import error message:", e)
             ashexit()
 
         # Model selection
@@ -174,35 +206,36 @@ class TorchTheory():
             else:
                 qm_elems = elems
 
-        # Converting coordinates and element information to Torch tensors
-        # dtype has to be float32 to get compatible Tensor for coordinate and nuc-charges
-        coords_torch = torch.tensor(np.array([current_coords], dtype='float32'), requires_grad=True, device=self.device)
-        nuc_charges_torch = torch.tensor(np.array([elemstonuccharges(qm_elems)]), device=self.device)
-
         # Call model to get energy
-        print("self.model:", self.model)
-        energy_tensor = self.model((nuc_charges_torch, coords_torch)).energies
-        #result = self.model(nuc_charges_torch, coords_torch)
-        #print("result ", result)
-        #print("result 0", result[0])
-        #print("result 1", result[1])
-        #print("result 0 0", result[0][0])
-        #print("result 0 0", result[0].item())
-        #print("stuff 0 energies", stuff[0].energies)
-        #print("result.energies", result.energies)
-        #exit()
-        self.energy = energy_tensor.item()
-        #print("self.energy:", self.energy)
-        #exit()
-        # Call Grad
-        if Grad:
-            gradient_tensor = torch.autograd.grad(energy_tensor.sum(), coords_torch)[0]
-            self.gradient = gradient_tensor.detach().cpu().numpy()[0]
 
-        if Hessian:
-            print("Calculating Hessian (requires torchani)")
-            import torchani
-            self.hessian = torchani.utils.hessian(coords_torch , energies=energy_tensor)
+        # AIMNet2
+        if 'aimnet2' in str(self.model).lower():
+            input_data = {'coord':current_coords, 'numbers':elemstonuccharges(qm_elems), 'charge':charge, 'mult':mult}
+            results = self.model(input_data, forces=Grad, stress=False, hessian=False)
+            # print("results:", results)
+            self.energy = results["energy"].item() / ash.constants.hartoeV
+            if Grad:
+                self.gradient = -1*(0.03674932217565499/1.88972612546)*results["forces"].detach().cpu().numpy()
+            if Hessian:
+                self.hessian = (0.03674932217565499/1.88972612546/1.88972612546)*results["hessian"].detach().cpu().numpy()
+        # TorchANI
+        else:
+            # Converting coordinates and element information to Torch tensors
+            # dtype has to be float32 to get compatible Tensor for coordinate and nuc-charges
+            coords_torch = torch.tensor(np.array([current_coords], dtype='float32'), requires_grad=True, device=self.device)
+            nuc_charges_torch = torch.tensor(np.array([elemstonuccharges(qm_elems)]), device=self.device)
+            energy_tensor = self.model((nuc_charges_torch, coords_torch)).energies
+            self.energy = energy_tensor.item()
+
+            # Call Grad
+            if Grad:
+                gradient_tensor = torch.autograd.grad(energy_tensor.sum(), coords_torch)[0]
+                self.gradient = gradient_tensor.detach().cpu().numpy()[0]
+
+            if Hessian:
+                print("Calculating Hessian (requires torchani)")
+                import torchani
+                self.hessian = torchani.utils.hessian(coords_torch , energies=energy_tensor)
 
         if PC is True:
             print("PC not supported yet")

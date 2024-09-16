@@ -6,8 +6,8 @@
 <img src="ash-simple-logo-letterbig.png" alt="drawing" width="300" align="right"/>
 
  # ASH: a multi-scale, multi-theory modelling program
-ASH is a Python-based computational chemistry and QM/MM environment for molecular calculations in the gas phase, explicit solution, crystal or protein environment. Can do single-point calculations, geometry optimizations, nudged elastic band calculations, surface scans, molecular dynamics, numerical frequencies and many other things using a MM, QM or QM/MM Hamiltonian.
-Interfaces to popular QM codes: ORCA, xTB, PySCF, MRCC, Psi4, Dalton, CFour, TeraChem, QUICK. Interface to the OpenMM library for MM and MD algorithms. Interfaces to specialized codes like Block, Dice and ipie for DMRG, SHCI and AFQMC calculations.
+ASH is a Python-based computational chemistry and QM/MM environment for molecular calculations in the gas phase, explicit solution, crystal or protein environment. It's a program for performing single-point calculations, geometry optimizations, nudged elastic band calculations, surface scans, molecular dynamics, numerical frequencies and many other things using a MM, QM, QM/MM or ONIOM Hamiltonian.
+Interfaces to popular QM codes: ORCA, xTB, PySCF, MRCC, ccpy, Psi4, Dalton, CFour, TeraChem, QUICK. Interface to the OpenMM library for MM and MD algorithms. Interfaces to specialized high-level QM codes like Block, Dice and ipie for DMRG, SHCI and AFQMC calculations. Interfaces to machine-learning libraries like PyTorch and MLatom for using and training machine learning potentials.
 Excellent environment for writing simple or complex computational chemistry workflows.
 
 **In case of problems:**
@@ -44,7 +44,7 @@ Ongoing priorities:
 - Write unit tests
 - Improve documentation of code, write docstrings.
 
-**Very basic example:**
+**Basic example:**
 
 ```sh
 from ash import *
@@ -75,4 +75,26 @@ NumFreq(theory=ORCAcalc,fragment=HF_frag)
 #Molecular dynamics calculation for 2 ps
 OpenMM_MD(fragment=HF_frag, theory=ORCAcalc, timestep=0.001, simulation_time=2)
 
+ ```
+
+**QM/MM example:**
+
+```sh
+from ash import *
+
+# Defining a fragment
+fragment = Fragment(pdbfile="system.pdb")
+#QM-method and QM-region
+qm_orca = ORCATheory(orcasimpleinput="! r2SCAN-3c tightscf", numcores=8)
+#MM Theory
+omm  = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "specialresidue.xml"], pdbfile="system.pdb", periodic=True)
+
+#QM/MM Theory
+qmatoms = [93,94,95,96,97,133,134,135, 2001,2002]
+qm_mm = QMMMTheory(qm_theory= qm_orca, mm_theory= omm, fragment=fragment, qm_charge=-1, qm_mult=6,  qmatoms= qmatoms, printlevel=1)
+
+#Geometry optimization
+Optimizer(theory=qm_mm,fragment=fragment, actatoms=qmatoms)
+#or Molecular dynamics
+MolecularDynamics(fragment=fragment, theory=qm_mm, timestep=0.001, simulation_time=2)
  ```

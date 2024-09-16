@@ -3141,8 +3141,7 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
 
         #Determine linkatom distance
         if linkatom_method == 'ratio':
-            print("Linkatom method: ratio")
-
+            #print("Linkatom method: ratio")
             if linkatom_ratio == 'Auto':
                 print("Automatic ratio. Determining ratio based on dict of equilibrium distances")
                 #TODO
@@ -3154,7 +3153,6 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
                 print("Determined ratio:", linkatom_ratio)
                 print("not yet ready")
                 ashexit()
-
             print("Ratio used:", linkatom_ratio)
             r_QM1_MM1 = distance(qmatom_coords, mmatom_coords)
             # See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
@@ -3163,7 +3161,7 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
             linkatom_distance = distance(qmatom_coords, linkatom_coords)
             print("Linkatom distance (QM1-L) determined to be:", linkatom_distance)
         elif linkatom_method == 'simple':
-            print("Linkatom method: simple")
+            #print("Linkatom method: simple")
             if linkatom_simple_distance is None:
                 #print("linkatom_simple_distance not set. Getting standard distance from dictionary for element:", elems[dict_item[0]])
                 #Getting from dict

@@ -487,11 +487,15 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 else:
                     print(f"Highest energy image is {checkmax}. Not turning on CI")
         if startci:
+            print("CI is active as number:", ci)
             if (it % 5) == 0:
+                print("Checking if CI should be changed (every 5th iteration)")
                 newci = np.argmax(path.GetEnergy())
                 # cant allow it to be at the end points
-                if newci != ci and newci != 0 and newci < path.GetNim() - 1:
-                    ci = newci
+                if newci != ci:
+                    if newci != 0 and newci < path.GetNim() - 1:
+                        print(f"Changing CI from {ci} to {newci}")
+                        ci = newci
                     if restart_on_ci:
                         reset_opt = True
         if startci != True:
