@@ -9,6 +9,7 @@ hartocm = 219474.6313702
 hartokj = 2625.4996394798254
 hartree2j = 4.3597438e-18
 hartoeV = 27.211386245988
+evtohar = 0.03674932217565499
 
 # speed of light in cm/s
 c = 2.99792458e10
