@@ -92,6 +92,16 @@ function LJcoulomb_julia(charges,coords,epsij,sigmaij)
     return E, gradient, VLJ, VC
 end
 
+#Calling recommended Coulomb function
+function coulomb_julia(charges,coords)
+    println("Calling coulomb_julia (pythoncall/juliacall)")
+    charges=pyconvert(Array{Float64,1},charges)
+    coords=pyconvert(Array,coords)
+    E, gradient = coulombchargev1c(charges, coords)
+    return E, gradient
+end
+
+
 #Reorder cluster with Julia
 function reorder_cluster_julia(elems,coords,fraglists)
     println("Calling reorder_cluster_julia (pythoncall/juliacall)")

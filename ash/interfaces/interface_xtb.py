@@ -310,7 +310,6 @@ class xTBTheory:
             #Todo: xtbrestart possibly. needs to be optional
             ash.modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
 
-            print("x")
             # Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
@@ -463,7 +462,6 @@ class xTBTheory:
                     #TODO: Wait for xtb-python to be updated to use xtb version 6.5.1
                     self.pcgrad =res.get_PCgradient()
                     print("self.pcgrad:", self.pcgrad)
-                    print("here")
                     ashexit()
                     print("------------ENDING XTB-INTERFACE-------------")
                     print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
@@ -804,6 +802,27 @@ def grabatomcharges_xTB():
     with open('charges') as file:
         for line in file:
             charges.append(float(line.split()[0]))
+    return charges
+
+
+#Grab xTB charges from outputfile. Choice between Mulliken and CM5
+def grabatomcharges_xTB_output(filename, chargemodel="CM5"):
+    if chargemodel== "Mulliken":
+        col=1
+    elif chargemodel == "CM5":
+        col=2
+    charges=[]
+    Grab=False
+    with open(filename) as file:
+        for line in file:
+            if Grab:
+                if len(line.split()) == 6:
+                    charges.append(float(line.split()[col]))
+            if 'Mulliken/CM5 charges' in line:
+                Grab=True
+            if 'Wiberg/Mayer' in line:
+                Grab=False
+
     return charges
 
 def grab_dipole_moment(outfile):

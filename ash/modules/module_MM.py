@@ -2,87 +2,79 @@ import numpy as np
 import time
 
 from ash.modules.module_coords import distance
+from ash.modules.module_theory import Theory
 from ash.functions.functions_general import ashexit, blankline,print_time_rel,BC, load_julia_interface
 import ash.constants
-#import ash
 
 
 # Simple nonbonded MM theory. Charges and LJ-potentials
-class NonBondedTheory:
+class NonBondedTheory(Theory):
     def __init__(self, atomtypes=None, forcefield=None, charges = None, LJcombrule='geometric',
                  codeversion=None, printlevel=2, numcores=1, nonbonded_type="Coulomb-LJ"):
-
-        if atomtypes == None:
+        super().__init__()
+        self.theorynamelabel="NonBondedTheory"
+        if atomtypes is None:
             print("Error: NonBondedTheory needs atomtypes to be defined")
             ashexit()
 
-        #Indicate that this is a MMtheory
+        # Indicate that this is a MMtheory
         self.theorytype="MM"
 
-        #If codeversion not explicity asked for then we go for defaults (that may have changed if Julia interface failed)
+        # If codeversion not explicity asked for then we go for defaults (that may have changed if Julia interface failed)
         if codeversion == None:
             codeversion=ash.settings_ash.settings_dict["nonbondedMM_code"]
             print("MM Codeversion not set. Using default setting: ", codeversion)
         self.codeversion=codeversion
 
-        #Printlevel
+        # Printlevel
         self.printlevel=printlevel
 
-        #Atom types
+        # Atom types
         self.atomtypes=atomtypes
-        #Read MM forcefield.
+        # Read MM forcefield.
         self.forcefield=forcefield
 
-        #Inactive but included for completeness
+        # Inactive but included for completeness
         self.numcores=numcores
         #
         self.numatoms = len(self.atomtypes)
         self.LJcombrule=LJcombrule
 
-        #Nonbonded type. Options: 'Coulomb-LJ', 'Coulomb', 'LJ
+        # Nonbonded type. Options: 'Coulomb-LJ', 'Coulomb', 'LJ
         self.nonbonded_type=nonbonded_type
 
-        #Todo: Delete
-        # If qmatoms list passed to Nonbonded theory then we are doing QM/MM
-        #self.qmatoms=qmatoms
-        #print("Defining Nonbonded Theory")
-        #print("qmatoms:", self.qmatoms)
-
-
-
-        #These are charges for whole system including QM.
+        # These are charges for whole system including QM.
         self.atom_charges = charges
-        #Possibly have self.mm_charges here also??
+        # Possibly have self.mm_charges here also??
 
-
-        #Initializing sigmaij and epsij arrays. Will be filled by calculate_LJ_pairpotentials
+        # Initializing sigmaij and epsij arrays. Will be filled by calculate_LJ_pairpotentials
         self.sigmaij=np.zeros((self.numatoms, self.numatoms))
         self.epsij=np.zeros((self.numatoms, self.numatoms))
         self.pairarrays_assigned = False
 
-    #Set numcores method
+    # Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
-    #Set numcores method
+    # Set numcores method
     def cleanup(self):
         print("Cleanup for NonbondedTheory called")
-    #Todo: Need to make active-region version of pyarray version here.
+    # Todo: Need to make active-region version of pyarray version here.
     def calculate_LJ_pairpotentials(self, qmatoms=None, actatoms=None, frozenatoms=None):
         module_init_time=time.time()
-        #actatoms
+        # actatoms
         if actatoms is None:
             actatoms=[]
         if frozenatoms is None:
             frozenatoms=[]
 
-        #Deleted combination_rule argument. Now using variable assigned to object
+        # Deleted combination_rule argument. Now using variable assigned to object
 
         combination_rule=self.LJcombrule
 
-        #If qmatoms passed list passed then QM/MM and QM-QM pairs will be ignored from pairlist
+        # If qmatoms passed list passed then QM/MM and QM-QM pairs will be ignored from pairlist
         if self.printlevel >= 2:
             print("Inside calculate_LJ_pairpotentials")
-        #Todo: Figure out if we can find out if qmatoms without being passed
+        # Todo: Figure out if we can find out if qmatoms without being passed
         if qmatoms is None or qmatoms == []:
             qmatoms = []
             print("WARNING: qmatoms list is empty.")
@@ -94,9 +86,9 @@ class NonBondedTheory:
         if self.printlevel >= 2:
             print("Defining Lennard-Jones pair potentials")
 
-        #List to store pairpotentials
+        # List to store pairpotentials
         self.LJpairpotentials=[]
-        #New: multi-key dict instead using tuple
+        # New: multi-key dict instead using tuple
         self.LJpairpotdict={}
         if combination_rule == 'geometric':
             if self.printlevel >= 2:
@@ -118,7 +110,7 @@ class NonBondedTheory:
             print("Unknown combination rule. Exiting")
             ashexit()
 
-        #A large system has many atomtypes. Creating list of unique atomtypes to simplify loop
+        # A large system has many atomtypes. Creating list of unique atomtypes to simplify loop
         CheckpointTime = time.time()
         self.uniqatomtypes = np.unique(self.atomtypes).tolist()
         DoAll=True
@@ -264,21 +256,20 @@ class NonBondedTheory:
         print("Sum of charges:", sum(charges))
 
     # current_coords is now used for full_coords, charges for full coords
-    def run(self, current_coords=None, elems=None, charges=None, connectivity=None,
+    def run(self, current_coords=None, elems=None, charges=None, connectivity=None, numcores=1, label=None,
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None, charge=None, mult=None):
         module_init_time=time.time()
         if current_coords is None:
             print("No current_coords argument. Exiting...")
             ashexit()
         CheckpointTime = time.time()
-        #If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
-        #QM-QM pairs will be skipped in LJ
-
-        #Testing if arrays assigned or not. If not calling calculate_LJ_pairpotentials
-        #Passing qmatoms over so pairs can be skipped
-        #This sets self.sigmaij and self.epsij and also self.LJpairpotentials
-        #Todo: if actatoms have been defined this will be skipped in pairlist creation
-        #if frozenatoms passed frozen-frozen interactions will be skipped
+        # If qmatoms list provided to run (probably by QM/MM object) then we are doing QM/MM
+        # QM-QM pairs will be skipped in LJ
+        # Testing if arrays assigned or not. If not calling calculate_LJ_pairpotentials
+        # Passing qmatoms over so pairs can be skipped
+        # This sets self.sigmaij and self.epsij and also self.LJpairpotentials
+        # Todo: if actatoms have been defined this will be skipped in pairlist creation
+        # if frozenatoms passed frozen-frozen interactions will be skipped
         if 'LJ' in self.nonbonded_type:
             if self.pairarrays_assigned is False:
                 print("Calling LJ pairpot calc")
@@ -288,21 +279,23 @@ class NonBondedTheory:
             if len(self.LJpairpotentials) > 0:
                 LJ=True
         else:
+            print("No LJ")
             LJ=False
 
-        #If charges not provided to run function. Use object charges
-        if charges == None:
-            charges=self.atom_charges
+        # If charges not provided to run function. Use object charges
+        if charges is None:
+            print("Warning: No charges given to run. Using object atom_charges")
+            charges = self.atom_charges
 
-        #If coords not provided to run function. Use object coords
-        #HMM. I guess we are not keeping coords as part of MMtheory?
-        #if len(full_cords)==0:
+        # If coords not provided to run function. Use object coords
+        # HMM. I guess we are not keeping coords as part of MMtheory?
+        # if len(full_cords)==0:
         #    full_coords=
 
         if self.printlevel >= 2:
             print(BC.OKBLUE, BC.BOLD, "------------RUNNING NONBONDED MM CODE-------------", BC.END)
             print("Calculating MM energy and gradient")
-        #initializing
+        # initializing
         self.Coulombchargeenergy=0
         self.LJenergy=0
         self.MMEnergy=0.0
@@ -310,34 +303,33 @@ class NonBondedTheory:
         self.Coulombchargegradient=np.zeros((len(current_coords),3))
         self.LJgradient=np.zeros((len(current_coords),3))
 
-        #Slow Python version
+        # ACTIVE ATOMS
+
+        # Slow-ish Python(numpy) version
+        print("Codeversion:", self.codeversion)
         if self.codeversion=='py':
             if self.printlevel >= 2:
                 print("Using slow Python MM code")
-            #Sending full coords and charges over. QM charges are set to 0.
-            if Coulomb==True:
-                self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, current_coords)
+            # Sending full coords and charges over. QM charges are set to 0.
+            if Coulomb:
+                print("here")
+                self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, current_coords, mode="numpy")
                 if self.printlevel >= 2:
                     print("Coulomb Energy (au):", self.Coulombchargeenergy)
                     print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * ash.constants.harkcal)
                     print("")
-                    #print("self.Coulombchargegradient:", self.Coulombchargegradient)
+                    # print("self.Coulombchargegradient:", self.Coulombchargegradient)
                 blankline()
                 self.MMEnergy += self.Coulombchargeenergy
                 self.MMGradient += self.Coulombchargegradient
             # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
-            if LJ==True:
-                #print("xx")
-                #exit()
-                #LennardJones(coords, epsij, sigmaij, connectivity=[], qmatoms=[])
-                #self.LJenergy,self.LJgradient = LennardJones(full_coords,self.atomtypes, self.LJpairpotentials, connectivity=connectivity)
+            if LJ:
                 self.LJenergy,self.LJgradient = LennardJones(current_coords,self.epsij,self.sigmaij)
-                #print("Lennard-Jones Energy (au):", self.LJenergy)
-                #print("Lennard-Jones Energy (kcal/mol):", self.LJenergy*ash.constants.harkcal)
+
                 self.MMEnergy += self.LJenergy
                 self.MMGradient += self.LJgradient
 
-        #Combined Coulomb+LJ Python version. Slow
+        # Combined Coulomb+LJ Python version. Slow
         elif self.codeversion=='py_comb':
             print("not active")
             ashexit()
@@ -376,12 +368,34 @@ class NonBondedTheory:
                 print("Alternatively, use codeversion='py' argument to NonBondedTheory to use slower Python version for array creation")
                 ashexit()
 
-            #print_time_rel(CheckpointTime, modulename="NonBondedTheory:from run to just before calling ")
+            # print_time_rel(CheckpointTime, modulename="NonBondedTheory:from run to just before calling ")
             self.MMEnergy, self.MMGradient, self.LJenergy, self.Coulombchargeenergy =\
                 Juliafunctions.LJcoulomb_julia(charges, current_coords, self.epsij, self.sigmaij)
-            #Converting to numpy array
+            # Converting to numpy array
             self.MMGradient = np.asarray(self.MMGradient)
-            #print_time_rel(CheckpointTime, modulename="NonBondedTheoryfrom run to done julia")
+            # print_time_rel(CheckpointTime, modulename="NonBondedTheoryfrom run to done julia")
+        elif self.codeversion == 'cupy':
+            if self.printlevel >= 2:
+                print("Using Cupy Python MM code (requires GPU)")
+            # Sending full coords and charges over. QM charges are set to 0.
+            if Coulomb:
+                self.Coulombchargeenergy, self.Coulombchargegradient  = coulombcharge(charges, current_coords, mode="cupy")
+                if self.printlevel >= 2:
+                    print("Coulomb Energy (au):", self.Coulombchargeenergy)
+                    print("Coulomb Energy (kcal/mol):", self.Coulombchargeenergy * ash.constants.harkcal)
+                    print("")
+                    # print("self.Coulombchargegradient:", self.Coulombchargegradient)
+                blankline()
+                self.MMEnergy += self.Coulombchargeenergy
+                self.MMGradient += self.Coulombchargegradient
+            # NOTE: Lennard-Jones should  calculate both MM-MM and QM-MM LJ interactions. Full coords necessary.
+            # TODO:
+            if LJ:
+                print("Warning: LJ still done on CPU")
+                self.LJenergy,self.LJgradient = LennardJones(current_coords,self.epsij,self.sigmaij)
+
+                self.MMEnergy += self.LJenergy
+                self.MMGradient += self.LJgradient
         else:
             print("Unknown version of MM code")
             ashexit()
@@ -401,7 +415,7 @@ class NonBondedTheory:
         return self.MMEnergy, self.MMGradient
 
 
-#MMAtomobject used to store LJ parameter and possibly charge for MM atom with atomtype, e.g. OT
+# MMAtomobject used to store LJ parameter and possibly charge for MM atom with atomtype, e.g. OT
 class AtomMMobject:
     def __init__(self, atomcharge=None, LJparameters=None, element=None):
         self.atomcharge = atomcharge
@@ -414,7 +428,7 @@ class AtomMMobject:
     def add_element(self,element=None):
         self.element=element
 
-#Makes more sense to store this here. Simplifies ASH inputfile import.
+# Makes more sense to store this here. Simplifies ASH inputfile import.
 def MMforcefield_read(file):
     print("Reading forcefield file:", file)
     MM_forcefield = {}
@@ -641,11 +655,120 @@ def LennardJones(coords, epsij, sigmaij, connectivity=None, qmatoms=None):
 
     return final_energy,final_gradient
 
-#TODO: Do we always calculate charge if atoms are connected? Need connectivity for CHARMM/Amber expressions
-#Coulomb energy and gradient in Bohrs
-def coulombcharge(charges, coords):
+# General coulomb function (numpy and cupy). Energy + Gradient
+def coulombcharge(charges, coords, mode="numpy"):
+    if mode=="numpy":
+        print("Calling coulombcharge_np")
+        return coulombcharge_np(charges, coords)
+    elif mode=="cupy":
+        print("Calling coulombcharge_cupy")
+        return coulombcharge_cupy(charges, coords)
+    elif mode=="julia":
+        print("Calling coulombcharge_julia")
+        print("Loading Julia")
+        try:
+            Juliafunctions=load_julia_interface()
+        except:
+            print("Problem loading Julia")
+            ashexit()
+        return Juliafunctions.coulomb_julia(charges, coords)
+    else:
+        print("Unknown mode for coulombcharge")
+        ashexit()
+
+# Coulomb energy and gradient in Bohrs
+# Note: charges and coords should be Numpy arrays
+def distance_matrix(coords):
+    """ Calculate the distance matrix and difference matrix for a set of coordinates. """
+    diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
+    dist = np.sqrt(np.sum(diff ** 2, axis=-1))
+    return dist, diff
+
+def coulombcharge_np(charges, coords):
+    # Constants conversion
+    ang2bohr = 1.88972612546  # Angstrom to Bohr conversion factor
+
+    # Converting coordinates to Bohr
+    coords_b = coords * ang2bohr
+    charges = np.array(charges).flatten()
+    # Calculate the distance matrix and coordinate differences
+    dist_matrix, diff_matrix = distance_matrix(coords_b)
+    np.fill_diagonal(dist_matrix, np.inf)  # Avoid division by zero
+
+    # Calculate Coulomb energy
+    charges_matrix = np.outer(charges, charges)
+    pair_energies = np.triu(charges_matrix / dist_matrix)
+    energy = np.sum(pair_energies)
+
+    # Calculate electric field components
+    efield_pair_hat = diff_matrix / dist_matrix[..., np.newaxis]
+    efield_pair = efield_pair_hat / dist_matrix[..., np.newaxis] ** 2
+
+    # Calculate the gradient
+    gradient = np.sum(efield_pair * charges[np.newaxis, :, np.newaxis] * charges[:, np.newaxis, np.newaxis], axis=1)
+    gradient *= -1
+
+    return energy, gradient
+
+def distance_matrix_cupy(coords1, coords2):
+    import cupy as cp
+    diff = coords1[:, cp.newaxis, :] - coords2[cp.newaxis, :, :]
+    dist = cp.sqrt(cp.sum(diff ** 2, axis=-1))
+    return dist, diff
+
+# Decent Coulomb-charge cupy-version with batching
+def coulombcharge_cupy(charges, coords, batch_size=1000):
+    import cupy as cp
+    ang2bohr = 1.88972612546  # Angstrom to Bohr conversion factor
+    coords_b = cp.array(coords * ang2bohr)
+    charges = cp.array(np.array(charges).flatten())
+    num_atoms = len(charges)
+    energy = cp.float64(0)
+    gradient = cp.zeros((num_atoms, 3), dtype=cp.float64)
+
+    for i in range(0, num_atoms, batch_size):
+        end_i = min(i + batch_size, num_atoms)
+        coords_batch_i = coords_b[i:end_i]
+        charges_batch_i = charges[i:end_i]
+
+        for j in range(i, num_atoms, batch_size):
+            end_j = min(j + batch_size, num_atoms)
+            coords_batch_j = coords_b[j:end_j]
+            charges_batch_j = charges[j:end_j]
+
+            dist_matrix, diff_matrix = distance_matrix_cupy(coords_batch_i, coords_batch_j)
+
+            # Avoid self-interactions
+            if i == j:
+                cp.fill_diagonal(dist_matrix, cp.inf)
+
+            charges_matrix = cp.outer(charges_batch_i, charges_batch_j)
+
+            # Calculate Coulomb energy
+            pair_energies = charges_matrix / dist_matrix
+            energy += cp.sum(cp.triu(pair_energies) if i == j else pair_energies)
+
+            # Calculate gradient (note the sign change here)
+            efield_pair = -diff_matrix / dist_matrix[..., cp.newaxis]**3
+            grad_contrib_i = cp.sum(efield_pair * charges_batch_j[cp.newaxis, :, cp.newaxis], axis=1)
+            gradient[i:end_i] += charges_batch_i[:, cp.newaxis] * grad_contrib_i
+
+            if i != j:
+                grad_contrib_j = -cp.sum(efield_pair * charges_batch_i[:, cp.newaxis, cp.newaxis], axis=0)
+                gradient[j:end_j] += charges_batch_j[:, cp.newaxis] * grad_contrib_j
+            else:
+                # For i == j, we need to zero out the diagonal contributions
+                grad_contrib_j = -cp.sum(efield_pair * charges_batch_i[:, cp.newaxis, cp.newaxis], axis=0)
+                grad_contrib_j[cp.arange(end_j-i)] = 0
+                gradient[j:end_j] += charges_batch_j[:, cp.newaxis] * grad_contrib_j
+
+    return float(energy.get()), gradient.get()
+
+
+def old_coulombcharge(charges, coords):
     #Converting list to numpy array and converting to bohr
-    coords_b=np.array(coords)*ash.constants.ang2bohr
+    ang2bohr = 1.8897259886  # Angstrom to Bohr conversion factor
+    coords_b=np.array(coords)*ang2bohr
     #Coulomb energy
     energy=0
     #Initialize Coulomb gradient

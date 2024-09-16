@@ -8,6 +8,7 @@ import itertools
 
 #import ash
 import ash.constants
+import ash.modules.module_coords
 
 ashpath = os.path.dirname(ash.__file__)
 from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, find_replace_string_in_file, \
@@ -149,7 +150,7 @@ class OpenMMTheory:
         # Platform (CPU, CUDA, OpenCL) and Parallelization
         self.platform_choice = platform
 
-        if properties == None:
+        if properties is None:
             self.properties = {}
         else:
             self.properties = properties
@@ -225,6 +226,9 @@ class OpenMMTheory:
             print(
             "Note: OpenMM will fail in this step if parameters are missing in topology and\n"
             "      parameter files (e.g. nonbonded entries).\n")
+
+        # Initializing
+        pdb_pbc_vectors=None
 
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
@@ -375,6 +379,8 @@ class OpenMMTheory:
                 print("Reading topology from PDB-file instead")
                 pdb = openmm.app.PDBFile(pdbfile)
                 self.topology = pdb.topology
+                # Check if PBC vectors in PDB-file
+                pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
             self.forcefield = forcefield
 
         elif ASH_FF_file is not None:
@@ -464,6 +470,8 @@ class OpenMMTheory:
                 print("Reading topology from PDBfile:", pdbfile)
             pdb = openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
+            # Check if PBC vectors in PDB-file
+            pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
         # Simple OpenMM system without any forcefield defined. Requires ASH fragment
         # Used for OpenMM_MD with QM Hamiltonian
         elif dummysystem is True:
@@ -494,9 +502,13 @@ class OpenMMTheory:
             # This would be regular OpenMM Forcefield definition requiring XML file
             # Topology from PDBfile annoyingly enough
             pdb = openmm.app.PDBFile(pdbfile)
+
+            # Check if PBC vectors in PDB-file
+            pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
+
             self.topology = pdb.topology
             self.forcefield = openmm.app.ForceField(*xmlfiles)
-            #Defining some things. resids is used by actregiondefine
+            # Defining some things. resids is used by actregiondefine
             self.resids = [i.residue.index for i in self.topology.atoms()]
             self.resnames = [i.residue.name for i in self.topology.atoms()]
             self.atomnames = [i.name for i in self.topology.atoms()]
@@ -512,7 +524,7 @@ class OpenMMTheory:
                     print_line_with_subheader1("Setting up periodicity.")
                     #Inspect and set PBC in self.topology and self.forcefield
                     #Necessary for system creation with periodics (otherwise failure)
-                    self.set_periodics_before_system_creation(PBCvectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed)
+                    self.set_periodics_before_system_creation(PBCvectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed,)
 
                 #Nonbonded method to use for PBC
                 if self.nonbondedMethod_PBC == 'PME':
@@ -867,6 +879,16 @@ class OpenMMTheory:
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
 
+    # Create a mixed MM/ML potential system from a ML potential (requires OpenMM-ML)
+    # from openmmml import MLPotential
+    # potential = MLPotential('ani2x')
+    #TODO: Check whether system contains all previous settings (frozen atoms, constraints)
+    #TODO: May have to check
+    def create_mixed_ML_system(self,potential,mlatoms):
+        print("Creating a mixed MM/ML system (replaces old MM system)")
+        print("MLatom indices:", mlatoms)
+        self.system = potential.createMixedSystem(self.topology, self.system, mlatoms)
+
     # Function to write PDB-file if everything is available
     def write_pdbfile(self, outputname="system"):
         import openmm
@@ -889,17 +911,16 @@ class OpenMMTheory:
             print("Found neither system positions defined or an ASH fragment file. Can not write PDB-file.")
             ashexit()
 
-
-
-
     #Function that handles periodicity in forcefield objects (for Amber, CHARMM). TODO: Test GROMACS and XML
-    def set_periodics_before_system_creation(self,PBCvectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
+    def set_periodics_before_system_creation(self,PBCvectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
         import openmm
         from packaging import version
         if use_parmed is True:
             import parmed
         print("Inspecting periodicity input before system creation")
-
+        print("PBCVectors:", PBCvectors)
+        print("periodic_cell_dimensions:", periodic_cell_dimensions)
+        print("pdb_pbc_vectors:", pdb_pbc_vectors)
         #IF PBC vectors provided then we need to set them in the topology (otherwise system creation does not work)
         if PBCvectors is not None:
             print("\nPBC vectors provided by user (in Angstrom):", PBCvectors)
@@ -931,7 +952,6 @@ class OpenMMTheory:
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][1] = PBCvectors[0][0]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = PBCvectors[1][1]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = PBCvectors[2][2]
-
 
         elif periodic_cell_dimensions is not None:
             print("\nPBC cell dimensions provided by user:", periodic_cell_dimensions)
@@ -992,8 +1012,13 @@ class OpenMMTheory:
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][1] = periodic_cell_dimensions[0]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = periodic_cell_dimensions[1]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = periodic_cell_dimensions[2]
-
-
+        elif pdb_pbc_vectors is not None:
+            print("Warning: neither user keyword PBCvectors or periodic_cell_dimensions was set (None)")
+            print("However, we found PBC information inside PDB-topology of the PDB-file that was read in. Using this and continuing")
+            #Should work automatically
+        else:
+            print("Found no PBC information, yet periodicity is requested. Exiting!")
+            ashexit()
 
     #Get PBC vectors from topology of openmm object. Convenient in a script
     def get_PBC_vectors(self):
@@ -1078,6 +1103,19 @@ class OpenMMTheory:
         #4. remove system restraint force ?
         self.system.removeForce(-1)
 
+    # Method to add any (compatible) force to system (could e.g. be a loaded TorchForce )
+    def add_force(self,newforce):
+        print("Adding new force to system:", newforce)
+        self.system.addForce(newforce)
+    def remove_force(self,forceindex):
+        print(f"Removing force-index {forceindex}: {self.system.getForces()[forceindex].getName()}")
+        self.system.removeForce(forceindex)
+    def remove_force_by_name(self,forcename):
+        print(f"Searching forces and removing a force name: {forcename}")
+        for i, force in enumerate(self.system.getForces()):
+            if force.getName() == forcename:
+                print(f"Removing force-index {i}: {forcename}")
+                self.system.removeForce(i)
 # Bond restraint force, e.g. for umbrella sampling
 # TODO : unit check
     def add_custom_bond_force(self,i,j,value,forceconstant):
@@ -1119,21 +1157,23 @@ class OpenMMTheory:
         torsion_force.setUsesPeriodicBoundaryConditions(True)
         self.system.addForce(torsion_force)
 
-    # This is custom externa force that restrains group of atoms to center of system
-    def add_center_force(self, center_coords=None, atomindices=None, forceconstant=1.0):
+    # This is custom external force that restrains group of atoms to center of system
+    #Note: has flatbottom properties
+    def add_centerforce(self, center_coords=None, atomindices=None, forceconstant=1.0, distance=5.0):
         import openmm
-        print("Inside add_center_force")
-        print("center_coords:", center_coords)
-        print("atomindices:", atomindices)
-        print("forceconstant:", forceconstant)
+        print("add_centerforce:")
+        print("Center coordinates:", center_coords)
+        print("Force acting on atomindices:", atomindices)
+        print(f"Forceconstant: {forceconstant} kcal/mol/Ang^2")
+        print(f"Force acting at values larger than {distance} Ang:")
         #Distinguish periodic and nonperiodic scenarios:
         if self.Periodic is True:
-            print("Warning: Add_center_force with PBC is not tested")
-            centerforce = openmm.CustomExternalForce("k *periodicdistance(x, y, z, x0, y0, z0)")
+            centerforce = openmm.CustomExternalForce("0.5*k * max(0,periodicdistance(x, y, z, x0, y0, z0) - r0)^2")
         else:
-            centerforce = openmm.CustomExternalForce("k * (abs(x-x0) + abs(y-y0) + abs(z-z0))")
+            centerforce = openmm.CustomExternalForce("0.5*k * max(0,((x-x0)^2+(y-y0)^2+(z-z0)^2)-r0)^2")
         centerforce.addGlobalParameter("k",
-                                       forceconstant * 4.184 * openmm.unit.kilojoule / openmm.unit.angstrom / openmm.unit.mole)
+                                       forceconstant * openmm.unit.kilocalories_per_mole / openmm.unit.angstroms ** 2)
+        centerforce.addGlobalParameter("r0", distance * openmm.unit.angstrom)
         centerforce.addPerParticleParameter('x0')
         centerforce.addPerParticleParameter('y0')
         centerforce.addPerParticleParameter('z0')
@@ -1142,14 +1182,41 @@ class OpenMMTheory:
         center_y = center_coords[1] / 10
         center_z = center_coords[2] / 10
         for i in atomindices:
-            # centerforce.addParticle(i, np.array([0.0, 0.0, 0.0]))
             centerforce.addParticle(i, openmm.Vec3(center_x, center_y, center_z))
         self.system.addForce(centerforce)
-        #Updating simulation again in order to update parameters. Making sure not to change integrator etc.
-        #self.create_simulation(timestep=self.timestep, integrator=self.integrator,
-        #                       coupling_frequency=self.coupling_frequency, temperature=self.temperature)
         print("Added center force")
         return centerforce
+    # Alternative version of a Flatbottom center force on small-molecule w.r.t. rest-of-system
+    #Note: behaves differently with respect to PBC-wrapping, creating problems for QM/MM.
+    def add_flatbottom_centerforce(self, molA_indices=None, molB_indices = None, distance=5.0, forceconstant=1.0):
+        import openmm
+        print("Inside add_flatbottom_centerforce")
+        print("molA_indices size:", len(molA_indices))
+        print("molB_indices size:", len(molB_indices))
+        print("forceconstant:", forceconstant)
+        print("distance:", distance)
+        #Define force
+        #centerforce = openmm.CustomCentroidBondForce(2, "0.5*k*(distance(g1,g2)-r0)^2")
+        centerforce = openmm.CustomCentroidBondForce(2, "0.5*k*max(0, distance(g1,g2)-r0)^2")
+        #Periodic case (note: periodicdistance not available for CustomCentroidBondForce)
+        if self.Periodic is True:
+            print("Warning: add_flatbottom_centerforce with PBC is not well tested")
+            centerforce.setUsesPeriodicBoundaryConditions=True
+            #centerforce = openmm.CustomExternalForce("k *periodicdistance(x, y, z, x0, y0, z0)")
+            #centerforce = openmm.CustomCentroidBondForce(2, "0.5*k*(distance(g1,g2)-r0)^2")
+
+        centerforce.addGlobalParameter("k",
+                                       forceconstant * openmm.unit.kilocalories_per_mole / openmm.unit.angstroms ** 2)
+        centerforce.addGlobalParameter("r0", distance * openmm.unit.angstrom)
+        g1 = molA_indices #solute/ligand
+        g2 = molB_indices #rest
+        centerforce.addGroup(g1) # index will be 0
+        centerforce.addGroup(g2) # index will be 1
+        centerforce.addBond([0,1],[]) #no [] since global
+        self.system.addForce(centerforce)
+        print("Added center force")
+        return centerforce
+
 
     def add_custom_external_force(self):
         import openmm
@@ -1544,13 +1611,11 @@ class OpenMMTheory:
         import openmm
         timeA = time.time()
         # Energy composition
-        # TODO: Calling this is expensive (seconds)as the energy has to be recalculated.
-        # Only do for cases: a) single-point b) First energy-step in optimization and last energy-step
-        # OpenMM energy components
+        # NOTE: Calling this is expensive (seconds)as the energy has to be recalculated.
         openmm_energy = dict()
         energycomp = self.getEnergyDecomposition(simulation.context)
-        #print("energycomp: ", energycomp)
-        #print("self.forcegroups:", self.forcegroups)
+        print("energycomp: ", energycomp)
+        print("self.forcegroups:", self.forcegroups)
         # print("len energycomp", len(energycomp))
         # print("openmm_energy: ", openmm_energy)
         print("")
@@ -1589,16 +1654,6 @@ class OpenMMTheory:
                 openmm_energy['Otherforce' + str(extrafcount)] = comp[1]
 
         print_time_rel(timeA, modulename="energy decomposition")
-        # timeA = time.time()
-
-        # The force terms to print in the ordered table.
-        # Deprecated. Better to print everything.
-        # Missing terms in force_terms will be printed separately
-        # if self.Forcefield == 'CHARMM':
-        #    force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded', '14-LJ']
-        # else:
-        #    #Modify...
-        #    force_terms = ['Bond', 'Angle', 'Urey-Bradley', 'Dihedrals', 'Impropers', 'CMAP', 'Nonbonded']
 
         # Sum all force-terms
         sumofallcomponents = 0.0
@@ -1855,6 +1910,28 @@ class OpenMMTheory:
     #     self.update_simulation()
     #     print_time_rel(timeA, modulename="zero_nonbondedforce")
     #     # self.create_simulation()
+
+    # Updating LJ interactions in OpenMM object. Used to set LJ sites to zero e.g. so that they do not contribute
+    # Can be used to get QM-MM LJ interaction energy
+    def update_LJ_epsilons(self, atomlist, epsilons):
+        import openmm
+        timeA = time.time()
+        print("Updating LJ interaction strengths in OpenMM object.")
+        assert len(atomlist) == len(epsilons)
+        for atomindex, newepsilon in zip(atomlist, epsilons):
+            charge, sigma, oldepsilon = self.nonbonded_force.getParticleParameters(atomindex)
+            # Different depending on type of NonbondedForce
+            if isinstance(self.nonbonded_force, openmm.CustomNonbondedForce):
+                self.nonbonded_force.setParticleParameters(atomindex, [charge, sigma, newepsilon])
+                # bla1,bla2,bla3 = self.nonbonded_force.getParticleParameters(i)
+                # print("bla1,bla2,bla3", bla1,bla2,bla3)
+            elif isinstance(self.nonbonded_force, openmm.NonbondedForce):
+                self.nonbonded_force.setParticleParameters(atomindex, charge, sigma, newepsilon)
+                #bla1,bla2,bla3 = self.nonbonded_force.getParticleParameters(atomindex)
+                #print("bla1,bla2,bla3", bla1,bla2,bla3)
+
+        printdebug("done here")
+        print_time_rel(timeA, modulename="update_LJ_epsilons")
 
     # Updating charges in OpenMM object. Used to set QM charges to 0 for example
     # Taking list of atom-indices and list of charges (usually zero) and setting new charge
@@ -2879,10 +2956,24 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     return openmmobject, fragment
 
 
-def write_pdbfile_openMM(topology, positions, filename):
+def write_pdbfile_openMM(topology, positions, filename, connectivity_dict=None):
     import openmm.app
+
+    if connectivity_dict is not None:
+        print("Connectivity passed to write_pdbfile_openMM")
+        openmm_add_bonds_to_topology(topology,connectivity_dict)
+
     openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
     print("Wrote PDB-file:", filename)
+
+#Take OpenMM topology and connectivity dictionary and add bonds to topology
+#in order for OpenMM PDBFile.writeFile to write CONECT lines
+def openmm_add_bonds_to_topology(topology,connectivity):
+    atoms = (list(topology.atoms()))
+    for conatom,conlist in connectivity.items():
+        for conl in conlist:
+            topology.addBond(atoms[conatom],atoms[conl])
+
 
 # Assumes all atoms of small molecule present (including hydrogens)
 def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0, 70.0, 70.0],
@@ -3004,7 +3095,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
 #Too similar to create_nonbonded_model_xmlfile
 #TODO: Add option to symmetrize charges for similar atoms in residue
 def write_nonbonded_FF_for_ligand(fragment=None, charge=None, mult=None, coulomb14scale=1.0, lj14scale=1.0,
-    ff_type="CHARMM", charge_model="CM5", theory=None, LJ_model="UFF", resname="LIG", numcores=1):
+    ff_type="AMBER", charge_model="CM5", theory=None, LJ_model="UFF", resname="LIG", numcores=1):
     print_line_with_mainheader("write_nonbonded_FF_for_ligand")
 
     # Check if fragment is provided
@@ -3241,24 +3332,28 @@ def read_NPT_statefile(npt_output):
 
 
 # Wrapper function for OpenMM_MDclass
-def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
+def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None, atomic_units_force_reporter=False,
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
               anderson_thermostat=False, platform='CPU', constraints=None, restraints=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
-              datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
-              center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False):
+              datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
+              centerforce_atoms=None, centerforce_constant=1.0, centerforce_distance=10.0, centerforce_center=None,
+              barostat_frequency=25, specialbox=False):
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, force_file_option=force_file_option, atomic_units_force_reporter=atomic_units_force_reporter,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        energy_file_option=energy_file_option, force_file_option=force_file_option, atomic_units_force_reporter=atomic_units_force_reporter,
                         constraints=constraints, restraints=restraints,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, printlevel=printlevel, hydrogenmass=hydrogenmass,
-                        plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
-                        center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
+                        plumed_object=plumed_object, add_centerforce=add_centerforce,trajfilename=trajfilename,
+                        centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
+                        centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
                         barostat_frequency=barostat_frequency, specialbox=specialbox)
     if simulation_steps is not None:
         md.run(simulation_steps=simulation_steps)
@@ -3275,14 +3370,15 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.004, simulation_steps=None,
     return
 
 class OpenMM_MDclass:
-    def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.004,
+    def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.001,
                  traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', force_file_option=None, atomic_units_force_reporter=False,
+                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+                 energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
                  coupling_frequency=1, printlevel=2, platform='CPU',
                  anderson_thermostat=False, hydrogenmass=1.5, constraints=None, restraints=None,
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
-                 datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
-                 center_force_atoms=None, centerforce_constant=1.0,
+                 datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
+                 centerforce_atoms=None, centerforce_constant=1.0, centerforce_distance=10.0, centerforce_center=None,
                  barostat_frequency=25, specialbox=False,):
         module_init_time = time.time()
         import openmm
@@ -3368,12 +3464,13 @@ class OpenMM_MDclass:
         self.plumed_object = plumed_object
         self.barostat_frequency = barostat_frequency
         self.trajectory_file_option=trajectory_file_option
-        self.force_file_option=force_file_option
+        self.force_file_option=force_file_option #Gradients/forces as a file
+        self.energy_file_option=energy_file_option #Energies as a file
         self.atomic_units_force_reporter=atomic_units_force_reporter #Forces in atomic units
 
         #PERIODIC or not
         if self.openmmobject.Periodic is True:
-            #Generally we want True but for now allowing user to modify (default=True)
+            #Generally we want True except sometimes we do our own wrapping
             self.enforcePeriodicBox=enforcePeriodicBox
         else:
             print("System is non-periodic. Setting enforcePeriodicBox to False")
@@ -3538,11 +3635,8 @@ class OpenMM_MDclass:
         if self.QM_MM_object is not None:
             print("QM_MM_object provided. Switching to QM/MM loop.")
             #print("QM/MM requires enforcePeriodicBox to be False.")
-            #True means we end up with solute in corner of box (wrong for nonPBC QM code)
-            #NOTE: but OK for proteins?
-            #self.enforcePeriodicBox = True
-            # enforcePeriodicBox or not
-            print("self.enforcePeriodicBox:", self.enforcePeriodicBox)
+            #True sometimes means we end up with solute in corner of box (wrong for nonPBC QM code)
+
 
             # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
             # (it would calculate OpenMM energy twice) so turning on in case forgotten
@@ -3552,40 +3646,42 @@ class OpenMM_MDclass:
                 self.QM_MM_object.openmm_externalforce = True
                 #NOTE: Now creating externalforceobject as part of this MD object instead (previously QM/MM object)
                 self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
-            # TODO: Should we set parallelization of QM theory here also in case forgotten?
 
-            centercoordinates = False
-            # CENTER COORDINATES HERE on SOLUTE HERE ??
-            # TODO: Deprecated I think
-            if centercoordinates is True:
-                # Solute atoms assumed to be QM-region
-                self.fragment.write_xyzfile(xyzfilename="fragment-before-centering.xyz")
-                soluteatoms = self.QM_MM_object.qmatoms
-                solutecoords = self.fragment.get_coords_for_atoms(soluteatoms)[0]
-                print("Changing origin to centroid.")
-                self.fragment.coords = change_origin_to_centroid(fragment.coords, subsetcoords=solutecoords)
-                self.fragment.write_xyzfile(xyzfilename="fragment-after-centering.xyz")
+        # CENTER COORDINATES HERE on SOLUTE HERE ??
+        # NOTE: Deprecated most likely
+        #centercoordinates = False
+        #if centercoordinates is True:
+        #    # Solute atoms assumed to be QM-region
+        #    self.fragment.write_xyzfile(xyzfilename="fragment-before-centering.xyz")
+        #    soluteatoms = self.QM_MM_object.qmatoms
+        #    solutecoords = self.fragment.get_coords_for_atoms(soluteatoms)[0]
+        #    print("Changing origin to centroid.")
+        #    self.fragment.coords = change_origin_to_centroid(fragment.coords, subsetcoords=solutecoords)
+        #    self.fragment.write_xyzfile(xyzfilename="fragment-after-centering.xyz")
 
-            # Now adding center force acting on solute
-            if add_center_force is True:
-                # print("add_center_force is True")
-                print("Forceconstant is: {} kcal/mol/Ang^2".format(centerforce_constant))
-                if center_force_atoms is None:
-                    print("center_force_atoms unset. Using QM/MM atoms:", self.QM_MM_object.qmatoms)
-                    center_force_atoms = self.QM_MM_object.qmatoms
+        # Adding (flat-bottom) center force acting on solute
+        if add_centerforce is True:
+            print("Centerforce option active")
+            if centerforce_atoms is None:
+                print("centerforce_atoms unset. Trying to use QM atoms:", self.QM_MM_object.qmatoms)
+                centerforce_atoms = self.QM_MM_object.qmatoms
+            if centerforce_center is None:
+                print("No center coordinates set. Using geometric center of whole fragment.")
                 # Get geometric center of system (Angstrom)
-                center = self.fragment.get_coordinate_center()
-                print("center:", center)
+                centerforce_center = self.fragment.get_coordinate_center()
+                print("centerforce_center:", centerforce_center)
+            #Alternative (PBC wrapping issues, however)
+            #rest_system = listdiff(fragment.allatoms, centerforce_atoms)
+            #self.openmmobject.add_flatbottom_centerforce(molA_indices=centerforce_atoms, molB_indices=rest_system,
+            #                                              forceconstant=centerforce_constant, distance=centerforce_distance)
+            self.openmmobject.add_centerforce(center_coords=centerforce_center, atomindices=centerforce_atoms,
+                                                forceconstant=centerforce_constant, distance=centerforce_distance)
 
-                self.openmmobject.add_center_force(center_coords=center, atomindices=center_force_atoms,
-                                                   forceconstant=centerforce_constant)
-
-            # After adding possible QM/MM force, possible Plumed force, possible center force
-            # Let's list all OpenMM object system forces for sanity
-            print("OpenMM Forces defined:", self.openmmobject.system.getForces())
-            # Does step by step
-
-            print_time_rel(module_init_time, modulename="OpenMM_MD setup", moduleindex=1)
+        # After adding possible QM/MM force, possible Plumed force, possible center force
+        # Let's list all OpenMM object system forces for sanity
+        print("enforcePeriodicBox:", self.enforcePeriodicBox)
+        print("OpenMM Forces defined:", self.openmmobject.system.getForces())
+        print_time_rel(module_init_time, modulename="OpenMM_MD setup", moduleindex=1)
 
     #Set sim reporters. Needs to be done after simulation is created and not modified anymore
     def set_sim_reporters(self,simulation,restart=False):
@@ -3634,10 +3730,25 @@ class OpenMM_MDclass:
             simulation.reporters.append(
                 mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=self.enforcePeriodicBox))
+        elif self.trajectory_file_option =="XYZ":
+            print("XYZ trajectory format selected (not available for classical MD). Warning: not very fast")
+            print("Deleting possible old trajectory-file (OpenMMMD_traj.xyz)")
+            try:
+                os.remove("OpenMMMD_traj.xyz")
+            except:
+                pass
+            #Done manually by write_xyzfile
+
         if self.force_file_option != None:
             print("ForceReporter traj format selected.")
             #exit()
             simulation.reporters.append(ForceReporter(self.trajfilename + '_force.txt', self.traj_frequency, atomic_units=self.atomic_units_force_reporter))
+        if self.energy_file_option != None:
+            print("Energyfile  selected.")
+            try:
+                os.remove(self.energy_file_option)
+            except:
+                pass
 
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
@@ -3845,7 +3956,7 @@ class OpenMM_MDclass:
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
                 checkpoint = time.time()
                 print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                #QM/MM periodic. Translating coords outside of box, back in
+                #Periodic handling. Important choice for QM/MM.
                 if self.openmmobject.Periodic is True:
                     print("Periodic QM/MM is on")
                     if self.enforcePeriodicBox is True:
@@ -3868,10 +3979,6 @@ class OpenMM_MDclass:
                 #    changed_origin_coords = change_origin_to_centroid(self.fragment.coords, subsetcoords=solute_coords)
                 #    current_coords = center_coordinates(current_coords,)
 
-
-
-
-
                 checkpoint = time.time()
                 # Run QM/MM step to get full system QM+PC gradient.
                 self.QM_MM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
@@ -3881,11 +3988,12 @@ class OpenMM_MDclass:
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
                     # Manual step info option
-                    if self.printlevel >= 2:
+                    #NOTE: Can't do it because the MM-energy has not been calculated yet when we do customexternalforceupdate option
+                    #if self.printlevel >= 2:
 
                         #Defining total QM/MM potential energy
-                        QM_MM_energy = self.QM_MM_object.QMenergy+self.QM_MM_object.MMenergy-self.QM_MM_object.extforce_energy
-                        print_current_step_info(step,current_state,self.openmmobject,qm_energy=QM_MM_energy)
+                    #    QM_MM_energy = self.QM_MM_object.QMenergy+self.QM_MM_object.MMenergy-self.QM_MM_object.extforce_energy
+                    #    print_current_step_info(step,current_state,self.openmmobject,qm_energy=QM_MM_energy)
 
                     #print("QM/MM step. Writing unwrapped to trajfile: OpenMMMD_traj_unwrapped.xyz")
                     #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_unwrapped", printlevel=1, writemode='a')
@@ -3908,7 +4016,7 @@ class OpenMM_MDclass:
 
 
                 #OpenMM metadynamics
-                if metadynamics == True:
+                if metadynamics is True:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
                     meta_object.step(self.simulation, 1)
@@ -3997,8 +4105,13 @@ class OpenMM_MDclass:
                         print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
                     #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     #checkpoint = time.time()
-                    # Manual trajectory option (reporters do not work for manual dynamics steps)
-                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    if self.energy_file_option != None:
+                        with open(self.energy_file_option,"a") as f:
+                            f.write(f"{energy}\n")
+
+                    # Manual trajectory option
+                    if self.trajectory_file_option =="XYZ":
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
                     #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                     #checkpoint = time.time()
 
@@ -4071,10 +4184,10 @@ class OpenMM_MDclass:
                     print_current_step_info(step,current_state,self.openmmobject)
                     print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
-                    # Manual trajectory option (reporters do not work for manual dynamics steps)
-                    #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
-                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
-                    #checkpoint = time.time()
+
+                    if self.trajectory_file_option =="XYZ":
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+
 
                 self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
@@ -4174,7 +4287,7 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         volume_threshold (float, optional): [description]. Defaults to 1.0.
         density_threshold (float, optional): [description]. Defaults to 0.001.
         temperature (int, optional): [description]. Defaults to 300.
-        timestep (float, optional): [description]. Defaults to 0.004.
+        timestep (float, optional): [description]. Defaults to 0.001.
         traj_frequency (int, optional): [description]. Defaults to 100.
         trajectory_file_option (str, optional): [description]. Defaults to 'DCD'.
         coupling_frequency (int, optional): [description]. Defaults to 1.
@@ -4452,15 +4565,16 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
 # Metadynamics written as a wrapper function around OpenMM_MDclass
 #TODO: Decide units for CV biaswidth range and Gaussian height
 #NOTE: Restraints are in Angstrom and kcal/mol^2
-def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_steps=None, simulation_time=None,
+def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
               anderson_thermostat=False, restraints=None, flatbottom_restraint_CV1=None, flatbottom_restraint_CV2=None,
               funnel_restraint=None, funnel_parameters=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
-              datafilename=None, dummy_MM=False, plumed_object=None, add_center_force=False,
-              center_force_atoms=None, centerforce_constant=1.0, barostat_frequency=25, specialbox=False,
+              datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
+              centerforce_atoms=None, centerforce_distance=10.0, centerforce_constant=1.0, centerforce_center=None,
+              barostat_frequency=25, specialbox=False,
               use_plumed=False, plumed_input_string=None,
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6,
               height=1,
@@ -4511,8 +4625,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.004, simulation_s
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, platform=platform, hydrogenmass=hydrogenmass,
-                        plumed_object=plumed_object, add_center_force=add_center_force,trajfilename=trajfilename,
-                        center_force_atoms=center_force_atoms, centerforce_constant=centerforce_constant,
+                        plumed_object=plumed_object, add_centerforce=add_centerforce,trajfilename=trajfilename,
+                        centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
+                        centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
                         barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
 
     #Load OpenMM.app
@@ -5112,21 +5227,21 @@ def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity,centroid)
     boxlength_half=boxlength/2
 
 
-    print("indices:", indices)
+    #print("indices:", indices)
 
     #Get indices of all whole molecules that have an atom outisde box
     all_mol_indices = [connectivity[connectivity_dict.get(i)] for i in indices]
-    print("all_mol_indices:",all_mol_indices)
+    #print("all_mol_indices:",all_mol_indices)
     #Removing duplicates
     trimmed_all_mol_indices = trim_list_of_lists(all_mol_indices)
-    print("trimmed_all_mol_indices:",trimmed_all_mol_indices)
+    #print("trimmed_all_mol_indices:",trimmed_all_mol_indices)
     #Get all molecule coordinates (that have an atom outside box)
     allmol_coords = np.take(allcoords, trimmed_all_mol_indices, axis=0)
-    print("allmol_coords:",allmol_coords)
+    #print("allmol_coords:",allmol_coords)
     #Check if all molecule members are outside
     #Get Boolean array of whole molecules outside (True) or inside (False) of box
     allmol_outside_bools_single = [len(get_atoms_outside_box(m, centroid, boxlength)) == len(m) for m in allmol_coords]
-    print("allmol_outside_bools_single:",allmol_outside_bools_single)
+    #print("allmol_outside_bools_single:",allmol_outside_bools_single)
 
     #Looping over indices
     #print(f"6Time:{time.time()-checkpoint}")
@@ -5216,7 +5331,7 @@ def trim_list_of_lists(k):
 def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     import openmm.app
 
-    #Funciton to merge PDB-files (e.g. protein and ligand) while preserving and updating connectivity records
+    #Function to merge PDB-files (e.g. protein and ligand) while preserving and updating connectivity records
     #PDB inputfiles
     pdb1 = openmm.app.PDBFile(pdbfile_1)
     pdb2 = openmm.app.PDBFile(pdbfile_2)
@@ -5224,8 +5339,8 @@ def merge_pdb_files(pdbfile_1,pdbfile_2,outputname="merged.pdb"):
     #Create modeller object
     modeller = openmm.app.Modeller(pdb1.topology, pdb1.positions) #Add pdbfile1
     modeller.add(pdb2.topology, pdb2.positions) #Add pdbfile2
-    mergedTopology = modeller.topology #Merging topology files
-    mergedPositions = modeller.positions #merging ositions
+    mergedTopology = modeller.topology #Merging topology
+    mergedPositions = modeller.positions #merging positions
 
     #Write merged topology and positions to new PDB file
     write_pdbfile_openMM(modeller.topology, mergedPositions, outputname)
@@ -5276,9 +5391,10 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
         import openff
         from openff.toolkit.topology import Molecule
         from openmmforcefields.generators import GAFFTemplateGenerator
-    except:
+    except ImportError as errormessage:
         print("OpenFF and openmmforcefields libraries are required but could not be imported")
         print("You can install like this:   conda install --yes -c conda-forge openmmforcefields")
+        print("Python import error message:", errormessage)
         ashexit()
     print()
 

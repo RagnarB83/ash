@@ -340,7 +340,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             allconstraints = {}
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
-                            print("x allconstraints:", allconstraints)
+                            #print("x allconstraints:", allconstraints)
                             #Running zero-theory with optimizer just to set geometry
                             geomeTRICOptimizer(fragment=fragment, theory=zerotheory, maxiter=maxiter, coordsystem=coordsystem,
                             constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, conv_criteria=conv_criteria, subfrctor=subfrctor,
@@ -502,6 +502,7 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 
     print_time_rel(module_init_time, modulename='calc_surface', moduleindex=0)
     result = ASH_Results(label="Surface calc", surfacepoints=surfacedictionary)
+    result.write_to_disk(filename="ASH_surface.result")
 
     return result
 
@@ -561,6 +562,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
         print("Surface dictionary size {} matching total number of XYZ files {}. We should have all data".format(len(surfacedictionary),totalnumpoints))
         print("Exiting.")
         result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)
+        result.write_to_disk(filename="ASH_surface_xyz.result")
         return result
 
     #Turn off outputfiles for special theories like: ZeroTheory and ORCA_CC_CBS_Theory
@@ -884,6 +886,7 @@ def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=Non
 
     print_time_rel(module_init_time, modulename='calc_surface_fromXYZ', moduleindex=0)
     result = ASH_Results(label="Surface calc XYZ", surfacepoints=surfacedictionary)
+    result.write_to_disk(filename="ASH_surface_xyz.result")
     return result
 
 

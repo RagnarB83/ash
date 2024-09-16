@@ -114,7 +114,6 @@ class BigDFTTheory:
         print("Warning: this requires pandas to be installed: pip install pandas")
         #Append MM coords to
         #TODO: units
-        print("here")
         print("systemobj.PointParticles.X:", systemobj.PointParticles.X)
         print("sys.PointParticles.Z:", systemobj.PointParticles.Z)
         newX = np.append(systemobj.PointParticles.X,MMcoords,axis=0)

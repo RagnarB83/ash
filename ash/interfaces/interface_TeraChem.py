@@ -8,7 +8,7 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel,print_li
 from ash.modules.module_coords import write_xyzfile
 import ash.settings_ash
 
-#TeraChem Theory object.
+# TeraChem Theory object.
 class TeraChemTheory:
     def __init__(self, terachemdir=None, filename='terachem', printlevel=2, label="TeraChem",
                 teracheminput=None, numcores=1):
@@ -49,8 +49,6 @@ class TeraChemTheory:
         self.numcores=numcores
     def cleanup():
         print(f"self.theorynamelabel cleanup not yet implemented.")
-    #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
-    #NOTE: Should be possible by adding to subprocess call
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -61,8 +59,8 @@ class TeraChemTheory:
             numcores = self.numcores
 
         print(BC.OKBLUE, BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
-        #Checking if charge and mult has been provided
-        if charge == None or mult == None:
+        # Checking if charge and mult has been provided
+        if charge is None or mult is None:
             print(BC.FAIL, f"Error. charge and mult has not been defined for {self.theorynamelabel}Theory.run method", BC.END)
             ashexit()
 
@@ -86,22 +84,22 @@ class TeraChemTheory:
             else:
                 qm_elems = elems
 
-        #Write coordinates to disk as XYZ-file
+        # Write coordinates to disk as XYZ-file
         write_xyzfile(qm_elems, current_coords, "terachem", printlevel=1)
 
-        #Write PC to disk
+        # Write PC to disk
         if PC is True:
             create_terachem_pcfile_general(current_MM_coords,MMcharges, filename=self.filename)
 
-        #Grab energy and gradient
-        if Grad==True:
+        # Grab energy and gradient
+        if Grad:
             if PC is True:
                 write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,
                     Grad=True, PCfile=self.filename+'.pc', xyzfilename=self.filename+'.xyz',filename=self.filename)
             else:
                 write_terachem_input(self.teracheminput,charge,mult,qm_elems,current_coords,Grad=True, filename=self.filename)
 
-            #Run Terachem
+            # Run Terachem
             run_terachem(self.terachemdir,self.filename)
 
             self.energy=grab_energy_terachem(self.filename+'.out')
@@ -120,9 +118,26 @@ class TeraChemTheory:
 
             self.energy=grab_energy_terachem(self.filename+'.out')
 
-        #TODO: write in error handling here
+        # PC-correction
+        # Terachem includes PC-PC interaction, we need to correct energy and pcgradient
+        if PC:
+            print("Terachem energy (before correction)", self.energy)
+            # pc_pc_energy = ash.modules.module_coords.nuc_nuc_repulsion(current_MM_coords, MMcharges)
+            # print("old PC-PC energy:", pc_pc_energy)
+            # TODO: Benchmark how fast this is, add Julia option
+            #Note: Using cupy by default, requires GPU (requirement for Terachem anyway)
+            curr_time = time.time()
+            pc_selfen, pc_selfgrad = ash.modules.module_MM.coulombcharge(MMcharges, current_MM_coords, mode="cupy")
+            print_time_rel(curr_time, modulename=f'PC-E+G correction', moduleindex=2)
+            print("PC-PC self-energy:", pc_selfen)
+            self.energy = self.energy - pc_selfen
+            print("Terachem energy (after PC-PC selfenergy subtraction)", self.energy)
+            if Grad:
+                self.pcgradient = self.pcgradient - pc_selfgrad
+
+        # TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
-        if Grad == True:
+        if Grad:
             print(f"Single-point {self.theorynamelabel} energy:", self.energy)
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             if PC is True:

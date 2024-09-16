@@ -4,7 +4,7 @@
 
 ####################################
 # CRITICAL PACKAGES
-# (should already been installed)
+# (should already have been installed)
 ####################################
 #mamba install python
 #mamba install numpy
@@ -39,10 +39,11 @@ mamba install -c conda-forge matplotlib # 203 MB
 mamba install -c conda-forge parmed # 36 MB
 mamba install -c conda-forge plumed # 10 MB
 
-# Julia installation and Julia-Python interface
-#Only needed for molecular crystal QM/MM
+#Julia-Python interface (sed for molecular crystal QM/MM, NonBondedTheory)
+mamba install conda-forge::pyjuliacall
+# Alternative: python -m pip install juliacall # 0.1 MB
+#Julia installation (you can also follow the instructions at https://julialang.org/downloads/)
 mamba install -c conda-forge julia # 146MB
-python -m pip install juliacall # 0.1 MB
 
 #Optional QM program packages
 #Psi4

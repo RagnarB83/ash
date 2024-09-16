@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 import numpy as np
+import math
 
 import ash.settings_ash
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep
@@ -15,7 +16,7 @@ MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z',
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
                 mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label="MRCC",
-                keep_orientation=True, frozen_core_settings='Auto'):
+                keep_orientation=True, frozen_core_settings='Auto', no_basis_read_orbs=False):
 
         self.theorynamelabel="MRCC"
         self.theorytype="QM"
@@ -28,7 +29,7 @@ class MRCCTheory:
             print("MRCCTheory requires a mrccinput keyword")
             ashexit()
 
-        if mrccdir == None:
+        if mrccdir is None:
             print(BC.WARNING, "No mrccdir argument passed to MRCCTheory. Attempting to find mrccdir variable inside settings_ash", BC.END)
             try:
                 print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
@@ -54,6 +55,13 @@ class MRCCTheory:
         #Parallelization strategy: 'OMP', 'OMP-and-MKL' or 'MPI'
         self.parallelization=parallelization
         self.keep_orientation=keep_orientation
+
+        # No basis read orbs option If True, MRCC will read in fort.55 and fort.56 files (containing integrals)
+        self.no_basis_read_orbs=no_basis_read_orbs
+        if self.no_basis_read_orbs is True:
+            if 'basis' in mrccinput:
+                print("Error: basis keyword found in mrccinput. should not be used when no_basis_read_orbs option is active")
+                ashexit()
 
         if self.keep_orientation is True:
             print("Warning: keep_orientation options is on (by default)! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
@@ -146,7 +154,7 @@ class MRCCTheory:
 
         if Grad==True:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string, no_basis_read_orbs=self.no_basis_read_orbs)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
@@ -161,7 +169,7 @@ class MRCCTheory:
 
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation,
-                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string)
+                             PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string, no_basis_read_orbs=self.no_basis_read_orbs)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
@@ -209,9 +217,17 @@ def run_mrcc(mrccdir,filename,parallelization,numcores):
 #TODO: Gradient option
 #NOTE: Now setting ccsdthreads and ptthreads to number of cores
 def write_mrcc_input(mrccinput,charge,mult,elems,coords,numcores,Grad=False,keep_orientation=False, PC_coords=None,PC_charges=None,
-                     frozen_core_option=None):
+                     frozen_core_option=None, no_basis_read_orbs=True):
     print("Writing MRCC inputfile")
+
     with open("MINP", 'w') as inpfile:
+
+
+        # For case where no basis is defined, assumed that fort.55 and fort.56 files have been created (contaning integrals)
+        if no_basis_read_orbs is True:
+            print("Warning: no_basis_read_orbs is True. Adding iface=cfour option, means that integrals will be read from fort.55 and fort.56 files")
+            inpfile.write("iface=cfour") #Activates CFour interface (just means that MRCC will read in fort.55 and fort.56 files)
+
         for m in mrccinput.split('\n'):
             if 'core' in m:
                 print("Warning: ignoring user-defined core option. Using frozen_core_option instead")
@@ -455,3 +471,42 @@ def grab_dipole_moment(outfile):
             if ' Dipole moment [au]:' in line:
                 grab=True
     return dipole_moment
+
+
+# Write MRCC rudimentary inputfile (fort.56) file with list of occupations
+#NOTE: For frozen-core calculations the occupations should only be for active electrons
+def MRCC_write_basic_inputfile(occupations=None, filename="fort.56", scf_type="RHF",
+                               ex_level=4, nsing=1, ntrip=0, rest=0, CC_CI=1, dens=0, CS=1,
+                               spatial=1, HF=1, ndoub=0, nacto=0, nactv=0, tol=9, maxex=0,
+                               sacc=0, freq=0.0000, symm=0, conver=0, diag=0, dboc=0, mem=1024):
+    print("SCF_type:", scf_type)
+    if scf_type == 'RHF':
+        nsing=1
+        ndoub=0
+        CS=1
+        spatial=1
+        HF=1
+    elif scf_type == 'ROHF':
+        nsing=0
+        ndoub=1
+        CS=0
+        spatial=1
+        HF=0
+    elif scf_type == 'UHF':
+        nsing=0
+        ndoub=1
+        CS=0
+        spatial=0
+        HF=1
+
+    occupation_string = ' '.join(str(x) for x in occupations)
+    inputstring=f"""   {ex_level}    {nsing}    {ntrip}     {rest}    {CC_CI}    {dens}     {conver}     {symm}     {diag}    {CS}    {spatial}     {HF}      {ndoub}    {nacto}      {nactv}    {tol}      {maxex}     {sacc} {freq}     {dboc} {mem}
+ex.lev, nsing, ntrip, rest, CC/CI, dens, conver, symm, diag, CS, spatial, HF, ndoub, nacto, nactv, tol, maxex, sacc, freq, dboc, mem
+ {occupation_string}"""
+
+    with open(filename, 'w') as f:
+        f.write(inputstring)
+
+    #Touch KEYWD file (otherwise MRCC crashes)
+    sp.run(["touch", "KEYWD"])
+

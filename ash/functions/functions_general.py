@@ -38,6 +38,28 @@ else:
         BOLD = ''
         UNDERLINE = ''
 
+
+
+def check_program_location(directory,directory_name, bin_name):
+    if directory != None:
+        finaldirectory = directory
+        print(BC.OKGREEN,f"Using directory path provided: {finaldirectory}", BC.END)
+    else:
+        print(BC.WARNING, f"No {directory_name} argument passed. Attempting to find {directory_name} variable in ASH settings file (~/ash_user_settings.ini)", BC.END)
+        try:
+            finaldirectory=ash.settings_ash.settings_dict[directory_name]
+            print(BC.OKGREEN,f"Using {directory_name} path provided from ASH settings file (~/ash_user_settings.ini): ", finaldirectory, BC.END)
+        except KeyError:
+            print(BC.WARNING,f"Found no {directory_name} variable in ASH settings file either.",BC.END)
+            print(BC.WARNING,f"Checking for {bin_name} in PATH environment variable.",BC.END)
+            try:
+                finaldirectory = os.path.dirname(shutil.which(f'{bin_name}'))
+                print(BC.OKGREEN,f"Found {bin_name} binary in PATH. Using the following directory:", finaldirectory, BC.END)
+            except TypeError:
+                print(BC.FAIL,f"Found no {bin_name} binary in PATH environment variable either. Giving up.", BC.END)
+                ashexit()
+    return finaldirectory
+
 #Create ASH environment shell-file in home-dir
 #Simple shell script to active ASH environment for future calcs
 def create_ash_env_file():
@@ -183,9 +205,10 @@ def load_julia_interface(julia_library=None):
             juliapath=os.path.dirname(shutil.which('julia'))
             print("Found Julia in dir:", juliapath)
         except TypeError:
-            print("Problem. No julia binary found in PATH environment variable.")
-            print("Make sure the path to Julia's bin directory is available in your shell-configuration or jobscript")
-            ashexit()
+            print("Possible Problem. No julia binary found in PATH environment variable.")
+            print("Make sure the path to your desired Julia's bin directory is available in your shell-configuration or jobscript")
+            print("Will continue as pythoncall may be able to install Julia for you.")
+            #ashexit()
 
         #Importing the necessary interface library
         print("Loading a Python/Julia interface library")
@@ -246,8 +269,8 @@ def timefn(fn):
 
 # Grep-style function to find a line in file and return a list of words
 # TODO: Make more advanced
-def pygrep(string, file):
-    with open(file) as f:
+def pygrep(string, file, errors=None):
+    with open(file, errors=errors) as f:
         for line in f:
             if string in line:
                 stringlist = line.split()
@@ -255,9 +278,9 @@ def pygrep(string, file):
 
 
 # Multiple match version. Replace pygrep ?
-def pygrep2(string, file, print_output=False):
+def pygrep2(string, file, print_output=False, errors=None):
     l = []
-    with open(file) as f:
+    with open(file, errors=errors) as f:
         for line in f:
             if string in line:
                 l.append(line)

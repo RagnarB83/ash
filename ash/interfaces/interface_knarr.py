@@ -307,6 +307,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     result = ASH_Results(label="NEBTS calc", energy=SP.energy, geometry=SP.coords,
         saddlepoint_fragment=SP, charge=charge, mult=mult, MEP_energies_dict=energies_dict,
         barrier_energy=SP_relenergy)
+    result.write_to_disk(filename="ASH_NEBTS.result")
     return result
 
 #ASH NEB function. Calls Knarr
@@ -341,7 +342,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     elif runmode == 'serial' and numcores == 1:
         print(BC.WARNING,"NEB runmode is serial, i.e. running one image after another.", BC.END)
         print("theory:", theory)
-        print("theory.numcors:", theory.numcores)
+        print("Theory.numcores:", theory.numcores)
         if theory.numcores > 1:
             print(BC.WARNING,f"Theory parallelization is active and will utilize: {theory.numcores} CPU cores per image.",BC.END)
         else:
@@ -541,6 +542,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         result = ASH_Results(label="NEB-IDPPonly calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
             saddlepoint_fragment=Saddlepoint_fragment, charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict,
             barrier_energy=None)
+        result.write_to_disk(filename="ASH_NEB.result")
         return result
 
     #REGULAR NEB
@@ -562,6 +564,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
             #Returning result object with all attributes None
             result = ASH_Results(label="NEB-CI calc (fail)")
+            result.write_to_disk(filename="ASH_NEB.result")
             return result
 
         else:
@@ -586,10 +589,12 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             result = ASH_Results(label="NEB-CI calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
                 saddlepoint_fragment=Saddlepoint_fragment, charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict,
                 barrier_energy=None)
+            result.write_to_disk(filename="ASH_NEB.result")
             return result
         else:
             #Returning result object
             result = ASH_Results(label="NEB calc", charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict)
+            result.write_to_disk(filename="ASH_NEB.result")
             return result
 
 
@@ -764,7 +769,8 @@ class KnarrCalculator:
                                 shutil.copyfile(path_to_imagefile,"./"+imagefile_name)
                             else:
                                 if self.printlevel >= 1:
-                                    print(f"File {path_to_imagefile} does NOT exist. Continuing.")
+                                    print(f"File {path_to_imagefile} does NOT exist. Exiting.")
+                                ashexit()
 
                 #Handling GBW files for ORCATheory and QMMMTheory (if using ORCA)
                 if self.ORCAused == True:
@@ -831,7 +837,7 @@ class KnarrCalculator:
                     #full_coords = self.full_fragment_reactant.coords
                     #Creating deep copy of reactant coordinates as it will be modified
                     #New: Using full_coords from either reactant or product depending on which the image_number it is closest to
-                    #Note: this is technically only an issue for QM/MM jobs if the NEB-active region is smaller (e.g. same as QM-region) than the actregion used originally to find 
+                    #Note: this is technically only an issue for QM/MM jobs if the NEB-active region is smaller (e.g. same as QM-region) than the actregion used originally to find
                     #reactant and product geometries
 
                     #Closer to reactant
@@ -950,7 +956,8 @@ class KnarrCalculator:
                                         shutil.copyfile(path_to_imagefile,workerdir+"/"+self.theory.filename+".gbw") #Copying to Pooljob_image_X as orca.gbw
                             else:
                                 if self.printlevel >= 1:
-                                    print(f"File {path_to_imagefile} does NOT exist. Continuing.")
+                                    print(f"File {path_to_imagefile} does NOT exist. Exiting.")
+                                ashexit()
 
 
                 ################################################

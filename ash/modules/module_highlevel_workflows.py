@@ -2551,6 +2551,7 @@ maxiter {maxiter}
 etol {etol}
 natorbs true
 end
+
 """
     icetheory = ash.ORCATheory(orcasimpleinput=input, orcablocks=blocks, numcores=numcores, basis_per_element=basis_per_element, label=f'{label}ICE_tgen{tgen}_tvar_{tvar}', save_output_with_label=True)
     return icetheory
@@ -4071,3 +4072,85 @@ end
 
         #return only final energy now. Energy components accessible as energy_components attribute
         return E_FINAL
+
+
+def iterative_MR_nat(fragment=None, theory=None,basis=None, numcores=1, maxiter=7, extrainput="", moreadfile=None):
+
+    #Getting initial orbitals, e.g. ROHF
+    extrablock="""
+%scf
+directresetfreq 1
+diismaxeq 20
+end"""
+    orbfile, natocc = ORCA_orbital_setup(orbitals_option="ROHF", extrainput=extrainput, extrablock=extrablock,
+                                         fragment=fragment, basis=basis, moreadfile=moreadfile,
+                                         charge=fragment.charge, mult=fragment.mult)
+
+    #Doing initial MR calculation
+    CAS_nel=fragment.mult-1
+    CAS_norb=CAS_nel
+
+    #DDCI1, DDCI2, DDCI2.5, DDCI3, DDCI3.5
+    MR_excitation_options_all = [{'1h':1,'1p':1,'1h1p':1,'2h':0, '2p':0, '2h1p':0, '1h2p':0,'2h2p':0, 'ss':0, 'isss':0, 'issa':0, 'ssss':0, 'sssa':0},
+                              {'1h':1,'1p':1,'1h1p':1,'2h':1, '2p':1, '2h1p':0, '1h2p':0,'2h2p':0, 'ss':0, 'isss':0, 'issa':0, 'ssss':0, 'sssa':0},
+                              {'1h':1,'1p':1,'1h1p':1,'2h':1, '2p':1, '2h1p':1, '1h2p':0,'2h2p':0, 'ss':0, 'isss':0, 'issa':0, 'ssss':0, 'sssa':0},
+                              {'1h':1,'1p':1,'1h1p':1,'2h':1, '2p':1, '2h1p':1, '1h2p':1,'2h2p':0, 'ss':0, 'isss':0, 'issa':0, 'ssss':0, 'sssa':0},
+                              {'1h':1,'1p':1,'1h1p':1,'2h':1, '2p':1, '2h1p':1, '1h2p':1,'2h2p':1, 'ss':0, 'isss':0, 'issa':0, 'ssss':0, 'sssa':0},
+                              {'1h':1,'1p':1,'1h1p':1,'2h':1, '2p':1, '2h1p':1, '1h2p':1,'2h2p':1, 'ss':1, 'isss':1, 'issa':0, 'ssss':0, 'sssa':0},
+                              {'1h':1,'1p':1,'1h1p':1,'2h':1, '2p':1, '2h1p':1, '1h2p':1,'2h2p':1, 'ss':1, 'isss':1, 'issa':1, 'ssss':1, 'sssa':1}]
+    MRCI_natorbiterations_all=[5,5,5,5,5,5,5]
+    MRCI_tsel_all=[1e-4,1e-4,1e-4,1e-4,1e-4,1e-4,1e-4]
+
+    #LOOPING OVER MRCI
+    for macroiter in range(0,maxiter):
+        print("===============================")
+        print("MACROITERATION:", macroiter)
+        print("===============================")
+        #Setting up MR calculation
+        MR_excitation_options = MR_excitation_options_all[macroiter]
+        print("Using  MR_excitation_options:", MR_excitation_options)
+        MRCI_natorbiterations=MRCI_natorbiterations_all[macroiter]
+        print("Using MRCI_natorbiterations:", MRCI_natorbiterations)
+        MRCI_tsel=MRCI_tsel_all[macroiter]
+        print("Using MRCI_tsel:", MRCI_tsel)
+        blocks=f"""
+%casscf
+nel {CAS_nel}
+norb {CAS_norb}
+end
+
+%mrci
+newblock {fragment.mult} *
+excitations none
+refs cas({CAS_nel},{CAS_norb}) end
+Flags[is]   {MR_excitation_options['1h']}
+Flags[sa]   {MR_excitation_options['1p']}
+Flags[ia]   {MR_excitation_options['1h1p']}
+Flags[ijss] {MR_excitation_options['2h']}
+Flags[ssab] {MR_excitation_options['2p']}
+Flags[ijsa] {MR_excitation_options['2h1p']}
+Flags[isab] {MR_excitation_options['1h2p']}
+Flags[ijab] {MR_excitation_options['2h2p']}
+Flags[ss] {MR_excitation_options['ss']}
+Flags[isss] {MR_excitation_options['isss']}
+Flags[issa] {MR_excitation_options['issa']}
+Flags[ssss] {MR_excitation_options['ssss']}
+Flags[sssa] {MR_excitation_options['sssa']}
+nroots 1
+end
+AllSingles true
+PrintWF det
+natorbiters {MRCI_natorbiterations}
+natorbs 2
+tsel {MRCI_tsel}
+end
+"""
+        mrtheory = ash.ORCATheory(orcasimpleinput=f"! {basis} CASSCF noiter", orcablocks=blocks, moreadfile=orbfile, numcores=numcores)
+
+        print("Now")
+        ash.Singlepoint(theory=mrtheory, fragment=fragment)
+        os.rename("orca.out", f"orca_MR_iter{macroiter}.out")
+        shutil.copy("orca.b0_s0.nat", f"orca_MR_iter{macroiter}.b0_s0.nat.gbw")
+        orbfile="orca.b0_s0.nat"
+        print("--------------------------")
+        print("Now next")

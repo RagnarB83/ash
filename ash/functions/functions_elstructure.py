@@ -1800,17 +1800,17 @@ def create_cubefile_from_orbfile(orbfile, option='density', grid=3, delete_temp_
     orcafile=False
     #First checking if input is a Molden file
     if '.molden' in orbfile or 'MOLDEN' in orbfile:
-        print("Orbfile recognized as a Molden-file")
+        print(f"Orbfile ({orbfile}) recognized as a Molden-file")
         moldenfile=True
         mfile=orbfile
     elif '.gbw' in orbfile:
-        print("Orbfile recognized as ORCA GBW file")
+        print(f"Orbfile ({orbfile}) recognized as ORCA GBW file")
         orcafile=True
     elif '.nat' in orbfile:
-        print("Orbfile recognized as ORCA natural-orbital file")
+        print(f"Orbfile ({orbfile}) recognized as ORCA natural-orbital file")
         orcafile=True
     elif 'mp2nat' in orbfile:
-        print("Orbfile recognized as ORCA natural-orbital file")
+        print(f"Orbfile ({orbfile}) recognized as ORCA natural-orbital file")
         orcafile=True
 
 
@@ -1962,9 +1962,11 @@ def DM_MO_to_AO(DM_MO, C):
 #Diagonalize density matrix in AO basis
 def diagonalize_DM_AO(D, S):
     print("Diagonalizing density matrix")
-    import scipy
+    import scipy.linalg
     from functools import reduce
     # Diagonalize the DM in AO basis
+    print("Trace of input DM_AO:", np.trace(D))
+    print("Trace of input DM_AO*S:", np.trace(np.dot(D,S)))
     A = reduce(np.dot, (S, D, S))
     w, v = scipy.linalg.eigh(A, b=S)
     # Flip NOONs (and NOs) since they're in increasing order
@@ -1978,7 +1980,7 @@ def diagonalize_DM_AO(D, S):
 #Diagonalize density matrix in MO basis
 def diagonalize_DM(D):
     print("Diagonalizing density matrix directly")
-    import scipy
+    import scipy.linalg
     #Diagonalize
     w, v = scipy.linalg.eigh(D)
     # Flip NOONs (and NOs) since they're in increasing order
@@ -2011,7 +2013,7 @@ def make_molden_file(fragment, AO_basis, MO_coeffs, MO_energies=None, MO_occs=No
     print("WARNING: ORDER has only been checked for s,p,d and f")
 
     if AO_order is None:
-        print("Warning: no AO_order given. Don't know what to do")
+        print("Error: no AO_order given.")
         ashexit()
     else:
          print("AO_order_object given. Will use this to order AOs")
@@ -2039,9 +2041,11 @@ Molden file created by ASH (using orca format)
     gtostring="""[GTO]
 """
     #Looping over each atom in AO_basis object
+    print("AO_basis:", AO_basis)
+    #exit()
     for i,atom in enumerate(AO_basis):
         gtostring+=f"  {i+1} 0\n"
-        bfs = atom["BasisFunctions"]
+        bfs = atom["Basis"]
         for bf in bfs:
             coeffs=bf["Coefficients"]
             exponents=bf["Exponents"]
@@ -2079,6 +2083,12 @@ Molden file created by ASH (using orca format)
     mostring="""[MO]
 """
     #Loop over MOs
+    #print("mo_coeffs:",MO_coeffs)
+    #print("mo_coeffs:",MO_coeffs[0])
+    #exit()
+    print("Warning: transposing MO_coeffs for convenience")
+    MO_coeffs=np.transpose(MO_coeffs)
+
     for i,(mo_coeffs,mo_en,mo_occ) in enumerate(zip(MO_coeffs,MO_energies,MO_occs)):
         moheader=f""" Sym=     1a
  Ene= {mo_en}
@@ -2086,9 +2096,11 @@ Molden file created by ASH (using orca format)
  Occup= {mo_occ}\n"""
         mostring+=moheader
         #Reorder according to AO_order_object
-        print("mostring:",mostring)
+        #print("mostring:",mostring)
+        factor=-1 #Sign change
         mo_coeffs_reordered =  reorder_AOs_in_MO_ORCA_to_Molden(mo_coeffs,AO_order)
         for i,mo_coeff in enumerate(mo_coeffs_reordered):
+            mo_coeff=mo_coeff*factor
             mostring+=f" {i+1}      {mo_coeff:15.12f}\n"
 
     #Combine and write out
@@ -2120,9 +2132,9 @@ def reorder_AOs_in_MO_ORCA_to_Molden(coeffs,order):
     new_order = np.empty(len(order), dtype=object)
 
     for i,(c,o) in enumerate(zip(coeffs,order)):
-        print("i:",i)
-        print("c:",c)
-        print("o:",o)
+        #print("i:",i)
+        #print("c:",c)
+        #print("o:",o)
         #exit()
         if "pz" in o:
             new_coeffs[i+2] = c
@@ -2293,3 +2305,207 @@ def get_entropy(occupations):
     for o in occ_2:
         S+=(o*math.log(o)+(1-o)*math.log(1-o))
     return S
+
+
+
+
+def yoshimine_sort(a,b,c,d):
+    if a > b:
+        ab = a*(a+1)/2 + b
+    else:
+        ab = b*(b+1)/2 + a
+    if c > d:
+        cd = c*(c+1)/2 + d
+    else:
+        cd = d*(d+1)/2 + c
+    if ab > cd:
+        abcd = ab*(ab+1)/2 + cd
+    else:
+        abcd = cd*(cd+1)/2 + ab
+    return math.floor(abcd)
+
+
+
+#General function to write FCIDUMP style integral file from Numpy arrays
+# Support for different headers
+# TODO: unrestricted case
+# TODO: symmetry
+# Confirmed to work for MRCC
+def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, header_format="MRCC",
+                            num_corr_el=None, filename=None, int_threshold=1e-16, scf_type="RHF", mult=None):
+
+    print("\nASH_write_integralfile")
+    print()
+    if two_el_integrals is None or one_el_integrals is None or nuc_repulsion_energy is None or num_corr_el is None:
+        print("Error: two_el_integrals, one_el_integrals, num_corr_el or nuc_repulsion_energy not provided")
+        ashexit()
+    if mult is None:
+        print("Please provide the spin multiplicity using the mult keyword")
+        ashexit()
+
+    print(f"Header format: {header_format} (options: FCIDUMP, MRCC)")
+    print("filename:", filename)
+    print("SCF_type:", scf_type)
+    if scf_type == 'RHF' or scf_type == "ROHF":
+        pass
+    elif scf_type == 'UHF':
+        print("Error: UHF not yet implemented")
+        ashexit()
+    basis_dim = one_el_integrals[0].size
+
+    # Header
+    if header_format == "FCIDUMP":
+        #NORB: number of basis functions
+        #NELEC: number of correlated electrons
+        #MS2: TODO
+        #isym: 
+        #orbsym
+        isym=1
+        orbsymstring=','.join(str(1) for i in range(0,basis_dim))
+        ms2=mult-1 # unpaired electrons
+        uhf_option_string = ""
+        if scf_type == "UHF":
+            uhf_option_string = "UHF=.TRUE.,"
+        header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
+ORBSYM={orbsymstring},
+ISYM={isym},{uhf_option_string}
+&END
+"""
+        if filename is None:
+            filename="FCIDUMP"
+            print("FCIDUMP option:, filename set to:", filename)
+    elif header_format == "MRCC":
+        # Note: assuming no symmetry setting 1 as irrep for each orbital
+        header = f"""    {basis_dim}    {num_corr_el}
+    {'  '.join('1' for i in range(basis_dim))}
+    150000
+    """
+        filename="fort.55"
+        print("MRCC option:, filename set to:", filename)
+
+    print("Integral threshold:", int_threshold)
+    num_integrals = two_el_integrals.shape[0]**4
+    print("num_integrals:", num_integrals)
+
+    # Integral dict
+    from collections import OrderedDict
+    int_1el_dict=OrderedDict()
+
+    # 1-electron integrals (using 0 as dummy 3rd and 4th index)
+    for m in range(0,basis_dim):
+        for n in range(m,basis_dim):
+            int_value=one_el_integrals[m,n]
+            int_1el_dict[(m,n)] = [int_value,[m+1,n+1,0,0]]
+
+    # 2-electron integrals
+    npair = basis_dim*(basis_dim+1)//2
+
+    # Open file
+    f = open(filename, 'w')
+
+    # Write header
+    f.write(header)
+
+    # Set up 2-electron integrals
+    two_el_integral_string=""
+
+    print("two_el_integrals.ndim:", two_el_integrals.ndim)
+    print("two_el_integrals.size:", two_el_integrals.size)
+
+    # Tested with pyscf : eri = ao2mo.full(theory.mol, theory.mf.mo_coeff, verbose=0)
+    if two_el_integrals.ndim == 2:
+        print("ndim 2, assuming 4-fold symmetry")
+        xint_2el_dict=OrderedDict()
+        # 4-fold symmetry
+        assert (two_el_integrals.size == npair**2)
+        ij = 0
+        for i in range(basis_dim):
+            for j in range(0, i+1):
+                kl = 0
+                for k in range(0, basis_dim):
+                    for l in range(0, k+1):
+                        if abs(two_el_integrals[ij,kl]) > int_threshold:
+                            xint_2el_dict[(i+1, j+1, k+1, l+1)] = two_el_integrals[ij,kl]
+                        kl += 1
+                ij += 1
+        # Creating string for 2-el integrals
+        for k,v in xint_2el_dict.items():
+            two_el_integral_string+=f"{v:>29.20E}{k[0]:>5}{k[1]:>5}{k[2]:>5}{k[3]:>5}\n"
+
+    elif two_el_integrals.ndim == 4:
+        print("ndim 4")
+        int_2el_dict=OrderedDict() #yos_value : [int_value,[i,j,k,l ]]  Note, switching to 1-based indexing here
+        # 2-electron integrals
+        for i in range(0,basis_dim):
+            for j in range(0,basis_dim):
+                for k in range(0,basis_dim):
+                    for l in range(0,basis_dim):
+                        yos_val = yoshimine_sort(i,j,k,l)
+                        if yos_val not in int_2el_dict:
+                            int_value=two_el_integrals[i,j,k,l]
+                            if abs(int_value) > int_threshold:
+                                int_2el_dict[yos_val] = [int_value,[i+1,j+1,k+1,l+1]]
+        # Creating string
+        for k,v in int_2el_dict.items():
+            two_el_integral_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+
+    # Writing 2-electron integrals to file
+    f.write(two_el_integral_string)
+
+    # Writing 1-el integrals
+    one_el_string=""
+    for k,v in int_1el_dict.items():
+        one_el_string+=f"{v[0]:>29.20E}{v[1][0]:>5}{v[1][1]:>5}{v[1][2]:>5}{v[1][3]:>5}\n"
+    f.write(one_el_string)
+
+    # Nuclear repulsion energy as last line
+    f.write(f"{nuc_repulsion_energy:>29.20E}{0:>5}{0:>5}{0:>5}{0:>5}\n")
+
+    f.close()
+
+#Function to check occupations 
+def check_occupations(occ):
+    occ = list(occ)
+    length = len(occ)
+    print("\ncheck_occupations function")
+    print("Checking occupations array:", occ)
+    print("Length of occupations array:", length)
+
+    #RHF
+    if (occ.count(2.0) + occ.count(0.0)) == length:
+        two_count = occ.count(2.0)
+        num_el=two_count*2
+        print("Occupation array consists only of 2.0 and 0.0 values")
+        print("This is presumably a closed-shell RHF WF")
+        print("Number of electrons:", num_el)
+        label="RHF"
+    #Fractional
+    elif any(num not in [2.0,1.0,0.0] for num in occ):
+        print("Occupation array contains fractional values")
+        num_el=sum(occ)
+        print("This is some kind of fractional-occupation WF")
+        print("Could be CASSCF, WF NOs, UNO-transformation, smeared DFT etc.")
+        print("Number of electrons:", num_el)
+        label="FRACT"
+    #ROHF
+    elif occ.count(2.0) > 0 and occ.count(1.0) > 0:
+        two_count = occ.count(2.0)
+        one_count = occ.count(1.0)
+        num_el=two_count*2+one_count
+        print("Found 1.0 and 2.0 occupations")
+        print("This is presumably an open-shell ROHF WF")
+        print("Number of electrons:", num_el)
+        label="ROHF"
+    #UHF
+    elif occ.count(2.0) == 0 and occ.count(1.0) > 0:
+        print("Found no 2.0 occupations but some 1.0 occupations")
+        one_count = occ.count(1.0)
+        num_el=one_count
+        print("This is presumably an open-shell UHF WF")
+        print("Number of electrons:", num_el)
+        label="UHF"
+    else:
+        print("unclear case")
+        label="Unknown"
+
+    return label

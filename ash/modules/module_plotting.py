@@ -606,11 +606,11 @@ def MOplot_vertical(mos_dict, pointsize=4000, linewidth=2, label="Label", yrange
     Openshell=mos_dict["Openshell"]
     fig, ax = plt.subplots()
 
-    #Alpha MOs
+    # Alpha MOs
     ax.scatter([1]*len(bands_alpha), bands_alpha, color='blue', marker = '_',  s=pointsize, linewidth=linewidth )
     ax.scatter([1]*len(virtbands_alpha), virtbands_alpha, color='cyan', marker = '_',  s=pointsize, linewidth=linewidth )
 
-    #Beta MOs
+    # Beta MOs
     if Openshell == True:
         ax.scatter([1.05]*len(bands_beta), bands_beta, color='red', marker = '_',  s=pointsize, linewidth=linewidth )
         ax.scatter([1.05]*len(virtbands_beta), virtbands_beta, color='pink', marker = '_',  s=pointsize, linewidth=linewidth )

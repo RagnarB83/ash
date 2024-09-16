@@ -12,7 +12,8 @@ import ash.modules.module_coords
 #Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
     def __init__(self, fragment=None, qm_theory=None, qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
-                 potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None, pdbfile=None):
+                 potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None, pdbfile=None,
+                 scratchdir=".", workdir="."):
         module_init_time=time.time()
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
 
@@ -24,6 +25,8 @@ class PolEmbedTheory:
         self.pot_option=pot_option
         self.PElabel_pyframe = PElabel_pyframe
         self.potfilename = potfilename
+        self.scratchdir=scratchdir
+        self.workdir=workdir
         #Theory level definitions
         allowed_qmtheories=['Psi4Theory', 'PySCFTheory', 'DaltonTheory']
         self.qm_theory=qm_theory
@@ -35,8 +38,8 @@ class PolEmbedTheory:
 
         if self.pot_option=='LoProp':
             if daltondir is None:
-                print("LoProp option chosen. This requires daltondir variable")
-                ashexit()
+                print("LoProp option chosen. This may require daltondir variable")
+                #ashexit()
 
 
         if pdbfile is not None:
@@ -95,7 +98,7 @@ class PolEmbedTheory:
                     self.hybridatomlabels.append('QM')
                     self.residlabels.append(1)
                 elif i in self.peatoms:
-                    print("i : {} in peatoms".format(i))
+                    #print("i : {} in peatoms".format(i))
                     self.hybridatomlabels.append(self.PElabel_pyframe)
                     self.residlabels.append(count)
                     rescount+=1
@@ -108,12 +111,12 @@ class PolEmbedTheory:
                     count+=1
                     rescount=0
 
-        print("self.hybridatomlabels:", self.hybridatomlabels)
-        print("self.residlabels:", self.residlabels)
+        #print("self.hybridatomlabels:", self.hybridatomlabels)
+        #print("self.residlabels:", self.residlabels)
         #Create Potential file here. Usually true.
-        if self.pot_create==True:
+        if self.pot_create:
             print("Potfile Creation is on!")
-            if self.pyframe==True:
+            if self.pyframe:
                 print("Using PyFrame")
                 try:
                     import pyframe
@@ -122,21 +125,33 @@ class PolEmbedTheory:
                     print("Pyframe not found. Install pyframe via pip (https://pypi.org/project/PyFraME):")
                     print("pip install pyframe")
                     ashexit(code=9)
-                #Create dummy pdb-file if PDB-file not provided
+                # Create dummy pdb-file if PDB-file not provided
                 if pdbfile is None:
-                    ash.modules.module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
+                    print("TODO")
+                    ashexit()
+                    #ash.modules.module_coords.write_pdbfile_dummy(self.elems, self.coords, self.potfilename, self.hybridatomlabels, self.residlabels)
                     file=self.potfilename+'.pdb'
-                #Pyframe
-                if self.pot_option=='SEP':
+                # Pyframe
+                if self.pot_option == 'SEP':
                     print("Pot option: SEP")
-                    system = pyframe.MolecularSystem(input_file=file)
+                    #print(file)
+                    system = pyframe.MolecularSystem(input_file=pdbfile)
+                    print("x")
+                    print("self.PElabel_pyframe", self.PElabel_pyframe)
                     solventPol = system.get_fragments_by_name(names=[self.PElabel_pyframe])
-                    solventNonPol = system.get_fragments_by_name(names=['WAT'])
+                    print("solventPol:", solventPol)
                     system.add_region(name='solventpol', fragments=solventPol, use_standard_potentials=True,
                           standard_potential_model='SEP')
-                    system.add_region(name='solventnonpol', fragments=solventNonPol, use_standard_potentials=True,
+                    # Non-polarizable region
+                    if mmatoms is not None:
+                        print("Doing nonpol region")
+                        solventNonPol = system.get_fragments_by_name(names=['LIG'])
+                        system.add_region(name='solventnonpol', fragments=solventNonPol, use_standard_potentials=True,
                           standard_potential_model='TIP3P')
+
+                    #
                     project = pyframe.Project()
+                    print("x")
                     project.create_embedding_potential(system)
                     project.write_potential(system)
                     self.potfile=self.potfilename+'.pot'
@@ -144,7 +159,7 @@ class PolEmbedTheory:
                 elif self.pot_option=='TIP3P':
                     #Not sure if we use this much or at all. Needs to be checked.
                     print("Pot option: TIP3P")
-                    system = pyframe.MolecularSystem(input_file=file)
+                    system = pyframe.MolecularSystem(input_file=pdbfile)
                     solvent = system.get_fragments_by_name(names=['WAT'])
                     system.add_region(name='solvent', fragments=solvent, use_standard_potentials=True,
                           standard_potential_model='TIP3P')
@@ -177,16 +192,31 @@ class PolEmbedTheory:
                     #os.environ['PATH'] = daltondir + ':'+os.environ['PATH']
                     #print("Current PATH is:", os.environ['PATH'])
                     #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
-                    system = pyframe.MolecularSystem(input_file=file)
+                    system = pyframe.MolecularSystem(input_file=pdbfile)
                     core = system.get_fragments_by_name(names=['QM'])
                     system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
                     # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
                     solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
-                    system.add_region(name='solvent', fragments=solvent, use_mfcc=True, use_multipoles=True,
-                                      multipole_order=2, multipole_model='LoProp', multipole_method='DFT', multipole_xcfun='PBE0',
-                                      multipole_basis='loprop-6-31+G*', use_polarizabilities=True, polarizability_model='LoProp',
-                                      polarizability_method='DFT', polarizability_xcfun='PBE0', polarizability_basis='loprop-6-31+G*')
+                    #multipole_model='LoProp',
+                    #multipole_method='DFT',
+                    #multipole_xcfun='PBE0',
+                    #multipole_basis='loprop-6-31+G*',
+                    #polarizability_model='LoProp',
+                    #polarizability_method='DFT', polarizability_xcfun='PBE0',
+                    #                 polarizability_basis='loprop-6-31+G*'
+                    #system.add_region(name='solvent', fragments=solvent, use_mfcc=True, use_multipoles=True,
+                    #                  multipole_order=2,use_polarizabilities=True)
+                    system.add_region(name='solvent', fragments=solvent, use_multipoles=True,
+                            multipole_order=2, use_polarizabilities=True, basis='loprop-6-31+G*')
+
                     project = pyframe.Project()
+
+                    project.scratch_dir = self.scratchdir
+                    project.work_dir = self.workdir
+                    project.jobs_per_node = 1
+                    project.memory_per_job = 2048 * 12
+                    project.mpi_procs_per_job = 1
+                    project.print_info()
                     print("Creating embedding potential")
                     project.create_embedding_potential(system)
                     project.write_core(system)
