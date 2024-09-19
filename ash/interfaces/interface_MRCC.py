@@ -12,7 +12,7 @@ from ash.interfaces.interface_multiwfn import write_multiwfn_input_option
 MRCC_basis_dict={'DZ':'cc-pVDZ', 'TZ':'cc-pVTZ', 'QZ':'cc-pVQZ', '5Z':'cc-pV5Z', 'ADZ':'aug-cc-pVDZ', 'ATZ':'aug-cc-pVTZ', 'AQZ':'aug-cc-pVQZ',
             'A5Z':'aug-cc-pV5Z'}
 
-#MRCC Theory object.
+# MRCC Theory object.
 class MRCCTheory:
     def __init__(self, mrccdir=None, filename='mrcc', printlevel=2,
                 mrccinput=None, numcores=1, parallelization='OMP-and-MKL', label="MRCC",
@@ -67,13 +67,15 @@ class MRCCTheory:
             print("Warning: keep_orientation options is on (by default)! This means that the original input structure in an MRCC job is kept and symmetry is turned off")
             print("This is necessary for gradient calculations and also is you want the density for the original structure")
             print("Do keep_orientation=False if you want MRCC to use symmetry and its own standard orientation")
-    #Set numcores method
+
+    # Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
+
     def cleanup(self):
         print("MRCC cleanup not yet implemented.")
 
-    #Determines Frozen core seetings to apply
+    # Determines Frozen core seetings to apply
     def determine_frozen_core(self,elems):
         print("Determining frozen core")
         print("frozen_core_settings options are: Auto, None or MRCC")
@@ -106,10 +108,10 @@ class MRCCTheory:
             else:
                 print("Unknown option for frozen_core_settings")
                 ashexit()
-    #Method to grab dipole moment from a MRCC outputfile (assumes run has been executed)
+    # Method to grab dipole moment from a MRCC outputfile (assumes run has been executed)
     def get_dipole_moment(self):
         return grab_dipole_moment(self.filename+'.out')
-    #NOTE: Polarizability not available in MRCC
+    # NOTE: Polarizability not available in MRCC
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
@@ -119,7 +121,7 @@ class MRCCTheory:
             numcores = self.numcores
 
         print(BC.OKBLUE, BC.BOLD, "------------RUNNING MRCC INTERFACE-------------", BC.END)
-        #Checking if charge and mult has been provided
+        # Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for MRCCTheory.run method", BC.END)
             ashexit()
@@ -130,14 +132,14 @@ class MRCCTheory:
         print("MRCC input:")
         print(self.mrccinput)
 
-        #Coords provided to run
+        # Coords provided to run
         if current_coords is not None:
             pass
         else:
             print("no current_coords")
             ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
                 print("No elems provided")
@@ -145,27 +147,24 @@ class MRCCTheory:
             else:
                 qm_elems = elems
 
-        #FROZEN CORE SETTINGS
+        # FROZEN CORE SETTINGS
         self.determine_frozen_core(qm_elems)
 
-        #Grab energy and gradient
-        #TODO: No qm/MM yet. need to check if possible in MRCC
-        #Note: for gradient and QM/MM it is best to keep_orientation=True in write_mrcc_input
-
-        if Grad==True:
+        # Grab energy and gradient
+        if Grad:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores,Grad=True, keep_orientation=self.keep_orientation,
                              PC_coords=current_MM_coords, PC_charges=MMcharges, frozen_core_option=self.frozencore_string, no_basis_read_orbs=self.no_basis_read_orbs)
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
             self.gradient = grab_gradient_mrcc(self.filename+'.out',len(qm_elems))
 
-            #PC self energy
-            if PC == True:
+            # PC self energy
+            if PC:
                 pc_self_energy = grab_MRCC_PC_self_energy("mrcc_job.dat")
                 print("PC self-energy:", pc_self_energy)
                 self.energy = self.energy - pc_self_energy
-            #Pointcharge-gradient
-            self.pcgradient = grab_MRCC_pointcharge_gradient("mrcc_job.dat",MMcharges)
+                # Pointcharge-gradient
+                self.pcgradient = grab_MRCC_pointcharge_gradient("mrcc_job.dat",MMcharges)
 
         else:
             write_mrcc_input(self.mrccinput,charge,mult,qm_elems,current_coords,numcores, keep_orientation=self.keep_orientation,
@@ -173,13 +172,13 @@ class MRCCTheory:
             run_mrcc(self.mrccdir,self.filename+'.out',self.parallelization,numcores)
             self.energy=grab_energy_mrcc(self.filename+'.out')
 
-            #PC self energy
-            if PC == True:
+            # PC self energy
+            if PC:
                 pc_self_energy = grab_MRCC_PC_self_energy("mrcc_job.dat")
                 print("PC self-energy:", pc_self_energy)
                 self.energy = self.energy - pc_self_energy
 
-        #TODO: write in error handling here
+        # TODO: write in error handling here
         print(BC.OKBLUE, BC.BOLD, "------------ENDING MRCC INTERFACE-------------", BC.END)
         if Grad == True:
             print("Single-point MRCC energy:", self.energy)
