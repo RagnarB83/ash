@@ -150,6 +150,9 @@ class ORCATheory:
         if self.deltaSCF is True and self.deltaSCF_confline is None:
             print("Error: DELTASCF is True but no deltaSCF_confline provided. Exiting")
             ashexit()
+        if self.deltaSCF is True:
+            print("DeltaSCF True, turning on population analysis printing")
+            self.print_population_analysis=True
 
         # Basis sets per element
         self.basis_per_element=basis_per_element
@@ -632,6 +635,12 @@ end"""
                 if 'nososcf' not in self.orcasimpleinput:
                     print("Adding NOSOSCF to orcasimpleinput to avoid future calculations from falling back to ground-state")
                     self.orcasimpleinput = self.orcasimpleinput + ' nososcf'
+                if 'nodamp' not in self.orcasimpleinput:
+                    print("Adding NODAMP to orcasimpleinput to avoid future calculations from falling back to ground-state")
+                    self.orcasimpleinput = self.orcasimpleinput + ' nodamp'
+                if 'nolshift' not in self.orcasimpleinput:
+                    print("Adding NOLSHIFT to orcasimpleinput to avoid future calculations from falling back to ground-state")
+                    self.orcasimpleinput = self.orcasimpleinput + ' nolshift'
             else:
                 print("deltaSCF_turn_off_automatically option if False. Will keep DeltaSCF settings")
 
