@@ -138,6 +138,12 @@ class ORCATheory:
         if isinstance(atomstoflip, int):
             print(BC.FAIL,"Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.", BC.END)
             ashexit()
+        if self.brokensym is True:
+            # Add UKS if not present
+            if 'UKS' not in self.orcasimpleinput:
+                if 'UHF' not in self.orcasimpleinput:
+                    print("Warning: UKS/UHF keyword not present in orcasimpleinput for BS job. Adding.")
+                    self.orcasimpleinput = self.orcasimpleinput + ' UKS'
         if atomstoflip is not None:
             self.atomstoflip=atomstoflip
         else:
@@ -511,6 +517,7 @@ end"""
         if self.brokensym is True:
             if self.printlevel >= 2:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
+
             if self.HSmult is None:
                 print("Error:HSmult keyword in ORCATheory has not been set. This is required. Exiting.")
                 ashexit()

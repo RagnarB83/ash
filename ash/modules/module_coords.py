@@ -188,6 +188,10 @@ class Fragment:
             self.create_coords_from_smiles(smiles)
         # If xyzfile argument, run read_xyzfile
         elif xyzfile is not None:
+            if not os.path.isfile(xyzfile):
+                print(f"XYZ-file {xyzfile} not found. Exiting.")
+                ashexit()
+
             self.label = xyzfile.split('/')[-1].split('.')[0]
             self.read_xyzfile(xyzfile, readchargemult=readchargemult, conncalc=conncalc)
         # PDB-file

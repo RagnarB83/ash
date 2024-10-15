@@ -1,0 +1,58 @@
+<ForceField>
+<AtomTypes>
+<Type name="OX0" class="OX0" element="O" mass="15.9994"/>
+<Type name="CX1" class="CX1" element="C" mass="12.0107"/>
+<Type name="OX2" class="OX2" element="O" mass="15.9994"/>
+<Type name="CX3" class="CX3" element="C" mass="12.0107"/>
+<Type name="CX4" class="CX4" element="C" mass="12.0107"/>
+<Type name="CX5" class="CX5" element="C" mass="12.0107"/>
+<Type name="NX6" class="NX6" element="N" mass="14.0067"/>
+<Type name="HX7" class="HX7" element="H" mass="1.00794"/>
+<Type name="HX8" class="HX8" element="H" mass="1.00794"/>
+<Type name="FX9" class="FX9" element="F" mass="18.99840316"/>
+<Type name="HX10" class="HX10" element="H" mass="1.00794"/>
+<Type name="HX11" class="HX11" element="H" mass="1.00794"/>
+<Type name="HX12" class="HX12" element="H" mass="1.00794"/>
+<Type name="HX13" class="HX13" element="H" mass="1.00794"/>
+<Type name="HX14" class="HX14" element="H" mass="1.00794"/>
+<Type name="HX15" class="HX15" element="H" mass="1.00794"/>
+</AtomTypes>
+<Residues>
+<Residue name="LIG">
+<Atom name="OY0" type="OX0"/>
+<Atom name="CY1" type="CX1"/>
+<Atom name="OY2" type="OX2"/>
+<Atom name="CY3" type="CX3"/>
+<Atom name="CY4" type="CX4"/>
+<Atom name="CY5" type="CX5"/>
+<Atom name="NY6" type="NX6"/>
+<Atom name="HY7" type="HX7"/>
+<Atom name="HY8" type="HX8"/>
+<Atom name="FY9" type="FX9"/>
+<Atom name="HY10" type="HX10"/>
+<Atom name="HY11" type="HX11"/>
+<Atom name="HY12" type="HX12"/>
+<Atom name="HY13" type="HX13"/>
+<Atom name="HY14" type="HX14"/>
+<Atom name="HY15" type="HX15"/>
+</Residue>
+</Residues>
+<NonbondedForce coulomb14scale="1.0" lj14scale="1.0">
+<Atom type="OX0" charge="-0.4566253888716604" sigma="0.3118145513491188" epsilon="0.25104"/>
+<Atom type="CX1" charge="0.20017410635670158" sigma="0.34308509635584467" epsilon="0.43932"/>
+<Atom type="OX2" charge="-0.4701513439912843" sigma="0.3118145513491188" epsilon="0.25104"/>
+<Atom type="CX3" charge="-0.16934799859723243" sigma="0.34308509635584467" epsilon="0.43932"/>
+<Atom type="CX4" charge="0.04432589580259967" sigma="0.34308509635584467" epsilon="0.43932"/>
+<Atom type="CX5" charge="-0.02593962800469058" sigma="0.34308509635584467" epsilon="0.43932"/>
+<Atom type="NX6" charge="-0.5583722994387512" sigma="0.3260689308393642" epsilon="0.288696"/>
+<Atom type="HX7" charge="0.08446326065356775" sigma="0.0" epsilon="0.0"/>
+<Atom type="HX8" charge="0.08170092192833019" sigma="0.0" epsilon="0.0"/>
+<Atom type="FX9" charge="-0.17541104715860323" sigma="0.29969832878241015" epsilon="0.20920000000000002"/>
+<Atom type="HX10" charge="0.09023008989340449" sigma="0.0" epsilon="0.0"/>
+<Atom type="HX11" charge="0.12408026469131761" sigma="0.0" epsilon="0.0"/>
+<Atom type="HX12" charge="0.1204179298800265" sigma="0.0" epsilon="0.0"/>
+<Atom type="HX13" charge="0.36607715655547135" sigma="0.0" epsilon="0.0"/>
+<Atom type="HX14" charge="0.37513269272214317" sigma="0.0" epsilon="0.0"/>
+<Atom type="HX15" charge="0.36922938757865986" sigma="0.0" epsilon="0.0"/>
+</NonbondedForce>
+</ForceField>

@@ -1693,8 +1693,9 @@ class OpenMMTheory:
             dof -= 3
         self.dof=dof
 
-    #NOTE: Adding charge/mult here temporarily to  be consistent with QM_theories. Not used
-    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None, label=None, charge=None, mult=None,
+    #NOTE: Adding charge/mult/PC here to  be consistent with QM_theories. Not used
+    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None, label=None, charge=None, mult=None, PC=False, current_MM_coords=None, MMcharges=None,
+            mm_elems=None,
             numcores=1):
         module_init_time = time.time()
         timeA = time.time()
@@ -2577,7 +2578,8 @@ def print_systemsize(modeller):
 def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
                     ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False,
-                    platform="CPU", use_pdbfixer=True, implicit=False, implicit_solvent_xmlfile=None):
+                    platform="CPU", use_pdbfixer=True, implicit=False, implicit_solvent_xmlfile=None,
+                    residuetemplate_choice=None):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
     try:
@@ -2722,7 +2724,6 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     print("User-provided dictionary of residue_variants:", residue_variants)
     print("\nNow checking PDB-file for alternate locations, i.e. multiple occupancies:\n")
 
-
     #Check PDB-file whether it contains alternate locations of residue atoms (multiple occupations)
     #Default behaviour:
     # - if no multiple occupancies return input PDBfile and go on
@@ -2757,6 +2758,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     else:
         print("Skipping PDBFixer")
         pdbfile_for_modeller=pdbfile
+
 
     # Load fixed PDB-file and create Modeller object
     pdb = openmm_app.PDBFile(pdbfile_for_modeller)
@@ -2825,8 +2827,42 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     #print("Providing full list of residue_states", residue_states)
     print("Warning: OpenMM Modeller will fail in this step if residue information is missing")
     print("residue_states:", residue_states)
+
+
+    #Dealing with possible user-defined residuetemplate_choice
+    if residuetemplate_choice is None:
+        print("No residuetemplate_choice provided. Continuing")
+        residueTemplates={}
+    else:
+        print("Found user-specified residuetemplate_choice")
+        print("Will generate residueTemplates based on residuetemplate_choice:", residuetemplate_choice)
+        print("Note: residuetemplate_choice should be a dict like this: residuetemplate_choice={'FER':'FE2'}   ")
+        residueTemplates={}
+        for resname,choice in residuetemplate_choice.items():
+            print("resname:",resname)
+            print("choice:",choice)
+            residueTemplates=dict((res, choice) for res in modeller.topology.residues() if res.name == resname)
+    print("residueTemplates:", residueTemplates)
+
+    #Checking if we have problems with unmatched residues
+    print("\nNow checking if we have problems with unmatched residues")
+    #NOTE: We would get exception in addHydrogens anyway
     try:
-        modeller.addHydrogens(forcefield_obj, pH=pH, variants=residue_states)
+        forcefield_obj.getUnmatchedResidues(modeller.topology, residueTemplates=residueTemplates)
+    except Exception as e:
+        print("Exception found during forcefield_obj.getUnmatchedResidues.")
+        print("Exception:", e)
+        print("\nASH interpretation. you probably have multiple matching templates in the forcefield XML-file for a residue")
+        print("This occurs e.g. for the case of Fe2+ vs Fe3+ ion in the Amber FF.")
+        print("To deal with this problem, you have to provide a residuetemplate_choice dictionary to the ASH interface")
+        print("Example: residuetemplate_choice should be a dict like this: residuetemplate_choice={'FER':'FE2'}   ")
+        print("   where FER is here the name of the residue (in PDB-file) and FE2 is the name of the desired template in the forcefield XML-file")
+        exit()
+    print("No problem with unmatched residues found. Continuing")
+    
+    try:
+        print("residueTemplates:", residueTemplates)
+        modeller.addHydrogens(forcefield_obj, pH=pH, variants=residue_states, residueTemplates=residueTemplates)
     except ValueError as errormessage:
         print(BC.FAIL,"\nError: OpenMM modeller.addHydrogens signalled a ValueError",BC.END)
         print("This is a common error and suggests a problem in PDB-file or missing residue information in the forcefield.")
@@ -2842,8 +2878,6 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     print_systemsize(modeller)
 
     # Adding Solvent
-
-    print("implicit:", implicit)
     if implicit is True:
         periodic=False
         print("We are doing implicit solvation")
@@ -2869,13 +2903,15 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             modeller.addSolvent(forcefield_obj, boxSize=openmm.Vec3(solvent_boxdims[0], solvent_boxdims[1],
                                                                 solvent_boxdims[2]) * openmm_unit.angstrom,
                                                                 neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype,
-                                                                ionicStrength=ionicstrength * openmm_unit.molar)
+                                                                ionicStrength=ionicstrength * openmm_unit.molar,
+                                                                residueTemplates=residueTemplates)
         else:
             print("Using solvent padding (solvent_padding=X keyword): {} Å".format(solvent_padding))
             print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
+            print("residueTemplates:", residueTemplates)
             modeller.addSolvent(forcefield_obj, padding=solvent_padding * openmm_unit.angstrom, model=modeller_solvent_name,
                                 neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype,
-                                ionicStrength=ionicstrength * openmm_unit.molar)
+                                ionicStrength=ionicstrength * openmm_unit.molar, residueTemplates=residueTemplates)
         write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent_ions.pdb")
 
         # Ions
@@ -3175,12 +3211,6 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
                             epsilons_per_res=None, filename="system.xml", coulomb14scale=0.833333,
                             lj14scale=0.5, skip_nb=False, charmm=False):
     print("Inside write_xmlfile_nonbonded")
-    # resnames=["MOL1", "MOL2"]
-    # atomnames_per_res=[["CM1","CM2","HX1","HX2"],["OT1","HT1","HT2"]]
-    # atomtypes_per_res=[["CM","CM","H","H"],["OT","HT","HT"]]
-    # sigmas_per_res=[[1.2,1.2,1.3,1.3],[1.25,1.17,1.17]]
-    # epsilons_per_res=[[0.2,0.2,0.3,0.3],[0.25,0.17,0.17]]
-    # etc.
     # Always list of lists now
 
     assert len(resnames) == len(atomnames_per_res) == len(atomtypes_per_res)
@@ -3256,6 +3286,8 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
         xmlfile.write("</ForceField>\n")
     print("Wrote XML-file:", filename)
     return filename
+
+
 
 
 # TODO: Move elsewhere?

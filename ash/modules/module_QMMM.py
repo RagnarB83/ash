@@ -278,7 +278,7 @@ class QMMMTheory:
             if self.mm_theory_name == "OpenMMTheory":
                 self.mm_theory.remove_constraints_for_atoms(self.qmatoms)
 
-            # Remove bonded interactions in MM part. Only in OpenMM. Assuming they were never defined in NonbondedTHeory
+                # Remove bonded interactions in MM part. Only in OpenMM. Assuming they were never defined in NonbondedTHeory
                 print("Removing bonded terms for QM-region in MMtheory")
                 self.mm_theory.modify_bonded_forces(self.qmatoms)
 
