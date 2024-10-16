@@ -47,7 +47,7 @@ class OpenMMTheory:
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
                  constraints=None, bondconstraints=None,
                  restraints=None, frozen_atoms=None, fragment=None, dummysystem=False,
-                 autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None):
+                 autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None, residuetemplate_choice=None):
 
 
         self.printlevel=printlevel
@@ -142,6 +142,7 @@ class OpenMMTheory:
             self.hydrogenmass = None
         if self.printlevel > 0:
             print("Hydrogenmass option:", self.hydrogenmass)
+
 
         # Setting for controlling whether QM1-MM1 bonded terms are deleted or not in a QM/MM job
         # See modify_bonded_forces
@@ -514,7 +515,16 @@ class OpenMMTheory:
             self.atomnames = [i.name for i in self.topology.atoms()]
 
 
-
+        # Dealing with possible user-defined residuetemplate_choice
+        residueTemplates={} #initial
+        if residuetemplate_choice is not None:
+            print("Found user-specified residuetemplate_choice")
+            print("Will generate residueTemplates based on residuetemplate_choice:", residuetemplate_choice)
+            print("Note: residuetemplate_choice should be a dict like this: residuetemplate_choice={'FER':'FE2'}   ")
+            residueTemplates={}
+            for resname,choice in residuetemplate_choice.items():
+                residueTemplates=dict((res, choice) for res in self.topology.residues() if res.name == resname)
+        print("residueTemplates:", residueTemplates)
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
         if self.system is None:
             # Periodic or non-periodic ystem
@@ -560,7 +570,7 @@ class OpenMMTheory:
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms,
-                                                               switchDistance=switching_function_distance * openmm.unit.angstroms)
+                                                               switchDistance=switching_function_distance * openmm.unit.angstroms, residueTemplates=residueTemplates)
                 elif GROMACSfiles is True:
                     # NOTE: Gromacs has read PBC info from Gro file already
                     if self.printlevel > 0:
@@ -571,14 +581,14 @@ class OpenMMTheory:
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
-                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
+                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms, residueTemplates=residueTemplates)
                 elif Amberfiles is True:
                     # NOTE: PBC information should be in forcefield object already
                     self.system = self.forcefield.createSystem(nonbondedMethod=nonb_method_PBC,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
-                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
+                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms, residueTemplates=residueTemplates)
 
                     # print("self.system num con", self.system.getNumConstraints())
                 else:
@@ -587,18 +597,7 @@ class OpenMMTheory:
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
-                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
-
-                #FINAL PBC CHECK
-                #if PBCvectors is not None:
-                #    print("here")
-                    #NOTE: No longer setting PBC vectors in system here.
-                    # pbcvectors_mod = PBCvectors
-                    #if self.printlevel > 0:
-                    #    print("Setting PBC vectors of system by user request.")
-                    #    print("Assuming list of lists with units Angstrom")
-                    #pbcvecs=np.array(PBCvectors)*0.1
-                    #self.system.setDefaultPeriodicBoxVectors(*pbcvecs)
+                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms, residueTemplates=residueTemplates)
 
                 #FINAL PRINTING OF SYSTEM PBC VECTORS
                 a, b, c = self.system.getDefaultPeriodicBoxVectors()
@@ -2830,17 +2829,13 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
 
 
     #Dealing with possible user-defined residuetemplate_choice
-    if residuetemplate_choice is None:
-        print("No residuetemplate_choice provided. Continuing")
-        residueTemplates={}
-    else:
+    residueTemplates={} #initisal
+    if residuetemplate_choice is not None:
         print("Found user-specified residuetemplate_choice")
         print("Will generate residueTemplates based on residuetemplate_choice:", residuetemplate_choice)
         print("Note: residuetemplate_choice should be a dict like this: residuetemplate_choice={'FER':'FE2'}   ")
         residueTemplates={}
         for resname,choice in residuetemplate_choice.items():
-            print("resname:",resname)
-            print("choice:",choice)
             residueTemplates=dict((res, choice) for res in modeller.topology.residues() if res.name == resname)
     print("residueTemplates:", residueTemplates)
 
@@ -2876,6 +2871,13 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
 
     write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterH.pdb")
     print_systemsize(modeller)
+
+    #If using Residuetemplates then we have to remade after systemchange (addHydrogens)
+    if residuetemplate_choice is not None:
+        for resname,choice in residuetemplate_choice.items():
+            residueTemplates=dict((res, choice) for res in modeller.topology.residues() if res.name == resname)
+
+
 
     # Adding Solvent
     if implicit is True:
@@ -2914,12 +2916,9 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
                                 ionicStrength=ionicstrength * openmm_unit.molar, residueTemplates=residueTemplates)
         write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent_ions.pdb")
 
+
         # Ions
         #NOTE: Had to remove separate ion-add step due to OpenMM 8.1 change
-        #print("Adding ionic strength: {} M, using ions: {} and {}".format(ionicstrength, pos_iontype, neg_iontype))
-        #modeller.addSolvent(forcefield_obj, neutralize=True, positiveIon=pos_iontype, negativeIon=neg_iontype,
-        #    ionicStrength=ionicstrength * openmm_unit.molar)
-        #write_pdbfile_openMM(modeller.topology, modeller.positions, "system_afterions.pdb")
         print_systemsize(modeller)
         # Create ASH fragment and write to disk
         fragment = Fragment(pdbfile="system_aftersolvent_ions.pdb")
@@ -2937,7 +2936,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     print("Creating OpenMMTheory object")
     openmmobject =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
                             topology=modeller.topology, pdbfile=None, periodic=periodic,
-                            autoconstraints='HBonds', rigidwater=True, printlevel=0)
+                            autoconstraints='HBonds', rigidwater=True, printlevel=0, residuetemplate_choice=residuetemplate_choice)
     #Write out System XMLfile
     #TODO: Disable ?
     systemxmlfile="system_full.xml"
@@ -2973,16 +2972,19 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         f"omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
     print()
     print()
+    if residuetemplate_choice is not None:
+        print("Warning: A residuetemplate_choice option was provided to OpenMM_Modeller. This means that you will have to provide this also when defining an OpenMMTheory object.")
+        print(f"E.g. like this: omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\"], pdbfile=\"finalsystem.pdb\", periodic={periodic}, residuetemplate_choice={residuetemplate_choice})")
     #Check system for atoms with large gradient and print warning
     #TODO: Can we avoid re-creating the omm object ?
-    print("Now running single-point MM job to check for bad contacts")
+    print("\nNow running single-point MM job to check for bad contacts")
     #Setting sensible periodic cutoff to avoid error
     #periodic_nonbonded_cutoff=(modeller.topology.getPeriodicBoxVectors()[0][0].value_in_unit(openmm_unit.angstrom)/2.0)-1
     periodic_nonbonded_cutoff=10
     omm =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
                             topology=modeller.topology, pdbfile=None, periodic=periodic,
                             periodic_nonbonded_cutoff=periodic_nonbonded_cutoff,
-                            autoconstraints=None, rigidwater=False, printlevel=0)
+                            autoconstraints=None, rigidwater=False, printlevel=0, residuetemplate_choice=residuetemplate_choice)
     SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True, printlevel=0)
     check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=45000)
 
