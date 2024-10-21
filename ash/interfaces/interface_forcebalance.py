@@ -109,7 +109,7 @@ class ForceBalance:
 def write_xmlfile(resnames=None, atomnames_per_res=None, atomtypes_per_res=None, elements_per_res=None, connectivity_dict=None,
                             masses_per_res=None, charges_per_res=None, sigmas_per_res=None,
                             epsilons_per_res=None, filename="system.xml", 
-                            coulomb14scale=0.833333, lj14scale=0.5, charmm=False
+                            coulomb14scale=0.833333, lj14scale=0.5, charmm=False,
                             skip_nb=False, skip_harmb=False, skip_harma=False, skip_torsion=False):
     
     print("Inside write_xmlfile")
