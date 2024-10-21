@@ -43,7 +43,7 @@ class ONIOMTheory(Theory):
             ashexit()
 
         if type(theories_N) != list:
-            print("Error: theories_N should be a list")
+            print("Error: theories_N should be defined and be a list")
             ashexit()
         print(f"{len(theories_N)} theories provided. This is a {len(theories_N)}-layer ONIOM.")
         if regions_N is None:
@@ -443,6 +443,8 @@ class ONIOMTheory(Theory):
                 r_elems = [elems[x] for x in region]
 
                 other_elems = listdiff(full_elems, r_elems)
+                
+                other_region = listdiff(self.allatoms, region)
 
                 #############
                 # Linkatoms
@@ -551,9 +553,20 @@ class ONIOMTheory(Theory):
                 label=f"{self.theorylabels[i]}_region{j+1}"
                 theory.filename = f"{label}"
                 print(f"Running Theory {i+1} ({theory.theorynamelabel}) on Region {j+1} ({len(region_elems_final)} atoms)")
-                res = theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=numcores,
-                                                PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges, mm_elems=mm_elems_for_qmprogram,
-                                                label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
+
+                # For an MM-theory like OpenMM we have to do some special handling
+                if theory.theorytype == "MM":
+                    print("Case: Theory is MM")
+                    # Other region (i.e. not region1)
+                    theory.update_charges(other_region,[0.0 for x in other_region])
+                    theory.update_LJ_epsilons(other_region,[0.0 for x in other_region])
+                    theory.modify_bonded_forces(other_region)
+                    # NOTE: Fullsystem coordinates still passed here
+                    res = theory.run(current_coords=full_coords, elems=full_elems, Grad=Grad, numcores=numcores, label=label)
+                else:
+                    res = theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=numcores,
+                                                    PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges, mm_elems=mm_elems_for_qmprogram,
+                                                    label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
                 if PC and Grad:
                     e,g,pg = res
                 elif not PC and Grad:

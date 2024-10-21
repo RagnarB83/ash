@@ -25,7 +25,8 @@ class ORCATheory:
                  moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
                  autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None,
-                 cpcm_radii=None, ROHF_UHF_swap=False):
+                 cpcm_radii=None, ROHF_UHF_swap=False,
+                 deltaSCF=False, deltaSCF_PMOM=False, deltaSCF_confline=None, deltaSCF_turn_off_automatically=True):
         print_line_with_mainheader("ORCATheory initialization")
 
 
@@ -137,10 +138,28 @@ class ORCATheory:
         if isinstance(atomstoflip, int):
             print(BC.FAIL,"Error: atomstoflip should be list of integers (e.g. [0] or [2,3,5]), not a single integer.", BC.END)
             ashexit()
+        if self.brokensym is True:
+            # Add UKS if not present
+            if 'UKS' not in self.orcasimpleinput:
+                if 'UHF' not in self.orcasimpleinput:
+                    print("Warning: UKS/UHF keyword not present in orcasimpleinput for BS job. Adding.")
+                    self.orcasimpleinput = self.orcasimpleinput + ' UKS'
         if atomstoflip is not None:
             self.atomstoflip=atomstoflip
         else:
             self.atomstoflip=[]
+        # DELTASCF
+        self.deltaSCF=deltaSCF
+        self.deltaSCF_PMOM=deltaSCF_PMOM
+        self.deltaSCF_confline=deltaSCF_confline
+        self.deltaSCF_turn_off_automatically=deltaSCF_turn_off_automatically
+        if self.deltaSCF is True and self.deltaSCF_confline is None:
+            print("Error: DELTASCF is True but no deltaSCF_confline provided. Exiting")
+            ashexit()
+        if self.deltaSCF is True:
+            print("DeltaSCF True, turning on population analysis printing")
+            self.print_population_analysis=True
+
         # Basis sets per element
         self.basis_per_element=basis_per_element
         if self.basis_per_element is not None:
@@ -480,7 +499,7 @@ end"""
                 else:
                     print_if_level("Autostart feature is active. ORCA will read GBW-file present.", self.printlevel,2)
 
-        #If 1st runcall, add this to inputfile
+        # If 1st runcall, add this to inputfile
         if self.runcalls == 1:
             #first_iteration_input
             extraline=self.extraline+"\n"+self.first_iteration_input
@@ -494,11 +513,12 @@ end"""
             print(extraline)
             print(self.orcablocks)
             print("Charge: {}  Mult: {}".format(charge, mult))
-        #Printing extra options chosen:
-        if self.brokensym==True:
+        # Printing extra options chosen:
+        if self.brokensym is True:
             if self.printlevel >= 2:
                 print("Brokensymmetry SpinFlipping on! HSmult: {}.".format(self.HSmult))
-            if self.HSmult == None:
+
+            if self.HSmult is None:
                 print("Error:HSmult keyword in ORCATheory has not been set. This is required. Exiting.")
                 ashexit()
             if len(qmatomstoflip) == 0:
@@ -508,6 +528,21 @@ end"""
             for flipatom,qmflipatom in zip(self.atomstoflip,qmatomstoflip):
                 if self.printlevel >= 2:
                     print("Flipping atom: {} QMregionindex: {} Element: {}".format(flipatom, qmflipatom, qm_elems[qmflipatom]))
+        # DeltaSCF
+        deltascfblock=None
+        if self.deltaSCF is True:
+            if self.printlevel >= 2:
+                print("DeltaSCF option chosen. Will attempt MOM excited state SCF solution in first run")
+                print("DeltaSCF PMOM:", self.deltaSCF_PMOM)
+                print("Configuration line:", self.deltaSCF_confline)
+            if mult == 1:
+                if 'UKS' not in self.orcasimpleinput:
+                    if 'UHF' not in self.orcasimpleinput:
+                        print("Warning: Singlet DeltaSCF calculation requested but no UKS/UHF keyword present.")
+                        print("Only doubly excited SCF states can be found ")
+
+            deltascfblock=f"! DELTASCF \n%scf\n PMOM {self.deltaSCF_PMOM} \n {self.deltaSCF_confline}\nend"
+
         if self.extrabasis != "":
             if self.printlevel >= 2:
                 print("Using extra basis ({}) on QM-region indices : {}".format(self.extrabasis,qmatoms_extrabasis))
@@ -525,29 +560,33 @@ end"""
             if self.printlevel >= 2:
                 print("Pointcharge embedding is on!")
             create_orca_pcfile(self.filename, current_MM_coords, MMcharges)
-            if self.brokensym == True:
+            if self.brokensym is True:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         charge, mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
-                                     fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict, ROHF_UHF_swap=self.ROHF_UHF_swap)
+                                     fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict, ROHF_UHF_swap=self.ROHF_UHF_swap,
+                                     deltaSCFblock=deltascfblock)
             else:
                 create_orca_input_pc(self.filename, qm_elems, current_coords, self.orcasimpleinput, self.orcablocks,
                                         charge, mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
-                                        fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict, ROHF_UHF_swap=self.ROHF_UHF_swap)
+                                        fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict, ROHF_UHF_swap=self.ROHF_UHF_swap,
+                                        deltaSCFblock=deltascfblock)
         else:
-            if self.brokensym == True:
+            if self.brokensym is True:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         charge,mult, extraline=extraline, HSmult=self.HSmult, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                      atomstoflip=qmatomstoflip, extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
                                      ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms, ROHF_UHF_swap=self.ROHF_UHF_swap,
-                                     fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
+                                     fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict,
+                                     deltaSCFblock=deltascfblock)
             else:
                 create_orca_input_plain(self.filename, qm_elems, current_coords, self.orcasimpleinput,self.orcablocks,
                                         charge,mult, extraline=extraline, Grad=Grad, Hessian=Hessian, moreadfile=self.moreadfile,
                                         extrabasisatoms=qmatoms_extrabasis, extrabasis=self.extrabasis, propertyblock=self.propertyblock,
                                         ghostatoms=self.ghostatoms, dummyatoms=self.dummyatoms,ROHF_UHF_swap=self.ROHF_UHF_swap,
-                                        fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict)
+                                        fragment_indices=fragment_indices, atom_specific_basis_dict=self.atom_specific_basis_dict,
+                                        deltaSCFblock=deltascfblock)
 
         # Run inputfile using ORCA parallelization. Take numcores argument.
         # print(BC.OKGREEN, "------------Running ORCA calculation-------------", BC.END)
@@ -563,10 +602,10 @@ end"""
         engradfile=self.filename+'.engrad'
         pcgradfile=self.filename+'.pcgrad'
 
-        #Checking if finished.
+        # Checking if finished.
         if self.ignore_ORCA_error is False:
             ORCAfinished,numiterations = checkORCAfinished(outfile)
-            #Check if ORCA finished or not. Exiting if so
+            # Check if ORCA finished or not. Exiting if so
             if ORCAfinished is False:
                 print(BC.FAIL,"Problem with ORCA run", BC.END)
                 print(BC.OKBLUE,BC.BOLD, "------------ENDING ORCA-INTERFACE-------------", BC.END)
@@ -587,27 +626,45 @@ end"""
         else:
             self.gbwfile=self.filename+'.gbw'
 
-        #Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
+        # Now that we have possibly run a BS-DFT calculation, turning Brokensym off for future calcs (opt, restart, etc.)
         # using this theory object
-        #TODO: Possibly use different flag for this???
-        if self.brokensym==True:
+        if self.brokensym is True:
             if self.printlevel >= 2:
                 print("ORCA Flipspin calculation done. Now turning off brokensym in ORCA object for possible future calculations")
             self.brokensym=False
+        # Turning off deltaSCF for future calcs
+        if self.deltaSCF is True:
+            print("DeltaSCF calculation done.")
+            if self.deltaSCF_turn_off_automatically is True:
+                print("deltaSCF_turn_off_automatically option is True. Turning off DELTASCF for future calculations.")
+                self.deltaSCF=False
+                deltascfblock=None
+                if 'nososcf' not in self.orcasimpleinput:
+                    print("Adding NOSOSCF to orcasimpleinput to avoid future calculations from falling back to ground-state")
+                    self.orcasimpleinput = self.orcasimpleinput + ' nososcf'
+                if 'nodamp' not in self.orcasimpleinput:
+                    print("Adding NODAMP to orcasimpleinput to avoid future calculations from falling back to ground-state")
+                    self.orcasimpleinput = self.orcasimpleinput + ' nodamp'
+                if 'nolshift' not in self.orcasimpleinput:
+                    print("Adding NOLSHIFT to orcasimpleinput to avoid future calculations from falling back to ground-state")
+                    self.orcasimpleinput = self.orcasimpleinput + ' nolshift'
+            else:
+                print("deltaSCF_turn_off_automatically option if False. Will keep DeltaSCF settings")
 
-        #Now that we have possibly run a ORCA job with moreadfile we now turn the moreadfile option off as we probably want to use the
+        # Now that we have possibly run a ORCA job with moreadfile we now turn the moreadfile option off
+        #  as we probably want to use the orbitals we created
         if self.moreadfile != None:
             print("First ORCATheory calculation finished.")
-            #Now either keeping moreadfile or removing it. Default: removing
+            # Now either keeping moreadfile or removing it. Default: removing
             if self.moreadfile_always == False:
                 print("Now turning moreadfile option off.")
                 self.moreadfile=None
 
-        #Optional save ORCA output with filename according to label
+        # Optional save ORCA output with filename according to label
         if self.save_output_with_label is True:
             shutil.copy(self.filename+'.out', self.filename+f'_{self.label}_{charge}_{mult}.out')
 
-        #Keep outputfile from each run if requested
+        # Keep outputfile from each run if requested
         if self.keep_each_run_output is True:
             print("\nkeep_each_run_output is True")
             print("Copying {} to {}".format(self.filename+'.out', self.filename+'_run{}'.format(self.runcalls)+'.out'))
@@ -1735,7 +1792,7 @@ def create_orca_inputVIEcomp_gas(name, name2, elems, coords, orcasimpleinput, or
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, extraline='',
                          HSmult=None, atomstoflip=None, Hessian=False, extrabasisatoms=None, extrabasis=None, atom_specific_basis_dict=None, extraspecialbasisatoms=None, extraspecialbasis=None,
-                         moreadfile=None, propertyblock=None, fragment_indices=None, ROHF_UHF_swap=False):
+                         moreadfile=None, propertyblock=None, fragment_indices=None, ROHF_UHF_swap=False, deltaSCFblock=None):
     if extrabasisatoms is None:
         extrabasisatoms=[]
     pcfile=name+'.pc'
@@ -1759,6 +1816,10 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write('Flipspin {}'.format(atomstoflipstring)+ '\n')
             orcafile.write('FinalMs {}'.format((mult-1)/2)+ '\n')
             orcafile.write('end  \n')
+        orcafile.write('\n')
+        #DELTASCF
+        if deltaSCFblock is not None:
+            orcafile.write(deltaSCFblock)
         orcafile.write('\n')
         if atomstoflip is not None:
             orcafile.write('*xyz {} {}\n'.format(charge,HSmult))
@@ -1803,27 +1864,27 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
 #Allows for extraline that could be another '!' line or block-inputline.
 def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,charge,mult, Grad=False, Hessian=False, extraline='',
                             HSmult=None, atomstoflip=None, extrabasis=None, extrabasisatoms=None, moreadfile=None, propertyblock=None,
-                            ghostatoms=None, dummyatoms=None,fragment_indices=None, atom_specific_basis_dict=None, ROHF_UHF_swap=False):
+                            ghostatoms=None, dummyatoms=None,fragment_indices=None, atom_specific_basis_dict=None, ROHF_UHF_swap=False,
+                            deltaSCFblock=None):
     if extrabasisatoms == None:
         extrabasisatoms=[]
     if ghostatoms == None:
         ghostatoms=[]
     if dummyatoms == None:
         dummyatoms = []
-
     with open(name+'.inp', 'w') as orcafile:
         orcafile.write(orcasimpleinput+'\n')
         if extraline != '':
-            orcafile.write(extraline + '\n')
-        if Grad == True:
+            orcafile.write(extraline)
+        if Grad is True:
             orcafile.write('! Engrad' + '\n')
-        if Hessian == True:
+        if Hessian is True:
             orcafile.write('! Freq' + '\n')
         if moreadfile is not None:
             print("MOREAD option active. Will read orbitals from file:", moreadfile)
             orcafile.write('! MOREAD' + '\n')
             orcafile.write('%moinp \"{}\"'.format(moreadfile) + '\n')
-        orcafile.write(orcablockinput + '\n')
+        orcafile.write(orcablockinput)
         if atomstoflip is not None:
             if type(atomstoflip) == int:
                 atomstoflipstring=str(atomstoflip)
@@ -1833,6 +1894,10 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             orcafile.write('Flipspin {}'.format(atomstoflipstring)+ '\n')
             orcafile.write('FinalMs {}'.format((mult-1)/2)+ '\n')
             orcafile.write('end  \n')
+            orcafile.write('\n')
+        #DELTASCF
+        if deltaSCFblock is not None:
+            orcafile.write(deltaSCFblock)
         orcafile.write('\n')
         if atomstoflip is not None:
             orcafile.write('*xyz {} {}\n'.format(charge,HSmult))
@@ -1956,7 +2021,6 @@ def grabatomcharges_ORCA(chargemodel,outputfile):
     column=None
 
     numatoms = int(pygrep('Number of atoms                             ...', outputfile)[-1])
-    print("numatoms:", numatoms)
 
     #if
     if len(pygrep2("WARNING: Broken symmetry calculations", outputfile)):
