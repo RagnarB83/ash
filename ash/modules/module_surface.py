@@ -347,25 +347,25 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             charge=charge, mult=mult,
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
 
-                            #Write geometry to disk
+                            # Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg", "surface_fragfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
-                            #Single-point calculation on adjusted geometry
+                            # Single-point calculation on adjusted geometry
                             if theory is not None:
                                 result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                                 energy = result.energy
                                 print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
-                                if keepoutputfiles == True:
-                                    shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
-                                if keepmofiles == True:
-                                    shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
+                                if theory.theorytype == "QM":
+                                    if keepoutputfiles:
+                                        shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                                    if keepmofiles:
+                                        shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
+                                else:
+                                    print("Warning: For hybrid theories, outputfiles and MO-files are not kept")
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
 
-                            #Writing dictionary to file
-                            #write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
-                            #calc_rotational_constants(fragment)
                         else:
                             print("RC1, RC2 values in dict already. Skipping.")
                     print("surfacedictionary:", surfacedictionary)
@@ -399,15 +399,14 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                         energy = result.energy
                         print("RCvalue1: {} Energy: {}".format(RCvalue1,energy))
-                        if keepoutputfiles == True:
-                            shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
-                        if keepmofiles == True:
-                            shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
+                        if theory.theorytype == "QM":
+                            if keepoutputfiles:
+                                shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                            if keepmofiles:
+                                shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
+                        else:
+                            print("Warning: For hybrid theories, outputfiles and MO-files are not kept")
                         surfacedictionary[(RCvalue1)] = energy
-                        #Writing dictionary to file
-                        #write_surfacedict_to_file(surfacedictionary,resultfile, dimension=1)
-                        #print("surfacedictionary:", surfacedictionary)
-                        #calc_rotational_constants(fragment)
                     else:
                         print("RC1 value in dict already. Skipping.")
         #####################
@@ -426,29 +425,30 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         print("==================================================")
                         pointlabel='RC1_'+str(RCvalue1)+'-'+'RC2_'+str(RCvalue2)
                         if (RCvalue1,RCvalue2) not in surfacedictionary:
-                            #Now setting constraints
+                            # Now setting constraints
                             allconstraints = set_constraints(dimension=2, RCvalue1=RCvalue1, RCvalue2=RCvalue2, extraconstraints=extraconstraints,
                                                              RC1_type=RC1_type, RC2_type=RC2_type, RC1_indices=RC1_indices, RC2_indices=RC2_indices)
                             print("allconstraints:", allconstraints)
-                            #Running
+                            # Running
                             result = geomeTRICOptimizer(fragment=fragment, theory=theory, maxiter=maxiter, coordsystem=coordsystem,
                                 constraints=allconstraints, constrainvalue=True, convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                                 subfrctor=subfrctor,charge=charge, mult=mult,
                                 ActiveRegion=ActiveRegion, actatoms=actatoms)
                             energy = result.energy
                             print("RCvalue1: {} RCvalue2: {} Energy: {}".format(RCvalue1,RCvalue2, energy))
-                            if keepoutputfiles == True:
-                                try:
-                                    shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
-                                except:
-                                    pass
-                            if keepmofiles == True:
-                                shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
+                            if theory.theorytype == "QM":
+                                if keepoutputfiles:
+                                    try:
+                                        shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                                    except:
+                                        pass
+                                if keepmofiles:
+                                    shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
+                            else:
+                                print("Warning: For hybrid theories, outputfiles and MO-files are not kept")
                             surfacedictionary[(RCvalue1,RCvalue2)] = energy
-                            #Writing dictionary to file
-                            #write_surfacedict_to_file(surfacedictionary,resultfile, dimension=2)
-                            #calc_rotational_constants(fragment)
-                            #Write geometry to disk
+
+                            # Write geometry to disk
                             fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
                             fragment.print_system(filename="RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".ygg")
                             shutil.move("RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz", "surface_xyzfiles/RC1_"+str(RCvalue1)+"-RC2_"+str(RCvalue2)+".xyz")
@@ -478,16 +478,18 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                             ActiveRegion=ActiveRegion, actatoms=actatoms)
                         energy = result.energy
                         print("RCvalue1: {} Energy: {}".format(RCvalue1, energy))
-                        if keepoutputfiles == True:
-                            try:
-                                shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
-                            except:
-                                pass
-                        if keepmofiles == True:
-                            shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
+                        if theory.theorytype == "QM":
+                            if keepoutputfiles == True:
+                                try:
+                                    shutil.copyfile(theory.filename+'.out', 'surface_outfiles/'+str(theory.filename)+'_'+pointlabel+'.out')
+                                except:
+                                    pass
+                            if keepmofiles == True:
+                                shutil.copyfile(theory.filename+'.gbw', 'surface_mofiles/'+str(theory.filename)+'_'+pointlabel+'.gbw')
+                        else:
+                            print("Warning: For hybrid theories, outputfiles and MO-files are not kept")
                         surfacedictionary[(RCvalue1)] = energy
 
-                        #calc_rotational_constants(fragment)
                         #Write geometry to disk
                         fragment.write_xyzfile(xyzfilename="RC1_"+str(RCvalue1)+".xyz")
                         fragment.print_system(filename="RC1_"+str(RCvalue1)+".ygg")
