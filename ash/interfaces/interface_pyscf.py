@@ -2126,8 +2126,8 @@ class PySCFTheory:
                 self.mf.xc = self.functional
                 #TODO: libxc vs. xcfun interface control here
                 #mf._numint.libxc = xcfun
-            #Grid setting
-            self.mf.grids.level = self.gridlevel
+                #Grid setting
+                self.mf.grids.level = self.gridlevel
 
     def set_printing_option_mf(self):
         #Verbosity of pySCF mf
