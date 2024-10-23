@@ -497,7 +497,7 @@ class OpenMMTheory:
             if self.printlevel > 0:
                 print("Reading OpenMM XML forcefield files and PDB file")
                 print("xmlfiles:", str(xmlfiles).strip("[]"))
-                if pdbfile == None:
+                if pdbfile is None:
                     print("Error:No pdbfile input provided")
                     ashexit()
             # This would be regular OpenMM Forcefield definition requiring XML file
@@ -5420,6 +5420,7 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
         print("Problem importing parmed Python library")
         print("Parmed can be installed using pip: pip install parmed")
         ashexit()
+    print(f"Parmed version {parmed.__version__} imported")
     #OpenMMForcefields stuff
     try:
         import openff
