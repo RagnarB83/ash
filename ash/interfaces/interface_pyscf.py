@@ -48,6 +48,7 @@ class PySCFTheory:
         self.theorytype="QM"
         self.analytic_hessian=True
         self.printlevel=printlevel
+        self.functional=functional
         #if self.printlevel >= 2:
         print_line_with_mainheader("PySCFTheory initialization")
 
