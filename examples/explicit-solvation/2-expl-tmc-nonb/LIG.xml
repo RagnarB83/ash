@@ -1,0 +1,25 @@
+<ForceField>
+<AtomTypes>
+<Type name="FeX0" class="FeX0" element="Fe" mass="55.845"/>
+<Type name="ClX1" class="ClX1" element="Cl" mass="35.45"/>
+<Type name="ClX2" class="ClX2" element="Cl" mass="35.45"/>
+<Type name="ClX3" class="ClX3" element="Cl" mass="35.45"/>
+<Type name="ClX4" class="ClX4" element="Cl" mass="35.45"/>
+</AtomTypes>
+<Residues>
+<Residue name="LIG">
+<Atom name="FeY0" type="FeX0"/>
+<Atom name="ClY1" type="ClX1"/>
+<Atom name="ClY2" type="ClX2"/>
+<Atom name="ClY3" type="ClX3"/>
+<Atom name="ClY4" type="ClX4"/>
+</Residue>
+</Residues>
+<NonbondedForce coulomb14scale="0.83333333" lj14scale="0.5">
+<Atom type="FeX0" charge="0.46027346532495444" sigma="0.2594297067224668" epsilon="0.054392"/>
+<Atom type="ClX1" charge="-0.36505520366451816" sigma="0.35163772404999194" epsilon="0.9497680000000001"/>
+<Atom type="ClX2" charge="-0.36506136889224705" sigma="0.35163772404999194" epsilon="0.9497680000000001"/>
+<Atom type="ClX3" charge="-0.3650524351439036" sigma="0.35163772404999194" epsilon="0.9497680000000001"/>
+<Atom type="ClX4" charge="-0.36504645762428567" sigma="0.35163772404999194" epsilon="0.9497680000000001"/>
+</NonbondedForce>
+</ForceField>
