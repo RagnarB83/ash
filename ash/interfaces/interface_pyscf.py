@@ -48,6 +48,7 @@ class PySCFTheory:
         self.theorytype="QM"
         self.analytic_hessian=True
         self.printlevel=printlevel
+        self.functional=functional
         #if self.printlevel >= 2:
         print_line_with_mainheader("PySCFTheory initialization")
 
@@ -74,6 +75,14 @@ class PySCFTheory:
             if scf_type == 'UHF':
                 print("Changing UHF to UKS")
                 scf_type='UKS'
+            if "dm21" in self.functional.lower():
+                print("A DM21-type functional selected. This requires DM21 installation")
+                try:
+                    import density_functional_approximation_dm21 as dm21
+                except ModuleNotFoundError as e:
+                    print("Error importing density_functional_approximation_dm21 library. Exiting")
+                    print("Make sure DM21 is installed in the Python environment. See https://github.com/google-deepmind/deepmind-research/tree/master/density_functional_approximation_dm21")
+                    ashexit()
         else:
             if scf_type == 'RKS' or scf_type == 'UKS':
                 print("Error: RKS/UKS chosen but no functional. Exiting")
@@ -2108,12 +2117,17 @@ class PySCFTheory:
 
     def set_DFT_options(self):
         if self.functional is not None:
-            #Setting functional
-            self.mf.xc = self.functional
-            #TODO: libxc vs. xcfun interface control here
-            #mf._numint.libxc = xcfun
-            #Grid setting
-            self.mf.grids.level = self.gridlevel
+            #DM21
+            if "dm21" in self.functional.lower():
+                import density_functional_approximation_dm21 as dm21
+                self.mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
+            else:
+                #Setting functional
+                self.mf.xc = self.functional
+                #TODO: libxc vs. xcfun interface control here
+                #mf._numint.libxc = xcfun
+                #Grid setting
+                self.mf.grids.level = self.gridlevel
 
     def set_printing_option_mf(self):
         #Verbosity of pySCF mf
