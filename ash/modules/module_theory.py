@@ -18,7 +18,6 @@ class Theory:
     def run(self):
         print("Run was called but not yet implemented for this theory")
 
-#Not used yet
 class QMTheory(Theory):
     def __init__(self):
         super().__init__()
