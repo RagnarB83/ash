@@ -95,7 +95,7 @@ class GPAWTheory(QMTheory):
         print("Creating ASE atoms object")
         atoms = Atoms(elems,positions=current_coords)
 
-        calc = GPAW(mode=self.mode, nbands=self.numbands, xc=self.functional, 
+        calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
                     gpts=self.gridpoints, basis=self.basis, charge=charge, spinpol=spinpol,
                     txt=self.filename)
         atoms.calc = calc
@@ -112,7 +112,7 @@ class GPAWTheory(QMTheory):
         if Grad is True:
             if self.printlevel >=0:
                 print(f"Single-point {self.theorynamelabel} energy:", self.energy)
-            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} actualrun', moduleindex=2)
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             if PC is True:
                 return self.energy, self.gradient, self.pcgrad
             else:
@@ -120,5 +120,5 @@ class GPAWTheory(QMTheory):
         else:
             if self.printlevel >=0:
                 print(f"Single-point {self.theorynamelabel} energy:", self.energy)
-            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} actualrun', moduleindex=2)
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
