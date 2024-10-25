@@ -113,6 +113,8 @@ class GPAWTheory(QMTheory):
             self.energy = atoms.get_potential_energy()
             forces = atoms.get_forces()
             print("forces:", forces)
+            self.gradient=-1*forces
+            print("self.gradient:", self.gradient)
         else:
             self.energy = atoms.get_potential_energy()
         if self.printlevel >= 1:
