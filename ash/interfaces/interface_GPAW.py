@@ -4,7 +4,7 @@ from ash.functions.functions_general import ashexit, BC,print_time_rel, print_li
 import ash.modules.module_coords
 from ash.modules.module_results import ASH_Results
 from ash.modules.module_theory import QMTheory
-from ash.functions.functions_elstructure import get_ec_entropy,get_entropy
+from ash.modules.module_coords import cubic_box_size,bounding_box_dimensions
 import os
 import sys
 import glob
@@ -21,7 +21,7 @@ import copy
 
 class GPAWTheory(QMTheory):
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="gpaw", filename="gpaw", functional=None,
-                 basis=None, nbands=None, gridpoints=None, mode=None):
+                 basis=None, nbands=None, gridpoints=None, mode=None, boxshift=0.0):
 
         self.theorynamelabel="GPAW"
         self.theorytype="QM"
@@ -53,6 +53,7 @@ class GPAWTheory(QMTheory):
         self.mode=mode
         self.basis=basis
         self.filename=filename
+        self.boxshift=boxshift
         # Basis can be name-string or a dict: e.g. basis={'H': 'sz', 'C': 'dz', 7: 'dzp'}
 
     # Set numcores method
@@ -93,7 +94,13 @@ class GPAWTheory(QMTheory):
 
         # Creating ASE atoms object
         print("Creating ASE atoms object")
-        atoms = Atoms(elems,positions=current_coords)
+
+        #Creating cell box based on coords
+        print("Estimating cell based on coordinates")
+        cell_dims = cubic_box_size(current_coords, shift=self.boxshift)
+        print("cell_dims:", cell_dims)
+
+        atoms = Atoms(elems,positions=current_coords, cell=cell_dims)
 
         calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
                     gpts=self.gridpoints, basis=self.basis, charge=charge, spinpol=spinpol,
