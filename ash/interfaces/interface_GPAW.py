@@ -96,11 +96,11 @@ class GPAWTheory(QMTheory):
         print("Creating ASE atoms object")
 
         #Creating cell box based on coords
-        print("Estimating cell based on coordinates")
-        cell_dims = cubic_box_size(current_coords, shift=self.boxshift)
-        print("cell_dims:", cell_dims)
+        print("Estimating cell dimension based on coordinates")
+        cell_dim = cubic_box_size(current_coords, shift=self.boxshift)
+        print("cell_dim:", cell_dim)
 
-        atoms = Atoms(elems,positions=current_coords, cell=cell_dims)
+        atoms = Atoms(elems,positions=current_coords, cell=[cell_dim,cell_dim,cell_dim])
 
         calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
                     gpts=self.gridpoints, basis=self.basis, charge=charge, spinpol=spinpol,
