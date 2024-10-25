@@ -100,8 +100,9 @@ class GPAWTheory(QMTheory):
         cell_dim = cubic_box_size(current_coords, shift=self.boxshift)
         print("cell_dim:", cell_dim)
 
-        atoms = Atoms(elems,positions=current_coords, cell=[cell_dim,cell_dim,cell_dim])
-
+        atoms = Atoms(elems,positions=current_coords, cell=(cell_dim,cell_dim,cell_dim))
+        atoms.center()
+        
         calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
                     gpts=self.gridpoints, basis=self.basis, charge=charge, spinpol=spinpol,
                     txt=self.filename)
@@ -109,6 +110,7 @@ class GPAWTheory(QMTheory):
 
 
         if Grad is True:
+            self.energy = atoms.get_potential_energy()
             forces = atoms.get_forces()
             print("forces:", forces)
         else:
