@@ -41,12 +41,17 @@ class GPAWTheory(QMTheory):
         if gridpoints is None:
             print("No gridpoints provided. Example: gridpoints=(24,24,24) Exiting")
             ashexit()
-        if basis is None:
-            print("No basis provided. Exiting")
+        if mode == "lcao" and basis is None:
+            print("Mode is LCAO but no basis provided. Exiting")
             ashexit()
         if mode is None:
             print("No mode provided. Example: mode=\"fd\" or mode=\"PW(200)\" or mode=\"lcao\"  Exiting")
             ashexit()
+
+        #Setting basis to None if not lcao
+        if mode != "lcao":
+            self.basis=None
+        
         self.functional=functional
         self.nbands=nbands
         self.gridpoints=gridpoints
