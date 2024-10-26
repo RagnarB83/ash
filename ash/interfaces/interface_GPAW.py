@@ -115,14 +115,17 @@ class GPAWTheory(QMTheory):
         atoms.center()
 
         if self.mode == "lcao":
+            print("Running GPAW LCAO calculation with basis", self.basis)
             calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
                         gpts=self.gridpoints, basis=self.basis, charge=charge, spinpol=spinpol,
                         txt=self.filename)
         elif self.mode == "fd":
+            print("Running GPAW FD calculation")
             calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
                         gpts=self.gridpoints, charge=charge, spinpol=spinpol,
                         txt=self.filename)
         elif self.mode == "pw":
+            print("Running GPAW PW calculation with cutoff:", self.pwcutoff)
             from gpaw import PW
             calc = GPAW(mode=PW(self.pwcutoff), nbands=self.nbands, xc=self.functional, 
                         gpts=self.gridpoints, charge=charge, spinpol=spinpol,
