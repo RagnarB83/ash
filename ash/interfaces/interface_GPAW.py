@@ -150,13 +150,14 @@ class GPAWTheory(QMTheory):
 
 
         if Grad is True:
-            self.energy = atoms.get_potential_energy()
+            self.energy = atoms.get_potential_energy() / ash.constants.hartoeV
             forces = atoms.get_forces()
             print("forces:", forces)
             self.gradient=-1*forces
             print("self.gradient:", self.gradient)
         else:
-            self.energy = atoms.get_potential_energy()
+            self.energy = atoms.get_potential_energy() / ash.constants.hartoeV
+            forces = atoms.get_forces()
         if self.printlevel >= 1:
             print()
             print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
