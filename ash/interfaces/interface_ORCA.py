@@ -118,7 +118,7 @@ class ORCATheory:
 
         # Adding NoAutostart keyword to extraline if requested
         if self.autostart is False:
-            self.extraline=extraline+"\n! Noautostart"
+            self.extraline=extraline+"\n! Noautostart\n"
         else:
             self.extraline=extraline
 
