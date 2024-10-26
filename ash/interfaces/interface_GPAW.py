@@ -21,7 +21,7 @@ import copy
 
 class GPAWTheory(QMTheory):
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="gpaw", filename="gpaw", functional=None,
-                 basis=None, nbands=None, gridpoints=None, mode=None, boxshift=0.0, pwcutoff=None):
+                 basis=None, nbands=None, gridpoints=None, h=None, mode=None, boxshift=0.0, pwcutoff=None):
 
         self.theorynamelabel="GPAW"
         self.theorytype="QM"
@@ -49,17 +49,23 @@ class GPAWTheory(QMTheory):
         if nbands is None:
             print("No nbands provided. Example: nbands=2, Exiting")
             ashexit()
-        if gridpoints is None:
-            print("No gridpoints provided. Example: gridpoints=(24,24,24) Exiting")
+        if gridpoints is None and h is None:
+            print("No gridpoints or h parameter provided.")
+            print("Do either gridpoints=(24,24,24) or h=0.25 Exiting")
+            ashexit()
+        if gridpoints is not None and h is not None:
+            print("Both gridpoints and h parameter provided.")
+            print("Choose only one option. Exiting")
             ashexit()
 
         # Setting basis to None if not lcao
         if mode != "lcao":
             self.basis=None
-        
+
         self.functional=functional
         self.nbands=nbands
         self.gridpoints=gridpoints
+        self.h=h
         self.mode=mode
         self.basis=basis
         self.filename=filename
@@ -117,18 +123,25 @@ class GPAWTheory(QMTheory):
         if self.mode == "lcao":
             print("Running GPAW LCAO calculation with basis", self.basis)
             calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
-                        gpts=self.gridpoints, basis=self.basis, charge=charge, spinpol=spinpol,
+                        basis=self.basis, charge=charge, spinpol=spinpol,
                         txt=self.filename)
         elif self.mode == "fd":
             print("Running GPAW FD calculation")
-            calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
-                        gpts=self.gridpoints, charge=charge, spinpol=spinpol,
-                        txt=self.filename)
+            if self.gridpoints is not None:
+                print("Using gridpoints:", self.gridpoints)
+                calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
+                            gpts=self.gridpoints, charge=charge, spinpol=spinpol,
+                            txt=self.filename)
+            elif self.h is not None:
+                print("Using h:", self.h)
+                calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
+                            h=self.h, charge=charge, spinpol=spinpol,
+                            txt=self.filename)
         elif self.mode == "pw":
             print("Running GPAW PW calculation with cutoff:", self.pwcutoff)
             from gpaw import PW
             calc = GPAW(mode=PW(self.pwcutoff), nbands=self.nbands, xc=self.functional, 
-                        gpts=self.gridpoints, charge=charge, spinpol=spinpol,
+                        charge=charge, spinpol=spinpol,
                         txt=self.filename)
         else:
             print("Unknown mode:", self.mode)
