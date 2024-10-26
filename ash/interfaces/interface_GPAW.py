@@ -21,7 +21,7 @@ import copy
 
 class GPAWTheory(QMTheory):
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="gpaw", filename="gpaw", functional=None,
-                 basis=None, nbands=None, gridpoints=None, mode=None, boxshift=0.0):
+                 basis=None, nbands=None, gridpoints=None, mode=None, boxshift=0.0, pwcutoff=None):
 
         self.theorynamelabel="GPAW"
         self.theorytype="QM"
@@ -32,6 +32,17 @@ class GPAWTheory(QMTheory):
 
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
 
+        # Mode
+        if mode is None:
+            print("No mode provided. Example: mode=\"fd\" or mode=\"pw\" or mode=\"lcao\"  Exiting")
+            ashexit()
+        if mode == "lcao" and basis is None:
+            print("Mode is LCAO but no basis provided. Exiting")
+            ashexit()
+        if mode == "pw" and pwcutoff is None:
+            print("Mode is PW but no pwcutoff provided. Exiting")
+            ashexit()
+
         if functional is None:
             print("No functional provided. Example: functional=\"PBE\" Exiting")
             ashexit()
@@ -41,14 +52,8 @@ class GPAWTheory(QMTheory):
         if gridpoints is None:
             print("No gridpoints provided. Example: gridpoints=(24,24,24) Exiting")
             ashexit()
-        if mode == "lcao" and basis is None:
-            print("Mode is LCAO but no basis provided. Exiting")
-            ashexit()
-        if mode is None:
-            print("No mode provided. Example: mode=\"fd\" or mode=\"PW(200)\" or mode=\"lcao\"  Exiting")
-            ashexit()
 
-        #Setting basis to None if not lcao
+        # Setting basis to None if not lcao
         if mode != "lcao":
             self.basis=None
         
@@ -59,6 +64,7 @@ class GPAWTheory(QMTheory):
         self.basis=basis
         self.filename=filename
         self.boxshift=boxshift
+        self.pwcutoff=pwcutoff
         # Basis can be name-string or a dict: e.g. basis={'H': 'sz', 'C': 'dz', 7: 'dzp'}
 
     # Set numcores method
@@ -88,7 +94,7 @@ class GPAWTheory(QMTheory):
             print("Run-label:", label)
 
         # Load gpaw and ase
-        from gpaw import GPAW, PW
+        from gpaw import GPAW
         from ase import Atoms
 
         if mult > 1:
@@ -107,10 +113,23 @@ class GPAWTheory(QMTheory):
 
         atoms = Atoms(elems,positions=current_coords, cell=(cell_dim,cell_dim,cell_dim))
         atoms.center()
-        
-        calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
-                    gpts=self.gridpoints, basis=self.basis, charge=charge, spinpol=spinpol,
-                    txt=self.filename)
+
+        if self.mode == "lcao":
+            calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
+                        gpts=self.gridpoints, basis=self.basis, charge=charge, spinpol=spinpol,
+                        txt=self.filename)
+        elif self.mode == "fd":
+            calc = GPAW(mode=self.mode, nbands=self.nbands, xc=self.functional, 
+                        gpts=self.gridpoints, charge=charge, spinpol=spinpol,
+                        txt=self.filename)
+        elif self.mode == "pw":
+            from gpaw import PW
+            calc = GPAW(mode=PW(self.pwcutoff), nbands=self.nbands, xc=self.functional, 
+                        gpts=self.gridpoints, charge=charge, spinpol=spinpol,
+                        txt=self.filename)
+        else:
+            print("Unknown mode:", self.mode)
+            ashexit()
         atoms.calc = calc
 
 
