@@ -67,9 +67,9 @@ class GeomeTRICOptimizerClass:
             if actatoms != None:
                 print("List of active atoms provided. Setting ActiveRegion to True")
                 ActiveRegion=True
-            if actatoms==None:
+            if actatoms is None:
                 actatoms=[]
-            if frozenatoms==None:
+            if frozenatoms is None:
                 frozenatoms=[]
 
             if ActiveRegion is True and coordsystem == "tric":

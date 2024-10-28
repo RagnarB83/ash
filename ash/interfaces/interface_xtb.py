@@ -108,12 +108,11 @@ class xTBTheory:
             else:
                 self.xtbdir = xtbdir
 
-            #Solvent line to be passed to run-call
-
+            # Solvent line to be passed to run-call
             if solvent != None:
-                self.solvent_line="--alpb {}".format(solvent)
+                self.solvent=solvent
             else:
-                self.solvent_line=""
+                self.solvent=None
 
         else:
             print("unknown runmode. exiting")
@@ -324,15 +323,15 @@ class xTBTheory:
                                       Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores)
                 else:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                  Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line, numcores=numcores)
+                                  Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent, numcores=numcores)
             else:
                 if PC:
                     create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line, numcores=numcores)
+                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent, numcores=numcores)
                 else:
                     run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent_line, numcores=numcores)
+                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent, numcores=numcores)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -407,7 +406,7 @@ class xTBTheory:
                 self.calcobject.set_electronic_temperature(self.electronic_temp)
                 self.calcobject.set_max_iterations(self.maxiter)
                 self.calcobject.set_accuracy(self.accuracy)
-                #Solvent
+                # Solvent
                 if self.solvent_object != None:
                     print("Setting solvent to:", self.solvent_object)
                     self.calcobject.set_solvent(self.solvent_object)
@@ -550,11 +549,12 @@ def xtbVEAgrab(file):
 # Run xTB single-point job
 def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
 
-
     if solvent is None:
-        solvent_line=""
+        solvent_line1=""
+        solvent_line2=""
     else:
-        solvent_line=solvent
+        solvent_line1="--alpb"
+        solvent_line2=solvent
 
     basename = xyzfile.split('.')[0]
     uhf=mult-1
@@ -576,20 +576,20 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
 
     if Grad:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), str(solvent_line), '--parallel', str(numcores), '--input', 'xtbinput']
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2]
     elif Opt:
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--opt', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2 ]
     elif Hessian:
         try:
             os.remove("hessian")
         except:
             pass
         command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--hess', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', str(solvent_line)  ]
+                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2 ]
     else:
-        command_list=[xtbdir + '/xtb', basename + '.xyz', str(solvent_line), '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                      '--etemp', str(electronic_temp),  '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput']
+        command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
+                      '--etemp', str(electronic_temp),  '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2]
     if printlevel >= 1:
         print("Running xtb with these arguments:", command_list)
 

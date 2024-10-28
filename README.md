@@ -15,7 +15,7 @@ Please open an issue on Github and we will try to fix any problems as soon as po
 
 **Installation:**
 See https://ash.readthedocs.io/en/latest/setup.html for detailed installation instructions.
-A proper ASH installation must usually be done in a conda/mamba environment.
+A proper ASH installation should usually be done in a conda/mamba environment together with the OpenMM library.
 
 Basic installation via pip:
 
