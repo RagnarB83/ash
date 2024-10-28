@@ -549,7 +549,6 @@ def xtbVEAgrab(file):
 # Run xTB single-point job
 def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
 
-    print("solvent:", solvent)
     if solvent is None:
         solvent_line1=""
         solvent_line2=""
