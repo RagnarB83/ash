@@ -2196,11 +2196,14 @@ class PySCFTheory:
                 self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
                 print("Here self.mf:", self.mf)
             else:
+                print("Case CPU. Adding pointcharges via create_mm_mol")
                 #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
                 #Newer syntax
-                mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
-                self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
+                #mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
+                #self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
+                pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
                 print("Here self.mf:", self.mf)
+                print("Type mf", type(self.mf))
 
         #Polarizable embedding option
         elif self.pe is True:
@@ -2502,8 +2505,6 @@ class PySCFTheory:
         if self.platform == 'GPU':
             print("GPU platform requested. Will now convert mf object to GPU")
             self.mf = self.mf.to_gpu()
-
-
 
         ##############################
         #EMBEDDING OPTIONS
