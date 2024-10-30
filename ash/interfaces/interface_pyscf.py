@@ -2493,12 +2493,7 @@ class PySCFTheory:
         if self.CC or self.MP2:
             self.set_frozen_core_settings(qm_elems)
 
-        ##############################
-        #EMBEDDING OPTIONS
-        ##############################
-        self.set_embedding_options(PC=PC,MM_coords=current_MM_coords, MMcharges=MMcharges)
-        if self.printlevel >1:
-            print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
+
 
         #############################
         # PLATFORM CHANGE
@@ -2507,6 +2502,17 @@ class PySCFTheory:
         if self.platform == 'GPU':
             print("GPU platform requested. Will now convert mf object to GPU")
             self.mf = self.mf.to_gpu()
+
+
+
+        ##############################
+        #EMBEDDING OPTIONS
+        ##############################
+        self.set_embedding_options(PC=PC,MM_coords=current_MM_coords, MMcharges=MMcharges)
+        if self.printlevel >1:
+            print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
+
+
 
 
     #Actual Run
