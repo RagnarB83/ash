@@ -43,7 +43,7 @@ class PySCFTheory:
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None,
-                  PBC_lattice_vectors=None,):
+                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6 ):
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
@@ -146,6 +146,8 @@ class PySCFTheory:
             print("Pointcharge gradient will also be performed on GPU using cupy")
         # QM/MM GPU4pyscf requires lattice vectors
         self.PBC_lattice_vectors=PBC_lattice_vectors
+        self.rcut_ewald=rcut_ewald
+        self.rcut_hcore=rcut_hcore
         
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
@@ -2195,26 +2197,23 @@ class PySCFTheory:
                 print("QM/MM embedding for GPU. Adding pointcharges via create_mm_mol from gpu4pyscf")
 
                 from gpu4pyscf.qmmm.pbc import mm_mole
-                from gpu4pyscf.qmmm.pbc.itrf import qmmm_for_scf
+                from gpu4pyscf.qmmm.pbc.itrf import add_mm_charges, qmmm_for_scf
 
                 if self.PBC_lattice_vectors is None:
                     print("PBC lattice vectors not set, needed for QM/MM with GPU4pyscf. Exiting")
                     ashexit()
 
-                mm_mol = mm_mole.create_mm_mol(MM_coords, self.PBC_lattice_vectors, MMcharges)
+                mm_mol = mm_mole.create_mm_mol(MM_coords, self.PBC_lattice_vectors, MMcharges, rcut_ewald=self.rcut_ewald, rcut_hcore=self.rcut_hcore)
                 self.mf = qmmm_for_scf(self.mf, mm_mol)
                 #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
-                print("Here self.mf:", self.mf)
-                print("Type mf", type(self.mf))
             else:
                 print("Case CPU. Adding pointcharges via create_mm_mol")
                 #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
                 #Newer syntax
                 mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
                 self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
-                #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
-                print("Here self.mf:", self.mf)
-                print("Type mf", type(self.mf))
+            #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
+            print("QM/MM mf object created:", self.mf)
 
         #Polarizable embedding option
         elif self.pe is True:
