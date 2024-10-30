@@ -2336,8 +2336,6 @@ class PySCFTheory:
         else:
             if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS) :
                 self.num_orbs = len(self.mf.mo_occ) # Restricted
-            
-            elif isinstance(
             else:
                 self.num_orbs = len(self.mf.mo_occ[0]) 
             
