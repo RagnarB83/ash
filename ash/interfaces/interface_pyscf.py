@@ -2328,10 +2328,18 @@ class PySCFTheory:
                 print("E_xc:", E_xc)
 
         #Setting number of orbitals as attribute of object
-        if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS) :
-            self.num_orbs = len(self.mf.mo_occ) # Restricted
+        print(self.mf)
+        if self.platform == 'GPU':
+            print("self.mf:", self.mf)
+            print(self.mf.__dict__)
+            self.num_orbs = self.mf.get_nmo()
         else:
-            self.num_orbs = len(self.mf.mo_occ[0]) 
+            if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS) :
+                self.num_orbs = len(self.mf.mo_occ) # Restricted
+            
+            elif isinstance(
+            else:
+                self.num_orbs = len(self.mf.mo_occ[0]) 
             
         if self.printlevel >= 1:
             print("Number of orbitals:", self.num_orbs)
