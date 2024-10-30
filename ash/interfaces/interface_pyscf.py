@@ -2188,13 +2188,16 @@ class PySCFTheory:
 
             #GPU vs. CPU
             if self.platform == 'GPU':
-                print("QM/MM embedding for GPU. testing whether .to_gpu works")
-                #import 
-                #add_mm_charges(scf_method, atoms_or_coords, a, charges, radii=None, 
-                #               rcut_ewald=None, rcut_hcore=None, unit=None)
-                mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
-                self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
+                print("QM/MM embedding for GPU. Adding pointcharges via create_mm_mol from gpu4pyscf")
+
+                from gpu4pyscf.qmmm.pbc import mm_mole
+                from gpu4pyscf.qmmm.pbc.itrf import qmmm_for_scf
+
+                mm_mol = mm_mole.create_mm_mol(MM_coords, MMcharges)
+                self.mf = qmmm_for_scf(self.mf, mm_mol)
+                #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
                 print("Here self.mf:", self.mf)
+                print("Type mf", type(self.mf))
             else:
                 print("Case CPU. Adding pointcharges via create_mm_mol")
                 #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
