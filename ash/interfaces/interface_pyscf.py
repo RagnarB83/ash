@@ -2330,6 +2330,7 @@ class PySCFTheory:
         #Setting number of orbitals as attribute of object
         print(self.mf)
         if self.platform == 'GPU':
+            import gpu4pyscf
             print("self.mf:", self.mf)
             print(self.mf.__dict__)
             if isinstance(self.mf, gpu4pyscf.qmmm.pbc.itrf.QMMMRKS):
