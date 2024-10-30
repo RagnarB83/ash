@@ -42,7 +42,8 @@ class PySCFTheory:
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
-                  mcpdft=False, mcpdft_functional=None):
+                  mcpdft=False, mcpdft_functional=None,
+                  PBC_lattice_vectors=None,):
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
@@ -143,6 +144,9 @@ class PySCFTheory:
             print("Warning: GPU platform for PySCF. This requires gpu4pyscf plugin to be available")
             self.GPU_pcgrad=True
             print("Pointcharge gradient will also be performed on GPU using cupy")
+        # QM/MM GPU4pyscf requires lattice vectors
+        self.PBC_lattice_vectors=PBC_lattice_vectors
+        
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
         self.conv_tol=conv_tol
@@ -2193,7 +2197,11 @@ class PySCFTheory:
                 from gpu4pyscf.qmmm.pbc import mm_mole
                 from gpu4pyscf.qmmm.pbc.itrf import qmmm_for_scf
 
-                mm_mol = mm_mole.create_mm_mol(MM_coords, MMcharges)
+                if self.PBC_lattice_vectors is None:
+                    print("PBC lattice vectors not set, needed for QM/MM with GPU4pyscf. Exiting")
+                    ashexit()
+
+                mm_mol = mm_mole.create_mm_mol(MM_coords, self.PBC_lattice_vectors, MMcharges)
                 self.mf = qmmm_for_scf(self.mf, mm_mol)
                 #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
                 print("Here self.mf:", self.mf)
