@@ -43,7 +43,7 @@ class PySCFTheory:
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None,
-                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=[0.8,1.2]):
+                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=None):
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
