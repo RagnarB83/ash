@@ -2199,9 +2199,9 @@ class PySCFTheory:
                 print("Case CPU. Adding pointcharges via create_mm_mol")
                 #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
                 #Newer syntax
-                #mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
-                #self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
-                pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
+                mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
+                self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
+                #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
                 print("Here self.mf:", self.mf)
                 print("Type mf", type(self.mf))
 
