@@ -2331,6 +2331,7 @@ class PySCFTheory:
         print(self.mf)
         if self.platform == 'GPU':
             import gpu4pyscf
+            import gpu4pyscf.qmmm
             print("self.mf:", self.mf)
             print(self.mf.__dict__)
             if isinstance(self.mf, gpu4pyscf.qmmm.pbc.itrf.QMMMRKS):
