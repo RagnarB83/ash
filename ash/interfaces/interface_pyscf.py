@@ -43,7 +43,7 @@ class PySCFTheory:
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None,
-                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6 ):
+                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=[0.8,1.2]):
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
@@ -148,6 +148,7 @@ class PySCFTheory:
         self.PBC_lattice_vectors=PBC_lattice_vectors
         self.rcut_ewald=rcut_ewald
         self.rcut_hcore=rcut_hcore
+        self.radii=radii
         
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
@@ -2203,7 +2204,7 @@ class PySCFTheory:
                     print("PBC lattice vectors not set, needed for QM/MM with GPU4pyscf. Exiting")
                     ashexit()
 
-                mm_mol = mm_mole.create_mm_mol(MM_coords, self.PBC_lattice_vectors, MMcharges, rcut_ewald=self.rcut_ewald, rcut_hcore=self.rcut_hcore)
+                mm_mol = mm_mole.create_mm_mol(MM_coords, self.PBC_lattice_vectors, MMcharges, radii=self.radii, rcut_ewald=self.rcut_ewald, rcut_hcore=self.rcut_hcore)
                 self.mf = qmmm_for_scf(self.mf, mm_mol)
                 #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
             else:
