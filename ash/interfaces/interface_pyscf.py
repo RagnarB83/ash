@@ -2193,14 +2193,12 @@ class PySCFTheory:
                 #add_mm_charges(scf_method, atoms_or_coords, a, charges, radii=None, 
                 #               rcut_ewald=None, rcut_hcore=None, unit=None)
                 mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
-                import pyscf.qmmm.itrf.qmmm_for_scf
                 self.mf = pyscf.qmmm.itrf.qmmm_for_scf.qmmm_for_scf(self.mf, mm_mol, platform=self.platform)
                 print("Here self.mf:", self.mf)
             else:
                 #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
                 #Newer syntax
                 mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
-                import pyscf.qmmm.itrf.qmmm_for_scf
                 self.mf = pyscf.qmmm.itrf.qmmm_for_scf.qmmm_for_scf(self.mf, mm_mol, platform=self.platform)
                 print("Here self.mf:", self.mf)
 
