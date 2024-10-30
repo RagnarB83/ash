@@ -2334,10 +2334,10 @@ class PySCFTheory:
             import gpu4pyscf.qmmm
             print("self.mf:", self.mf)
             print(self.mf.__dict__)
-            if isinstance(self.mf, gpu4pyscf.qmmm.pbc.itrf.QMMMRKS):
-                self.num_orbs = len(self.mf.mo_energy)
-            else:
-                self.num_orbs = len(self.mf.mo_energy[0])
+            #if isinstance(self.mf, gpu4pyscf.qmmm.pbc.itrf.QMMMRKS):
+            self.num_orbs = len(self.mf.mo_energy)
+            #else:
+            #    self.num_orbs = len(self.mf.mo_energy[0])
         else:
             if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS) :
                 self.num_orbs = len(self.mf.mo_occ) # Restricted
