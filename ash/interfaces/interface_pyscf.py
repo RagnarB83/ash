@@ -758,14 +758,14 @@ class PySCFTheory:
 
         #TODO: gpu4pyscf errors for Mulliken pop analysis. Probably fixed later
         #For now, we return
-        if self.platform == 'GPU':
-            print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
-            #import gpu4pyscf
-            #mull_pop_func = gpu4pyscf.dft.RKS.mulliken_pop
-            return
-        else:
-            mull_pop_func = pyscf.scf.rhf.mulliken_pop
-            mull_spinpop_func = pyscf.scf.uhf.mulliken_spin_pop
+        #if self.platform == 'GPU':
+        #    print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
+        #    #import gpu4pyscf
+        #    #mull_pop_func = gpu4pyscf.dft.RKS.mulliken_pop
+        #    return
+        #else:
+        mull_pop_func = pyscf.scf.rhf.mulliken_pop
+        mull_spinpop_func = pyscf.scf.uhf.mulliken_spin_pop
 
         if label==None:
             label=''
@@ -1818,9 +1818,9 @@ class PySCFTheory:
         if self.printlevel >=1:
             print("get_dipole_moment function.")
 
-        if self.platform =="GPU":
-            print("Dipole moment calculation not currently supported on GPU")
-            return None
+        #if self.platform =="GPU":
+        #    print("Dipole moment calculation not currently supported on GPU")
+        #    return None
 
         if label == None:
             label=""
@@ -2334,6 +2334,7 @@ class PySCFTheory:
             import gpu4pyscf.qmmm
             print("self.mf:", self.mf)
             print(self.mf.__dict__)
+            #TODO: need to account for UKS here later
             #if isinstance(self.mf, gpu4pyscf.qmmm.pbc.itrf.QMMMRKS):
             self.num_orbs = len(self.mf.mo_energy)
             #else:
@@ -2535,9 +2536,6 @@ class PySCFTheory:
         if self.printlevel >1:
             print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
 
-
-
-
     #Actual Run
     #Assumes prepare_run has been executed
     def actualrun(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None,
@@ -2578,6 +2576,13 @@ class PySCFTheory:
                 #NOTE: dm needs to have been created here (regardless of the type of guess)
                 #scf_result = self.mf.run(dm)
                 scf_result = self.run_SCF(dm=dm)
+
+            #GPU CHANGE
+            if self.platform == 'GPU':
+                print("GPU SCF calculation done.")
+                print("Converting mf object back to CPU")
+                self.mf = self.mf.to_cpu()
+
 
             #Possible stability analysis
             self.run_stability_analysis()
