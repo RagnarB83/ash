@@ -686,10 +686,18 @@ end"""
                 spinpops = grabspinpop_ORCA("Mulliken",self.filename+'.out')
                 self.properties["Mulliken_charges"] = charges
                 self.properties["Mulliken_spinpops"] = spinpops
-                print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
-                for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
-                    print("{:<2} {:<2}: {:>10.4f} {:>10.4f}".format(i,el,ch,sp))
-
+                if len(spinpops) == 0 and len(charges) != 0:
+                    print("{:<2} {:<2}  {:>10}".format(" ", " ", "Charge"))
+                    for i,(el, ch) in enumerate(zip(qm_elems,charges)):
+                        print("{:<2} {:<2}: {:>10.4f}".format(i,el,ch))
+                    print()
+                elif len(spinpops) != 0 and len(charges) != 0:
+                    print("{:<2} {:<2}  {:>10} {:>10}".format(" ", " ", "Charge", "Spinpop"))
+                    for i,(el, ch, sp) in enumerate(zip(qm_elems,charges, spinpops)):
+                        print("{:<2} {:<2}: {:>10.4f} {:>10.4f}".format(i,el,ch,sp))
+                    print()
+                else:
+                    print("Warning: No charges or spinpops were found in ORCA output. Continuing")
         #Grab energy
         if self.ignore_ORCA_error is False:
             self.energy=ORCAfinalenergygrab(outfile)
@@ -1985,24 +1993,24 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     if chargemodel == "Mulliken":
         with open(outputfile) as ofile:
             for line in ofile:
-                if grab==True:
+                if grab is True:
                     if 'Sum of atomic' in line:
                         grab=False
                     elif '------' not in line:
                         spinpops.append(float(line.split()[-1]))
-                if 'MULLIKEN ATOMIC CHARGES' in line:
+                if 'MULLIKEN ATOMIC CHARGES AND SPIN POPULATIONS' in line:
                     grab=True
     elif chargemodel == "Loewdin":
         with open(outputfile) as ofile:
             for line in ofile:
-                if grab==True:
+                if grab is True:
                     if 'Sum of atomic' in line:
                         grab=False
                     elif len(line.replace(' ','')) < 2:
                         grab=False
                     elif '------' not in line:
                         spinpops.append(float(line.split()[-1]))
-                if 'LOEWDIN ATOMIC CHARGES' in line:
+                if 'LOEWDIN ATOMIC CHARGES AND SPIN POPULATIONS' in line:
                     grab=True
     else:
         print("Unknown chargemodel. Exiting...")
@@ -2011,6 +2019,8 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     if BS is True:
         print("Broken-symmetry job detected. Only taking BS-state populations")
         spinpops=spinpops[int(len(spinpops)/2):]
+    #if len(spinpops) == 0:
+    #    print("Warning: No spinpopulations were found in ORCA outputfile")
     return spinpops
 
 def grabatomcharges_ORCA(chargemodel,outputfile):
