@@ -101,7 +101,21 @@ class ONIOMTheory(Theory):
         print("Embedding:", self.embedding)
         print("Theories:")
         for i,t in enumerate(self.theories_N):
-            print(f"Theory {i+1}:", t.theorynamelabel)
+            print(f"Theory {i+1}: {t.theorynamelabel} . Numcores: {t.numcores}")
+        # Setting numcores of ONIOMTheory object.
+
+        # numcores-setting in ONIOMTheory takes precedent
+        if numcores != 1:
+            print(f"Numcores keyword (numcores={numcores}) was set for ONIOMTheory.")
+            self.numcores=numcores
+            print(f"Warning: ONIOM will use {numcores} cores in general for all Theories (overriding numcores in Theory objects)")
+            for i,t in enumerate(self.theories_N):
+                t.numcores=numcores
+                print(f"Warning: Setting numcores={numcores} for Theory {i+1}: {t.theorynamelabel}")
+        else:
+            print("Warning: numcores attribute was not set for ONIOMTheory.")
+            print("This is fine, but check if numcores settings above are appropriate for each Theory object")
+
         print("\nRegions provided:")
         #
         for i,r in enumerate(self.regions_N):
@@ -143,6 +157,7 @@ class ONIOMTheory(Theory):
             print("No covalent ONIOM boundary. Linkatoms and dipole_correction options set to False")
             self.linkatoms=False
             self.dipole_correction=False
+            self.MMboundary_indices=[]
 
         if len(self.theories_N) > 3:
             print("Error: N>3 layer ONIOM is not yet supported")
@@ -313,6 +328,8 @@ class ONIOMTheory(Theory):
 
     # From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
     def get_MMboundary(self,scale,tol):
+        print("here")
+        exit()
         timeA=time.time()
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
@@ -338,9 +355,6 @@ class ONIOMTheory(Theory):
 
         # Charge/mult. Note: ignoring charge/mult from run keyword.
         # Charge/mult definitions for full system and regions must have been provided on object creation
-
-        if numcores is None:
-            numcores = self.numcores
 
         # Full coordinates
         full_coords=current_coords
@@ -385,9 +399,8 @@ class ONIOMTheory(Theory):
         ll_theory_full.filename = f"{label}"
         # RUN FULL
         res_full = ll_theory_full.run(current_coords=full_coords,
-                                    elems=full_elems, Grad=Grad, numcores=numcores,
+                                    elems=full_elems, Grad=Grad, numcores=ll_theory.numcores,
                                     label=label, charge=self.fullregion_charge, mult=self.fullregion_mult)
-
         if Grad:
             e_LL_full,g_LL_full = res_full
         else:
@@ -422,8 +435,7 @@ class ONIOMTheory(Theory):
 
         # LOOPING OVER OTHER THEORY-REGION COMBOS
         for j,region in enumerate(self.regions_N):
-            print("j:",j)
-            print("region:", region)
+            print("\nj:",j)
             # Skipping last region
             if j == len(self.regions_N)-1:
                 print("Last region always skipped")
@@ -443,7 +455,7 @@ class ONIOMTheory(Theory):
                 r_elems = [elems[x] for x in region]
 
                 other_elems = listdiff(full_elems, r_elems)
-                
+
                 other_region = listdiff(self.allatoms, region)
 
                 #############
@@ -491,50 +503,55 @@ class ONIOMTheory(Theory):
                     pointchargecoords = np.take(current_coords,PCregion,axis=0)
                     print("Num pointchargecoords:", len(pointchargecoords))
 
-                    #########################
-                    # Do Charge-shifting
-                    # #######################
-                    # Sherwoord charge-shifting: MM1 charge distributed to MM2 atoms
-                    if self.chargeboundary_method.lower() == "chargeshift":
-                        print("Chargeshiftmethod is: (regular) chargeshift")
-                        pointcharges = self.ShiftMMCharges(charges_qmregionzeroed) # Creates pointcharges
-                        print("Num pointcharges after shift:", len(pointcharges))
-                        print("Pointcharges after shift:", pointcharges)
+                    if self.linkatoms is True:
+                        print("Case: Electrostatic embedding with linkatoms")
+                        #########################
+                        # Do Charge-shifting
+                        # #######################
+                        # Sherwoord charge-shifting: MM1 charge distributed to MM2 atoms
+                        if self.chargeboundary_method.lower() == "chargeshift":
+                            print("Chargeshiftmethod is: (regular) chargeshift")
+                            pointcharges = self.ShiftMMCharges(charges_qmregionzeroed) # Creates pointcharges
+                            print("Num pointcharges after shift:", len(pointcharges))
+                            print("Pointcharges after shift:", pointcharges)
 
-                        # Only keep pointcharges for PC region
+                            # Only keep pointcharges for PC region
+                            pointcharges=[pointcharges[x] for x in PCregion]
+
+                            # DIPOLE CORRECTION (adds extra dipolecharges to pointcharges and pointchargecoords)
+                            if self.dipole_correction is True:
+                                print("Dipole correction is on. Adding dipole charges")
+                                dipole_charges, dipole_coords = self.SetDipoleCharges(current_coords) # Creates
+
+                                # Adding dipole charge coords to MM coords (given to QM code) and defining pointchargecoords
+                                if self.printlevel > 1:
+                                    print("Adding {} dipole charges to PC environment".format(len(dipole_charges)))
+
+                                # Adding dipole charges to MM charges list (given to QM code)
+                                pointcharges = list(pointcharges)+list(dipole_charges)
+                                print("Num pointcharges after dipole addition", len(pointcharges))
+                                print("pointcharges after dipole addition:", pointcharges)
+
+                                pointchargecoords = np.append(pointchargecoords, np.array(dipole_coords), axis=0)
+                                print("Num pointchargecoords after dipole addition", len(pointchargecoords))
+                                print("pointchargecoords after dipole addition:", pointchargecoords)
+                                # Using element H for dipole charges. Only matters for CP2K GEEP
+                                print("other_elems:", other_elems)
+                                mm_elems_for_qmprogram = other_elems + ['H']*len(dipole_charges)
+
+                                if self.printlevel > 1: print("Number of pointcharges after dipole addition: ", len(pointcharges))
+
+                            else:
+                                print("Dipole correction is off. Not adding any dipole charges")
+                                if self.printlevel > 1: print("Number of pointcharges: ", len(pointcharges))
+
+                        elif self.chargeboundary_method.lower() == "rcd":
+                            print("Chargeshiftmethod is: rcd")
+                            pointcharges, pointchargecoords = self.RCD_shifting(charges_qmregionzeroed, pointchargecoords, current_coords, PCregion)
+                    else:
+                        print("Case: Electrostatic embedding but no linkatoms")
+                        pointcharges = np.array(charges_qmregionzeroed)
                         pointcharges=[pointcharges[x] for x in PCregion]
-
-                        # DIPOLE CORRECTION (adds extra dipolecharges to pointcharges and pointchargecoords)
-                        if self.dipole_correction is True:
-                            print("Dipole correction is on. Adding dipole charges")
-                            dipole_charges, dipole_coords = self.SetDipoleCharges(current_coords) # Creates
-
-                            # Adding dipole charge coords to MM coords (given to QM code) and defining pointchargecoords
-                            if self.printlevel > 1:
-                                print("Adding {} dipole charges to PC environment".format(len(dipole_charges)))
-
-                            # Adding dipole charges to MM charges list (given to QM code)
-                            pointcharges = list(pointcharges)+list(dipole_charges)
-                            print("Num pointcharges after dipole addition", len(pointcharges))
-                            print("pointcharges after dipole addition:", pointcharges)
-
-                            pointchargecoords = np.append(pointchargecoords, np.array(dipole_coords), axis=0)
-                            print("Num pointchargecoords after dipole addition", len(pointchargecoords))
-                            print("pointchargecoords after dipole addition:", pointchargecoords)
-                            # Using element H for dipole charges. Only matters for CP2K GEEP
-                            print("other_elems:", other_elems)
-                            mm_elems_for_qmprogram = other_elems + ['H']*len(dipole_charges)
-
-                            if self.printlevel > 1: print("Number of pointcharges after dipole addition: ", len(pointcharges))
-
-                        else:
-                            print("Dipole correction is off. Not adding any dipole charges")
-                            if self.printlevel > 1: print("Number of pointcharges: ", len(pointcharges))
-
-
-                    elif self.chargeboundary_method.lower() == "rcd":
-                        print("Chargeshiftmethod is: rcd")
-                        pointcharges, pointchargecoords = self.RCD_shifting(charges_qmregionzeroed, pointchargecoords, current_coords, PCregion)
 
                     print("Region Num pointcharges after shift:", len(pointcharges))
                     print("Region Num pointchargecoords after shift:", len(pointchargecoords))
@@ -562,9 +579,9 @@ class ONIOMTheory(Theory):
                     theory.update_LJ_epsilons(other_region,[0.0 for x in other_region])
                     theory.modify_bonded_forces(other_region)
                     # NOTE: Fullsystem coordinates still passed here
-                    res = theory.run(current_coords=full_coords, elems=full_elems, Grad=Grad, numcores=numcores, label=label)
+                    res = theory.run(current_coords=full_coords, elems=full_elems, Grad=Grad, numcores=theory.numcores, label=label)
                 else:
-                    res = theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=numcores,
+                    res = theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=theory.numcores,
                                                     PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges, mm_elems=mm_elems_for_qmprogram,
                                                     label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
                 if PC and Grad:

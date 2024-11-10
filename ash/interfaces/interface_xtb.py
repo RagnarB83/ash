@@ -171,7 +171,7 @@ class xTBTheory:
             # Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
-                print("Running xtB using {} cores".format(numcores))
+                print(f"Running xtB using {numcores} cores")
                 print("...")
 
             run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
@@ -225,7 +225,7 @@ class xTBTheory:
             #Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
-                print("Running xtB using {} cores".format(numcores))
+                print(f"Running xtB using {numcores} cores")
                 print("...")
 
             run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
@@ -278,19 +278,19 @@ class xTBTheory:
             print("------------STARTING XTB INTERFACE-------------")
             print("Object-label:", self.label)
             print("Run-label:", label)
-        #Coords provided to run
+        # Coords provided to run
         if current_coords is not None:
             pass
         else:
             print("no current_coords")
             ashexit()
 
-        #Checking if charge and mult has been provided
+        # Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for xTBTheory.run method", BC.END)
             ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
                 print("No elems provided")
@@ -298,7 +298,7 @@ class xTBTheory:
             else:
                 qm_elems = elems
 
-        #Since xTB will stupidly run even when number of unp. electrons and num-electrons don't match
+        # Since xTB will stupidly run even when number of unp. electrons and num-electrons don't match
         check_multiplicity(qm_elems,charge,mult)
         if self.runmode=='inputfile':
             if self.printlevel >=2:
@@ -318,7 +318,7 @@ class xTBTheory:
             # Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
-                print("Running xtB using {} cores".format(self.numcores))
+                print(f"Running xtB using {numcores} cores")
                 print("...")
             if Grad:
                 #print("Grad is True")
