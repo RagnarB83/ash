@@ -320,28 +320,17 @@ class xTBTheory:
                 print("------------Running xTB-------------")
                 print(f"Running xtB using {numcores} cores")
                 print("...")
-            if Grad:
-                #print("Grad is True")
-                if PC:
-                    #print("PC is true")
-                    create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, printlevel=self.printlevel,
-                                      Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores)
-                else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                  Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent, numcores=numcores)
-            else:
-                if PC:
-                    create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent, numcores=numcores)
-                else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent, numcores=numcores)
+            # Create pcharge file if PC
+            if PC:
+                create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
+
+            # Run xTB (note: passing PC and Grad Booleans)
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, printlevel=self.printlevel, PC=PC,
+                                    Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
-            #Check if finished. Grab energy
+            # Check if finished. Grab energy
             if Grad==True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)
                 if PC==True:
@@ -553,7 +542,8 @@ def xtbVEAgrab(file):
     return VEA
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, PC=False,
+    electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
 
     if solvent is None:
         solvent_line1=""
@@ -564,11 +554,18 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
 
     basename = xyzfile.split('.')[0]
     uhf=mult-1
-    #Writing xtbinputfile to disk so that we use ORCA-style PCfile and embedding
-    with open('xtbinput', 'w') as xfile:
-        xfile.write('$embedding\n')
-        xfile.write('interface=orca\n')
-        xfile.write('end\n')
+
+    if PC is True:
+        # Writing xtbinputfile to disk so that we use ORCA-style PCfile and embedding
+        with open('xtbinput', 'w') as xfile:
+            xfile.write('$embedding\n')
+            xfile.write('interface=orca\n')
+            xfile.write('end\n')
+        xtbembed_line1="--input"
+        xtbembed_line2="xtbinput"
+    else:
+        xtbembed_line1=""
+        xtbembed_line2=""
 
     if 'GFN2' in xtbmethod.upper():
         xtbflag = 2
@@ -580,26 +577,31 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
         print("Unknown xtbmethod chosen. Exiting...")
         ashexit()
 
+    #Going through what flag to pass to xtb
     if Grad:
-        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2]
+        jobflag="--grad"
     elif Opt:
-        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--opt', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2 ]
+        jobflag="--opt"
     elif Hessian:
+        #Remove old hessian file
         try:
             os.remove("hessian")
         except:
             pass
-        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--hess', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2 ]
+        jobflag="--hess"
     else:
-        command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                      '--etemp', str(electronic_temp),  '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2]
+        jobflag=""
+
+    command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
+                '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2]
+    # Remove empty arguments
+    command_list=list(filter(None, command_list))
+
+
     if printlevel >= 1:
         print("Running xtb with these arguments:", command_list)
 
-    #Catching errors best we can
+    # Catching errors best we can
     try:
         with open(basename+'.out', 'w') as ofile:
             process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
@@ -623,7 +625,7 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
             try:
                 os.remove("xtbrestart")
             except FileNotFoundError:
-                print("Nof xtbrestart file present")
+                print("No xtbrestart file present")
             shutil.copyfile(basename+'.out', basename+'_firstrun.out')
             try:
                 with open(basename+'.out', 'w') as ofile:

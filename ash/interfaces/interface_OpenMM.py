@@ -570,7 +570,7 @@ class OpenMMTheory:
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms,
-                                                               switchDistance=switching_function_distance * openmm.unit.angstroms, residueTemplates=residueTemplates)
+                                                               switchDistance=switching_function_distance * openmm.unit.angstroms)
                 elif GROMACSfiles is True:
                     # NOTE: Gromacs has read PBC info from Gro file already
                     if self.printlevel > 0:
@@ -581,14 +581,14 @@ class OpenMMTheory:
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
-                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms, residueTemplates=residueTemplates)
+                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
                 elif Amberfiles is True:
                     # NOTE: PBC information should be in forcefield object already
                     self.system = self.forcefield.createSystem(nonbondedMethod=nonb_method_PBC,
                                                                constraints=self.autoconstraints,
                                                                hydrogenMass=self.hydrogenmass,
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
-                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms, residueTemplates=residueTemplates)
+                                                               nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms)
 
                     # print("self.system num con", self.system.getNumConstraints())
                 else:
