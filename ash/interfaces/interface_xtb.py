@@ -7,16 +7,19 @@ import time
 import ash.constants
 import ash.settings_solvation
 import ash.settings_ash
-from ash.functions.functions_general import ashexit, blankline,reverse_lines, print_time_rel,BC, print_line_with_mainheader,print_if_level
+from ash.functions.functions_general import (
+    ashexit, blankline, reverse_lines, print_time_rel, BC, 
+    print_line_with_mainheader, print_if_level
+)
 import ash.modules.module_coords
-from ash.modules.module_coords import elemstonuccharges, check_multiplicity, check_charge_mult
+from ash.modules.module_coords import (
+    elemstonuccharges,
+    check_multiplicity,
+    check_charge_mult
+)
 
-
-#Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
-#TODO: QM/MM pointcharges for library
-#TODO: THis should be a general interface so remove settings_solvation calls.
-#TODO: xtb. Need to check how compatible threading and multiprocessing of xtb is
-
+# Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
+# TODO: QM/MM pointcharges for library
 
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
@@ -26,46 +29,43 @@ class xTBTheory:
         self.theorytype="QM"
         self.analytic_hessian=False
 
-        #Hardness of pointcharge. GAM factor. Big number means PC behaviour
+        # Hardness of pointcharge. GAM factor. Big number means PC behaviour
         self.hardness=hardness_PC
 
-        #Accuracy (0.1 it quite tight)
+        # Accuracy (0.1 it quite tight)
         self.accuracy=accuracy
 
-        #Printlevel
+        # Printlevel
         self.printlevel=printlevel
 
-        #Controlling output in xtb-library
+        # Controlling output in xtb-library
         if self.printlevel >= 3:
-            self.verbosity = "full" #Full output
+            self.verbosity = "full"  # Full output
         elif self.printlevel == 2:
-            self.verbosity = "minimal" #  SCC iterations
+            self.verbosity = "minimal"  # SCC iterations
         elif self.printlevel <= 1:
-            self.verbosity = "muted" #nothing
+            self.verbosity = "muted"  # nothing
 
+        # Label to distinguish different xtb objects
+        self.label = label
+        self.numcores = numcores
+        self.filename = filename
+        self.xtbmethod = xtbmethod
+        self.maxiter = maxiter
+        self.runmode = runmode
 
-        #Label to distinguish different xtb objects
-        self.label=label
-
-
-        self.numcores=numcores
-        self.filename=filename
-        self.xtbmethod=xtbmethod
-        self.maxiter=maxiter
-        self.runmode=runmode
-
-        self.electronic_temp=electronic_temp
+        self.electronic_temp = electronic_temp
 
         print_line_with_mainheader("xTB INTERFACE")
         print("Runmode:", self.runmode)
         print("xTB method:", self.xtbmethod)
-        #Parallelization for both library and inputfile runmode
+        # Parallelization for both library and inputfile runmode
         print("xTB object numcores:", self.numcores)
-        #NOTE: Setting OMP_NUM_THREADS should be sufficient for performance. MKL threading should be handled by xTB
+        # NOTE: Setting OMP_NUM_THREADS should be sufficient for performance. MKL handled by xTB
         os.environ["OMP_NUM_THREADS"] = str(self.numcores)
-        #os.environ["MKL_NUM_THREADS"] = "1"
+        # os.environ["MKL_NUM_THREADS"] = "1"
 
-        #New library version. interface via conda: xtb-python
+        # New library version. interface via conda: xtb-python
         if self.runmode=='library':
             print("Using new library-based xTB interface")
             print("Importing xtb-python library")
@@ -78,10 +78,10 @@ class xTBTheory:
                 ashexit(code=9)
 
             # Creating variable and setting to None. Replaced by run
-            self.calcobject=None
+            self.calcobject = None
             print("xTB method:", self.xtbmethod)
 
-            #Creating solvent object if solvent requested
+            # Creating solvent object if solvent requested
             if solvent != None:
                 from xtb.utils import get_solvent, Solvent
                 self.solvent_object = get_solvent(solvent)
@@ -90,7 +90,7 @@ class xTBTheory:
                     ashexit()
             else:
                 self.solvent_object=None
-        #Inputfile
+        # Inputfile
         elif self.runmode=='inputfile':
             if xtbdir == None:
                 print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xtbdir variable inside settings_ash", BC.END)
@@ -101,7 +101,12 @@ class xTBTheory:
                     print(BC.WARNING,"Found no xtbdir variable in ash.settings_ash module either.",BC.END)
                     try:
                         self.xtbdir = os.path.dirname(shutil.which('xtb'))
-                        print(BC.OKGREEN,"Found xtb in path. Setting xtbdir to:", self.xtbdir, BC.END)
+                        print(
+                            BC.OKGREEN,
+                            "Found xtb in path. Setting xtbdir to:",
+                            self.xtbdir,
+                            BC.END
+                        )
                     except:
                         print("Found no xtb executable in path. Exiting... ")
                         ashexit()
@@ -118,10 +123,10 @@ class xTBTheory:
             print("unknown runmode. exiting")
             ashexit()
 
-    #Set numcores method
+    # Set numcores method
     def set_numcores(self,numcores):
-        self.numcores=numcores
-    #Cleanup after run.
+        self.numcores = numcores
+    # Cleanup after run.
     def cleanup(self):
         if self.printlevel >= 2:
             print("Cleaning up old xTB files")
@@ -133,7 +138,7 @@ class xTBTheory:
             except:
                 pass
 
-    #Do an xTB-Numfreq Hessian instead of ASH optimization. Useful for gas-phase chemistry (avoids too much ASH printout
+    # Do an xTB-Numfreq Hessian instead of ASH optimization. Useful for gas-phase chemistry (avoids too much ASH printout
     def Hessian(self, fragment=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING INTERNAL xTB Hessian-------------", BC.END)
@@ -144,10 +149,10 @@ class xTBTheory:
         else:
             print("Fragment provided to Hessian")
         #
-        current_coords=fragment.coords
-        elems=fragment.elems
+        current_coords = fragment.coords
+        elems = fragment.elems
 
-        #Check charge/mult
+        # Check charge/mult
         charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Hessian", theory=self)
 
         if numcores==None:
@@ -157,16 +162,16 @@ class xTBTheory:
         if self.printlevel >= 2:
             print("Creating inputfile:", self.filename+'.xyz')
 
-        #Check if mult is sensible
+        # Check if mult is sensible
         check_multiplicity(elems,charge,mult)
         if self.runmode=='inputfile':
-            #Write xyz_file
+            # Write xyz_file
             ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
 
-            #Run inputfile.
+            # Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
-                print("Running xtB using {} cores".format(numcores))
+                print(f"Running xtB using {numcores} cores")
                 print("...")
 
             run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
@@ -220,7 +225,7 @@ class xTBTheory:
             #Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
-                print("Running xtB using {} cores".format(numcores))
+                print(f"Running xtB using {numcores} cores")
                 print("...")
 
             run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
@@ -244,14 +249,15 @@ class xTBTheory:
             #Update coordinates in someway
         print("ASH fragment updated:", fragment)
         fragment.print_coords()
-        #Writing out fragment file and XYZ file
+        # Writing out fragment file and XYZ file
         fragment.print_system(filename='Fragment-optimized.ygg')
         fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
-        #Printing internal coordinate table
+        # Printing internal coordinate table
         ash.modules.module_coords.print_internal_coordinate_table(fragment)
         print_time_rel(module_init_time, modulename='xtB Opt-run', moduleindex=2)
         return
+    
     #Method to grab dipole moment from an xtb outputfile (assumes run has been executed)
     def get_dipole_moment(self):
         return grab_dipole_moment(self.filename+'.out')
@@ -272,19 +278,19 @@ class xTBTheory:
             print("------------STARTING XTB INTERFACE-------------")
             print("Object-label:", self.label)
             print("Run-label:", label)
-        #Coords provided to run
+        # Coords provided to run
         if current_coords is not None:
             pass
         else:
             print("no current_coords")
             ashexit()
 
-        #Checking if charge and mult has been provided
+        # Checking if charge and mult has been provided
         if charge == None or mult == None:
             print(BC.FAIL, "Error. charge and mult has not been defined for xTBTheory.run method", BC.END)
             ashexit()
 
-        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
                 print("No elems provided")
@@ -292,7 +298,7 @@ class xTBTheory:
             else:
                 qm_elems = elems
 
-        #Since xTB will stupidly run even when number of unp. electrons and num-electrons don't match
+        # Since xTB will stupidly run even when number of unp. electrons and num-electrons don't match
         check_multiplicity(qm_elems,charge,mult)
         if self.runmode=='inputfile':
             if self.printlevel >=2:
@@ -312,30 +318,19 @@ class xTBTheory:
             # Run inputfile.
             if self.printlevel >= 2:
                 print("------------Running xTB-------------")
-                print("Running xtB using {} cores".format(self.numcores))
+                print(f"Running xtB using {numcores} cores")
                 print("...")
-            if Grad:
-                #print("Grad is True")
-                if PC:
-                    #print("PC is true")
-                    create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, printlevel=self.printlevel,
-                                      Grad=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores)
-                else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                  Grad=True, electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent, numcores=numcores)
-            else:
-                if PC:
-                    create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent, numcores=numcores)
-                else:
-                    run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, maxiter=self.maxiter, printlevel=self.printlevel,
-                                      electronic_temp=self.electronic_temp, accuracy=self.accuracy, solvent=self.solvent, numcores=numcores)
+            # Create pcharge file if PC
+            if PC:
+                create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
+
+            # Run xTB (note: passing PC and Grad Booleans)
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, printlevel=self.printlevel, PC=PC,
+                                    Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
-            #Check if finished. Grab energy
+            # Check if finished. Grab energy
             if Grad==True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)
                 if PC==True:
@@ -547,7 +542,8 @@ def xtbVEAgrab(file):
     return VEA
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
+def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, PC=False,
+    electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
 
     if solvent is None:
         solvent_line1=""
@@ -558,11 +554,18 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
 
     basename = xyzfile.split('.')[0]
     uhf=mult-1
-    #Writing xtbinputfile to disk so that we use ORCA-style PCfile and embedding
-    with open('xtbinput', 'w') as xfile:
-        xfile.write('$embedding\n')
-        xfile.write('interface=orca\n')
-        xfile.write('end\n')
+
+    if PC is True:
+        # Writing xtbinputfile to disk so that we use ORCA-style PCfile and embedding
+        with open('xtbinput', 'w') as xfile:
+            xfile.write('$embedding\n')
+            xfile.write('interface=orca\n')
+            xfile.write('end\n')
+        xtbembed_line1="--input"
+        xtbembed_line2="xtbinput"
+    else:
+        xtbembed_line1=""
+        xtbembed_line2=""
 
     if 'GFN2' in xtbmethod.upper():
         xtbflag = 2
@@ -574,26 +577,31 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
         print("Unknown xtbmethod chosen. Exiting...")
         ashexit()
 
+    #Going through what flag to pass to xtb
     if Grad:
-        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--grad', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2]
+        jobflag="--grad"
     elif Opt:
-        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--opt', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2 ]
+        jobflag="--opt"
     elif Hessian:
+        #Remove old hessian file
         try:
             os.remove("hessian")
         except:
             pass
-        command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), '--hess', '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                              '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2 ]
+        jobflag="--hess"
     else:
-        command_list=[xtbdir + '/xtb', basename + '.xyz', '--gfn', str(xtbflag), '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
-                      '--etemp', str(electronic_temp),  '--acc', str(accuracy), '--parallel', str(numcores), '--input', 'xtbinput', solvent_line1, solvent_line2]
+        jobflag=""
+
+    command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
+                '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2]
+    # Remove empty arguments
+    command_list=list(filter(None, command_list))
+
+
     if printlevel >= 1:
         print("Running xtb with these arguments:", command_list)
 
-    #Catching errors best we can
+    # Catching errors best we can
     try:
         with open(basename+'.out', 'w') as ofile:
             process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
@@ -617,7 +625,7 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
             try:
                 os.remove("xtbrestart")
             except FileNotFoundError:
-                print("Nof xtbrestart file present")
+                print("No xtbrestart file present")
             shutil.copyfile(basename+'.out', basename+'_firstrun.out')
             try:
                 with open(basename+'.out', 'w') as ofile:
@@ -772,8 +780,8 @@ def create_xtb_pcfile_solvent(name,elems,coords,solventunitcharges,bulkcorr=Fals
             line = "{} {} {} {} {}".format(p, c[0]/bohr2ang, c[1]/bohr2ang, c[2]/bohr2ang, hardness)
             pcfile.write(line+'\n')
 
-#General xtb pointchargefile creation
-#Using ORCA-style format: pc-coords in Å
+# General xtb pointchargefile creation
+# Using ORCA-style format: pc-coords in Å
 def create_xtb_pcfile_general(coords,pchargelist,hardness=1000):
     bohr2ang=ash.constants.bohr2ang
     #https://xtb-docs.readthedocs.io/en/latest/pcem.html
@@ -784,7 +792,7 @@ def create_xtb_pcfile_general(coords,pchargelist,hardness=1000):
             pcfile.write(line+'\n')
 
 
-#Grab pointcharge gradient (Eh/Bohr) from xtb pcgrad file
+# Grab pointcharge gradient (Eh/Bohr) from xtb pcgrad file
 def xtbpcgradientgrab(numatoms):
     gradient = np.zeros((numatoms, 3))
     with open('pcgrad') as pgradfile:
@@ -796,7 +804,7 @@ def xtbpcgradientgrab(numatoms):
             gradient[count] = [val_x,val_y,val_z]
     return gradient
 
-#Grab xTB charges. Assuming default xTB charges that are inside file charges
+# Grab xTB charges. Assuming default xTB charges that are inside file charges
 def grabatomcharges_xTB():
     charges=[]
     with open('charges') as file:

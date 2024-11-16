@@ -42,7 +42,8 @@ class PySCFTheory:
                   AVAS=False, DMET_CAS=False, CAS_AO_labels=None, APC=False, apc_max_size=(2,2),
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
-                  mcpdft=False, mcpdft_functional=None):
+                  mcpdft=False, mcpdft_functional=None,
+                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=None):
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
@@ -143,6 +144,12 @@ class PySCFTheory:
             print("Warning: GPU platform for PySCF. This requires gpu4pyscf plugin to be available")
             self.GPU_pcgrad=True
             print("Pointcharge gradient will also be performed on GPU using cupy")
+        # QM/MM GPU4pyscf requires lattice vectors
+        self.PBC_lattice_vectors=PBC_lattice_vectors
+        self.rcut_ewald=rcut_ewald
+        self.rcut_hcore=rcut_hcore
+        self.radii=radii
+        
         self.scf_type=scf_type
         self.stability_analysis=stability_analysis
         self.conv_tol=conv_tol
@@ -751,14 +758,14 @@ class PySCFTheory:
 
         #TODO: gpu4pyscf errors for Mulliken pop analysis. Probably fixed later
         #For now, we return
-        if self.platform == 'GPU':
-            print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
-            #import gpu4pyscf
-            #mull_pop_func = gpu4pyscf.dft.RKS.mulliken_pop
-            return
-        else:
-            mull_pop_func = pyscf.scf.rhf.mulliken_pop
-            mull_spinpop_func = pyscf.scf.uhf.mulliken_spin_pop
+        #if self.platform == 'GPU':
+        #    print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
+        #    #import gpu4pyscf
+        #    #mull_pop_func = gpu4pyscf.dft.RKS.mulliken_pop
+        #    return
+        #else:
+        mull_pop_func = pyscf.scf.rhf.mulliken_pop
+        mull_spinpop_func = pyscf.scf.uhf.mulliken_spin_pop
 
         if label==None:
             label=''
@@ -1811,9 +1818,9 @@ class PySCFTheory:
         if self.printlevel >=1:
             print("get_dipole_moment function.")
 
-        if self.platform =="GPU":
-            print("Dipole moment calculation not currently supported on GPU")
-            return None
+        #if self.platform =="GPU":
+        #    print("Dipole moment calculation not currently supported on GPU")
+        #    return None
 
         if label == None:
             label=""
@@ -2184,16 +2191,30 @@ class PySCFTheory:
             # QM/MM pointcharge embedding
             #TODO: Gaussian blur option
             print("PC True. Adding pointcharges")
-            #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
 
-            #Newer syntax
-            mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
 
-            #Modified pyscf QM/MM routines
-            import ash.interfaces.interface_pyXscf_mods
-            print("self.platform:", self.platform)
-            self.mf = ash.interfaces.interface_pyXscf_mods.qmmm_for_scf(self.mf, mm_mol, platform=self.platform)
-            print("Here self.mf:", self.mf)
+            #GPU vs. CPU
+            if self.platform == 'GPU':
+                print("QM/MM embedding for GPU. Adding pointcharges via create_mm_mol from gpu4pyscf")
+
+                from gpu4pyscf.qmmm.pbc import mm_mole
+                from gpu4pyscf.qmmm.pbc.itrf import add_mm_charges, qmmm_for_scf
+
+                if self.PBC_lattice_vectors is None:
+                    print("PBC lattice vectors not set, needed for QM/MM with GPU4pyscf. Exiting")
+                    ashexit()
+
+                mm_mol = mm_mole.create_mm_mol(MM_coords, self.PBC_lattice_vectors, MMcharges, radii=self.radii, rcut_ewald=self.rcut_ewald, rcut_hcore=self.rcut_hcore)
+                self.mf = qmmm_for_scf(self.mf, mm_mol)
+                #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
+            else:
+                print("Case CPU. Adding pointcharges via create_mm_mol")
+                #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
+                #Newer syntax
+                mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
+                self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
+            #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
+            print("QM/MM mf object created:", self.mf)
 
         #Polarizable embedding option
         elif self.pe is True:
@@ -2307,10 +2328,22 @@ class PySCFTheory:
                 print("E_xc:", E_xc)
 
         #Setting number of orbitals as attribute of object
-        if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS) :
-            self.num_orbs = len(self.mf.mo_occ) # Restricted
+        print(self.mf)
+        if self.platform == 'GPU':
+            import gpu4pyscf
+            import gpu4pyscf.qmmm
+            print("self.mf:", self.mf)
+            print(self.mf.__dict__)
+            #TODO: need to account for UKS here later
+            #if isinstance(self.mf, gpu4pyscf.qmmm.pbc.itrf.QMMMRKS):
+            self.num_orbs = len(self.mf.mo_energy)
+            #else:
+            #    self.num_orbs = len(self.mf.mo_energy[0])
         else:
-            self.num_orbs = len(self.mf.mo_occ[0]) 
+            if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS) :
+                self.num_orbs = len(self.mf.mo_occ) # Restricted
+            else:
+                self.num_orbs = len(self.mf.mo_occ[0]) 
             
         if self.printlevel >= 1:
             print("Number of orbitals:", self.num_orbs)
@@ -2486,12 +2519,7 @@ class PySCFTheory:
         if self.CC or self.MP2:
             self.set_frozen_core_settings(qm_elems)
 
-        ##############################
-        #EMBEDDING OPTIONS
-        ##############################
-        self.set_embedding_options(PC=PC,MM_coords=current_MM_coords, MMcharges=MMcharges)
-        if self.printlevel >1:
-            print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
+
 
         #############################
         # PLATFORM CHANGE
@@ -2501,6 +2529,12 @@ class PySCFTheory:
             print("GPU platform requested. Will now convert mf object to GPU")
             self.mf = self.mf.to_gpu()
 
+        ##############################
+        #EMBEDDING OPTIONS
+        ##############################
+        self.set_embedding_options(PC=PC,MM_coords=current_MM_coords, MMcharges=MMcharges)
+        if self.printlevel >1:
+            print_time_rel(module_init_time, modulename='pySCF prepare', moduleindex=2)
 
     #Actual Run
     #Assumes prepare_run has been executed
@@ -2542,6 +2576,13 @@ class PySCFTheory:
                 #NOTE: dm needs to have been created here (regardless of the type of guess)
                 #scf_result = self.mf.run(dm)
                 scf_result = self.run_SCF(dm=dm)
+
+            #GPU CHANGE
+            if self.platform == 'GPU':
+                print("GPU SCF calculation done.")
+                print("Converting mf object back to CPU")
+                self.mf = self.mf.to_cpu()
+
 
             #Possible stability analysis
             self.run_stability_analysis()
