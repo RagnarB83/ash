@@ -357,6 +357,8 @@ def n_max_values(l,num):
 def print_if_level(var, printlevel,refprintlevel):
     if printlevel >= refprintlevel:
         print(var)
+    #else:
+    #    print("Printlevel too low")
 
 # Debug print. Behaves like print but reads global debug var first
 def printdebug(string, var=''):

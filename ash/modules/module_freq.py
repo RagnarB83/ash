@@ -298,7 +298,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
 
             theory.printlevel=printlevel
-            print("geo:", geo)
             energy, gradient = theory.run(current_coords=geo, elems=elems, Grad=True, charge=charge, mult=mult)
             displacement_grad_dictionary[stringlabel] = gradient
 

@@ -165,6 +165,10 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     print("-------------------------------------------------------------------------")
     if fragment.numatoms != 1:
         if Opt_theory != None:
+            #Cleanup
+            Opt_theory.cleanup()
+            #Avoids problems with GBW-files
+            Opt_theory.path_to_last_gbwfile_used=None
             #DFT-opt
             ash.interfaces.interface_geometric_new.geomeTRICOptimizer(theory=Opt_theory,fragment=fragment, charge=charge, mult=mult)
             print("-------------------------------------------------------------------------")
@@ -179,7 +183,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
                     analyticHessian=False
 
             #DFT-FREQ
-            if analyticHessian == True:
+            if analyticHessian is True:
                 print("Analytic Hessian calculation")
                 freq_result = ash.AnFreq(fragment=fragment, theory=Opt_theory, charge=charge, mult=mult)
                 thermochem = freq_result.thermochemistry
