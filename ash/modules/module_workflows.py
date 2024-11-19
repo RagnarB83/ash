@@ -181,7 +181,7 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
             #DFT-FREQ
             if analyticHessian == True:
                 print("Analytic Hessian calculation")
-                freq_result = ash.AnFreq(fragment=fragment, theory=Opt_theory, numcores=numcores, charge=charge, mult=mult)
+                freq_result = ash.AnFreq(fragment=fragment, theory=Opt_theory, charge=charge, mult=mult)
                 thermochem = freq_result.thermochemistry
             else:
                 print("Numerical Hessian calculation")

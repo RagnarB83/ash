@@ -1015,6 +1015,8 @@ class OpenMMTheory:
             print("Warning: neither user keyword PBCvectors or periodic_cell_dimensions was set (None)")
             print("However, we found PBC information inside PDB-topology of the PDB-file that was read in. Using this and continuing")
             #Should work automatically
+        elif self.topology.getPeriodicBoxVectors() is not None:
+            print("Found PBC information in topology object. Using this and continuing")
         else:
             print("Found no PBC information, yet periodicity is requested. Exiting!")
             ashexit()
