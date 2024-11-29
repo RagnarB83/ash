@@ -175,7 +175,7 @@ class xTBTheory:
                 print("...")
 
             run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
-                                    Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp,
+                                    Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores)
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -229,7 +229,7 @@ class xTBTheory:
                 print("...")
 
             run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
-                                    Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp,
+                                    Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores)
 
             if self.printlevel >= 2:
@@ -325,7 +325,7 @@ class xTBTheory:
                 create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
 
             # Run xTB (note: passing PC and Grad Booleans)
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, printlevel=self.printlevel, PC=PC,
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
                                     Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores)
 
             if self.printlevel >= 2:
