@@ -555,7 +555,7 @@ class Fragment:
         try:
             import openmm.app
         except ImportError:
-            print("Error: OpenMM not installed. Cannot read PDB file.")
+            print("Error: OpenMM not found. Cannot read PDB file.")
             ashexit()
         pdb = openmm.app.PDBFile(filename)
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
@@ -763,7 +763,7 @@ class Fragment:
         try:
             import openmm.app
         except ImportError:
-            print("Error: OpenMM not installed. Cannot define a topology")
+            print("Error: OpenMM not found. Cannot define a topology")
             ashexit()
         print("Defining new basic single-chain, single-residue topology")
         self.pdb_topology = openmm.app.Topology()
@@ -792,7 +792,7 @@ class Fragment:
         try:
             import openmm.app
         except ImportError:
-            print("Error: OpenMM not installed. Cannot read PDB file.")
+            print("Error: OpenMM not found. Cannot read PDB file.")
             ashexit()
 
         #Adding extension
