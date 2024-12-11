@@ -3713,7 +3713,7 @@ class OpenMM_MDclass:
         #CheckpointReporter
         print("Creating CheckpointReporter that will write a restartable checkpointfile every X steps")
         checkpointfilename='OpenMM_MD.chk'
-        simulation.reporters.append(openmm.app.CheckpointReporter(checkpointfilename, self.traj_frequency*10))
+        simulation.reporters.append(openmm.app.CheckpointReporter(checkpointfilename, self.traj_frequency*1))
         #StateDataReporter
         print("Creating StateDataReporter that will write to stdout")
         statedatareporter_stdout=openmm.app.StateDataReporter(stdout, self.traj_frequency, step=True, time=True,
