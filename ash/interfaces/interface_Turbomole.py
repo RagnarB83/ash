@@ -12,8 +12,9 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 class TurbomoleTheory:
     def __init__(self, turbodir=None, filename='XXX', printlevel=2, label="Turbomole",
-                numcores=1, functional=None, gridsize="m4", scfconf=7, symmetry="c1",
-                basis=None, jbasis=None, scfiterlimit=50, maxcor=500, ricore=500):
+                numcores=1, parallelization='SMP', functional=None, gridsize="m4", scfconf=7, symmetry="c1", rij=True,
+                basis=None, jbasis=None, scfiterlimit=50, maxcor=500, ricore=500,
+                mp2=False):
 
         self.theorynamelabel="Turbomole"
         self.label=label
@@ -31,6 +32,9 @@ class TurbomoleTheory:
         self.jbasis=jbasis
         self.maxcor=maxcor
         self.ricore=ricore
+        self.rij=rij
+        self.mp2=mp2
+        self.parallelization=parallelization
 
         # Basis set
         if basis is None:
@@ -39,27 +43,51 @@ class TurbomoleTheory:
         else:
             self.basis=basis
 
-        # Turbomole executable to use
-        if functional is not None:
-            print("Functional provided. Choosing Turbomole executable to be ridft")
-            #TODO: choose RI or not
-            self.turbo_exe="ridft"
-            self.filename="ridft"
+        # MP2
+        if self.mp2 is True:
+            self.rij=False
+            self.dft=False
+            if functional is not None:
+                print("Error: MP2 is True but a functional was provided. Exiting...")
+                ashexit()
 
-        print("self.turbo_exe:", self.turbo_exe)
+            self.turbo_scf_exe="dscf"
+            self.filename_scf="dscf"
+
+            self.turbo_mp2_exe="ricc2"
+            self.filename_mp2="ricc2"
+
+            self.turbo_exe_grad="grad"
+        # DFT
+        elif functional is not None:
+            self.dft=True
+            print("Functional provided. Choosing Turbomole executables to be ridft and rdgrad")
+            if rij is True:
+                self.turbo_scf_exe="ridft"
+                self.turbo_exe_grad="rdgrad"
+                self.filename_scf="ridft"
+                self.filename_grad="rdgrad"
+            else:
+                self.turbo_scf_exe="dscf"
+                self.turbo_exe_grad="grad"
+                self.filename_scf="dscf"
+                self.filename_grad="grad"      
+        print("self.turbo_scf_exe:", self.turbo_scf_exe)
         print("jbasis:", jbasis)
         # Checking for ridft and jbas
-        if self.turbo_exe =="ridft" and jbasis is None:
+        if self.turbo_scf_exe =="ridft" and jbasis is None:
             print("No jbasis provided for ridft. Exiting...")
             ashexit()
         else:
             self.jbasis=jbasis
 
-
         # Checking OpenMPI
         if numcores != 1:
             print(f"Parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version is available in your environment")
-            check_OpenMPI()
+            print("parallelization:", self.parallelization)
+            if self.parallelization == 'MPI':
+                print("Parallelization is MPI. Checking availability of OpenMPI")
+                check_OpenMPI()
 
         # Finding Turbomole
         if turbodir is None:
@@ -86,7 +114,10 @@ class TurbomoleTheory:
     def set_numcores(self,numcores):
         self.numcores=numcores
     def cleanup(self):
-        print(f"{self.theorynamelabel} cleanup not yet implemented.")
+        files=['coord','control','energy','gradient', 'auxbasis', 'basis', 'mos', 'ridft.out', 'rdgrad.out', 'ricc2.out', 'statistics']
+        for f in files:
+            if os.path.exists(f):
+                os
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -121,39 +152,57 @@ class TurbomoleTheory:
             else:
                 qm_elems = elems
 
+        # Delete old files
+        files=['coord','control','energy','gradient']
+        for f in files:
+            if os.path.exists(f):
+                os.remove(f)
+
         # Create coord file
         create_coord_file(qm_elems,current_coords)
 
         #
-        create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, 
-                            symmetry="c1", basis=self.basis, jbasis=self.jbasis, 
+        create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
+                            symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
                             scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore)
-
+        #################
         # Run Turbomole
-        print("Running Turbomole executable:", self.turbo_exe)
-        run_turbo(self.turbodir,self.filename, exe=self.turbo_exe, 
-                  numcores=self.numcores)
+        #################
 
-        # Grab energy
-        exit()
+        print("Running Turbomole executable:", self.turbo_scf_exe)
+        # SCF-energy only
+        run_turbo(self.turbodir,self.filename_scf, exe=self.turbo_scf_exe, parallelization=self.parallelization,
+                  numcores=self.numcores)
+        self.energy = grab_energy_from_energyfile()
+        print("SCF Energy:", self.energy)
+
+        # MP2 energy only
+        if self.mp2 is True:
+            print("MP2 is True. Running:", self.turbo_mp2_exe)
+            run_turbo(self.turbodir,self.filename_mp2, exe=self.turbo_mp2_exe, parallelization=self.parallelization,
+                  numcores=self.numcores)
+            mp2_corr_energy = grab_energy_from_energyfile(column=4)
+            print("MP2 correlation energy:", mp2_corr_energy)
+            self.energy += mp2_corr_energy
+            print("Total MP2 energy:", self.energy)
+
+        # GRADIENT
+        if Grad is True:
+            print("Running Turbomole-gradient executable")
+            print("self.turbo_exe_grad:", self.turbo_exe_grad)
+            print("self.filename_grad:", self.filename_grad)
+            run_turbo(self.turbodir,self.filename_grad, exe=self.turbo_exe_grad, parallelization=self.parallelization,
+                  numcores=self.numcores)
+            self.gradient = grab_gradient(len(current_coords))
+
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
+        print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
         # Grab gradient if calculated
         if Grad is True:
-            #Grab gradient
-            self.gradient = grab_gradient_NWChem(self.filename+'.out',len(current_coords))
-            #Grab PCgradient from separate file
-            if PC is True:
-                self.pcgradient = grab_pcgradient_NWChem(f'{self.filename}.bqforce.dat',len(MMcharges))
-                print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
-                return self.energy, self.gradient, self.pcgradient
-            else:
-                print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
-                return self.energy, self.gradient
-        #Returning energy without gradient
+            return self.energy, self.gradient
         else:
-            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
 
 
@@ -169,7 +218,7 @@ def create_coord_file(elems,coords):
             coordfile.write(f"{coords[i][0]*ang2bohr} {coords[i][1]*ang2bohr} {coords[i][2]*ang2bohr} {elems[i]}\n")
         coordfile.write("$end\n")
 
-def create_control_file(functional="lh12ct-ssifpw92", gridsize="m4", scfconf="7", symmetry="c1",
+def create_control_file(functional="lh12ct-ssifpw92", gridsize="m4", scfconf="7", symmetry="c1", rij=True, dft=True, mp2=False,
                         basis="def2-SVP", jbasis="def2-SVP", scfiterlimit=30, maxcor=500, ricore=500):
 
 #Skipping orb section for now
@@ -193,22 +242,64 @@ $maxcor    {maxcor} MiB  per_core
 $scforbitalshift  automatic=.1
 $energy    file=energy
 $grad    file=gradient
-$dft
-    functional   {functional}
-    gridsize   {gridsize}
 $scfconv   {scfconf}
-$ricore      {ricore}
-$rij
-$jbas    file=auxbasis
-$end"""
+"""
+
+    if dft is True:
+        print("hre")
+        controlstring += f"""$dft
+    functional   {functional}
+    gridsize   {gridsize}"""
+
+    if mp2 is True:
+        controlstring += f"""$denconv .1d-6
+$ricc2
+mp2"""
+
+
+    if rij is True:
+        controlstring += f"""$ricore      {maxcor}
+$rij"""
+
+    controlstring+="\n$end"
 
     writestringtofile(controlstring, 'control')
 
 
-def run_turbo(turbodir,filename, exe="ridft", numcores=1):
+def run_turbo(turbodir,filename, exe="ridft", numcores=1, parallelization=None):
     print(f"Running executable {exe} and writing to output {filename}.out")
     with open(filename+'.out', 'w') as ofile:
-        #if numcores >1:
-        #    process = sp.run(['mpirun', '-np', str(numcores), turbodir + '/nwchem', filename+'.nw'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
-        #else:
-        process = sp.run([turbodir + '/ridft'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        if numcores >1:
+            if parallelization == 'MPI':
+                os.environ['PARA_ARCH'] = 'MPI'
+                os.environ['PARNODES'] = str(numcores)
+                process = sp.run(['mpirun', '-np', str(numcores), turbodir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            elif parallelization == 'SMP':
+                os.environ['PARA_ARCH'] = 'SMP'
+                turbodir=
+                process = sp.run([turbodir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_new=True)
+        else:
+            process = sp.run([turbodir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
+def grab_energy_from_energyfile(column=1):
+    with open('energy', 'r') as energyfile:
+        for line in energyfile:
+            if '$end' in line:
+                return energy
+            if "$energy" not in line:
+                energy = float(line.split()[column])
+    return energy
+
+def grab_gradient(numatoms):
+    gradient = np.zeros((numatoms,3))
+    with open('gradient', 'r') as gradfile:
+        gradlines = gradfile.readlines()
+    counter=0
+    for i,line in enumerate(gradlines):
+        if '$end' in line:
+            break
+        if i > 4:
+            gradient[counter] = [float(j.replace('D','E')) for j in line.split()]
+            counter+=1
+
+    return gradient
