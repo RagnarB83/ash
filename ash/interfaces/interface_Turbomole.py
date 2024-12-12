@@ -11,7 +11,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 # Turbomole Theory object.
 
 class TurbomoleTheory:
-    def __init__(self, turbodir=None, filename='XXX', printlevel=2, label="Turbomole",
+    def __init__(self, TURBODIR=None, turbomoledir=None, filename='XXX', printlevel=2, label="Turbomole",
                 numcores=1, parallelization='SMP', functional=None, gridsize="m4", scfconf=7, symmetry="c1", rij=True,
                 basis=None, jbasis=None, scfiterlimit=50, maxcor=500, ricore=500,
                 mp2=False):
@@ -90,21 +90,32 @@ class TurbomoleTheory:
                 check_OpenMPI()
 
         # Finding Turbomole
-        if turbodir is None:
-            print(BC.WARNING, f"No turbodir argument passed to {self.theorynamelabel}Theory. Attempting to find turbodir variable inside settings_ash", BC.END)
+        if TURBODIR is not None:
+            self.turbomoledir = TURBODIR
+            self.TURBODIR=TURBODIR
+        elif turbomoledir is None:
+            print(BC.WARNING, f"No turbomoledir argument passed to {self.theorynamelabel}Theory. Attempting to find turbomoledir variable inside settings_ash", BC.END)
             try:
                 print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
-                self.turbodir=ash.settings_ash.settings_dict["turbodir"]
+                self.turbomoledir=ash.settings_ash.settings_dict["turbomoledir"]
             except:
-                print(BC.WARNING,"Found no turbodir variable in settings_ash module either.",BC.END)
+                print(BC.WARNING,"Found no turbomoledir variable in settings_ash module either.",BC.END)
                 try:
-                    self.turbodir = os.path.dirname(shutil.which('ridft'))
-                    print(BC.OKGREEN,"Found ridft (Turbomol executable) in PATH. Setting turbodir to:", self.turbodir, BC.END)
+                    self.turbomoledir = os.path.dirname(shutil.which('ridft'))
+                    print(BC.OKGREEN,"Found ridft (Turbomol executable) in PATH. Setting turbomoledir to:", self.turbomoledir, BC.END)
                 except:
                     print(BC.FAIL,"Found no ridft executable in PATH. Exiting... ", BC.END)
                     ashexit()
+            self.TURBODIR = os.path.dirname(os.path.dirname(self.turbomoledir))
         else:
-            self.turbodir = turbodir
+            self.turbomoledir = turbomoledir
+            self.TURBODIR = os.path.dirname(os.path.dirname(self.turbomoledir))
+
+        # Setting environment variable TURBODIR (for basis set )
+        os.environ['TURBODIR'] = self.TURBODIR
+        print("TURBODIR:", self.TURBODIR)
+
+
 
         # Printlevel
         self.printlevel=printlevel
@@ -171,7 +182,7 @@ class TurbomoleTheory:
 
         print("Running Turbomole executable:", self.turbo_scf_exe)
         # SCF-energy only
-        run_turbo(self.turbodir,self.filename_scf, exe=self.turbo_scf_exe, parallelization=self.parallelization,
+        run_turbo(self.turbomoledir,self.filename_scf, exe=self.turbo_scf_exe, parallelization=self.parallelization,
                   numcores=self.numcores)
         self.energy = grab_energy_from_energyfile()
         print("SCF Energy:", self.energy)
@@ -179,7 +190,7 @@ class TurbomoleTheory:
         # MP2 energy only
         if self.mp2 is True:
             print("MP2 is True. Running:", self.turbo_mp2_exe)
-            run_turbo(self.turbodir,self.filename_mp2, exe=self.turbo_mp2_exe, parallelization=self.parallelization,
+            run_turbo(self.turbomoledir,self.filename_mp2, exe=self.turbo_mp2_exe, parallelization=self.parallelization,
                   numcores=self.numcores)
             mp2_corr_energy = grab_energy_from_energyfile(column=4)
             print("MP2 correlation energy:", mp2_corr_energy)
@@ -191,7 +202,7 @@ class TurbomoleTheory:
             print("Running Turbomole-gradient executable")
             print("self.turbo_exe_grad:", self.turbo_exe_grad)
             print("self.filename_grad:", self.filename_grad)
-            run_turbo(self.turbodir,self.filename_grad, exe=self.turbo_exe_grad, parallelization=self.parallelization,
+            run_turbo(self.turbomoledir,self.filename_grad, exe=self.turbo_exe_grad, parallelization=self.parallelization,
                   numcores=self.numcores)
             self.gradient = grab_gradient(len(current_coords))
 
@@ -266,20 +277,22 @@ $rij"""
     writestringtofile(controlstring, 'control')
 
 
-def run_turbo(turbodir,filename, exe="ridft", numcores=1, parallelization=None):
+def run_turbo(turbomoledir,filename, exe="ridft", numcores=1, parallelization=None):
     print(f"Running executable {exe} and writing to output {filename}.out")
+
     with open(filename+'.out', 'w') as ofile:
         if numcores >1:
             if parallelization == 'MPI':
+                print(f"Warning: make sure that turbomoledir ({turbomoledir}) is set to the correct path for MPI parallelization")
                 os.environ['PARA_ARCH'] = 'MPI'
                 os.environ['PARNODES'] = str(numcores)
-                process = sp.run(['mpirun', '-np', str(numcores), turbodir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                process = sp.run(['mpirun', '-np', str(numcores), turbomoledir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             elif parallelization == 'SMP':
                 os.environ['PARA_ARCH'] = 'SMP'
-                #turbodir=
-                process = sp.run([turbodir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_new=True)
+                print(f"Warning: make sure that turbomoledir ({turbomoledir}) is set to the correct path for SMP parallelization")
+                process = sp.run([turbomoledir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_new=True)
         else:
-            process = sp.run([turbodir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+            process = sp.run([turbomoledir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 def grab_energy_from_energyfile(column=1):
     with open('energy', 'r') as energyfile:
