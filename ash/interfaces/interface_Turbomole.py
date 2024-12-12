@@ -276,7 +276,7 @@ def run_turbo(turbodir,filename, exe="ridft", numcores=1, parallelization=None):
                 process = sp.run(['mpirun', '-np', str(numcores), turbodir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             elif parallelization == 'SMP':
                 os.environ['PARA_ARCH'] = 'SMP'
-                turbodir=
+                #turbodir=
                 process = sp.run([turbodir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_new=True)
         else:
             process = sp.run([turbodir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
