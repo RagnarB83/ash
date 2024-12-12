@@ -257,7 +257,6 @@ $scfconv   {scfconf}
 """
 
     if dft is True:
-        print("hre")
         controlstring += f"""$dft
     functional   {functional}
     gridsize   {gridsize}"""
@@ -283,11 +282,13 @@ def run_turbo(turbomoledir,filename, exe="ridft", numcores=1, parallelization=No
     with open(filename+'.out', 'w') as ofile:
         if numcores >1:
             if parallelization == 'MPI':
+                print("Parallelization is MPI")
                 print(f"Warning: make sure that turbomoledir ({turbomoledir}) is set to the correct path for MPI parallelization")
                 os.environ['PARA_ARCH'] = 'MPI'
                 os.environ['PARNODES'] = str(numcores)
                 process = sp.run(['mpirun', '-np', str(numcores), turbomoledir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             elif parallelization == 'SMP':
+                print("Parallelization is SMP")
                 os.environ['PARA_ARCH'] = 'SMP'
                 print(f"Warning: make sure that turbomoledir ({turbomoledir}) is set to the correct path for SMP parallelization")
                 process = sp.run([turbomoledir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_new=True)
@@ -295,6 +296,7 @@ def run_turbo(turbomoledir,filename, exe="ridft", numcores=1, parallelization=No
             process = sp.run([turbomoledir + f'/{exe}'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 def grab_energy_from_energyfile(column=1):
+    energy = None
     with open('energy', 'r') as energyfile:
         for line in energyfile:
             if '$end' in line:
