@@ -1822,22 +1822,19 @@ def linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad):
 
 
 # Convenient function to calculate and decompose the QM/MM energy of a system and QMMMTheory object
-def compute_decomposed_QM_MM_energy(fragment=None, theory=None, mm_theory=None):
+def compute_decomposed_QM_MM_energy(fragment=None, theory=None):
 
     print_line_with_mainheader("Decomposed QM/MM Energy Calculation")
 
     if isinstance(theory, QMMMTheory) is False:
         print("Please provide a QMMMTheory object as theory.")
         ashexit()
-    if mm_theory is None:
-        print("Please provide a MMTheory object as mm_theory.")
-        ashexit()
+    #if mm_theory is None:
+    #    print("Please provide a MMTheory object as mm_theory.")
+    #    ashexit()
     if theory.qm_charge is None or theory.qm_mult is None:
         print("Please define qm_charge and qm_mult attributes in the QMMMtheory object")
         ashexit()
-
-    #Keeping unmodified copy of mm_theory
-    mm_theory_orig = copy.deepcopy(mm_theory)
 
 
     #Single-point energy calculation of QM/MM object
