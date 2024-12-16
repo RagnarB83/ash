@@ -91,7 +91,7 @@ class TurbomoleTheory:
 
         # Finding Turbomole
         if TURBODIR is not None:
-            self.turbomoledir = TURBODIR
+            #self.turbomoledir = TURBODIR
             self.TURBODIR=TURBODIR
         elif turbomoledir is None:
             print(BC.WARNING, f"No turbomoledir argument passed to {self.theorynamelabel}Theory. Attempting to find turbomoledir variable inside settings_ash", BC.END)
@@ -114,8 +114,6 @@ class TurbomoleTheory:
         # Setting environment variable TURBODIR (for basis set )
         os.environ['TURBODIR'] = self.TURBODIR
         print("TURBODIR:", self.TURBODIR)
-
-
 
         # Printlevel
         self.printlevel=printlevel

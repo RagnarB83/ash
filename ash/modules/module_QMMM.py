@@ -335,7 +335,7 @@ class QMMMTheory:
         print_time_rel(module_init_time, modulename='QM/MM object creation', currprintlevel=self.printlevel, moduleindex=3)
 
 
-    #From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
+    # From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
     def get_MMboundary(self,scale,tol):
         timeA=time.time()
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
@@ -694,7 +694,7 @@ class QMMMTheory:
         except:
             print("Error: Could not grab dipole moment from QM-part of QM/MM theory.")
         return dipole
-    #Method to polarizability from outputfile (assumes run has been executed)
+    # Method to polarizability from outputfile (assumes run has been executed)
     def get_polarizability_tensor(self):
         try:
             print("Grabbing polarizability from QM-part of QM/MM theory.")
@@ -741,7 +741,6 @@ class QMMMTheory:
 
     # Mechanical embedding run
     def mech_run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
-        print("Mechanical embedding not ready yet")
         module_init_time=time.time()
         CheckpointTime = time.time()
         if self.printlevel >= 2:
@@ -1820,3 +1819,84 @@ def linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad):
     #Returning forcemod as QM1 and MM1 contributions
     # subtract from QM1,  add to MM1
     return -1*forcemod,forcemod
+
+
+# Convenient function to calculate and decompose the QM/MM energy of a system and QMMMTheory object
+def compute_decomposed_QM_MM_energy(fragment=None, theory=None, mm_theory=None):
+
+    print_line_with_mainheader("Decomposed QM/MM Energy Calculation")
+
+    if isinstance(theory, QMMMTheory) is False:
+        print("Please provide a QMMMTheory object as theory.")
+        ashexit()
+    if mm_theory is None:
+        print("Please provide a MMTheory object as mm_theory.")
+        ashexit()
+    if theory.qm_charge is None or theory.qm_mult is None:
+        print("Please define qm_charge and qm_mult attributes in the QMMMtheory object")
+        ashexit()
+
+    #Keeping unmodified copy of mm_theory
+    mm_theory_orig = copy.deepcopy(mm_theory)
+
+
+    #Single-point energy calculation of QM/MM object
+    theory.printlevel=0
+    result = ash.Singlepoint(theory=theory, fragment=fragment, printlevel=0)
+
+    # Grabbing the basic terms (the ones always calculated)
+    E_QM_MM_tot = result.energy
+    E_QM_pol = result.qm_energy
+    E_MM_mod = result.mm_energy
+
+    # Extra calculation to decompose E_MM_mod into pure E_MM and QM-MM vdw terms
+    #Updating MM theory: etting LJ part of QM-sites to zero. and recalculating MM part
+    theory.mm_theory.update_LJ_epsilons(theory.qmatoms, [0.0 for i in theory.qmatoms])
+    result_MM_mod2 = ash.Singlepoint(theory=theory.mm_theory, fragment=fragment, charge=0, mult=1, printlevel=0)
+    #Taking the difference in MM energies: will be the QM-MM Lennard-Jones contribution
+    E_QM_MM_vdw = E_MM_mod - result_MM_mod2.energy
+
+    # QM-MM bonded (covalent) term
+    print("WARNING: QM-MM bonded term not implemented yet. Setting to zero.")
+    print("This means that the MM term still contains the QM-MM bonded contribution")
+    E_QM_MM_bond=0.0
+
+    E_MM_pure=result_MM_mod2.energy
+
+
+    ######################################
+    # Extra calculation to decompose E_QM_pol into pure E_QM and elstatc energy
+    #Defining a mechanical QM/MM object for the purpose of getting the pure QM-energy (no polarization)
+    QM_MM_mech = QMMMTheory(fragment=fragment, qm_theory=theory.qm_theory, mm_theory=theory.mm_theory, qmatoms=theory.qmatoms, embedding='mech', qm_charge=theory.qm_charge, qm_mult=theory.qm_mult, printlevel=0)
+
+    #Single-point energy calculation of mechanical QM/MM object. Taking only QM-energy
+    result_mech = ash.Singlepoint(theory=QM_MM_mech, fragment=fragment, printlevel=0)
+    E_QM_pure=result_mech.qm_energy
+    E_QM_MM_elstat = E_QM_pol - E_QM_pure
+
+    #Defining the total coupling term
+    E_coupling = E_QM_MM_elstat + E_QM_MM_vdw + E_QM_MM_bond
+
+    #Sanity check
+    assert E_QM_MM_tot - (E_QM_pol+ E_MM_mod) < 1e-6
+    assert E_QM_MM_tot - (E_QM_pure + E_MM_pure + E_coupling) < 1e-6
+
+    print()
+    print("="*70)
+    print("The standard QM/MM energy terms that ASH always prints:")
+    print("-"*70)
+    print("E_QM/MM (Total QM/MM energy):", E_QM_MM_tot)
+    print("E_QM^pol (polarized QM-energy):", E_QM_pol)
+    print("E_MM^mod (MM-energy with QM-MM vdw contribution)", E_MM_mod)
+    print("-"*70)
+    print("The decomposed terms:")
+    print("-"*70)
+    print("E_QM/MM (Total QM/MM energy):", E_QM_MM_tot)
+    print("E_QM (The pure QM energy)", E_QM_pure)
+    print("E_MM (The pure MM energy)", E_MM_pure)
+    print("E_coupling (QM-MM total coupling energy)", E_coupling)
+    print("E_QM-MM_elstat (QM-MM elstat coupling energy)", E_QM_MM_elstat)
+    print("E_QM-MM_vdw (the QM-MM vdw coupling energy)", E_QM_MM_vdw)
+    print("E_QM_MM_bond (the QM-MM covalent coupling energy)", E_QM_MM_bond)
+    print("="*70)
+    print()

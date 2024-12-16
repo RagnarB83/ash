@@ -181,9 +181,10 @@ class OpenMMTheory:
         else:
             if self.printlevel > 0:
                 print("Using platform:", self.platform_choice)
-        #print("Properties settings:", self.properties)
+        # print("Properties settings:", self.properties)
         # Whether to do energy decomposition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_decomposition = do_energy_decomposition
+
 
         # Initializing
         self.coords = []
@@ -871,6 +872,14 @@ class OpenMMTheory:
         # Used by GentlewarmupMD etc. to get a basic gradient
         self.force_run=False
 
+        # For energy decomposition we must create force groups
+        # Must be done after system creation but before simulation creation
+        if self.do_energy_decomposition is True:
+            print("Energy decomposition is active. Creating force groups")
+            self.forcegroupify()
+
+
+
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
 
     # Create a mixed MM/ML potential system from a ML potential (requires OpenMM-ML)
@@ -1109,6 +1118,8 @@ class OpenMMTheory:
     def remove_force_by_name(self,forcename):
         print(f"Searching forces and removing a force name: {forcename}")
         for i, force in enumerate(self.system.getForces()):
+            #print("force:", force)
+            print("force name:", force.getName())
             if force.getName() == forcename:
                 print(f"Removing force-index {i}: {forcename}")
                 self.system.removeForce(i)
@@ -1591,14 +1602,11 @@ class OpenMMTheory:
             force = self.system.getForce(i)
             force.setForceGroup(i)
             self.forcegroups[force] = i
-        # print("self.forcegroups :", self.forcegroups)
-        # ashexit()
+
 
     def getEnergyDecomposition(self, context):
-        # Call and set force groups
-        self.forcegroupify()
         energies = {}
-        # print("self.forcegroups:", self.forcegroups)
+        energies_2 = {}
         for f, i in self.forcegroups.items():
             energies[f] = context.getState(getEnergy=True, groups=2 ** i).getPotentialEnergy()
         return energies
@@ -1606,51 +1614,14 @@ class OpenMMTheory:
     def printEnergyDecomposition(self,simulation):
         import openmm
         timeA = time.time()
-        # Energy composition
+        # Energy decomposition
         # NOTE: Calling this is expensive (seconds)as the energy has to be recalculated.
         openmm_energy = dict()
         energycomp = self.getEnergyDecomposition(simulation.context)
-        print("energycomp: ", energycomp)
-        print("self.forcegroups:", self.forcegroups)
-        # print("len energycomp", len(energycomp))
-        # print("openmm_energy: ", openmm_energy)
         print("")
-        bondterm_set = False
-        extrafcount = 0
-        # This currently assumes CHARMM36 components, More to be added
         for comp in energycomp.items():
-            # print("comp: ", comp)
-            if 'HarmonicBondForce' in str(type(comp[0])):
-                # Not sure if this works in general.
-                if bondterm_set is False:
-                    openmm_energy['Bond'] = comp[1]
-                    bondterm_set = True
-                else:
-                    openmm_energy['Urey-Bradley'] = comp[1]
-            elif 'HarmonicAngleForce' in str(type(comp[0])):
-                openmm_energy['Angle'] = comp[1]
-            elif 'PeriodicTorsionForce' in str(type(comp[0])):
-                openmm_energy['Dihedrals'] = comp[1]
-            elif 'CustomTorsionForce' in str(type(comp[0])):
-                openmm_energy['Impropers'] = comp[1]
-            elif 'CMAPTorsionForce' in str(type(comp[0])):
-                openmm_energy['CMAP'] = comp[1]
-            elif 'NonbondedForce' in str(type(comp[0])):
-                openmm_energy['Nonbonded'] = comp[1]
-            elif 'LennardJones' in str(type(comp[0])):
-                openmm_energy['LennardJones'] = comp[1]
-            elif 'LennardJones14' in str(type(comp[0])):
-                openmm_energy['LennardJones14'] = comp[1]
-            elif 'CMMotionRemover' in str(type(comp[0])):
-                openmm_energy['CMM'] = comp[1]
-            elif 'CustomBondForce' in str(type(comp[0])):
-                openmm_energy['14-LJ'] = comp[1]
-            else:
-                extrafcount += 1
-                openmm_energy['Otherforce' + str(extrafcount)] = comp[1]
-
-        print_time_rel(timeA, modulename="energy decomposition")
-
+            openmm_energy[comp[0].getName()] = comp[1]
+        
         # Sum all force-terms
         sumofallcomponents = 0.0
         for val in openmm_energy.values():
@@ -1667,12 +1638,11 @@ class OpenMMTheory:
         print('%-20s | %15.2f | %15.2f' % ('Sumcomponents', sumofallcomponents, sumofallcomponents / 4.184))
         print("")
         print('%-20s | %15.2f | %15.2f' % ('Total', self.energy * ash.constants.hartokj, self.energy * ash.constants.harkcal))
-
-        print("")
         print("")
         # Adding sum to table
         openmm_energy['Sum'] = sumofallcomponents
         self.energy_components = openmm_energy
+        print_time_rel(timeA, modulename="energy decomposition")
 
     # Compute the number of degrees of freedom.
     def compute_DOF(self):
