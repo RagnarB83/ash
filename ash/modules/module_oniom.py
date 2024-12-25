@@ -97,6 +97,8 @@ class ONIOMTheory(Theory):
         self.charge = self.fullregion_charge
         self.mult = self.fullregion_mult
 
+        #self.numcores=numcores
+
         #
         print("Embedding:", self.embedding)
         print("Theories:")
@@ -115,6 +117,7 @@ class ONIOMTheory(Theory):
         else:
             print("Warning: numcores attribute was not set for ONIOMTheory.")
             print("This is fine, but check if numcores settings above are appropriate for each Theory object")
+            self.numcores=1
 
         print("\nRegions provided:")
         #

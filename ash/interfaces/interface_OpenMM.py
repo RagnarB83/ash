@@ -216,10 +216,6 @@ class OpenMMTheory:
         # Positions. Generally not used but can be if e.g. grofile has been read in.
         # Purpose: set virtual sites etc.
         self.positions = None
-
-
-
-
         self.Forcefield = None
         # What type of forcefield files to read. Reads in different way.
         # print("Now reading forcefield files")
@@ -312,7 +308,7 @@ class OpenMMTheory:
                 self.forcefield = self.grotop
 
             # TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
-
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
         elif Amberfiles is True:
             if self.printlevel > 0:
@@ -384,6 +380,7 @@ class OpenMMTheory:
                 # Check if PBC vectors in PDB-file
                 pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
             self.forcefield = forcefield
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
         elif ASH_FF_file is not None:
             if self.printlevel > 0:
@@ -444,7 +441,7 @@ class OpenMMTheory:
                           residlabels=residlabels)
             pdb = openmm.app.PDBFile("cluster.pdb")
             self.topology = pdb.topology
-
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
             self.forcefield = openmm.app.ForceField(xmlfile)
 
         # Load XMLfile for whole system
@@ -472,6 +469,7 @@ class OpenMMTheory:
                 print("Reading topology from PDBfile:", pdbfile)
             pdb = openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
             # Check if PBC vectors in PDB-file
             pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
         # Simple OpenMM system without any forcefield defined. Requires ASH fragment
@@ -492,6 +490,8 @@ class OpenMMTheory:
                                             sigmas_per_res=[[0.0]*fragment.numatoms], epsilons_per_res=[[0.0]*fragment.numatoms], skip_nb=True)
             # Create dummy forcefield
             self.forcefield = openmm.app.ForceField(xmlfile)
+
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
         # Read topology from PDB-file and XML-forcefield files to define forcefield
         else:
@@ -514,6 +514,7 @@ class OpenMMTheory:
             self.resids = [i.residue.index for i in self.topology.atoms()]
             self.resnames = [i.residue.name for i in self.topology.atoms()]
             self.atomnames = [i.name for i in self.topology.atoms()]
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
 
         # Dealing with possible user-defined residuetemplate_choice

@@ -3598,7 +3598,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
 # Get list of lists of water constraints in system (O-H,O-H,H-H) via OpenMM theory
 def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='tip3p'):
     print("Inside getwaterconstraintslist")
-    if openmmtheoryobject==None or atomlist==None:
+    if openmmtheoryobject is None or atomlist is None:
         print("getwaterconstraintslist requires openmmtheoryobject and atomlist to be set ")
         ashexit()
     if watermodel == 'tip3p' or watermodel == 'spc':
@@ -3611,6 +3611,13 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
     atomtypes=openmmtheoryobject.atomtypes
     resnames=openmmtheoryobject.resnames
     elements=openmmtheoryobject.mm_elements
+
+    if len(resnames) == 0:
+        print("Error: No resnames found in OpenMMTheory object")
+        ashexit()
+    if len(elements) == 0:
+        print("Error: No mm_elements found in OpenMMTheory object")
+        ashexit()
 
     waterconstraints = []
     if resnames:
