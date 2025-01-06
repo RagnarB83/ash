@@ -11,7 +11,7 @@ from collections import defaultdict
 
 from ash.functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
     print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, load_julia_interface, \
-    search_list_of_lists_for_index
+    search_list_of_lists_for_index, natural_sort
 #from ash.modules.module_singlepoint import ReactionEnergy
 import ash.dictionaries_lists
 import ash.settings_ash
@@ -1768,9 +1768,11 @@ def read_xyzfile(filename,printlevel=2):
 #Read all XYZ-files from directory
 #Return fragment list
 def read_xyzfiles(xyzdir,readchargemult=False, label_from_filename=True):
+    print("read_xyzfiles function")
+    print("Note: will read XYZ-files in directory using natural sorting")
     import glob
     filenames=[];fragments=[]
-    for file in glob.glob(xyzdir+'/*.xyz'):
+    for file in natural_sort(glob.glob(xyzdir+'/*.xyz')):
         filename=os.path.basename(file)
         filenames.append(filename)
         print("\n\nXYZ-file:", filename)
