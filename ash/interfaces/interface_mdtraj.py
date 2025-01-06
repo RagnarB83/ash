@@ -121,10 +121,6 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
 #TODO: allow option to grab by ps? Requires information about timestep and traj-frequency
 def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
 
-    if frames is None:
-        print("frames needs to be set")
-        ashexit()
-
     #Trajectory basename
     traj_basename = os.path.splitext(trajectory)[0]
 
@@ -135,6 +131,23 @@ def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
     print("Loading trajectory using mdtraj.")
     traj = mdtraj.load(trajectory, top=pdbtopology)
     print(f"This trajectory contains {traj.n_frames} frames")
+
+    print("User frame selection:", frames)
+    if frames is None:
+        print("Error: frames keyword needs to be set. Should usually be a list of two integers.")
+        print("E.g. frames=[0,1] to grab first frame or frames=[0,3] to grab first 3 frames")
+        print("Also possible to do: frames='first' or frames='last' to grab first or last")
+        ashexit()
+    elif frames =="first":
+        frames = [0,1]
+    elif frames =="last":
+        frames = [traj.n_frames-1,traj.n_frames]
+    elif len(frames) != 2:
+        print("Error: frames keyword needs to be a list of two integers.")
+        print("E.g. frames=[0,1] to grab first frame or frames=[0,3] to grab first 3 frames")
+        print("Also possible to do: frames='first' or frames='last' to grab first or last")
+        ashexit()
+
     #Slicing trajectory
     print("Slicing trajectory using frame selection:", frames)
     tslice = traj[frames[0]:frames[1]]
@@ -145,6 +158,7 @@ def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
         ashexit()
 
     # Save trajectory in format
+    print(f"Writing sliced trajectory to file in format {format} (you can change this by format keyword to be 'DCD', 'XYZ' or 'PDB') ")
     if format == 'DCD':
         tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.dcd')
         print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.dcd')

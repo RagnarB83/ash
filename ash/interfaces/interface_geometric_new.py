@@ -685,7 +685,7 @@ class ASHengineclass:
         timeA=time.time()
         currcoords=self.M.xyzs[0]
         #Special act-region (for QM/MM) since GeomeTRIC does not handle huge system and constraints
-        if self.ActiveRegion==True:
+        if self.ActiveRegion is True:
             #Defining full_coords as original coords temporarily
             #full_coords = np.array(fragment.coords)
             full_coords = self.fragment.coords
@@ -761,13 +761,14 @@ class ASHengineclass:
         else:
             self.full_current_coords=currcoords
             #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
+            self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
             #print("Current geometry (Å) in step {}".format(self.iteration_count))
             if self.printlevel >= 1:
                 print(f"Current geometry (Å) in step {self.iteration_count} (print_atoms_list region)")
                 print("---------------------------------------------------")
                 print_coords_for_atoms(currcoords, self.fragment.elems, self.print_atoms_list)
                 print("")
-                print("Note: printed only print_atoms_list (this is not necessary all atoms) ")
+                print("Note: printed only print_atoms_list (this is not necessarily all atoms) ")
             E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, charge=self.charge, mult=self.mult,
                                 Grad=True)
             #label='Iter'+str(self.iteration_count)

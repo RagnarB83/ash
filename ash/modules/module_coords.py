@@ -11,7 +11,7 @@ from collections import defaultdict
 
 from ash.functions.functions_general import ashexit, isint, listdiff, print_time_rel, BC, printdebug, print_line_with_mainheader, \
     print_line_with_subheader1, print_line_with_subheader1_end, print_line_with_subheader2, writelisttofile, load_julia_interface, \
-    search_list_of_lists_for_index
+    search_list_of_lists_for_index, natural_sort
 #from ash.modules.module_singlepoint import ReactionEnergy
 import ash.dictionaries_lists
 import ash.settings_ash
@@ -555,7 +555,7 @@ class Fragment:
         try:
             import openmm.app
         except ImportError:
-            print("Error: OpenMM not installed. Cannot read PDB file.")
+            print("Error: OpenMM not found. Cannot read PDB file.")
             ashexit()
         pdb = openmm.app.PDBFile(filename)
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
@@ -763,7 +763,7 @@ class Fragment:
         try:
             import openmm.app
         except ImportError:
-            print("Error: OpenMM not installed. Cannot define a topology")
+            print("Error: OpenMM not found. Cannot define a topology")
             ashexit()
         print("Defining new basic single-chain, single-residue topology")
         self.pdb_topology = openmm.app.Topology()
@@ -792,7 +792,7 @@ class Fragment:
         try:
             import openmm.app
         except ImportError:
-            print("Error: OpenMM not installed. Cannot read PDB file.")
+            print("Error: OpenMM not found. Cannot read PDB file.")
             ashexit()
 
         #Adding extension
@@ -1768,9 +1768,11 @@ def read_xyzfile(filename,printlevel=2):
 #Read all XYZ-files from directory
 #Return fragment list
 def read_xyzfiles(xyzdir,readchargemult=False, label_from_filename=True):
+    print("read_xyzfiles function")
+    print("Note: will read XYZ-files in directory using natural sorting")
     import glob
     filenames=[];fragments=[]
-    for file in glob.glob(xyzdir+'/*.xyz'):
+    for file in natural_sort(glob.glob(xyzdir+'/*.xyz')):
         filename=os.path.basename(file)
         filenames.append(filename)
         print("\n\nXYZ-file:", filename)
@@ -3598,7 +3600,7 @@ def add_atoms_to_system_CHARMM(fragment=None, added_atoms_coordstring=None, resg
 # Get list of lists of water constraints in system (O-H,O-H,H-H) via OpenMM theory
 def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='tip3p'):
     print("Inside getwaterconstraintslist")
-    if openmmtheoryobject==None or atomlist==None:
+    if openmmtheoryobject is None or atomlist is None:
         print("getwaterconstraintslist requires openmmtheoryobject and atomlist to be set ")
         ashexit()
     if watermodel == 'tip3p' or watermodel == 'spc':
@@ -3611,6 +3613,13 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
     atomtypes=openmmtheoryobject.atomtypes
     resnames=openmmtheoryobject.resnames
     elements=openmmtheoryobject.mm_elements
+
+    if len(resnames) == 0:
+        print("Error: No resnames found in OpenMMTheory object")
+        ashexit()
+    if len(elements) == 0:
+        print("Error: No mm_elements found in OpenMMTheory object")
+        ashexit()
 
     waterconstraints = []
     if resnames:

@@ -181,9 +181,10 @@ class OpenMMTheory:
         else:
             if self.printlevel > 0:
                 print("Using platform:", self.platform_choice)
-        #print("Properties settings:", self.properties)
+        # print("Properties settings:", self.properties)
         # Whether to do energy decomposition of MM energy or not. Takes time. Can be turned off for MD runs
         self.do_energy_decomposition = do_energy_decomposition
+
 
         # Initializing
         self.coords = []
@@ -215,10 +216,6 @@ class OpenMMTheory:
         # Positions. Generally not used but can be if e.g. grofile has been read in.
         # Purpose: set virtual sites etc.
         self.positions = None
-
-
-
-
         self.Forcefield = None
         # What type of forcefield files to read. Reads in different way.
         # print("Now reading forcefield files")
@@ -311,7 +308,7 @@ class OpenMMTheory:
                 self.forcefield = self.grotop
 
             # TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
-
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
         elif Amberfiles is True:
             if self.printlevel > 0:
@@ -383,6 +380,7 @@ class OpenMMTheory:
                 # Check if PBC vectors in PDB-file
                 pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
             self.forcefield = forcefield
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
         elif ASH_FF_file is not None:
             if self.printlevel > 0:
@@ -443,7 +441,7 @@ class OpenMMTheory:
                           residlabels=residlabels)
             pdb = openmm.app.PDBFile("cluster.pdb")
             self.topology = pdb.topology
-
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
             self.forcefield = openmm.app.ForceField(xmlfile)
 
         # Load XMLfile for whole system
@@ -471,6 +469,7 @@ class OpenMMTheory:
                 print("Reading topology from PDBfile:", pdbfile)
             pdb = openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
             # Check if PBC vectors in PDB-file
             pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
         # Simple OpenMM system without any forcefield defined. Requires ASH fragment
@@ -491,6 +490,8 @@ class OpenMMTheory:
                                             sigmas_per_res=[[0.0]*fragment.numatoms], epsilons_per_res=[[0.0]*fragment.numatoms], skip_nb=True)
             # Create dummy forcefield
             self.forcefield = openmm.app.ForceField(xmlfile)
+
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
         # Read topology from PDB-file and XML-forcefield files to define forcefield
         else:
@@ -513,6 +514,7 @@ class OpenMMTheory:
             self.resids = [i.residue.index for i in self.topology.atoms()]
             self.resnames = [i.residue.name for i in self.topology.atoms()]
             self.atomnames = [i.name for i in self.topology.atoms()]
+            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
 
         # Dealing with possible user-defined residuetemplate_choice
@@ -871,10 +873,13 @@ class OpenMMTheory:
         # Used by GentlewarmupMD etc. to get a basic gradient
         self.force_run=False
 
-        # Create/update basic simulation (will be overridden by OpenMM_Opt, OpenMM_MD functions)
-        # Disabling as we want to make OpenMMTheory picklable
-        # update_simulation needs to be called instead by run
-        # self.create_simulation()
+        # For energy decomposition we must create force groups
+        # Must be done after system creation but before simulation creation
+        if self.do_energy_decomposition is True:
+            print("Energy decomposition is active. Creating force groups")
+            self.forcegroupify()
+
+
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
 
@@ -1114,6 +1119,8 @@ class OpenMMTheory:
     def remove_force_by_name(self,forcename):
         print(f"Searching forces and removing a force name: {forcename}")
         for i, force in enumerate(self.system.getForces()):
+            #print("force:", force)
+            print("force name:", force.getName())
             if force.getName() == forcename:
                 print(f"Removing force-index {i}: {forcename}")
                 self.system.removeForce(i)
@@ -1515,7 +1522,7 @@ class OpenMMTheory:
 
     #Create integrator.
     def create_integrator(self):
-        timeA = time.time()
+        #timeA = time.time()
         import openmm
         #NOTE: Integrator definition has to be here (instead of set_simulation_parameters) as it has to be recreated for each updated simulation
         # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
@@ -1550,7 +1557,7 @@ class OpenMMTheory:
                   "LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ",
                   BC.END)
             ashexit()
-        print_time_rel(timeA, modulename="create integrator",currprintlevel=self.printlevel)
+        #print_time_rel(timeA, modulename="create integrator",currprintlevel=self.printlevel)
 
     #Create simulation object (now not part of OpenMMTheory)
     def create_simulation(self, internal=False):
@@ -1596,14 +1603,11 @@ class OpenMMTheory:
             force = self.system.getForce(i)
             force.setForceGroup(i)
             self.forcegroups[force] = i
-        # print("self.forcegroups :", self.forcegroups)
-        # ashexit()
+
 
     def getEnergyDecomposition(self, context):
-        # Call and set force groups
-        self.forcegroupify()
         energies = {}
-        # print("self.forcegroups:", self.forcegroups)
+        energies_2 = {}
         for f, i in self.forcegroups.items():
             energies[f] = context.getState(getEnergy=True, groups=2 ** i).getPotentialEnergy()
         return energies
@@ -1611,51 +1615,14 @@ class OpenMMTheory:
     def printEnergyDecomposition(self,simulation):
         import openmm
         timeA = time.time()
-        # Energy composition
+        # Energy decomposition
         # NOTE: Calling this is expensive (seconds)as the energy has to be recalculated.
         openmm_energy = dict()
         energycomp = self.getEnergyDecomposition(simulation.context)
-        print("energycomp: ", energycomp)
-        print("self.forcegroups:", self.forcegroups)
-        # print("len energycomp", len(energycomp))
-        # print("openmm_energy: ", openmm_energy)
         print("")
-        bondterm_set = False
-        extrafcount = 0
-        # This currently assumes CHARMM36 components, More to be added
         for comp in energycomp.items():
-            # print("comp: ", comp)
-            if 'HarmonicBondForce' in str(type(comp[0])):
-                # Not sure if this works in general.
-                if bondterm_set is False:
-                    openmm_energy['Bond'] = comp[1]
-                    bondterm_set = True
-                else:
-                    openmm_energy['Urey-Bradley'] = comp[1]
-            elif 'HarmonicAngleForce' in str(type(comp[0])):
-                openmm_energy['Angle'] = comp[1]
-            elif 'PeriodicTorsionForce' in str(type(comp[0])):
-                openmm_energy['Dihedrals'] = comp[1]
-            elif 'CustomTorsionForce' in str(type(comp[0])):
-                openmm_energy['Impropers'] = comp[1]
-            elif 'CMAPTorsionForce' in str(type(comp[0])):
-                openmm_energy['CMAP'] = comp[1]
-            elif 'NonbondedForce' in str(type(comp[0])):
-                openmm_energy['Nonbonded'] = comp[1]
-            elif 'LennardJones' in str(type(comp[0])):
-                openmm_energy['LennardJones'] = comp[1]
-            elif 'LennardJones14' in str(type(comp[0])):
-                openmm_energy['LennardJones14'] = comp[1]
-            elif 'CMMotionRemover' in str(type(comp[0])):
-                openmm_energy['CMM'] = comp[1]
-            elif 'CustomBondForce' in str(type(comp[0])):
-                openmm_energy['14-LJ'] = comp[1]
-            else:
-                extrafcount += 1
-                openmm_energy['Otherforce' + str(extrafcount)] = comp[1]
-
-        print_time_rel(timeA, modulename="energy decomposition")
-
+            openmm_energy[comp[0].getName()] = comp[1]
+        
         # Sum all force-terms
         sumofallcomponents = 0.0
         for val in openmm_energy.values():
@@ -1672,12 +1639,11 @@ class OpenMMTheory:
         print('%-20s | %15.2f | %15.2f' % ('Sumcomponents', sumofallcomponents, sumofallcomponents / 4.184))
         print("")
         print('%-20s | %15.2f | %15.2f' % ('Total', self.energy * ash.constants.hartokj, self.energy * ash.constants.harkcal))
-
-        print("")
         print("")
         # Adding sum to table
         openmm_energy['Sum'] = sumofallcomponents
         self.energy_components = openmm_energy
+        print_time_rel(timeA, modulename="energy decomposition")
 
     # Compute the number of degrees of freedom.
     def compute_DOF(self):
@@ -1854,8 +1820,6 @@ class OpenMMTheory:
                         chargeprod._value = 0.0
                         force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
                         # print("New:", force.getExceptionParameters(exc))
-        #self.create_simulation()
-        #self.update_simulation()
         print_time_rel(timeA, modulename="delete_exceptions")
 
     # # Function to
@@ -1908,10 +1872,6 @@ class OpenMMTheory:
     #         elif isinstance(force, openmm.CustomNonbondedForce):
     #             print("customnonbondedforce not implemented")
     #             ashexit()
-    #     #self.create_simulation()
-    #     self.update_simulation()
-    #     print_time_rel(timeA, modulename="zero_nonbondedforce")
-    #     # self.create_simulation()
 
     # Updating LJ interactions in OpenMM object. Used to set LJ sites to zero e.g. so that they do not contribute
     # Can be used to get QM-MM LJ interaction energy
@@ -1975,8 +1935,6 @@ class OpenMMTheory:
             if isinstance(force, openmm.CustomNonbondedForce):
                 pass
                 #self.nonbonded_force.updateParametersInContext(self.simulation.context)
-        #self.create_simulation()
-        #self.update_simulation()
         printdebug("done here")
         print_time_rel(timeA, modulename="update_charges")
 
@@ -2190,8 +2148,6 @@ class OpenMMTheory:
         print("CMAP Torsion terms:", numcmaptorsionterms_removed)
         print("CustomBond terms", numcustombondterms_removed)
         print("")
-        #self.create_simulation()
-        #self.update_simulation()
         print_time_rel(timeA, modulename="modify_bonded_forces")
 
 
@@ -3377,7 +3333,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
               centerforce_atoms=None, centerforce_constant=1.0, centerforce_distance=10.0, centerforce_center=None,
-              barostat_frequency=25, specialbox=False):
+              barostat_frequency=25, specialbox=False, chkfile=None, statefile=None):
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
@@ -3390,7 +3346,8 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
                         plumed_object=plumed_object, add_centerforce=add_centerforce,trajfilename=trajfilename,
                         centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
                         centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
-                        barostat_frequency=barostat_frequency, specialbox=specialbox)
+                        barostat_frequency=barostat_frequency, specialbox=specialbox,
+                        chkfile=chkfile, statefile=statefile)
     if simulation_steps is not None:
         md.run(simulation_steps=simulation_steps)
     elif simulation_time is not None:
@@ -3415,7 +3372,8 @@ class OpenMM_MDclass:
                  enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
                  centerforce_atoms=None, centerforce_constant=1.0, centerforce_distance=10.0, centerforce_center=None,
-                 barostat_frequency=25, specialbox=False,):
+                 barostat_frequency=25, specialbox=False,
+                 chkfile=None, statefile=None):
         module_init_time = time.time()
         import openmm
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
@@ -3486,9 +3444,9 @@ class OpenMM_MDclass:
                     print(f"Atoms: {restraint[0]} {restraint[1]} {restraint[2]} {restraint[3]} Value: {restraint[4]} Force-constant: {restraint[5]} kcal/mol/radian^2")
                     self.openmmobject.add_custom_torsion_force(restraint[0], restraint[1], restraint[2], restraint[3], restraint[4], restraint[5])
 
-
-
-
+        #RESTART options
+        self.chkfile=chkfile
+        self.statefile=statefile
 
         # Assigning some basic variables
         self.temperature = temperature
@@ -3722,6 +3680,11 @@ class OpenMM_MDclass:
     #Set sim reporters. Needs to be done after simulation is created and not modified anymore
     def set_sim_reporters(self,simulation,restart=False):
         import openmm
+
+        #CheckpointReporter
+        print("Creating CheckpointReporter that will write a restartable checkpointfile every X steps")
+        checkpointfilename='OpenMM_MD.chk'
+        simulation.reporters.append(openmm.app.CheckpointReporter(checkpointfilename, self.traj_frequency*1))
         #StateDataReporter
         print("Creating StateDataReporter that will write to stdout")
         statedatareporter_stdout=openmm.app.StateDataReporter(stdout, self.traj_frequency, step=True, time=True,
@@ -3785,11 +3748,12 @@ class OpenMM_MDclass:
                 os.remove(self.energy_file_option)
             except:
                 pass
+        print("simulation.reporters:", simulation.reporters)
 
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
     def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, metadyn_settings=None, mm_elems=None,
-            plumedinput=None, process_id=None, workerdir=None, restraints=None, restart=False):
+            plumedinput=None, process_id=None, workerdir=None, restraints=None, restart=False, chkfile=None, statefile=None):
         module_init_time = time.time()
         print_line_with_mainheader("OpenMM Molecular Dynamics Run")
         import openmm
@@ -3800,6 +3764,15 @@ class OpenMM_MDclass:
             simulation_steps = int(simulation_time / self.timestep)
         if simulation_steps is not None:
             simulation_time = simulation_steps * self.timestep
+
+        #Checking whether chkfile has been provided to run method or init
+        if chkfile is None and self.chkfile is not None:
+            print("chkfile provided to init. Will use this for restart.")
+            chkfile=self.chkfile
+        if statefile is None and self.statefile is not None:
+            print("statefile provided to init. Will use this for restart.")
+            statefile=self.statefile
+
 
         ##################################
         # CREATE SIMULATION OBJECT
@@ -3897,15 +3870,31 @@ class OpenMM_MDclass:
             self.openmmobject.add_bondrestraints(restraints=restraints)
 
 
-        #Creating simulation object
-        if restart is False:
-            print("Restart false. This is a new simulation")
+        #Creating simulation object and 
+        if chkfile is not None:
+            self.simulation = self.openmmobject.create_simulation()
+            print("Checkpoint file provided. Restarting simulation using position and velocity data in file")
+            state = self.simulation.context.getState(getVelocities=True)
+            print("Simulation velocities before:", state.getVelocities(asNumpy=True))
+            self.simulation.loadCheckpoint(chkfile)
+            state = self.simulation.context.getState(getVelocities=True)
+            print("Simulation velocities after loading checkpoint file:", state.getVelocities(asNumpy=True))
+        elif statefile is not None:
+            self.simulation = self.openmmobject.create_simulation()
+            print("State file provided. Restarting simulation using position and velocity data in file")
+            state = self.simulation.context.getState(getVelocities=True)
+            print("Simulation velocities before:", state.getVelocities(asNumpy=True))
+            self.simulation.loadState(statefile)
+            state = self.simulation.context.getState(getVelocities=True)
+            print("Simulation velocities after loading statefile:", state.getVelocities(asNumpy=True))
+        elif restart is True:
+            print("Restart true. Reusing already-defined simulation object")
+        else:
+            print("Restart false and no chkfile/statefile set. This is a new simulation")
             self.simulation = self.openmmobject.create_simulation()
             print("Simulation created.")
-        else:
-            print("Restart true. Reusing simulation object")
         forceclassnames = [i.__class__.__name__ for i in self.openmmobject.system.getForces()]
-
+        #exit()
         ##################################
         # PRINT BASICS
         ##################################
@@ -4259,11 +4248,12 @@ class OpenMM_MDclass:
         if self.plumed_object is not None:
             self.plumed_object.close()
 
+        # GETTING positions, forces and energy of final frame
+        self.state = self.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
+        
         ##########################
         #PERIODIC BOX VECTORS
         ##########################
-        self.state = self.simulation.context.getState(getEnergy=True, getPositions=True, getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
-
         if self.openmmobject.Periodic is True:
             print("Checking PBC vectors:")
             a, b, c = self.state.getPeriodicBoxVectors()
@@ -4292,6 +4282,14 @@ class OpenMM_MDclass:
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
         print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
+        
+        # Saving state to disk
+        #Can be used to restart using statefile option
+        print("Saving a statefile and checkpointfile of the final frame of the simulation: OpenMM_MD_final_state.xml and OpenMM_MD_final_checkpoint.chk")
+        print("These file can be used to restart a simulation (statefile and chkfile keywords) using the same coordinates and velocities.")
+        self.simulation.saveState('OpenMM_MD_final_state.xml')
+        self.simulation.saveCheckpoint('OpenMM_MD_final_checkpoint.chk')
+        
         ########################
         # Updating ASH fragment
         ########################
@@ -4724,10 +4722,6 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
             writestringtofile(plumedinput,"plumedinput.in")
 
         #NOTE: Ading PlumedForce to OpenMM system now done inside md.run instead
-
-    #Updating simulation context as the CustomCVForce needs to be added
-    #Unnecessary as md.run will create_simulation
-    #md.openmmobject.create_simulation()
 
 
     #Add restrining funnel for funnel metadynamics

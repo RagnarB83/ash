@@ -90,6 +90,7 @@ from .interfaces.interface_TeraChem import TeraChemTheory
 from .interfaces.interface_sparrow import SparrowTheory
 from .interfaces.interface_NWChem import NWChemTheory
 from .interfaces.interface_Gaussian import GaussianTheory
+from .interfaces.interface_Turbomole import TurbomoleTheory
 from .interfaces.interface_CP2K import CP2KTheory
 from .interfaces.interface_BigDFT import BigDFTTheory
 from .interfaces.interface_deMon import deMon2kTheory
@@ -125,7 +126,7 @@ from .modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy
 from .interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_RMSF, MDtraj_coord_analyze
 
 # QM/MM
-from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf
+from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy
 from .modules.module_polembed import PolEmbedTheory
 
 # Knarr
