@@ -272,7 +272,7 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     polarizability_dict={}
 
     final_result = ASH_Results(label="Job_parallel", energies=[], gradients=[])
-    if Grad == True:
+    if Grad is True:
         gradient_dict={}
         for i,r in enumerate(results):
             if r.ready() == True:
@@ -282,9 +282,9 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                 final_result.energies.append(r.get()[1])
                 final_result.gradients.append(r.get()[2])
                 if len(r.get()[4]) > 0:
-                    #print("Property dict found from Worker-par", r.get()[4])
+                    # print("Property dict found from Worker-par", r.get()[4])
                     property_dict[r.get()[0]] = r.get()[4]
-                    #Dipole and polarizability
+                    # Dipole and polarizability
                     if 'dipole_moment' in r.get()[4]:
                         dipole_dict[r.get()[0]] = r.get()[4]['dipole_moment']
                     if 'polarizability' in r.get()[4]:
@@ -292,14 +292,14 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
 
         final_result.gradients_dict = gradient_dict
         final_result.properties = property_dict
-        #Dipole and polarizability
+        # Dipole and polarizability
         final_result.displacement_dipole_dictionary = dipole_dict
         final_result.displacement_polarizability_dictionary = polarizability_dict
 
     else:
         for i,r in enumerate(results):
             #print("Result {} ready: {}".format(i, r.ready()))
-            if r.ready() == True:
+            if r.ready() is True:
                 energy_dict[r.get()[0]] = r.get()[1]
                 worker_dirnames_dict[r.get()[0]] = r.get()[2]
                 final_result.energies.append(r.get()[1])
