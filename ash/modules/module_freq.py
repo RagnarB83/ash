@@ -1362,6 +1362,7 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
         fullhessian = calc_model_Hessian_ORCA(usedfragment,model=restHessian)
     #GFN1-xTB restHessian
     elif restHessian == 'xtb':
+        print("restHessian option is xtb")
         if fragment.charge is None or fragment.mult is None:
             print("Error: For restHessian=xtb option we require charge and multiplicity information to be present in input fragment")
             ashexit()
