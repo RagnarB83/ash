@@ -1311,7 +1311,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     #else:
     #    capping_atom_hessian_indices=[]
 #NOTE: Trans+rot projection off right now
-def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindices,large_atomindices=None,restHessian='Almloef',projection=False):
+def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='Almloef', projection=False):
     print("approximate_full_Hessian_from_smaller")
     print()
     write_hessian(hessian_small,hessfile="smallhessian")
@@ -1329,21 +1329,14 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
             print(f"small_atomindices: {small_atomindices} are not all present in large_atomindices: {large_atomindices}")
             print("This does not make sense. Exiting")
             ashexit()
-        #If large Hessian is a partial Hessian of the full systemthen we need to change small Hessian atomindices
+        #If large Hessian is a partial Hessian of the full system then we need to change small Hessian atomindices
         correct_small_atomindices=[large_atomindices.index(i) for i in small_atomindices]
         print("correct_small_atomindices:", correct_small_atomindices)
         #Create new fragment from large_atomindices
         subcoords, subelems = fragment.get_coords_for_atoms(large_atomindices)
         usedfragment = ash.Fragment(elems=subelems,coords=subcoords, printlevel=0, charge=fragment.charge, mult=fragment.mult)
 
-        if check_multiplicity(subelems,usedfragment.charge,usedfragment.mult, exit=False) == False:
-            print("Bad multiplicity. Using dummy")
-            #Dummy charge/mult
-            usedfragment.charge=0
-            if isodd(usedfragment.nuccharge):
-                usedfragment.mult=2
-            else:
-                usedfragment.mult=1
+
     else:
         #Size of Hessian as big as fragment
         hess_size=fragment.numatoms*3
@@ -1357,14 +1350,30 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
     print("Initial fullhessian:", fullhessian)
     print("Number of Hessian elements:", fullhessian.size)
     write_hessian(fullhessian,hessfile="initialfullhessian")
+
     #Making sure hessian_small is np array
     hessian_small = np.array(hessian_small)
+    print("hessian_small:", hessian_small)
     #Fill up hessian_large with model approximation from ORCA
     if restHessian == 'Almloef' or restHessian == 'Lindh' or restHessian == 'Schlegel' or restHessian == 'Swart':
         print("restHessian:", restHessian)
+        #Note: using dummy charge and mult here
+        usedfragment.charge=0; usedfragment.mult=1
         fullhessian = calc_model_Hessian_ORCA(usedfragment,model=restHessian)
     #GFN1-xTB restHessian
     elif restHessian == 'xtb':
+        if fragment.charge is None or fragment.mult is None:
+            print("Error: For restHessian=xtb option we require charge and multiplicity information to be present in input fragment")
+            ashexit()
+        if check_multiplicity(subelems,usedfragment.charge,usedfragment.mult, exit=False) == False:
+            print("Bad multiplicity. Using dummy")
+            #Dummy charge/mult
+            usedfragment.charge=0
+            if isodd(usedfragment.nuccharge):
+                usedfragment.mult=2
+            else:
+                usedfragment.mult=1
+
         xtb = ash.xTBTheory(xtbmethod='GFN1')
         fullhessian = xtb.Hessian(fragment=usedfragment, charge=usedfragment.charge, mult=usedfragment.mult)
     #Or with unit matrix
@@ -1372,7 +1381,7 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
         print("restHessian is unit/identity")
         fullhessian = np.identity(hess_size)
     #Keep matrix at zero
-    elif restHessian==None or restHessian=='Zero':
+    elif restHessian is None or restHessian.lower() =='zero':
         print("RestHessian is zero.")
     else:
         print("RestHessian is zero.")

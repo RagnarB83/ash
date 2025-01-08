@@ -3840,7 +3840,7 @@ def mol_to_pdb(file):
     try:
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("mol_to_pdb requires OpenBabel library but it could not be imported")
+        print("Error: mol_to_pdb requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     mol = next(pybel.readfile("mol", file))
@@ -3855,7 +3855,7 @@ def sdf_to_pdb(file):
         from openbabel import openbabel
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("sdf_to_pdb requires OpenBabel library but it could not be imported")
+        print("Error: sdf_to_pdb requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     mol = next(pybel.readfile("sdf", file))
@@ -3892,7 +3892,7 @@ def writepdb_with_connectivity(file):
     try:
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("writepdb_with_connectivity requires OpenBabel library but it could not be imported")
+        print("Error: writepdb_with_connectivity requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     mol = next(pybel.readfile("pdb", file))
@@ -3908,7 +3908,7 @@ def xyz_to_pdb_with_connectivity(file, resname="UNL"):
         from openbabel import openbabel
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("xyz_to_pdb_with_connectivity requires OpenBabel library but it could not be imported")
+        print("Error: xyz_to_pdb_with_connectivity requires OpenBabel library but it could not be imported")
         print("You can install OpenBabel like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     #Read in XYZ-file
@@ -3947,7 +3947,7 @@ def pdb_to_smiles(fname: str) -> str:
     try:
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("pdb_to_smiles requires OpenBabel library but it could not be imported")
+        print("Error: pdb_to_smiles requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     mol = next(pybel.readfile("pdb", fname))
@@ -3961,7 +3961,7 @@ def smiles_to_coords(smiles_string):
         from openbabel import pybel
         from openbabel import openbabel
     except ModuleNotFoundError:
-        print("smiles_to_coords requires OpenBabel library but it could not be imported")
+        print("Error: smiles_to_coords requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     print("Reading SMILES by OpenBabel")
