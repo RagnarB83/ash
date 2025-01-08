@@ -9,7 +9,7 @@ from ash.interfaces.interface_OpenMM import OpenMMTheory
 from ash.modules.module_coords import print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile,write_coords_all
 from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,print_line_with_subheader1,print_if_level
 from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex
-from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller
+from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller, read_hessian
 from ash.modules.module_results import ASH_Results
 
 ##################################################
@@ -317,11 +317,23 @@ class GeomeTRICOptimizerClass:
         def hessian_option(self,fragment,actatoms,theory,charge,mult,modelhessian):
 
             if type(self.hessian) == np.ndarray:
-                print("Hessian option provided is a Numpy array. Writing to disk.")
+                print("Hessian option provided is a Numpy array.")
+
+                # Sanity check. Check that the Hessian provided is compatible with actatoms
+                print("Checking that Hessian is compatible with active-region")
+                print("2 actatoms:", actatoms)
+                if self.hessian.shape[0] != 3*len(actatoms):
+                    print(f"Error: Hessian shape is {self.hessian.shape}  which is incompatible with the the number of active atoms {len(actatoms)} present")
+                    print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(actatoms)} x {3*len(actatoms)})")
+                    ashexit()
+
+                print("Writing Hessian array to disk.")
+
                 hessianfile="Hessian_np"
                 write_hessian(self.hessian,hessfile=hessianfile)
                 self.hessian="file:"+hessianfile
                 print("Hessian option to be used by geometric:", self.hessian)
+
             elif type(self.hessian) == str:
                 print("Hessian option provided is a string")
                 #Do xtB Hessian to get Hessian file if requestd
@@ -362,12 +374,25 @@ class GeomeTRICOptimizerClass:
                     hessianfile="Hessian_from_partial"
                     write_hessian(combined_hessian,hessfile=hessianfile)
                     self.hessian="file:"+hessianfile
+                elif "file:" in self.hessian:
+                    hessianfile = self.hessian.replace("file:","")
+
+                print("Checking that defined Hessian is compatible with active-region")
+                hessian_read = read_hessian(hessianfile)
+                print("actatoms:", actatoms)
+                if hessian_read.shape[0] != 3*len(actatoms):
+                    print(f"Error: Hessian shape is {hessian_read.shape}  which is incompatible with the the number of active atoms {len(actatoms)} present")
+                    print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(actatoms)} x {3*len(actatoms)})")
+                    ashexit()
+
             elif self.hessian == None:
                 if self.printlevel >= 1:
                     print("No Hessian option provided.")
             else:
                 print("Unknown Hessian option")
                 ashexit()
+            
+
 
         #If using Active region then we write only those coordinates to disk (initialxyzfiletric)
         def setup_active_region_geometry(self,fragment):
