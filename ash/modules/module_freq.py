@@ -1311,7 +1311,8 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     #else:
     #    capping_atom_hessian_indices=[]
 #NOTE: Trans+rot projection off right now
-def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='Almloef', projection=False):
+def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='Almloef', projection=False,
+                                          charge=None, mult=None):
     print("approximate_full_Hessian_from_smaller")
     print()
     write_hessian(hessian_small,hessfile="smallhessian")
@@ -1357,26 +1358,28 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
     #Fill up hessian_large with model approximation from ORCA
     if restHessian == 'Almloef' or restHessian == 'Lindh' or restHessian == 'Schlegel' or restHessian == 'Swart':
         print("restHessian:", restHessian)
-        #Note: using dummy charge and mult here
-        usedfragment.charge=0; usedfragment.mult=1
+        if charge is None or mult is None:
+            print("Error: For this restHessian option we require charge and multiplicity information to be provided")
+            ashexit()
+        usedfragment.charge=charge; usedfragment.mult=mult
         fullhessian = calc_model_Hessian_ORCA(usedfragment,model=restHessian)
     #GFN1-xTB restHessian
     elif restHessian == 'xtb':
         print("restHessian option is xtb")
-        if fragment.charge is None or fragment.mult is None:
-            print("Error: For restHessian=xtb option we require charge and multiplicity information to be present in input fragment")
+        if charge is None or mult is None:
+            print("Error: For restHessian=xtb option we require charge and multiplicity information to be provided")
             ashexit()
-        if check_multiplicity(subelems,usedfragment.charge,usedfragment.mult, exit=False) == False:
-            print("Bad multiplicity. Using dummy")
-            #Dummy charge/mult
-            usedfragment.charge=0
-            if isodd(usedfragment.nuccharge):
-                usedfragment.mult=2
-            else:
-                usedfragment.mult=1
+        #if check_multiplicity(subelems,usedfragment.charge,usedfragment.mult, exit=False) == False:
+        #    print("Bad multiplicity. Using dummy")
+        #    #Dummy charge/mult
+        #    usedfragment.charge=0
+        #    if isodd(usedfragment.nuccharge):
+        #        usedfragment.mult=2
+        #    else:
+        #        usedfragment.mult=1
 
         xtb = ash.xTBTheory(xtbmethod='GFN1')
-        fullhessian = xtb.Hessian(fragment=usedfragment, charge=usedfragment.charge, mult=usedfragment.mult)
+        fullhessian = xtb.Hessian(fragment=usedfragment, charge=charge, mult=mult)
     #Or with unit matrix
     elif restHessian == 'unit' or restHessian == 'identity':
         print("restHessian is unit/identity")
