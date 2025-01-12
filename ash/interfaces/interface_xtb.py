@@ -152,6 +152,9 @@ class xTBTheory:
         current_coords = fragment.coords
         elems = fragment.elems
 
+        #TODO remove
+        ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
+
         # Check charge/mult
         charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Hessian", theory=self)
 
@@ -164,6 +167,7 @@ class xTBTheory:
 
         # Check if mult is sensible
         check_multiplicity(elems,charge,mult)
+
         if self.runmode=='inputfile':
             # Write xyz_file
             ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)

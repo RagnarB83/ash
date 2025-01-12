@@ -748,6 +748,7 @@ class Fragment:
     # Write PDB-file
     def write_pdbfile(self,filename="Fragment"):
         print("Fragment.write_pdbfile method called")
+        filename=filename.replace(".pdb","")
         # Write PDB-file if information is available
         if self.pdb_atomnames is not None:
             print("Found PDB residue/atom/segment information stored in fragment. Writing proper PDB file.")

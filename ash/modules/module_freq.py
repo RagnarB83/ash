@@ -1312,7 +1312,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     #    capping_atom_hessian_indices=[]
 #NOTE: Trans+rot projection off right now
 def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='Almloef', projection=False,
-                                          charge=None, mult=None):
+                                          charge=None, mult=None, xtbmethod="GFN1"):
     print("approximate_full_Hessian_from_smaller")
     print()
     write_hessian(hessian_small,hessfile="smallhessian")
@@ -1363,7 +1363,7 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
             ashexit()
         usedfragment.charge=charge; usedfragment.mult=mult
         fullhessian = calc_model_Hessian_ORCA(usedfragment,model=restHessian)
-    #GFN1-xTB restHessian
+    #GFN-xTB restHessian
     elif restHessian == 'xtb':
         print("restHessian option is xtb")
         if charge is None or mult is None:
@@ -1378,7 +1378,7 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
         #    else:
         #        usedfragment.mult=1
 
-        xtb = ash.xTBTheory(xtbmethod='GFN1')
+        xtb = ash.xTBTheory(xtbmethod=xtbmethod)
         fullhessian = xtb.Hessian(fragment=usedfragment, charge=charge, mult=mult)
     #Or with unit matrix
     elif restHessian == 'unit' or restHessian == 'identity':

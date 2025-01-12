@@ -2311,7 +2311,7 @@ def clean_up_constraints_list(fragment=None, constraints=None,printlevel=2):
 
 
 def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePeriodicBox=True,
-               traj_frequency=100, use_reporter=True,printlevel=0):
+               traj_frequency=100, use_reporter=True, printlevel=0):
     import openmm
     from packaging import version
     module_init_time = time.time()
@@ -2503,13 +2503,6 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
         print(f"Final RMS force: {rms_force} Eh/Bohr (w/o restraints)")
         print(f"Final Max force: {forces_final.max()} Eh/Bohr (w/o restraints)")
 
-    # Get coordinates
-    newcoords = state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
-    if printlevel >= 1:
-        print("")
-        print("Updating coordinates in ASH fragment.")
-    fragment.coords = newcoords
-
     #Writing final PDB-file. If system is non-periodic (according to OpenMMTheory settings) then we set enforcePeriodicBox to False
     #to avoid some strange geometry translation
     if openmmobject.Periodic is True:
@@ -2521,6 +2514,16 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
             print("Writing final PDB file (enforcePeriodicBox=False)")
         positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=False).getPositions()
     write_pdbfile_openMM(openmmobject.topology, positions, 'frag-minimized.pdb')
+
+    # Get coordinates to update fragment
+    # Strange bug before:
+    #newcoords = state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
+    newcoords=simulation.context.getState(getPositions=True, enforcePeriodicBox=False).getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
+    if printlevel >= 1:
+        print("")
+        print("Updating coordinates in ASH fragment.")
+    fragment.coords = newcoords
+
 
     if printlevel >= 1:
         print('All Done!')

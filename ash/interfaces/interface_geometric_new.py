@@ -323,7 +323,7 @@ class GeomeTRICOptimizerClass:
                 print("Checking that Hessian is compatible with active-region")
                 print("2 actatoms:", actatoms)
                 if self.hessian.shape[0] != 3*len(actatoms):
-                    print(f"Error: Hessian shape is {self.hessian.shape}  which is incompatible with the the number of active atoms {len(actatoms)} present")
+                    print(f"Error: Hessian shape is {self.hessian.shape}  which is incompatible with the  number of active atoms present ({len(actatoms)})")
                     print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(actatoms)} x {3*len(actatoms)})")
                     ashexit()
 
@@ -381,7 +381,7 @@ class GeomeTRICOptimizerClass:
                 hessian_read = read_hessian(hessianfile)
                 print("actatoms:", actatoms)
                 if hessian_read.shape[0] != 3*len(actatoms):
-                    print(f"Error: Hessian shape is {hessian_read.shape}  which is incompatible with the the number of active atoms {len(actatoms)} present")
+                    print(f"Error: Hessian shape is {hessian_read.shape}  which is incompatible with the  number of active atoms present ({len(actatoms)})")
                     print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(actatoms)} x {3*len(actatoms)})")
                     ashexit()
 
@@ -391,7 +391,6 @@ class GeomeTRICOptimizerClass:
             else:
                 print("Unknown Hessian option")
                 ashexit()
-            
 
 
         #If using Active region then we write only those coordinates to disk (initialxyzfiletric)
