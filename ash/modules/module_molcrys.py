@@ -441,8 +441,11 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     ##################################
     if theory.__class__.__name__ == "ORCATheory":
 
+        #Using numcores in Theory object if larger than numcores in Molcrys
+        if theory.numcores > numcores:
+            numcores=theory.numcores
 
-        if theory.brokensym == True:
+        if theory.brokensym is True:
 
             if chargemodel =="IAO":
                 print("Note IAO charges on broken-symmetry solution are probably not sensible")

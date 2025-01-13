@@ -1189,7 +1189,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         currtime = time.time()
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
         if id == 0:
-            if brokensym==True:
+            if brokensym is True:
                 ORCASPcalculation = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir,
                                        orcasimpleinput=orcasimpleinput, numcores=NUMPROC,
                                        orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
