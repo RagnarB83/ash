@@ -187,7 +187,10 @@ class QMMMTheory:
                 print(BC.FAIL,"Number of charges not matching number of fragment atoms. Exiting.",BC.END)
                 ashexit()
             self.charges=charges
-            self.mm_theory.update_charges(self.fragment.allatoms,self.charges)
+
+            # Update charges in mm_theory if defined (molcrys allows mm_theory to be None)
+            if self.mm_theory is not None:
+                self.mm_theory.update_charges(self.fragment.allatoms,self.charges)
 
         if len(self.charges) == 0:
             print("No charges present in QM/MM object. Exiting...")
