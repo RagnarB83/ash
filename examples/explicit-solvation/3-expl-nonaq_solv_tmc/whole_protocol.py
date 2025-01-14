@@ -8,12 +8,12 @@ numcores=8
 
 # Solvent input parameters
 box_size=100
-padpar=2.0 # padding parameter for PBC. Increase if simulation crashes (
-solvent_density = 0.8699 # g/ml
+padpar=2.0 # padding parameter (Å) for PBC. Increase if simulation crashes
+solvent_density = 0.786  # g/ml
 solvent_xyzfile="acetonitrile.xyz"
-solvent_name="ACN" #Used for files
+solvent_name="ACN" #Name used for files
 solvent_FF="OpenFF"
-max_NPT_cycles=1
+max_NPT_cycles=10
 # Solute input parameters
 solute_xyzfile="fecl4.xyz"
 solute_charge=-1
