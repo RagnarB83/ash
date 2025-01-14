@@ -4079,7 +4079,7 @@ def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, wr
     #Trim by removing clashing atoms
     new_frag.printlevel=1
     #Find atoms connected to solute index 0. Uses scale and tol
-    membs = get_molecule_members_loop_np2(new_frag.coords, new_frag.elems, 10, scale, tol, atomindex=0, membs=None)
+    membs = get_molecule_members_loop_np2(new_frag.coords, new_frag.elems, 20, scale, tol, atomindex=0, membs=None)
     print("Found clashing solvent atoms:", membs)
     delatoms=[]
     for i in membs:
