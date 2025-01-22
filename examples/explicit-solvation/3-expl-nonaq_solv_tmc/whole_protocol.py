@@ -7,7 +7,7 @@ from ash import *
 numcores=8
 
 # Solvent input parameters
-box_size=100
+box_size=30
 padpar=2.0 # padding parameter (Å) for PBC. Increase if simulation crashes
 solvent_density = 0.786  # g/ml
 solvent_xyzfile="acetonitrile.xyz"
@@ -79,7 +79,7 @@ omm = OpenMMTheory(xmlfiles=[solute_xmlfile,solvent_xmlfile],pdbfile="solution.p
 
 # Now we are ready to do QM/MM
 #Defining QM/MM object to check
-qm_theory = xTBTheory()
+qm_theory = xTBTheory(xtbmethod="GFN2")
 qmatoms = solute.allatoms #Works because solute appears first in solution fragment
 qm_mm = QMMMTheory(qm_theory=qm_theory, mm_theory=omm, qmatoms=qmatoms, fragment=solution,
     qm_charge=solute_charge, qm_mult=solute_mult)
@@ -88,5 +88,5 @@ qm_mm = QMMMTheory(qm_theory=qm_theory, mm_theory=omm, qmatoms=qmatoms, fragment
 # Singlepoint(fragment=solution, theory=qm_mm)
 # Optimizer(fragment=solution, theory=qm_mm, ActiveRegion=True, actatoms=qmatoms)
 # MolecularDynamics(fragment=solution, theory=qm_mm, timestep=0.001, simulation_time=10, traj_frequency=1,
-#    temperature=30, integrator='LangevinMiddleIntegrator', coupling_frequency=1,
+#    temperature=300, integrator='LangevinMiddleIntegrator', coupling_frequency=1,
 #    trajfilename='QM_MM_NVT-MD',trajectory_file_option='DCD')

@@ -3050,7 +3050,7 @@ def QMPC_fragexpand(theory=None, fragment=None, thresh=5e-4):
 #Now sped up via get_connected_atoms_np. Silly
 def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None, unusualboundary=False):
     timeA = time.time()
-    print("Determining QM-MM boundary")
+    print("Determining QM-MM/HL-LL boundary")
     print("Parameters determing connectivity:")
     print("Scaling factor:", scale)
     print("Tolerance:", tol)

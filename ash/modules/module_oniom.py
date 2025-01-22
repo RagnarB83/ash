@@ -97,8 +97,6 @@ class ONIOMTheory(Theory):
         self.charge = self.fullregion_charge
         self.mult = self.fullregion_mult
 
-        #self.numcores=numcores
-
         #
         print("Embedding:", self.embedding)
         print("Theories:")
@@ -142,20 +140,53 @@ class ONIOMTheory(Theory):
             print()
             self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.regions_N[0], self.fragment.coords, self.fragment.elems, conn_scale,
                 conn_tolerance, excludeboundaryatomlist=None, unusualboundary=None)
+        elif len(self.theories_N) == 3:
+            self.theorylabels = ["HL","IL", "LL"]
+            # Atom labels
+            atomlabels = ["HL" if b in self.regions_N[0] else "ML" if b in self.regions_N[1] else "LL" for b in self.fragment.allatoms ]
+            print("atomlabels:", atomlabels)
+            # If HL-LL covalent boundary issue and ASH exits then printing QM-coordinates is useful
+            print("\nFull-system coordinates (before any linkatoms):")
+            ash.modules.module_coords.print_coords_for_atoms(self.fragment.coords, self.fragment.elems, self.fragment.allatoms, labels=atomlabels)
+            #
+            self.boundaryatoms_HL_ML = ash.modules.module_coords.get_boundary_atoms(self.regions_N[0], self.fragment.coords, self.fragment.elems, conn_scale,
+                conn_tolerance, excludeboundaryatomlist=None, unusualboundary=None)
+            print("boundaryatoms_HL_ML:", self.boundaryatoms_HL_ML)
+            self.boundaryatoms_ML_LL = ash.modules.module_coords.get_boundary_atoms(self.regions_N[1], self.fragment.coords, self.fragment.elems, conn_scale,
+                conn_tolerance, excludeboundaryatomlist=None, unusualboundary=None)
+            print("boundaryatoms_ML_LL:", self.boundaryatoms_ML_LL)
+            print("XX")
+            #self.boundaryatoms=[]
 
-
+        elif len(self.theories_N) == 4:
+            print("4-layer ONION is not supported yet")
+            ashexit()
         else:
-            print("todo")
-            self.regionlabels = ["HL","IL", "LL"]
+            print("Weird unsupported theory specifaction:", self.theories_N)
             ashexit()
 
-        if len(self.boundaryatoms) > 0:
+        # Checking for covalent boundary
+        if len(self.theories_N) == 2 and len(self.boundaryatoms) > 0:
             print("Found covalent ONIOM boundary. Linkatoms option set to True")
             print("Boundaryatoms (HL:LL pairs):", self.boundaryatoms)
             print("Note: used connectivity settings, scale={} and tol={} to determine boundary.".format(conn_scale,conn_tolerance))
             self.linkatoms = True
             # Get MM boundary information. Stored as self.MMboundarydict
-            self.get_MMboundary(conn_scale,conn_tolerance)
+            self.get_MMboundary(self.boundaryatoms,conn_scale,conn_tolerance)
+        elif len(self.theories_N) == 3 and len(self.boundaryatoms_HL_ML) > 0:
+            print("Found covalent ONIOM boundary between HL and ML regions. Linkatoms option set to True")
+            print("Boundaryatoms (HL:LL pairs):", self.boundaryatoms_HL_ML)
+            print("Note: used connectivity settings, scale={} and tol={} to determine boundary.".format(conn_scale,conn_tolerance))
+            self.linkatoms = True
+            # Get MM boundary information. Stored as self.MMboundarydict
+            self.get_MMboundary(self.boundaryatoms_HL_ML,conn_scale,conn_tolerance)
+        elif len(self.theories_N) == 3 and len(self.boundaryatoms_ML_LL) > 0:
+            print("Found covalent ONIOM boundary between ML and LL regions. Linkatoms option set to True")
+            print("Boundaryatoms (HL:LL pairs):", self.boundaryatoms_ML_LL)
+            print("Note: used connectivity settings, scale={} and tol={} to determine boundary.".format(conn_scale,conn_tolerance))
+            self.linkatoms = True
+            # Get MM boundary information. Stored as self.MMboundarydict
+            self.get_MMboundary(self.boundaryatoms_ML_LL,conn_scale,conn_tolerance)
         else:
             print("No covalent ONIOM boundary. Linkatoms and dipole_correction options set to False")
             self.linkatoms=False
@@ -169,7 +200,7 @@ class ONIOMTheory(Theory):
     def create_linkatoms(self, current_coords,region_atoms, elems):
         checkpoint=time.time()
         # Get linkatom coordinates
-        #NOTE: Option to change linkatom_distance, now 1.08736
+        # NOTE: Option to change linkatom_distance, now 1.08736
         self.linkatoms_dict = ash.modules.module_coords.get_linkatom_positions(self.boundaryatoms,region_atoms, 
                                                                                current_coords, elems,
                                                                                linkatom_method=self.linkatom_method,
@@ -330,12 +361,12 @@ class ONIOMTheory(Theory):
         return pointcharges, pointchargecoords
 
     # From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
-    def get_MMboundary(self,scale,tol):
+    def get_MMboundary(self,boundaryatoms,scale,tol):
         timeA=time.time()
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         self.MMboundarydict={}
-        for (QM1atom,MM1atom) in self.boundaryatoms.items():
+        for (QM1atom,MM1atom) in boundaryatoms.items():
             connatoms = ash.modules.module_coords.get_connected_atoms(self.fragment.coords, self.fragment.elems, scale,tol, MM1atom)
             #Deleting QM-atom from connatoms list
             connatoms.remove(QM1atom)
@@ -434,9 +465,14 @@ class ONIOMTheory(Theory):
         if Grad:
             G_dict[(num_theories-1,-1)] = g_LL_full
 
+        ###############################################
+        # RUN OTHER REGIONS
+        ###############################################
+        
         # LOOPING OVER OTHER THEORY-REGION COMBOS
         for j,region in enumerate(self.regions_N):
             print("\nj:",j)
+            print("region:", region )
             # Skipping last region
             if j == len(self.regions_N)-1:
                 print("Last region always skipped")
@@ -666,14 +702,15 @@ class ONIOMTheory(Theory):
             print(f"Energy (Region2-IL): {E_dict[(1,1)]} Eh")
             print(f"Energy (Region2-LL): {E_dict[(2,1)]} Eh")
 
-            if self.linkatoms is True:
-                print("Linkatom projection for ONIOM-3 not ready")
-                ashexit()
             if Grad:
-
                 print("Gradient for 3-layer ONIOM is not yet ready")
                 ashexit()
-                #NOTE: We need to finish linkatom handling
+
+                if self.linkatoms is True:
+                    print("Linkatom projection for ONIOM-3 not ready")
+                    ashexit()
+
+                # NOTE: We need to finish linkatom handling
                 # Gradient assembled
                 self.gradient = G_dict[(2,-1)]
                 for at, g in zip(self.regions_N[0], G_dict[(0,0)]):
