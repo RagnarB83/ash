@@ -5008,34 +5008,17 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=No
         CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val*CV_unit, CV_max_val*CV_unit, biaswidth_cv*biaswidth_cv_unit, periodic=False)
     elif CV_type.lower() == "cn":
         print("CV type is CN")
-        try:
-            import cvpack
-        except:
-            print("CV-type CN requires the cvpack package. See https://github.com/RedesignScience/cvpack?tab=readme-ov-file")
-            print("Install like this: mamba install -c mdtools cvpack")
-            ashexit()
-
-        #NH3 group
-        group1=[6]
-        group2=[13,14,15]
-
-        forces = {f.getName(): f for f in self.openmmobject.system.getForces()}
-        nc = cvpack.NumberOfContacts(
-            group1,
-            group2,
-            forces["NonbondedForce"],
-            stepFunction="step(1-x)",
-        )
-
-        cvforce = nc
+        print("not ready")
+        ashexit()
+        #try:
+        #    import cvpack
+        #except:
+        #    print("CV-type CN requires the cvpack package. See https://github.com/RedesignScience/cvpack?tab=readme-ov-file")
+        #    print("Install like this: mamba install -c mdtools cvpack")
+        #    ashexit()
 
         #Biasvariable: forceobj, minval, maxval, biaswidth
         biasvar=openmm.app.BiasVariable(cvforce, 00, 18.0, 2.0, periodic=False)
-
-
-
-
-        ashexit()
         #cvforce = openmm.CustomTorsionForce('theta')
         #cvforce.addTorsion(*CV_atoms)
         #CV_bias = openmm.app.BiasVariable(cvforce, CV_min_val*CV_unit, CV_max_val*CV_unit, biaswidth_cv*biaswidth_cv_unit, periodic=True)
