@@ -4630,10 +4630,10 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
     print("biasdirectory chosen to be:", biasdir)
     biasdir_full_path = os.path.abspath(biasdir)
     print("Full path to biasdirectory is:", biasdir_full_path)
-
-    if CV1_atoms == None or CV1_type == None:
-        print("Error: You must specify both CV1_atoms and CV1_type keywords")
-        ashexit()
+    if user_cvforce is None:
+        if CV1_atoms == None or CV1_type == None:
+            print("Error: You must specify both CV1_atoms and CV1_type keywords")
+            ashexit()
 
     if CV2_atoms == None or CV2_type == None:
         print("CV2 not specified. Assuming only 1 CV in simulation.")
@@ -5242,7 +5242,8 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
         return
 
     elif numCVs == 1:
-
+        cv1_conversionfactor=1.0
+        CV1_unit_label="UNK"
         if CV1_type == 'dihedral' or CV1_type == 'torsion' or CV1_type == 'angle':
             cv1_conversionfactor =180/np.pi
             CV1_unit_label="°"
