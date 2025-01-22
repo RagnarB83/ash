@@ -3464,9 +3464,10 @@ class OpenMM_MDclass:
         self.force_file_option=force_file_option #Gradients/forces as a file
         self.energy_file_option=energy_file_option #Energies as a file
         self.atomic_units_force_reporter=atomic_units_force_reporter #Forces in atomic units
-        self.user_cvforce=None # Initializing possibility of user CV object
-        self.user_biasvar=None #Initializing possibility of user biasvariable
-
+        self.user_cvforce1=None # Initializing possibility of user CV object
+        self.user_biasvar1=None #Initializing possibility of user biasvariable
+        self.user_cvforce2=None # Initializing possibility of user CV object
+        self.user_biasvar2=None #Initializing possibility of user biasvariable
         #PERIODIC or not
         if self.openmmobject.Periodic is True:
             #Generally we want True except sometimes we do our own wrapping
@@ -3822,9 +3823,9 @@ class OpenMM_MDclass:
             if metadyn_settings["numCVs"] == 2:
                 #Creating CV biasvariables and forces
                 CV1_bias,cvforce_1 = create_CV_bias(metadyn_settings["CV1_type"],metadyn_settings["CV1_atoms"],metadyn_settings["CV1_biaswidth"],
-                                                    CV_range=metadyn_settings["CV1_range"], reference_pos=reference_pos, reference_particles=metadyn_settings["CV1_atoms"], user_cvforce=self.user_cvforce, user_biasvar=self.user_biasvar)
+                                                    CV_range=metadyn_settings["CV1_range"], reference_pos=reference_pos, reference_particles=metadyn_settings["CV1_atoms"], user_cvforce=self.user_cvforce1, user_biasvar=self.user_biasvar1)
                 CV2_bias,cvforce_2 = create_CV_bias(metadyn_settings["CV2_type"],metadyn_settings["CV2_atoms"],metadyn_settings["CV2_biaswidth"],
-                                                    CV_range=metadyn_settings["CV2_range"], reference_pos=reference_pos, reference_particles=metadyn_settings["CV2_atoms"], user_cvforce=self.user_cvforce, user_biasvar=self.user_biasvar)
+                                                    CV_range=metadyn_settings["CV2_range"], reference_pos=reference_pos, reference_particles=metadyn_settings["CV2_atoms"], user_cvforce=self.user_cvforce2, user_biasvar=self.user_biasvar2)
 
                 #Gridwidth and min/max values now set. Adding to dict
                 metadyn_settings["CV1_gridwidth"] = CV1_bias.gridWidth
@@ -3848,7 +3849,7 @@ class OpenMM_MDclass:
                 #Creating CV biasvariable and force
                 CV1_bias,cvforce_1 = create_CV_bias(metadyn_settings["CV1_type"],metadyn_settings["CV1_atoms"],metadyn_settings["CV1_biaswidth"],
                                                     CV_range=metadyn_settings["CV1_range"], reference_pos=reference_pos, reference_particles=metadyn_settings["CV1_atoms"],
-                                                    user_cvforce=self.user_cvforce, user_biasvar=self.user_biasvar)
+                                                    user_cvforce=self.user_cvforce1, user_biasvar=self.user_biasvar1)
                 #Gridwidth and min/max values now set. Adding to dict
                 metadyn_settings["CV1_gridwidth"] = CV1_bias.gridWidth
                 metadyn_settings["CV1_minvalue"] = CV1_bias.minValue
@@ -4051,6 +4052,8 @@ class OpenMM_MDclass:
                 if metadynamics is True:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
+                    cv1scaling=1
+                    cv2scaling=1
                     meta_object.step(self.simulation, 1)
                     print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
@@ -4156,6 +4159,7 @@ class OpenMM_MDclass:
 
                     #getCollectiveVariables
                     cv1scaling=1
+                    cv2scaling=1
                     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
                         if self.printlevel >= 2:
                             print("MTD: Writing current collective variables to disk")
@@ -4621,7 +4625,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6,
               height=1,
               CV1_biaswidth=0.5, CV2_biaswidth=0.5, CV1_range=None, CV2_range=None,
-              user_cvforce=None, user_biasvar=None,
+              user_cvforce1=None, user_biasvar1=None, user_cvforce2=None, user_biasvar2=None,
               frequency=1, savefrequency=10, printlevel=2,
               biasdir='.', multiplewalkers=False, numcores=1, walkerid=None):
     print_line_with_mainheader("OpenMM metadynamics")
@@ -4630,16 +4634,24 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
     print("biasdirectory chosen to be:", biasdir)
     biasdir_full_path = os.path.abspath(biasdir)
     print("Full path to biasdirectory is:", biasdir_full_path)
-    if user_cvforce is None:
-        if CV1_atoms == None or CV1_type == None:
-            print("Error: You must specify both CV1_atoms and CV1_type keywords")
-            ashexit()
 
-    if CV2_atoms == None or CV2_type == None:
+    if CV2_type is None:
         print("CV2 not specified. Assuming only 1 CV in simulation.")
         numCVs=1
+        if user_cvforce1 is None:
+            if CV1_atoms == None or CV1_type == None:
+                print("Error: You must specify both CV1_atoms and CV1_type keywords")
+                ashexit()
     else:
         numCVs=2
+        if user_cvforce1 is None:
+            if CV1_atoms == None or CV1_type == None:
+                print("Error: You must specify both CV1_atoms and CV1_type keywords")
+                ashexit()
+        if user_cvforce2 is None:
+            if CV2_atoms == None or CV2_type == None:
+                print("Error: You must specify both CV2_atoms and CV2_type keywords")
+                ashexit()
 
     #Parallelization
     if multiplewalkers is True and numcores == 1 :
@@ -4674,13 +4686,19 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
                         barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
 
     #
-    if user_cvforce is not None:
-        print("User CV-force was given:", user_cvforce)
-        md.user_cvforce=user_cvforce
-    if user_biasvar is not None:
-        print("User Biasvar was given:", user_biasvar)
-        md.user_biasvar=user_biasvar
-
+    if user_cvforce1 is not None:
+        print("User CV-force 1 was given:", user_cvforce1)
+        md.user_cvforce1=user_cvforce1
+    if user_biasvar1 is not None:
+        print("User Biasvar CV1 was given:", user_biasvar1)
+        md.user_biasvar1=user_biasvar1
+    if user_cvforce2 is not None:
+        print("User CV-force 2 was given:", user_cvforce2)
+        md.user_cvforce2=user_cvforce2
+    if user_biasvar2 is not None:
+        print("User Biasvar CV2 was given:", user_biasvar2)
+        md.user_biasvar2=user_biasvar2
+    
     #Load OpenMM.app
     import openmm
     import openmm.app as openmm_app
@@ -5032,7 +5050,6 @@ def create_CV_bias(CV_type,CV_atoms,biaswidth_cv,CV_range=None, reference_pos=No
     else:
         print("unsupported CV_type for native OpenMM metadynamics implementation")
         ashexit()
-
     return CV_bias,cvforce
 
 #Standalone function to create Plumed input-string based on basic MTD info and CVs
@@ -5183,6 +5200,8 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
     else:
         numCVs=1
     if numCVs == 2:
+        cv1_conversionfactor=1.0
+        cv2_conversionfactor=1.0
         if CV1_type == 'dihedral' or CV1_type == 'torsion' or CV1_type == 'angle' :
             cv1_conversionfactor =180/np.pi
             CV1_unit_label="°"
@@ -5195,6 +5214,11 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
         elif CV2_type == 'bond' or CV2_type == 'distance' or CV2_type == 'rmsd':
             cv2_conversionfactor = 10.0
             CV2_unit_label="Å"
+        else:
+            CV1_unit_label=""
+            CV2_unit_label=""
+
+
 
         #Get free energy surface from biasfiles
         free_energy, list_of_fes_from_biasfiles = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwidth,
@@ -5243,13 +5267,14 @@ def metadynamics_plot_data(biasdir=None, dpi=200, imageformat='png', plot_xlim=N
 
     elif numCVs == 1:
         cv1_conversionfactor=1.0
-        CV1_unit_label="UNK"
         if CV1_type == 'dihedral' or CV1_type == 'torsion' or CV1_type == 'angle':
             cv1_conversionfactor =180/np.pi
             CV1_unit_label="°"
         elif CV1_type == 'bond' or CV1_type == 'distance' or CV1_type == 'rmsd':
             cv1_conversionfactor = 10.0
             CV1_unit_label="Ang"
+        else:
+            CV1_unit_label=""
         free_energy, bla = get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwidth,None,directory=biasdir)
 
         #X-values
