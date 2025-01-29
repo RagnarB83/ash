@@ -20,10 +20,13 @@ import ash.functions.functions_parallel
 
 # ORCA Theory object.
 class ORCATheory:
-    def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, extrabasis=None, atom_specific_basis_dict=None, ecp_dict=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
-                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, numcores=1, nprocs=None, label="ORCA",
+    def __init__(self, orcadir=None, orcasimpleinput='', printlevel=2, basis_per_element=None, extrabasisatoms=None, 
+                 extrabasis=None, atom_specific_basis_dict=None, ecp_dict=None, TDDFT=False, TDDFTroots=5, FollowRoot=1,
+                 orcablocks='', extraline='', first_iteration_input=None, brokensym=None, HSmult=None, atomstoflip=None, 
+                 numcores=1, nprocs=None, label="ORCA",
                  moreadfile=None, moreadfile_always=False, bind_to_core_option=True, ignore_ORCA_error=False,
-                 autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
+                 autostart=True, propertyblock=None, save_output_with_label=False, keep_each_run_output=False, 
+                 print_population_analysis=False, filename="orca", check_for_errors=True, check_for_warnings=True,
                  fragment_indices=None, xdm=False, xdm_a1=None, xdm_a2=None, xdm_func=None, NMF=False, NMF_sigma=None,
                  cpcm_radii=None, ROHF_UHF_swap=False,
                  deltaSCF=False, deltaSCF_PMOM=False, deltaSCF_confline=None, deltaSCF_turn_off_automatically=True):
@@ -4060,3 +4063,4 @@ def new_ORCA_natorbsfile_from_density(gbwfile, densityname="mdcip", result_file=
     #print("orca_basename:", orca_basename)
 
     return newgbwfile, natocc
+

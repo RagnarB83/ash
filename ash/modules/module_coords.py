@@ -3199,8 +3199,8 @@ def get_molecules_from_trajectory(file, writexyz=False, skipindex=1, conncalc=Fa
     list_of_molecules = []
     all_elems, all_coords, all_titles = split_multimolxyzfile(file, writexyz=writexyz, skipindex=skipindex,return_fragments=False)
     print("Found {} molecules in file.".format(len(all_elems)))
-    for els, cs in zip(all_elems, all_coords):
-        conf = ash.Fragment(elems=els, coords=cs, conncalc=conncalc, printlevel=0)
+    for i,(els, cs) in enumerate(zip(all_elems, all_coords)):
+        conf = ash.Fragment(elems=els, coords=cs, conncalc=conncalc, printlevel=0, label=f"{file}_{i}")
         list_of_molecules.append(conf)
 
     return list_of_molecules

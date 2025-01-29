@@ -1264,8 +1264,6 @@ class OpenMMTheory:
                                    k * openmm.unit.kilocalories_per_mole / openmm.unit.angstroms ** 2)
         self.system.addForce(new_restraints)
 
-    # TODO: Angleconstraints and Dihedral restraints
-
     # Z_cc: length of cone part
     # R_cylinder: radius of cylinder part
     # alpha: angle of cone in degrees
@@ -1298,7 +1296,6 @@ class OpenMMTheory:
             # Add host and guest indices
             g1 = funnel.addGroup(host_index, [1.0 for i in range(len(host_index))])
             g2 = funnel.addGroup(guest_index, [1.0 for i in range(len(guest_index))])
-
 
             # Add bond
             funnel.addBond([g1, g2], [])
@@ -4759,7 +4756,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
         #NOTE: Ading PlumedForce to OpenMM system now done inside md.run instead
 
 
-    #Add restrining funnel for funnel metadynamics
+    #Add restraining funnel for funnel metadynamics
     if funnel_restraint is not None:
         if funnel_parameters == None:
             print("Error: funnel_restraint requires passing a dictionary with funnel definition parameters.")
