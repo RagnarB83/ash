@@ -2530,7 +2530,8 @@ ScalHFX {percentages[0]}
 end"""
     
 
-    theory_1= ORCATheory(orcasimpleinput=f"! {functional} {basis} tightscf ", orcablocks=blocks_1, filename="theory1", numcores=numcores)
+    theory_1= ORCATheory(orcasimpleinput=f"! {functional} {basis} tightscf ", orcablocks=blocks_1, filename="theory1", numcores=numcores,
+                         autostart=False)
     print("Now running Theory-1")
     result_1 = ash.Singlepoint(theory=theory_1, fragment=fragment)
     blocks_2=f"""

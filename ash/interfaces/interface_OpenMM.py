@@ -23,7 +23,7 @@ from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
 from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
 from ash.modules.module_singlepoint import Singlepoint
-from ash.interfaces.interface_plumed import MTD_analyze
+from ash.interfaces.interface_plumed import plumed_MTD_analyze
 from ash.interfaces.interface_mdtraj import MDtraj_import, MDtraj_imagetraj, MDtraj_RMSF
 import ash.functions.functions_parallel
 import ash.modules.module_plotting
@@ -4615,10 +4615,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
               anderson_thermostat=False, restraints=None, flatbottom_restraint_CV1=None, flatbottom_restraint_CV2=None,
               funnel_restraint=None, funnel_parameters=None,
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
-              datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
+              datafilename=None, dummy_MM=False, add_centerforce=False,
               centerforce_atoms=None, centerforce_distance=10.0, centerforce_constant=1.0, centerforce_center=None,
               barostat_frequency=25, specialbox=False,
-              use_plumed=False, plumed_input_string=None,
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6,
               height=1,
               CV1_biaswidth=0.5, CV2_biaswidth=0.5, CV1_range=None, CV2_range=None,
@@ -4655,21 +4654,6 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
         print("Error: For multiplewalkers=True  you must set numcores to the number of walkers")
         ashexit()
 
-
-    if use_plumed is True:
-        print("Using metadynamics via OpenMM Plumed plugin (use_plumed=True)")
-
-        #TODO: Trying to load plumed, test for plugin and also plumed package
-        try:
-            #from openmmplumed import PlumedForce
-            import openmmplumed
-        except ModuleNotFoundError:
-            print("openmmplumed module plugin not found. See https://github.com/openmm/openmm-plumed \nYou can install via conda: \nconda install -c conda-forge openmm-plumed")
-            ashexit()
-    else:
-        print("Using OpenMM built-in metadynamics option (use_plumed=False)")
-
-
     #Creating MDclass
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints,
@@ -4677,7 +4661,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, platform=platform, hydrogenmass=hydrogenmass,
-                        plumed_object=plumed_object, add_centerforce=add_centerforce,trajfilename=trajfilename,
+                        add_centerforce=add_centerforce,trajfilename=trajfilename,
                         centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
                         centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
                         barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
@@ -4710,51 +4694,26 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
         print("rmsd_CV2_reference_indices:", CV2_atoms)
     else:
         reference_pos=None
-    #Setting up collective variables for native case or plumed case
-    if use_plumed is False:
-        native_MTD=True
-        plumedinput=None
-        #Creating dictionary with MTD parameters that will be passed to MD function
-        if numCVs == 1:
-            # Create metadynamics dict for 1 CV
-            metadyn_settings = {"numCVs":numCVs, "temperature":temperature, "biasfactor":biasfactor,
-                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
-                                "CV1_type":CV1_type,"CV2_type":None,
-                                "CV1_atoms":CV1_atoms,"CV2_atoms":CV2_atoms, "CV1_range":CV1_range, "CV2_range":CV2_range,
-                                "CV1_biaswidth":CV1_biaswidth,"CV2_biaswidth":CV2_biaswidth,
-                                "CV2_minvalue":None,"CV2_maxvalue":None,
-                                "flatbottom_restraint_CV1":flatbottom_restraint_CV1, "flatbottom_restraint_CV2":flatbottom_restraint_CV2}
-        elif numCVs == 2:
-            # Create metadynamics object for 2 CVs
-            metadyn_settings = {"numCVs":numCVs, "temperature":temperature, "biasfactor":biasfactor,
-                                "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
-                                "CV1_type":CV1_type,"CV2_type":CV2_type,
-                                "CV1_range":CV1_range, "CV2_range":CV2_range,
-                                "CV1_atoms":CV1_atoms,"CV2_atoms":CV2_atoms, "CV1_biaswidth":CV1_biaswidth,"CV2_biaswidth":CV2_biaswidth,
-                                "flatbottom_restraint_CV1":flatbottom_restraint_CV1, "flatbottom_restraint_CV2":flatbottom_restraint_CV2}
-    else:
-        print("Setting up Plumed")
-        #Setting native_MTD Boolean to False and metaobject to None
-        native_MTD=False
-        metadyn_settings=None
-        #OPTION to provide the full Plumed input as string instead
-        if plumed_input_string != None:
-            print("plumed_input_string provided. Will read all options from this string (make sure to provide atom indices in 1-based indexing)")
-            writestringtofile(plumed_input_string,"plumedinput.in")
-            plumedinput=plumed_input_string
-        #CREATE Plumed input strings based on provided keyword options
-        else:
-            print("No plumed_input_string provided. Will create based on user-input")
-            plumedinput = setup_plumed_input(savefrequency,numCVs,height,temperature,biasfactor,
-                       CV1_type,CV1_biaswidth,CV1_atoms,
-                       CV2_type,CV2_biaswidth,CV2_atoms,
-                       multiplewalkers=multiplewalkers, biasdir=biasdir_full_path,
-                       walkernum=numcores,
-                       walkerid=walkerid)
-            writestringtofile(plumedinput,"plumedinput.in")
-
-        #NOTE: Ading PlumedForce to OpenMM system now done inside md.run instead
-
+    #Setting up collective variables for native case
+    native_MTD=True
+    #Creating dictionary with MTD parameters that will be passed to MD function
+    if numCVs == 1:
+        # Create metadynamics dict for 1 CV
+        metadyn_settings = {"numCVs":numCVs, "temperature":temperature, "biasfactor":biasfactor,
+                            "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
+                            "CV1_type":CV1_type,"CV2_type":None,
+                            "CV1_atoms":CV1_atoms,"CV2_atoms":CV2_atoms, "CV1_range":CV1_range, "CV2_range":CV2_range,
+                            "CV1_biaswidth":CV1_biaswidth,"CV2_biaswidth":CV2_biaswidth,
+                            "CV2_minvalue":None,"CV2_maxvalue":None,
+                            "flatbottom_restraint_CV1":flatbottom_restraint_CV1, "flatbottom_restraint_CV2":flatbottom_restraint_CV2}
+    elif numCVs == 2:
+        # Create metadynamics object for 2 CVs
+        metadyn_settings = {"numCVs":numCVs, "temperature":temperature, "biasfactor":biasfactor,
+                            "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
+                            "CV1_type":CV1_type,"CV2_type":CV2_type,
+                            "CV1_range":CV1_range, "CV2_range":CV2_range,
+                            "CV1_atoms":CV1_atoms,"CV2_atoms":CV2_atoms, "CV1_biaswidth":CV1_biaswidth,"CV2_biaswidth":CV2_biaswidth,
+                            "flatbottom_restraint_CV1":flatbottom_restraint_CV1, "flatbottom_restraint_CV2":flatbottom_restraint_CV2}
 
     #Add restraining funnel for funnel metadynamics
     if funnel_restraint is not None:
@@ -4784,7 +4743,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
 
     if multiplewalkers is True:
         print(f"Now launching Metadynamics job with {numcores} walkers")
-        print("Disabled")
+        print("Error: Disabled")
         ashexit()
         #Input parameters passed as dictionary to Simple_parallel
         #NOTE: multiprocess library (instead of multiprocessing) is necessary.
@@ -4792,38 +4751,90 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
         ash.functions.functions_parallel.Simple_parallel(jobfunction=
                                                         md.run, parameter_dict={"simulation_steps":simulation_steps,
                                                         "simulation_time":simulation_time, "metadynamics":native_MTD,
-                                                        "metadyn_settings":metadyn_settings, "plumedinput" : plumedinput},
+                                                        "metadyn_settings":metadyn_settings},
                                                         numcores=numcores, version='multiprocess', separate_dirs=True,
                                                         restraints=restraints)
     else:
         simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, metadynamics=native_MTD, metadyn_settings=metadyn_settings,
-                            restraints=restraints, plumedinput=plumedinput)
+                            restraints=restraints)
     print("Metadynamics simulation done")
 
     #Finalizing simulation (writes and updates files)
     md.finalize_simulation()
 
     #Data plotting
-    if use_plumed is False:
-        print("\nAll bias-files have been written to biasdirectory:", biasdir_full_path)
-        print("Dir also contains: ASH_MTD_parameters.txt")
-        print("Use function  get_free_energy_from_biasfiles  to create free-energy surface")
-        print("and function metadynamics_plot_data to plot the data")
-        print()
-    else:
-        path_to_plumed=os.path.dirname(os.path.dirname(os.path.dirname(openmmplumed.mm.pluginLoadedLibNames[0])))
-        print("You can now call MTD_analyze in a separate ASH script to analyze/plot data (requires presence of HILLS and COLVAR files in directory)")
-        print("Example:")
-        if numCVs == 1:
-            print(f"MTD_analyze(path_to_plumed={path_to_plumed}, CV1_type='{CV1_type}', temperature={temperature}, \
-CV1_indices={CV1_atoms}, plumed_energy_unit='kj/mol', Plot_To_Screen=False)")
-        elif numCVs == 2:
-            print(f"MTD_analyze(path_to_plumed={path_to_plumed}, CV1_type='{CV1_type}', CV2_type='{CV2_type}', temperature={temperature}, \
-CV1_indices={CV1_atoms}, CV2_indices={CV2_atoms}, plumed_energy_unit='kj/mol', Plot_To_Screen=False)")
-        print("\n")
+    print("\nAll bias-files have been written to biasdirectory:", biasdir_full_path)
+    print("Dir also contains: ASH_MTD_parameters.txt")
+    print("Use function  get_free_energy_from_biasfiles  to create free-energy surface")
+    print("and function metadynamics_plot_data to plot the data")
+    print()
     return
 
-#
+# Metadynamics-function that used OpenMM_Plumed interface
+def OpenMM_metadynamics_plumed(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
+              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
+              anderson_thermostat=False, restraints=None, 
+              enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
+              datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
+              centerforce_atoms=None, centerforce_distance=10.0, centerforce_constant=1.0, centerforce_center=None,
+              barostat_frequency=25, specialbox=False,
+              plumed_input_string=None,
+              frequency=1, savefrequency=10, printlevel=2,
+              biasdir='.', numcores=1):
+    print_line_with_mainheader("OpenMM metadynamics using OpenMM-Plumed interface")
+
+    #Biasdirectory
+    print("biasdirectory chosen to be:", biasdir)
+    biasdir_full_path = os.path.abspath(biasdir)
+    print("Full path to biasdirectory is:", biasdir_full_path)
+
+    print("Using metadynamics via OpenMM Plumed plugin")
+    try:
+        #from openmmplumed import PlumedForce
+        import openmmplumed
+    except ModuleNotFoundError:
+        print("openmmplumed module plugin not found. See https://github.com/openmm/openmm-plumed \nYou can install via conda: \nconda install -c conda-forge openmm-plumed")
+        ashexit()
+
+    #Creating MDclass
+    md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
+                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
+                        enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
+                        datafilename=datafilename, dummy_MM=dummy_MM, platform=platform, hydrogenmass=hydrogenmass,
+                        plumed_object=plumed_object, add_centerforce=add_centerforce,trajfilename=trajfilename,
+                        centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
+                        centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
+                        barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
+
+    #Load OpenMM.app
+    import openmm
+    import openmm.app as openmm_app
+
+    print("Setting up Plumed")
+    #OPTION to provide the full Plumed input as string instead
+    if plumed_input_string != None:
+        print("plumed_input_string provided. Will read all options from this string (make sure to provide atom indices in 1-based indexing)")
+        writestringtofile(plumed_input_string,"plumedinput.in")
+        plumedinput=plumed_input_string
+    
+    print("Now starting metadynamics simulation")
+    simulation = md.run(simulation_steps=simulation_steps, simulation_time=simulation_time, restraints=restraints, plumedinput=plumedinput)
+    print("Metadynamics simulation done")
+
+    #Finalizing simulation (writes and updates files)
+    md.finalize_simulation()
+
+    path_to_plumed=os.path.dirname(os.path.dirname(os.path.dirname(openmmplumed.mm.pluginLoadedLibNames[0])))
+    print("You can now call plumed_MTD_analyze in a separate ASH script to analyze/plot data (requires presence of HILLS and COLVAR files in directory)")
+    print("\n")
+
+    return
+
+
 def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004], steps=[10,50,10000],
     temperatures=[1,10,300], check_gradient_first=True, gradient_threshold=100, use_mdtraj=True,
     trajfilename="warmup_MD", initial_opt=True, traj_frequencies=[1,1,100], maxoptsteps=10, coupling_frequency=1):
@@ -5847,3 +5858,4 @@ def write_xmlfile_parmed(topology,system,xmlfilename):
     ww.residues.update(parmed.modeller.ResidueTemplateContainer.from_structure(st).to_library())
     ww.write(xmlfilename)
     print("Wrote XML-file:", xmlfilename)
+

@@ -29,7 +29,7 @@ def call_plumed_sum_hills(path_to_plumed,hillsfile,ndim=None, binsg=[99,99], min
             os.system(f'plumed sum_hills --hills HILLS --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}')
 
 #Metadynamics visualization function for Plumed runs
-def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
+def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
                 CV1_indices=None, CV2_indices=None, plumed_length_unit=None, plumed_energy_unit=None, plumed_time_unit=None,
                 CV1_grid_limits=None,CV2_grid_limits=None):
     #Energy-unit used by Plumed-ASH should be eV in general
@@ -97,7 +97,7 @@ def MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=Fals
         #Run Plumed script to get fes.dat from HILLS
         #Setting PATH and LD_LIBRARY_PATH for PLUMED. LD-lib path to C library may also be required
         if path_to_plumed==None:
-            print("Set path_to_plumed argument. Example: MTD_analyze(path_to_plumed=/home/bjornsson/plumed-install)")
+            print("Set path_to_plumed argument. Example: plumed_MTD_analyze(path_to_plumed=/home/bjornsson/plumed-install)")
             ashexit()
 
 
@@ -714,7 +714,7 @@ class plumed_ASH():
             print("plumed_MD requires path_to_plumed_kernel argument to be set")
             print("Should point to: /path/to/libplumedKernel.so or /path/to/libplumedKernel.dylib")
             ashexit()
-        #Path to Plumed (used by MTD_analyze)
+        #Path to Plumed (used by plumed_MTD_analyze)
         if '.dylib' in path_to_plumed_kernel:
             self.path_to_plumed=path_to_plumed_kernel.replace("/lib/libplumedKernel.dylib","")
         else:
