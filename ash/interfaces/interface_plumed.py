@@ -4,8 +4,12 @@ import sys
 import re
 import time
 import glob
+import shutil
 
-from ash.functions.functions_general import ashexit, natural_sort, print_line_with_mainheader,print_time_rel
+import ash.settings_ash
+from ash.functions.functions_general import ashexit, natural_sort, print_line_with_mainheader,print_time_rel, BC,  \
+    check_program_location
+
 
 #Standalone function to call plumed binary and get fes.dat
 def call_plumed_sum_hills(path_to_plumed,hillsfile,ndim=None, binsg=[99,99], ming=[0,0], maxg=[10,10]):
@@ -28,10 +32,11 @@ def call_plumed_sum_hills(path_to_plumed,hillsfile,ndim=None, binsg=[99,99], min
             print(f"Calling plumed sum_hills with  grid settings: --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}")
             os.system(f'plumed sum_hills --hills HILLS --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}')
 
-#Metadynamics visualization function for Plumed runs
-def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
-                CV1_indices=None, CV2_indices=None, plumed_length_unit=None, plumed_energy_unit=None, plumed_time_unit=None,
-                CV1_grid_limits=None,CV2_grid_limits=None):
+# Metadynamics visualization function for Plumed runs
+def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
+                CV1_indices=None, CV2_indices=None, plumed_length_unit=None, plumed_energy_unit="kj/mol", plumed_time_unit=None,
+                CV1_grid_limits=None, CV2_grid_limits=None):
+
     #Energy-unit used by Plumed-ASH should be eV in general
     print_line_with_mainheader("Metadynamics Analysis Script")
     try:
@@ -39,32 +44,20 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
     except:
         print("Problem importing matplotlib (make it is installed in your environment). Plotting is not possible but continuing.")
 
+    path_to_plumed=check_program_location(path_to_plumed,'path_to_plumed','plumed')
 
     ###############################
-    #USER SETTINGS
+    # USER SETTINGS
     ###############################
     colormap='RdYlBu_r'
+    WellTemp=True
     #Colormap to use in 2CV plots.
     # Perceptually uniform sequential: viridis, plasma, inferno, magma, cividis
     #Others: # RdYlBu_r
     #See https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
     ##############################
-    WellTemp=True
-
-    #Get everything from provided plumed_ash object
-    if plumed_ash_object != None:
-        print("plumed_ash object provided. Reading")
-        path_to_plumed=plumed_ash_object.path_to_plumed
-        CV1_type = plumed_ash_object.CV1_type
-        CV2_type = plumed_ash_object.CV2_type
-        CV1_indices = plumed_ash_object.CV1_indices
-        CV2_indices = plumed_ash_object.CV2_indices
-        temperature=plumed_ash_object.temperature
-        plumed_length_unit=plumed_ash_object.plumed_length_unit
-        plumed_energy_unit=plumed_ash_object.plumed_energy_unit
-        plumed_time_unit=plumed_ash_object.plumed_time_unit
     #Or from plumed info file
-    elif os.path.isfile("plumed_ash.info") == True:
+    if os.path.isfile("plumed_ash.info") == True:
         print("Found file plumed_ash.info file in directory. Reading")
         with open("plumed_ash.info") as pinfo:
             for line in pinfo:
@@ -88,36 +81,23 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
                 if 'plumed_time_unit' in line:
                     plumed_time_unit = line.split()[-1]
 
-    #Or from keywords (TO BE CHECKED)
-    else:
-        print("No Plumed_ASH object provided or plumed_ash.info file. Trying to get information via keywords")
-        if CV1_type==None or temperature==None:
-            print("give CV1_type and temperature")
-            ashexit()
-        #Run Plumed script to get fes.dat from HILLS
-        #Setting PATH and LD_LIBRARY_PATH for PLUMED. LD-lib path to C library may also be required
-        if path_to_plumed==None:
-            print("Set path_to_plumed argument. Example: plumed_MTD_analyze(path_to_plumed=/home/bjornsson/plumed-install)")
-            ashexit()
-
-
     ######################
     # UNITS
     ######################
     pi=3.14159265359
-    #Dict of energy conversions: Energy-unit to kcal/mol
+    # Dict of energy conversions: Energy-unit to kcal/mol
     energy_conversion_dict= {'eV':1/23.060541945329334, 'kj/mol':4.184 }
     # possibly conversion from energy-unit to kcal/mol.
     energy_scaling=energy_conversion_dict[plumed_energy_unit]
 
-    #Possible nm to Ang conversion. TODO: Generalize
+    # Possible nm to Ang conversion. TODO: Generalize
     if plumed_length_unit =="A":
         distance_scaling=1
     else:
         print("No plumed_length_unit defined. Assuming default plumed (nm)")
         distance_scaling=10
 
-    #1D
+    # 1D
     if CV2_type == None or CV2_type == "None":
         print("1D MTD")
         CVnum=1
@@ -130,7 +110,7 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
         else:
             print("1unknown. exiting");exit()
         print("Final CV1 units:", finalcvunit_1)
-    #2D
+    # 2D
     else:
         print("2D MTD")
         CVnum=2
@@ -162,11 +142,11 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
     ######################
 
     ########################
-    #READING MAIN DATA
+    # READING MAIN DATA
     ########################
     print("Assuming current dir contains COLVAR/HILLS files")
     print("Reading HILLS files")
-    #Checking if Multiple Walker MTD or not (by analyzing whether HILLS.X files are present or not)
+    # Checking if Multiple Walker MTD or not (by analyzing whether HILLS.X files are present or not)
     try:
         f = open("HILLS.0")
         f.close()
@@ -182,7 +162,7 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
             print("Found no HILLS.X or HILLS file. Exiting...")
             ashexit()
 
-    #The plumed sum_hills command that is run.
+    # The plumed sum_hills command that is run.
     print("")
     if MultipleWalker==True:
         #Removing old HILLS.ALL if present
@@ -222,7 +202,7 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
 
     else:
         print("Calling call_plumed_sum_hills")
-        #call_plumed_sum_hills(path_to_plumed,"HILLS")
+        # call_plumed_sum_hills(path_to_plumed,"HILLS")
         if CV1_grid_limits == None:
             call_plumed_sum_hills(path_to_plumed,"HILLS",CVnum)
         else:
@@ -233,7 +213,7 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
                 #Changing input unit from Angstrom to nm or degree to radian
                 call_plumed_sum_hills(path_to_plumed,'HILLS',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling,CV2_grid_limits[0]/ CV2_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling,CV2_grid_limits[1]/ CV2_scaling])
         HILLSFILELIST=['HILLS']
-        #Single COLVAR file
+        # Single COLVAR file
         COLVARFILELIST=['COLVAR']
 
     print("")
@@ -260,22 +240,19 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
             PotCurve=False
             print("File potcurve not found. Add file if desired.")
     ########################################
-
-
-
-    #READING fes.dat
-    #Reaction coordinates (radian if torsion)
+    # READING fes.dat
+    # Reaction coordinates (radian if torsion)
     rc=[]
     rc2=[]
-    #Free energy (kJ/mol)
+    # Free energy (kJ/mol)
     free_energy=[]
 
-    #Derivative of Free Energy vs. reaction-coordinate. Probably not useful
+    # Derivative of Free Energy vs. reaction-coordinate. Probably not useful
     derivG=[]
     derivG2=[]
 
-    #Reading file
-    ##! FIELDS dihed1 dihed2 file.free der_dihed1 der_dihed2
+    # Reading file
+    # ! FIELDS dihed1 dihed2 file.free der_dihed1 der_dihed2
     with open("fes.dat") as fesfile:
         for line in fesfile:
             if '#' not in line and len(line.split()) > 0:
@@ -290,7 +267,6 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
                     derivG.append(float(line.split()[3]))
                     derivG2.append(float(line.split()[4]))
 
-
     #READ HILLS. Only necessary for Well-Tempered Metadynamics and plotting of Gaussian height
     if WellTemp==True:
         time_hills=[]
@@ -303,6 +279,7 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
                     if 'FIELDS' in line:
                         biasfcolnum=int(line.split().index('biasf'))
                     if '#' not in line:
+                        #exit()
                         if biasfcolnum==6:
                             if len(line) > 25:
                                 time_hills.append(float(line.split()[0]))
@@ -342,6 +319,7 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
                         if number_of_fields >= 3:
                             if len(line) > 25:
                                 time.append(float(line.split()[0]))
+                                time_list.append(time)
                                 colvar_value.append(float(line.split()[1]))
                                 biaspot_value.append(float(line.split()[2]))
                     elif CVnum == 2:
@@ -423,7 +401,7 @@ def plumed_MTD_analyze(plumed_ash_object=None, path_to_plumed=None, Plot_To_Scre
     ###################
     print("Data preparation done")
     print("Now plotting via Matplotlib")
-
+    #exit()
     if CVnum==1:
         print("Making plots for 1 CV:")
         #Space between subplots
@@ -891,3 +869,4 @@ class plumed_ASH():
     def close(self):
         #Properly close Plumed object (flushes outputfiles etc)
         self.plumedobj.finalize()
+
