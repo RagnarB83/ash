@@ -4777,16 +4777,12 @@ def OpenMM_MD_plumed(fragment=None, theory=None, timestep=0.001, simulation_step
               coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
               anderson_thermostat=False, restraints=None, 
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
-              datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
+              datafilename=None, dummy_MM=False, add_centerforce=False,
               centerforce_atoms=None, centerforce_distance=10.0, centerforce_constant=1.0, centerforce_center=None,
               barostat_frequency=25, specialbox=False,
               plumed_input_string=None, printlevel=2, numcores=1):
     print_line_with_mainheader("OpenMM metadynamics using OpenMM-Plumed interface")
 
-    #Biasdirectory
-    print("biasdirectory chosen to be:", biasdir)
-    biasdir_full_path = os.path.abspath(biasdir)
-    print("Full path to biasdirectory is:", biasdir_full_path)
 
     print("Using metadynamics via OpenMM Plumed plugin")
     try:
@@ -4803,7 +4799,7 @@ def OpenMM_MD_plumed(fragment=None, theory=None, timestep=0.001, simulation_step
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, platform=platform, hydrogenmass=hydrogenmass,
-                        plumed_object=plumed_object, add_centerforce=add_centerforce,trajfilename=trajfilename,
+                        add_centerforce=add_centerforce,trajfilename=trajfilename,
                         centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
                         centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
                         barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
