@@ -4771,7 +4771,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
     return
 
 # Metadynamics-function that used OpenMM_Plumed interface
-def OpenMM_metadynamics_plumed(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
+def OpenMM_MD_plumed(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
@@ -4780,9 +4780,7 @@ def OpenMM_metadynamics_plumed(fragment=None, theory=None, timestep=0.001, simul
               datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
               centerforce_atoms=None, centerforce_distance=10.0, centerforce_constant=1.0, centerforce_center=None,
               barostat_frequency=25, specialbox=False,
-              plumed_input_string=None,
-              frequency=1, savefrequency=10, printlevel=2,
-              biasdir='.', numcores=1):
+              plumed_input_string=None, printlevel=2, numcores=1):
     print_line_with_mainheader("OpenMM metadynamics using OpenMM-Plumed interface")
 
     #Biasdirectory
