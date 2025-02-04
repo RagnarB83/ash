@@ -37,7 +37,7 @@ def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None,
                 CV1_indices=None, CV2_indices=None, plumed_length_unit=None, plumed_energy_unit="kj/mol", plumed_time_unit=None,
                 CV1_grid_limits=None, CV2_grid_limits=None):
 
-    #Energy-unit used by Plumed-ASH should be eV in general
+    # Energy-unit used by Plumed-ASH should be eV in general
     print_line_with_mainheader("Metadynamics Analysis Script")
     try:
         import matplotlib.pyplot as plt
