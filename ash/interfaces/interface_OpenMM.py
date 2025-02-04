@@ -3811,9 +3811,19 @@ class OpenMM_MDclass:
                 pass
             #Reference positions for RMSD. Currently limited to starting position
             if metadyn_settings["CV1_type"] == 'rmsd' or metadyn_settings["CV2_type"] == 'rmsd':
-                coords_nm = self.fragment.coords * 0.1  # converting from Angstrom to nm
-                reference_pos = [openmm.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in
-                    range(len(coords_nm))] * openmm.unit.nanometer
+                
+                if metadyn_settings["reference_xyzfile"] is None:
+                    print("No reference_xyzfile was provided for RMSD-CV. Using input coordinates as reference")
+                    coords_nm = self.fragment.coords * 0.1  # converting from Angstrom to nm
+                    reference_pos = [openmm.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in
+                        range(len(coords_nm))] * openmm.unit.nanometer
+                else:
+                    print("A reference_xyzfile was provided for RMSD-CV. Using")
+                    print("Reading XYZ-file:", metadyn_settings["reference_xyzfile"])
+                    ref_frag = Fragment(xyzfile=metadyn_settings["reference_xyzfile"])
+                    coords_nm = ref_frag.coords * 0.1  # converting from Angstrom to nm
+                    reference_pos = [openmm.Vec3(coords_nm[i, 0], coords_nm[i, 1], coords_nm[i, 2]) for i in
+                        range(len(coords_nm))] * openmm.unit.nanometer        
             else:
                 reference_pos=None
             #Creating meta_object from settings provided
@@ -4621,7 +4631,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
               centerforce_atoms=None, centerforce_distance=10.0, centerforce_constant=1.0, centerforce_center=None,
               barostat_frequency=25, specialbox=False,
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6,
-              height=1,
+              height=1, reference_xyzfile=None,
               CV1_biaswidth=0.5, CV2_biaswidth=0.5, CV1_range=None, CV2_range=None,
               CV1_parameters=None, CV2_parameters=None,
               user_cvforce1=None, user_biasvar1=None, user_cvforce2=None, user_biasvar2=None,
@@ -4633,6 +4643,9 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
     print("biasdirectory chosen to be:", biasdir)
     biasdir_full_path = os.path.abspath(biasdir)
     print("Full path to biasdirectory is:", biasdir_full_path)
+    if not os.path.isdir(biasdir_full_path):
+        print(f"Error: Biasdirectory: {biasdir_full_path} does not exist")
+        ashexit()
 
     if CV2_type is None:
         print("CV2 not specified. Assuming only 1 CV in simulation.")
@@ -4704,7 +4717,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
         # Create metadynamics dict for 1 CV
         metadyn_settings = {"numCVs":numCVs, "temperature":temperature, "biasfactor":biasfactor,
                             "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
-                            "CV1_type":CV1_type,"CV2_type":None,
+                            "CV1_type":CV1_type,"CV2_type":None, "reference_xyzfile":reference_xyzfile,
                             "CV1_atoms":CV1_atoms,"CV2_atoms":CV2_atoms, "CV1_range":CV1_range, "CV2_range":CV2_range,
                             "CV1_biaswidth":CV1_biaswidth,"CV2_biaswidth":CV2_biaswidth,
                             "CV2_minvalue":None,"CV2_maxvalue":None, "CV1_parameters":CV1_parameters,
@@ -4713,7 +4726,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
         # Create metadynamics object for 2 CVs
         metadyn_settings = {"numCVs":numCVs, "temperature":temperature, "biasfactor":biasfactor,
                             "height":height, "frequency":frequency, "saveFrequency":savefrequency, "biasdir":biasdir_full_path,
-                            "CV1_type":CV1_type,"CV2_type":CV2_type,
+                            "CV1_type":CV1_type,"CV2_type":CV2_type, "reference_xyzfile":reference_xyzfile,
                             "CV1_range":CV1_range, "CV2_range":CV2_range, "CV1_parameters":CV1_parameters, "CV2_parameters":CV2_parameters,
                             "CV1_atoms":CV1_atoms,"CV2_atoms":CV2_atoms, "CV1_biaswidth":CV1_biaswidth,"CV2_biaswidth":CV2_biaswidth,
                             "flatbottom_restraint_CV1":flatbottom_restraint_CV1, "flatbottom_restraint_CV2":flatbottom_restraint_CV2}
