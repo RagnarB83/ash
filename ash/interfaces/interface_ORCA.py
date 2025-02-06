@@ -3291,7 +3291,7 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="", label="frag",
         MP2_density=None, MDCI_density=None, AutoCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None,
         gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False, natorb_iterations=None,
-        FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6,
+        FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6, nroots=1,
         ROHF=False, ROHF_case=None, MP2_nat_step=False, MREOMtype="MR-EOM",
         NMF=False, NMF_sigma=None):
 
@@ -3641,6 +3641,7 @@ end
         gtol {gtol}
         nel {CAS_nel}
         norb {CAS_norb}
+        nroots {nroots}
         end
         """
         natorbs = ash.ORCATheory(orcasimpleinput=f"! {extrainput} CASSCF {basis} tightscf", orcablocks=casscfblocks, numcores=numcores,
@@ -3656,6 +3657,7 @@ end
         gtol {gtol}
         nel {CAS_nel}
         norb {CAS_norb}
+        nroots {nroots}
         end
         %mrci
         natorbs 2
@@ -3691,6 +3693,7 @@ end
         gtol {gtol}
         nel {CAS_nel}
         norb {CAS_norb}
+        nroots {nroots}
         end
         %autoci
         density {AutoCI_density}
@@ -3725,6 +3728,7 @@ end
 %casscf
   nel {CAS_nel}
   norb {CAS_norb}
+  nroots {nroots}
 end
 
 %mrci
