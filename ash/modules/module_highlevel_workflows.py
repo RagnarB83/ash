@@ -2651,7 +2651,7 @@ def newAuto_ICE_CAS(fragment=None, basis="cc-pVDZ", basisblock="", moreadfile=No
 
 
 #Workflow to do active-space selection with MP2 or CCSD and then ICE-CI
-def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainput="",
+def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainput="", nroots=1,
                  initial_orbitals="RI-MP2", MP2_density="unrelaxed", CC_density="unrelaxed", moreadfile=None, gtol=2.50e-04,
                  numcores=1, charge=None, mult=None, CASCI=True, tgen=1e-4, memory=10000, no_moreadfile_in_CAS=False,
                  ciblockline=""):
@@ -2744,6 +2744,11 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
                                  label='CCSD', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
         mofile=f"{natorbs.filename}.mdci.nat"
         natoccgrab=CCSD_natocc_grab
+    elif initial_orbitals =="DLPNO-CCSD":
+        natorbs = ash.ORCATheory(orcasimpleinput=f"! DLPNO-CCSD {basis} autoaux tightscf", orcablocks=ccsdblocks, numcores=numcores,
+                                 label='DLPNOCCSD', save_output_with_label=True, autostart=autostart_option, moreadfile=moreadfile)
+        mofile=f"{natorbs.filename}.mdci.nat"
+        natoccgrab=CCSD_natocc_grab
     else:
         print("Error: initial_orbitals must be HF, MP2, RI-MP2 or CCSD")
         ashexit()
@@ -2789,13 +2794,14 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
     nel {nel}
     norb {norb}
     cistep ice
+    nroots {nroots}
     ci
     tgen {tgen}
     {ciblockline}
     end
     end
     """
-    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF  {basis} tightscf",
+    ice_cas_CI = ash.ORCATheory(orcasimpleinput=f"! CASSCF  {basis} tightscf", filename="ice_cas_ci",
                                 orcablocks=casblocks, moreadfile=mofile, autostart=autostart, label=f"{label}", numcores=numcores)
 
     result_ICE = ash.Singlepoint(fragment=fragment, theory=ice_cas_CI, charge=charge,mult=mult)
@@ -2817,7 +2823,7 @@ def Auto_ICE_CAS(fragment=None, basis="cc-pVDZ", nmin=1.98, nmax=0.02, extrainpu
             final_flag=True
         print("{:<9} {:9.4f} {:9.4f}".format(index,initocc,iceocc))
 
-    return result_ICE
+    return "ice_cas_ci.gbw", ICEnatoccupations
 
 
 
