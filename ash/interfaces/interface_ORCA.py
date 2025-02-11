@@ -3290,7 +3290,8 @@ def grab_ORCA_wfn(data=None, jsonfile=None, density=None):
 #Mainly for getting natural orbitals
 def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblock="", extrablock="", extrainput="", label="frag",
         MP2_density=None, MDCI_density=None, AutoCI_density=None, memory=10000, numcores=1, charge=None, mult=None, moreadfile=None,
-        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False, natorb_iterations=None,
+        gtol=2.50e-04, nmin=1.98, nmax=0.02, CAS_nel=None, CAS_norb=None,CASCI=False, natorb_iterations=None, AVAS=False,
+        AVAS_keyword="AVAS(Valence-D)", AVASblock=None,
         FOBO_excitation_options=None, MRCI_natorbiterations=0, MRCI_tsel=1e-6, nroots=1,
         ROHF=False, ROHF_case=None, MP2_nat_step=False, MREOMtype="MR-EOM",
         NMF=False, NMF_sigma=None):
@@ -3316,6 +3317,7 @@ def ORCA_orbital_setup(orbitals_option=None, fragment=None, basis=None, basisblo
     charge,mult = check_charge_mult(charge, mult, "QM", fragment, "ORCA_orbital_setup", theory=None)
 
     #ORBITALS_OPTIONS
+
     #If ROHF only is requested we activate the ROHF procedure
     if 'ROHF' in orbitals_option:
         print("ROHF orbitals_option requested")
@@ -3474,13 +3476,40 @@ end
         Singlepoint(theory=rohf,fragment=fragment)
         #Now SCF-step is done. Now adding noiter to extrainput and moreadfile
         moreadfile=f"{rohf.filename}.gbw"
-        extrainput="noiter"
+        extrainput=""
         print("ROHF step is done. Now adding noiter to extrainput and moreadfile for next step")
+
+    #############################################################
+    #Possible AVAS step before final orbitals
+    ##############################################################
+    elif AVAS is True:
+        print("AVAS is True. Will run an AVAS guess")
+        print("AVAS keyword option:", AVAS_keyword)
+        print("AVASblock:", AVASblock)
+        if AVASblock is None:
+            AVASblock=""
+        avasblocks=f"""
+%scf
+ {AVASblock}
+end
+#CAS-CI calc using AVAS-suggested space
+%casscf
+
+end
+
+"""
+        avas_prep = ash.ORCATheory(orcasimpleinput=f"!  {basis} {extrainput} noiter {AVAS_keyword}", orcablocks=avasblocks, numcores=numcores,
+                                 label='AVASprep', filename="AVASprep", save_output_with_label=True, moreadfile=moreadfile, autostart=autostart_option)
+        Singlepoint(theory=avas_prep,fragment=fragment)
+        #Now AVAS-step is done.
+        moreadfile=f"{avas_prep.filename}.gbw"
+        extrainput=""
+        print("AVAS-prep step is done")
 
     #############################################################
     #Possible initial MP2-nat step before final orbitals
     ##############################################################
-    if MP2_nat_step is True:
+    elif MP2_nat_step is True:
         print("MP2_nat_step is True. Will run an MP2-natural orbital calculation preparatory step")
         print("MP2_density option:", MP2_density)
         print("moreadfile:", moreadfile)
@@ -3766,6 +3795,11 @@ end
         if natorb_iterations:
             print("Natural-orbital iterations option is ON!")
             print(f"Will run {natorb_iterations} natural-orbital iterations")
+
+            if 'noiter' not in natorbs.orcasimpleinput.lower():
+                print("Adding noiter to input")
+                natorbs.orcasimpleinput = natorbs.orcasimpleinput + ' noiter '
+
             for n_i in range(0,natorb_iterations):
 
                 print(f"Now running natorb iteration {n_i}")
@@ -3777,6 +3811,7 @@ end
                     natorbs.moreadfile_always=True
 
                 nat_occupations=natoccgrab(natorbs.filename+'.out')
+                print("nat_occupations:", nat_occupations)
                 if orbitals_option not in ['MRCI','FOBO']:
                     natocc_print(nat_occupations,orbitals_option,nmin,nmax)
                 os.rename(f"{natorbs.filename}.out", f"orca_natorbiter_{n_i}.out")

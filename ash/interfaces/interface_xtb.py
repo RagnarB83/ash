@@ -23,7 +23,8 @@ from ash.modules.module_coords import (
 
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
-                 maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None):
+                 maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None,
+                 use_tblite=False, periodic=False, periodic_cell_dimensions=None):
 
         self.theorynamelabel="xTB"
         self.theorytype="QM"
@@ -37,6 +38,18 @@ class xTBTheory:
 
         # Printlevel
         self.printlevel=printlevel
+
+        # Use Tblite library inside xtb or not
+        self.use_tblite=use_tblite
+
+        self.periodic=periodic
+        self.periodic_cell_dimensions=periodic_cell_dimensions
+        if self.periodic is True:
+            print("Periodic boundary conditions enabled. Will pass periodicity information to xtb")
+            if self.periodic_cell_dimensions is None:
+                print("Error: No periodic_cell_dimensions was passed yet periodic is True")
+                print("Please pass a list of box dimensions and angles as a list, e.g. periodic_cell_dimensions=[20.0,20.0,20.0, 90.0, 90.0,90.0]") 
+                ashexit()
 
         # Controlling output in xtb-library
         if self.printlevel >= 3:
@@ -61,6 +74,7 @@ class xTBTheory:
         print("xTB method:", self.xtbmethod)
         # Parallelization for both library and inputfile runmode
         print("xTB object numcores:", self.numcores)
+        print("Use tblite:", self.use_tblite)
         # NOTE: Setting OMP_NUM_THREADS should be sufficient for performance. MKL handled by xTB
         os.environ["OMP_NUM_THREADS"] = str(self.numcores)
         # os.environ["MKL_NUM_THREADS"] = "1"
@@ -169,8 +183,14 @@ class xTBTheory:
         check_multiplicity(elems,charge,mult)
 
         if self.runmode=='inputfile':
-            # Write xyz_file
-            ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
+            if self.periodic is True:
+                # Write turbomole style coord file but in Angstrom and with PBC info
+                ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', periodic_info=self.periodic_cell_dimensions)
+                coordfile="coord"
+            else:
+                # Write xyz_file if molecule
+                ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
+                coordfile=self.filename + '.xyz'
 
             # Run inputfile.
             if self.printlevel >= 2:
@@ -178,9 +198,9 @@ class xTBTheory:
                 print(f"Running xtB using {numcores} cores")
                 print("...")
 
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
                                     Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
-                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores)
+                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores, use_tblite=self.use_tblite)
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
 
@@ -223,8 +243,14 @@ class xTBTheory:
         #Check if mult is sensible
         check_multiplicity(elems,charge,mult)
         if self.runmode=='inputfile':
-            #Write xyz_file
-            ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
+            if self.periodic is True:
+                # Write turbomole style coord file but in Angstrom and with PBC info
+                ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', periodic_info=self.periodic_cell_dimensions)
+                coordfile="coord"
+            else:
+                # Write xyz_file if molecule
+                ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
+                coordfile=self.filename + '.xyz'
 
             #Run inputfile.
             if self.printlevel >= 2:
@@ -232,9 +258,10 @@ class xTBTheory:
                 print(f"Running xtB using {numcores} cores")
                 print("...")
 
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult,
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
                                     Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
-                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores)
+                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores,
+                                    use_tblite=self.use_tblite)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -310,14 +337,25 @@ class xTBTheory:
             #TODO: Add restart function so that xtbrestart is not always deleted
             #Create XYZfile with generic name for xTB to run
             #inputfilename="xtb-inpfile"
-            if self.printlevel >= 2:
-                print("Creating inputfile:", self.filename+'.xyz')
+
             num_qmatoms=len(current_coords)
             num_mmatoms=len(MMcharges)
 
             #self.cleanup()
             #Todo: xtbrestart possibly. needs to be optional
-            ash.modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename,printlevel=self.printlevel)
+            if self.runmode=='inputfile':
+                if self.periodic is True:
+                    if self.printlevel >= 2:
+                        print("Creating Turbomole-style coord file with PBC info:")
+                    # Write turbomole style coord file but in Angstrom and with PBC info
+                    ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', periodic_info=self.periodic_cell_dimensions)
+                    coordfile="coord"
+                else:
+                    if self.printlevel >= 2:
+                        print("Creating inputfile:", self.filename+'.xyz')
+                    coordfile=self.filename + '.xyz'
+                    # Write xyz_file if molecule
+                    ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
 
             # Run inputfile.
             if self.printlevel >= 2:
@@ -329,13 +367,14 @@ class xTBTheory:
                 create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
 
             # Run xTB (note: passing PC and Grad Booleans)
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, self.filename + '.xyz', charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
-                                    Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores)
+            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
+                                    Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores,
+                                    use_tblite=self.use_tblite)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
             # Check if finished. Grab energy
-            if Grad==True:
+            if Grad is True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)
                 if PC==True:
                     # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
@@ -546,8 +585,8 @@ def xtbVEAgrab(file):
     return VEA
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, PC=False,
-    electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1):
+def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, PC=False,
+    electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1, use_tblite=False):
 
     if solvent is None:
         solvent_line1=""
@@ -556,7 +595,13 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
         solvent_line1="--alpb"
         solvent_line2=solvent
 
-    basename = xyzfile.split('.')[0]
+    #Use tblite or not
+    if use_tblite is True:
+        tblite_flag="--tblite"
+    else:
+        tblite_flag=""
+
+    basename = coordfile.split('.')[0]
     uhf=mult-1
 
     if PC is True:
@@ -594,9 +639,9 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, xyzfile, charge, mult, Grad=False, Opt=
             pass
         jobflag="--hess"
     else:
-        jobflag=""
+        jobflag="" #NOTE.
 
-    command_list=[xtbdir + '/xtb', basename+'.xyz', '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter),
+    command_list=[xtbdir + '/xtb', coordfile, '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag,
                 '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2]
     # Remove empty arguments
     command_list=list(filter(None, command_list))
