@@ -185,8 +185,10 @@ class xTBTheory:
         if self.runmode=='inputfile':
             if self.periodic is True:
                 # Write turbomole style coord file but in Angstrom and with PBC info
-                ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', periodic_info=self.periodic_cell_dimensions)
-                coordfile="coord"
+                coordfile="xtb_coord"
+                ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGS', 
+                                                                     periodic_info=self.periodic_cell_dimensions, filename=coordfile)
+                
             else:
                 # Write xyz_file if molecule
                 ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
@@ -245,8 +247,10 @@ class xTBTheory:
         if self.runmode=='inputfile':
             if self.periodic is True:
                 # Write turbomole style coord file but in Angstrom and with PBC info
-                ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', periodic_info=self.periodic_cell_dimensions)
-                coordfile="coord"
+                coordfile="xtb_coord"
+                ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', 
+                                                                     periodic_info=self.periodic_cell_dimensions, filename=coordfile)
+                
             else:
                 # Write xyz_file if molecule
                 ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
@@ -348,8 +352,10 @@ class xTBTheory:
                     if self.printlevel >= 2:
                         print("Creating Turbomole-style coord file with PBC info:")
                     # Write turbomole style coord file but in Angstrom and with PBC info
-                    ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', periodic_info=self.periodic_cell_dimensions)
-                    coordfile="coord"
+                    coordfile="xtb_coord"
+                    ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', 
+                                                                         periodic_info=self.periodic_cell_dimensions, filename=coordfile)
+                    
                 else:
                     if self.printlevel >= 2:
                         print("Creating inputfile:", self.filename+'.xyz')
@@ -376,7 +382,7 @@ class xTBTheory:
             # Check if finished. Grab energy
             if Grad is True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)
-                if PC==True:
+                if PC is True:
                     # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                     self.pcgrad = xtbpcgradientgrab(num_mmatoms)
                     if self.printlevel >= 2:
