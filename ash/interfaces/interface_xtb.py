@@ -345,23 +345,21 @@ class xTBTheory:
             num_qmatoms=len(current_coords)
             num_mmatoms=len(MMcharges)
 
-            #self.cleanup()
-            #Todo: xtbrestart possibly. needs to be optional
             if self.runmode=='inputfile':
                 if self.periodic is True:
                     if self.printlevel >= 2:
                         print("Creating Turbomole-style coord file with PBC info:")
                     # Write turbomole style coord file but in Angstrom and with PBC info
                     coordfile="xtb_coord"
-                    ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', 
+                    ash.interfaces.interface_Turbomole.create_coord_file(qm_elems,current_coords, write_unit='ANGSTROM', 
                                                                          periodic_info=self.periodic_cell_dimensions, filename=coordfile)
-                    
+
                 else:
                     if self.printlevel >= 2:
                         print("Creating inputfile:", self.filename+'.xyz')
                     coordfile=self.filename + '.xyz'
                     # Write xyz_file if molecule
-                    ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
+                    ash.modules.module_coords.write_xyzfile(qm_elems, current_coords, self.filename, printlevel=self.printlevel)
 
             # Run inputfile.
             if self.printlevel >= 2:
