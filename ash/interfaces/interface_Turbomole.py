@@ -219,12 +219,32 @@ class TurbomoleTheory:
 # Independent Turbomole functions
 ################################
 
-def create_coord_file(elems,coords):
-    ang2bohr=1.88972612546
-    with open('coord', 'w') as coordfile:
-        coordfile.write("$coord\n")
+# We always pass Angstrom but may choose to write coord file in Angstrom or Bohr, or fract (untested)
+def create_coord_file(elems,coords, write_unit='BOHR', periodic_info=None, filename="coord"):
+    if write_unit.upper() == "BOHR":
+        conversion_factor=1.88972612546
+        unit_string=""
+    elif write_unit.upper() == "ANGSTROM":
+        conversion_factor=1.0
+        unit_string="angs"
+    elif write_unit.upper() == "FRACT":
+        conversion_factor=1.0
+        unit_string="fract"
+    else:
+        print("Error")
+        ashexit()
+    with open(filename, 'w') as coordfile:
+        coordfile.write(f"$coord {unit_string}\n")
         for i in range(len(elems)):
-            coordfile.write(f"{coords[i][0]*ang2bohr} {coords[i][1]*ang2bohr} {coords[i][2]*ang2bohr} {elems[i]}\n")
+            if write_unit.upper() == "FRACT":
+                coordfile.write(f"{coords[i][0]/periodic_info[0]} {coords[i][1]/periodic_info[1]} {coords[i][2]/periodic_info[2]} {elems[i]}\n")
+            else:
+                coordfile.write(f"{coords[i][0]*conversion_factor} {coords[i][1]*conversion_factor} {coords[i][2]*conversion_factor} {elems[i]}\n")
+        # PBC
+        if periodic_info is not None:
+            coordfile.write(f"$periodic 3\n")
+            coordfile.write(f"$cell {unit_string}\n")
+            coordfile.write(f"{periodic_info[0]} {periodic_info[1]} {periodic_info[2]} {periodic_info[3]} {periodic_info[4]} {periodic_info[5]}\n")
         coordfile.write("$end\n")
 
 def create_control_file(functional="lh12ct-ssifpw92", gridsize="m4", scfconf="7", symmetry="c1", rij=True, dft=True, mp2=False,

@@ -62,7 +62,8 @@ class CP2KTheory:
             print("potential_dict keyword is required")
             ashexit()
         if functional is None:
-            print("functional keyword is required")
+            if basis_method.upper() != "XTB":
+                print("functional keyword is required for PW andd GPW ")
             ashexit()
 
         #NOTE: We still define a cell even though we may not be periodic

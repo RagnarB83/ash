@@ -441,8 +441,11 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
     ##################################
     if theory.__class__.__name__ == "ORCATheory":
 
+        #Using numcores in Theory object if larger than numcores in Molcrys
+        if theory.numcores > numcores:
+            numcores=theory.numcores
 
-        if theory.brokensym == True:
+        if theory.brokensym is True:
 
             if chargemodel =="IAO":
                 print("Note IAO charges on broken-symmetry solution are probably not sensible")
@@ -528,13 +531,10 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         for i in Centralmainfrag:
             file.write(str(i)+' ')
 
-
-
     blankline()
 
-    #print_time_rel_and_tot(currtime, origtime, modulename="stuff before SP-loop")
     currtime=time.time()
-    #SP-LOOP FOR MAINFRAG
+    # SP-LOOP FOR MAINFRAG
     for SPLoopNum in range(0,SPLoopMaxIter):
         blankline()
         print("This is Charge-Iteration Loop number", SPLoopNum)
@@ -544,14 +544,15 @@ def molcrys(cif_file=None, xtl_file=None, xyz_file=None, cell_length=None, cell_
         # Run ORCA QM/MM calculation with charge-model info
         QMMM_SP_calculation = ash.QMMMTheory(fragment=Cluster, qm_theory=QMtheory, qmatoms=Centralmainfrag,
                                              charges=Cluster.atomcharges, embedding='Elstat')
-        QMMM_SP_calculation.run(current_coords=Cluster.coords, elems=Cluster.elems, numcores=numcores, charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult)
+        QMMM_SP_calculation.run(current_coords=Cluster.coords, elems=Cluster.elems, numcores=numcores, 
+                                charge=fragmentobjects[0].Charge, mult=fragmentobjects[0].Mult)
 
-        #Keeping the GBWfile
+        # Keeping the GBWfile
         if theory.__class__.__name__ == "ORCATheory":
             mainfrag_gbwfile="last_mainfrag.gbw"
             shutil.copy(QMtheory.filename+'.gbw', mainfrag_gbwfile)
 
-        #Grab atomic charges for fragment.
+        # Grab atomic charges for fragment.
         if theory.__class__.__name__ == "ORCATheory":
 
             if chargemodel == 'DDEC3' or chargemodel == 'DDEC6':

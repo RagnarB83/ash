@@ -9,7 +9,7 @@ from ash.interfaces.interface_OpenMM import OpenMMTheory
 from ash.modules.module_coords import print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile,write_coords_all
 from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,print_line_with_subheader1,print_if_level
 from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex
-from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller
+from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller, read_hessian
 from ash.modules.module_results import ASH_Results
 
 ##################################################
@@ -19,7 +19,7 @@ from ash.modules.module_results import ASH_Results
 
 #Wrapper function around GeomeTRICOptimizerClass
 #NOTE: theory and fragment given to Optimizer function but not part of Class initialization. Only passed to run method
-def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', frozenatoms=None, constraints=None,
+def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', force_coordsystem=False, frozenatoms=None, constraints=None,
                        constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
                        modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
@@ -38,7 +38,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                         hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,modelhessian=modelhessian,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                         print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write,
-                        printlevel=printlevel)
+                        printlevel=printlevel, force_coordsystem=force_coordsystem)
 
     #Providing theory and fragment to run method. Also constraints
     result = optimizer.run(theory=theory, fragment=fragment, charge=charge, mult=mult,
@@ -54,7 +54,7 @@ class GeomeTRICOptimizerClass:
                      frozenatoms=None, maxiter=250, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
                        print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None,
-                       subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
+                       subfrctor=1, MM_PDB_traj_write=False, printlevel=2, force_coordsystem=False):
 
             self.printlevel=printlevel
             print_line_with_mainheader("geomeTRICOptimizer initialization")
@@ -72,15 +72,16 @@ class GeomeTRICOptimizerClass:
             if frozenatoms is None:
                 frozenatoms=[]
 
-            if ActiveRegion is True and coordsystem == "tric":
-                print("Warning: ActiveRegion True and coordsystem is TRIC.")
-                print("HDLC coordinate system is usually more robust for large systems.")
-                print("Try coordsystem='hdlc' if you experience problems")
-                #TODO: Look into this more
-                # print("Activeregion true and coordsystem = tric are not compatible")
-                # print("Switching to HDLC")
-                # coordsystem='hdlc'
-                # exit()
+            if ActiveRegion is True and coordsystem.lower() == "tric":
+                print("Warning: ActiveRegion is set but the coordsystem is TRIC. The HDLC coordinate system is usually much more robust for large systems than TRIC.")
+                print("")
+                if force_coordsystem is True:
+                    print("force_coordsystem is True.")
+                    print("Sticking with coordsystem TRIC")
+                else:
+                    print("force_coordsystem is False.")
+                    print("Warning: Now switching to HDLC to avoid likely robustness problems with TRIC. To avoid this behaviour (and force use of TRIC) you can use set the Boolean force_coordsystem to True.")
+                    coordsystem='hdlc'
 
             # Defining some attributes
             self.maxiter=maxiter
@@ -317,11 +318,23 @@ class GeomeTRICOptimizerClass:
         def hessian_option(self,fragment,actatoms,theory,charge,mult,modelhessian):
 
             if type(self.hessian) == np.ndarray:
-                print("Hessian option provided is a Numpy array. Writing to disk.")
+                print("Hessian option provided is a Numpy array.")
+
+                # Sanity check. Check that the Hessian provided is compatible with actatoms
+                print("Checking that Hessian is compatible with active-region")
+                print("2 actatoms:", actatoms)
+                if self.hessian.shape[0] != 3*len(actatoms):
+                    print(f"Error: Hessian shape is {self.hessian.shape}  which is incompatible with the  number of active atoms present ({len(actatoms)})")
+                    print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(actatoms)} x {3*len(actatoms)})")
+                    ashexit()
+
+                print("Writing Hessian array to disk.")
+
                 hessianfile="Hessian_np"
                 write_hessian(self.hessian,hessfile=hessianfile)
                 self.hessian="file:"+hessianfile
                 print("Hessian option to be used by geometric:", self.hessian)
+
             elif type(self.hessian) == str:
                 print("Hessian option provided is a string")
                 #Do xtB Hessian to get Hessian file if requestd
@@ -362,12 +375,24 @@ class GeomeTRICOptimizerClass:
                     hessianfile="Hessian_from_partial"
                     write_hessian(combined_hessian,hessfile=hessianfile)
                     self.hessian="file:"+hessianfile
+                elif "file:" in self.hessian:
+                    hessianfile = self.hessian.replace("file:","")
+
+                print("Checking that defined Hessian is compatible with active-region")
+                hessian_read = read_hessian(hessianfile)
+                print("actatoms:", actatoms)
+                if hessian_read.shape[0] != 3*len(actatoms):
+                    print(f"Error: Hessian shape is {hessian_read.shape}  which is incompatible with the  number of active atoms present ({len(actatoms)})")
+                    print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(actatoms)} x {3*len(actatoms)})")
+                    ashexit()
+
             elif self.hessian == None:
                 if self.printlevel >= 1:
                     print("No Hessian option provided.")
             else:
                 print("Unknown Hessian option")
                 ashexit()
+
 
         #If using Active region then we write only those coordinates to disk (initialxyzfiletric)
         def setup_active_region_geometry(self,fragment):

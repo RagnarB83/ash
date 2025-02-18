@@ -2509,3 +2509,68 @@ def check_occupations(occ):
         label="Unknown"
 
     return label
+
+
+# Simple function to do density-sensitivity metric by Martin-Fernández and Harvey, J. Phys. Chem. A. 2021, 125, 4639-4652
+# https://pubs.acs.org/doi/10.1021/acs.jpca.1c01290
+#Hardcoded to use ORCA
+def density_sensitivity_metric(fragment=None, functional="B3LYP", basis="def2-TZVP", percentages=[0.20,0.25], numcores=1):
+    print("density_sensitivity_metric")
+    if fragment is None:
+        print("Error: please provide a valid ASH Fragment")
+        ashexit()
+
+    print("Functional:", functional)
+    print("Basis set:", basis)
+    print("HF Exchange percentages used:", percentages)
+
+    blocks_1=f"""
+%method
+ScalHFX {percentages[0]}
+end"""
+    
+
+    theory_1= ORCATheory(orcasimpleinput=f"! {functional} {basis} tightscf ", orcablocks=blocks_1, filename="theory1", numcores=numcores,
+                         autostart=False)
+    print("Now running Theory-1")
+    result_1 = ash.Singlepoint(theory=theory_1, fragment=fragment)
+    blocks_2=f"""
+%method
+ScalHFX {percentages[1]}
+end"""
+    #Theory 2, reading in GBW-file from
+    theory_2= ORCATheory(orcasimpleinput=f"! {functional} {basis} tightscf ",orcablocks=blocks_2, filename="theory2",
+                         moreadfile="theory1.gbw", numcores=numcores)
+    print("Now running Theory-2")
+    result_2 = ash.Singlepoint(theory=theory_2, fragment=fragment)
+
+    #Theory1 with theory 2
+    #Theory 2, reading in GBW-file from
+    print("Now running Theory-1 with density from Theory-2")
+    theory_1b= ORCATheory(orcasimpleinput=f"! {functional} {basis} CALCGUESSENERGY noiter ",orcablocks=blocks_1, filename="theory1b",
+                         moreadfile="theory2.gbw", numcores=numcores)
+    result_1b = ash.Singlepoint(theory=theory_1b, fragment=fragment)
+
+    #Define metrics
+    delta_E_D = (result_1b.energy - result_1.energy)*ash.constants.harkcal
+    delta_E = (result_2.energy - result_1.energy)*ash.constants.harkcal
+    delta_E_F = (result_2.energy - result_1b.energy)*ash.constants.harkcal
+    eps_D = 100*abs(delta_E_D/delta_E)
+    delta_alpha=(percentages[1]-percentages[0])
+    S_rho = 100*abs((2*delta_E_D/(delta_alpha*delta_alpha))/(delta_E/delta_alpha))
+    print();print()
+
+    print("Density sensitivity metrics")
+    print("-"*30)
+    print(f"delta_E: {delta_E:7.3f} kcal/mol")
+    print(f"delta_E_F: {delta_E_F:7.3f}  kcal/mol")
+    print(f"delta_E_D: {delta_E_D:7.3f}  kcal/mol")
+    print(f"eps_D: {eps_D:7.3f} %")
+    print(f"S_rho: {S_rho:7.2f}")
+
+    metrics_dict = {'delta_E':delta_E, 'delta_E_F':delta_E_F, 'delta_E_D':delta_E_D, 'eps_D':eps_D, 'S_rho':S_rho}
+
+    print("\nReturning dictionary:", metrics_dict)
+    #TODO: Option to plot difference density also
+
+    return metrics_dict

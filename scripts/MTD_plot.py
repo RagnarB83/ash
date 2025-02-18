@@ -1,4 +1,4 @@
 from ash import *
 
 #TODO
-#MTD_analyze()
+#plumed_MTD_analyze()

@@ -55,7 +55,8 @@ import ash.constants
 import ash.functions.functions_elstructure
 from .functions.functions_elstructure import read_cube, write_cube, write_cube_diff, diffdens_tool, create_cubefile_from_orbfile, diffdens_of_cubefiles,  \
     NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb, make_molden_file, \
-    diagonalize_DM_AO, diagonalize_DM, DM_AO_to_MO, DM_AO_to_MO, DM_MO_to_AO, select_space_from_occupations,select_indices_from_occupations, ASH_write_integralfile
+    diagonalize_DM_AO, diagonalize_DM, DM_AO_to_MO, DM_AO_to_MO, DM_MO_to_AO, select_space_from_occupations,select_indices_from_occupations, ASH_write_integralfile, \
+    density_sensitivity_metric
 
 #multiwfn interface
 import ash.interfaces.interface_multiwfn
@@ -109,7 +110,7 @@ from .interfaces.interface_packmol import packmol_solvate
 # MM: external and internal
 from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
      OpenMM_box_equilibration, write_nonbonded_FF_for_ligand, solvate_small_molecule, small_molecule_parameterizer, \
-        OpenMM_metadynamics, Gentle_warm_up_MD, check_gradient_for_bad_atoms, get_free_energy_from_biasfiles, \
+        OpenMM_metadynamics, OpenMM_MD_plumed, Gentle_warm_up_MD, check_gradient_for_bad_atoms, get_free_energy_from_biasfiles, \
         free_energy_from_bias_array,metadynamics_plot_data, merge_pdb_files
 
 # General aliases
@@ -139,7 +140,7 @@ from .interfaces.interface_VMD import write_VMD_script_cube
 from .interfaces.interface_ASE import Dynamics_ASE
 
 # Plumed interface
-from .interfaces.interface_plumed import plumed_ASH, MTD_analyze
+from .interfaces.interface_plumed import plumed_ASH, plumed_MTD_analyze
 
 # Solvation
 # NOTE: module_solvation.py or module_solvation2.py To be cleaned up

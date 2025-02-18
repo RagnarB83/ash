@@ -631,7 +631,7 @@ def read_ciffile(file):
                 if '_cell_angle_gamma' in line:
                         cell_gamma =float(line.split()[-1].split('(')[0])
             #symmops
-            if symmopgrab==True:
+            if symmopgrab is True:
                 if 'space' not in line and len(line) > 2:
                     if 'x' in line or 'X' in line:
                         symmops.append(line.split('\'')[1])
@@ -649,8 +649,8 @@ def read_ciffile(file):
                         line=line[1:]
                     line2=line.replace("'","").replace(" ","").replace("\n","")
                     symmops.append(line2)
-            if fractgrab == True:
-                #If empty line encountered then coordinates-lines should be over
+            if fractgrab is True:
+                # If empty line encountered then coordinates-lines should be over
                 if len(line.replace(' ','')) < 2:
                     fractgrab=False
                     print("Found all coordinates")
@@ -1189,7 +1189,7 @@ def gasfragcalc_ORCA(fragmentobjects,Cluster,chargemodel,orcadir,orcasimpleinput
         currtime = time.time()
         #Assuming mainfrag is fragmentobject 0 and only mainfrag can be Broken-symmetry
         if id == 0:
-            if brokensym==True:
+            if brokensym is True:
                 ORCASPcalculation = ash.interfaces.interface_ORCA.ORCATheory(orcadir=orcadir,
                                        orcasimpleinput=orcasimpleinput, numcores=NUMPROC,
                                        orcablocks=orcablocks, extraline=chargemodelline, brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip)
@@ -1312,8 +1312,8 @@ def rmsd_list(listA,listB):
 
 
 def choose_shortrangemodel(Cluster,shortrangemodel,fragmentobjects,QMtheory,mainfrag_gbwfile,numcores,LJHparameters):
-
-    if shortrangemodel=='UFF':
+    print("shortrangemodel:", shortrangemodel)
+    if shortrangemodel=='UFF' or shortrangemodel=='UFF_all':
         print("Using UFF forcefield for all elements")
         for fragmentobject in fragmentobjects:
             #fragmentobject.Elements

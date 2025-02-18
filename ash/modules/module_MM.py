@@ -255,6 +255,16 @@ class NonBondedTheory(Theory):
         #print("Charges are now:", charges)
         print("Sum of charges:", sum(charges))
 
+    def update_LJ_epsilons(self,atomlist,epsilons):
+        print("Updating charges.")
+        assert len(atomlist) == len(epsilons)
+        print("Error: update_LJ_epsilons in Nonbondedtheory not ready")
+        ashexit()
+        #for atom,eps in zip(atomlist,epsilons):
+        #    self.atom_charges[atom] = eps
+        #print("Charges are now:", charges)
+        print("Sum of epsilons:", sum(epsilons))
+
     # current_coords is now used for full_coords, charges for full coords
     def run(self, current_coords=None, elems=None, charges=None, connectivity=None, numcores=1, label=None,
             Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None, charge=None, mult=None):

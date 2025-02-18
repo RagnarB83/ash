@@ -19,7 +19,7 @@ import ash.constants
 #TODO: IR/Raman intensities
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, masses=None,
            pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100,
-           scaling_factor=1.0):
+           scaling_factor=1.0, symmetry_number=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
 
@@ -79,7 +79,8 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
         print("\n\n")
         print("Normal mode composition factors by element")
         printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms,TRmodenum=TRmodenum)
-        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO=QRRHO, QRRHO_omega_0=QRRHO_omega_0)
+        thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO=QRRHO, QRRHO_omega_0=QRRHO_omega_0,
+                                    symmetry_number=symmetry_number)
 
         # Add Hessian to fragment and write to file
         fragment.hessian=hessian
@@ -107,7 +108,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
 # ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial',
         temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, Raman=False,
-        scaling_factor=1.0):
+        scaling_factor=1.0, symmetry_number=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     ################
@@ -530,7 +531,8 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     # Get and print out thermochemistry
     thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure,
-                                    QRRHO=QRRHO, QRRHO_method=QRRHO_method, QRRHO_omega_0=QRRHO_omega_0)
+                                    QRRHO=QRRHO, QRRHO_method=QRRHO_method, QRRHO_omega_0=QRRHO_omega_0,
+                                    symmetry_number=symmetry_number)
 
     # Write Hessian to file
     write_hessian(hessian,hessfile="Hessian")
@@ -758,7 +760,7 @@ def old_printfreqs(vfreq,numatoms,TRmodenum=6):
 
 #
 def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100,
-                   use_full_geo_in_rotational_analysis=True):
+                   use_full_geo_in_rotational_analysis=True, symmetry_number=None):
     module_init_time=time.time()
     """[summary]
 
@@ -844,8 +846,14 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
             E_rot=ash.constants.R_gasconst*temp
         else:
             #Nonlinear case
-            #Symmetry number hardcoded. TODO: properly
-            sigma_r=2.0
+            if symmetry_number is None:
+                print("Case: nonlinear system and no user-provided symmetry_number.")
+                print("Setting symmetry number to 1.0 (appropriate for C1, Ci and Cs pointgroups)")
+                sigma_r=1.0
+            else:
+                print("Case: nonlinear system and user-provided symmetry_number:", symmetry_number)
+                sigma_r=symmetry_number
+            
             q_r=(math.pi**(1/2) / sigma_r ) * (temp**(3/2)) / ((rot_temps_x*rot_temps_y*rot_temps_z)**(1/2))
             S_rot=ash.constants.R_gasconst*(math.log(q_r)+1.5)
             E_rot=1.5*ash.constants.R_gasconst*temp
@@ -1303,7 +1311,8 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     #else:
     #    capping_atom_hessian_indices=[]
 #NOTE: Trans+rot projection off right now
-def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindices,large_atomindices=None,restHessian='Almloef',projection=False):
+def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='Almloef', projection=False,
+                                          charge=None, mult=None, xtbmethod="GFN1"):
     print("approximate_full_Hessian_from_smaller")
     print()
     write_hessian(hessian_small,hessfile="smallhessian")
@@ -1321,21 +1330,14 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
             print(f"small_atomindices: {small_atomindices} are not all present in large_atomindices: {large_atomindices}")
             print("This does not make sense. Exiting")
             ashexit()
-        #If large Hessian is a partial Hessian of the full systemthen we need to change small Hessian atomindices
+        #If large Hessian is a partial Hessian of the full system then we need to change small Hessian atomindices
         correct_small_atomindices=[large_atomindices.index(i) for i in small_atomindices]
         print("correct_small_atomindices:", correct_small_atomindices)
         #Create new fragment from large_atomindices
         subcoords, subelems = fragment.get_coords_for_atoms(large_atomindices)
         usedfragment = ash.Fragment(elems=subelems,coords=subcoords, printlevel=0, charge=fragment.charge, mult=fragment.mult)
 
-        if check_multiplicity(subelems,usedfragment.charge,usedfragment.mult, exit=False) == False:
-            print("Bad multiplicity. Using dummy")
-            #Dummy charge/mult
-            usedfragment.charge=0
-            if isodd(usedfragment.nuccharge):
-                usedfragment.mult=2
-            else:
-                usedfragment.mult=1
+
     else:
         #Size of Hessian as big as fragment
         hess_size=fragment.numatoms*3
@@ -1349,22 +1351,41 @@ def approximate_full_Hessian_from_smaller(fragment,hessian_small,small_atomindic
     print("Initial fullhessian:", fullhessian)
     print("Number of Hessian elements:", fullhessian.size)
     write_hessian(fullhessian,hessfile="initialfullhessian")
+
     #Making sure hessian_small is np array
     hessian_small = np.array(hessian_small)
+    print("hessian_small:", hessian_small)
     #Fill up hessian_large with model approximation from ORCA
     if restHessian == 'Almloef' or restHessian == 'Lindh' or restHessian == 'Schlegel' or restHessian == 'Swart':
         print("restHessian:", restHessian)
+        if charge is None or mult is None:
+            print("Error: For this restHessian option we require charge and multiplicity information to be provided")
+            ashexit()
+        usedfragment.charge=charge; usedfragment.mult=mult
         fullhessian = calc_model_Hessian_ORCA(usedfragment,model=restHessian)
-    #GFN1-xTB restHessian
+    #GFN-xTB restHessian
     elif restHessian == 'xtb':
-        xtb = ash.xTBTheory(xtbmethod='GFN1')
-        fullhessian = xtb.Hessian(fragment=usedfragment, charge=usedfragment.charge, mult=usedfragment.mult)
+        print("restHessian option is xtb")
+        if charge is None or mult is None:
+            print("Error: For restHessian=xtb option we require charge and multiplicity information to be provided")
+            ashexit()
+        #if check_multiplicity(subelems,usedfragment.charge,usedfragment.mult, exit=False) == False:
+        #    print("Bad multiplicity. Using dummy")
+        #    #Dummy charge/mult
+        #    usedfragment.charge=0
+        #    if isodd(usedfragment.nuccharge):
+        #        usedfragment.mult=2
+        #    else:
+        #        usedfragment.mult=1
+
+        xtb = ash.xTBTheory(xtbmethod=xtbmethod)
+        fullhessian = xtb.Hessian(fragment=usedfragment, charge=charge, mult=mult)
     #Or with unit matrix
     elif restHessian == 'unit' or restHessian == 'identity':
         print("restHessian is unit/identity")
         fullhessian = np.identity(hess_size)
     #Keep matrix at zero
-    elif restHessian==None or restHessian=='Zero':
+    elif restHessian is None or restHessian.lower() =='zero':
         print("RestHessian is zero.")
     else:
         print("RestHessian is zero.")

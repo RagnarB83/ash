@@ -748,6 +748,7 @@ class Fragment:
     # Write PDB-file
     def write_pdbfile(self,filename="Fragment"):
         print("Fragment.write_pdbfile method called")
+        filename=filename.replace(".pdb","")
         # Write PDB-file if information is available
         if self.pdb_atomnames is not None:
             print("Found PDB residue/atom/segment information stored in fragment. Writing proper PDB file.")
@@ -3049,7 +3050,7 @@ def QMPC_fragexpand(theory=None, fragment=None, thresh=5e-4):
 #Now sped up via get_connected_atoms_np. Silly
 def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomlist=None, unusualboundary=False):
     timeA = time.time()
-    print("Determining QM-MM boundary")
+    print("Determining QM-MM/HL-LL boundary")
     print("Parameters determing connectivity:")
     print("Scaling factor:", scale)
     print("Tolerance:", tol)
@@ -3198,8 +3199,8 @@ def get_molecules_from_trajectory(file, writexyz=False, skipindex=1, conncalc=Fa
     list_of_molecules = []
     all_elems, all_coords, all_titles = split_multimolxyzfile(file, writexyz=writexyz, skipindex=skipindex,return_fragments=False)
     print("Found {} molecules in file.".format(len(all_elems)))
-    for els, cs in zip(all_elems, all_coords):
-        conf = ash.Fragment(elems=els, coords=cs, conncalc=conncalc, printlevel=0)
+    for i,(els, cs) in enumerate(zip(all_elems, all_coords)):
+        conf = ash.Fragment(elems=els, coords=cs, conncalc=conncalc, printlevel=0, label=f"{file}_{i}")
         list_of_molecules.append(conf)
 
     return list_of_molecules
@@ -3654,13 +3655,18 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
 
 #Check whether spin multiplicity is consistent with the nuclear charge and total charge
 def check_multiplicity(elems,charge,mult, exit=True):
+    print("Inside check_multiplicity")
+    print("charge:", charge)
+    print("mult:", mult)
     def is_even(number):
         if number % 2 == 0:
             return True
         return False
     #From elems list calculate nuclear charge
     nuccharge=nucchargelist(elems)
+    print("nuccharge:", nuccharge)
     num_electrons = nuccharge - charge
+    print("num_electrons:", num_electrons)
     unpaired_electrons=mult-1
     result = list(map(is_even, (num_electrons,unpaired_electrons)))
     if result[0] != result[1]:
@@ -3840,7 +3846,7 @@ def mol_to_pdb(file):
     try:
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("mol_to_pdb requires OpenBabel library but it could not be imported")
+        print("Error: mol_to_pdb requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     mol = next(pybel.readfile("mol", file))
@@ -3855,7 +3861,7 @@ def sdf_to_pdb(file):
         from openbabel import openbabel
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("sdf_to_pdb requires OpenBabel library but it could not be imported")
+        print("Error: sdf_to_pdb requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     mol = next(pybel.readfile("sdf", file))
@@ -3892,7 +3898,7 @@ def writepdb_with_connectivity(file):
     try:
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("writepdb_with_connectivity requires OpenBabel library but it could not be imported")
+        print("Error: writepdb_with_connectivity requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     mol = next(pybel.readfile("pdb", file))
@@ -3908,7 +3914,7 @@ def xyz_to_pdb_with_connectivity(file, resname="UNL"):
         from openbabel import openbabel
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("xyz_to_pdb_with_connectivity requires OpenBabel library but it could not be imported")
+        print("Error: xyz_to_pdb_with_connectivity requires OpenBabel library but it could not be imported")
         print("You can install OpenBabel like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     #Read in XYZ-file
@@ -3947,7 +3953,7 @@ def pdb_to_smiles(fname: str) -> str:
     try:
         from openbabel import pybel
     except ModuleNotFoundError:
-        print("pdb_to_smiles requires OpenBabel library but it could not be imported")
+        print("Error: pdb_to_smiles requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     mol = next(pybel.readfile("pdb", fname))
@@ -3961,7 +3967,7 @@ def smiles_to_coords(smiles_string):
         from openbabel import pybel
         from openbabel import openbabel
     except ModuleNotFoundError:
-        print("smiles_to_coords requires OpenBabel library but it could not be imported")
+        print("Error: smiles_to_coords requires OpenBabel library but it could not be imported")
         print("You can install like this:    conda install --yes -c conda-forge openbabel")
         ashexit()
     print("Reading SMILES by OpenBabel")
@@ -4073,7 +4079,7 @@ def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, wr
     #Trim by removing clashing atoms
     new_frag.printlevel=1
     #Find atoms connected to solute index 0. Uses scale and tol
-    membs = get_molecule_members_loop_np2(new_frag.coords, new_frag.elems, 10, scale, tol, atomindex=0, membs=None)
+    membs = get_molecule_members_loop_np2(new_frag.coords, new_frag.elems, 20, scale, tol, atomindex=0, membs=None)
     print("Found clashing solvent atoms:", membs)
     delatoms=[]
     for i in membs:
