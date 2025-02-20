@@ -72,7 +72,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 
 #NEB-TS: NEB-CI + OptTS
 #Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
-def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
+def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, Singleiter=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, restart_file=None, TS_guess_file=None, mofilesdir=None,
@@ -81,8 +81,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
     print_line_with_mainheader("NEB+TS")
     module_init_time=time.time()
-    if IDPPonly is True:
-        print("Will first perform IDPP-only NEB job, followed by TSOpt job using geomeTRIC optimizer.")
+    if Singleiter is True:
+        print("Will first perform guess-only NEB job, followed by TSOpt job using geomeTRIC optimizer.")
     else:
         print("Will first perform loose NEB-CI job, followed by TSOpt job using geomeTRIC optimizer.")
     print("Hessian option:", hessian_for_TS)
@@ -105,7 +105,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     print(f"{cores_for_TSopt} CPU cores will be used to parallize theory during Opt-TS part.")
 
     #CI-NEB step
-    NEB_results = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
+    NEB_results = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, Singleiter=Singleiter,
             conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores,
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
@@ -313,7 +313,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
-        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
+        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, Singleiter=False,
         charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, zoom=False,
         restart_file=None, TS_guess_file=None, mofilesdir=None):
@@ -482,22 +482,90 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     PrintDivider()
     PrintDivider()
 
-    if restart_file == None:
+    if restart_file is None:
         print("Creating interpolated path.")
 
         if TS_guess != None:
             print(f"A TS guess file : {TS_guess_file} was provided")
             print("Will use intermediate geometry in interpolation")
 
-        # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
-        Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
-        print("Saving initial path as : initial_guess_path.xyz")
-        shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
-        os.remove("knarr_path.xyz")
-        print("\nReading initial path")
-        #Reading initial path from XYZ file.
-        rp, ndim, nim, symb = ReadTraj("initial_guess_path.xyz")
+        if interpolation == "IDPP":
+            print("Using Knarr IDPP path generation")
+            # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
+            Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
+            print("Saving initial path as : initial_guess_path.xyz")
+            shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
+            os.remove("knarr_path.xyz")
+        elif interpolation.upper() == "GEODESIC":
+            print("Using geodesic-interpolate path generation")
+            print("See Github repository: https://github.com/virtualzx-nad/geodesic-interpolate")
+            print("""If you use this, make sure to cite:
+Geodesic interpolation for reaction pathways  by
+Xiaolei Zhu, Keiran C. Thompson, Todd J. Martínez, J. Chem. Phys. 2019, 150, 164103.
+https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation-for-reaction-pathways
+""")
+            # Importing
+            from ash.external.additional_python_modules.geodesicinterpolate import geodesic_interpolate
+            from geodesic_interpolate.interpolation import redistribute
+            from geodesic_interpolate import Geodesic
+            from geodesic_interpolate.fileio import read_xyz, write_xyz
+            import logging
+            logger = logging.getLogger(__name__)
 
+            #Dummy arguments object
+            class Arg:
+                def __init__(self, filename=None,nimages=None, tol=2e-3, save_raw=None,
+                             scaling=None, dist_cutoff=None, friction=None, maxiter=None,microiter=None,
+                             sweep=None, output="interpolated.xyz"):
+
+                    self.filename=filename
+                    self.nimages=nimages
+                    self.tol=tol
+                    self.save_raw=save_raw
+                    self.scaling=scaling
+                    self.dist_cutoff=dist_cutoff
+                    self.friction=friction
+                    self.maxiter=maxiter
+                    self.microiter=microiter
+                    self.sweep=sweep
+                    self.output=output
+
+            args = Arg(filename="R_P_combined.xyz", nimages=images, tol=2e-3, maxiter=15, scaling=1.7,
+                       friction=1e-2, dist_cutoff=3, sweep=None, output="initial_guess_path.xyz")
+
+            # Creating combined XYZ-file
+            reactant.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='w')
+            product.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='a')
+
+            # Read the initial geometries.
+            symbols, X = read_xyz(args.filename)
+            logger.info('Loaded %d geometries from %s', len(X), args.filename)
+
+            # First redistribute number of images.  Perform interpolation if too few and subsampling if too many
+            # images are given
+            raw = redistribute(symbols, X, args.nimages, tol=args.tol * 5)
+            # if args.save_raw is not None:
+            #    write_xyz(args.save_raw, symbols, raw)
+
+            # Perform smoothing by minimizing distance in Cartesian coordinates with redundant internal metric
+            # to find the appropriate geodesic curve on the hyperspace.
+            smoother = Geodesic(symbols, raw, args.scaling, threshold=args.dist_cutoff, friction=args.friction)
+            if args.sweep is None:
+                args.sweep = len(symbols) > 35
+            try:
+                if args.sweep:
+                    smoother.sweep(tol=args.tol, max_iter=args.maxiter, micro_iter=args.microiter)
+                else:
+                    smoother.smooth(tol=args.tol, max_iter=args.maxiter)
+            finally:
+                # Save the smoothed path to output file.  try block is to ensure output is saved if one ^C the
+                # process, or there is an error
+                logging.info('Saving final path to file %s', args.output)
+                write_xyz(args.output, symbols, smoother.path)
+
+        print("\nReading initial path")
+        # Reading initial path from XYZ file.
+        rp, ndim, nim, symb = ReadTraj("initial_guess_path.xyz")
         path = InitializePathObject(nim, react)
         path.SetCoords(rp)
     else:
@@ -524,10 +592,10 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     # CALLING NEB
     #############################
 
-    if IDPPonly == True:
-        print("IDPPonly option will do one NEB iteration on the IDPP path and then stop NEB part")
+    if Singleiter is True:
+        print("Singleiter option will do one NEB iteration on the guess path and then stop NEB part")
         optimizer["MAX_ITER"] = 1
-        #Now starting NEB from path object, using neb_settings and optimizer settings
+        # Now starting NEB from path object, using neb_settings and optimizer settings
         print("neb_settings:", neb_settings)
         print("optimizer:", optimizer)
         DoNEB(path, calculator, neb_settings, optimizer)
@@ -538,7 +606,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         #return Saddlepoint_fragment, calculator.energies_dict
 
         #Returning result object
-        result = ASH_Results(label="NEB-IDPPonly calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
+        result = ASH_Results(label="NEB-Singleiter calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
             saddlepoint_fragment=Saddlepoint_fragment, charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict,
             barrier_energy=None)
         result.write_to_disk(filename="ASH_NEB.result")

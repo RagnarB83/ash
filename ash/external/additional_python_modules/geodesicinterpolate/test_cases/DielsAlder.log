@@ -1,0 +1,38 @@
+[__main__    ]Loaded 2 geometries from test_cases/DielsAlder.xyz
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      2.119.  New length:3
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.806.  New length:4
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.639.  New length:5
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.513.  New length:6
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.443.  New length:7
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.394.  New length:8
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.348.  New length:9
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.306.  New length:10
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.266.  New length:11
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.230.  New length:12
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.197.  New length:13
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.166.  New length:14
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.138.  New length:15
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.111.  New length:16
+[interpolation]Inserting image between 1 and 2 with Cartesian RMSD      1.091.  New length:17
+[geodesic    ]Maximum RMSD change in initial path:       1.07
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:   17  Atoms   31 Rijs    171
+[geodesic    ]  Degree of freedoms   1395: 
+[geodesic    ]  Iteration   0: Length      5.273 |dL|=5.965e-01
+[geodesic    ]  Iteration   1: Length     11.551 |dL|=3.833e+00
+[geodesic    ]  Iteration   2: Length      3.953 |dL|=1.308e-01
+[geodesic    ]  Iteration   3: Length      4.914 |dL|=2.413e-01
+[geodesic    ]  Iteration   4: Length      2.946 |dL|=1.134e-01
+[geodesic    ]  Iteration   5: Length      2.749 |dL|=5.641e-02
+[geodesic    ]  Iteration   6: Length      2.960 |dL|=8.823e-02
+[geodesic    ]  Iteration   7: Length      2.505 |dL|=3.120e-02
+[geodesic    ]  Iteration   8: Length      2.422 |dL|=3.621e-02
+[geodesic    ]  Iteration   9: Length      2.636 |dL|=3.709e-02
+[geodesic    ]  Iteration  10: Length      2.329 |dL|=1.205e-02
+[geodesic    ]  Iteration  11: Length      2.341 |dL|=1.716e-02
+[geodesic    ]  Iteration  12: Length      2.239 |dL|=5.393e-03
+[geodesic    ]  Iteration  13: Length      2.195 |dL|=8.426e-03
+[geodesic    ]  Iteration  14: Length      2.226 |dL|=2.472e-02
+[geodesic    ]Smoothing converged after 15 iterations
+[geodesic    ]Final path length:      2.22629  Max RMSD in path:       0.28
+[__main__    ]Saving final path to file test_cases/DielsAlder_interpolated.xyz

@@ -1,0 +1,49 @@
+[__main__    ]Loaded 2 geometries from calcium_binding.xyz
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      3.645.  New length:3
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      2.693.  New length:4
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.684.  New length:5
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      1.546.  New length:6
+[interpolation]Inserting image between 4 and 5 with Cartesian RMSD      1.525.  New length:7
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.339.  New length:8
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.039.  New length:9
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      1.004.  New length:10
+[interpolation]Inserting image between 1 and 2 with Cartesian RMSD      0.938.  New length:11
+[interpolation]Inserting image between 1 and 2 with Cartesian RMSD      0.959.  New length:12
+[interpolation]Inserting image between 4 and 5 with Cartesian RMSD      0.936.  New length:13
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      0.921.  New length:14
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      0.954.  New length:15
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      0.974.  New length:16
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      1.008.  New length:17
+[geodesic    ]Maximum RMSD change in initial path:       0.99
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:   17  Atoms  600 Rijs   2729
+[geodesic    ]  Degree of freedoms  27000: 
+[geodesic    ]  Initial length:   36.839
+[geodesic    ]Sweep   0: L=  17.15 dX=4.15e+01 tol=2.000e-02 dL=2.758e-01
+[geodesic    ]Sweep   1: L=  12.48 dX=2.27e+01 tol=5.517e-02 dL=1.579e-01
+[geodesic    ]Sweep   2: L=  10.57 dX=1.55e+01 tol=3.158e-02 dL=3.759e-02
+[geodesic    ]Sweep   3: L=   9.46 dX=9.36e+00 tol=7.517e-03 dL=3.484e-02
+[geodesic    ]Sweep   4: L=   8.91 dX=7.99e+00 tol=6.968e-03 dL=2.569e-02
+[geodesic    ]Sweep   5: L=   8.44 dX=7.21e+00 tol=5.137e-03 dL=1.411e-02
+[geodesic    ]Sweep   6: L=   8.15 dX=6.07e+00 tol=2.821e-03 dL=2.977e-02
+[geodesic    ]Sweep   7: L=   7.88 dX=5.43e+00 tol=5.955e-03 dL=3.423e-02
+[geodesic    ]Sweep   8: L=   7.66 dX=1.01e+01 tol=6.846e-03 dL=1.983e-02
+[geodesic    ]Sweep   9: L=   7.45 dX=7.54e+00 tol=3.965e-03 dL=2.950e-02
+[geodesic    ]Sweep  10: L=   7.29 dX=7.93e+00 tol=5.900e-03 dL=8.818e-03
+[geodesic    ]Sweep  11: L=   7.12 dX=8.32e+00 tol=1.764e-03 dL=6.121e-03
+[geodesic    ]Sweep  12: L=   7.00 dX=1.15e+01 tol=1.224e-03 dL=3.120e-03
+[geodesic    ]Sweep  13: L=   6.87 dX=7.37e+00 tol=1.000e-03 dL=7.086e-03
+[geodesic    ]Sweep  14: L=   6.77 dX=8.87e+00 tol=1.417e-03 dL=2.483e-03
+[geodesic    ]Optimization not converged after 14 iteartions
+[geodesic    ]Final path length:      6.77003  Max RMSD in path:       0.62
+[__main__    ]Saving final path to file interpolated.xyz
