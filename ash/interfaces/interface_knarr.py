@@ -530,7 +530,7 @@ https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation
                     self.sweep=sweep
                     self.output=output
 
-            args = Arg(filename="R_P_combined.xyz", nimages=images, tol=2e-3, maxiter=15, scaling=1.7,
+            args = Arg(filename="R_P_combined.xyz", nimages=images+2, tol=2e-3, maxiter=15, scaling=1.7,
                        friction=1e-2, dist_cutoff=3, sweep=None, output="initial_guess_path.xyz")
 
             # Creating combined XYZ-file
