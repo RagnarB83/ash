@@ -505,7 +505,7 @@ Xiaolei Zhu, Keiran C. Thompson, Todd J. Martínez, J. Chem. Phys. 2019, 150, 16
 https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation-for-reaction-pathways
 """)
             # Importing
-            from ash.external.additional_python_modules.geodesicinterpolate import geodesic_interpolate
+            import ash.external.additional_python_modules.geodesicinterpolate as geodesic_interpolate
             from geodesic_interpolate.interpolation import redistribute
             from geodesic_interpolate import Geodesic
             from geodesic_interpolate.fileio import read_xyz, write_xyz
