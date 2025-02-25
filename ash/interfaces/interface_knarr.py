@@ -515,7 +515,7 @@ https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation
             #Dummy arguments object
             class Arg:
                 def __init__(self, filename=None,nimages=None, tol=2e-3, save_raw=None,
-                             scaling=None, dist_cutoff=None, friction=None, maxiter=None,microiter=None,
+                             scaling=None, dist_cutoff=None, friction=1e-3, maxiter=50,microiter=20,
                              sweep=None, output="interpolated.xyz"):
 
                     self.filename=filename
@@ -551,11 +551,9 @@ https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation
             # to find the appropriate geodesic curve on the hyperspace.
             smoother = Geodesic(symbols, raw, args.scaling, threshold=args.dist_cutoff, friction=args.friction)
             if args.sweep is None:
-                print("symbosl:", symbols)
                 args.sweep = len(symbols) > 35
             try:
                 if args.sweep:
-                    print("RB here 2")
                     smoother.sweep(tol=args.tol, max_iter=args.maxiter, micro_iter=args.microiter)
                 else:
                     smoother.smooth(tol=args.tol, max_iter=args.maxiter)
@@ -566,7 +564,6 @@ https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation
                 write_xyz(args.output, symbols, smoother.path)
 
         print("\nReading initial path")
-        exit()
         # Reading initial path from XYZ file.
         rp, ndim, nim, symb = ReadTraj("initial_guess_path.xyz")
         path = InitializePathObject(nim, react)
