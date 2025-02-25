@@ -199,6 +199,7 @@ class Geodesic(object):
         Returns:
             The optimized path.  This is also stored in self.path
         """
+        print("inside sweep")
         if end < 0:
             end = self.nimages + end
         self.neval = 0
@@ -213,6 +214,9 @@ class Geodesic(object):
             X0 = self.path.copy()
             for i in images[:-1]:   # Use self.smooth() to optimize individual images
                 xmid = (self.path[i - 1] + self.path[i + 1]) * 0.5
+                print("here")
+                print("micro_iter:", micro_iter)
+                print("iteration:", iteration)
                 self.smooth(curr_tol, max_iter=min(micro_iter, iteration + 6),
                             start=i, end=i + 1, log_level=logging.DEBUG,
                             friction=self.friction if iteration else 0.1,
