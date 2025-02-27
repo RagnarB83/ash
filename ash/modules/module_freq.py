@@ -1874,7 +1874,7 @@ def read_hessian(file):
 
 #Calculate Hessian (GFN1) for a fragment.
 def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1, use_xtb_feature=True,
-    charge=None, mult=None):
+    charge=None, mult=None, xtbmethod="GFN1"):
 
     print_line_with_mainheader("calc_hessian_xtb")
 
@@ -1890,7 +1890,7 @@ def calc_hessian_xtb(fragment=None, runmode='serial', actatoms=None, numcores=1,
         fragment = ash.Fragment(elems=subelems,coords=subcoords, printlevel=0)
     print("Will now calculate xTB Hessian")
     #Creating xtb theory object
-    xtb = ash.xTBTheory(xtbmethod='GFN1', numcores=numcores)
+    xtb = ash.xTBTheory(xtbmethod=xtbmethod, numcores=numcores)
 
     #Get Hessian from xTB directly (avoiding ASH NumFreq)
     if use_xtb_feature == True:

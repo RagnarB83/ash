@@ -383,13 +383,15 @@ class GeomeTRICOptimizerClass:
                 elif "file:" in self.hessian:
                     hessianfile = self.hessian.replace("file:","")
 
-                print("Checking that defined Hessian is compatible with active-region")
-                hessian_read = read_hessian(hessianfile)
-                print("actatoms:", actatoms)
-                if hessian_read.shape[0] != 3*len(atomsused):
-                    print(f"Error: Hessian shape is {hessian_read.shape}  which is incompatible with the  number of active atoms present ({len(atomsused)})")
-                    print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(atomsused)} x {3*len(atomsused)})")
-                    ashexit()
+                #Allow first and each options still
+                if self.hessian not in ['first','each']:
+                    print("Checking that defined Hessian is compatible with active-region")
+                    hessian_read = read_hessian(hessianfile)
+                    print("actatoms:", actatoms)
+                    if hessian_read.shape[0] != 3*len(atomsused):
+                        print(f"Error: Hessian shape is {hessian_read.shape}  which is incompatible with the  number of active atoms present ({len(atomsused)})")
+                        print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(atomsused)} x {3*len(atomsused)})")
+                        ashexit()
 
             elif self.hessian == None:
                 if self.printlevel >= 1:

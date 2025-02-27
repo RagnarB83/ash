@@ -760,7 +760,7 @@ class Fragment:
         return f"{filename}.pdb"
 
     # Create new topology from scratch if none is defined (defined automatically when reading PDB-files by OpenMM)
-    def define_topology(self, scale=1.0, tol=0.1):
+    def define_topology(self, scale=1.0, tol=0.1, resname="MOL"):
         try:
             import openmm.app
         except ImportError:
@@ -769,7 +769,7 @@ class Fragment:
         print("Defining new basic single-chain, single-residue topology")
         self.pdb_topology = openmm.app.Topology()
         chain = self.pdb_topology.addChain()
-        residue = self.pdb_topology.addResidue("MOL", chain)
+        residue = self.pdb_topology.addResidue(resname, chain)
 
         # Defaultdictionary to keep track of unique element-atomnames
         atomnames_dict=defaultdict(int)
@@ -788,7 +788,7 @@ class Fragment:
 
     # Write PDB-file via OpenMM
     def write_pdbfile_openmm(self,filename="Fragment", calc_connectivity=False, pdb_topology=None,
-                             skip_connectivity=False):
+                             skip_connectivity=False, resname="MOL"):
         print("write_pdbfile_openmm\n")
         try:
             import openmm.app
@@ -807,7 +807,7 @@ class Fragment:
             print("Warning: ASH Fragment has no PDB-file topology defined (required for PDB-file writing)")
             print("Now defining new topology from scratch")
             if pdb_topology is None:
-                self.define_topology() #Creates self.pdb_topology
+                self.define_topology(resname=resname) #Creates self.pdb_topology
         else:
             print("Using pdbtopology found in ASH fragment")
 
@@ -4043,13 +4043,29 @@ def bounding_box_dimensions(coordinates,shift=0.0):
     final_dims = dimensions + shift
     return dimensions  # Return the dimensions of the bounding box
 
+# Combien and place 2 fragments
+def combine_and_place_fragments(ref_frag, trans_frag):
+    
+    for displacement in [0.0, 2.0, 4.0, 6.0,8.0,10.0,12.0,14.0]:
+        #Translating 2nd frag by displacement in 
+        trans_frag.coords[:,-1] +=displacement
+        members = get_molecule_members_loop_np2(np.vstack((ref_frag.coords,trans_frag.coords)), ref_frag.elems+trans_frag.elems, 
+                                        10, 1.0, 0.4, atomindex=0, membs=None)
+        if len(members) == ref_frag.numatoms:
+            print("Molecules are sufficiently far apart")
+            break
+    
+    combined_solute = Fragment(elems=ref_frag.elems+trans_frag.elems, coords = np.vstack((ref_frag.coords,trans_frag.coords)), 
+                               printlevel=2)
+    return combined_solute
+
 
 #Simple function to combine 2 ASH fragments where one is assumed to be a solute (fewer atoms) and the other assumed to be
 #some kind of solvent system (box,sphere etc.)
 #Use tolerance (tol) e.g. to control how many solvent molecules around get deleted
 #Currently using 0.4 as default based on threonine in acetonitrile example
-def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, write_pdb=False, write_solute_connectivity=True,
-                                       solute_pdb=None, solvent_pdb=None, outputname="solution.pdb", write_PBC_info=True):
+def insert_solute_into_solvent(solute=None, solute2=None, solvent=None, scale=1.0, tol=0.4, write_pdb=False, write_solute_connectivity=True,
+                                       solute_pdb=None, solute2_pdb=None, solvent_pdb=None, outputname="solution.pdb", write_PBC_info=True):
     print("\ninsert_solute_into_solvent\n")
     #Early exits
     if write_pdb:
@@ -4060,32 +4076,63 @@ def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, wr
     if solute is None and solute_pdb is not None:
         print("No solute fragment provided but solute_pdb is set. Reading solute fragment from PDB-file")
         solute = Fragment(pdbfile=solute_pdb)
+    if solute2 is None and solute2_pdb is not None:
+        print("No solute2 fragment provided but solute2_pdb is set. Reading solute2 fragment from PDB-file")
+        solute2 = Fragment(pdbfile=solute2_pdb)
     if solvent is None and solvent_pdb is not None:
         print("No solvent fragment provided but solvent_pdb is set. Reading solvent fragment from PDB-file")
         solvent = Fragment(pdbfile=solvent_pdb)
 
     #Get centers
     com_box = solvent.get_coordinate_center()
-    com_solute = solute.get_coordinate_center()
 
-    #Translating solute coords
-    trans_coord=np.array(com_box)-np.array(com_solute)
-    solute.coords=solute.coords+trans_coord
+    if solute2 is  None:
+        com_solute = solute.get_coordinate_center()
+        #Translating solute coords
+        trans_coord=np.array(com_box)-np.array(com_solute)
+        solute.coords=solute.coords+trans_coord
+    else:
+        #Combine and Translate solute2 so that it is close to solute1
+        combined_solute = combine_and_place_fragments(ref_frag=solute, trans_frag=solute2)
+
+        #COM and trans
+        com_solute = combined_solute.get_coordinate_center()
+        trans_coord=np.array(com_box)-np.array(com_solute)
+        #Translate combined solute fragment
+        combined_solute.coords=combined_solute.coords+trans_coord
+
 
     #New Fragment by combining element lists and coordinates
-    new_frag = Fragment(elems=solute.elems+solvent.elems, coords = np.vstack((solute.coords,solvent.coords)), printlevel=2)
+    if solute2 is None:
+        print("Combining solute and solvent")
+        new_frag = Fragment(elems=solute.elems+solvent.elems, coords = np.vstack((solute.coords,solvent.coords)), printlevel=2)
+    else:
+        print("Combining combined_solute and solvent")
+        new_frag = Fragment(elems=combined_solute.elems+solvent.elems, coords = np.vstack((combined_solute.coords,solvent.coords)), printlevel=2)
 
     new_frag.write_xyzfile(xyzfilename="solution-pre.xyz")
     #Trim by removing clashing atoms
     new_frag.printlevel=1
+
     #Find atoms connected to solute index 0. Uses scale and tol
     membs = get_molecule_members_loop_np2(new_frag.coords, new_frag.elems, 20, scale, tol, atomindex=0, membs=None)
-    print("Found clashing solvent atoms:", membs)
     delatoms=[]
     for i in membs:
         if i >= solute.numatoms:
             delatoms.append(i)
+    print("First delatoms:", delatoms)
+    if solute2 is not None:
+        membs2 = get_molecule_members_loop_np2(new_frag.coords, new_frag.elems, 20, scale, tol, atomindex=solute.numatoms, membs=None)
+        print("membs2:", membs2)
+        for j in membs2:
+            if j >= solute.numatoms+solute2.numatoms:
+                if j not in delatoms:
+                    delatoms.append(j)
+    print("Final delatoms:", delatoms)
+    
+    # Deleting
     delatoms.sort(reverse=True)
+    print("Found clashing solvent atoms:", delatoms)
     for d in delatoms:
         new_frag.delete_atom(d)
     new_frag.printlevel=2
@@ -4113,7 +4160,18 @@ def insert_solute_into_solvent(solute=None, solvent=None, scale=1.0, tol=0.4, wr
 
         #Create modeller object
         modeller = openmm.app.Modeller(pdb1.topology, pdb1.positions) #Add pdbfile1
+        
+        #solute2
+        if solute2 is not None:
+            print("Adding solute2")
+            pdb_solute2 = openmm.app.PDBFile(solute2_pdb)
+            solute2_resname= list(pdb_solute2.topology.residues())[0].name
+            print("solute2_resname:", solute2_resname)
+            modeller.add(pdb_solute2.topology, pdb_solute2.positions) #Add pdbfile2
+        print("Adding solvent")
         modeller.add(pdb2.topology, pdb2.positions) #Add pdbfile2
+
+
         #Delete clashing atoms from topology
         toDelete = [r for j,r in enumerate(modeller.topology.atoms()) if j in delatoms]
         modeller.delete(toDelete)

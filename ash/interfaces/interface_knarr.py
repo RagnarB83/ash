@@ -77,7 +77,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, restart_file=None, TS_guess_file=None, mofilesdir=None,
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
-        hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1):
+        hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1,
+        partial_hessian_atoms=None, partial_npoint_choice=2):
 
     print_line_with_mainheader("NEB+TS")
     module_init_time=time.time()
@@ -181,8 +182,22 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     elif hessian_for_TS == 'each':
         hessianoption="each"
     #xTB Hessian option
-    elif hessian_for_TS == 'xtb':
-        hessianfile = calc_hessian_xtb(fragment=SP, runmode='serial', actatoms=actatoms, numcores=max_cores, use_xtb_feature=True)
+    elif 'xtb' in hessian_for_TS.lower():
+        print("xtB-type Hessian chosen (xtb found in string)")
+        if 'gfn1' in hessian_for_TS.lower():
+            print("Using GFN1-xTB Hessian")
+            xtbmethod="GFN1"
+        elif 'gfn2' in hessian_for_TS.lower():
+            print("Using GFN2-xTB Hessian")
+            xtbmethod="GFN2"
+        else:
+            print("Neither gfn1 or gfn2 was chosen (control this by choosing hessian_for_TS='GFN1-xTB' or hessian_for_TS='GFN2-xTB' )")
+            print("Choosing xtbmethod to be GFN2-xTB by default")
+            xtbmethod="GFN2"
+
+
+        hessianfile = calc_hessian_xtb(fragment=SP, runmode='serial', actatoms=actatoms, numcores=max_cores, use_xtb_feature=True,
+                                       xtbmethod=xtbmethod)
         hessianoption='file:'+str(hessianfile)
     #Cheap model Hessian
     #NOTE: None of these work well.  Need to use tangent to modify
@@ -207,35 +222,54 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     # Add connecting atoms and erform partial Hessian optimization
     elif hessian_for_TS == 'partial':
         print("hessian_for_TS option: partial")
-        print(f"Using climbing image tangent to find dominant atoms in approximate TS mode (tsmode_tangent_threshold={tsmode_tangent_threshold})")
+        print("Using partial Hessian to approximate Hessian for saddle-point optimization.")
 
-        #Getting tangent and atoms that contribute at least X to tangent where X is tsmode_tangent_threshold=0.1 (default)
-        tangent = read_tangent("CItangent.xyz")
-        TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
-        #Convert activeregion atom indices to full system indices
-        print("Determining atoms contributing the most to TS mode")
-        if ActiveRegion is True:
-            print("TSmodeatoms (active region):", TSmodeatoms)
-            TSmodeatoms = [actatoms[a] for a in TSmodeatoms]
-            print("TSmodeatoms (full system):", TSmodeatoms)
+
+        if Singleiter is True:
+            print("This is a Singleiter NEBTS job.")
+            if partial_hessian_atoms is None:
+                print("Error: partial_hessian_atoms is not set")
+                print("In Singleiter NEBTS jobs no climbing image tangent is available. Setting the partial_hessian_atoms list is necessary.")
+                print("Example: partial_hessian_atoms=[15,16,18,19]  where the numbers are atom indices believed to contribute the most to the TS mode")
+                print("Exiting")
+                ashexit()
+            Final_partial_hessatoms=partial_hessian_atoms
+            print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
         else:
-            print("TSmodeatoms (full system):", TSmodeatoms)
-        #Now finding the atoms that TSmodeatoms are connected to, for both R, P and SP
-        print("Now finding connected atoms to TSmode-atoms")
-        result_R = get_conn_atoms_for_list(fragment=reactant, atoms=TSmodeatoms)
-        print("result_R:", result_R)
-        result_P = get_conn_atoms_for_list(fragment=product, atoms=TSmodeatoms)
-        print("result_P:", result_P)
-        result_SP = get_conn_atoms_for_list(fragment=SP, atoms=TSmodeatoms)
-        print("result_SP:", result_SP)
-        #Combining
-        Final_partial_hessatoms = np.unique(result_R + result_P + result_SP).tolist()
+            print("This is a regular NEBTS job. Partial Hessian can either be approximated from tangent or explicity set via partial_hessian_atoms keyword")
+            if partial_hessian_atoms is None:
+                print("partial_hessian_atoms list is empty. Will now try to use climbing image tangent to guess the important atoms")
+                print(f"Using climbing image tangent to find dominant atoms in approximate TS mode (tsmode_tangent_threshold={tsmode_tangent_threshold})")
 
-        print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
-        print("This corresponds to atoms contributing to the TS-mode and connected atoms")
+                #Getting tangent and atoms that contribute at least X to tangent where X is tsmode_tangent_threshold=0.1 (default)
+                tangent = read_tangent("CItangent.xyz")
+                TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
+                #Convert activeregion atom indices to full system indices
+                print("Determining atoms contributing the most to TS mode")
+                if ActiveRegion is True:
+                    print("TSmodeatoms (active region):", TSmodeatoms)
+                    TSmodeatoms = [actatoms[a] for a in TSmodeatoms]
+                    print("TSmodeatoms (full system):", TSmodeatoms)
+                else:
+                    print("TSmodeatoms (full system):", TSmodeatoms)
+                #Now finding the atoms that TSmodeatoms are connected to, for both R, P and SP
+                print("Now finding connected atoms to TSmode-atoms")
+                result_R = get_conn_atoms_for_list(fragment=reactant, atoms=TSmodeatoms)
+                print("result_R:", result_R)
+                result_P = get_conn_atoms_for_list(fragment=product, atoms=TSmodeatoms)
+                print("result_P:", result_P)
+                result_SP = get_conn_atoms_for_list(fragment=SP, atoms=TSmodeatoms)
+                print("result_SP:", result_SP)
+                #Combining
+                Final_partial_hessatoms = np.unique(result_R + result_P + result_SP).tolist()
+                print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
+                print("This corresponds to atoms contributing to the TS-mode and connected atoms")
+            else:
+                Final_partial_hessatoms=partial_hessian_atoms
+                print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization
-        result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=Final_partial_hessatoms, runmode=runmode, numcores=numcores)
+        result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=partial_npoint_choice, hessatoms=Final_partial_hessatoms, runmode=runmode, numcores=numcores)
 
         #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
         #Large Hessian is the actatoms Hessian if actatoms provided
