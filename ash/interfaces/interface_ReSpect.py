@@ -105,8 +105,8 @@ class ReSpectTheory:
         print("Running ReSpect SCF calculation")
         run_respect(respectdir=self.respectdir, jobtype='scf', inputfile=self.filename, numcores=self.numcores, scratchdir=f'{os.getcwd()}/respect_calc_scratch')
 
-        #Grab energy, gradient
-        self.energy, self.gradient = grab_energy_gradient(f"{self.filename}.out_scf", Grad=Grad)
+        #Grab energy. Note: no analytic gradient in ReSpect yet
+        self.energy = grab_energy(f"{self.filename}.out_scf", Grad=Grad)
         #Grab properties
 
         # if jobtype has been set
@@ -125,10 +125,10 @@ class ReSpectTheory:
 
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
         # Grab gradient if calculated
-        if Grad is True:
-            return self.energy, self.gradient
-        else:
-            return self.energy
+        #if Grad is True:
+        #    return self.energy, self.gradient
+        #else:
+        return self.energy
 
 # jobtype: scf, gt
 def run_respect(respectdir=None, jobtype='scf', inputfile='', numcores=1, scratchdir='.'):
@@ -137,8 +137,7 @@ def run_respect(respectdir=None, jobtype='scf', inputfile='', numcores=1, scratc
                         check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 
-def grab_energy_gradient(filename, Grad=False):
-    gradient=None
+def grab_energy(filename, Grad=False):
     energy=None
     if Grad:
         pass
@@ -148,7 +147,7 @@ def grab_energy_gradient(filename, Grad=False):
                 if '  --- Total energy             --- =' in line:
                     energy = float(line.split()[-1])
                     break
-    return energy, gradient
+    return energy
 
 def create_respect_inputfile(filename,elems, coords, charge,mult, scf_inputkeywords=None, jobtype_inputkeywords=None, jobtype=None):
 
