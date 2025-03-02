@@ -174,8 +174,3 @@ def create_respect_inputfile(filename,elems, coords, charge,mult, scf_inputkeywo
                 f.write(f"{indent}{subj_k}: {subj_val}\n")
 
     f.close()
-
-
-    H   -1.4523499293         0.0000000000         0.8996235720
-    H    1.4523499293         0.0000000000         0.8996235720
-    O    0.0000000000         0.0000000000        -0.2249058930
