@@ -105,6 +105,10 @@ class ReSpectTheory:
         print("Running ReSpect SCF calculation")
         run_respect(respectdir=self.respectdir, jobtype='scf', inputfile=self.filename, numcores=self.numcores, scratchdir=f'{os.getcwd()}/respect_calc_scratch')
 
+        #Grab energy, gradient
+        self.energy, self.gradient = grab_energy_gradient(f"{self.filename}.out_scf", Grad=Grad)
+        #Grab properties
+
         # if jobtype has been set
         if self.jobtype is not None:
             print("Running ReSpect property calculation:", self.jobtype)
@@ -134,12 +138,15 @@ def run_respect(respectdir=None, jobtype='scf', inputfile='', numcores=1, scratc
 
 
 def grab_energy_gradient(filename, Grad=False):
-
+    gradient=None
     if Grad:
-        
+        pass
     else:
-        respect.out_scf
-
+        with open(filename) as f:
+            for line in f:
+                if '  --- Total energy             --- =' in line:
+                    energy = float(line.split()[-1])
+                    break
     return energy, gradient
 
 def create_respect_inputfile(filename,elems, coords, charge,mult, scf_inputkeywords=None, jobtype_inputkeywords=None, jobtype=None):
