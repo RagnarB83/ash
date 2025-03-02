@@ -139,6 +139,7 @@ def run_respect(respectdir=None, jobtype='scf', inputfile='', numcores=1, scratc
 
 def grab_energy_gradient(filename, Grad=False):
     gradient=None
+    energy=None
     if Grad:
         pass
     else:
@@ -164,7 +165,7 @@ def create_respect_inputfile(filename,elems, coords, charge,mult, scf_inputkeywo
     f.write(f"{indent}charge:        {charge}\n")
     f.write(f"{indent}multiplicity:        {mult}\n")
     for s_k,s_val in scf_inputkeywords.items():
-        f.write(f"    {s_k}: {s_val}\n")
+        f.write(f"{indent}{s_k}: {s_val}\n")
     if jobtype is not None:
         for job_k, job_val in jobtype_inputkeywords.items():
             f.write(f"#{job_k} input block\n")
