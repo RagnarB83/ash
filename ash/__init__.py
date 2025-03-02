@@ -92,6 +92,7 @@ from .interfaces.interface_sparrow import SparrowTheory
 from .interfaces.interface_NWChem import NWChemTheory
 from .interfaces.interface_Gaussian import GaussianTheory
 from .interfaces.interface_Turbomole import TurbomoleTheory
+from .interfaces.interface_ReSpect import ReSpectTheory
 from .interfaces.interface_CP2K import CP2KTheory
 from .interfaces.interface_BigDFT import BigDFTTheory
 from .interfaces.interface_deMon import deMon2kTheory
