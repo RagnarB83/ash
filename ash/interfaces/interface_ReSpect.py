@@ -161,7 +161,7 @@ def create_respect_inputfile(filename,elems, coords, charge,mult, scf_inputkeywo
     # Geometry block
     f.write(f"{indent}geometry:\n")
     for el,c in zip(elems,coords):
-        f.write(f"{indent}{indent}{el}{c[0]:<13.10f}{c[2]:<13.10f}{c[2]:<13.10f}\n")
+        f.write(f"{indent}{indent}{el}{indent}{c[0]:<13.10f}{indent}{c[2]:<13.10f}{indent}{c[2]:<13.10f}\n")
     f.write(f"{indent}charge:        {charge}\n")
     f.write(f"{indent}multiplicity:        {mult}\n")
     for s_k,s_val in scf_inputkeywords.items():
