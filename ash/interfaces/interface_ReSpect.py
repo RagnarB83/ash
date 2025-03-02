@@ -132,9 +132,9 @@ class ReSpectTheory:
 
 # jobtype: scf, gt
 def run_respect(respectdir=None, jobtype='scf', inputfile='', numcores=1, scratchdir='.'):
-
-    process = sp.run([respectdir + f'/respect', f'--{jobtype}', f'--inp={inputfile}', f"--nt={numcores}", f"--scratch={scratchdir}"], 
-                     check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+    with open('respect_.out', 'w') as ofile:
+        process = sp.run([respectdir + f'/respect', f'--{jobtype}', f'--inp={inputfile}', f"--nt={numcores}", f"--scratch={scratchdir}"], 
+                        check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 
 def grab_energy_gradient(filename, Grad=False):
