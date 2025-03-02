@@ -133,27 +133,36 @@ def run_respect(respectdir=None, jobtype='scf', inputfile='', numcores=1, scratc
                      check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 
+def grab_energy_gradient(filename, Grad=False):
+
+    if Grad:
+        
+    else:
+        respect.out_scf
+
+    return energy, gradient
+
 def create_respect_inputfile(filename,elems, coords, charge,mult, scf_inputkeywords=None, jobtype_inputkeywords=None, jobtype=None):
 
+    indent="  "
     f = open(f"{filename}.inp", "w")
     f.write("# Respect inputfile created by ASH\n")
     f.write("# SCF inputblock\n")
     f.write("scf:\n")
     f.write("\n")
     # Geometry block
-    f.write("    geometry:\n")
+    f.write(f"{indent}geometry:\n")
     for el,c in zip(elems,coords):
-        f.write(f"      {el}  {c[0]} {c[2]} {c[2]} \n")
-    f.write(f"    charge:        {charge}\n")
-    f.write(f"    multiplicity:        {mult}\n")
+        f.write(f"{indent}{indent}{el}  {c[0]} {c[2]} {c[2]} \n")
+    f.write(f"{indent}charge:        {charge}\n")
+    f.write(f"{indent}multiplicity:        {mult}\n")
     for s_k,s_val in scf_inputkeywords.items():
         f.write(f"    {s_k}: {s_val}\n")
-    print("jobptype:", jobtype)
     if jobtype is not None:
         for job_k, job_val in jobtype_inputkeywords.items():
             f.write(f"#{job_k} input block\n")
             f.write(f"{job_k}:\n")
             for subj_k,subj_val in job_val.items():
-                f.write(f"  {subj_k}: {subj_val}\n")
+                f.write(f"{indent}{subj_k}: {subj_val}\n")
 
     f.close()
