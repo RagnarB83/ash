@@ -103,7 +103,7 @@ class ReSpectTheory:
 
         # Always run SCF-job first
         print("Running ReSpect SCF calculation")
-        run_respect(respectdir=self.respectdir, jobtype='scf', inputfile=self.filename, numcores=self.numcores, scratchdir='./respect_calc_scratch')
+        run_respect(respectdir=self.respectdir, jobtype='scf', inputfile=self.filename, numcores=self.numcores, scratchdir=f'{os.getcwd()}/respect_calc_scratch')
 
         # if jobtype has been set
         if self.jobtype is not None:
