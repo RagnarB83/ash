@@ -104,7 +104,7 @@ class ReSpectTheory:
         # Always run SCF-job first
         print("Running ReSpect SCF calculation")
         run_respect(respectdir=self.respectdir, jobtype='scf', inputfile=self.filename, numcores=self.numcores, scratchdir=f'{os.getcwd()}/respect_calc_scratch')
-
+        print("SCF calculation done")
         #Grab energy. Note: no analytic gradient in ReSpect yet
         self.energy = grab_energy(f"{self.filename}.out_scf", Grad=Grad)
         #Grab properties
@@ -116,9 +116,9 @@ class ReSpectTheory:
                 print("Multiple jobtypes requested. Will loop through them")
                 for job in self.jobtype:
                     print("Running job:", job)
-                    run_respect(respectdir=self.respectdir, jobtype=self.jobtype, inputfile=self.filename, numcores=self.numcores, scratchdir='/respect_calc_scratch')
+                    run_respect(respectdir=self.respectdir, jobtype=self.jobtype, inputfile=self.filename, numcores=self.numcores, scratchdir=f'{os.getcwd()}/respect_calc_scratch')
             else:
-                run_respect(respectdir=self.respectdir, jobtype=self.jobtype, inputfile=self.filename, numcores=self.numcores, scratchdir='./respect_calc_scratch')
+                run_respect(respectdir=self.respectdir, jobtype=self.jobtype, inputfile=self.filename, numcores=self.numcores, scratchdir=f'{os.getcwd()}/respect_calc_scratch')
 
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
