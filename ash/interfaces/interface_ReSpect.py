@@ -14,7 +14,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 class ReSpectTheory:
     def __init__(self, respectdir=None, filename='respect', printlevel=2, label="ReSpect",
                 numcores=1, scf_inputkeywords=None, jobtype=None, 
-                jobtype_inputkeywords=None):
+                jobtype_inputkeywords=None, parallelization="OpenMP"):
 
         self.theorynamelabel="ReSpectTheory"
         self.label=label
@@ -28,6 +28,7 @@ class ReSpectTheory:
         self.jobtype=jobtype
         self.scf_inputkeywords=scf_inputkeywords
         self.jobtype_inputkeywords=jobtype_inputkeywords
+        self.parallelization=parallelization
         #
         if scf_inputkeywords is None:
             print("Error: You must pass a dictionary to scf_inputkeywords option")
@@ -42,10 +43,13 @@ class ReSpectTheory:
 
         # Checking OpenMPI
         if numcores != 1:
-            print(f"Parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version is available in your environment")
+            print(f"Parallel job requested with numcores: {numcores}")
             print("parallelization:", self.parallelization)
             if self.parallelization == 'MPI':
-                print("Parallelization is MPI. Checking availability of OpenMPI")
+                print("Parallelization is MPI.")
+                print("Not supported in interface yet")
+                ashexit()
+                print("Checking availability of OpenMPI")
                 check_OpenMPI()
 
         # Printlevel
