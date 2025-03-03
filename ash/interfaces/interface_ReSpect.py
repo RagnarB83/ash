@@ -168,7 +168,12 @@ def create_respect_inputfile(filename,elems, coords, charge,mult, scf_inputkeywo
     f.write(f"{indent}charge:        {charge}\n")
     f.write(f"{indent}multiplicity:        {mult}\n")
     for s_k,s_val in scf_inputkeywords.items():
-        f.write(f"{indent}{s_k}: {s_val}\n")
+        if s_k == 'basis' and isinstance(s_val,dict):
+            f.write(f"{indent}{s_k}:")
+            for b_k,b_val in s_val.items():
+                f.write(f"{indent}{indent}{b_k}:{b_val}")
+        else:
+            f.write(f"{indent}{s_k}: {s_val}\n")
     if jobtype is not None:
         for job_k, job_val in jobtype_inputkeywords.items():
             f.write(f"#{job_k} input block\n")
