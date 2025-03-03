@@ -22,7 +22,7 @@ class ReSpectTheory:
         self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-        #self.respectdir=check_program_location(respectdir,'respectdir','respect')
+        self.respectdir=check_program_location(respectdir,'respectdir','respect')
         #
         self.filename=filename
         self.jobtype=jobtype
