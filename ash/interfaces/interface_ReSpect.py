@@ -22,7 +22,7 @@ class ReSpectTheory:
         self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-        self.respectdir=check_program_location(respectdir,'respectdir','respect')
+        #self.respectdir=check_program_location(respectdir,'respectdir','respect')
         #
         self.filename=filename
         self.jobtype=jobtype
@@ -168,10 +168,13 @@ def create_respect_inputfile(filename,elems, coords, charge,mult, scf_inputkeywo
     f.write(f"{indent}charge:        {charge}\n")
     f.write(f"{indent}multiplicity:        {mult}\n")
     for s_k,s_val in scf_inputkeywords.items():
+        print("s_k:", s_k)
+        print("s_val:", s_val)
         if s_k == 'basis' and isinstance(s_val,dict):
-            f.write(f"{indent}{s_k}:")
+            print("here")
+            f.write(f"{indent}{s_k}\n")
             for b_k,b_val in s_val.items():
-                f.write(f"{indent}{indent}{b_k}:{b_val}")
+                f.write(f"{indent}{indent}{b_k}:{b_val}\n")
         else:
             f.write(f"{indent}{s_k}: {s_val}\n")
     if jobtype is not None:
