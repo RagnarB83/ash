@@ -1331,6 +1331,11 @@ class OpenMMTheory:
             print("Note: unit assumed be in Angstrom")
             var_unit = openmm.unit.angstroms
             var_unit_label="Å"
+        elif cvtype.lower() == "cn":
+            energy_expression = f"(k/2)*max(0, var-var_max)^2"
+            print("CV type: CN")
+            var_unit = 1.0
+            var_unit_label=" "
         else:
             print("Error: unknown cvtype for add_CV_restraint")
             ashexit()
