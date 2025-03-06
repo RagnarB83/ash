@@ -29,6 +29,10 @@ class ReSpectTheory:
         self.scf_inputkeywords=scf_inputkeywords
         self.jobtype_inputkeywords=jobtype_inputkeywords
         self.parallelization=parallelization
+
+        # Store optional properties of ReSpect run job in a dict
+        self.properties = {}
+
         #
         if scf_inputkeywords is None:
             print("Error: You must pass a dictionary to scf_inputkeywords option")
@@ -111,7 +115,13 @@ class ReSpectTheory:
         print("SCF calculation done")
         #Grab energy. Note: no analytic gradient in ReSpect yet
         self.energy = grab_energy(f"{self.filename}.out_scf", Grad=Grad)
-        #Grab properties
+
+        if self.energy is None:
+            print(f"No energy was found in ReSpect SCF outputfile: {self.filename}.out_scf")
+            print(f"Something went wrong in calculation. Inspect {self.filename}.out_scf for reason")
+            ashexit()
+
+        print(f"Single-point {self.theorynamelabel} energy:", self.energy)
 
         # if jobtype has been set
         if self.jobtype is not None:
@@ -121,10 +131,23 @@ class ReSpectTheory:
                 for job in self.jobtype:
                     print("Running job:", job)
                     run_respect(respectdir=self.respectdir, jobtype=self.jobtype, inputfile=self.filename, numcores=self.numcores, scratchdir=f'{os.getcwd()}/respect_calc_scratch')
+                    # Grab properties
+                    if job == "gt":
+                        gvalues = grab_gtensor(f"{self.filename}.out_gt")
+                        self.properties = {'g_values':gvalues}
             else:
                 run_respect(respectdir=self.respectdir, jobtype=self.jobtype, inputfile=self.filename, numcores=self.numcores, scratchdir=f'{os.getcwd()}/respect_calc_scratch')
+                # Grab properties
+                if self.jobtype == "gt":
+                    gvalues = grab_gtensor(f"{self.filename}.out_gt")
+                    self.properties = {'g_values':gvalues}
 
-        print(f"Single-point {self.theorynamelabel} energy:", self.energy)
+
+        print("Calculated and stored ReSpect properties:")
+        for p_k,p_v in self.properties.items():
+            print(f"{p_k} : {p_v}")
+
+        print()
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
@@ -183,3 +206,16 @@ def create_respect_inputfile(filename,elems, coords, charge,mult, scf_inputkeywo
                 f.write(f"{indent}{subj_k}: {subj_val}\n")
 
     f.close()
+
+def grab_gtensor(filename):
+    grab=False
+    g_values=[]
+    with open(filename) as f:
+        for line in f:
+            if grab is True:
+                if 'g_11' in line or 'g_22' in line or 'g_33' in line:
+                    g_values.append(float(line.split()[1]))
+            if '                    Principal values of the g-tensor' in line:
+                grab=True
+            if '  Determinant of the g-tensor' in line:
+                grab=False
