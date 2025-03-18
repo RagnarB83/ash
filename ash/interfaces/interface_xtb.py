@@ -599,7 +599,17 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Op
         solvent_line1="--alpb"
         solvent_line2=solvent
 
-    #Use tblite or not
+    # Spinpolarization or not
+    if 'SP' in xtbmethod.upper():
+        print("Spin polarization requested")
+        use_tblite=True
+        spinpol_flag="--spinpol"
+    else:
+        print("No spin polarization")
+        spinpol_flag=""
+
+
+    # Use tblite or not
     if use_tblite is True:
         tblite_flag="--tblite"
     else:
@@ -645,7 +655,7 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Op
     else:
         jobflag="" #NOTE.
 
-    command_list=[xtbdir + '/xtb', coordfile, '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag,
+    command_list=[xtbdir + '/xtb', coordfile, '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
                 '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2]
     # Remove empty arguments
     command_list=list(filter(None, command_list))

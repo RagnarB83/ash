@@ -2382,6 +2382,9 @@ ISYM={isym},{uhf_option_string}
     """
         filename="fort.55"
         print("MRCC option:, filename set to:", filename)
+    else:
+        print("Error: Unknown header_format option ")
+        ashexit()
 
     print("Integral threshold:", int_threshold)
     num_integrals = two_el_integrals.shape[0]**4

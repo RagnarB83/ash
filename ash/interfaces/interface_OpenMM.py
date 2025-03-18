@@ -2540,7 +2540,8 @@ def print_systemsize(modeller):
 def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
                     ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False,
-                    platform="CPU", use_pdbfixer=True, implicit=False, implicit_solvent_xmlfile=None,
+                    platform="CPU", use_pdbfixer=True, implicit=False, implicit_solvent_xmlfile=None, 
+                    membrane=False, membrane_lipidtype='POPC', membrane_padding=10.0, membraneCenterZ=0.0,
                     residuetemplate_choice=None):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
@@ -2855,6 +2856,24 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             print("Choosing : implicit/obc2.xml")
             implicit_solvent_xmlfile="implicit/obc2.xml"
             waterxmlfile=implicit_solvent_xmlfile
+    elif membrane is True:
+        print("We are doing membrane-addition and solvation")
+        print("Setting periodic to True")
+        periodic=True
+        print("Adding membrane-lipid type (membrane_lipidtype keyword):", membrane_lipidtype)
+        print("Adding solvent, modeller_solvent_name:", modeller_solvent_name)
+        print("Actual solvent name:", watermodel)
+        print("Actual solvent file:", waterxmlfile)
+        modeller.addMembrane(forcefield_obj, lipidType=membrane_lipidtype, positiveIon=pos_iontype, negativeIon=neg_iontype,
+                             ionicStrength=ionicstrength * openmm_unit.molar, neutralize=True, membraneCenterZ=membraneCenterZ * openmm_unit.angstrom,
+                             minimumPadding=membrane_padding * openmm_unit.angstrom)
+
+        write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent_ions.pdb")
+        # Ions
+        #NOTE: Had to remove separate ion-add step due to OpenMM 8.1 change
+        print_systemsize(modeller)
+        # Create ASH fragment and write to disk
+        fragment = Fragment(pdbfile="system_aftersolvent_ions.pdb")
     else:
         print("We are doing explicit solvation")
         print("Setting periodic to True")

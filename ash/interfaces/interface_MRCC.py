@@ -416,7 +416,7 @@ def grab_MRCC_PC_self_energy(file):
     return pc_self_energy
 
 
-#Function to create a correct correlated WF Molden file from a MRCC Molden file,
+# Function to create a correct correlated WF Molden file from a MRCC Molden file,
 def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfile=None, multiwfndir=None, printlevel=2):
     print("convert_MRCC_Molden_file")
 
@@ -479,6 +479,9 @@ def MRCC_write_basic_inputfile(occupations=None, filename="fort.56", scf_type="R
                                spatial=1, HF=1, ndoub=0, nacto=0, nactv=0, tol=9, maxex=0,
                                sacc=0, freq=0.0000, symm=0, conver=0, diag=0, dboc=0, mem=1024):
     print("SCF_type:", scf_type)
+    if occupations is None:
+        print("Error: need to set occupations")
+        ashexit()
     if scf_type == 'RHF':
         nsing=1
         ndoub=0

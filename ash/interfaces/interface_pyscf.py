@@ -23,7 +23,7 @@ import copy
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
                   scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry='C1',
-                  guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk',
+                  guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk', do_pop_analysis=True,
                   noautostart=False, autostart=True, fcidumpfile=None,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, scf_noiter=False, direct_scf=True, GHF_complex=False, collinear_option='mcol',
@@ -50,6 +50,10 @@ class PySCFTheory:
         self.analytic_hessian=True
         self.printlevel=printlevel
         self.functional=functional
+
+        # Population analysis active by default
+        self.do_pop_analysis=do_pop_analysis
+
         #if self.printlevel >= 2:
         print_line_with_mainheader("PySCFTheory initialization")
 
@@ -395,10 +399,10 @@ class PySCFTheory:
         import pyscf.tools.fcidump
         
         #Read FCI dump and return dictionary with integrals etc
-        #result = pyscf.tools.fcidump.read(fcidumpfile, verbose=True)
-        #print("result:", result)
+        result = pyscf.tools.fcidump.read(fcidumpfile)
+        #Defining here
+        self.num_basis_functions = result["NORB"]
         #H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
-
         self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=False)
 
     # Create FCIDUMP file from either mf object (provided or internal)
@@ -2451,11 +2455,12 @@ class PySCFTheory:
         #####################
         if self.fcidumpfile is None:
             self.define_basis(elems=qm_elems)
+            self.num_basis_functions=len(self.mol.ao_labels())
+
         self.mol.build()
-        self.num_basis_functions=len(self.mol.ao_labels())
+
         if self.printlevel >= 1:
             print("Number of basis functions:", self.num_basis_functions)
-
         ############################
         # CREATE MF OBJECT
         ############################
@@ -2474,6 +2479,8 @@ class PySCFTheory:
         if self.scf_type == 'GHF' or self.scf_type == 'GKS':
             self.set_collinear_option()
 
+        if self.printlevel >= 1:
+            print("Number of basis functions:", self.num_basis_functions)
 
         #####################
         # RELATIVITY
@@ -2600,7 +2607,8 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Total num. orbitals:", self.num_scf_orbitals_alpha)
                 if self.printlevel >1:
-                    self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
+                    if self.do_pop_analysis:
+                        self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             elif self.scf_type == 'GHF' or self.scf_type == 'GKS':
                 self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
                 print("GHF/GKS job")
