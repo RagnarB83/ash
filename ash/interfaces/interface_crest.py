@@ -78,7 +78,7 @@ def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=N
     if solvent is None:
         solventstring=""
     else:
-        solventstring=f'-gbsa {solvent}'
+        solventstring=f'-alpb {solvent}'
     #Extra options or empty. string with extra crest keyword flags
     if extraoptions == None:
         extraoptions=""
