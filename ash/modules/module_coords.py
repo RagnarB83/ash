@@ -82,7 +82,7 @@ class Reaction:
 
 # ASH Fragment class
 class Fragment:
-    def __init__(self, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, grofile=None,
+    def __init__(self, fragments=None, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, grofile=None,
                  amber_inpcrdfile=None, amber_prmtopfile=None, trexiofile=None, smiles=None,
                  chemshellfile=None, coords=None, elems=None, connectivity=None, atom=None, diatomic=None, diatomic_bondlength=None,
                  bondlength=None,
@@ -158,6 +158,28 @@ class Fragment:
             if connectivity != None:
                 conncalc = False
                 self.connectivity = connectivity
+        
+        # Fragment from input fragments
+        elif fragments is not None:
+            print("Creating fragments by combining input fragments")
+            self.elems=[]
+            for f in fragments:
+                self.elems += f.elems
+            self.coords=np.vstack([f.coords for f in fragments])
+
+            # Use charge/mult if provided, otherwise use 
+            if charge is None:
+                print("Combining charge and multiplicities from input fragments")
+                try:
+                    charges_fragments = [f.charge for f in fragments]
+                    charge = sum(charges_fragments)
+                    mults_fragments = [f.mult for f in fragments]
+                    spin_fragments = [(m-1)/2 for m in mults_fragments]
+                    spin = sum(spin_fragments)
+                    mult = int(2*spin+1)
+                except TypeError:
+                    print("Charges/multiplicities not found in inputfragments.")
+
         # Defining an atom
         elif atom is not None:
             print("Creating Atom Fragment")

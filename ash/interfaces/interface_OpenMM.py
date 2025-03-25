@@ -1194,6 +1194,23 @@ class OpenMMTheory:
         self.system.addForce(centerforce)
         print("Added center force")
         return centerforce
+    
+    #e.g. for steered MD
+    def add_custom_centroidbond_force(self,host_indices, guest_indices, forceconstant=1.0, r0=0.0):
+        print(f"Adding CustomCentroidBondForce between centroid of host {host_indices}  and centroid of guest {guest_indices} ")
+        print(f"Forceconstant : {forceconstant} kcal/mol/Å^2")
+        import openmm
+        force = openmm.CustomCentroidBondForce(2, "0.5*k*(distance(g1,g2)-r0)^2")
+        force.addPerBondParameter('k')
+        force.addGlobalParameter('r0', r0*openmm.unit.angstroms)
+        force.addGroup(host_indices) 
+        force.addGroup(guest_indices) 
+        force.addBond([0,1],[forceconstant * openmm.unit.kilocalories_per_mole / openmm.unit.angstroms ** 2])
+        self.system.addForce(force)
+        print("Added force")
+        return force
+
+
     # Alternative version of a Flatbottom center force on small-molecule w.r.t. rest-of-system
     #Note: behaves differently with respect to PBC-wrapping, creating problems for QM/MM.
     def add_flatbottom_centerforce(self, molA_indices=None, molB_indices = None, distance=5.0, forceconstant=1.0):
@@ -3903,6 +3920,7 @@ class OpenMM_MDclass:
         #Case: QM MD
         if self.externalqm is True:
             print("Creating new OpenMM custom external force for external QM theory.")
+            #NOTE: If we run sim 1-by-one we constantly add 
             self.qmcustomforce = self.openmmobject.add_custom_external_force()
 
         #Possible restraints added
@@ -4216,22 +4234,6 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
-
-                # NOTE: Better to use OpenMM-plumed interface
-                # After MM step, grab coordinates and forces
-                #if self.plumed_object is not None:
-                #    print("Plumed active. Untested. Hopefully works.")
-                #    ashexit()
-                #    #Necessary to call again
-                #    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
-                #    #Keep coords as default OpenMM nm and forces ad kJ/mol/nm. Avoid conversion
-                #    plumed_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
-                #    plumed_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
-                #    # Plumed object needs to be configured for OpenMM
-                #    energy, newforces = self.plumed_object.run(coords=plumed_coords, forces=plumed_forces,
-                #                                               step=step)
-                #    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces,
-                #                                                   simulation,conversion_factor=1.0)
 
         #TODO: Delete at some point once testing and debugging are over
         elif self.dummy_MM is True:
