@@ -31,7 +31,7 @@ class PySCFTheory:
                   BS=False, HSmult=None, atomstoflip=None,
                   TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
-                  dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
+                  dispersion=None, densityfit=False, auxbasis=None, auxbasis_file=None, sgx=False, magmom=None,
                   pe=False, potfile=None, filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4,
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False, cc_conv_tol_normt=1e-06, cc_conv_tol=1e-07,
@@ -70,6 +70,9 @@ class PySCFTheory:
             ashexit()
         if basis_file is not None and not os.path.isfile(basis_file):
             print("Error: basis_file does not exist. Exiting")
+            ashexit()
+        if auxbasis_file is not None and not os.path.isfile(auxbasis_file):
+            print("Error: auxbasis_file does not exist. Exiting")
             ashexit()
         if functional is not None:
             if self.printlevel >= 1:
@@ -290,6 +293,7 @@ class PySCFTheory:
         #Density fitting and semi-numeric exchange options
         self.densityfit = densityfit #RI-J
         self.auxbasis = auxbasis #Aux J basis
+        self.auxbasis_file= auxbasis_file
         self.sgx=sgx #Semi-numerical exchange
 
         #Special PySCF run option
@@ -1893,23 +1897,30 @@ class PySCFTheory:
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #NOTE: We should also support basis set exchange API: https://github.com/pyscf/pyscf/issues/1299
         if self.basis_file != None:
-            if self.printlevel >= 1:
-                print("Reading basis set from file:", self.basis_file)
-            basis_dict={}
-            for elem in elems:
+
+            #Avoiding doing this every time
+            if self.runcalls == 1:
                 if self.printlevel >= 1:
-                    print(f"Reading basis set for element: {elem} from file: {self.basis_file}")
-                basis_per_elem=pyscf.gto.basis.load(self.basis_file, elem)
-                if self.printlevel >= 3:
-                    print("basis_per_elem:", basis_per_elem)
-                basis_dict[elem]=basis_per_elem
-            self.mol.basis=basis_dict
+                    print("Reading basis set from file:", self.basis_file)
+                self.basis_dict={}
+                for elem in list(set(elems)):
+                    if self.printlevel >= 1:
+                        print(f"Reading basis set for element: {elem} from file: {self.basis_file}")
+                    basis_per_elem=pyscf.gto.basis.load(self.basis_file, elem)
+                    if self.printlevel >= 3:
+                        print("basis_per_elem:", basis_per_elem)
+                    self.basis_dict[elem]=basis_per_elem
+                self.mol.basis=self.basis_dict
+            else:
+                self.mol.basis=self.basis_dict
+
         else:
             if self.printlevel >= 1:
                 print("Using basis set from input string")
             self.mol.basis=self.basis
         if self.printlevel >= 1:
             print("Basis set:", self.mol.basis)
+        
         #Optional setting magnetic moments
         if self.magmom != None:
             if self.printlevel >= 1:
@@ -2096,13 +2107,30 @@ class PySCFTheory:
                 #self.mf.nlcgrids.atom_grid={'H': (50,194),'F': (50,194)}
                 #self.mf.nlcgrids.prune=dft.gen_grid.sg1_prune
 
-    def set_DF_mf_options(self,Grad=False):
+    def set_DF_mf_options(self,Grad=False, elems=None):
+        import pyscf
         #https://pyscf.org/user/df.html
         #ASH-default gives PySCF default :optimized JK auxbasis for family if it exists,
         # otherwise an even-tempered basis is generated
         #NOTE: For DF with pure functionals pyscf is using a large JK auxbasis despite only J integrals present
         #More efficient then to specify the : 'def2-universal-jfit' (same as 'weigend') auxbasis
         #Currently left up to user
+
+        if self.auxbasis_file is not None:
+            print("Auxiliary basis from file requested:", self.auxbasis_file)
+
+            if self.runcalls == 1:
+                self.auxbasis_dict={}
+                for elem in list(set(elems)):
+                    if self.printlevel >= 1:
+                        print(f"Reading basis set for element: {elem} from file: {self.auxbasis_file}")
+                    auxbasis_per_elem=pyscf.gto.basis.load(self.auxbasis_file, elem)
+                    if self.printlevel >= 3:
+                        print("auxbasis_per_elem:", auxbasis_per_elem)
+                    self.auxbasis_dict[elem]=auxbasis_per_elem
+                    self.auxbasis=self.auxbasis_dict
+            else:
+                self.auxbasis=self.auxbasis_dict
 
         #If SGX was selected we do DF for Coulomb and SGX for Exchange (densityfit keyword is ignored)
         if self.sgx is True:
@@ -2318,7 +2346,6 @@ class PySCFTheory:
         if self.printlevel >=1:
             print("Max cycle in mf object:", mf.max_cycle)
             print("Running SCF")
-        print("mf:", mf)
         scf_result = mf.run(dm)
         E_tot = scf_result.e_tot
         if self.printlevel >=1:
@@ -2453,6 +2480,7 @@ class PySCFTheory:
         #####################
         # BASIS
         #####################
+
         if self.fcidumpfile is None:
             self.define_basis(elems=qm_elems)
             self.num_basis_functions=len(self.mol.ao_labels())
@@ -2518,7 +2546,7 @@ class PySCFTheory:
         ##############################
         #DENSITY FITTING and SGX
         ##############################
-        self.set_DF_mf_options(Grad=Grad)
+        self.set_DF_mf_options(Grad=Grad,elems=qm_elems)
 
         ##############################
         #FROZEN ORBITALS in CC
