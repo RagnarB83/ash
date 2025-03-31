@@ -21,7 +21,7 @@ class ONIOMTheory(Theory):
     def __init__(self, theories_N=None, regions_N=None, regions_chargemult=None,
                  embedding="mechanical", full_pointcharges=None, chargemodel="CM5", dipole_correction=False,
                  fullregion_charge=None, fullregion_mult=None, fragment=None, label=None, 
-                 chargeboundary_method="chargeshift",
+                 chargeboundary_method="chargeshift", excludeboundaryatomlist=None,
                  linkatom_method='ratio', linkatom_simple_distance=None, linkatom_forceproj_method="adv",
                  linkatom_ratio=0.723, printlevel=2, numcores=1):
         super().__init__()
@@ -139,7 +139,7 @@ class ONIOMTheory(Theory):
             ash.modules.module_coords.print_coords_for_atoms(self.fragment.coords, self.fragment.elems, self.fragment.allatoms, labels=atomlabels)
             print()
             self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.regions_N[0], self.fragment.coords, self.fragment.elems, conn_scale,
-                conn_tolerance, excludeboundaryatomlist=None, unusualboundary=None)
+                conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=None)
         elif len(self.theories_N) == 3:
             self.theorylabels = ["HL","IL", "LL"]
             # Atom labels
@@ -150,10 +150,10 @@ class ONIOMTheory(Theory):
             ash.modules.module_coords.print_coords_for_atoms(self.fragment.coords, self.fragment.elems, self.fragment.allatoms, labels=atomlabels)
             #
             self.boundaryatoms_HL_ML = ash.modules.module_coords.get_boundary_atoms(self.regions_N[0], self.fragment.coords, self.fragment.elems, conn_scale,
-                conn_tolerance, excludeboundaryatomlist=None, unusualboundary=None)
+                conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=None)
             print("boundaryatoms_HL_ML:", self.boundaryatoms_HL_ML)
             self.boundaryatoms_ML_LL = ash.modules.module_coords.get_boundary_atoms(self.regions_N[1], self.fragment.coords, self.fragment.elems, conn_scale,
-                conn_tolerance, excludeboundaryatomlist=None, unusualboundary=None)
+                conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=None)
             print("boundaryatoms_ML_LL:", self.boundaryatoms_ML_LL)
             print("XX")
             #self.boundaryatoms=[]
