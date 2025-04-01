@@ -11,7 +11,7 @@ H       -1.377626260     -0.759337000     -1.144156718
 H2O=Fragment(coordsstring=coords,charge=0,mult=1)
 
 def test_xtb_load():
-    global H2O
+    #global H2O
     #Default
     xtb_default = xTBTheory()
     assert xtb_default.xtbmethod=='GFN1'
