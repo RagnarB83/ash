@@ -12,16 +12,16 @@ class Sphere:
 # Defining global variables here:
 def init(progdir,ORCApath,ncores):
     #Disabled XTBpath
-    global bulkfile
-    global bulksphere
-    global scale
-    global tol
-    global debug
+    #global bulkfile
+    #global bulksphere
+    #global scale
+    #global tol
+    #global debug
     #Making orcadir and xtbdir (originally read from inputfile) global everywhere
-    global orcadir
-    global xtbdir
-    global NumCores
-    global print_time
+    #global orcadir
+    #global xtbdir
+    #global NumCores
+    #global print_time
     orcadir=ORCApath
     #xtbdir=XTBpath
     NumCores=ncores
