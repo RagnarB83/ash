@@ -44,7 +44,7 @@ path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 8,
               "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.07, "IDPP_RMS_F": 0.009}
 neb_settings = {"PATH": "neb.xyz",
               "CLIMBING": True,
-              "TANGENT": "IMPROVED",
+              "TANGENT": "IMPROVED", "CICHANGEFREQUENCYCHECK":5,
               "SPRINGTYPE": "DISTANCE",
               "PERP_SPRINGTYPE": "",
               "ENERGY_WEIGHTED": True, "SPRINGCONST": 1.0, "SPRINGCONST2": 10.0,
@@ -73,7 +73,7 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 #NEB-TS: NEB-CI + OptTS
 #Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, Singleiter=False,
-        conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, 
+        conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, cichange_freqcheck=5,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, restart_file=None, TS_guess_file=None, mofilesdir=None,
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
@@ -107,7 +107,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
     #CI-NEB step
     NEB_results = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, Singleiter=Singleiter,
-            conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, 
+            conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, cichange_freqcheck=cichange_freqcheck,
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores,
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
             interpolation=interpolation, idpp_maxiter=idpp_maxiter, idpp_springconst=idpp_springconst,
@@ -346,7 +346,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
-        conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, 
+        conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, cichange_freqcheck=5,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, Singleiter=False,
         charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, zoom=False,
@@ -474,6 +474,9 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     optimizer["MAX_ITER"] = maxiter
     #Turning on ZOOM
     neb_settings["ZOOM"] = zoom
+    # Check how often CI should be changed
+    neb_settings["CICHANGEFREQUENCYCHECK"]=cichange_freqcheck
+
     #Setting number of images of Knarr
     path_parameters["NIMAGES"]=total_num_images
 

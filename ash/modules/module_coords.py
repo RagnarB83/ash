@@ -3140,10 +3140,11 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
 # Simple method: Just use a fixed distance (default 1.09 Å)
 # Ratio method: Determine by scaling QM1-MM1 distance with a ratio. Ratio can be fixed value (e.g. 0.723) or determined from equilibrium distances (not ready)
 # Using linkatom distance of 1.09 Å for now as default. Makes sense for C-H link atoms.
-def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom_dict=None, linkatom_method='simple',
+def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom_method='simple', linkatom_type='H',
                            linkatom_simple_distance=None, bondpairs_eq_dict=None, linkatom_ratio=0.723):
     timeA = time.time()
     print("Inside get_linkatom_positions")
+    print("linkatom_type:", linkatom_type)
     print("linkatom_method:", linkatom_method)
 
     if linkatom_simple_distance is None:
@@ -3174,7 +3175,7 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
             if linkatom_ratio == 'Auto':
                 print("Automatic ratio. Determining ratio based on dict of equilibrium distances")
                 #TODO
-                R_eq_QM_H = bondpairs_eq_dict[(elems[dict_item[0]], 'H')]
+                R_eq_QM_H = bondpairs_eq_dict[(elems[dict_item[0]], linkatom_type)]
                 R_eq_QM_MM = bondpairs_eq_dict[(elems[dict_item[0]], elems[dict_item[1]])]
                 print("R_eq_QM_H:", R_eq_QM_H)
                 print("R_eq_QM_MM:", R_eq_QM_MM)
@@ -3194,7 +3195,7 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
             if linkatom_simple_distance is None:
                 #print("linkatom_simple_distance not set. Getting standard distance from dictionary for element:", elems[dict_item[0]])
                 #Getting from dict
-                linkatom_distance = linkdistances_dict[(elems[dict_item[0]], 'H')]
+                linkatom_distance = linkdistances_dict[(elems[dict_item[0]], linkatom_type)]
             else:
                 #print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
                 #Getting from user

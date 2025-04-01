@@ -23,7 +23,7 @@ class ONIOMTheory(Theory):
                  fullregion_charge=None, fullregion_mult=None, fragment=None, label=None, 
                  chargeboundary_method="chargeshift", excludeboundaryatomlist=None,
                  linkatom_method='ratio', linkatom_simple_distance=None, linkatom_forceproj_method="adv",
-                 linkatom_ratio=0.723, printlevel=2, numcores=1):
+                 linkatom_ratio=0.723, linkatom_type='H', printlevel=2, numcores=1):
         super().__init__()
         self.theorytype="ONIOM"
         self.printlevel=printlevel
@@ -69,6 +69,7 @@ class ONIOMTheory(Theory):
         self.linkatoms = False
 
         # Linkatom method strategy to determine linkatom position or QM-L distance
+        self.linkatom_type=linkatom_type # Usually 'H'
         self.linkatom_method = linkatom_method # Options: 'simple' or 'ratio'
         self.linkatom_simple_distance = linkatom_simple_distance # For method simple, Default 1.09 Angstrom
         # For method ratio. see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
@@ -202,7 +203,7 @@ class ONIOMTheory(Theory):
         # Get linkatom coordinates
         # NOTE: Option to change linkatom_distance, now 1.08736
         self.linkatoms_dict = ash.modules.module_coords.get_linkatom_positions(self.boundaryatoms,region_atoms, 
-                                                                               current_coords, elems,
+                                                                               current_coords, elems, linkatom_type=self.linkatom_type,
                                                                                linkatom_method=self.linkatom_method,
                                                                                linkatom_simple_distance=self.linkatom_simple_distance,
                                                                                linkatom_ratio=self.linkatom_ratio)
@@ -215,6 +216,7 @@ class ONIOMTheory(Theory):
 
         print_time_rel(checkpoint, modulename='create_linkatoms', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
         return linkatoms_coords
+
     def ZeroQMCharges(self, atoms):
         print("Setting Region charges to Zero")
         # Looping over charges and setting region atoms to zero
@@ -506,7 +508,7 @@ class ONIOMTheory(Theory):
 
                     if self.printlevel > 1:
                         print(f"There are {self.num_linkatoms} linkatoms")
-                    region_elems_final = r_elems + ['H']*self.num_linkatoms
+                    region_elems_final = r_elems + [self.linkatom_type]*self.num_linkatoms
                 else:
                     region_coords_final = r_coords
                     region_elems_final = r_elems

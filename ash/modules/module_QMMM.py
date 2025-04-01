@@ -18,7 +18,7 @@ class QMMMTheory:
                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
                 qm_charge=None, qm_mult=None, chargeboundary_method="shift",
                 dipole_correction=True, linkatom_method='simple', linkatom_simple_distance=None,
-                linkatom_forceproj_method="adv", linkatom_ratio=0.723):
+                linkatom_forceproj_method="adv", linkatom_ratio=0.723, linkatom_type='H'):
 
         module_init_time = time.time()
         timeA = time.time()
@@ -47,6 +47,7 @@ class QMMMTheory:
         self.linkatoms = False
 
         # Linkatom method strategy to determine linkatom position or QM-L distance
+        self.linkatom_type=linkatom_type # Usually 'H'
         self.linkatom_method = linkatom_method # Options: 'simple' or 'ratio'
         self.linkatom_simple_distance = linkatom_simple_distance # For method simple, Default 1.09 Angstrom
         # For method ratio. see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
@@ -957,7 +958,7 @@ class QMMMTheory:
         checkpoint=time.time()
         # Get linkatom coordinates
         self.linkatoms_dict = ash.modules.module_coords.get_linkatom_positions(self.boundaryatoms,self.qmatoms, current_coords, self.elems,
-                                                                               linkatom_method=self.linkatom_method, 
+                                                                               linkatom_method=self.linkatom_method, linkatom_type=self.linkatom_type,
                                                                                linkatom_simple_distance=self.linkatom_simple_distance,
                                                                                linkatom_ratio=self.linkatom_ratio)
         printdebug("linkatoms_dict:", self.linkatoms_dict)
@@ -985,7 +986,7 @@ class QMMMTheory:
         check_before_linkatoms=time.time()
         if self.linkatoms is True:
             linkatoms_coords = self.create_linkatoms(current_coords)
-            self.current_qmelems = self.qmelems + ['H']*self.num_linkatoms
+            self.current_qmelems = self.qmelems + [self.linkatom_type]*self.num_linkatoms
             if self.printlevel > 1:
                 print("Number of MM atoms:", len(self.mmatoms))
                 print(f"There are {self.num_linkatoms} linkatoms")
