@@ -2067,7 +2067,8 @@ class PySCFTheory:
 
     def set_dispersion_options(self, Grad=False):
         if self.dispersion != None:
-            print("Dispersion correction is active")
+            print("Dispersion correction is active.")
+            print("Warning: Using https://github.com/ajz34/vdw library")
             try:
                 import vdw
             except ModuleNotFoundError:

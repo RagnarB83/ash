@@ -10,12 +10,49 @@ import ash.settings_ash
 from ash.functions.functions_general import ashexit, natural_sort, print_line_with_mainheader,print_time_rel, BC,  \
     check_program_location
 
+def read_fesfile(CVnum=1, fesfile="fes.dat"):
+    # Reading file
+    # ! FIELDS dihed1 dihed2 file.free der_dihed1 der_dihed2
+    with open(fesfile) as f:
+        rc=[]
+        rc2=[]
+        free_energy=[]
+        derivG=[]
+        derivG2=[]
 
-#Standalone function to call plumed binary and get fes.dat
-def call_plumed_sum_hills(path_to_plumed,hillsfile,ndim=None, binsg=[99,99], ming=[0,0], maxg=[10,10]):
+        for line in f:
+            if '#' not in line and len(line.split()) > 0:
+                if CVnum==1:
+                    rc.append(float(line.split()[0]))
+                    free_energy.append(float(line.split()[1]))
+                    derivG.append(float(line.split()[2]))
+                else:
+                    rc.append(float(line.split()[0]))
+                    rc2.append(float(line.split()[1]))
+                    free_energy.append(float(line.split()[2]))
+                    derivG.append(float(line.split()[3]))
+                    derivG2.append(float(line.split()[4]))
+        if CVnum==1:
+            return rc, free_energy
+        else:
+            return rc,rc2,free_energy
+
+# Standalone function to call plumed binary and get fes.dat
+def call_plumed_sum_hills(hillsfile=None, path_to_plumed=None, ndim=None, binsg=[99,99], ming=[0,0], maxg=[10,10]):
+
+        path_to_plumed=check_program_location(path_to_plumed,'path_to_plumed','plumed')
+
         print("Running plumed sum_hills on hills file")
         print("path_to_plumed:", path_to_plumed)
+        if hillsfile is None:
+            print("hillsfile is not set. Assuming file is called HILLS and continuing")
+            hillsfile="HILLS"
         print("HILLS file:", hillsfile)
+
+        if os.path.isfile(hillsfile) is False:
+            print(f"Error: hillfile {hillsfile} does not exist.")
+            ashexit()
+
         print("Plumed will create fes.dat")
         #Either run plumed binary, requiring to st
         os.environ['PATH'] = path_to_plumed+'/bin'+os.pathsep+os.environ['PATH']
@@ -32,6 +69,37 @@ def call_plumed_sum_hills(path_to_plumed,hillsfile,ndim=None, binsg=[99,99], min
             print(f"Calling plumed sum_hills with  grid settings: --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}")
             os.system(f'plumed sum_hills --hills HILLS --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}')
 
+# Simple 1D FES plot from Plumed
+def plumed_FES_plot_1CV(CV1_type=None, CV1_unit_label=None, imageformat='png', dpi=200, path_to_plumed=None, hillsfile=None):
+    try:
+        import matplotlib.pyplot as plt
+    except:
+        print("Problem importing matplotlib (make sure it is installed in your environment). Plotting is not possible but continuing.")
+
+    path_to_plumed=check_program_location(path_to_plumed,'path_to_plumed','plumed')
+
+    call_plumed_sum_hills(hillsfile=None, path_to_plumed=path_to_plumed, ndim=1, binsg=[99,99], ming=[0,0], maxg=[10,10])
+
+    rc, G = read_fesfile(CVnum=1, fesfile="fes.dat")
+    G = np.array(G)
+    e_conversionfactor=4.184 #kJ/mol to kcal/mol
+    rel_G = (G-min(G))/e_conversionfactor
+
+    # Plot object
+    print("Now plotting:")
+    print("Image format (imageformat keyword):", imageformat)
+    if CV1_type is None and CV1_unit_label is None:
+        print("Warning: CV1_type and CV1_unit_label keywords not set. Will set x-axis label to empty")
+        CVlabel=""
+    else:
+        CVlabel=f"{CV1_type} ({CV1_unit_label})"
+    y_axislabel="Energy (kcal(/mol))"
+    eplot = ash.modules.module_plotting.ASH_plot("Metadynamics", num_subplots=1, x_axislabel=CVlabel, y_axislabel=y_axislabel)
+    eplot.addseries(0, x_list=rc, y_list=rel_G, legend=None, color='blue', line=True, scatter=False)
+    eplot.savefig('MTD_CV1', imageformat=imageformat, dpi=dpi)
+    return
+
+
 # Metadynamics visualization function for Plumed runs
 def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None, CV2_type=None, temperature=None,
                 CV1_indices=None, CV2_indices=None, plumed_length_unit=None, plumed_energy_unit="kj/mol", plumed_time_unit=None,
@@ -42,7 +110,7 @@ def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None,
     try:
         import matplotlib.pyplot as plt
     except:
-        print("Problem importing matplotlib (make it is installed in your environment). Plotting is not possible but continuing.")
+        print("Problem importing matplotlib (make sure it is installed in your environment). Plotting is not possible but continuing.")
 
     path_to_plumed=check_program_location(path_to_plumed,'path_to_plumed','plumed')
 
