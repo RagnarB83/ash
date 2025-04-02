@@ -553,23 +553,17 @@ class OpenMMTheory:
 
                 if self.printlevel > 0:
                     print("Nonbonded PBC method selected:", nonb_method_PBC)
+                
                 #Determining nonbonded cutoff strategy
                 smallest_boxdim= min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms)
                 print("Smallest_box dimension is:", smallest_boxdim)
                 print("periodic_nonbonded_cutoff:", periodic_nonbonded_cutoff)
                 if smallest_boxdim < periodic_nonbonded_cutoff*2:
                     print(f"Warning: Smallest box dimension is less than 2*periodic_nonbonded_cutoff = {2*self.periodic_nonbonded_cutoff}")
-                    print("Automatically setting the cutoff to be 1/2 the smallest box dimension")
+                    print("This will not work. See https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#boxsize")
+                    print("Will now automatically set the cutoff to be 1/2 the smallest box dimension")
                     self.periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
                     print("periodic_nonbonded_cutoff is now:", self.periodic_nonbonded_cutoff)
-
-                self.periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
-
-                if self.periodic_nonbonded_cutoff is None:
-                    if self.printlevel > 0:
-                        print("No periodic_nonbonded_cutoff provided. Determining cutoff value based on approx 1/2 box size.")
-                        print("Warning: for NPT simulations this may be too large")
-                    self.periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
 
                 if self.printlevel > 0:
                     print("Nonbonded cutoff is {} Angstrom.".format(self.periodic_nonbonded_cutoff))
@@ -2992,7 +2986,6 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     periodic_nonbonded_cutoff=10
     omm =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
                             topology=modeller.topology, pdbfile=None, periodic=periodic,
-                            periodic_nonbonded_cutoff=periodic_nonbonded_cutoff,
                             autoconstraints=None, rigidwater=False, printlevel=0, residuetemplate_choice=residuetemplate_choice)
     SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True, printlevel=0)
     check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=45000)
