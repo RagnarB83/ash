@@ -25,13 +25,13 @@ def read_fesfile(CVnum=1, fesfile="fes.dat"):
                 if CVnum==1:
                     rc.append(float(line.split()[0]))
                     free_energy.append(float(line.split()[1]))
-                    derivG.append(float(line.split()[2]))
+                    #derivG.append(float(line.split()[2]))
                 else:
                     rc.append(float(line.split()[0]))
                     rc2.append(float(line.split()[1]))
                     free_energy.append(float(line.split()[2]))
-                    derivG.append(float(line.split()[3]))
-                    derivG2.append(float(line.split()[4]))
+                    #derivG.append(float(line.split()[3]))
+                    #derivG2.append(float(line.split()[4]))
         if CVnum==1:
             return rc, free_energy
         else:
@@ -69,18 +69,26 @@ def call_plumed_sum_hills(hillsfile=None, path_to_plumed=None, ndim=None, binsg=
             print(f"Calling plumed sum_hills with  grid settings: --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}")
             os.system(f'plumed sum_hills --hills HILLS --bin {binsg[0]},{binsg[1]} --min {ming[0]},{ming[1]} --max {maxg[0]},{maxg[1]}')
 
-# Simple 1D FES plot from Plumed
-def plumed_FES_plot_1CV(CV1_type=None, CV1_unit_label=None, imageformat='png', dpi=200, path_to_plumed=None, hillsfile=None):
+
+# Sumhills and plot
+def plumed_MTD_plot_1CV(CV1_type=None, CV1_unit_label=None, imageformat='png', dpi=200, path_to_plumed=None, hillsfile=None):
+
+    path_to_plumed=check_program_location(path_to_plumed,'path_to_plumed','plumed')
+
+    call_plumed_sum_hills(hillsfile=hillsfile, path_to_plumed=path_to_plumed, ndim=1, binsg=[99,99], ming=[0,0], maxg=[10,10])
+
+    plumed_FES_plot_1CV(CV1_type=CV1_type, CV1_unit_label=CV1_unit_label, imageformat=imageformat, dpi=dpi)
+
+
+# Simple 1D FES plot from Plumed fes.dat file
+#Works for any fes.dat file
+def plumed_FES_plot_1CV(fesfile="fes.dat", imageformat='png', dpi=200, CV1_type=None, CV1_unit_label=None):
     try:
         import matplotlib.pyplot as plt
     except:
         print("Problem importing matplotlib (make sure it is installed in your environment). Plotting is not possible but continuing.")
 
-    path_to_plumed=check_program_location(path_to_plumed,'path_to_plumed','plumed')
-
-    call_plumed_sum_hills(hillsfile=None, path_to_plumed=path_to_plumed, ndim=1, binsg=[99,99], ming=[0,0], maxg=[10,10])
-
-    rc, G = read_fesfile(CVnum=1, fesfile="fes.dat")
+    rc, G = read_fesfile(CVnum=1, fesfile=fesfile)
     G = np.array(G)
     e_conversionfactor=4.184 #kJ/mol to kcal/mol
     rel_G = (G-min(G))/e_conversionfactor

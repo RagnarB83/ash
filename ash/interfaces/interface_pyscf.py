@@ -2347,7 +2347,13 @@ class PySCFTheory:
         if self.printlevel >=1:
             print("Max cycle in mf object:", mf.max_cycle)
             print("Running SCF")
+
+        #Grid printing
         scf_result = mf.run(dm)
+
+        #Grid
+        if 'KS' in self.scf_type:
+            print("Number of gridpoints used in calculation:", len(self.mf.grids.coords))
         E_tot = scf_result.e_tot
         if self.printlevel >=1:
             print("SCF done!")
