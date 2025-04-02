@@ -554,7 +554,17 @@ class OpenMMTheory:
                 if self.printlevel > 0:
                     print("Nonbonded PBC method selected:", nonb_method_PBC)
                 #Determining nonbonded cutoff strategy
-                #PME is hard-coded so we must specify a cutoff
+                smallest_boxdim= min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms)
+                print("Smallest_box dimension is:", smallest_boxdim)
+                print("periodic_nonbonded_cutoff:", periodic_nonbonded_cutoff)
+                if smallest_boxdim < periodic_nonbonded_cutoff*2:
+                    print(f"Warning: Smallest box dimension is less than 2*periodic_nonbonded_cutoff = {2*self.periodic_nonbonded_cutoff}")
+                    print("Automatically setting the cutoff to be 1/2 the smallest box dimension")
+                    self.periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
+                    print("periodic_nonbonded_cutoff is now:", self.periodic_nonbonded_cutoff)
+
+                self.periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
+
                 if self.periodic_nonbonded_cutoff is None:
                     if self.printlevel > 0:
                         print("No periodic_nonbonded_cutoff provided. Determining cutoff value based on approx 1/2 box size.")
