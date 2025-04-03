@@ -155,7 +155,7 @@ class xTBTheory:
     def cleanup_temp(self):
         if self.printlevel >= 2:
             print("Cleaning up old xTB temp files")
-        files=['xtbrestart','molden.input','charges','pcgrad','wbo','xtbinput','pcharge','xtbtopo.mol']
+        files=['xtbrestart','molden.input','pcgrad','wbo','xtbinput','pcharge','xtbtopo.mol']
 
         for file in files:
             try:
