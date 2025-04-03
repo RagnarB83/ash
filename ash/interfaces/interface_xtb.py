@@ -393,9 +393,6 @@ class xTBTheory:
                                     Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores,
                                     use_tblite=self.use_tblite)
 
-            # Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
-            self.cleanup_temp()
-
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
 
@@ -408,12 +405,16 @@ class xTBTheory:
                     if self.printlevel >= 2:
                         print("xtb energy :", self.energy)
                         print("------------ENDING XTB-INTERFACE-------------")
+                    # Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
+                    self.cleanup_temp()
                     print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                     return self.energy, self.grad, self.pcgrad
                 else:
                     if self.printlevel >= 2:
                         print("xtb energy :", self.energy)
                         print("------------ENDING XTB-INTERFACE-------------")
+                    # Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
+                    self.cleanup_temp()
                     print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                     return self.energy, self.grad
             else:
@@ -422,6 +423,8 @@ class xTBTheory:
                 if self.printlevel >= 2:
                     print("xtb energy :", self.energy)
                     print("------------ENDING XTB-INTERFACE-------------")
+                # Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
+                self.cleanup_temp()
                 print_time_rel(module_init_time, modulename='xTB run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                 return self.energy
 
