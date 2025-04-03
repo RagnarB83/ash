@@ -151,6 +151,17 @@ class xTBTheory:
                 os.remove(file)
             except:
                 pass
+    # Cleanup temp files only 
+    def cleanup_temp(self):
+        if self.printlevel >= 2:
+            print("Cleaning up old xTB temp files")
+        files=['xtbrestart','molden.input','charges','pcgrad','wbo','xtbinput','pcharge','xtbtopo.mol']
+
+        for file in files:
+            try:
+                os.remove(file)
+            except:
+                pass
 
     # Do an xTB-Numfreq Hessian instead of ASH optimization. Useful for gas-phase chemistry (avoids too much ASH printout
     def Hessian(self, fragment=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
@@ -203,6 +214,10 @@ class xTBTheory:
             run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
                                     Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores, use_tblite=self.use_tblite)
+
+            #Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
+            self.cleanup_temp()
+
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
 
@@ -250,7 +265,7 @@ class xTBTheory:
                 coordfile="xtb_coord"
                 ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGSTROM', 
                                                                      periodic_info=self.periodic_cell_dimensions, filename=coordfile)
-                
+
             else:
                 # Write xyz_file if molecule
                 ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
@@ -266,6 +281,9 @@ class xTBTheory:
                                     Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores,
                                     use_tblite=self.use_tblite)
+
+            # Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
+            self.cleanup_temp()
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -375,8 +393,12 @@ class xTBTheory:
                                     Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores,
                                     use_tblite=self.use_tblite)
 
+            # Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
+            self.cleanup_temp()
+
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
+
             # Check if finished. Grab energy
             if Grad is True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)
