@@ -4029,11 +4029,15 @@ class OpenMM_MDclass:
             #Convert to dict
             connectivity_dict = create_conn_dict(connectivity)
 
+            #MD LOOP
             for step in range(simulation_steps):
                 checkpoint_begin_step = time.time()
                 checkpoint = time.time()
                 if self.printlevel >= 2:
                     print("Step:", step)
+                else:
+                    if step % self.traj_frequency == 0:
+                        print("Step:", step)
 
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
                 current_state=self.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
@@ -4045,13 +4049,16 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 #Periodic handling. Important choice for QM/MM.
                 if self.openmmobject.Periodic is True:
-                    print("Periodic QM/MM is on")
+                    if self.printlevel >= 2:
+                        print("Periodic QM/MM is on")
                     if self.enforcePeriodicBox is True:
                         #NOTE: All is fine also if we have frozen a large part of the system
-                        print("enforcePeriodicBox is True. Wrapping handling by OpenMM")
+                        if self.printlevel >= 2:
+                            print("enforcePeriodicBox is True. Wrapping handling by OpenMM")
                     elif self.enforcePeriodicBox is False:
-                        print("enforcePeriodicBox is False. Wrapping handled by ASH")
-                        print("Note: only cubic PBC boxes supported")
+                        if self.printlevel >= 2:
+                            print("enforcePeriodicBox is False. Wrapping handled by ASH")
+                            print("Note: only cubic PBC boxes supported")
                         checkpoint = time.time()
                         #Using original center of box
                         current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
@@ -4094,7 +4101,7 @@ class OpenMM_MDclass:
                 self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,
                                                                self.QM_MM_object.QM_PC_gradient,self.simulation)
                 print_time_rel(CheckpointTime, modulename='update custom external force', moduleindex=2,
-                                currprintlevel=self.printlevel, currthreshold=1)
+                                currprintlevel=self.printlevel, currthreshold=2)
 
                 # NOTE: Think about energy correction (currently skipped above)
                 #Accessible: self.QM_MM_object.extforce_energy

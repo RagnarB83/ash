@@ -626,11 +626,13 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Op
 
     # Spinpolarization or not
     if 'SP' in xtbmethod.upper():
-        print("Spin polarization requested")
+        if printlevel > 1:
+            print("Spin polarization requested")
         use_tblite=True
         spinpol_flag="--spinpol"
     else:
-        print("No spin polarization")
+        if printlevel > 1:
+            print("No spin polarization")
         spinpol_flag=""
 
 

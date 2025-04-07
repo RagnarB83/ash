@@ -3678,18 +3678,13 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
 
 #Check whether spin multiplicity is consistent with the nuclear charge and total charge
 def check_multiplicity(elems,charge,mult, exit=True):
-    print("Inside check_multiplicity")
-    print("charge:", charge)
-    print("mult:", mult)
     def is_even(number):
         if number % 2 == 0:
             return True
         return False
     #From elems list calculate nuclear charge
     nuccharge=nucchargelist(elems)
-    print("nuccharge:", nuccharge)
     num_electrons = nuccharge - charge
-    print("num_electrons:", num_electrons)
     unpaired_electrons=mult-1
     result = list(map(is_even, (num_electrons,unpaired_electrons)))
     if result[0] != result[1]:
