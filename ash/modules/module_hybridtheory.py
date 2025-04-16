@@ -402,7 +402,7 @@ class WrapTheory(Theory):
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
-            charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None, PC=None):
+            charge=None, mult=None):
 
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
