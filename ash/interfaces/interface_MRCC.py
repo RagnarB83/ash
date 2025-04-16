@@ -194,8 +194,13 @@ class MRCCTheory:
             return self.energy
 
 def run_mrcc(mrccdir,filename,parallelization,numcores):
+    # Putting MRCC in PATH
+    if mrccdir not in os.environ["PATH"]:
+        os.environ["PATH"] += os.pathsep + mrccdir
+        print(" os.environ:",  os.environ["PATH"])
+
     with open(filename, 'w') as ofile:
-        #process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+        # process = sp.run([mrccdir + '/dmrcc'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
         if parallelization == 'OMP':
             print(f"OMP parallelization is active. Using OMP_NUM_THREADS={numcores}")
