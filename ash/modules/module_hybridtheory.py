@@ -203,7 +203,8 @@ class DualTheory:
         return
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, label='default', charge=None, mult=None, run_both_theories=False ):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, label='default', charge=None, mult=None, run_both_theories=False,
+            current_MM_coords=None, MMcharges=None, qm_elems=None, PC=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DUALTHEORY INTERFACE-------------", BC.END)
         self.totalruncalls += 1
         print("running")
@@ -401,7 +402,7 @@ class WrapTheory(Theory):
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
-            charge=None, mult=None):
+            charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None, PC=None):
 
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 

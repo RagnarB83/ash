@@ -708,7 +708,8 @@ class QMMMTheory:
             print("Error: Could not grab polarizability from QM-part of QM/MM theory.")
         return polarizability
     # General run
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None,
+            current_MM_coords=None, MMcharges=None, qm_elems=None, PC=None):
 
         if self.printlevel >= 2:
             print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
