@@ -39,6 +39,7 @@ class QMMMTheory:
 
         # Indicate that this is a hybrid QM/MM type theory
         self.theorytype = "QM/MM"
+        self.theorynamelabel="QMMMTheory"
 
         # External force energy. Zero except when using openmm_externalforce
         self.extforce_energy = 0.0

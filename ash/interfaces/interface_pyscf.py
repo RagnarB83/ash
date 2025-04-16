@@ -3592,3 +3592,67 @@ def DFA_error_analysis(fragment=None, DFA_obj=None, REF_obj=None, DFA_DM=None, R
     print(f"DE: {DE} Eh")
 
     return FE, DE
+
+
+
+#MANUAL creation of mol and mf if 1-el, 2-el and overlap integrals are available
+def create_pyscf_mol_and_mf(numel=None, mult=None, nuc_repulsion_energy=None,
+    one_el_integrals=None, two_el_integrals=None, overlap=None, verbosity=4 ):
+    from pyscf import gto
+    import numpy as np
+    #Create empty mol object
+    mol = gto.M()
+    mol.nelectron = numel
+    mol.spin = mult-1
+    
+    # Numorbs from 1-el integral shape
+    norb = one_el_integrals.shape[0]
+    #Nuc repulsion energy
+    mol.energy_nuc = lambda *args: nuc_repulsion_energy
+    mol.incore_anyway = True
+
+    #mol.build()
+    #MF
+    mf = mol.RHF()
+
+    #1-el integrals
+    h1 = one_el_integrals
+    idx, idy = np.tril_indices(norb, -1)
+    if h1[idx,idy].max() == 0:
+        h1[idx,idy] = h1[idy,idx]
+    else:
+        h1[idy,idx] = h1[idx,idy]
+
+    #Defining methods of mf: hcore and overlap
+    mf.get_hcore = lambda *args: h1
+    mf.get_ovlp = lambda *args: overlap
+    mf._eri = two_el_integrals
+    intor_symmetric = mf.mol.intor_symmetric
+    mf.mol.intor_symmetric = lambda intor, **kwargs: overlap \
+        if intor == 'int1e_ovlp' else intor_symmetric(intor, **kwargs)
+
+    mf.verbose=verbosity
+    #Simplest guess possible since we don't have atoms
+    mf.init_guess = '1e'
+    return mol, mf
+
+
+def compute_core_guess(Hcore,S):
+    import scipy.linalg
+    F=Hcore #initial Fock matrix
+    S_minhalf = half_inv_overlap(S)
+    Ftr = np.transpose(S_minhalf)*F*S_minhalf #Transform Fock matrix
+    eps, Ctr = scipy.linalg.eigh(Ftr) #Diagonalize transformed Fock to get eps and C'
+    C = S_minhalf*Ctr # Get C from C'
+    return C
+
+def half_inv_overlap(S):
+    import scipy.linalg
+    #Overlap
+    Sval,Svec = scipy.linalg.eigh(S)
+    #lowest_S_eigenval=min(Sval)
+    #Transformation matrix
+    SVAL_minhalf = np.diag(Sval)**-0.5
+    Stemp = SVAL_minhalf*np.transpose(Svec)
+    S_minhalf = Svec * Stemp
+    return S_minhalf
