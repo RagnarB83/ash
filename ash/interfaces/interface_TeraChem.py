@@ -35,7 +35,7 @@ class TeraChemTheory:
                     print(BC.OKGREEN,"Found terachem in PATH. Setting terachemdir to:", self.terachemdir, BC.END)
                 except:
                     print(BC.FAIL,"Found no terachem executable in PATH. Exiting... ", BC.END)
-                    #ashexit()
+                    ashexit()
         else:
             self.terachemdir = terachemdir
 

@@ -1,0 +1,1002 @@
+[__main__    ]Loaded 2 geometries from collagen.xyz
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      1.537.  New length:3
+[coord_utils ]Pair list contain 6266 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 3286 pairs
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[coord_utils ]Pair list contain 6321 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 3289 pairs
+[geodesic    ]Maximum RMSD change in initial path:       1.11
+[coord_utils ]Pair list contain 3286 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   3286
+[interpolation]  Trial path length:   36.381 after 11 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 3295 pairs
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[coord_utils ]Pair list contain 6356 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 3297 pairs
+[geodesic    ]Maximum RMSD change in initial path:       1.11
+[coord_utils ]Pair list contain 3286 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   3286
+[interpolation]  Trial path length:   36.153 after 12 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 3296 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.95
+[coord_utils ]Pair list contain 3279 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   3279
+[interpolation]  Trial path length:   31.702 after 8 iterations
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      0.951.  New length:4
+[coord_utils ]Pair list contain 5579 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2995 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.57
+[coord_utils ]Pair list contain 2995 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2995
+[interpolation]  Trial path length:    5.205 after 5 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2995 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.55
+[coord_utils ]Pair list contain 2995 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2995
+[interpolation]  Trial path length:    5.188 after 4 iterations
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      0.936.  New length:5
+[coord_utils ]Pair list contain 5669 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2941 pairs
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[coord_utils ]Pair list contain 5690 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2943 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.59
+[coord_utils ]Pair list contain 2944 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2944
+[interpolation]  Trial path length:   21.541 after 11 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2952 pairs
+[interpolation]  Screened pairs came into contact. Adding reference point.
+[coord_utils ]Pair list contain 5734 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2954 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.59
+[coord_utils ]Pair list contain 2944 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2944
+[interpolation]  Trial path length:   21.259 after 11 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2954 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.58
+[coord_utils ]Pair list contain 2945 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2945
+[interpolation]  Trial path length:   19.827 after 14 iterations
+[interpolation]Inserting image between 3 and 4 with Cartesian RMSD      0.584.  New length:6
+[coord_utils ]Pair list contain 5399 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2816 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.40
+[coord_utils ]Pair list contain 2820 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2820
+[interpolation]  Trial path length:   10.785 after 4 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2817 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.36
+[coord_utils ]Pair list contain 2821 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2821
+[interpolation]  Trial path length:   12.889 after 13 iterations
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      0.549.  New length:7
+[coord_utils ]Pair list contain 5381 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2918 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.30
+[coord_utils ]Pair list contain 2918 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2918
+[interpolation]  Trial path length:    2.187 after 3 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2918 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.31
+[coord_utils ]Pair list contain 2918 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2918
+[interpolation]  Trial path length:    2.205 after 3 iterations
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      0.482.  New length:8
+[coord_utils ]Pair list contain 5240 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2807 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.25
+[coord_utils ]Pair list contain 2807 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2807
+[interpolation]  Trial path length:    1.716 after 3 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2807 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.25
+[coord_utils ]Pair list contain 2807 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2807
+[interpolation]  Trial path length:    1.713 after 3 iterations
+[interpolation]Inserting image between 4 and 5 with Cartesian RMSD      0.473.  New length:9
+[coord_utils ]Pair list contain 5226 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2744 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.26
+[coord_utils ]Pair list contain 2746 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2746
+[interpolation]  Trial path length:    6.275 after 4 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2746 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.28
+[coord_utils ]Pair list contain 2748 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2748
+[interpolation]  Trial path length:    6.954 after 4 iterations
+[interpolation]Inserting image between 6 and 7 with Cartesian RMSD      0.401.  New length:10
+[coord_utils ]Pair list contain 5137 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2713 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.26
+[coord_utils ]Pair list contain 2717 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2717
+[interpolation]  Trial path length:    7.824 after 4 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2712 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.26
+[coord_utils ]Pair list contain 2716 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2716
+[interpolation]  Trial path length:    7.569 after 4 iterations
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      0.298.  New length:11
+[coord_utils ]Pair list contain 5293 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2883 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.16
+[coord_utils ]Pair list contain 2883 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2883
+[interpolation]  Trial path length:    1.080 after 3 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2883 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.17
+[coord_utils ]Pair list contain 2883 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2883
+[interpolation]  Trial path length:    1.088 after 3 iterations
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      0.263.  New length:12
+[coord_utils ]Pair list contain 5209 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2822 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.14
+[coord_utils ]Pair list contain 2822 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2822
+[interpolation]  Trial path length:    0.928 after 3 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2822 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.14
+[coord_utils ]Pair list contain 2822 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2822
+[interpolation]  Trial path length:    0.930 after 3 iterations
+[interpolation]Inserting image between 6 and 7 with Cartesian RMSD      0.256.  New length:13
+[coord_utils ]Pair list contain 5056 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2675 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.15
+[coord_utils ]Pair list contain 2677 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2677
+[interpolation]  Trial path length:    4.769 after 5 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2673 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.15
+[coord_utils ]Pair list contain 2675 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2675
+[interpolation]  Trial path length:    5.004 after 3 iterations
+[interpolation]Inserting image between 10 and 11 with Cartesian RMSD      0.255.  New length:14
+[coord_utils ]Pair list contain 5074 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2681 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.17
+[coord_utils ]Pair list contain 2686 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2686
+[interpolation]  Trial path length:    6.235 after 3 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2681 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.16
+[coord_utils ]Pair list contain 2686 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2686
+[interpolation]  Trial path length:    7.023 after 7 iterations
+[interpolation]Inserting image between 5 and 6 with Cartesian RMSD      0.254.  New length:15
+[coord_utils ]Pair list contain 5073 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2720 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.14
+[coord_utils ]Pair list contain 2720 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2720
+[interpolation]  Trial path length:    0.735 after 3 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2720 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.13
+[coord_utils ]Pair list contain 2720 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2720
+[interpolation]  Trial path length:    0.724 after 3 iterations
+[interpolation]Inserting image between 9 and 10 with Cartesian RMSD      0.244.  New length:16
+[coord_utils ]Pair list contain 5073 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2669 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.12
+[coord_utils ]Pair list contain 2672 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2672
+[interpolation]  Trial path length:    0.905 after 3 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2669 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.13
+[coord_utils ]Pair list contain 2672 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2672
+[interpolation]  Trial path length:    0.904 after 3 iterations
+[interpolation]Inserting image between 14 and 15 with Cartesian RMSD      0.236.  New length:17
+[coord_utils ]Pair list contain 5274 pairs
+[interpolation]Starting least-squares minimization of bisection point at    0.02.
+[coord_utils ]Pair list contain 2757 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.12
+[coord_utils ]Pair list contain 2762 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2762
+[interpolation]  Trial path length:    1.583 after 4 iterations
+[interpolation]Starting least-squares minimization of bisection point at    0.98.
+[coord_utils ]Pair list contain 2757 pairs
+[geodesic    ]Maximum RMSD change in initial path:       0.12
+[coord_utils ]Pair list contain 2762 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:    3  Atoms  460 Rijs   2762
+[interpolation]  Trial path length:    1.578 after 3 iterations
+[geodesic    ]Maximum RMSD change in initial path:       0.24
+[coord_utils ]Pair list contain 1999 pairs
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:   17  Atoms  460 Rijs   1999
+[geodesic    ]  Degree of freedoms  20700: 
+[geodesic    ]  Initial length:   16.450
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration   0: Length      0.824 |dL|=6.981e-03
+[geodesic    ]Skipping smoothing: path already optimal.
+[geodesic    ]Final path length:      0.82428  Max RMSD in path:       0.24
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration   1: Length      0.774 |dL|=7.359e-03
+[geodesic    ]Skipping smoothing: path already optimal.
+[geodesic    ]Final path length:      0.77416  Max RMSD in path:       0.24
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration   2: Length      0.723 |dL|=9.501e-03
+[geodesic    ]Skipping smoothing: path already optimal.
+[geodesic    ]Final path length:      0.72280  Max RMSD in path:       0.24
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration   3: Length      1.034 |dL|=3.009e-02
+[geodesic    ]  Iteration   4: Length      1.018 |dL|=6.136e-02
+[geodesic    ]  Iteration   5: Length      0.999 |dL|=6.399e-02
+[geodesic    ]  Iteration   6: Length      1.001 |dL|=4.856e-02
+[geodesic    ]  Iteration   7: Length      0.991 |dL|=1.219e-02
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.99080  Max RMSD in path:       0.18
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration   8: Length      0.774 |dL|=3.558e-02
+[geodesic    ]  Iteration   9: Length      0.762 |dL|=9.323e-03
+[geodesic    ]Smoothing converged after 2 iterations
+[geodesic    ]Final path length:      0.76151  Max RMSD in path:       0.18
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  10: Length      0.663 |dL|=3.648e-02
+[geodesic    ]  Iteration  11: Length      0.646 |dL|=1.343e-02
+[geodesic    ]Smoothing converged after 2 iterations
+[geodesic    ]Final path length:      0.64551  Max RMSD in path:       0.18
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  12: Length      4.464 |dL|=2.737e+00
+[geodesic    ]  Iteration  13: Length      4.565 |dL|=8.535e-01
+[geodesic    ]  Iteration  14: Length      3.005 |dL|=7.010e-01
+[geodesic    ]  Iteration  15: Length      2.106 |dL|=3.145e-01
+[geodesic    ]  Iteration  16: Length      2.061 |dL|=1.615e-01
+[geodesic    ]  Iteration  17: Length      2.058 |dL|=1.286e-01
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      2.05751  Max RMSD in path:       0.18
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  18: Length      1.520 |dL|=4.569e-01
+[geodesic    ]  Iteration  19: Length      1.167 |dL|=3.187e-01
+[geodesic    ]  Iteration  20: Length      1.000 |dL|=2.182e-02
+[geodesic    ]  Iteration  21: Length      1.003 |dL|=4.009e-02
+[geodesic    ]  Iteration  22: Length      0.994 |dL|=3.842e-03
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.99436  Max RMSD in path:       0.18
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  23: Length      0.874 |dL|=1.732e-01
+[geodesic    ]  Iteration  24: Length      0.738 |dL|=9.727e-02
+[geodesic    ]  Iteration  25: Length      0.710 |dL|=3.058e-02
+[geodesic    ]  Iteration  26: Length      0.716 |dL|=4.716e-02
+[geodesic    ]  Iteration  27: Length      0.706 |dL|=6.102e-03
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.70615  Max RMSD in path:       0.18
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  28: Length      0.741 |dL|=1.083e-01
+[geodesic    ]  Iteration  29: Length      0.689 |dL|=2.752e-02
+[geodesic    ]  Iteration  30: Length      0.686 |dL|=1.470e-02
+[geodesic    ]Smoothing converged after 3 iterations
+[geodesic    ]Final path length:      0.68567  Max RMSD in path:       0.18
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  31: Length      1.193 |dL|=1.119e-01
+[geodesic    ]  Iteration  32: Length      1.054 |dL|=1.261e-01
+[geodesic    ]  Iteration  33: Length      0.970 |dL|=1.196e-02
+[geodesic    ]Smoothing converged after 3 iterations
+[geodesic    ]Final path length:      0.96963  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  34: Length      5.879 |dL|=6.239e+00
+[geodesic    ]  Iteration  35: Length      6.587 |dL|=1.147e+00
+[geodesic    ]  Iteration  36: Length      5.019 |dL|=3.888e-01
+[geodesic    ]  Iteration  37: Length      3.931 |dL|=4.285e-01
+[geodesic    ]  Iteration  38: Length      3.349 |dL|=2.955e-01
+[geodesic    ]  Iteration  39: Length      2.980 |dL|=1.857e-01
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      2.97957  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  40: Length      2.205 |dL|=8.498e-01
+[geodesic    ]  Iteration  41: Length      1.766 |dL|=2.623e-01
+[geodesic    ]  Iteration  42: Length      1.628 |dL|=6.936e-02
+[geodesic    ]  Iteration  43: Length      1.649 |dL|=1.371e-01
+[geodesic    ]  Iteration  44: Length      1.607 |dL|=2.394e-02
+[geodesic    ]  Iteration  45: Length      1.607 |dL|=2.932e-02
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      1.60749  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  46: Length      1.526 |dL|=4.802e-01
+[geodesic    ]  Iteration  47: Length      1.214 |dL|=9.750e-02
+[geodesic    ]  Iteration  48: Length      1.169 |dL|=3.020e-02
+[geodesic    ]  Iteration  49: Length      1.171 |dL|=2.682e-02
+[geodesic    ]  Iteration  50: Length      1.165 |dL|=4.200e-03
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      1.16533  Max RMSD in path:       0.17
+[geodesic    ]Sweep   0: L=   9.14 dX=6.73e+00 tol=2.000e-02 dL=1.857e-01
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  51: Length      1.279 |dL|=2.357e-01
+[geodesic    ]  Iteration  52: Length      1.202 |dL|=5.724e-02
+[geodesic    ]  Iteration  53: Length      1.258 |dL|=7.001e-02
+[geodesic    ]  Iteration  54: Length      1.189 |dL|=3.132e-02
+[geodesic    ]Smoothing converged after 4 iterations
+[geodesic    ]Final path length:      1.18879  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  55: Length      1.181 |dL|=9.770e-02
+[geodesic    ]  Iteration  56: Length      1.182 |dL|=9.228e-02
+[geodesic    ]  Iteration  57: Length      1.152 |dL|=1.020e-02
+[geodesic    ]Smoothing converged after 3 iterations
+[geodesic    ]Final path length:      1.15227  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  58: Length      1.357 |dL|=1.209e-01
+[geodesic    ]  Iteration  59: Length      1.305 |dL|=8.889e-02
+[geodesic    ]  Iteration  60: Length      1.464 |dL|=1.816e-01
+[geodesic    ]  Iteration  61: Length      1.236 |dL|=6.814e-02
+[geodesic    ]  Iteration  62: Length      1.243 |dL|=4.852e-02
+[geodesic    ]  Iteration  63: Length      1.213 |dL|=8.099e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      1.21291  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  64: Length      2.050 |dL|=2.102e-01
+[geodesic    ]  Iteration  65: Length      2.808 |dL|=3.309e-01
+[geodesic    ]  Iteration  66: Length      2.131 |dL|=2.933e-01
+[geodesic    ]  Iteration  67: Length      1.731 |dL|=2.520e-01
+[geodesic    ]  Iteration  68: Length      1.910 |dL|=2.511e-01
+[geodesic    ]  Iteration  69: Length      1.639 |dL|=1.673e-01
+[geodesic    ]  Iteration  70: Length      1.599 |dL|=6.922e-02
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      1.59864  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  71: Length      1.282 |dL|=3.839e-01
+[geodesic    ]  Iteration  72: Length      1.282 |dL|=1.752e-01
+[geodesic    ]  Iteration  73: Length      0.999 |dL|=4.889e-02
+[geodesic    ]  Iteration  74: Length      1.008 |dL|=7.528e-02
+[geodesic    ]  Iteration  75: Length      0.980 |dL|=1.794e-02
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.97976  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  76: Length      0.836 |dL|=1.306e-01
+[geodesic    ]  Iteration  77: Length      0.764 |dL|=5.123e-02
+[geodesic    ]  Iteration  78: Length      0.787 |dL|=8.062e-02
+[geodesic    ]  Iteration  79: Length      0.707 |dL|=4.106e-02
+[geodesic    ]  Iteration  80: Length      0.719 |dL|=4.867e-02
+[geodesic    ]  Iteration  81: Length      0.703 |dL|=2.669e-02
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.70295  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  82: Length      0.704 |dL|=7.425e-02
+[geodesic    ]  Iteration  83: Length      0.679 |dL|=7.044e-02
+[geodesic    ]  Iteration  84: Length      0.712 |dL|=1.418e-01
+[geodesic    ]  Iteration  85: Length      0.656 |dL|=8.348e-02
+[geodesic    ]  Iteration  86: Length      0.656 |dL|=6.716e-02
+[geodesic    ]  Iteration  87: Length      0.636 |dL|=1.173e-02
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.63620  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  88: Length      0.806 |dL|=1.479e-01
+[geodesic    ]  Iteration  89: Length      0.791 |dL|=1.357e-01
+[geodesic    ]  Iteration  90: Length      0.739 |dL|=8.255e-02
+[geodesic    ]  Iteration  91: Length      0.730 |dL|=6.500e-02
+[geodesic    ]Smoothing converged after 4 iterations
+[geodesic    ]Final path length:      0.73013  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  92: Length      1.363 |dL|=2.802e-01
+[geodesic    ]  Iteration  93: Length      1.312 |dL|=2.202e-01
+[geodesic    ]  Iteration  94: Length      1.158 |dL|=9.890e-02
+[geodesic    ]  Iteration  95: Length      1.128 |dL|=2.280e-02
+[geodesic    ]Smoothing converged after 4 iterations
+[geodesic    ]Final path length:      1.12833  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration  96: Length      0.879 |dL|=9.469e-02
+[geodesic    ]  Iteration  97: Length      0.728 |dL|=1.579e-01
+[geodesic    ]  Iteration  98: Length      0.657 |dL|=5.992e-02
+[geodesic    ]  Iteration  99: Length      0.655 |dL|=7.178e-02
+[geodesic    ]  Iteration 100: Length      0.642 |dL|=2.286e-02
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.64230  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 101: Length      0.700 |dL|=4.702e-02
+[geodesic    ]  Iteration 102: Length      0.662 |dL|=3.621e-02
+[geodesic    ]Smoothing converged after 2 iterations
+[geodesic    ]Final path length:      0.66232  Max RMSD in path:       0.17
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 103: Length      0.822 |dL|=4.034e-02
+[geodesic    ]  Iteration 104: Length      0.820 |dL|=5.589e-02
+[geodesic    ]  Iteration 105: Length      0.859 |dL|=9.458e-02
+[geodesic    ]  Iteration 106: Length      0.803 |dL|=4.213e-02
+[geodesic    ]  Iteration 107: Length      0.799 |dL|=3.477e-02
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.79921  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 108: Length      0.780 |dL|=2.961e-02
+[geodesic    ]Skipping smoothing: path already optimal.
+[geodesic    ]Final path length:      0.77994  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 109: Length      0.774 |dL|=6.421e-03
+[geodesic    ]Skipping smoothing: path already optimal.
+[geodesic    ]Final path length:      0.77416  Max RMSD in path:       0.16
+[geodesic    ]Sweep   1: L=   7.32 dX=6.31e+00 tol=3.714e-02 dL=6.922e-02
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 110: Length      0.824 |dL|=6.905e-03
+[geodesic    ]Skipping smoothing: path already optimal.
+[geodesic    ]Final path length:      0.82428  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 111: Length      0.774 |dL|=6.421e-03
+[geodesic    ]Skipping smoothing: path already optimal.
+[geodesic    ]Final path length:      0.77416  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 112: Length      0.780 |dL|=2.961e-02
+[geodesic    ]  Iteration 113: Length      0.764 |dL|=7.728e-03
+[geodesic    ]Smoothing converged after 2 iterations
+[geodesic    ]Final path length:      0.76428  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 114: Length      0.778 |dL|=1.468e-02
+[geodesic    ]  Iteration 115: Length      0.788 |dL|=3.148e-02
+[geodesic    ]  Iteration 116: Length      0.773 |dL|=1.170e-02
+[geodesic    ]Smoothing converged after 3 iterations
+[geodesic    ]Final path length:      0.77284  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 117: Length      0.725 |dL|=2.506e-02
+[geodesic    ]  Iteration 118: Length      0.740 |dL|=4.418e-02
+[geodesic    ]  Iteration 119: Length      0.714 |dL|=1.807e-02
+[geodesic    ]  Iteration 120: Length      0.716 |dL|=3.688e-02
+[geodesic    ]  Iteration 121: Length      0.711 |dL|=8.605e-03
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.71061  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 122: Length      0.670 |dL|=3.408e-02
+[geodesic    ]  Iteration 123: Length      0.649 |dL|=3.112e-02
+[geodesic    ]  Iteration 124: Length      0.661 |dL|=4.365e-02
+[geodesic    ]  Iteration 125: Length      0.640 |dL|=1.104e-02
+[geodesic    ]Smoothing converged after 4 iterations
+[geodesic    ]Final path length:      0.64021  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 126: Length      0.892 |dL|=1.203e-01
+[geodesic    ]  Iteration 127: Length      0.812 |dL|=1.730e-01
+[geodesic    ]  Iteration 128: Length      0.745 |dL|=2.582e-02
+[geodesic    ]  Iteration 129: Length      0.748 |dL|=2.754e-02
+[geodesic    ]  Iteration 130: Length      0.738 |dL|=1.428e-02
+[geodesic    ]  Iteration 131: Length      0.739 |dL|=2.588e-02
+[geodesic    ]  Iteration 132: Length      0.736 |dL|=3.877e-03
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.73561  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 133: Length      0.733 |dL|=4.421e-02
+[geodesic    ]  Iteration 134: Length      0.768 |dL|=1.175e-01
+[geodesic    ]  Iteration 135: Length      0.697 |dL|=4.614e-02
+[geodesic    ]  Iteration 136: Length      0.701 |dL|=5.299e-02
+[geodesic    ]  Iteration 137: Length      0.688 |dL|=7.087e-03
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.68762  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 138: Length      0.660 |dL|=8.811e-02
+[geodesic    ]  Iteration 139: Length      0.620 |dL|=3.804e-02
+[geodesic    ]  Iteration 140: Length      0.644 |dL|=5.871e-02
+[geodesic    ]  Iteration 141: Length      0.613 |dL|=1.815e-02
+[geodesic    ]  Iteration 142: Length      0.620 |dL|=4.230e-02
+[geodesic    ]  Iteration 143: Length      0.609 |dL|=4.698e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.60936  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 144: Length      0.657 |dL|=6.830e-02
+[geodesic    ]  Iteration 145: Length      0.617 |dL|=2.140e-02
+[geodesic    ]  Iteration 146: Length      0.622 |dL|=2.347e-02
+[geodesic    ]  Iteration 147: Length      0.611 |dL|=1.071e-02
+[geodesic    ]Smoothing converged after 4 iterations
+[geodesic    ]Final path length:      0.61136  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 148: Length      0.793 |dL|=8.835e-02
+[geodesic    ]  Iteration 149: Length      0.769 |dL|=4.759e-02
+[geodesic    ]  Iteration 150: Length      0.960 |dL|=1.311e-01
+[geodesic    ]  Iteration 151: Length      0.741 |dL|=3.428e-02
+[geodesic    ]  Iteration 152: Length      0.754 |dL|=3.766e-02
+[geodesic    ]  Iteration 153: Length      0.722 |dL|=8.125e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.72217  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 154: Length      1.152 |dL|=1.332e-01
+[geodesic    ]  Iteration 155: Length      1.198 |dL|=1.275e-01
+[geodesic    ]  Iteration 156: Length      1.015 |dL|=4.118e-02
+[geodesic    ]  Iteration 157: Length      1.013 |dL|=4.285e-02
+[geodesic    ]  Iteration 158: Length      0.990 |dL|=1.970e-02
+[geodesic    ]  Iteration 159: Length      0.994 |dL|=2.455e-02
+[geodesic    ]  Iteration 160: Length      0.987 |dL|=4.621e-03
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.98693  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 161: Length      1.103 |dL|=1.585e-01
+[geodesic    ]  Iteration 162: Length      1.284 |dL|=1.403e-01
+[geodesic    ]  Iteration 163: Length      0.984 |dL|=5.689e-02
+[geodesic    ]  Iteration 164: Length      1.005 |dL|=6.763e-02
+[geodesic    ]  Iteration 165: Length      0.953 |dL|=1.023e-02
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.95331  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 166: Length      1.055 |dL|=5.572e-02
+[geodesic    ]  Iteration 167: Length      1.092 |dL|=7.685e-02
+[geodesic    ]  Iteration 168: Length      1.009 |dL|=3.388e-02
+[geodesic    ]  Iteration 169: Length      1.010 |dL|=2.716e-02
+[geodesic    ]  Iteration 170: Length      1.001 |dL|=5.429e-03
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      1.00098  Max RMSD in path:       0.16
+[geodesic    ]Sweep   2: L=   6.51 dX=4.30e+00 tol=1.384e-02 dL=1.170e-02
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 171: Length      1.090 |dL|=4.027e-02
+[geodesic    ]  Iteration 172: Length      1.115 |dL|=8.613e-02
+[geodesic    ]  Iteration 173: Length      1.060 |dL|=1.598e-02
+[geodesic    ]  Iteration 174: Length      1.063 |dL|=2.927e-02
+[geodesic    ]  Iteration 175: Length      1.058 |dL|=2.024e-03
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      1.05771  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 176: Length      1.027 |dL|=1.814e-02
+[geodesic    ]  Iteration 177: Length      1.078 |dL|=9.155e-02
+[geodesic    ]  Iteration 178: Length      1.020 |dL|=1.349e-02
+[geodesic    ]  Iteration 179: Length      1.024 |dL|=2.706e-02
+[geodesic    ]  Iteration 180: Length      1.016 |dL|=5.110e-03
+[geodesic    ]  Iteration 181: Length      1.016 |dL|=8.365e-03
+[geodesic    ]  Iteration 182: Length      1.015 |dL|=6.935e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      1.01549  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 183: Length      0.981 |dL|=3.954e-02
+[geodesic    ]  Iteration 184: Length      1.045 |dL|=1.111e-01
+[geodesic    ]  Iteration 185: Length      0.951 |dL|=2.355e-02
+[geodesic    ]  Iteration 186: Length      0.954 |dL|=2.564e-02
+[geodesic    ]  Iteration 187: Length      0.947 |dL|=4.762e-03
+[geodesic    ]  Iteration 188: Length      0.947 |dL|=1.041e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.94663  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 189: Length      0.962 |dL|=1.108e-01
+[geodesic    ]  Iteration 190: Length      1.089 |dL|=1.269e-01
+[geodesic    ]  Iteration 191: Length      0.905 |dL|=2.785e-02
+[geodesic    ]  Iteration 192: Length      0.905 |dL|=4.047e-02
+[geodesic    ]  Iteration 193: Length      0.890 |dL|=4.639e-03
+[geodesic    ]  Iteration 194: Length      0.889 |dL|=8.769e-03
+[geodesic    ]  Iteration 195: Length      0.888 |dL|=1.874e-03
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.88755  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 196: Length      0.807 |dL|=6.185e-02
+[geodesic    ]  Iteration 197: Length      0.782 |dL|=4.610e-02
+[geodesic    ]  Iteration 198: Length      0.921 |dL|=1.209e-01
+[geodesic    ]  Iteration 199: Length      0.774 |dL|=4.624e-02
+[geodesic    ]  Iteration 200: Length      0.797 |dL|=5.630e-02
+[geodesic    ]  Iteration 201: Length      0.756 |dL|=5.974e-03
+[geodesic    ]  Iteration 202: Length      0.758 |dL|=1.608e-02
+[geodesic    ]  Iteration 203: Length      0.755 |dL|=1.500e-03
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.75521  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 204: Length      0.684 |dL|=3.633e-02
+[geodesic    ]  Iteration 205: Length      0.745 |dL|=1.118e-01
+[geodesic    ]  Iteration 206: Length      0.636 |dL|=3.142e-02
+[geodesic    ]  Iteration 207: Length      0.635 |dL|=1.826e-02
+[geodesic    ]  Iteration 208: Length      0.630 |dL|=4.577e-03
+[geodesic    ]  Iteration 209: Length      0.630 |dL|=1.324e-02
+[geodesic    ]  Iteration 210: Length      0.629 |dL|=1.401e-03
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.62905  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 211: Length      0.616 |dL|=6.470e-02
+[geodesic    ]  Iteration 212: Length      0.589 |dL|=2.703e-02
+[geodesic    ]  Iteration 213: Length      0.629 |dL|=1.020e-01
+[geodesic    ]  Iteration 214: Length      0.579 |dL|=3.536e-02
+[geodesic    ]  Iteration 215: Length      0.579 |dL|=3.059e-02
+[geodesic    ]  Iteration 216: Length      0.573 |dL|=5.035e-03
+[geodesic    ]  Iteration 217: Length      0.572 |dL|=1.163e-03
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.57212  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 218: Length      0.630 |dL|=8.331e-02
+[geodesic    ]  Iteration 219: Length      0.601 |dL|=3.408e-02
+[geodesic    ]  Iteration 220: Length      0.649 |dL|=9.866e-02
+[geodesic    ]  Iteration 221: Length      0.596 |dL|=3.863e-02
+[geodesic    ]  Iteration 222: Length      0.605 |dL|=6.386e-02
+[geodesic    ]  Iteration 223: Length      0.586 |dL|=7.144e-03
+[geodesic    ]  Iteration 224: Length      0.586 |dL|=3.635e-03
+[geodesic    ]  Iteration 225: Length      0.585 |dL|=1.568e-03
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.58536  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 226: Length      0.664 |dL|=5.608e-02
+[geodesic    ]  Iteration 227: Length      0.647 |dL|=3.986e-02
+[geodesic    ]  Iteration 228: Length      0.675 |dL|=1.021e-01
+[geodesic    ]  Iteration 229: Length      0.642 |dL|=5.493e-02
+[geodesic    ]  Iteration 230: Length      0.651 |dL|=5.944e-02
+[geodesic    ]  Iteration 231: Length      0.633 |dL|=9.085e-03
+[geodesic    ]  Iteration 232: Length      0.633 |dL|=4.529e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.63263  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 233: Length      0.639 |dL|=2.630e-02
+[geodesic    ]  Iteration 234: Length      0.611 |dL|=3.989e-02
+[geodesic    ]  Iteration 235: Length      0.606 |dL|=1.309e-02
+[geodesic    ]  Iteration 236: Length      0.611 |dL|=2.054e-02
+[geodesic    ]  Iteration 237: Length      0.603 |dL|=8.553e-03
+[geodesic    ]  Iteration 238: Length      0.604 |dL|=1.596e-02
+[geodesic    ]  Iteration 239: Length      0.602 |dL|=2.711e-03
+[geodesic    ]  Iteration 240: Length      0.602 |dL|=4.075e-04
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.60219  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 241: Length      0.663 |dL|=2.594e-02
+[geodesic    ]  Iteration 242: Length      0.640 |dL|=2.642e-02
+[geodesic    ]  Iteration 243: Length      0.639 |dL|=1.800e-02
+[geodesic    ]  Iteration 244: Length      0.642 |dL|=3.400e-02
+[geodesic    ]  Iteration 245: Length      0.636 |dL|=9.905e-03
+[geodesic    ]  Iteration 246: Length      0.635 |dL|=7.332e-04
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.63532  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 247: Length      0.708 |dL|=2.435e-02
+[geodesic    ]  Iteration 248: Length      0.697 |dL|=8.593e-03
+[geodesic    ]  Iteration 249: Length      0.699 |dL|=1.571e-02
+[geodesic    ]  Iteration 250: Length      0.695 |dL|=2.934e-03
+[geodesic    ]  Iteration 251: Length      0.695 |dL|=5.722e-03
+[geodesic    ]  Iteration 252: Length      0.695 |dL|=1.503e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.69460  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 253: Length      0.731 |dL|=1.510e-02
+[geodesic    ]  Iteration 254: Length      0.746 |dL|=6.419e-02
+[geodesic    ]  Iteration 255: Length      0.727 |dL|=2.527e-02
+[geodesic    ]  Iteration 256: Length      0.728 |dL|=3.078e-02
+[geodesic    ]  Iteration 257: Length      0.724 |dL|=5.594e-03
+[geodesic    ]  Iteration 258: Length      0.724 |dL|=1.118e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.72424  Max RMSD in path:       0.16
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 259: Length      0.761 |dL|=1.923e-02
+[geodesic    ]  Iteration 260: Length      0.748 |dL|=7.566e-03
+[geodesic    ]  Iteration 261: Length      0.763 |dL|=2.493e-02
+[geodesic    ]  Iteration 262: Length      0.746 |dL|=5.577e-03
+[geodesic    ]  Iteration 263: Length      0.748 |dL|=1.215e-02
+[geodesic    ]  Iteration 264: Length      0.746 |dL|=3.897e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.74576  Max RMSD in path:       0.16
+[geodesic    ]Sweep   3: L=   6.04 dX=4.15e+00 tol=2.340e-03 dL=3.897e-03
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 265: Length      0.800 |dL|=1.651e-02
+[geodesic    ]  Iteration 266: Length      0.795 |dL|=5.437e-03
+[geodesic    ]  Iteration 267: Length      0.809 |dL|=2.312e-02
+[geodesic    ]  Iteration 268: Length      0.794 |dL|=4.653e-03
+[geodesic    ]  Iteration 269: Length      0.796 |dL|=1.425e-02
+[geodesic    ]  Iteration 270: Length      0.793 |dL|=4.628e-03
+[geodesic    ]  Iteration 271: Length      0.793 |dL|=2.170e-03
+[geodesic    ]  Iteration 272: Length      0.793 |dL|=5.377e-04
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.79332  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 273: Length      0.769 |dL|=7.063e-03
+[geodesic    ]  Iteration 274: Length      0.767 |dL|=3.562e-03
+[geodesic    ]  Iteration 275: Length      0.773 |dL|=2.584e-02
+[geodesic    ]  Iteration 276: Length      0.768 |dL|=1.028e-02
+[geodesic    ]  Iteration 277: Length      0.767 |dL|=2.190e-03
+[geodesic    ]  Iteration 278: Length      0.767 |dL|=2.935e-04
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.76667  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 279: Length      0.744 |dL|=1.599e-02
+[geodesic    ]  Iteration 280: Length      0.739 |dL|=1.060e-02
+[geodesic    ]  Iteration 281: Length      0.761 |dL|=3.953e-02
+[geodesic    ]  Iteration 282: Length      0.737 |dL|=1.144e-02
+[geodesic    ]  Iteration 283: Length      0.736 |dL|=4.333e-03
+[geodesic    ]  Iteration 284: Length      0.736 |dL|=1.650e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.73599  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 285: Length      0.713 |dL|=1.484e-02
+[geodesic    ]  Iteration 286: Length      0.711 |dL|=1.564e-02
+[geodesic    ]  Iteration 287: Length      0.708 |dL|=1.406e-02
+[geodesic    ]  Iteration 288: Length      0.708 |dL|=3.219e-03
+[geodesic    ]  Iteration 289: Length      0.708 |dL|=5.820e-03
+[geodesic    ]  Iteration 290: Length      0.707 |dL|=1.680e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.70732  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 291: Length      0.668 |dL|=1.816e-02
+[geodesic    ]  Iteration 292: Length      0.661 |dL|=6.146e-03
+[geodesic    ]  Iteration 293: Length      0.669 |dL|=2.027e-02
+[geodesic    ]  Iteration 294: Length      0.660 |dL|=4.734e-03
+[geodesic    ]  Iteration 295: Length      0.661 |dL|=5.879e-03
+[geodesic    ]  Iteration 296: Length      0.660 |dL|=2.108e-03
+[geodesic    ]  Iteration 297: Length      0.660 |dL|=2.019e-03
+[geodesic    ]  Iteration 298: Length      0.660 |dL|=5.104e-04
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.65962  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 299: Length      0.626 |dL|=2.188e-02
+[geodesic    ]  Iteration 300: Length      0.612 |dL|=2.594e-02
+[geodesic    ]  Iteration 301: Length      0.611 |dL|=1.363e-02
+[geodesic    ]  Iteration 302: Length      0.609 |dL|=1.090e-02
+[geodesic    ]  Iteration 303: Length      0.608 |dL|=1.819e-03
+[geodesic    ]  Iteration 304: Length      0.609 |dL|=6.548e-03
+[geodesic    ]  Iteration 305: Length      0.608 |dL|=1.390e-03
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.60817  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 306: Length      0.614 |dL|=2.438e-02
+[geodesic    ]  Iteration 307: Length      0.591 |dL|=4.197e-02
+[geodesic    ]  Iteration 308: Length      0.587 |dL|=8.378e-03
+[geodesic    ]  Iteration 309: Length      0.596 |dL|=2.939e-02
+[geodesic    ]  Iteration 310: Length      0.585 |dL|=8.684e-03
+[geodesic    ]  Iteration 311: Length      0.586 |dL|=2.056e-02
+[geodesic    ]  Iteration 312: Length      0.584 |dL|=2.523e-03
+[geodesic    ]  Iteration 313: Length      0.584 |dL|=4.140e-04
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.58400  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 314: Length      0.580 |dL|=2.772e-02
+[geodesic    ]  Iteration 315: Length      0.567 |dL|=2.959e-02
+[geodesic    ]  Iteration 316: Length      0.595 |dL|=8.193e-02
+[geodesic    ]  Iteration 317: Length      0.563 |dL|=3.105e-02
+[geodesic    ]  Iteration 318: Length      0.567 |dL|=3.297e-02
+[geodesic    ]  Iteration 319: Length      0.559 |dL|=4.067e-03
+[geodesic    ]  Iteration 320: Length      0.559 |dL|=2.219e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.55853  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 321: Length      0.564 |dL|=5.012e-02
+[geodesic    ]  Iteration 322: Length      0.543 |dL|=9.926e-03
+[geodesic    ]  Iteration 323: Length      0.566 |dL|=4.628e-02
+[geodesic    ]  Iteration 324: Length      0.540 |dL|=8.784e-03
+[geodesic    ]  Iteration 325: Length      0.546 |dL|=3.411e-02
+[geodesic    ]  Iteration 326: Length      0.538 |dL|=4.236e-03
+[geodesic    ]  Iteration 327: Length      0.538 |dL|=4.456e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.53760  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 328: Length      0.584 |dL|=4.728e-02
+[geodesic    ]  Iteration 329: Length      0.578 |dL|=4.389e-02
+[geodesic    ]  Iteration 330: Length      0.559 |dL|=2.469e-02
+[geodesic    ]  Iteration 331: Length      0.559 |dL|=3.131e-02
+[geodesic    ]  Iteration 332: Length      0.552 |dL|=5.927e-03
+[geodesic    ]  Iteration 333: Length      0.552 |dL|=2.626e-03
+[geodesic    ]  Iteration 334: Length      0.553 |dL|=1.028e-02
+[geodesic    ]  Iteration 335: Length      0.552 |dL|=7.010e-04
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.55153  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 336: Length      0.652 |dL|=4.460e-02
+[geodesic    ]  Iteration 337: Length      0.701 |dL|=8.659e-02
+[geodesic    ]  Iteration 338: Length      0.620 |dL|=2.439e-02
+[geodesic    ]  Iteration 339: Length      0.621 |dL|=1.912e-02
+[geodesic    ]  Iteration 340: Length      0.616 |dL|=4.027e-03
+[geodesic    ]  Iteration 341: Length      0.616 |dL|=1.285e-02
+[geodesic    ]  Iteration 342: Length      0.615 |dL|=1.345e-03
+[geodesic    ]  Iteration 343: Length      0.615 |dL|=2.859e-03
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.61473  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 344: Length      0.750 |dL|=3.816e-02
+[geodesic    ]  Iteration 345: Length      0.738 |dL|=3.201e-02
+[geodesic    ]  Iteration 346: Length      0.926 |dL|=1.051e-01
+[geodesic    ]  Iteration 347: Length      0.738 |dL|=4.747e-02
+[geodesic    ]  Iteration 348: Length      0.714 |dL|=7.988e-03
+[geodesic    ]  Iteration 349: Length      0.715 |dL|=8.206e-03
+[geodesic    ]  Iteration 350: Length      0.713 |dL|=7.512e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.71331  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 351: Length      0.837 |dL|=5.249e-02
+[geodesic    ]  Iteration 352: Length      0.830 |dL|=3.369e-02
+[geodesic    ]  Iteration 353: Length      0.986 |dL|=1.023e-01
+[geodesic    ]  Iteration 354: Length      0.824 |dL|=3.337e-02
+[geodesic    ]  Iteration 355: Length      0.809 |dL|=4.587e-03
+[geodesic    ]  Iteration 356: Length      0.809 |dL|=1.073e-02
+[geodesic    ]  Iteration 357: Length      0.808 |dL|=1.273e-03
+[geodesic    ]  Iteration 358: Length      0.808 |dL|=2.144e-03
+[geodesic    ]  Iteration 359: Length      0.808 |dL|=1.046e-03
+[geodesic    ]Smoothing converged after 9 iterations
+[geodesic    ]Final path length:      0.80767  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 360: Length      0.919 |dL|=5.240e-02
+[geodesic    ]  Iteration 361: Length      0.915 |dL|=3.737e-02
+[geodesic    ]  Iteration 362: Length      1.107 |dL|=1.288e-01
+[geodesic    ]  Iteration 363: Length      0.911 |dL|=3.206e-02
+[geodesic    ]  Iteration 364: Length      0.900 |dL|=5.285e-03
+[geodesic    ]  Iteration 365: Length      0.901 |dL|=1.040e-02
+[geodesic    ]  Iteration 366: Length      0.900 |dL|=1.114e-03
+[geodesic    ]  Iteration 367: Length      0.900 |dL|=1.920e-03
+[geodesic    ]  Iteration 368: Length      0.900 |dL|=3.222e-04
+[geodesic    ]Smoothing converged after 9 iterations
+[geodesic    ]Final path length:      0.89978  Max RMSD in path:       0.15
+[geodesic    ]Sweep   4: L=   5.75 dX=4.20e+00 tol=1.000e-03 dL=2.859e-03
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 369: Length      0.983 |dL|=3.130e-02
+[geodesic    ]  Iteration 370: Length      0.987 |dL|=4.598e-02
+[geodesic    ]  Iteration 371: Length      0.974 |dL|=8.733e-03
+[geodesic    ]  Iteration 372: Length      0.976 |dL|=1.654e-02
+[geodesic    ]  Iteration 373: Length      0.972 |dL|=2.049e-03
+[geodesic    ]  Iteration 374: Length      0.971 |dL|=1.680e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.97150  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 375: Length      0.931 |dL|=1.307e-02
+[geodesic    ]  Iteration 376: Length      0.942 |dL|=3.074e-02
+[geodesic    ]  Iteration 377: Length      0.928 |dL|=2.843e-03
+[geodesic    ]  Iteration 378: Length      0.929 |dL|=6.170e-03
+[geodesic    ]  Iteration 379: Length      0.928 |dL|=1.300e-03
+[geodesic    ]  Iteration 380: Length      0.928 |dL|=6.475e-04
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.92766  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 381: Length      0.860 |dL|=2.698e-02
+[geodesic    ]  Iteration 382: Length      0.854 |dL|=1.135e-02
+[geodesic    ]  Iteration 383: Length      1.004 |dL|=1.096e-01
+[geodesic    ]  Iteration 384: Length      0.863 |dL|=4.446e-02
+[geodesic    ]  Iteration 385: Length      0.850 |dL|=7.087e-03
+[geodesic    ]  Iteration 386: Length      0.850 |dL|=1.756e-03
+[geodesic    ]  Iteration 387: Length      0.850 |dL|=3.284e-03
+[geodesic    ]  Iteration 388: Length      0.849 |dL|=1.310e-03
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.84930  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 389: Length      0.776 |dL|=5.124e-02
+[geodesic    ]  Iteration 390: Length      0.774 |dL|=3.011e-02
+[geodesic    ]  Iteration 391: Length      0.759 |dL|=2.079e-02
+[geodesic    ]  Iteration 392: Length      0.755 |dL|=6.918e-03
+[geodesic    ]  Iteration 393: Length      0.760 |dL|=2.138e-02
+[geodesic    ]  Iteration 394: Length      0.755 |dL|=1.975e-03
+[geodesic    ]  Iteration 395: Length      0.755 |dL|=6.148e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.75453  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 396: Length      0.685 |dL|=3.993e-02
+[geodesic    ]  Iteration 397: Length      0.690 |dL|=4.980e-02
+[geodesic    ]  Iteration 398: Length      0.661 |dL|=8.639e-03
+[geodesic    ]  Iteration 399: Length      0.709 |dL|=6.936e-02
+[geodesic    ]  Iteration 400: Length      0.660 |dL|=7.597e-03
+[geodesic    ]  Iteration 401: Length      0.660 |dL|=7.771e-03
+[geodesic    ]  Iteration 402: Length      0.659 |dL|=5.890e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.65889  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 403: Length      0.606 |dL|=3.542e-02
+[geodesic    ]  Iteration 404: Length      0.585 |dL|=1.911e-02
+[geodesic    ]  Iteration 405: Length      0.626 |dL|=4.983e-02
+[geodesic    ]  Iteration 406: Length      0.583 |dL|=2.547e-02
+[geodesic    ]  Iteration 407: Length      0.590 |dL|=3.518e-02
+[geodesic    ]  Iteration 408: Length      0.576 |dL|=2.246e-03
+[geodesic    ]  Iteration 409: Length      0.576 |dL|=9.097e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.57638  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 410: Length      0.556 |dL|=4.956e-02
+[geodesic    ]  Iteration 411: Length      0.562 |dL|=6.272e-02
+[geodesic    ]  Iteration 412: Length      0.528 |dL|=9.066e-03
+[geodesic    ]  Iteration 413: Length      0.528 |dL|=8.996e-03
+[geodesic    ]  Iteration 414: Length      0.526 |dL|=7.088e-03
+[geodesic    ]  Iteration 415: Length      0.526 |dL|=3.491e-03
+[geodesic    ]  Iteration 416: Length      0.526 |dL|=1.049e-03
+[geodesic    ]  Iteration 417: Length      0.526 |dL|=2.991e-04
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.52564  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 418: Length      0.544 |dL|=5.347e-02
+[geodesic    ]  Iteration 419: Length      0.522 |dL|=9.938e-03
+[geodesic    ]  Iteration 420: Length      0.549 |dL|=5.865e-02
+[geodesic    ]  Iteration 421: Length      0.521 |dL|=1.769e-02
+[geodesic    ]  Iteration 422: Length      0.518 |dL|=3.656e-03
+[geodesic    ]  Iteration 423: Length      0.518 |dL|=2.579e-03
+[geodesic    ]  Iteration 424: Length      0.518 |dL|=4.099e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.51771  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 425: Length      0.556 |dL|=3.975e-02
+[geodesic    ]  Iteration 426: Length      0.539 |dL|=8.863e-03
+[geodesic    ]  Iteration 427: Length      0.550 |dL|=4.916e-02
+[geodesic    ]  Iteration 428: Length      0.538 |dL|=1.757e-02
+[geodesic    ]  Iteration 429: Length      0.536 |dL|=3.482e-03
+[geodesic    ]  Iteration 430: Length      0.536 |dL|=1.495e-03
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.53580  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 431: Length      0.576 |dL|=2.366e-02
+[geodesic    ]  Iteration 432: Length      0.561 |dL|=1.324e-02
+[geodesic    ]  Iteration 433: Length      0.564 |dL|=3.154e-02
+[geodesic    ]  Iteration 434: Length      0.559 |dL|=1.127e-02
+[geodesic    ]  Iteration 435: Length      0.560 |dL|=1.410e-02
+[geodesic    ]  Iteration 436: Length      0.558 |dL|=2.016e-03
+[geodesic    ]  Iteration 437: Length      0.558 |dL|=1.883e-04
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.55790  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 438: Length      0.612 |dL|=2.141e-02
+[geodesic    ]  Iteration 439: Length      0.600 |dL|=1.518e-02
+[geodesic    ]  Iteration 440: Length      0.599 |dL|=6.271e-03
+[geodesic    ]  Iteration 441: Length      0.598 |dL|=5.620e-03
+[geodesic    ]  Iteration 442: Length      0.598 |dL|=1.573e-03
+[geodesic    ]  Iteration 443: Length      0.598 |dL|=3.960e-03
+[geodesic    ]  Iteration 444: Length      0.598 |dL|=1.061e-03
+[geodesic    ]Smoothing converged after 7 iterations
+[geodesic    ]Final path length:      0.59762  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 445: Length      0.656 |dL|=1.817e-02
+[geodesic    ]  Iteration 446: Length      0.648 |dL|=6.621e-03
+[geodesic    ]  Iteration 447: Length      0.648 |dL|=4.653e-03
+[geodesic    ]  Iteration 448: Length      0.647 |dL|=1.126e-03
+[geodesic    ]  Iteration 449: Length      0.647 |dL|=1.157e-03
+[geodesic    ]Smoothing converged after 5 iterations
+[geodesic    ]Final path length:      0.64722  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 450: Length      0.694 |dL|=1.488e-02
+[geodesic    ]  Iteration 451: Length      0.691 |dL|=1.389e-02
+[geodesic    ]  Iteration 452: Length      0.708 |dL|=5.199e-02
+[geodesic    ]  Iteration 453: Length      0.691 |dL|=2.017e-02
+[geodesic    ]  Iteration 454: Length      0.689 |dL|=4.676e-03
+[geodesic    ]  Iteration 455: Length      0.689 |dL|=3.879e-04
+[geodesic    ]Smoothing converged after 6 iterations
+[geodesic    ]Final path length:      0.68861  Max RMSD in path:       0.15
+[geodesic    ]  Degree of freedoms   1380: 
+[geodesic    ]  Iteration 456: Length      0.729 |dL|=1.217e-02
+[geodesic    ]  Iteration 457: Length      0.728 |dL|=1.324e-02
+[geodesic    ]  Iteration 458: Length      0.764 |dL|=5.514e-02
+[geodesic    ]  Iteration 459: Length      0.727 |dL|=1.859e-02
+[geodesic    ]  Iteration 460: Length      0.725 |dL|=8.723e-03
+[geodesic    ]  Iteration 461: Length      0.724 |dL|=1.775e-03
+[geodesic    ]  Iteration 462: Length      0.724 |dL|=2.085e-03
+[geodesic    ]  Iteration 463: Length      0.724 |dL|=7.012e-04
+[geodesic    ]Smoothing converged after 8 iterations
+[geodesic    ]Final path length:      0.72409  Max RMSD in path:       0.15
+[geodesic    ]Sweep   5: L=   5.52 dX=3.14e+00 tol=1.000e-03 dL=1.680e-03
+[geodesic    ]Optimization converged after 5 iteartions
+[geodesic    ]Final path length:      5.52266  Max RMSD in path:       0.15
+[__main__    ]Saving final path to file collagen_interpolated.xyz

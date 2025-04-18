@@ -135,7 +135,7 @@ class TorchTheory():
         print("Model:", model_name)
         print("File:", model_file)
         if model_name is not None:
-            if model_name == 'aimnet2':
+            if str(model_name).lower() == 'aimnet2':
                 self.model = AIMNet2Calculator('aimnet2')
             else:
                 print("Error: Unknown model and no model_file selected")

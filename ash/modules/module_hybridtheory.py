@@ -203,7 +203,8 @@ class DualTheory:
         return
 
     #Run function. Takes coords, elems etc. arguments and computes E or E+G.
-    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, label='default', charge=None, mult=None, run_both_theories=False ):
+    def run(self, current_coords=None, elems=None, Grad=False, numcores=None, label='default', charge=None, mult=None, run_both_theories=False,
+            current_MM_coords=None, MMcharges=None, qm_elems=None, PC=None ):
         print(BC.OKBLUE,BC.BOLD, "------------RUNNING DUALTHEORY INTERFACE-------------", BC.END)
         self.totalruncalls += 1
         print("running")
@@ -371,8 +372,9 @@ class WrapTheory(Theory):
     """ASH WrapTheory theory.
     Combines 2 theories to give a modified energy and modified gradient
     """
-    def __init__(self, theory1=None, theory2=None, printlevel=2, label=None):
+    def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None):
         super().__init__()
+
         self.theorytype="QM"
         self.theory1=theory1
         self.theory2=theory2
@@ -380,8 +382,23 @@ class WrapTheory(Theory):
         self.label=label
         self.filename=""
         self.theorynamelabel="WrapTheory"
+        self.theories=theories
 
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
+        print("Creating WrapTheory object")
+
+        if theories is not None :
+            print("Theories defined by keyword")
+            if theory1 is not None or theory2 is not None:
+                print("Error: Both theory1/theory2 keywords and theories keyword cannot be defined")
+                print("Choose either to define: theory1 and theory2       or provide a list of all theories using the theories keyword")
+                exit()
+        else:
+            if theory1 is None or theory2 is None:
+                print("Error: Either theories keyword or theory1 and theory2 have to be provided to WrapTheory")
+                ashexit()
+            self.theories=[theory1,theory2]
+
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
@@ -389,49 +406,84 @@ class WrapTheory(Theory):
 
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
-        print("Running Theory 1:", self.theory1.theorynamelabel)
-        # Calculate Theory 1
-        if Grad:
-            e_theory1, g_theory1 = self.theory1.run(current_coords=current_coords,
+        if self.theories is not None:
+            energies=[]
+            gradients=[]
+            for theory in self.theories:
+                print(f"Now running Theory: {theory.theorynamelabel}")
+                eg_tuple = theory.run(current_coords=current_coords,
                                                     current_MM_coords=current_MM_coords,
                                                     MMcharges=MMcharges, qm_elems=qm_elems,
                                                     elems=elems, Grad=Grad, PC=PC, numcores=numcores,
                                                     label=label, charge=charge, mult=mult)
-        else:
-            e_theory1 = self.theory1.run(current_coords=current_coords,
-                                                    current_MM_coords=current_MM_coords,
-                                                    MMcharges=MMcharges, qm_elems=qm_elems,
-                                                    elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-                                                    label=label, charge=charge, mult=mult)
-        # Calculate Theory 2
-        print("Running Theory 2:", self.theory2.theorynamelabel)
-        if Grad:
-            e_theory2, g_theory2 = self.theory2.run(current_coords=current_coords,
-                                                    current_MM_coords=current_MM_coords,
-                                                    MMcharges=MMcharges, qm_elems=qm_elems,
-                                                    elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-                                                    label=label, charge=charge, mult=mult)
-        else:
-            e_theory2 = self.theory2.run(current_coords=current_coords,
-                                                    current_MM_coords=current_MM_coords,
-                                                    MMcharges=MMcharges, qm_elems=qm_elems,
-                                                    elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-                                                    label=label, charge=charge, mult=mult)
+                if Grad:
+                    energy = eg_tuple[0]
+                    grad = eg_tuple[1]
+                    energies.append(energy)
+                    gradients.append(grad)
+                else:
+                    energy = eg_tuple
+                    energies.append(energy)  
+            print("\nAll WrapTheory calculations are done!\n")
 
-        # Combine energy and gradient
-        energy = e_theory1 + e_theory2
-        if self.printlevel == 2:
-            print("Energy (Theory1):", e_theory1)
-            print("Energy (Theory2):", e_theory2)
-            print("Energy (Combined):", energy)
-        if Grad:
-            gradient = g_theory1 + g_theory2
-            if self.printlevel == 3:
-                print("Gradient (Theory1):", g_theory1)
-                print("Gradient (Theory2):", g_theory2)
-                print("Gradient (Combined):", gradient)
+            # Combine energy and gradient
+            self.energy = sum(energies)
+            if self.printlevel == 2:
+                for count,e in enumerate(energies):
+                    print(f"Energy ({self.theories[count].theorynamelabel}):", e)
+                print("Energy (Combined):", self.energy)
+            if Grad:
+                self.gradient = sum(gradients)
+                if self.printlevel == 3:
+                    for g,count in enumerate(gradients):
+                        print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
+                    print("Gradient (Combined):", self.gradient)
+
+        # old syntax
+        #else:
+        #    print("Running Theory 1:", self.theory1.theorynamelabel)
+        #    # Calculate Theory 1
+        #    if Grad:
+        #        e_theory1, g_theory1 = self.theory1.run(current_coords=current_coords,
+        #                                                current_MM_coords=current_MM_coords,
+        #                                                MMcharges=MMcharges, qm_elems=qm_elems,
+        #                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+        #                                                label=label, charge=charge, mult=mult)
+        #    else:
+        #        e_theory1 = self.theory1.run(current_coords=current_coords,
+        #                                                current_MM_coords=current_MM_coords,
+        #                                                MMcharges=MMcharges, qm_elems=qm_elems,
+        #                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+        #                                                label=label, charge=charge, mult=mult)
+        #    # Calculate Theory 2
+        #    print("Running Theory 2:", self.theory2.theorynamelabel)
+        #    if Grad:
+        #        e_theory2, g_theory2 = self.theory2.run(current_coords=current_coords,
+        #                                                current_MM_coords=current_MM_coords,
+        #                                                MMcharges=MMcharges, qm_elems=qm_elems,
+        #                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+        #                                                label=label, charge=charge, mult=mult)
+        #    else:
+        #        e_theory2 = self.theory2.run(current_coords=current_coords,
+        #                                                current_MM_coords=current_MM_coords,
+        #                                                MMcharges=MMcharges, qm_elems=qm_elems,
+        #                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+        #                                                label=label, charge=charge, mult=mult)
+        #
+        #    # Combine energy and gradient
+        #    energy = e_theory1 + e_theory2
+        #    if self.printlevel == 2:
+        #        print("Energy (Theory1):", e_theory1)
+        #        print("Energy (Theory2):", e_theory2)
+        #        print("Energy (Combined):", energy)
+        #    if Grad:
+        #        gradient = g_theory1 + g_theory2
+        #        if self.printlevel == 3:
+        #            print("Gradient (Theory1):", g_theory1)
+        #            print("Gradient (Theory2):", g_theory2)
+        #            print("Gradient (Combined):", gradient)
 
         if Grad:
-            return energy, gradient
+            return self.energy, self.gradient
         else:
-            return energy
+            return self.energy

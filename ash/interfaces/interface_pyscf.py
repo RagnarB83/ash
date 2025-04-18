@@ -23,7 +23,7 @@ import copy
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
                   scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry='C1',
-                  guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk',
+                  guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk', do_pop_analysis=True,
                   noautostart=False, autostart=True, fcidumpfile=None,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, scf_noiter=False, direct_scf=True, GHF_complex=False, collinear_option='mcol',
@@ -31,7 +31,7 @@ class PySCFTheory:
                   BS=False, HSmult=None, atomstoflip=None,
                   TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
-                  dispersion=None, densityfit=False, auxbasis=None, sgx=False, magmom=None,
+                  dispersion=None, densityfit=False, auxbasis=None, auxbasis_file=None, sgx=False, magmom=None,
                   pe=False, potfile=None, filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4,
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False, cc_conv_tol_normt=1e-06, cc_conv_tol=1e-07,
@@ -50,6 +50,10 @@ class PySCFTheory:
         self.analytic_hessian=True
         self.printlevel=printlevel
         self.functional=functional
+
+        # Population analysis active by default
+        self.do_pop_analysis=do_pop_analysis
+
         #if self.printlevel >= 2:
         print_line_with_mainheader("PySCFTheory initialization")
 
@@ -66,6 +70,9 @@ class PySCFTheory:
             ashexit()
         if basis_file is not None and not os.path.isfile(basis_file):
             print("Error: basis_file does not exist. Exiting")
+            ashexit()
+        if auxbasis_file is not None and not os.path.isfile(auxbasis_file):
+            print("Error: auxbasis_file does not exist. Exiting")
             ashexit()
         if functional is not None:
             if self.printlevel >= 1:
@@ -286,6 +293,7 @@ class PySCFTheory:
         #Density fitting and semi-numeric exchange options
         self.densityfit = densityfit #RI-J
         self.auxbasis = auxbasis #Aux J basis
+        self.auxbasis_file= auxbasis_file
         self.sgx=sgx #Semi-numerical exchange
 
         #Special PySCF run option
@@ -395,10 +403,10 @@ class PySCFTheory:
         import pyscf.tools.fcidump
         
         #Read FCI dump and return dictionary with integrals etc
-        #result = pyscf.tools.fcidump.read(fcidumpfile, verbose=True)
-        #print("result:", result)
+        result = pyscf.tools.fcidump.read(fcidumpfile)
+        #Defining here
+        self.num_basis_functions = result["NORB"]
         #H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
-
         self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=False)
 
     # Create FCIDUMP file from either mf object (provided or internal)
@@ -1889,23 +1897,30 @@ class PySCFTheory:
         #PYSCF basis object: https://sunqm.github.io/pyscf/tutorial.html
         #NOTE: We should also support basis set exchange API: https://github.com/pyscf/pyscf/issues/1299
         if self.basis_file != None:
-            if self.printlevel >= 1:
-                print("Reading basis set from file:", self.basis_file)
-            basis_dict={}
-            for elem in elems:
+
+            #Avoiding doing this every time
+            if self.runcalls == 1:
                 if self.printlevel >= 1:
-                    print(f"Reading basis set for element: {elem} from file: {self.basis_file}")
-                basis_per_elem=pyscf.gto.basis.load(self.basis_file, elem)
-                if self.printlevel >= 3:
-                    print("basis_per_elem:", basis_per_elem)
-                basis_dict[elem]=basis_per_elem
-            self.mol.basis=basis_dict
+                    print("Reading basis set from file:", self.basis_file)
+                self.basis_dict={}
+                for elem in list(set(elems)):
+                    if self.printlevel >= 1:
+                        print(f"Reading basis set for element: {elem} from file: {self.basis_file}")
+                    basis_per_elem=pyscf.gto.basis.load(self.basis_file, elem)
+                    if self.printlevel >= 3:
+                        print("basis_per_elem:", basis_per_elem)
+                    self.basis_dict[elem]=basis_per_elem
+                self.mol.basis=self.basis_dict
+            else:
+                self.mol.basis=self.basis_dict
+
         else:
             if self.printlevel >= 1:
                 print("Using basis set from input string")
             self.mol.basis=self.basis
         if self.printlevel >= 1:
             print("Basis set:", self.mol.basis)
+        
         #Optional setting magnetic moments
         if self.magmom != None:
             if self.printlevel >= 1:
@@ -2052,7 +2067,8 @@ class PySCFTheory:
 
     def set_dispersion_options(self, Grad=False):
         if self.dispersion != None:
-            print("Dispersion correction is active")
+            print("Dispersion correction is active.")
+            print("Warning: Using https://github.com/ajz34/vdw library")
             try:
                 import vdw
             except ModuleNotFoundError:
@@ -2092,13 +2108,30 @@ class PySCFTheory:
                 #self.mf.nlcgrids.atom_grid={'H': (50,194),'F': (50,194)}
                 #self.mf.nlcgrids.prune=dft.gen_grid.sg1_prune
 
-    def set_DF_mf_options(self,Grad=False):
+    def set_DF_mf_options(self,Grad=False, elems=None):
+        import pyscf
         #https://pyscf.org/user/df.html
         #ASH-default gives PySCF default :optimized JK auxbasis for family if it exists,
         # otherwise an even-tempered basis is generated
         #NOTE: For DF with pure functionals pyscf is using a large JK auxbasis despite only J integrals present
         #More efficient then to specify the : 'def2-universal-jfit' (same as 'weigend') auxbasis
         #Currently left up to user
+
+        if self.auxbasis_file is not None:
+            print("Auxiliary basis from file requested:", self.auxbasis_file)
+
+            if self.runcalls == 1:
+                self.auxbasis_dict={}
+                for elem in list(set(elems)):
+                    if self.printlevel >= 1:
+                        print(f"Reading basis set for element: {elem} from file: {self.auxbasis_file}")
+                    auxbasis_per_elem=pyscf.gto.basis.load(self.auxbasis_file, elem)
+                    if self.printlevel >= 3:
+                        print("auxbasis_per_elem:", auxbasis_per_elem)
+                    self.auxbasis_dict[elem]=auxbasis_per_elem
+                    self.auxbasis=self.auxbasis_dict
+            else:
+                self.auxbasis=self.auxbasis_dict
 
         #If SGX was selected we do DF for Coulomb and SGX for Exchange (densityfit keyword is ignored)
         if self.sgx is True:
@@ -2314,8 +2347,13 @@ class PySCFTheory:
         if self.printlevel >=1:
             print("Max cycle in mf object:", mf.max_cycle)
             print("Running SCF")
-        print("mf:", mf)
+
+        #Grid printing
         scf_result = mf.run(dm)
+
+        #Grid
+        if 'KS' in self.scf_type:
+            print("Number of gridpoints used in calculation:", len(self.mf.grids.coords))
         E_tot = scf_result.e_tot
         if self.printlevel >=1:
             print("SCF done!")
@@ -2449,13 +2487,15 @@ class PySCFTheory:
         #####################
         # BASIS
         #####################
+
         if self.fcidumpfile is None:
             self.define_basis(elems=qm_elems)
+            self.num_basis_functions=len(self.mol.ao_labels())
+
         self.mol.build()
-        self.num_basis_functions=len(self.mol.ao_labels())
+
         if self.printlevel >= 1:
             print("Number of basis functions:", self.num_basis_functions)
-
         ############################
         # CREATE MF OBJECT
         ############################
@@ -2474,6 +2514,8 @@ class PySCFTheory:
         if self.scf_type == 'GHF' or self.scf_type == 'GKS':
             self.set_collinear_option()
 
+        if self.printlevel >= 1:
+            print("Number of basis functions:", self.num_basis_functions)
 
         #####################
         # RELATIVITY
@@ -2511,7 +2553,7 @@ class PySCFTheory:
         ##############################
         #DENSITY FITTING and SGX
         ##############################
-        self.set_DF_mf_options(Grad=Grad)
+        self.set_DF_mf_options(Grad=Grad,elems=qm_elems)
 
         ##############################
         #FROZEN ORBITALS in CC
@@ -2600,7 +2642,8 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Total num. orbitals:", self.num_scf_orbitals_alpha)
                 if self.printlevel >1:
-                    self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
+                    if self.do_pop_analysis:
+                        self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             elif self.scf_type == 'GHF' or self.scf_type == 'GKS':
                 self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
                 print("GHF/GKS job")
@@ -2760,7 +2803,9 @@ class PySCFTheory:
             else:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
+                    checkpoint=time.time()
                 self.gradient = self.mf.nuc_grad_method().kernel()
+                print_time_rel(checkpoint, modulename='pyscf_gradient', moduleindex=2)
 
             #Applying dispersion gradient last
             if self.dispersion != None:
@@ -3547,3 +3592,67 @@ def DFA_error_analysis(fragment=None, DFA_obj=None, REF_obj=None, DFA_DM=None, R
     print(f"DE: {DE} Eh")
 
     return FE, DE
+
+
+
+#MANUAL creation of mol and mf if 1-el, 2-el and overlap integrals are available
+def create_pyscf_mol_and_mf(numel=None, mult=None, nuc_repulsion_energy=None,
+    one_el_integrals=None, two_el_integrals=None, overlap=None, verbosity=4 ):
+    from pyscf import gto
+    import numpy as np
+    #Create empty mol object
+    mol = gto.M()
+    mol.nelectron = numel
+    mol.spin = mult-1
+    
+    # Numorbs from 1-el integral shape
+    norb = one_el_integrals.shape[0]
+    #Nuc repulsion energy
+    mol.energy_nuc = lambda *args: nuc_repulsion_energy
+    mol.incore_anyway = True
+
+    #mol.build()
+    #MF
+    mf = mol.RHF()
+
+    #1-el integrals
+    h1 = one_el_integrals
+    idx, idy = np.tril_indices(norb, -1)
+    if h1[idx,idy].max() == 0:
+        h1[idx,idy] = h1[idy,idx]
+    else:
+        h1[idy,idx] = h1[idx,idy]
+
+    #Defining methods of mf: hcore and overlap
+    mf.get_hcore = lambda *args: h1
+    mf.get_ovlp = lambda *args: overlap
+    mf._eri = two_el_integrals
+    intor_symmetric = mf.mol.intor_symmetric
+    mf.mol.intor_symmetric = lambda intor, **kwargs: overlap \
+        if intor == 'int1e_ovlp' else intor_symmetric(intor, **kwargs)
+
+    mf.verbose=verbosity
+    #Simplest guess possible since we don't have atoms
+    mf.init_guess = '1e'
+    return mol, mf
+
+
+def compute_core_guess(Hcore,S):
+    import scipy.linalg
+    F=Hcore #initial Fock matrix
+    S_minhalf = half_inv_overlap(S)
+    Ftr = np.transpose(S_minhalf)*F*S_minhalf #Transform Fock matrix
+    eps, Ctr = scipy.linalg.eigh(Ftr) #Diagonalize transformed Fock to get eps and C'
+    C = S_minhalf*Ctr # Get C from C'
+    return C
+
+def half_inv_overlap(S):
+    import scipy.linalg
+    #Overlap
+    Sval,Svec = scipy.linalg.eigh(S)
+    #lowest_S_eigenval=min(Sval)
+    #Transformation matrix
+    SVAL_minhalf = np.diag(Sval)**-0.5
+    Stemp = SVAL_minhalf*np.transpose(Svec)
+    S_minhalf = Svec * Stemp
+    return S_minhalf

@@ -152,6 +152,10 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
     zoom_offset = neb["ZOOM_OFFSET"]
     zoom_alpha = neb["ZOOM_ALPHA"]
 
+    # RB addition
+    CICHANGEFREQUENCYCHECK = neb["CICHANGEFREQUENCYCHECK"]
+
+
     # ---------------------------------------------------------------------------------
     # Make checks for stupid input
     # --------------------------------------------------------------------------------
@@ -488,7 +492,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                     print(f"Highest energy image is {checkmax}. Not turning on CI")
         if startci:
             print("CI is active as number:", ci)
-            if (it % 5) == 0:
+            if (it % CICHANGEFREQUENCYCHECK) == 0:
                 print("Checking if CI should be changed (every 5th iteration)")
                 newci = np.argmax(path.GetEnergy())
                 # cant allow it to be at the end points

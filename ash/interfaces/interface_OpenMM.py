@@ -553,13 +553,17 @@ class OpenMMTheory:
 
                 if self.printlevel > 0:
                     print("Nonbonded PBC method selected:", nonb_method_PBC)
+                
                 #Determining nonbonded cutoff strategy
-                #PME is hard-coded so we must specify a cutoff
-                if self.periodic_nonbonded_cutoff is None:
-                    if self.printlevel > 0:
-                        print("No periodic_nonbonded_cutoff provided. Determining cutoff value based on approx 1/2 box size.")
-                        print("Warning: for NPT simulations this may be too large")
+                smallest_boxdim= min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms)
+                print("Smallest_box dimension is:", smallest_boxdim)
+                print("periodic_nonbonded_cutoff:", periodic_nonbonded_cutoff)
+                if smallest_boxdim < periodic_nonbonded_cutoff*2:
+                    print(f"Warning: Smallest box dimension is less than 2*periodic_nonbonded_cutoff = {2*self.periodic_nonbonded_cutoff}")
+                    print("This will not work. See https://github.com/openmm/openmm/wiki/Frequently-Asked-Questions#boxsize")
+                    print("Will now automatically set the cutoff to be 1/2 the smallest box dimension")
                     self.periodic_nonbonded_cutoff = round(0.5*min(self.topology.getUnitCellDimensions()).value_in_unit(openmm.unit.angstroms),6)
+                    print("periodic_nonbonded_cutoff is now:", self.periodic_nonbonded_cutoff)
 
                 if self.printlevel > 0:
                     print("Nonbonded cutoff is {} Angstrom.".format(self.periodic_nonbonded_cutoff))
@@ -1194,6 +1198,23 @@ class OpenMMTheory:
         self.system.addForce(centerforce)
         print("Added center force")
         return centerforce
+    
+    #e.g. for steered MD
+    def add_custom_centroidbond_force(self,host_indices, guest_indices, forceconstant=1.0, r0=0.0):
+        print(f"Adding CustomCentroidBondForce between centroid of host {host_indices}  and centroid of guest {guest_indices} ")
+        print(f"Forceconstant : {forceconstant} kcal/mol/Å^2")
+        import openmm
+        force = openmm.CustomCentroidBondForce(2, "0.5*k*(distance(g1,g2)-r0)^2")
+        force.addPerBondParameter('k')
+        force.addGlobalParameter('r0', r0*openmm.unit.angstroms)
+        force.addGroup(host_indices) 
+        force.addGroup(guest_indices) 
+        force.addBond([0,1],[forceconstant * openmm.unit.kilocalories_per_mole / openmm.unit.angstroms ** 2])
+        self.system.addForce(force)
+        print("Added force")
+        return force
+
+
     # Alternative version of a Flatbottom center force on small-molecule w.r.t. rest-of-system
     #Note: behaves differently with respect to PBC-wrapping, creating problems for QM/MM.
     def add_flatbottom_centerforce(self, molA_indices=None, molB_indices = None, distance=5.0, forceconstant=1.0):
@@ -1331,6 +1352,11 @@ class OpenMMTheory:
             print("Note: unit assumed be in Angstrom")
             var_unit = openmm.unit.angstroms
             var_unit_label="Å"
+        elif cvtype.lower() == "cn":
+            energy_expression = f"(k/2)*max(0, var-var_max)^2"
+            print("CV type: CN")
+            var_unit = 1.0
+            var_unit_label=" "
         else:
             print("Error: unknown cvtype for add_CV_restraint")
             ashexit()
@@ -2535,7 +2561,8 @@ def print_systemsize(modeller):
 def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfile=None, waterxmlfile=None, watermodel=None, pH=7.0,
                     solvent_padding=10.0, solvent_boxdims=None, extraxmlfile=None, residue_variants=None,
                     ionicstrength=0.1, pos_iontype='Na+', neg_iontype='Cl-', use_higher_occupancy=False,
-                    platform="CPU", use_pdbfixer=True, implicit=False, implicit_solvent_xmlfile=None,
+                    platform="CPU", use_pdbfixer=True, implicit=False, implicit_solvent_xmlfile=None, 
+                    membrane=False, membrane_lipidtype='POPC', membrane_padding=10.0, membraneCenterZ=0.0,
                     residuetemplate_choice=None):
     module_init_time = time.time()
     print_line_with_mainheader("OpenMM Modeller")
@@ -2850,6 +2877,24 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             print("Choosing : implicit/obc2.xml")
             implicit_solvent_xmlfile="implicit/obc2.xml"
             waterxmlfile=implicit_solvent_xmlfile
+    elif membrane is True:
+        print("We are doing membrane-addition and solvation")
+        print("Setting periodic to True")
+        periodic=True
+        print("Adding membrane-lipid type (membrane_lipidtype keyword):", membrane_lipidtype)
+        print("Adding solvent, modeller_solvent_name:", modeller_solvent_name)
+        print("Actual solvent name:", watermodel)
+        print("Actual solvent file:", waterxmlfile)
+        modeller.addMembrane(forcefield_obj, lipidType=membrane_lipidtype, positiveIon=pos_iontype, negativeIon=neg_iontype,
+                             ionicStrength=ionicstrength * openmm_unit.molar, neutralize=True, membraneCenterZ=membraneCenterZ * openmm_unit.angstrom,
+                             minimumPadding=membrane_padding * openmm_unit.angstrom)
+
+        write_pdbfile_openMM(modeller.topology, modeller.positions, "system_aftersolvent_ions.pdb")
+        # Ions
+        #NOTE: Had to remove separate ion-add step due to OpenMM 8.1 change
+        print_systemsize(modeller)
+        # Create ASH fragment and write to disk
+        fragment = Fragment(pdbfile="system_aftersolvent_ions.pdb")
     else:
         print("We are doing explicit solvation")
         print("Setting periodic to True")
@@ -2941,7 +2986,6 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     periodic_nonbonded_cutoff=10
     omm =OpenMMTheory(platform=platform, forcefield=forcefield_obj, topoforce=True,
                             topology=modeller.topology, pdbfile=None, periodic=periodic,
-                            periodic_nonbonded_cutoff=periodic_nonbonded_cutoff,
                             autoconstraints=None, rigidwater=False, printlevel=0, residuetemplate_choice=residuetemplate_choice)
     SP_result = Singlepoint(theory=omm, fragment=fragment, Grad=True, printlevel=0)
     check_gradient_for_bad_atoms(fragment=fragment,gradient=SP_result.gradient, threshold=45000)
@@ -3879,6 +3923,7 @@ class OpenMM_MDclass:
         #Case: QM MD
         if self.externalqm is True:
             print("Creating new OpenMM custom external force for external QM theory.")
+            #NOTE: If we run sim 1-by-one we constantly add 
             self.qmcustomforce = self.openmmobject.add_custom_external_force()
 
         #Possible restraints added
@@ -3984,11 +4029,15 @@ class OpenMM_MDclass:
             #Convert to dict
             connectivity_dict = create_conn_dict(connectivity)
 
+            #MD LOOP
             for step in range(simulation_steps):
                 checkpoint_begin_step = time.time()
                 checkpoint = time.time()
                 if self.printlevel >= 2:
                     print("Step:", step)
+                else:
+                    if step % self.traj_frequency == 0:
+                        print("Step:", step)
 
                 #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
                 current_state=self.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
@@ -4000,13 +4049,16 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 #Periodic handling. Important choice for QM/MM.
                 if self.openmmobject.Periodic is True:
-                    print("Periodic QM/MM is on")
+                    if self.printlevel >= 2:
+                        print("Periodic QM/MM is on")
                     if self.enforcePeriodicBox is True:
                         #NOTE: All is fine also if we have frozen a large part of the system
-                        print("enforcePeriodicBox is True. Wrapping handling by OpenMM")
+                        if self.printlevel >= 2:
+                            print("enforcePeriodicBox is True. Wrapping handling by OpenMM")
                     elif self.enforcePeriodicBox is False:
-                        print("enforcePeriodicBox is False. Wrapping handled by ASH")
-                        print("Note: only cubic PBC boxes supported")
+                        if self.printlevel >= 2:
+                            print("enforcePeriodicBox is False. Wrapping handled by ASH")
+                            print("Note: only cubic PBC boxes supported")
                         checkpoint = time.time()
                         #Using original center of box
                         current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
@@ -4039,8 +4091,8 @@ class OpenMM_MDclass:
 
                     #print("QM/MM step. Writing unwrapped to trajfile: OpenMMMD_traj_unwrapped.xyz")
                     #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_unwrapped", printlevel=1, writemode='a')
-
-                    print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
+                    if self.printlevel >= 2:
+                        print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
                     write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
 
                 # Now need to update OpenMM external force with new QM-PC force
@@ -4049,7 +4101,7 @@ class OpenMM_MDclass:
                 self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,
                                                                self.QM_MM_object.QM_PC_gradient,self.simulation)
                 print_time_rel(CheckpointTime, modulename='update custom external force', moduleindex=2,
-                                currprintlevel=self.printlevel, currthreshold=1)
+                                currprintlevel=self.printlevel, currthreshold=2)
 
                 # NOTE: Think about energy correction (currently skipped above)
                 #Accessible: self.QM_MM_object.extforce_energy
@@ -4192,22 +4244,6 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
-
-                # NOTE: Better to use OpenMM-plumed interface
-                # After MM step, grab coordinates and forces
-                #if self.plumed_object is not None:
-                #    print("Plumed active. Untested. Hopefully works.")
-                #    ashexit()
-                #    #Necessary to call again
-                #    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
-                #    #Keep coords as default OpenMM nm and forces ad kJ/mol/nm. Avoid conversion
-                #    plumed_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
-                #    plumed_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
-                #    # Plumed object needs to be configured for OpenMM
-                #    energy, newforces = self.plumed_object.run(coords=plumed_coords, forces=plumed_forces,
-                #                                               step=step)
-                #    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces,
-                #                                                   simulation,conversion_factor=1.0)
 
         #TODO: Delete at some point once testing and debugging are over
         elif self.dummy_MM is True:

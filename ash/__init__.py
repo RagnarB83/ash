@@ -92,6 +92,7 @@ from .interfaces.interface_sparrow import SparrowTheory
 from .interfaces.interface_NWChem import NWChemTheory
 from .interfaces.interface_Gaussian import GaussianTheory
 from .interfaces.interface_Turbomole import TurbomoleTheory
+from .interfaces.interface_ReSpect import ReSpectTheory
 from .interfaces.interface_CP2K import CP2KTheory
 from .interfaces.interface_BigDFT import BigDFTTheory
 from .interfaces.interface_deMon import deMon2kTheory
@@ -103,7 +104,7 @@ from .interfaces.interface_xtb import xTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
 from .interfaces.interface_MLatom import MLatomTheory
 from .interfaces.interface_DRACO import get_draco_radii
-from .interfaces.interface_DFTD4 import DFTD4Theory, calc_DFTD4
+from .interfaces.interface_Grimme_corrections import DFTD4Theory, calc_DFTD4, calc_gcp, gcpTheory
 from .interfaces.interface_torch import TorchTheory
 from .interfaces.interface_packmol import packmol_solvate
 
@@ -140,7 +141,7 @@ from .interfaces.interface_VMD import write_VMD_script_cube
 from .interfaces.interface_ASE import Dynamics_ASE
 
 # Plumed interface
-from .interfaces.interface_plumed import plumed_ASH, plumed_MTD_analyze
+from .interfaces.interface_plumed import plumed_ASH, plumed_MTD_analyze, plumed_FES_plot_1CV
 
 # Solvation
 # NOTE: module_solvation.py or module_solvation2.py To be cleaned up

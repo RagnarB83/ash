@@ -75,6 +75,8 @@ class ASH_plot():
         self.y_axislabels=y_axislabels
         #Legend position
         self.legend_pos=legend_pos
+        #Labels for each series
+        self.labels=[]
 
         print("Subplots:", self.num_subplots)
         print("Figure size:", figsize)
@@ -172,6 +174,8 @@ class ASH_plot():
 
         self.addplotcount+=1
         curraxes=self.axs[subplot]
+
+        self.labels.append(label)
 
         #Using x_list and y_list unless not provided
         if surfacedictionary == None:
@@ -486,7 +490,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
 #plot_Spectrum reads stick-values (e.g. absorption energie or IPs) and intensities, broadens spectrum (writes out dat and stk files) and then creates image-file using Matplotlib.
 #Default Gaussian broadening, Lorentz and Gaussian-Lorentzian (Voigt) also possible.
 def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, unit='eV', broadening=0.1, points=10000,
-    imageformat='png', dpi=200, matplotlib=True, CSV=True, color='blue', plot_sticks=True, lineshape='Gaussian', voigt_broadening=None):
+    imageformat='png', dpi=200, matplotlib=True, CSV=True, invert_xaxis=False, color='blue', plot_sticks=True, lineshape='Gaussian', voigt_broadening=None):
 
     print_line_with_mainheader("plot_Spectrum")
     if xvalues is None or yvalues is None or range is None:
@@ -582,6 +586,11 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
         plt.ylabel('Intensity')
         #################################
         plt.xlim(start, finish)
+
+        if invert_xaxis is True:
+            print("Inverting x-axis")
+            ax.invert_xaxis()
+
         #plt.legend(shadow=True, fontsize='small')
         #label='_nolegend_'
         plt.savefig(plotname + '.'+imageformat, format=imageformat, dpi=dpi)

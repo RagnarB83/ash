@@ -61,7 +61,7 @@ class GeomeTRICOptimizerClass:
             print_if_level("Creating optimizer object", self.printlevel,2)
 
             ###############################
-            #Going through user options
+            # Going through user options
             ###############################
 
             if actatoms != None:
@@ -317,15 +317,20 @@ class GeomeTRICOptimizerClass:
 
         def hessian_option(self,fragment,actatoms,theory,charge,mult,modelhessian):
 
+            # If actatoms is empty list then we must be using all atoms so defining this
+            if len(actatoms) == 0:
+                atomsused=fragment.allatoms
+            else:
+                atomsused=actatoms
+
             if type(self.hessian) == np.ndarray:
                 print("Hessian option provided is a Numpy array.")
 
                 # Sanity check. Check that the Hessian provided is compatible with actatoms
-                print("Checking that Hessian is compatible with active-region")
-                print("2 actatoms:", actatoms)
-                if self.hessian.shape[0] != 3*len(actatoms):
-                    print(f"Error: Hessian shape is {self.hessian.shape}  which is incompatible with the  number of active atoms present ({len(actatoms)})")
-                    print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(actatoms)} x {3*len(actatoms)})")
+                print("Checking that Hessian is compatible with active atoms")
+                if self.hessian.shape[0] != 3*len(atomsused):
+                    print(f"Error: Hessian shape is {self.hessian.shape}  which is incompatible with the  number of active atoms present ({len(atomsused)})")
+                    print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(atomsused)} x {3*len(atomsused)})")
                     ashexit()
 
                 print("Writing Hessian array to disk.")
@@ -341,7 +346,7 @@ class GeomeTRICOptimizerClass:
                 if self.hessian == "xtb":
                     print("xTB Hessian option requested")
                     #Calling xtb to get Hessian, written to disk. Returns name of Hessianfile
-                    hessianfile = calc_hessian_xtb(fragment=fragment, actatoms=actatoms, numcores=theory.numcores, use_xtb_feature=True, charge=charge, mult=mult)
+                    hessianfile = calc_hessian_xtb(fragment=fragment, actatoms=atomsused, numcores=theory.numcores, use_xtb_feature=True, charge=charge, mult=mult)
                     self.hessian="file:"+hessianfile
                 #NumFreq 1 and 2-point Hessians
                 elif self.hessian == "1point":
@@ -378,13 +383,15 @@ class GeomeTRICOptimizerClass:
                 elif "file:" in self.hessian:
                     hessianfile = self.hessian.replace("file:","")
 
-                print("Checking that defined Hessian is compatible with active-region")
-                hessian_read = read_hessian(hessianfile)
-                print("actatoms:", actatoms)
-                if hessian_read.shape[0] != 3*len(actatoms):
-                    print(f"Error: Hessian shape is {hessian_read.shape}  which is incompatible with the  number of active atoms present ({len(actatoms)})")
-                    print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(actatoms)} x {3*len(actatoms)})")
-                    ashexit()
+                #Allow first and each options still
+                if self.hessian not in ['first','each']:
+                    print("Checking that defined Hessian is compatible with active-region")
+                    hessian_read = read_hessian(hessianfile)
+                    print("actatoms:", actatoms)
+                    if hessian_read.shape[0] != 3*len(atomsused):
+                        print(f"Error: Hessian shape is {hessian_read.shape}  which is incompatible with the  number of active atoms present ({len(atomsused)})")
+                        print(f"Hessian should have dimension of 3*N x 3*N where N is the number of active-atoms of the system (should be : {3*len(atomsused)} x {3*len(atomsused)})")
+                        ashexit()
 
             elif self.hessian == None:
                 if self.printlevel >= 1:

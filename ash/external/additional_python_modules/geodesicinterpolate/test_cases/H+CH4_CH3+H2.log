@@ -1,0 +1,38 @@
+[__main__    ]Loaded 2 geometries from test_cases/H+CH4_CH3+H2.xyz
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      0.711.  New length:3
+[interpolation]Inserting image between 1 and 2 with Cartesian RMSD      0.380.  New length:4
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      0.349.  New length:5
+[interpolation]Inserting image between 3 and 4 with Cartesian RMSD      0.212.  New length:6
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      0.180.  New length:7
+[interpolation]Inserting image between 3 and 4 with Cartesian RMSD      0.178.  New length:8
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      0.173.  New length:9
+[interpolation]Inserting image between 7 and 8 with Cartesian RMSD      0.115.  New length:10
+[interpolation]Inserting image between 0 and 1 with Cartesian RMSD      0.101.  New length:11
+[interpolation]Inserting image between 7 and 8 with Cartesian RMSD      0.099.  New length:12
+[interpolation]Inserting image between 6 and 7 with Cartesian RMSD      0.091.  New length:13
+[interpolation]Inserting image between 3 and 4 with Cartesian RMSD      0.090.  New length:14
+[interpolation]Inserting image between 6 and 7 with Cartesian RMSD      0.090.  New length:15
+[interpolation]Inserting image between 5 and 6 with Cartesian RMSD      0.083.  New length:16
+[interpolation]Inserting image between 2 and 3 with Cartesian RMSD      0.079.  New length:17
+[geodesic    ]Maximum RMSD change in initial path:       0.07
+[geodesic    ]Performing geodesic smoothing
+[geodesic    ]  Images:   17  Atoms    6 Rijs     14
+[geodesic    ]  Degree of freedoms    270: 
+[geodesic    ]  Iteration   0: Length      1.507 |dL|=4.479e-02
+[geodesic    ]  Iteration   1: Length      1.995 |dL|=9.878e-02
+[geodesic    ]  Iteration   2: Length      1.347 |dL|=1.882e-02
+[geodesic    ]  Iteration   3: Length      1.511 |dL|=1.274e-01
+[geodesic    ]  Iteration   4: Length      1.314 |dL|=1.806e-02
+[geodesic    ]  Iteration   5: Length      1.319 |dL|=9.342e-02
+[geodesic    ]  Iteration   6: Length      1.300 |dL|=2.455e-02
+[geodesic    ]  Iteration   7: Length      1.284 |dL|=1.956e-02
+[geodesic    ]  Iteration   8: Length      1.356 |dL|=1.052e-01
+[geodesic    ]  Iteration   9: Length      1.280 |dL|=2.287e-02
+[geodesic    ]  Iteration  10: Length      1.275 |dL|=1.884e-02
+[geodesic    ]  Iteration  11: Length      1.271 |dL|=1.670e-02
+[geodesic    ]  Iteration  12: Length      1.268 |dL|=2.056e-02
+[geodesic    ]  Iteration  13: Length      1.264 |dL|=2.304e-03
+[geodesic    ]  Iteration  14: Length      1.263 |dL|=4.275e-03
+[geodesic    ]Smoothing converged after 15 iterations
+[geodesic    ]Final path length:      1.26274  Max RMSD in path:       0.11
+[__main__    ]Saving final path to file test_cases/H+CH4_CH3+H2_interpolated.xyz

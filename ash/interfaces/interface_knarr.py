@@ -44,7 +44,7 @@ path_parameters = {"METHOD": "DOUBLE", "INTERPOLATION": "IDPP", "NIMAGES": 8,
               "IDPP_MAX_MOVE": 0.1, "IDPP_MAX_F": 0.07, "IDPP_RMS_F": 0.009}
 neb_settings = {"PATH": "neb.xyz",
               "CLIMBING": True,
-              "TANGENT": "IMPROVED",
+              "TANGENT": "IMPROVED", "CICHANGEFREQUENCYCHECK":5,
               "SPRINGTYPE": "DISTANCE",
               "PERP_SPRINGTYPE": "",
               "ENERGY_WEIGHTED": True, "SPRINGCONST": 1.0, "SPRINGCONST2": 10.0,
@@ -72,17 +72,18 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 
 #NEB-TS: NEB-CI + OptTS
 #Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
-def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, IDPPonly=False,
-        conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, tol_max_f=1.03, tol_rms_f=0.51,
+def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, Singleiter=False,
+        conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, cichange_freqcheck=5,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, restart_file=None, TS_guess_file=None, mofilesdir=None,
         OptTS_maxiter=100, OptTS_print_atoms_list=None, OptTS_convergence_setting=None, OptTS_conv_criteria=None, OptTS_coordsystem='tric',
-        hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1):
+        hessian_for_TS=None, modelhessian='unit', tsmode_tangent_threshold=0.1, subfrctor=1,
+        partial_hessian_atoms=None, partial_npoint_choice=2):
 
     print_line_with_mainheader("NEB+TS")
     module_init_time=time.time()
-    if IDPPonly is True:
-        print("Will first perform IDPP-only NEB job, followed by TSOpt job using geomeTRIC optimizer.")
+    if Singleiter is True:
+        print("Will first perform guess-only NEB job, followed by TSOpt job using geomeTRIC optimizer.")
     else:
         print("Will first perform loose NEB-CI job, followed by TSOpt job using geomeTRIC optimizer.")
     print("Hessian option:", hessian_for_TS)
@@ -105,8 +106,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     print(f"{cores_for_TSopt} CPU cores will be used to parallize theory during Opt-TS part.")
 
     #CI-NEB step
-    NEB_results = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, IDPPonly=IDPPonly,
-            conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, tol_max_f=tol_max_f, tol_rms_f=tol_rms_f,
+    NEB_results = NEB(reactant=reactant, product=product, theory=theory, images=images, CI=CI, free_end=free_end, maxiter=maxiter, Singleiter=Singleiter,
+            conv_type=conv_type, tol_scale=tol_scale, tol_max_fci=tol_max_fci, tol_rms_fci=tol_rms_fci, cichange_freqcheck=cichange_freqcheck,
             tol_turn_on_ci=tol_turn_on_ci,  runmode=runmode, numcores=numcores,
             charge=charge, mult=mult,printlevel=printlevel, ActiveRegion=ActiveRegion, actatoms=actatoms,
             interpolation=interpolation, idpp_maxiter=idpp_maxiter, idpp_springconst=idpp_springconst,
@@ -181,8 +182,22 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     elif hessian_for_TS == 'each':
         hessianoption="each"
     #xTB Hessian option
-    elif hessian_for_TS == 'xtb':
-        hessianfile = calc_hessian_xtb(fragment=SP, runmode='serial', actatoms=actatoms, numcores=max_cores, use_xtb_feature=True)
+    elif 'xtb' in hessian_for_TS.lower():
+        print("xtB-type Hessian chosen (xtb found in string)")
+        if 'gfn1' in hessian_for_TS.lower():
+            print("Using GFN1-xTB Hessian")
+            xtbmethod="GFN1"
+        elif 'gfn2' in hessian_for_TS.lower():
+            print("Using GFN2-xTB Hessian")
+            xtbmethod="GFN2"
+        else:
+            print("Neither gfn1 or gfn2 was chosen (control this by choosing hessian_for_TS='GFN1-xTB' or hessian_for_TS='GFN2-xTB' )")
+            print("Choosing xtbmethod to be GFN2-xTB by default")
+            xtbmethod="GFN2"
+
+
+        hessianfile = calc_hessian_xtb(fragment=SP, runmode='serial', actatoms=actatoms, numcores=max_cores, use_xtb_feature=True,
+                                       xtbmethod=xtbmethod)
         hessianoption='file:'+str(hessianfile)
     #Cheap model Hessian
     #NOTE: None of these work well.  Need to use tangent to modify
@@ -207,35 +222,54 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     # Add connecting atoms and erform partial Hessian optimization
     elif hessian_for_TS == 'partial':
         print("hessian_for_TS option: partial")
-        print(f"Using climbing image tangent to find dominant atoms in approximate TS mode (tsmode_tangent_threshold={tsmode_tangent_threshold})")
+        print("Using partial Hessian to approximate Hessian for saddle-point optimization.")
 
-        #Getting tangent and atoms that contribute at least X to tangent where X is tsmode_tangent_threshold=0.1 (default)
-        tangent = read_tangent("CItangent.xyz")
-        TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
-        #Convert activeregion atom indices to full system indices
-        print("Determining atoms contributing the most to TS mode")
-        if ActiveRegion is True:
-            print("TSmodeatoms (active region):", TSmodeatoms)
-            TSmodeatoms = [actatoms[a] for a in TSmodeatoms]
-            print("TSmodeatoms (full system):", TSmodeatoms)
+
+        if Singleiter is True:
+            print("This is a Singleiter NEBTS job.")
+            if partial_hessian_atoms is None:
+                print("Error: partial_hessian_atoms is not set")
+                print("In Singleiter NEBTS jobs no climbing image tangent is available. Setting the partial_hessian_atoms list is necessary.")
+                print("Example: partial_hessian_atoms=[15,16,18,19]  where the numbers are atom indices believed to contribute the most to the TS mode")
+                print("Exiting")
+                ashexit()
+            Final_partial_hessatoms=partial_hessian_atoms
+            print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
         else:
-            print("TSmodeatoms (full system):", TSmodeatoms)
-        #Now finding the atoms that TSmodeatoms are connected to, for both R, P and SP
-        print("Now finding connected atoms to TSmode-atoms")
-        result_R = get_conn_atoms_for_list(fragment=reactant, atoms=TSmodeatoms)
-        print("result_R:", result_R)
-        result_P = get_conn_atoms_for_list(fragment=product, atoms=TSmodeatoms)
-        print("result_P:", result_P)
-        result_SP = get_conn_atoms_for_list(fragment=SP, atoms=TSmodeatoms)
-        print("result_SP:", result_SP)
-        #Combining
-        Final_partial_hessatoms = np.unique(result_R + result_P + result_SP).tolist()
+            print("This is a regular NEBTS job. Partial Hessian can either be approximated from tangent or explicity set via partial_hessian_atoms keyword")
+            if partial_hessian_atoms is None:
+                print("partial_hessian_atoms list is empty. Will now try to use climbing image tangent to guess the important atoms")
+                print(f"Using climbing image tangent to find dominant atoms in approximate TS mode (tsmode_tangent_threshold={tsmode_tangent_threshold})")
 
-        print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
-        print("This corresponds to atoms contributing to the TS-mode and connected atoms")
+                #Getting tangent and atoms that contribute at least X to tangent where X is tsmode_tangent_threshold=0.1 (default)
+                tangent = read_tangent("CItangent.xyz")
+                TSmodeatoms = list(np.where(np.any(abs(tangent)>tsmode_tangent_threshold, axis=1))[0])
+                #Convert activeregion atom indices to full system indices
+                print("Determining atoms contributing the most to TS mode")
+                if ActiveRegion is True:
+                    print("TSmodeatoms (active region):", TSmodeatoms)
+                    TSmodeatoms = [actatoms[a] for a in TSmodeatoms]
+                    print("TSmodeatoms (full system):", TSmodeatoms)
+                else:
+                    print("TSmodeatoms (full system):", TSmodeatoms)
+                #Now finding the atoms that TSmodeatoms are connected to, for both R, P and SP
+                print("Now finding connected atoms to TSmode-atoms")
+                result_R = get_conn_atoms_for_list(fragment=reactant, atoms=TSmodeatoms)
+                print("result_R:", result_R)
+                result_P = get_conn_atoms_for_list(fragment=product, atoms=TSmodeatoms)
+                print("result_P:", result_P)
+                result_SP = get_conn_atoms_for_list(fragment=SP, atoms=TSmodeatoms)
+                print("result_SP:", result_SP)
+                #Combining
+                Final_partial_hessatoms = np.unique(result_R + result_P + result_SP).tolist()
+                print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
+                print("This corresponds to atoms contributing to the TS-mode and connected atoms")
+            else:
+                Final_partial_hessatoms=partial_hessian_atoms
+                print(f"Performing partial Hessian calculation using atom-list: {Final_partial_hessatoms}")
         #TODO: Option to run this in parallel ?
         #Or just enable theory parallelization
-        result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=2, hessatoms=Final_partial_hessatoms, runmode=runmode, numcores=numcores)
+        result_freq = ash.NumFreq(theory=theory, fragment=SP, printlevel=0, npoint=partial_npoint_choice, hessatoms=Final_partial_hessatoms, runmode=runmode, numcores=numcores)
 
         #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
         #Large Hessian is the actatoms Hessian if actatoms provided
@@ -312,8 +346,8 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
-        conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, tol_max_f=0.26, tol_rms_f=0.13,
-        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, IDPPonly=False,
+        conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, cichange_freqcheck=5,
+        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, Singleiter=False,
         charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, zoom=False,
         restart_file=None, TS_guess_file=None, mofilesdir=None):
@@ -434,12 +468,15 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     neb_settings["TOL_SCALE"] = tol_scale
     neb_settings["TOL_MAX_FCI"] = tol_max_fci
     neb_settings["TOL_RMS_FCI"] = tol_rms_fci
-    neb_settings["TOL_MAX_F"] = tol_max_f
-    neb_settings["TOL_RMS_F"] = tol_rms_f
+    #neb_settings["TOL_MAX_F"] = tol_max_f
+    #neb_settings["TOL_RMS_F"] = tol_rms_f
     neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
     optimizer["MAX_ITER"] = maxiter
     #Turning on ZOOM
     neb_settings["ZOOM"] = zoom
+    # Check how often CI should be changed
+    neb_settings["CICHANGEFREQUENCYCHECK"]=cichange_freqcheck
+
     #Setting number of images of Knarr
     path_parameters["NIMAGES"]=total_num_images
 
@@ -482,22 +519,90 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     PrintDivider()
     PrintDivider()
 
-    if restart_file == None:
+    if restart_file is None:
         print("Creating interpolated path.")
 
         if TS_guess != None:
             print(f"A TS guess file : {TS_guess_file} was provided")
             print("Will use intermediate geometry in interpolation")
 
-        # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
-        Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
-        print("Saving initial path as : initial_guess_path.xyz")
-        shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
-        os.remove("knarr_path.xyz")
-        print("\nReading initial path")
-        #Reading initial path from XYZ file.
-        rp, ndim, nim, symb = ReadTraj("initial_guess_path.xyz")
+        if interpolation == "IDPP":
+            print("Using Knarr IDPP path generation")
+            # Generate path via Knarr_pathgenerator. ActiveRegion used to prevent RMSD alignment if doing actregion QM/MM etc.
+            Knarr_pathgenerator(neb_settings, path_parameters, react, prod, ActiveRegion)
+            print("Saving initial path as : initial_guess_path.xyz")
+            shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
+            os.remove("knarr_path.xyz")
+        elif interpolation.upper() == "GEODESIC":
+            print("Using geodesic-interpolate path generation")
+            print("See Github repository: https://github.com/virtualzx-nad/geodesic-interpolate")
+            print("""If you use this, make sure to cite:
+Geodesic interpolation for reaction pathways  by
+Xiaolei Zhu, Keiran C. Thompson, Todd J. Martínez, J. Chem. Phys. 2019, 150, 164103.
+https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation-for-reaction-pathways
+""")
+            # Importing
+            #import ash.external.additional_python_modules.geodesicinterpolate as geodesic_interpolate
+            from ash.external.additional_python_modules.geodesicinterpolate.geodesic_interpolate.interpolation import redistribute
+            from ash.external.additional_python_modules.geodesicinterpolate.geodesic_interpolate import Geodesic
+            from ash.external.additional_python_modules.geodesicinterpolate.geodesic_interpolate.fileio import read_xyz, write_xyz
+            import logging
+            logger = logging.getLogger(__name__)
 
+            #Dummy arguments object
+            class Arg:
+                def __init__(self, filename=None,nimages=None, tol=2e-3, save_raw=None,
+                             scaling=None, dist_cutoff=None, friction=1e-3, maxiter=50,microiter=20,
+                             sweep=None, output="interpolated.xyz"):
+
+                    self.filename=filename
+                    self.nimages=nimages
+                    self.tol=tol
+                    self.save_raw=save_raw
+                    self.scaling=scaling
+                    self.dist_cutoff=dist_cutoff
+                    self.friction=friction
+                    self.maxiter=maxiter
+                    self.microiter=microiter
+                    self.sweep=sweep
+                    self.output=output
+
+            args = Arg(filename="R_P_combined.xyz", nimages=images+2, tol=2e-3, maxiter=15, scaling=1.7,
+                       friction=1e-2, dist_cutoff=3, sweep=None, output="initial_guess_path.xyz")
+
+            # Creating combined XYZ-file
+            reactant.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='w')
+            product.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='a')
+
+            # Read the initial geometries.
+            symbols, X = read_xyz(args.filename)
+            logger.info('Loaded %d geometries from %s', len(X), args.filename)
+
+            # First redistribute number of images.  Perform interpolation if too few and subsampling if too many
+            # images are given
+            raw = redistribute(symbols, X, args.nimages, tol=args.tol * 5)
+            # if args.save_raw is not None:
+            #    write_xyz(args.save_raw, symbols, raw)
+
+            # Perform smoothing by minimizing distance in Cartesian coordinates with redundant internal metric
+            # to find the appropriate geodesic curve on the hyperspace.
+            smoother = Geodesic(symbols, raw, args.scaling, threshold=args.dist_cutoff, friction=args.friction)
+            if args.sweep is None:
+                args.sweep = len(symbols) > 35
+            try:
+                if args.sweep:
+                    smoother.sweep(tol=args.tol, max_iter=args.maxiter, micro_iter=args.microiter)
+                else:
+                    smoother.smooth(tol=args.tol, max_iter=args.maxiter)
+            finally:
+                # Save the smoothed path to output file.  try block is to ensure output is saved if one ^C the
+                # process, or there is an error
+                logging.info('Saving final path to file %s', args.output)
+                write_xyz(args.output, symbols, smoother.path)
+
+        print("\nReading initial path")
+        # Reading initial path from XYZ file.
+        rp, ndim, nim, symb = ReadTraj("initial_guess_path.xyz")
         path = InitializePathObject(nim, react)
         path.SetCoords(rp)
     else:
@@ -524,10 +629,10 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     # CALLING NEB
     #############################
 
-    if IDPPonly == True:
-        print("IDPPonly option will do one NEB iteration on the IDPP path and then stop NEB part")
+    if Singleiter is True:
+        print("Singleiter option will do one NEB iteration on the guess path and then stop NEB part")
         optimizer["MAX_ITER"] = 1
-        #Now starting NEB from path object, using neb_settings and optimizer settings
+        # Now starting NEB from path object, using neb_settings and optimizer settings
         print("neb_settings:", neb_settings)
         print("optimizer:", optimizer)
         DoNEB(path, calculator, neb_settings, optimizer)
@@ -538,7 +643,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         #return Saddlepoint_fragment, calculator.energies_dict
 
         #Returning result object
-        result = ASH_Results(label="NEB-IDPPonly calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
+        result = ASH_Results(label="NEB-Singleiter calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
             saddlepoint_fragment=Saddlepoint_fragment, charge=charge, mult=mult, MEP_energies_dict=calculator.energies_dict,
             barrier_energy=None)
         result.write_to_disk(filename="ASH_NEB.result")
