@@ -444,7 +444,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 self.mch.mol.groupname = None
 
             print("self.mch.fcisolver.groupname:", self.mch.fcisolver.groupname)
-            print("self.mch.orbsym:", self.mch.orbsym)
+            #print("self.mch.orbsym:", self.mch.orbsym)
             print("self.mch.mol:", self.mch.mol)
             print("self.mch.mol dict:", self.mch.mol.__dict__)
             print("self.mch.mol.groupname:", self.mch.mol.groupname)
