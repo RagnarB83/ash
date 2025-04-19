@@ -2372,11 +2372,11 @@ def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_rep
         else:
             isym=symmetry_option
             orbsymstring=','.join(str(1) for i in range(0,basis_dim))
-        header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
-ORBSYM={orbsymstring},
-ISYM={isym},{uhf_option_string}
-&END
-"""
+            header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
+    ORBSYM={orbsymstring},
+    ISYM={isym},{uhf_option_string}
+    &END
+    """
         if filename is None:
             filename="FCIDUMP"
             print("FCIDUMP option:, filename set to:", filename)
