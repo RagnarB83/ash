@@ -26,7 +26,7 @@ class BlockTheory:
     def __init__(self, blockdir=None, pyscftheoryobject=None, blockversion='Block2', filename='input.dat', printlevel=2,
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None,
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
-                Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
+                Block_direct=False, num_el=None, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
                 FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False, DMRG_DoRDM2=False,
                 SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block", print_WF_coeffs=False):
@@ -151,6 +151,11 @@ class BlockTheory:
         print("Block_direct:", Block_direct)
         if self.Block_direct is True:
             print("FCIDUMP file:", self.fcidumpfile)
+            if num_el is None:
+                print("Error: Block_direct option requires number of electrons to be set")
+                ashexit()
+            if num_el is None:
+            self.num_el=num_el
         print("Frozencore:", self.frozencore)
         print("moreadfile:", self.moreadfile)
         print("Initial orbitals:", self.initial_orbitals)
@@ -170,7 +175,24 @@ class BlockTheory:
         print("SC_NEVPT2:", SC_NEVPT2)
         print("SC_NEVPT2_Mcompression:",SC_NEVPT2_Mcompression)
 
+    #Write inputfile: Only for Block-direct
+    def write_inputfile(self,mult):
+        inputfilestring=f"""sym d2h
+orbitals {self.fcidumpfile}
 
+nelec {self.num_el}
+spin {(mult-1)/2}
+irrep 1
+
+hf_occ integral
+schedule default
+maxM {self.maxM}
+maxiter 300
+num_thrds {self.numcores}
+"""
+        print("Writing inputfile:", self.filename)
+        with open(self.filename) as f:
+            f.write(inputfilestring)
 
 
     def load_pyscf(self):
@@ -562,6 +584,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         if self.Block_direct is True:
             print("Running Block directly")
+            self.write_inputfile()
             self.call_block_directly()
 
         else:
