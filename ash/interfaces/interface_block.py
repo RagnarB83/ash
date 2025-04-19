@@ -190,7 +190,7 @@ maxiter 300
 num_thrds {self.numcores}
 """
         print("Writing inputfile:", self.filename)
-        with open(self.filename) as f:
+        with open(self.filename,'w') as f:
             f.write(inputfilestring)
 
 
