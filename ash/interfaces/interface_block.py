@@ -430,8 +430,12 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("This is single-iteration CAS-CI via pyscf and DMRG")
             #Creating pyscf CAS-CI object and setting fcisolver to DMRGCI
             self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf, self.norb, self.nelec)
-            self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, maxM=self.maxM, tol=self.tol, 
-                                                     groupname=self.groupname, orbsym=self.orbsym)
+            self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, maxM=self.maxM, tol=self.tol)
+
+            if self.groupname is not None:
+                self.mch.fcisolver.groupname=self.groupname
+                self.mch.orbsym=self.orbsym
+
             #self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
             #self.mch = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
             #self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf, self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
