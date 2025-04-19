@@ -2356,17 +2356,22 @@ def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_rep
 
     # Header
     if header_format == "FCIDUMP":
+        ms2=mult-1 # unpaired electrons
+        uhf_option_string = ""
+        if scf_type == "UHF":
+            uhf_option_string = "UHF=.TRUE.,"
         #NORB: number of basis functions
         #NELEC: number of correlated electrons
         #MS2: TODO
         #isym: 
         #orbsym
-        isym=symmetry_option
-        orbsymstring=','.join(str(1) for i in range(0,basis_dim))
-        ms2=mult-1 # unpaired electrons
-        uhf_option_string = ""
-        if scf_type == "UHF":
-            uhf_option_string = "UHF=.TRUE.,"
+        if symmetry_option == 0:
+            header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
+&END
+"""
+        else:
+            isym=symmetry_option
+            orbsymstring=','.join(str(1) for i in range(0,basis_dim))
         header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
 ORBSYM={orbsymstring},
 ISYM={isym},{uhf_option_string}
