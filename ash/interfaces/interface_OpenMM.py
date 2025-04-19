@@ -4093,7 +4093,7 @@ class OpenMM_MDclass:
                     #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_unwrapped", printlevel=1, writemode='a')
                     if self.printlevel >= 2:
                         print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
-                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
 
                 # Now need to update OpenMM external force with new QM-PC force
                  #The QM_PC gradient (link-atom projected, from QM_MM object) is provided to OpenMM external force

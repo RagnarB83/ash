@@ -28,7 +28,7 @@ class BlockTheory:
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
                 Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
-                FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False,
+                FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False, DMRG_DoRDM2=False,
                 SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block", print_WF_coeffs=False):
 
         self.theorynamelabel="Block"
@@ -131,6 +131,7 @@ class BlockTheory:
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
         self.DMRG_DoRDM=DMRG_DoRDM
+        self.DMRG_DoRDM2=DMRG_DoRDM2
         #post-DMRG
         self.FIC_MRCI=FIC_MRCI
         self.SC_NEVPT2_Wick=SC_NEVPT2_Wick
@@ -600,6 +601,13 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.DMRG_DoRDM is True:
             print("DMRG DoRDM is True. Calculating RDM1 and creating DMRG natural orbitals")
             rdm1 = self.mch.make_rdm1(ao_repr=True)
+            np.save("DMRG_rdm1_AObasis", rdm1)
+            # np.savetxt("rdm1_AObasis.txt", rdm1)
+            if self.DMRG_DoRDM2 is True:
+                print("DMRG DoRDM2 is True. Calculating RDM2")
+                rdm2 = self.mch.make_rdm2(ao_repr=True)
+                np.save("DMRG_rdm2_AObasis", rdm2)
+                #np.savetxt("rdm2_AObasis.txt", rdm2_AO)
             try:
                 print("Attempting DMRG spin-rdm")
                 rdm1s = self.mch.make_rdm1s(ao_repr=True)

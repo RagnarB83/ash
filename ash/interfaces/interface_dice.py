@@ -23,7 +23,7 @@ class DiceTheory:
                 moreadfile=None, initial_orbitals='MP2', CAS_AO_labels=None,memory=20000, frozencore=True,
                 SHCI=False, NEVPT2=False, AFQMC=False, label="Dice",
                 SHCI_stochastic=True, SHCI_PTiter=200, SHCI_sweep_iter= [0,3],
-                SHCI_DoRDM=False, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
+                SHCI_DoRDM=False, SHCI_DoRDM2=False, SHCI_sweep_epsilon = [ 5e-3, 1e-3 ], SHCI_macroiter=0,
                 SHCI_davidsonTol=5e-05, SHCI_dE=1e-08, SHCI_maxiter=9, SHCI_epsilon2=1e-07, SHCI_epsilon2Large=1000,
                 SHCI_targetError=0.0001, SHCI_sampleN=200, SHCI_nroots=1,
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None, SHCI_active_space_range=None,
@@ -128,6 +128,7 @@ class DiceTheory:
             self.SHCI_PTiter=SHCI_PTiter
             self.SHCI_sweep_iter=SHCI_sweep_iter
             self.SHCI_DoRDM=SHCI_DoRDM
+            self.SHCI_DoRDM2=SHCI_DoRDM2
             self.SHCI_sweep_epsilon = SHCI_sweep_epsilon
             self.SHCI_macroiter=SHCI_macroiter
             self.SHCI_davidsonTol=SHCI_davidsonTol
@@ -177,6 +178,7 @@ class DiceTheory:
             print("SHCI_PTiter", self.SHCI_PTiter)
             print("SHCI_sweep_iter", self.SHCI_sweep_iter)
             print("SHCI_DoRDM", self.SHCI_DoRDM)
+            print("SHCI_DoRDM2", self.SHCI_DoRDM2)
             print("SHCI_sweep_epsilon", self.SHCI_sweep_epsilon)
             print("SHCI DavidsonTol:", self.SHCI_davidsonTol)
             print("SHCI dE:", self.SHCI_dE)
@@ -788,6 +790,11 @@ noio
                                                                         mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
                     #RDM
                     rdm1 = self.mch.make_rdm1(ao_repr=True)
+                    np.save("SHCI_rdm1_AObasis", rdm2)
+                    if self.SHCI_DoRDM2 is True:
+                        rdm2 = self.mch.make_rdm2(ao_repr=True)
+                        np.save("SHCI_rdm2_AObasis", rdm2)
+                    
                     try:
                         print("Attempting SHCI spin-rdm")
                         dm_ab = self.mch.make_rdm1s()  # in AOs
