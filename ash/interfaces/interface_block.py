@@ -193,7 +193,7 @@ class BlockTheory:
 orbitals {self.fcidumpfile}
 
 nelec {self.num_el}
-spin {(mult-1)/2}
+spin {int(mult-1)}
 irrep 1
 
 hf_occ integral
