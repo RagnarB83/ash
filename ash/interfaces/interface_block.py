@@ -96,6 +96,7 @@ class BlockTheory:
 
         # SYMMETRY handling
         self.groupname=groupname #Default None, set to e.g. 'd2' string
+        self.orbsym=orbsym
         if self.groupname is not None:
             print("Using symmetry. Groupname:", self.groupname)
             if orbsym is None:
