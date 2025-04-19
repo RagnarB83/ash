@@ -435,9 +435,15 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, maxM=self.maxM, tol=self.tol)
 
             if self.groupname is not None:
+                print("Setting groupname for mch.fcisolver and orbsym in mch")
                 self.mch.fcisolver.groupname=self.groupname
                 self.mch.orbsym=self.orbsym
 
+            print("self.mch.fcisolver.groupname:", self.mch.fcisolver.groupname)
+            print("self.mch.orbsym:", self.mch.orbsym)
+            print("self.mch.mol:", self.mch.mol)
+            print("self.mch.mol dict:", self.mch.mol.__dict__)
+            print("self.mch.mol.groupname:", self.mch.mol.groupname)
             #self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
             #self.mch = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
             #self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf, self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
