@@ -790,7 +790,7 @@ noio
                                                                         mo_coefficients, occupations, label="SHCI_Final_nat_orbs")
                     #RDM
                     rdm1 = self.mch.make_rdm1(ao_repr=True)
-                    np.save("SHCI_rdm1_AObasis", rdm1)
+                    np.save("SHCI_rdm1_AObasis", rdm)
                     if self.SHCI_DoRDM2 is True:
                         rdm2 = self.mch.make_rdm2(ao_repr=True)
                         np.save("SHCI_rdm2_AObasis", rdm2)

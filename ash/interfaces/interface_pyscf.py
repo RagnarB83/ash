@@ -132,7 +132,8 @@ class PySCFTheory:
             print("Warning: this will ignore most other input")
             print("mf_object:", mf_object)
             self.mf_object=mf_object
-
+        else:
+            self.mf_object=None
         #Store optional properties of pySCF run job in a dict
         self.properties ={}
 
@@ -419,9 +420,7 @@ class PySCFTheory:
         #H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
         self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=self.fcidumpfile_molpro_orbsym)
         print("mf object:", self.mf)
-        print("mf object dict:", self.mf.__dict__)
-        print("mf.mol object dict", self.mf.mol.__dict__)
-        #Since this may have found symmetry we may have to adjust
+        # Warning: if symmetry information in FCIDUMP then mf object may be SymAdaptedRHF e.g.
 
     # Create FCIDUMP file from either mf object (provided or internal)
     def create_fcidump_file(self, mf=None, dump_from_mos=False, mo_coeff=None, 
