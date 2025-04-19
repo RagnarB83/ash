@@ -24,7 +24,7 @@ class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
                   scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry='C1',
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk', do_pop_analysis=True,
-                  noautostart=False, autostart=True, fcidumpfile=None,
+                  noautostart=False, autostart=True, fcidumpfile=None, fcidumpfile_molpro_orbsym=False,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, scf_noiter=False, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   NMF=False, NMF_sigma=None, NMF_distribution='FD', stability_analysis=False,
@@ -194,6 +194,7 @@ class PySCFTheory:
             self.noautostart=True
         #FCIDUMP file as read-in option
         self.fcidumpfile=fcidumpfile
+        self.fcidumpfile_molpro_orbsym=fcidumpfile_molpro_orbsym # Boolean. True/False
 
 
         #CAS
@@ -407,7 +408,7 @@ class PySCFTheory:
         #Defining here
         self.num_basis_functions = result["NORB"]
         #H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
-        self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=False)
+        self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=self.fcidumpfile_molpro_orbsym)
 
     # Create FCIDUMP file from either mf object (provided or internal)
     def create_fcidump_file(self, mf=None, dump_from_mos=False, mo_coeff=None, 
