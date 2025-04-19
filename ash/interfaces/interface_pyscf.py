@@ -60,59 +60,61 @@ class PySCFTheory:
 
         #EARLY EXITS
 
-        #Exit early if no SCF-type
-        if scf_type is None:
-            print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
-            ashexit()
-        if basis is None and basis_file is None and fcidumpfile is None:
-            print("Error: You must either provide a basis or a basis_file keyword . Basis can a name (string) or dict (elements as keys)")
-            print("basis_file should be a string of the filename containing basis set for each element, in NWChem format")
-            print("Best to download basis set from https://www.basissetexchange.org/")
-            ashexit()
-        if basis_file is not None and not os.path.isfile(basis_file):
-            print("Error: basis_file does not exist. Exiting")
-            ashexit()
-        if auxbasis_file is not None and not os.path.isfile(auxbasis_file):
-            print("Error: auxbasis_file does not exist. Exiting")
-            ashexit()
-        if functional is not None:
-            if self.printlevel >= 1:
-                print(f"Functional keyword: {functional} chosen. DFT is on!")
-            if scf_type == 'RHF':
-                print("Changing RHF to RKS")
-                scf_type='RKS'
-            if scf_type == 'UHF':
-                print("Changing UHF to UKS")
-                scf_type='UKS'
-            if "dm21" in self.functional.lower():
-                print("A DM21-type functional selected. This requires DM21 installation")
-                try:
-                    import density_functional_approximation_dm21 as dm21
-                except ModuleNotFoundError as e:
-                    print("Error importing density_functional_approximation_dm21 library. Exiting")
-                    print("Make sure DM21 is installed in the Python environment. See https://github.com/google-deepmind/deepmind-research/tree/master/density_functional_approximation_dm21")
+        if mf_object is None:
+            print("No input mf object")
+            #Exit early if no SCF-type
+            if scf_type is None:
+                print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
+                ashexit()
+            if basis is None and basis_file is None and fcidumpfile is None:
+                print("Error: You must either provide a basis or a basis_file keyword . Basis can a name (string) or dict (elements as keys)")
+                print("basis_file should be a string of the filename containing basis set for each element, in NWChem format")
+                print("Best to download basis set from https://www.basissetexchange.org/")
+                ashexit()
+            if basis_file is not None and not os.path.isfile(basis_file):
+                print("Error: basis_file does not exist. Exiting")
+                ashexit()
+            if auxbasis_file is not None and not os.path.isfile(auxbasis_file):
+                print("Error: auxbasis_file does not exist. Exiting")
+                ashexit()
+            if functional is not None:
+                if self.printlevel >= 1:
+                    print(f"Functional keyword: {functional} chosen. DFT is on!")
+                if scf_type == 'RHF':
+                    print("Changing RHF to RKS")
+                    scf_type='RKS'
+                if scf_type == 'UHF':
+                    print("Changing UHF to UKS")
+                    scf_type='UKS'
+                if "dm21" in self.functional.lower():
+                    print("A DM21-type functional selected. This requires DM21 installation")
+                    try:
+                        import density_functional_approximation_dm21 as dm21
+                    except ModuleNotFoundError as e:
+                        print("Error importing density_functional_approximation_dm21 library. Exiting")
+                        print("Make sure DM21 is installed in the Python environment. See https://github.com/google-deepmind/deepmind-research/tree/master/density_functional_approximation_dm21")
+                        ashexit()
+            else:
+                if scf_type == 'RKS' or scf_type == 'UKS':
+                    print("Error: RKS/UKS chosen but no functional. Exiting")
                     ashexit()
-        else:
-            if scf_type == 'RKS' or scf_type == 'UKS':
-                print("Error: RKS/UKS chosen but no functional. Exiting")
-                ashexit()
-        if NMF is True:
-            if NMF_distribution is None:
-                print("NMF requires NMF_distribution keyword. Exiting")
-                ashexit()
-            if NMF_sigma is None:
-                print("NMF requires NMF_sigma keyword. Exiting")
-                ashexit()
-        if BS is True:
-            if atomstoflip is None:
-                print("Error: BS is True but atomstoflip is not set. This is required. Exiting")
-                ashexit()
-            if scf_type == 'RHF' or scf_type == 'RKS':
-                print("SCF-type has to be unrestricted for BS. Exiting")
-                ashexit()
-            if HSmult is None:
-                print("Error: BS is True but HSmult is not set. This is required. Exiting")
-                ashexit()
+            if NMF is True:
+                if NMF_distribution is None:
+                    print("NMF requires NMF_distribution keyword. Exiting")
+                    ashexit()
+                if NMF_sigma is None:
+                    print("NMF requires NMF_sigma keyword. Exiting")
+                    ashexit()
+            if BS is True:
+                if atomstoflip is None:
+                    print("Error: BS is True but atomstoflip is not set. This is required. Exiting")
+                    ashexit()
+                if scf_type == 'RHF' or scf_type == 'RKS':
+                    print("SCF-type has to be unrestricted for BS. Exiting")
+                    ashexit()
+                if HSmult is None:
+                    print("Error: BS is True but HSmult is not set. This is required. Exiting")
+                    ashexit()
         if CC is True and CCmethod is None:
             print("Error: Need to choose CCmethod, e.g. 'CCSD', 'CCSD(T)")
             ashexit()
