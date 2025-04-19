@@ -133,6 +133,9 @@ class PySCFTheory:
             print("Warning: this will ignore most other input")
             print("mf_object:", mf_object)
             self.mf_object=mf_object
+            print("mf_object:", mf_object)
+            print(mf_object.__dict__)
+            self.scf_type="XXX"
 
         #Store optional properties of pySCF run job in a dict
         self.properties ={}
