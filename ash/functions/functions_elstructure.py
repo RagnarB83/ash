@@ -2332,7 +2332,8 @@ def yoshimine_sort(a,b,c,d):
 # TODO: symmetry
 # Confirmed to work for MRCC
 def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, header_format="MRCC",
-                            num_corr_el=None, filename=None, int_threshold=1e-16, scf_type="RHF", mult=None):
+                            num_corr_el=None, filename=None, int_threshold=1e-16, scf_type="RHF", mult=None,
+                            symmetry_option=0):
 
     print("\nASH_write_integralfile")
     print()
@@ -2360,7 +2361,7 @@ def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_rep
         #MS2: TODO
         #isym: 
         #orbsym
-        isym=1
+        isym=symmetry_option
         orbsymstring=','.join(str(1) for i in range(0,basis_dim))
         ms2=mult-1 # unpaired electrons
         uhf_option_string = ""
