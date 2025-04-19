@@ -1879,6 +1879,8 @@ class PySCFTheory:
         self.mol.charge = charge
         self.mol.spin = mult-1
 
+        print("self.mol.symmetry:", self.mol.symmetry)
+
         #cartesian basis or not
         if cartesian_basis is not None:
             print("Setting cartesian basis flag to:", cartesian_basis)

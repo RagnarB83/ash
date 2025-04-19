@@ -598,6 +598,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         # Run PySCF to get integrals and MOs. This would probably only be an SCF
         if self.Block_direct != True:
+            print("Now running input PySCFTheory object")
             self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
         # Get frozen-core
