@@ -441,7 +441,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 self.mch.mol.groupname=self.groupname
 
             if self.mch.mol.groupname == "N/A":
-                self.mch.mol.groupname = None
+                self.mch.mol.groupname = 'C1'
 
             print("self.mch.fcisolver.groupname:", self.mch.fcisolver.groupname)
             #print("self.mch.orbsym:", self.mch.orbsym)
