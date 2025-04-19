@@ -29,7 +29,8 @@ class BlockTheory:
                 Block_direct=False, num_el=None, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
                 FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False, DMRG_DoRDM2=False,
-                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block", print_WF_coeffs=False):
+                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block", print_WF_coeffs=False,
+                groupname=None, orbsym=None):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
@@ -92,6 +93,17 @@ class BlockTheory:
         self.numcores=numcores
         self.hybrid_num_mpi_procs=hybrid_num_mpi_procs
         self.hybrid_num_threads=hybrid_num_threads
+
+        # SYMMETRY handling
+        self.groupname=groupname #Default None, set to e.g. 'd2' string
+        if self.groupname is not None:
+            print("Using symmetry. Groupname:", self.groupname)
+            if orbsym is None:
+                print("Error: orbsym keyword should be set. should be list of integers representing irrep ids of each orb")
+                ashexit()
+            self.orbsym=orbsym
+
+
         #SETTING NUMCORES by setting prefix
         self.block_parallelization=block_parallelization
         if self.block_parallelization == 'MPI':
@@ -176,7 +188,7 @@ class BlockTheory:
 
     #Write inputfile: Only for Block-direct
     def write_inputfile(self,mult):
-        inputfilestring=f"""sym d2h
+        inputfilestring=f"""sym c1
 orbitals {self.fcidumpfile}
 
 nelec {self.num_el}
@@ -417,7 +429,8 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("This is single-iteration CAS-CI via pyscf and DMRG")
             #Creating pyscf CAS-CI object and setting fcisolver to DMRGCI
             self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf, self.norb, self.nelec)
-            self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, maxM=self.maxM, tol=self.tol)
+            self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, maxM=self.maxM, tol=self.tol, 
+                                                     groupname=self.groupname, orbsym=self.orbsym)
             #self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
             #self.mch = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
             #self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf, self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
