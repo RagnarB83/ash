@@ -59,13 +59,12 @@ class PySCFTheory:
         print_line_with_mainheader("PySCFTheory initialization")
 
         #EARLY EXITS
-
+        #Exit early if no SCF-type
+        if scf_type is None:
+            print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
+            ashexit()
         if mf_object is None:
             print("No input mf object")
-            #Exit early if no SCF-type
-            if scf_type is None:
-                print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
-                ashexit()
             if basis is None and basis_file is None and fcidumpfile is None:
                 print("Error: You must either provide a basis or a basis_file keyword . Basis can a name (string) or dict (elements as keys)")
                 print("basis_file should be a string of the filename containing basis set for each element, in NWChem format")
@@ -129,14 +128,10 @@ class PySCFTheory:
 
         # User-provided mf object
         if mf_object is not None:
-            print("User-provided mf object. WIll use this instead of creating a new one")
+            print("User-provided mf object. Will use this instead of creating a new one")
             print("Warning: this will ignore most other input")
             print("mf_object:", mf_object)
             self.mf_object=mf_object
-            print("mf_object:", mf_object)
-            print(mf_object.__dict__)
-            self.scf_type="XXX"
-            exit()
 
         #Store optional properties of pySCF run job in a dict
         self.properties ={}
