@@ -47,8 +47,9 @@ class BlockTheory:
 
         #Check for PySCFTheory object
         if pyscftheoryobject is None:
-            print("Error: No pyscftheoryobject was provided. This is required")
-            ashexit()
+            if Block_direct is False:
+                print("Error: No pyscftheoryobject was provided. This is required unless Block_direct is True")
+                ashexit()
 
         #MAKING SURE WE HAVE BLOCK
         #TODO: Look for regular block binary also here??
