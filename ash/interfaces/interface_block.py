@@ -154,7 +154,6 @@ class BlockTheory:
             if num_el is None:
                 print("Error: Block_direct option requires number of electrons to be set")
                 ashexit()
-            if num_el is None:
             self.num_el=num_el
         print("Frozencore:", self.frozencore)
         print("moreadfile:", self.moreadfile)
