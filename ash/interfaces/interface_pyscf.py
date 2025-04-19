@@ -420,6 +420,8 @@ class PySCFTheory:
         self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=self.fcidumpfile_molpro_orbsym)
         print("mf object:", self.mf)
         print("mf object dict:", self.mf.__dict__)
+        print("mf.mol object dict", self.mf.mol.__dict__)
+        #Since this may have found symmetry we may have to adjust
 
     # Create FCIDUMP file from either mf object (provided or internal)
     def create_fcidump_file(self, mf=None, dump_from_mos=False, mo_coeff=None, 
