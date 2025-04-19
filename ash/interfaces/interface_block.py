@@ -691,7 +691,8 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.properties['dipole'] = dipole
 
         # Gradient
-        self.gradient = self.mch.nuc_grad_method().kernel()
+        if Grad:
+            self.gradient = self.mch.nuc_grad_method().kernel()
 
         print("Block is finished")
         # Cleanup Block scratch stuff (big files)
