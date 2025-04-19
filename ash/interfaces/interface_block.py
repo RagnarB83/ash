@@ -245,10 +245,15 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
     def call_block_directly(self):
         module_init_time=time.time()
         print("Calling Block executable directly")
-        print(f"Running Block with ({self.numcores} MPI processes)")
-        with open('output.dat', "w") as outfile:
-            sp.call(['mpirun', '-np', str(self.numcores), ' --bind-to none', self.block_binary, self.filename], stdout=outfile)
-        print_time_rel(module_init_time, modulename='Block-direct-run', moduleindex=2)
+        if self.block_parallelization == 'MPI':
+            print(f"Running Block with ({self.numcores} MPI processes)")
+            with open('output.dat', "w") as outfile:
+                sp.call(['mpirun', '-np', str(self.numcores), ' --bind-to none', self.block_binary, self.filename], stdout=outfile)
+        else:
+            print(f"Running Block with ({self.numcores} cores (OpenMP))")
+            with open('output.dat', "w") as outfile:
+                sp.call([self.block_binary, self.filename], stdout=outfile)
+        print_time_rel(module_init_time, modulename='Block-direct-run', moduleindex=2)            
 
     #Set up initial orbitals
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC job
