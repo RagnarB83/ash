@@ -555,20 +555,25 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         # Setup initial_orbitals only if DMRG job has not been run before, otherwise we reuse previous
 
-        if self.runcalls == 1:
-            print("First runcall.")
-            print("Doing initial orbital setup")
-            mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
-            print("Doing active space setup")
-            self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
-        else:
-            print("Not first runcall. Reusing previous initial orbitals")
-            mo_coeffs = self.mch.mo_coeff
+        if self.Block_direct is True:
+            print("Running Block directly")
+            self.call_block_directly()
 
-        print("Setting up DMRG job")
-        self.setup_DMRG_job(verbose=5, rdmoption=None)
-        print("Running DMRG")
-        self.DMRG_run(mo_coeffs)
+        else:
+            if self.runcalls == 1:
+                print("First runcall.")
+                print("Doing initial orbital setup")
+                mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
+                print("Doing active space setup")
+                self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
+            else:
+                print("Not first runcall. Reusing previous initial orbitals")
+                mo_coeffs = self.mch.mo_coeff
+
+            print("Setting up DMRG job")
+            self.setup_DMRG_job(verbose=5, rdmoption=None)
+            print("Running DMRG")
+            self.DMRG_run(mo_coeffs)
 
         dmrg_energy = self.energy
         print("DMRG energy:", dmrg_energy)
