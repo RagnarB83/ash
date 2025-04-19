@@ -431,6 +431,8 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and DMRG")
             #Creating pyscf CAS-CI object and setting fcisolver to DMRGCI
+            print("self.pyscftheoryobject.mol:", self.pyscftheoryobject.mol)
+            print("self.pyscftheoryobject.mf", self.pyscftheoryobject.mf)
             self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf, self.norb, self.nelec)
             self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, maxM=self.maxM, tol=self.tol)
 
