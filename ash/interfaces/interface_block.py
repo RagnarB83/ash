@@ -698,6 +698,9 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
             # Dipole moment
             print("Now doing dipole")
+            print("rdm1:", rdm1)
+            print("rdm1 shape", rdm1.shape)
+            print("rdm1 ndim", rdm1.ndim)
             dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_DMRG_M_{self.maxM}")
 
             # Setting properties for a possible future job
