@@ -136,6 +136,7 @@ class PySCFTheory:
             print("mf_object:", mf_object)
             print(mf_object.__dict__)
             self.scf_type="XXX"
+            exit()
 
         #Store optional properties of pySCF run job in a dict
         self.properties ={}
