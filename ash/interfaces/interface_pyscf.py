@@ -22,6 +22,7 @@ import copy
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
+                  mf_object=None,
                   scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry='C1',
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk', do_pop_analysis=True,
                   noautostart=False, autostart=True, fcidumpfile=None, fcidumpfile_molpro_orbsym=False,
@@ -123,6 +124,13 @@ class PySCFTheory:
                     print("For a state-averaged CASSCF with different spin multiplicities, CASSCF_numstates must be a list")
                     print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
                     ashexit()
+
+        # User-provided mf object
+        if mf_object is not None:
+            print("User-provided mf object. WIll use this instead of creating a new one")
+            print("Warning: this will ignore most other input")
+            print("mf_object:", mf_object)
+            self.mf_object=mf_object
 
         #Store optional properties of pySCF run job in a dict
         self.properties ={}
@@ -2501,19 +2509,20 @@ class PySCFTheory:
 
         if self.printlevel >= 1:
             print("Number of basis functions:", self.num_basis_functions)
+        
         ############################
         # CREATE MF OBJECT
         ############################
-        #if self.platform == 'GPU':
-        #    print("Platform is GPU")
-        #    self.create_mf_for_gpu() #Creates self.mf
-        #else:
-        if self.fcidumpfile is None:
-            self.create_mf() #Creates self.mf
-        else:
+        if self.fcidumpfile is not None:
             print("FCIDUMP file read-in")
             print("Creating mf object from FCIDUMPfile")
             self.read_fcidump_file(self.fcidumpfile)
+        elif self.mf_object is not None:
+            print("An mf object already exits. Using.")
+            self.mf=self.mf_object
+        else:
+            print("Now creating mf object")
+            self.create_mf() #Creates self.mf
 
         #GHF/GKS
         if self.scf_type == 'GHF' or self.scf_type == 'GKS':
