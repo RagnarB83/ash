@@ -438,6 +438,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 print("Setting groupname for mch.fcisolver and orbsym in mch")
                 self.mch.fcisolver.groupname=self.groupname
                 self.mch.orbsym=self.orbsym
+                self.mch.mol.groupname=self.groupname
+
+            if self.mch.mol.groupname == "N/A":
+                self.mch.mol.groupname = None
 
             print("self.mch.fcisolver.groupname:", self.mch.fcisolver.groupname)
             print("self.mch.orbsym:", self.mch.orbsym)
