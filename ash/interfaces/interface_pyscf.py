@@ -409,6 +409,8 @@ class PySCFTheory:
         self.num_basis_functions = result["NORB"]
         #H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
         self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=self.fcidumpfile_molpro_orbsym)
+        print("mf object:", self.mf)
+        print("mf object dict:", self.mf.__dict__)
 
     # Create FCIDUMP file from either mf object (provided or internal)
     def create_fcidump_file(self, mf=None, dump_from_mos=False, mo_coeff=None, 
