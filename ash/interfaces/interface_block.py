@@ -665,14 +665,16 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         # RDM and Natural orbitals
         if self.DMRG_DoRDM is True:
             print("DMRG DoRDM is True. Calculating RDM1 and creating DMRG natural orbitals")
-            rdm1 = self.mch.make_rdm1(ao_repr=True)
-            np.save("DMRG_rdm1_AObasis", rdm1)
             # np.savetxt("rdm1_AObasis.txt", rdm1)
             if self.DMRG_DoRDM2 is True:
-                print("DMRG DoRDM2 is True. Calculating RDM2")
-                rdm2 = self.mch.make_rdm2(ao_repr=True)
+                print("DMRG DoRDM2 is True. Calculating RDM1 and RDM2")
+                bla = self.mch.make_rdm12(ao_repr=True)
+                print("bla:", bla)
                 np.save("DMRG_rdm2_AObasis", rdm2)
                 #np.savetxt("rdm2_AObasis.txt", rdm2_AO)
+            else:
+                rdm1 = self.mch.make_rdm1(ao_repr=True)
+                np.save("DMRG_rdm1_AObasis", rdm1)
             try:
                 print("Attempting DMRG spin-rdm")
                 rdm1s = self.mch.make_rdm1s(ao_repr=True)
