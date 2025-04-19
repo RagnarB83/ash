@@ -287,6 +287,8 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print(f"Running Block with ({self.numcores} cores (OpenMP))")
             with open('output.dat', "w") as outfile:
                 sp.call([self.block_binary, self.filename], stdout=outfile)
+        
+        self.energy=float(pygrep("DMRG Energy =","output.dat")[-1])
         print_time_rel(module_init_time, modulename='Block-direct-run', moduleindex=2)            
 
     #Set up initial orbitals
@@ -603,7 +605,6 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("Running Block directly")
             self.write_inputfile(mult)
             self.call_block_directly()
-
         else:
             if self.runcalls == 1:
                 print("First runcall.")
