@@ -583,7 +583,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         if self.Block_direct is True:
             print("Running Block directly")
-            self.write_inputfile()
+            self.write_inputfile(mult)
             self.call_block_directly()
 
         else:
