@@ -2367,7 +2367,10 @@ def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_rep
         #isym: list of symmetry indices integers
         #orbsym
         if symmetry_option == 0:
+            orbsymstring=','.join(str(1) for i in range(0,basis_dim))
             header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
+ORBSYM={orbsymstring},
+ISYM=1,{uhf_option_string}
 &END
 """
         else:

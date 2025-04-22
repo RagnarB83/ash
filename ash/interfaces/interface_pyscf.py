@@ -206,7 +206,6 @@ class PySCFTheory:
         self.fcidumpfile=fcidumpfile
         self.fcidumpfile_molpro_orbsym=fcidumpfile_molpro_orbsym # Boolean. True/False
 
-
         #CAS
         self.CAS=CAS
         self.CASSCF=CASSCF
@@ -413,14 +412,21 @@ class PySCFTheory:
     def read_fcidump_file(self,fcidumpfile):
         import pyscf.tools.fcidump
         
-        #Read FCI dump and return dictionary with integrals etc
-        result = pyscf.tools.fcidump.read(fcidumpfile)
-        #Defining here
-        self.num_basis_functions = result["NORB"]
-        #H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
-        self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=self.fcidumpfile_molpro_orbsym)
-        print("mf object:", self.mf)
-        # Warning: if symmetry information in FCIDUMP then mf object may be SymAdaptedRHF e.g.
+        # Read FCI dump and return dictionary with integrals etc
+        fcidump_parse = pyscf.tools.fcidump.read(fcidumpfile)
+        # Defining here
+        self.num_basis_functions = fcidump_parse["NORB"]
+
+        # Issue with pyscf reading FCIDUMP FILE when ORBSYM is present but we want no symmetry
+        # We get a SymadaptedRHF object etc. causing problems
+        if self.symmetry is None and 'ORBSYM' in fcidump_parse:
+            print("PySCFTheory symmetry option set to None but there is orbsym in fcidump")
+            print("To avoid creating a symmetry-adapted mf object, we removed symmetry info")
+            fcidump_parse.pop("ORBSYM",None)
+            self.mf = fcidump_to_scf(fcidump_parse, molpro_orbsym=self.fcidumpfile_molpro_orbsym)
+        else:
+            # H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
+            self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=self.fcidumpfile_molpro_orbsym)
 
     # Create FCIDUMP file from either mf object (provided or internal)
     def create_fcidump_file(self, mf=None, dump_from_mos=False, mo_coeff=None, 
@@ -514,7 +520,14 @@ class PySCFTheory:
 
     def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies=None, label="orbs"):
         from pyscf.tools import molden
-        print("Writing orbitals to disk as Molden file")
+        print("Writing Molden file")
+
+        # Skipping if basis set is missing
+        if mol.basis is None:
+            print("Warning: pyscf mol object contains no basis set. Can not create proper MOldenfile")
+            print("Skipping Moldenfile creation")
+            return None
+        
         if mo_energies is None:
             print("No MO energies. Setting to 0.0")
             mo_energies = np.array([0.0 for i in occupations])
@@ -1361,8 +1374,6 @@ class PySCFTheory:
             else:
                 #Regular CASSCF
                 print("Running CASSCF object")
-                print(casscf.__dict__)
-                print("CASSCF FCI solver:", casscf.fcisolver.__dict__)
                 casscf_result = casscf.run(orbitals, natorb=True)
                 print("casscf_result:", casscf_result)
                 e_tot = casscf_result.e_tot
@@ -2365,7 +2376,6 @@ class PySCFTheory:
 
         #Grid printing
         scf_result = mf.run(dm)
-
         #Grid
         if 'KS' in self.scf_type:
             print("Number of gridpoints used in calculation:", len(self.mf.grids.coords))
@@ -2503,7 +2513,8 @@ class PySCFTheory:
         # BASIS
         #####################
 
-        if self.fcidumpfile is None:
+        #Only define basis set if regular job (not FCIDUMP or read-in MF)
+        if self.fcidumpfile is None and self.mf_object is None:
             self.define_basis(elems=qm_elems)
             self.num_basis_functions=len(self.mol.ao_labels())
 
@@ -3613,7 +3624,7 @@ def DFA_error_analysis(fragment=None, DFA_obj=None, REF_obj=None, DFA_DM=None, R
 
 #MANUAL creation of mol and mf if 1-el, 2-el and overlap integrals are available
 def create_pyscf_mol_and_mf(numel=None, mult=None, nuc_repulsion_energy=None,
-    one_el_integrals=None, two_el_integrals=None, overlap=None, verbosity=4 ):
+    one_el_integrals=None, two_el_integrals=None, overlap=None, verbosity=4, symmetry=False ):
     from pyscf import gto
     import numpy as np
     #Create empty mol object
@@ -3626,10 +3637,17 @@ def create_pyscf_mol_and_mf(numel=None, mult=None, nuc_repulsion_energy=None,
     #Nuc repulsion energy
     mol.energy_nuc = lambda *args: nuc_repulsion_energy
     mol.incore_anyway = True
+    #Symmetry
+    mol.symmetry=symmetry
 
+    #print("mol dict", mol.__dict__)
     #mol.build()
     #MF
     mf = mol.RHF()
+    #print("mf type:", mf)
+    #print("mf.mol dict", mf.mol.__dict__)
+    #exit()
+    #exit()
 
     #1-el integrals
     h1 = one_el_integrals
@@ -3672,3 +3690,47 @@ def half_inv_overlap(S):
     Stemp = SVAL_minhalf*np.transpose(Svec)
     S_minhalf = Svec * Stemp
     return S_minhalf
+
+#Modified FCIDUMP file to mf function
+# Instead of reading file it reads the already parsed file as dict
+def fcidump_to_scf(fciparsed, molpro_orbsym=False, mf=None, **kwargs):
+    from pyscf import gto
+    import numpy
+    ctx = fciparsed
+    mol = gto.M()
+    mol.nelectron = ctx['NELEC']
+    mol.spin = ctx['MS2']
+    norb = mol.nao = ctx['NORB']
+    if 'ECORE' in ctx:
+        mol.energy_nuc = lambda *args: ctx['ECORE']
+    mol.incore_anyway = True
+
+    if 'ORBSYM' in ctx:
+        mol.symmetry = True
+        mol.groupname = 'N/A'
+        orbsym = numpy.asarray(ctx['ORBSYM'])
+        mol.irrep_id = list(set(orbsym))
+        mol.irrep_name = [('IR%d' % ir) for ir in mol.irrep_id]
+        so = numpy.eye(norb)
+        mol.symm_orb = []
+        for ir in mol.irrep_id:
+            mol.symm_orb.append(so[:,orbsym==ir])
+
+    if mf is None:
+        mf = mol.RHF(**kwargs)
+    else:
+        mf.mol = mol
+    h1 = ctx['H1']
+    idx, idy = numpy.tril_indices(norb, -1)
+    if h1[idx,idy].max() == 0:
+        h1[idx,idy] = h1[idy,idx]
+    else:
+        h1[idy,idx] = h1[idx,idy]
+    mf.get_hcore = lambda *args: h1
+    mf.get_ovlp = lambda *args: numpy.eye(norb)
+    mf._eri = ctx['H2']
+    intor_symmetric = mf.mol.intor_symmetric
+    mf.mol.intor_symmetric = lambda intor, **kwargs: numpy.eye(norb) \
+        if intor == 'int1e_ovlp' else intor_symmetric(intor, **kwargs)
+
+    return mf
