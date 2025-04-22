@@ -810,7 +810,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             # Mulliken analysis
             try:
                 print("Attempting Mulliken analysis")
-                self.pyscftheoryobject.run_population_analysis(self.pyscftheoryobject.mf, unrestricted=False, dm=rdm1, type='Mulliken', label='DMRG')
+                self.pyscftheoryobject.run_population_analysis(self.pyscftheoryobject.mf, unrestricted=False, dm=rdm1_MO, type='Mulliken', label='DMRG')
                 pyscf.scf.uhf.mulliken_spin_pop(self.pyscftheoryobject.mol, rdm1s, s=self.pyscftheoryobject.mf.get_ovlp(), verbose=3)
             except:
                 pass
