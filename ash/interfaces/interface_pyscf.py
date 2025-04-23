@@ -790,13 +790,11 @@ class PySCFTheory:
         print()
         print("Running population analysis")
 
-        #TODO: gpu4pyscf errors for Mulliken pop analysis. Probably fixed later
+        #TODO: gpu4pyscf errors for Mulliken pop analysis.
         #For now, we return
-        #if self.platform == 'GPU':
-        #    print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
-        #    #import gpu4pyscf
-        #    #mull_pop_func = gpu4pyscf.dft.RKS.mulliken_pop
-        #    return
+        if self.platform == 'GPU':
+            print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
+            return
         #else:
         mull_pop_func = pyscf.scf.rhf.mulliken_pop
         mull_spinpop_func = pyscf.scf.uhf.mulliken_spin_pop
@@ -807,8 +805,6 @@ class PySCFTheory:
             if unrestricted is False:
                 if dm is None:
                     dm = mf.make_rdm1()
-                #print("dm:", dm)
-                #print("dm.shape:", dm.shape)
                 mulliken_populations =mull_pop_func(self.mol,dm, verbose=verbose)
                 print(f"{label} Mulliken charges:", mulliken_populations[1])
             elif unrestricted is True:
