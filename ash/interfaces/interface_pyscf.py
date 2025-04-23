@@ -2597,7 +2597,6 @@ class PySCFTheory:
         if self.platform == 'GPU':
             print("GPU platform requested. Will now convert mf object to GPU")
             self.mf = self.mf.to_gpu()
-
         ##############################
         #EMBEDDING OPTIONS
         ##############################
@@ -2649,8 +2648,9 @@ class PySCFTheory:
             #GPU CHANGE
             if self.platform == 'GPU':
                 print("GPU SCF calculation done.")
-                print("Converting mf object back to CPU")
-                self.mf = self.mf.to_cpu()
+                if Grad is False:
+                    print("Converting mf object back to CPU")
+                    self.mf = self.mf.to_cpu()
 
 
             #Possible stability analysis
