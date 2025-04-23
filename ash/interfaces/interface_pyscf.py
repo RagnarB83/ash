@@ -23,7 +23,7 @@ import copy
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
                   mf_object=None,
-                  scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry='C1',
+                  scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry=False,
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk', do_pop_analysis=True,
                   noautostart=False, autostart=True, fcidumpfile=None, fcidumpfile_molpro_orbsym=False,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
