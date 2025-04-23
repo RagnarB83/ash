@@ -2831,7 +2831,11 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
                     checkpoint=time.time()
-                self.gradient = self.mf.nuc_grad_method().kernel()
+                print("")
+                print("mf:", self.mf)
+                g = self.mf.nuc_grad_method()
+                print("g:", g)
+                self.gradient = g.kernel()
                 print_time_rel(checkpoint, modulename='pyscf_gradient', moduleindex=2)
 
             #Applying dispersion gradient last
