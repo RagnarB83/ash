@@ -136,7 +136,7 @@ class MLatomTheory(Theory):
                 # Testing to see if dp is found
                 print("Searching for dp binary in PATH")
                 if shutil.which('dp'):
-                    deepmd_path = os.path.dirname(shutil.which(bin))
+                    deepmd_path = os.path.dirname(shutil.which('dp'))
                     print("Found dp binary in:", deepmd_path)
                     os.environ['DeePMDkit'] = deepmd_path
                     print("Setting DeePMDkit environment variable")
