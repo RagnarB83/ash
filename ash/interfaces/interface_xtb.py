@@ -548,10 +548,10 @@ class xTBTheory:
                 print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                 return self.energy
 
-#Grab Final single point energy
+# Grab Final single point energy
 def xtbfinalenergygrab(file):
     Energy=None
-    with open(file) as f:
+    with open(file, encoding='utf-8') as f:
         for line in f:
             if 'TOTAL ENERGY' in line:
                 Energy=float(line.split()[-3])

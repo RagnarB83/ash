@@ -370,7 +370,8 @@ class WrapTheory(Theory):
     """ASH WrapTheory theory.
     Combines 2 theories to give a modified energy and modified gradient
     """
-    def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None):
+    def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None,
+                 theory1_atoms=None, theory2_atoms=None):
         super().__init__()
 
         self.theorytype="QM"
@@ -381,6 +382,9 @@ class WrapTheory(Theory):
         self.filename=""
         self.theorynamelabel="WrapTheory"
         self.theories=theories
+        # Option to have theory only calculate certain atoms
+        self.theory1_atoms=theory1_atoms
+        self.theory2_atoms=theory2_atoms
 
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
         print("Creating WrapTheory object")
@@ -404,40 +408,71 @@ class WrapTheory(Theory):
 
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
-        if self.theories is not None:
-            energies=[]
-            gradients=[]
-            for theory in self.theories:
-                print(f"Now running Theory: {theory.theorynamelabel}")
-                eg_tuple = theory.run(current_coords=current_coords,
-                                                    current_MM_coords=current_MM_coords,
-                                                    MMcharges=MMcharges, qm_elems=qm_elems,
-                                                    elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-                                                    label=label, charge=charge, mult=mult)
-                print(f"Theory: {theory.theorynamelabel}  energy:", eg_tuple[0])
-                print(f"Theory: {theory.theorynamelabel}  gradient shape", eg_tuple[1].shape)
-                if Grad:
-                    energy = eg_tuple[0]
-                    grad = eg_tuple[1]
-                    energies.append(energy)
-                    gradients.append(grad)
-                else:
-                    energy = eg_tuple
-                    energies.append(energy)  
-            print("\nAll WrapTheory calculations are done!\n")
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
 
-            # Combine energy and gradient
-            self.energy = sum(energies)
-            if self.printlevel == 2:
-                for count,e in enumerate(energies):
-                    print(f"Energy ({self.theories[count].theorynamelabel}):", e)
-                print("Energy (Combined):", self.energy)
+        full_dimension=current_coords.shape[0]
+        energies=[]
+        gradients=[]
+        chosen_coords=current_coords
+        chosen_elems=qm_elems
+        for i,theory in enumerate(self.theories):
+            print(f"Now running Theory: {theory.theorynamelabel}")
+
+            #If theory_atoms have been set then we only pass part of coordinates over
+            if i+1 == 1 and self.theory1_atoms is not None:
+                print("theory1_atoms has been set:", self.theory1_atoms)
+                chosen_coords = np.take(current_coords, self.theory1_atoms, axis=0)
+                chosen_elems = [qm_elems[i] for i in self.theory1_atoms]
+            elif i+1 == 2 and self.theory2_atoms is not None:
+                print("theory2_atoms has been set:", self.theory2_atoms)
+                chosen_coords = np.take(current_coords, self.theory2_atoms, axis=0)
+                chosen_elems = [qm_elems[i] for i in self.theory2_atoms]
+            eg_tuple = theory.run(current_coords=chosen_coords,
+                                                current_MM_coords=current_MM_coords,
+                                                MMcharges=MMcharges, qm_elems=chosen_elems,
+                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
+                                                label=label, charge=charge, mult=mult)
+            print("eg_tuple:", eg_tuple)
             if Grad:
-                self.gradient = sum(gradients)
-                if self.printlevel == 3:
-                    for g,count in enumerate(gradients):
-                        print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
-                    print("Gradient (Combined):", self.gradient)
+                print(f"Theory: {theory.theorynamelabel}  gradient shape", eg_tuple[1].shape)
+                energy = eg_tuple[0]
+                tempgrad = eg_tuple[1]
+                # Assemble gradient of correct dimension
+                if i+1 == 1 and self.theory1_atoms is not None:
+                    fullgrad=np.zeros((full_dimension,3))
+                    fullgrad[self.theory1_atoms] = tempgrad
+                    grad=fullgrad
+                elif i+1 == 2 and self.theory2_atoms is not None:
+                    fullgrad=np.zeros((full_dimension,3))
+                    fullgrad[self.theory2_atoms] = tempgrad
+                    grad=fullgrad
+                else:
+                    grad=tempgrad
+                energies.append(energy)
+                gradients.append(grad)
+            else:
+                energy = eg_tuple
+                energies.append(energy)  
+        print("gradients:", gradients)
+        print("\nAll WrapTheory calculations are done!\n")
+
+        # Combine energy and gradient
+        self.energy = sum(energies)
+        if self.printlevel == 2:
+            for count,e in enumerate(energies):
+                print(f"Energy ({self.theories[count].theorynamelabel}):", e)
+            print("Energy (Combined):", self.energy)
+        if Grad:
+            self.gradient = sum(gradients)
+            if self.printlevel == 3:
+                for g,count in enumerate(gradients):
+                    print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
+                print("Gradient (Combined):", self.gradient)
 
         if Grad:
             return self.energy, self.gradient
