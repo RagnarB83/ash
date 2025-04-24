@@ -2512,10 +2512,10 @@ class PySCFTheory:
         #Only define basis set if regular job (not FCIDUMP or read-in MF)
         if self.fcidumpfile is None and self.mf_object is None:
             self.define_basis(elems=qm_elems)
-            self.num_basis_functions=len(self.mol.ao_labels())
-
+        print("Building pyscf mol object")
         self.mol.build()
-
+        # Defining number of basis functions
+        self.num_basis_functions=len(self.mol.ao_labels())
         if self.printlevel >= 1:
             print("Number of basis functions:", self.num_basis_functions)
         
