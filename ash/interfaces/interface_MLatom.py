@@ -133,6 +133,19 @@ class MLatomTheory(Theory):
                 print(self.model)
             elif ml_model.lower() == 'dpmd':
                 print("DMPD selected")
+                # Testing to see if dp is found
+                print("Searching for dp binary in PATH")
+                if shutil.which('dp'):
+                    deepmd_path = os.path.dirname(shutil.which(bin))
+                    print("Found dp binary in:", deepmd_path)
+                    os.environ['DeePMDkit'] = deepmd_path
+                    print("Setting DeePMDkit environment variable")
+                else:
+                    print("ASH could not find dp binary, implying DPMD has not been installed")
+                    print("See DeePMD-kit website: https://docs.deepmodeling.com/projects/deepmd/en/stable/install/easy-install.html")
+                    print("Might be as simple as: mamba install deepmd-kit lammps horovod")
+                    exit()
+
                 self.model = ml.models.dpmd(model_file=model_file)
             elif ml_model.lower() == 'gap':
                 print("GAP selected")
