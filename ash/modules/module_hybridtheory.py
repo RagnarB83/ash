@@ -414,6 +414,7 @@ class WrapTheory(Theory):
                                                     MMcharges=MMcharges, qm_elems=qm_elems,
                                                     elems=elems, Grad=Grad, PC=PC, numcores=numcores,
                                                     label=label, charge=charge, mult=mult)
+                print("eg_tuple:", eg_tuple)
                 if Grad:
                     energy = eg_tuple[0]
                     grad = eg_tuple[1]

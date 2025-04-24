@@ -144,6 +144,7 @@ class MLatomTheory(Theory):
                     print("ASH could not find dp binary, implying DPMD has not been installed")
                     print("See DeePMD-kit website: https://docs.deepmodeling.com/projects/deepmd/en/stable/install/easy-install.html")
                     print("Might be as simple as: mamba install deepmd-kit lammps horovod")
+                    print("and: pip install dpgen")
                     exit()
 
                 self.model = ml.models.dpmd(model_file=model_file)
