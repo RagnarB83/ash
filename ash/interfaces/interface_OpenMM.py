@@ -3446,14 +3446,42 @@ class OpenMM_MDclass:
         #Determine centroid of original fragment coordinates
         self.centroid_system = get_centroid(fragment.coords)
 
+        #Theory_runtype
+        self.theory_runtype=None
+
+        self.openmmobject=None
+        self.QM_MM_object=None
         #Case: OpenMMTheory
         if isinstance(theory, OpenMMTheory):
             self.openmmobject = theory
             self.QM_MM_object = None
+            self.theory_runtype ="MM"
         #Case: QM/MM theory with OpenMM mm_theory
         elif isinstance(theory, ash.QMMMTheory):
             self.QM_MM_object = theory
             self.openmmobject = theory.mm_theory
+            self.theory_runtype ="QMMM"
+        #Case: QM/MM theory with OpenMM mm_theory
+        elif isinstance(theory, ash.WrapTheory):
+            self.theory_runtype ="WRAP"
+
+            #Checking if OpenMMTheory object inside WrapTheory object
+            for t in theory.theories:
+                if isinstance(t,OpenMMTheory):
+                    print("Found OpenMMTheory object")
+                    self.openmmobject=t
+                elif isinstance(t,ash.QMMMTheory):
+                    print("Found QMMMTheory object")
+                    self.QM_MM_object=t
+                    if isinstance(t.mm_theory,OpenMMTheory):
+                        print("Found OpenMMTheory object as part of QMMMTheory object")
+                        self.openmmobject=t.mm_theory
+            #If nothing found then we create:
+            if self.openmmobject is None:
+                #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
+                self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
+                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+            self.wraptheory_object = theory
         #Case: OpenMM with external QM
         else:
             #NOTE: Recognize QM theories here ??
@@ -3468,6 +3496,7 @@ class OpenMM_MDclass:
                                 hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
             self.QM_MM_object = None
             self.qmtheory=theory
+            self.theory_runtype ="QM"
 
         #Basic restraints (bond,angle,torsion)
         if restraints is not None:
@@ -3678,6 +3707,8 @@ class OpenMM_MDclass:
             #print("QM/MM requires enforcePeriodicBox to be False.")
             #True sometimes means we end up with solute in corner of box (wrong for nonPBC QM code)
 
+            #Making sure QM/MM object will exit before calculating MM part
+            self.QM_MM_object.exit_after_customexternalforce_update=True
 
             # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
             # (it would calculate OpenMM energy twice) so turning on in case forgotten
@@ -3796,6 +3827,38 @@ class OpenMM_MDclass:
             except:
                 pass
         print("simulation.reporters:", simulation.reporters)
+
+    # For OpenMM native MTD
+    def mtd_step(self,step,meta_object,metadyn_settings):
+        checkpoint=time.time()
+        cv1scaling=1
+        cv2scaling=1
+        meta_object.step(self.simulation, 1)
+        print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+        checkpoint = time.time()
+
+        #getCollectiveVariables
+        if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
+            if self.printlevel >= 2:
+                print("MTD: Writing current collective variables to disk")
+            current_cv = meta_object.getCollectiveVariables(self.simulation)
+            if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
+                cv1scaling=10
+            elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
+                cv1scaling=180/np.pi
+            if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
+                cv2scaling=10
+            elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
+                cv2scaling=180/np.pi
+            currtime = step*self.timestep #Time in ps
+            with open(f'colvar', 'a') as f:
+                if metadyn_settings["numCVs"] == 2:
+                    f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
+                elif metadyn_settings["numCVs"] == 1:
+                    f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
+        print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+        checkpoint = time.time()
+        return
 
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
@@ -4017,7 +4080,83 @@ class OpenMM_MDclass:
 
         print()
 
-        if self.QM_MM_object is not None:
+
+        if self.theory_runtype == "WRAP":
+            print("WrapTheory run beginning")
+            
+            #MD LOOP
+            for step in range(simulation_steps):
+                checkpoint_begin_step = time.time()
+                checkpoint = time.time()
+                if self.printlevel >= 2:
+                    print("Step:", step)
+                else:
+                    if step % self.traj_frequency == 0:
+                        print("Step:", step)
+
+                #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
+                current_state=self.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                checkpoint = time.time()
+                # Get current coordinates from state to use for THEORY step
+                current_coords = np.array(current_state.getPositions(asNumpy=True))*10
+                checkpoint = time.time()
+                print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                
+                #Periodic handling. Important choice for QM/MM.
+                if self.openmmobject.Periodic is True:
+                    if self.printlevel >= 2:
+                        print("Periodicity is on")
+                    if self.enforcePeriodicBox is True:
+                        #NOTE: All is fine also if we have frozen a large part of the system
+                        if self.printlevel >= 2:
+                            print("enforcePeriodicBox is True. Wrapping handling by OpenMM")
+                    elif self.enforcePeriodicBox is False:
+                        if self.printlevel >= 2:
+                            print("enforcePeriodicBox is False. Wrapping handled by ASH")
+                            print("Note: only cubic PBC boxes supported")
+                        checkpoint = time.time()
+                        #Using original center of box
+                        current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
+                        print_time_rel(checkpoint, modulename="wrapping")
+
+                checkpoint = time.time()
+
+                # Run WrapTheory step to get full system QM+PC gradient.
+                wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
+                                      charge=self.charge, mult=self.mult)
+                
+                #NOTE: if WrapTheory contains QMMMTheory then wrapgradient does not have MM contribution (only QM_PC from QM/MM and other theory contributino)
+                print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+
+                # Now need to update OpenMM external force with new force
+                CheckpointTime = time.time()
+                self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,
+                                                               wrapgradient,self.simulation)
+                print_time_rel(CheckpointTime, modulename='update custom external force', moduleindex=2,
+                                currprintlevel=self.printlevel, currthreshold=2)
+                checkpoint = time.time()
+
+                #Printing step-info or write-trajectory at regular intervals
+                if step % self.traj_frequency == 0:
+                    if self.printlevel >= 2:
+                        print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
+
+                #OpenMM metadynamics
+                if metadynamics is True:
+                    if self.printlevel >= 2:
+                        print("Now calling OpenMM native metadynamics and taking 1 step")
+                    self.mtd_step(self,step,meta_object,metadyn_settings)
+                else:
+                    self.simulation.step(1)
+                    print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                    checkpoint = time.time()
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+
+
+        elif self.theory_runtype == "QMMM":
+        #if self.QM_MM_object is not None:
             print("QM/MM MD run beginning")
             #CASE: QM/MM. Custom external force needs to have been created in OpenMMTheory (should be handled by init)
 
@@ -4113,56 +4252,44 @@ class OpenMM_MDclass:
                 if metadynamics is True:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
-                    cv1scaling=1
-                    cv2scaling=1
-                    meta_object.step(self.simulation, 1)
-                    print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                    checkpoint = time.time()
+                    self.mtd_step(self,step,meta_object,metadyn_settings)
+                #     cv1scaling=1
+                #     cv2scaling=1
+                #     meta_object.step(self.simulation, 1)
+                #     print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                #     checkpoint = time.time()
 
-                    #getCollectiveVariables
-                    if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
-                        if self.printlevel >= 2:
-                            print("MTD: Writing current collective variables to disk")
-                        current_cv = meta_object.getCollectiveVariables(self.simulation)
-                        if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
-                            cv1scaling=10
-                        elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
-                            cv1scaling=180/np.pi
-                        if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
-                            cv2scaling=10
-                        elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
-                            cv2scaling=180/np.pi
-                        currtime = step*self.timestep #Time in ps
-                        with open(f'colvar', 'a') as f:
-                            if metadyn_settings["numCVs"] == 2:
-                                f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
-                            elif metadyn_settings["numCVs"] == 1:
-                                f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
-                    print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                    checkpoint = time.time()
-                else:
-                    self.simulation.step(1)
-                    print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                    checkpoint = time.time()
-                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-
-                # NOTE: Better to use OpenMM-plumed interface
-                # After MM step, grab coordinates and forces
-                #if self.plumed_object is not None:
-                #    print("Plumed active. Untested. Hopefully works.")
-                #    ashexit()
-                #    #Necessary to call again
-                #    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
-                #    current_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
-                #    current_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
-                #    # Plumed object needs to be configured for OpenMM
-                #    energy, newforces = self.plumed_object.run(coords=current_coords, forces=current_forces,
-                #                                               step=step)
-                #    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces,simulation)
+                #     #getCollectiveVariables
+                #     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
+                #         if self.printlevel >= 2:
+                #             print("MTD: Writing current collective variables to disk")
+                #         current_cv = meta_object.getCollectiveVariables(self.simulation)
+                #         if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
+                #             cv1scaling=10
+                #         elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
+                #             cv1scaling=180/np.pi
+                #         if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
+                #             cv2scaling=10
+                #         elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
+                #             cv2scaling=180/np.pi
+                #         currtime = step*self.timestep #Time in ps
+                #         with open(f'colvar', 'a') as f:
+                #             if metadyn_settings["numCVs"] == 2:
+                #                 f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
+                #             elif metadyn_settings["numCVs"] == 1:
+                #                 f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
+                #     print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                #     checkpoint = time.time()
+                # else:
+                #     self.simulation.step(1)
+                #     print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                #     checkpoint = time.time()
+                # print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
         #External QM for OpenMMtheory
         #Used to run QM dynamics with OpenMM
-        elif self.externalqm is True:
+        #elif self.externalqm is True:
+        elif self.theory_runtype == "QM":
             if self.printlevel >= 2:
                 print("External QM with OpenMM option")
             for step in range(simulation_steps):
@@ -4276,12 +4403,11 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
         else:
             #OpenMM metadynamics
-            if metadynamics == True:
+            if metadynamics is True:
                 print("Now calling OpenMM native metadynamics")
                 meta_object.step(self.simulation, simulation_steps)
             else:
                 print("Regular classical OpenMM MD option chosen.")
-                #This is the fastest option as getState is never called in each loop iteration like above
                 # Running all steps in one go
                 self.simulation.step(simulation_steps)
 

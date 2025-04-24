@@ -469,9 +469,11 @@ class ZeroTheory:
         self.label=label
         self.fragment=fragment
         self.filename="zerotheory"
+        self.theorynamelabel="ZeroTheory"
         #Indicate that this is a QMtheory
         self.theorytype="QM"
-    def run(self, current_coords=None, elems=None, Grad=False, PC=False, numcores=None, charge=None, mult=None, label=None ):
+    def run(self, current_coords=None, elems=None, Grad=False, PC=False, numcores=None, charge=None, mult=None, label=None,
+            current_MM_coords=None, MMcharges=None, qm_elems=None ):
         self.energy = 0.0
         #Gradient as np array
         self.gradient = np.zeros((len(elems), 3))

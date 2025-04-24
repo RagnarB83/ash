@@ -365,8 +365,6 @@ class DualTheory:
 #########################
 # WrapTheory class
 #########################
-# Similar in a way to DualTheory but we simply want to combine a regular Theory with a basic correction
-# Intended to be used for simple corrections like DFTD4.
 
 class WrapTheory(Theory):
     """ASH WrapTheory theory.
@@ -438,50 +436,6 @@ class WrapTheory(Theory):
                     for g,count in enumerate(gradients):
                         print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
                     print("Gradient (Combined):", self.gradient)
-
-        # old syntax
-        #else:
-        #    print("Running Theory 1:", self.theory1.theorynamelabel)
-        #    # Calculate Theory 1
-        #    if Grad:
-        #        e_theory1, g_theory1 = self.theory1.run(current_coords=current_coords,
-        #                                                current_MM_coords=current_MM_coords,
-        #                                                MMcharges=MMcharges, qm_elems=qm_elems,
-        #                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-        #                                                label=label, charge=charge, mult=mult)
-        #    else:
-        #        e_theory1 = self.theory1.run(current_coords=current_coords,
-        #                                                current_MM_coords=current_MM_coords,
-        #                                                MMcharges=MMcharges, qm_elems=qm_elems,
-        #                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-        #                                                label=label, charge=charge, mult=mult)
-        #    # Calculate Theory 2
-        #    print("Running Theory 2:", self.theory2.theorynamelabel)
-        #    if Grad:
-        #        e_theory2, g_theory2 = self.theory2.run(current_coords=current_coords,
-        #                                                current_MM_coords=current_MM_coords,
-        #                                                MMcharges=MMcharges, qm_elems=qm_elems,
-        #                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-        #                                                label=label, charge=charge, mult=mult)
-        #    else:
-        #        e_theory2 = self.theory2.run(current_coords=current_coords,
-        #                                                current_MM_coords=current_MM_coords,
-        #                                                MMcharges=MMcharges, qm_elems=qm_elems,
-        #                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-        #                                                label=label, charge=charge, mult=mult)
-        #
-        #    # Combine energy and gradient
-        #    energy = e_theory1 + e_theory2
-        #    if self.printlevel == 2:
-        #        print("Energy (Theory1):", e_theory1)
-        #        print("Energy (Theory2):", e_theory2)
-        #        print("Energy (Combined):", energy)
-        #    if Grad:
-        #        gradient = g_theory1 + g_theory2
-        #        if self.printlevel == 3:
-        #            print("Gradient (Theory1):", g_theory1)
-        #            print("Gradient (Theory2):", g_theory2)
-        #            print("Gradient (Combined):", gradient)
 
         if Grad:
             return self.energy, self.gradient
