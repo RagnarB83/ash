@@ -4083,7 +4083,15 @@ class OpenMM_MDclass:
 
         if self.theory_runtype == "WRAP":
             print("WrapTheory run beginning")
-            
+
+            #Get connectivity from OpenMM topology
+            connectivity = []
+            for resi in self.openmmobject.topology.residues():
+                resatoms = [i.index for i in list(resi.atoms())]
+                connectivity.append(resatoms)
+            #Convert to dict
+            connectivity_dict = create_conn_dict(connectivity)
+
             #MD LOOP
             for step in range(simulation_steps):
                 checkpoint_begin_step = time.time()
