@@ -3452,36 +3452,58 @@ class OpenMM_MDclass:
         self.openmmobject=None
         self.QM_MM_object=None
         #Case: OpenMMTheory
+        print("Analyzing theory input to OpenMM_MDclass")
         if isinstance(theory, OpenMMTheory):
+            print("This is an OpenMMTheory object")
             self.openmmobject = theory
             self.QM_MM_object = None
             self.theory_runtype ="MM"
         #Case: QM/MM theory with OpenMM mm_theory
         elif isinstance(theory, ash.QMMMTheory):
+            print("This is an QMMMTheory object")
             self.QM_MM_object = theory
             self.openmmobject = theory.mm_theory
             self.theory_runtype ="QMMM"
+
+            #Making sure QM/MM object will exit before calculating MM part
+            self.QM_MM_object.exit_after_customexternalforce_update=True
+            print("Turning on externalforce option.")
+            self.QM_MM_object.openmm_externalforce = True
+            #NOTE: Now creating externalforceobject as part of this MD object instead (previously QM/MM object)
+            self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
+            # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
+            # (it would calculate OpenMM energy twice) so turning on in case forgotten
         #Case: QM/MM theory with OpenMM mm_theory
         elif isinstance(theory, ash.WrapTheory):
+            print("This is an WrapTheory object. Inspecting the components")
             self.theory_runtype ="WRAP"
 
             #Checking if OpenMMTheory object inside WrapTheory object
             for t in theory.theories:
                 if isinstance(t,OpenMMTheory):
-                    print("Found OpenMMTheory object")
+                    print("Found OpenMMTheory object inside WrapTheory")
                     self.openmmobject=t
                 elif isinstance(t,ash.QMMMTheory):
-                    print("Found QMMMTheory object")
+                    print("Found QMMMTheory object inside WrapTheory")
                     self.QM_MM_object=t
+                    #Making sure QM/MM object will exit before calculating MM part
+                    self.QM_MM_object.exit_after_customexternalforce_update=True
+                    print("Turning on externalforce option.")
+                    self.QM_MM_object.openmm_externalforce = True
                     if isinstance(t.mm_theory,OpenMMTheory):
-                        print("Found OpenMMTheory object as part of QMMMTheory object")
+                        print("Found OpenMMTheory object inside QMMMTheory object of WrapTheory object")
                         self.openmmobject=t.mm_theory
+            
             #If nothing found then we create:
             if self.openmmobject is None:
                 #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
                 self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
                                 hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
             self.wraptheory_object = theory
+
+            print("Turning on externalforce option.")
+            self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
+
         #Case: OpenMM with external QM
         else:
             #NOTE: Recognize QM theories here ??
@@ -3494,6 +3516,8 @@ class OpenMM_MDclass:
             #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
             self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
                                 hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+            print("Creating new OpenMM custom external force for external QM theory.")
+            self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
             self.QM_MM_object = None
             self.qmtheory=theory
             self.theory_runtype ="QM"
@@ -3702,23 +3726,22 @@ class OpenMM_MDclass:
             self.plumedcustomforce = self.openmmobject.add_custom_external_force()
 
         # QM/MM MD
-        if self.QM_MM_object is not None:
-            print("QM_MM_object provided. Switching to QM/MM loop.")
-            #print("QM/MM requires enforcePeriodicBox to be False.")
-            #True sometimes means we end up with solute in corner of box (wrong for nonPBC QM code)
-
-            #Making sure QM/MM object will exit before calculating MM part
-            self.QM_MM_object.exit_after_customexternalforce_update=True
-
-            # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
-            # (it would calculate OpenMM energy twice) so turning on in case forgotten
-            if self.QM_MM_object.openmm_externalforce is False:
-                print("QM/MM object was not set to have 'openmm_externalforce=True'.")
-                print("Turning on externalforce option.")
-                self.QM_MM_object.openmm_externalforce = True
-                #NOTE: Now creating externalforceobject as part of this MD object instead (previously QM/MM object)
-                self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
-
+        #if self.QM_MM_object is not None:
+        #    print("QM_MM_object provided. Switching to QM/MM loop.")
+        #    #print("QM/MM requires enforcePeriodicBox to be False.")
+        #    #True sometimes means we end up with solute in corner of box (wrong for nonPBC QM code)
+        #
+        #    #Making sure QM/MM object will exit before calculating MM part
+        #    self.QM_MM_object.exit_after_customexternalforce_update=True
+        #
+        #    # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
+        #    # (it would calculate OpenMM energy twice) so turning on in case forgotten
+        #    if self.QM_MM_object.openmm_externalforce is False:
+        #        print("QM/MM object was not set to have 'openmm_externalforce=True'.")
+        #        print("Turning on externalforce option.")
+        #        self.QM_MM_object.openmm_externalforce = True
+        #        #NOTE: Now creating externalforceobject as part of this MD object instead (previously QM/MM object)
+        #        self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
         # CENTER COORDINATES HERE on SOLUTE HERE ??
         # NOTE: Deprecated most likely
         #centercoordinates = False
@@ -3983,11 +4006,7 @@ class OpenMM_MDclass:
             #Writing metadyn_settings dict to disk
             import json
             json.dump(metadyn_settings, open(f"{biasdir}/ASH_MTD_parameters.txt",'w'))
-        #Case: QM MD
-        if self.externalqm is True:
-            print("Creating new OpenMM custom external force for external QM theory.")
-            #NOTE: If we run sim 1-by-one we constantly add 
-            self.qmcustomforce = self.openmmobject.add_custom_external_force()
+
 
         #Possible restraints added
         if restraints != None:
@@ -4321,7 +4340,7 @@ class OpenMM_MDclass:
                 if self.printlevel >= 2:
                     print("Energy:", energy)
                 print_time_rel(checkpoint, modulename="QM run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                self.openmmobject.update_custom_external_force(self.qmcustomforce,gradient,self.simulation)
+                self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,gradient,self.simulation)
 
                 #Calculate energy associated with external force so that we can subtract it later
                 #TODO: take this and QM energy and add to print_current_step_info
