@@ -3473,7 +3473,30 @@ class OpenMM_MDclass:
             self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
             # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
             # (it would calculate OpenMM energy twice) so turning on in case forgotten
-        #Case: QM/MM theory with OpenMM mm_theory
+        #CASE: ONIOMTHeory that might containOpenMMTheory
+        elif isinstance(theory, ash.ONIOMTheory):
+            print("This is an ONIOMTheory object")
+            print("ONIOMTheory objects are not currently supported")
+            #self.QM_MM_object = theory
+            self.ONIOM_object = theory
+            self.theory_runtype ="ONIOM"
+
+            for t in theory.theories_N:
+                if isinstance(t,OpenMMTheory):
+                    print("Found OpenMMTheory object inside ONIOMTheory")
+                    self.openmmobject=t
+                    print("Problem: ONIOMTheory containing an OpenMMTheory is currently not supported yet. Complain to developer")
+                    ashexit()
+            #If nothing found then we create:
+            if self.openmmobject is None:
+                #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
+                self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
+                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+            print("Turning on externalforce option.")
+            self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
+
+
+        #Case: WrapTheory that might contain OpenMMTheory and QMMMTheory as component or subcomponent
         elif isinstance(theory, ash.WrapTheory):
             print("This is an WrapTheory object. Inspecting the components")
             self.theory_runtype ="WRAP"
@@ -4313,9 +4336,8 @@ class OpenMM_MDclass:
                 #     checkpoint = time.time()
                 # print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
-        #External QM for OpenMMtheory
-        #Used to run QM dynamics with OpenMM
-        #elif self.externalqm is True:
+        #External QM for OpenMMtheory or ONIOM
+        #TODO: Later we should have separate ONIOM option
         elif self.theory_runtype == "QM":
             if self.printlevel >= 2:
                 print("External QM with OpenMM option")
@@ -4397,8 +4419,87 @@ class OpenMM_MDclass:
                     self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+        elif self.theory_runtype == "ONIOM":
+            if self.printlevel >= 2:
+                print("ONIOM MD")
+            for step in range(simulation_steps):
+                checkpoint_begin_step = time.time()
+                checkpoint = time.time()
+                if self.printlevel >= 2:
+                    print("Step:", step)
+                #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
+                current_state=self.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                checkpoint = time.time()
+                # Get current coordinates from state to use for ONIOM step
+                current_coords = np.array(current_state.getPositions(asNumpy=True))*10
+                print_time_rel(checkpoint, modulename="get current coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                checkpoint = time.time()
 
 
+                # Run  step to get full system ONIOM gradient.
+                # Updates OpenMM object with ONIOM forces
+                energy,gradient=self.ONIOM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True, charge=self.charge, mult=self.mult)
+                if self.printlevel >= 2:
+                    print("Energy:", energy)
+                print_time_rel(checkpoint, modulename="ONIOMTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,gradient,self.simulation)
+
+                #Calculate energy associated with external force so that we can subtract it later
+                #TODO: take this and QM energy and add to print_current_step_info
+                extforce_energy=3*np.mean(sum(gradient*current_coords*1.88972612546))
+                if self.printlevel >= 2:
+                    print("extforce_energy:", extforce_energy)
+
+                #Printing step-info or write-trajectory at regular intervals
+                if step % self.traj_frequency == 0:
+                    # Manual step info option
+                    if self.printlevel >= 2:
+                        print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
+                    #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
+                    #checkpoint = time.time()
+                    if self.energy_file_option != None:
+                        with open(self.energy_file_option,"a") as f:
+                            f.write(f"{energy}\n")
+
+                    # Manual trajectory option
+                    if self.trajectory_file_option =="XYZ":
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    #checkpoint = time.time()
+
+
+                #OpenMM metadynamics
+                if metadynamics is True:
+                    if self.printlevel >= 2:
+                        print("Now calling OpenMM native metadynamics and taking 1 step")
+                    meta_object.step(self.simulation, 1)
+
+                    #getCollectiveVariables
+                    cv1scaling=1
+                    cv2scaling=1
+                    if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
+                        if self.printlevel >= 2:
+                            print("MTD: Writing current collective variables to disk")
+                        current_cv = meta_object.getCollectiveVariables(self.simulation)
+                        if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
+                            cv1scaling=10
+                        elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
+                            cv1scaling=180/np.pi
+                        if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
+                            cv2scaling=10
+                        elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
+                            cv2scaling=180/np.pi
+                        currtime = step*self.timestep #Time in ps
+                        with open(f'colvar', 'a') as f:
+                            if metadyn_settings["numCVs"] == 2:
+                                f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
+                            elif metadyn_settings["numCVs"] == 1:
+                                f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
+                else:
+                    self.simulation.step(1)
+                print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
         #TODO: Delete at some point once testing and debugging are over
         elif self.dummy_MM is True:
             print("Dummy MM option")
@@ -4428,7 +4529,10 @@ class OpenMM_MDclass:
                 self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-        else:
+        
+        elif self.theory_runtype == "MM":
+            if self.printlevel >= 2:
+                print("External QM with OpenMM option")
             #OpenMM metadynamics
             if metadynamics is True:
                 print("Now calling OpenMM native metadynamics")
@@ -4437,6 +4541,9 @@ class OpenMM_MDclass:
                 print("Regular classical OpenMM MD option chosen.")
                 # Running all steps in one go
                 self.simulation.step(simulation_steps)
+        else:
+            print(f"Error: Unrecognized Theory runtype ({self.theory_runtype}) for MD. This might mean that this ASH Theory object is not yet supported for running MD. Exiting.")
+            ashexit()
 
         print_line_with_subheader2("OpenMM MD simulation finished!")
         print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
