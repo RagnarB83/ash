@@ -385,7 +385,7 @@ class WrapTheory(Theory):
         # Option to have theory only calculate certain atoms
         self.theory1_atoms=theory1_atoms
         self.theory2_atoms=theory2_atoms
-        self.theory3_atoms=theory3_atomse
+        self.theory3_atoms=theory3_atoms
 
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
         print("Creating WrapTheory object")
