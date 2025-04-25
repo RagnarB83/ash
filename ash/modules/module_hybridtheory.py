@@ -371,7 +371,7 @@ class WrapTheory(Theory):
     Combines 2 theories to give a modified energy and modified gradient
     """
     def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None,
-                 theory1_atoms=None, theory2_atoms=None):
+                 theory1_atoms=None, theory2_atoms=None, theory3_atoms=None):
         super().__init__()
 
         self.theorytype="QM"
@@ -385,6 +385,7 @@ class WrapTheory(Theory):
         # Option to have theory only calculate certain atoms
         self.theory1_atoms=theory1_atoms
         self.theory2_atoms=theory2_atoms
+        self.theory3_atoms=theory3_atomse
 
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
         print("Creating WrapTheory object")
@@ -423,7 +424,7 @@ class WrapTheory(Theory):
         for i,theory in enumerate(self.theories):
             print(f"Now running Theory: {theory.theorynamelabel}")
 
-            #If theory_atoms have been set then we only pass part of coordinates over
+            # If theory_atoms have been set then we only pass part of coordinates over
             if i+1 == 1 and self.theory1_atoms is not None:
                 print("theory1_atoms has been set:", self.theory1_atoms)
                 chosen_coords = np.take(current_coords, self.theory1_atoms, axis=0)
@@ -432,12 +433,15 @@ class WrapTheory(Theory):
                 print("theory2_atoms has been set:", self.theory2_atoms)
                 chosen_coords = np.take(current_coords, self.theory2_atoms, axis=0)
                 chosen_elems = [qm_elems[i] for i in self.theory2_atoms]
+            elif i+1 == 3 and self.theory3_atoms is not None:
+                print("theory3_atoms has been set:", self.theory3_atoms)
+                chosen_coords = np.take(current_coords, self.theory3_atoms, axis=0)
+                chosen_elems = [qm_elems[i] for i in self.theory3_atoms]
             eg_tuple = theory.run(current_coords=chosen_coords,
                                                 current_MM_coords=current_MM_coords,
                                                 MMcharges=MMcharges, qm_elems=chosen_elems,
                                                 elems=elems, Grad=Grad, PC=PC, numcores=numcores,
                                                 label=label, charge=charge, mult=mult)
-            print("eg_tuple:", eg_tuple)
             if Grad:
                 print(f"Theory: {theory.theorynamelabel}  gradient shape", eg_tuple[1].shape)
                 energy = eg_tuple[0]
@@ -451,6 +455,10 @@ class WrapTheory(Theory):
                     fullgrad=np.zeros((full_dimension,3))
                     fullgrad[self.theory2_atoms] = tempgrad
                     grad=fullgrad
+                elif i+1 == 3 and self.theory3_atoms is not None:
+                    fullgrad=np.zeros((full_dimension,3))
+                    fullgrad[self.theory3_atoms] = tempgrad
+                    grad=fullgrad
                 else:
                     grad=tempgrad
                 energies.append(energy)
@@ -458,7 +466,6 @@ class WrapTheory(Theory):
             else:
                 energy = eg_tuple
                 energies.append(energy)  
-        print("gradients:", gradients)
         print("\nAll WrapTheory calculations are done!\n")
 
         # Combine energy and gradient
