@@ -4197,7 +4197,7 @@ class OpenMM_MDclass:
                 if metadynamics is True:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
-                    self.mtd_step(self,step,meta_object,metadyn_settings)
+                    self.mtd_step(step,meta_object,metadyn_settings)
                 else:
                     self.simulation.step(1)
                     print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
@@ -4302,7 +4302,7 @@ class OpenMM_MDclass:
                 if metadynamics is True:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
-                    self.mtd_step(self,step,meta_object,metadyn_settings)
+                    self.mtd_step(step,meta_object,metadyn_settings)
                 #     cv1scaling=1
                 #     cv2scaling=1
                 #     meta_object.step(self.simulation, 1)

@@ -45,7 +45,7 @@ class MLatomTheory(Theory):
             print("MLatom  requires installation of mlatom")
             print("See: http://mlatom.com/docs/installation.html")
             print("Try: pip install mlatom")
-            print("You probably also have to do: pip install scipy torch torchani tqdm matplotlib statsmodels h5py pyh5md")
+            print("You probably also have to do: pip install joblib, scipy torch torchani tqdm matplotlib statsmodels h5py pyh5md")
             print()
             print("Error message:", e)
             ashexit()
@@ -277,7 +277,7 @@ class MLatomTheory(Theory):
 
             print("\nNow training...")
             self.model.train(molecular_database=molDB, validation_molecular_database=valDB,
-                            property_to_learn=property_to_learn,
+                            property_to_learn=property_to_learn, hyperparameters=hyperparameters,
                             xyz_derivative_property_to_learn=xyz_derivative_property_to_learn)
 
         self.training_done=True

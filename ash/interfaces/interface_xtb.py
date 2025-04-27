@@ -437,24 +437,24 @@ class xTBTheory:
             qm_elems_numbers=np.array(elemstonuccharges(qm_elems))
             assert len(coords_au) == len(qm_elems_numbers)
             #Choosing method
-            if self.xtbmethod == 'GFN2':
+            if 'GFN2' in self.xtbmethod.upper():
                 if self.printlevel >= 2:
                     print("Using GFN2 parameterization")
                 param_method=Param.GFN2xTB
-            elif self.xtbmethod == 'GFN1':
+            elif 'GFN1' in self.xtbmethod.upper():
                 if self.printlevel >= 2:
                     print("Using GFN1 parameterization")
                 param_method=Param.GFN1xTB
-            elif self.xtbmethod == 'GFN0':
+            elif 'GFN0' in self.xtbmethod.upper():
                 if self.printlevel >= 2:
                     print("Using GFN0 parameterization")
                 param_method=Param.GFN0xTB
-            elif self.xtbmethod == 'GFNFF':
+            elif 'GFNFF' in self.xtbmethod.upper():
                 if self.printlevel >= 2:
                     print("Using GFNFF parameterization")
                     print("warning: experimental")
                 param_method=Param.GFNFF
-            elif self.xtbmethod == 'IPEA':
+            elif 'IPEA' in self.xtbmethod.upper() :
                 if self.printlevel >= 2:
                     print("Using IPEA parameterization")
                 param_method=Param.IPEAxTB

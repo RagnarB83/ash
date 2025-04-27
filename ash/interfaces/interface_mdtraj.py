@@ -1,6 +1,7 @@
 import os
 from ash.functions.functions_general import ashexit
 import numpy as np
+from ash.modules.module_coords import write_xyzfile, Fragment
 
 def MDtraj_import():
     print("Importing mdtraj (https://www.mdtraj.org)")
@@ -122,7 +123,11 @@ def MDtraj_imagetraj(trajectory, pdbtopology, format='DCD', unitcell_lengths=Non
 def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
 
     #Trajectory basename
-    traj_basename = os.path.splitext(trajectory)[0]
+    #traj_basename = os.path.splitext(trajectory)[0]
+    traj_basename = os.path.basename(os.path.splitext(trajectory)[0])
+    print("traj_basename:", traj_basename)
+    #os.path.basename(
+    #exit()
 
     #Import mdtraj library
     mdtraj = MDtraj_import()
@@ -142,6 +147,8 @@ def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
         frames = [0,1]
     elif frames =="last":
         frames = [traj.n_frames-1,traj.n_frames]
+    elif frames =="all":
+        frames = [0,traj.n_frames]
     elif len(frames) != 2:
         print("Error: frames keyword needs to be a list of two integers.")
         print("E.g. frames=[0,1] to grab first frame or frames=[0,3] to grab first 3 frames")
@@ -162,12 +169,24 @@ def MDtraj_slice(trajectory, pdbtopology, format='PDB', frames=None):
     if format == 'DCD':
         tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.dcd')
         print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.dcd')
+        return traj_basename + f'_frame{frames[0]}_{frames[1]}.dcd'
     elif format == 'PDB':
         tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.pdb')
         print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.pdb')
+        return traj_basename + f'_frame{frames[0]}_{frames[1]}.pdb'
     elif format == 'XYZ':
-        tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.xyz')
-        print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.xyz')
+        #Looping over selection and writing XYZ since mdtraj does not give proper elements
+        print("Warning: the MDtraj_slice XYZ-writing requires guessing element names based on atomnames in the topology PDB-file.")
+        print("This is not always successful (might require manual change of the atomnames in PDB-file)")
+        dummyfrag = Fragment(pdbfile=pdbtopology, printlevel=0)
+        elems = dummyfrag.elems
+        for i,t in enumerate(tslice):
+            coords = t._xyz[0]*10
+            write_xyzfile(elems, coords, traj_basename + f'_frame{frames[0]}_{frames[1]}', 
+                          printlevel=1, writemode='a', title="title")
+        #tslice.save(traj_basename + f'_frame{frames[0]}_{frames[1]}.xyz')
+        #print("Saved sliced trajectory:", traj_basename + f'_frame{frames[0]}_{frames[1]}.xyz')
+        return traj_basename + f'_frame{frames[0]}_{frames[1]}.xyz'
     else:
         print("Unknown trajectory format.")
     return

@@ -6,15 +6,17 @@ import random
 from ash.modules.module_coords import write_xyzfile, split_multimolxyzfile
 from ash.functions.functions_general import natural_sort,ashexit
 from ash import Singlepoint, Fragment
+from ash.interfaces.interface_mdtraj import MDtraj_slice
 
 # Collection of functions related to machine learning and data analysis
 # Also helper tools for Torch and MLatom interfaces
 
 # Function to create ML training data given XYZ-files and 2 ASH theories
-def create_ML_training_data(xyzdir=None, xyz_trajectory=None, num_snapshots=100, random_snapshots=True,
+def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=100, random_snapshots=True,
+                                dcd_pdb_topology=None,
                                theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1):
-    if xyzdir is None and xyz_trajectory is None:
-        print("Error: create_ML_training_data requires xyzdir or xyz_trajectory option to be set!")
+    if xyzdir is None and xyz_trajectory is None and dcd_trajectory is None:
+        print("Error: create_ML_training_data requires xyzdir, xyz_trajectory or dcd_trajectory option to be set!")
         ashexit()
 
     if theory_1 is None:
@@ -29,6 +31,7 @@ def create_ML_training_data(xyzdir=None, xyz_trajectory=None, num_snapshots=100,
 
     print("xyzdir:", xyzdir)
     print("xyz_trajectory:", xyz_trajectory)
+    print("dcd_trajectory:", dcd_trajectory)
     print("Charge:", charge)
     print("Mult:", mult)
     print("Grad:", Grad)
@@ -51,6 +54,46 @@ def create_ML_training_data(xyzdir=None, xyz_trajectory=None, num_snapshots=100,
             print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
             list_of_xyz_files=full_list_of_xyz_files[:num_snapshots]
         print(f"List of XYZ-files to use (num {len(list_of_xyz_files)}):", list_of_xyz_files)
+
+    #DCD TRAJECTORY
+    elif dcd_trajectory is not None:
+        print("DCD-trajectory specified.")
+        #Getting absolute path of file
+        dcd_trajectory=os.path.abspath(dcd_trajectory)
+        print("Absolute path of DCD-trajectory:", dcd_trajectory)
+        print("Now splitting the DCD trajectory into individual XYZ-files.")
+        try:
+            shutil.rmtree("./xyz_traj_split")
+            print("Deleted old xyz_traj_split")
+        except:
+            pass
+        os.mkdir("xyz_traj_split")
+        print("Splitting DCD trajectory using mdtraj")
+        #Converting DCD traj into XYZ traj
+        xyztraj = MDtraj_slice(dcd_trajectory, dcd_pdb_topology, format='XYZ', frames="all")
+        # Splitting XYZ
+        os.chdir("xyz_traj_split")
+        print("here")
+        split_multimolxyzfile(f"../{xyztraj}", writexyz=True, skipindex=1,return_fragments=False)        
+        # Getting list of XYZ-files in directory, properly sorted
+        full_list_of_xyz_files=natural_sort(glob.glob(f"molecule*.xyz"))
+        print("Created directory xyz_traj_split")
+        print("Number of XYZ-files in directory:", len(full_list_of_xyz_files))
+        print("Note: This directory can be used as a directory for the xyzdir option to create_ML_training_data")
+        print()
+        print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
+        if random_snapshots is True:
+            print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
+            list_of_xyz_files = random.sample(full_list_of_xyz_files, num_snapshots)
+        else:
+            print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
+            list_of_xyz_files=full_list_of_xyz_files[:num_snapshots]
+        print(f"List of XYZ-files to use (num {len(list_of_xyz_files)}):", list_of_xyz_files)
+
+        # Prepending path
+        list_of_xyz_files=[f"./xyz_traj_split/{f}" for f in list_of_xyz_files]
+        print(list_of_xyz_files)
+        os.chdir('..')
 
     # XYZ TRAJECTORY
     elif xyz_trajectory is not None:
