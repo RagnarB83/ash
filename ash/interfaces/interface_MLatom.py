@@ -233,7 +233,7 @@ class MLatomTheory(Theory):
             print(f"subtrainDB {len(subtrainDB)}):", subtrainDB)
             print(f"valDB (size: {len(valDB)}):", valDB)
             print("hyperparameters:", hyperparameters)
-            if hyperparameters is False:
+            if len(hyperparameters) > 0:
                 print("Hyperparameters provided:", hyperparameters)
                 # optimize its hyperparameters
                 if 'sigma' in hyperparameters:
