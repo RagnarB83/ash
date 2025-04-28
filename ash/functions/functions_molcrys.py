@@ -612,6 +612,7 @@ def read_ciffile(file):
     atomsitecolumns=[]
     with open(file, encoding='utf-8') as f:
         for line in f:
+            print("line:",line)
             if 'cell_formula_units_Z' in line:
                 cellunits=int(line.split()[-1])
                 print("Found {} cell_formula_units_Z in CIF file".format(cellunits))
