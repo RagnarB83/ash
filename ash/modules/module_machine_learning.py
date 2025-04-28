@@ -13,7 +13,7 @@ from ash.interfaces.interface_mdtraj import MDtraj_slice
 
 # Function to create ML training data given XYZ-files and 2 ASH theories
 def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=100, random_snapshots=True,
-                                dcd_pdb_topology=None,
+                                dcd_pdb_topology=None, nth_frame_in_traj=1,
                                theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1):
     if xyzdir is None and xyz_trajectory is None and dcd_trajectory is None:
         print("Error: create_ML_training_data requires xyzdir, xyz_trajectory or dcd_trajectory option to be set!")
@@ -74,7 +74,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
         # Splitting XYZ
         os.chdir("xyz_traj_split")
         print("here")
-        split_multimolxyzfile(f"../{xyztraj}", writexyz=True, skipindex=1,return_fragments=False)        
+        split_multimolxyzfile(f"../{xyztraj}", writexyz=True, skipindex=nth_frame_in_traj,return_fragments=False)        
         # Getting list of XYZ-files in directory, properly sorted
         full_list_of_xyz_files=natural_sort(glob.glob(f"molecule*.xyz"))
         print("Created directory xyz_traj_split")
