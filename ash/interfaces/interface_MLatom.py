@@ -214,7 +214,7 @@ class MLatomTheory(Theory):
     def train(self, molDB_xyzfile=None, molDB_scalarproperty_file=None,
               molDB_xyzvecproperty_file=None, split_DB=False, split_fraction=[0.9, 0.1],
               property_to_learn='energy', xyz_derivative_property_to_learn='energy_gradients',
-              hyperparameters=None):
+              hyperparameters={}):
 
         import mlatom as ml
         molDB = ml.data.molecular_database.from_xyz_file(filename = molDB_xyzfile)
@@ -233,7 +233,7 @@ class MLatomTheory(Theory):
             print(f"subtrainDB {len(subtrainDB)}):", subtrainDB)
             print(f"valDB (size: {len(valDB)}):", valDB)
 
-            if hyperparameters is not None:
+            if hyperparameters is False:
                 print("Hyperparameters provided:", hyperparameters)
                 # optimize its hyperparameters
                 if 'sigma' in hyperparameters:
