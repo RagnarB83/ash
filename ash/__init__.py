@@ -19,7 +19,7 @@ sys.path.insert(0, ashpath)
 print("Sys path:", sys.path)
 
 from .functions.functions_general import create_ash_env_file,blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
-    printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit, natural_sort
+    printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit, natural_sort,numlines_in_file
 
 #Results dataclass
 from .modules.module_results import ASH_Results,read_results_from_file
