@@ -610,7 +610,7 @@ def read_ciffile(file):
     symmopgrab_oldsyntax=False
     cellunits=None
     atomsitecolumns=[]
-    with open(file) as f:
+    with open(file, encoding='utf-8') as f:
         for line in f:
             if 'cell_formula_units_Z' in line:
                 cellunits=int(line.split()[-1])
