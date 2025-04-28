@@ -232,7 +232,7 @@ class MLatomTheory(Theory):
             subtrainDB, valDB = molDB.split(fraction_of_points_in_splits=split_fraction)
             print(f"subtrainDB {len(subtrainDB)}):", subtrainDB)
             print(f"valDB (size: {len(valDB)}):", valDB)
-
+            print("hyperparameters:", hyperparameters)
             if hyperparameters is False:
                 print("Hyperparameters provided:", hyperparameters)
                 # optimize its hyperparameters
