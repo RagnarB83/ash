@@ -107,7 +107,8 @@ class TorchTheory():
     def load_model(self,model_file):
         import torch
         # sTODO: weights only option ?
-        self.model = torch.jit.load(model_file)
+        #self.model = torch.jit.load(model_file)
+        self.model = torch.load(model_file)
 
     def save_model(self,filename=None, index=None):
         import torch
