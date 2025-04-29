@@ -4303,38 +4303,11 @@ class OpenMM_MDclass:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
                     self.mtd_step(step,meta_object,metadyn_settings)
-                #     cv1scaling=1
-                #     cv2scaling=1
-                #     meta_object.step(self.simulation, 1)
-                #     print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                #     checkpoint = time.time()
-
-                #     #getCollectiveVariables
-                #     if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
-                #         if self.printlevel >= 2:
-                #             print("MTD: Writing current collective variables to disk")
-                #         current_cv = meta_object.getCollectiveVariables(self.simulation)
-                #         if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
-                #             cv1scaling=10
-                #         elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
-                #             cv1scaling=180/np.pi
-                #         if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
-                #             cv2scaling=10
-                #         elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
-                #             cv2scaling=180/np.pi
-                #         currtime = step*self.timestep #Time in ps
-                #         with open(f'colvar', 'a') as f:
-                #             if metadyn_settings["numCVs"] == 2:
-                #                 f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
-                #             elif metadyn_settings["numCVs"] == 1:
-                #                 f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
-                #     print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                #     checkpoint = time.time()
-                # else:
-                #     self.simulation.step(1)
-                #     print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                #     checkpoint = time.time()
-                # print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                else:
+                    self.simulation.step(1)
+                    print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                    checkpoint = time.time()
+                    print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
         #External QM for OpenMMtheory or ONIOM
         #TODO: Later we should have separate ONIOM option
