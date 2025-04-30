@@ -169,7 +169,7 @@ class MLatomTheory(Theory):
             if self.model_file is not None:
                 print("model_file:", self.model_file)
                 file_present = os.path.isfile(self.model_file)
-                print("File exits:", file_present)
+                print("File exists:", file_present)
                 # Storing absolute path of file
                 self.model_file=os.path.abspath(self.model_file)
                 print("Absolute path to model_file:", self.model_file)
@@ -324,7 +324,7 @@ class MLatomTheory(Theory):
             if self.model_file is not None:
                 print("A modelfile was specified when MLatomTheory object was created. Checking if it exists")
                 file_present = os.path.isfile(self.model_file)
-                print("File exits:", file_present)
+                print("File exists:", file_present)
                 if file_present is False:
                     print("File does not exist. Exiting.")
                     ashexit()

@@ -5064,7 +5064,7 @@ def OpenMM_MD_plumed(fragment=None, theory=None, timestep=0.001, simulation_step
               enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, add_centerforce=False,
               centerforce_atoms=None, centerforce_distance=10.0, centerforce_constant=1.0, centerforce_center=None,
-              barostat_frequency=25, specialbox=False,
+              barostat_frequency=25, specialbox=False, chkfile=None, statefile=None,
               plumed_input_string=None, printlevel=2, numcores=1):
     print_line_with_mainheader("OpenMM metadynamics using OpenMM-Plumed interface")
 
@@ -5085,7 +5085,7 @@ def OpenMM_MD_plumed(fragment=None, theory=None, timestep=0.001, simulation_step
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, platform=platform, hydrogenmass=hydrogenmass,
                         add_centerforce=add_centerforce,trajfilename=trajfilename,
-                        centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
+                        centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant, chkfile=chkfile, statefile=statefile,
                         centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
                         barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
 
