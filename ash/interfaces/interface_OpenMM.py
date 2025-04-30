@@ -4095,7 +4095,34 @@ class OpenMM_MDclass:
         #    pass
 
         #Make sure file associated with StateDataReporter is open
-        if restart is False:
+        if restart is True:
+            print("Restart true. Reusing simulation reporters")
+            if self.datafilename is not None:
+                print("Reopening datafile:", self.datafilename)
+                #self.dataoutputoption = open(self.datafilename,'a')
+                #Setting simulation reporters
+                #Seems to be necessary to do this again after restart
+                #restart option means that StateDatareport and DCDReporter will append to files
+                self.set_sim_reporters(self.simulation, restart=True)
+        elif statefile is not None:
+            print("statefile is used")
+            if self.datafilename is not None:
+                print("Reopening datafile:", self.datafilename)
+                #self.dataoutputoption = open(self.datafilename,'a')
+                #Setting simulation reporters
+                #Seems to be necessary to do this again after restart
+                #restart option means that StateDatareport and DCDReporter will append to files
+                self.set_sim_reporters(self.simulation, restart=True)
+        elif chkfile is not None:
+            print("chkfile is used")
+            if self.datafilename is not None:
+                print("Reopening datafile:", self.datafilename)
+                #self.dataoutputoption = open(self.datafilename,'a')
+                #Setting simulation reporters
+                #Seems to be necessary to do this again after restart
+                #restart option means that StateDatareport and DCDReporter will append to files
+                self.set_sim_reporters(self.simulation, restart=True)
+        else:
             print("Restart false")
             if self.datafilename is not None:
                 #RB addition: Delete file after each run
@@ -4108,20 +4135,10 @@ class OpenMM_MDclass:
             #Setup data and simulation reporters for simulation object
             self.set_sim_reporters(self.simulation)
 
+            print("self.positions:", self.positions)
             # Setting coordinates of OpenMM object from current fragment.coords
             self.openmmobject.set_positions(self.positions,self.simulation)
-        else:
-            print("Restart true. Reusing simulation reporters")
-            if self.datafilename is not None:
-                print("Reopening datafile:", self.datafilename)
-                #self.dataoutputoption = open(self.datafilename,'a')
-                #Setting simulation reporters
-                #Seems to be necessary to do this again after restart
-                #restart option means that StateDatareport and DCDReporter will append to files
-                self.set_sim_reporters(self.simulation, restart=True)
-
         print()
-
 
         if self.theory_runtype == "WRAP":
             print("WrapTheory run beginning")
@@ -4904,7 +4921,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
               CV1_biaswidth=0.5, CV2_biaswidth=0.5, CV1_range=None, CV2_range=None,
               CV1_parameters=None, CV2_parameters=None,
               user_cvforce1=None, user_biasvar1=None, user_cvforce2=None, user_biasvar2=None,
-              frequency=1, savefrequency=10, printlevel=2,
+              frequency=1, savefrequency=10, printlevel=2, chkfile=None, statefile=None,
               biasdir='.', multiplewalkers=False, numcores=1, walkerid=None):
     print_line_with_mainheader("OpenMM metadynamics")
 
@@ -4946,7 +4963,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, platform=platform, hydrogenmass=hydrogenmass,
-                        add_centerforce=add_centerforce,trajfilename=trajfilename,
+                        add_centerforce=add_centerforce,trajfilename=trajfilename, chkfile=chkfile, statefile=statefile,
                         centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
                         centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
                         barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
