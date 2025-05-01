@@ -3906,6 +3906,13 @@ class OpenMM_MDclass:
         checkpoint = time.time()
         return
 
+    def write_state_and_chk_files(self,step):
+        # Saving state and chkfile to disk
+        print(f"Step {step}. Saving a statefile and checkpointfile : OpenMM_MD_state.xml and OpenMM_MD_checkpoint.chk")
+        print("Can be used to restart a simulation (statefile and chkfile keywords) using the same coordinates and velocities.")
+        self.simulation.saveState('OpenMM_MD_state.xml')
+        self.simulation.saveCheckpoint('OpenMM_MD_checkpoint.chk')
+
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
     def run(self, simulation_steps=None, simulation_time=None, metadynamics=False, metadyn_settings=None, mm_elems=None,
@@ -4206,6 +4213,10 @@ class OpenMM_MDclass:
 
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
+                    
                     if self.printlevel >= 2:
                         print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
                         write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
@@ -4287,6 +4298,10 @@ class OpenMM_MDclass:
 
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
+
                     # Manual step info option
                     #NOTE: Can't do it because the MM-energy has not been calculated yet when we do customexternalforceupdate option
                     #if self.printlevel >= 2:
@@ -4362,9 +4377,13 @@ class OpenMM_MDclass:
 
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+
                     # Manual step info option
                     if self.printlevel >= 2:
                         print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
+
                     #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     #checkpoint = time.time()
                     if self.energy_file_option != None:
@@ -4443,11 +4462,13 @@ class OpenMM_MDclass:
 
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+
                     # Manual step info option
                     if self.printlevel >= 2:
                         print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
-                    #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
-                    #checkpoint = time.time()
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
+
                     if self.energy_file_option != None:
                         with open(self.energy_file_option,"a") as f:
                             f.write(f"{energy}\n")
@@ -4509,8 +4530,8 @@ class OpenMM_MDclass:
                 if step % self.traj_frequency == 0:
                     # Manual step info option
                     print_current_step_info(step,current_state,self.openmmobject)
-                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                    checkpoint = time.time()
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
 
                     if self.trajectory_file_option =="XYZ":
                         write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
