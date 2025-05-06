@@ -2673,7 +2673,10 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             waterxmlfile = "amber14/tip3pfb.xml" #NOTE: this is not actually TIP3P but a reparaterized version
         elif watermodel.lower () == 'tip3p':
                 modeller_solvent_name="tip3p"
-                waterxmlfile = "amber14/tip3p.xml"
+                if forcefield == 'Amber14':
+                    waterxmlfile = "amber14/tip3p.xml"
+                else:
+                    waterxmlfile = "tip3p.xml"
         print("Waterxmlfile selected:", waterxmlfile)
 
 

@@ -3140,7 +3140,10 @@ def read_ORCA_json_file(file):
     print("Molecule-CoordinateUnits:", data["Molecule"]["CoordinateUnits"])
     print("Molecule-HFTyp:", data["Molecule"]["HFTyp"])
     print()
-    print("Densities found:", data["Molecule"]["Densities"].keys())
+    try:
+        print("Densities found:", data["Molecule"]["Densities"].keys())
+    except:
+        pass
     print("Dictionary keys of data", data["Molecule"].keys())
     #Note: only returning sub-dict Molecule
     return data["Molecule"]
