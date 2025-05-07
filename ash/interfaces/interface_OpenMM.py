@@ -3372,7 +3372,7 @@ def read_NPT_statefile(npt_output):
 
 # Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
-              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
+              traj_frequency=1000, restartfile_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
@@ -3383,7 +3383,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
               barostat_frequency=25, specialbox=False, chkfile=None, statefile=None):
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
-                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
+                        traj_frequency=traj_frequency, restartfile_frequency=restartfile_frequency, temperature=temperature, integrator=integrator,
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
                         energy_file_option=energy_file_option, force_file_option=force_file_option, atomic_units_force_reporter=atomic_units_force_reporter,
                         constraints=constraints, restraints=restraints,
@@ -3411,7 +3411,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.001,
-                 traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
+                 traj_frequency=1000, restartfile_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
                  barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
                  energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
                  coupling_frequency=1, printlevel=2, platform='CPU',
@@ -3578,6 +3578,7 @@ class OpenMM_MDclass:
         self.coupling_frequency = coupling_frequency
         self.timestep = timestep
         self.traj_frequency = int(traj_frequency)
+        self.restartfile_frequency=restartfile_frequency
         self.plumed_object = plumed_object
         self.barostat_frequency = barostat_frequency
         self.trajectory_file_option=trajectory_file_option
@@ -4216,12 +4217,13 @@ class OpenMM_MDclass:
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
 
-                    # Writing state and chk files
-                    self.write_state_and_chk_files(step)
-                    
                     if self.printlevel >= 2:
                         print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
                         write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
+
+                if step % self.restartfile_frequency == 0:
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
 
                 #OpenMM metadynamics
                 if metadynamics is True:
@@ -4298,11 +4300,12 @@ class OpenMM_MDclass:
                                       exit_after_customexternalforce_update=True, charge=self.charge, mult=self.mult)
                 print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
-                #Printing step-info or write-trajectory at regular intervals
-                if step % self.traj_frequency == 0:
-
+                if step % self.restartfile_frequency == 0:
                     # Writing state and chk files
                     self.write_state_and_chk_files(step)
+
+                #Printing step-info or write-trajectory at regular intervals
+                if step % self.traj_frequency == 0:
 
                     # Manual step info option
                     #NOTE: Can't do it because the MM-energy has not been calculated yet when we do customexternalforceupdate option
@@ -4383,8 +4386,6 @@ class OpenMM_MDclass:
                     # Manual step info option
                     if self.printlevel >= 2:
                         print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
-                    # Writing state and chk files
-                    self.write_state_and_chk_files(step)
 
                     #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     #checkpoint = time.time()
@@ -4398,6 +4399,9 @@ class OpenMM_MDclass:
                     #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                     #checkpoint = time.time()
 
+                if step % self.restartfile_frequency == 0:
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
 
                 #OpenMM metadynamics
                 if metadynamics is True:
@@ -4468,8 +4472,6 @@ class OpenMM_MDclass:
                     # Manual step info option
                     if self.printlevel >= 2:
                         print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
-                    # Writing state and chk files
-                    self.write_state_and_chk_files(step)
 
                     if self.energy_file_option != None:
                         with open(self.energy_file_option,"a") as f:
@@ -4481,6 +4483,9 @@ class OpenMM_MDclass:
                     #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                     #checkpoint = time.time()
 
+                if step % self.restartfile_frequency == 0:
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
 
                 #OpenMM metadynamics
                 if metadynamics is True:
@@ -4532,12 +4537,13 @@ class OpenMM_MDclass:
                 if step % self.traj_frequency == 0:
                     # Manual step info option
                     print_current_step_info(step,current_state,self.openmmobject)
-                    # Writing state and chk files
-                    self.write_state_and_chk_files(step)
 
                     if self.trajectory_file_option =="XYZ":
                         write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
 
+                if step % self.restartfile_frequency == 0:
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
 
                 self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
