@@ -3807,7 +3807,6 @@ class OpenMM_MDclass:
     #Set sim reporters. Needs to be done after simulation is created and not modified anymore
     def set_sim_reporters(self,simulation,restart=False):
         import openmm
-
         #CheckpointReporter
         print("Creating CheckpointReporter that will write a restartable checkpointfile every X steps")
         checkpointfilename='OpenMM_MD.chk'
@@ -4107,31 +4106,31 @@ class OpenMM_MDclass:
         #Make sure file associated with StateDataReporter is open
         if restart is True:
             print("Restart true. Reusing simulation reporters")
-            if self.datafilename is not None:
-                print("Reopening datafile:", self.datafilename)
+            #if self.datafilename is not None:
+            #    print("Reopening datafile:", self.datafilename)
                 #self.dataoutputoption = open(self.datafilename,'a')
                 #Setting simulation reporters
                 #Seems to be necessary to do this again after restart
                 #restart option means that StateDatareport and DCDReporter will append to files
-                self.set_sim_reporters(self.simulation, restart=True)
+            self.set_sim_reporters(self.simulation, restart=True)
         elif statefile is not None:
             print("statefile is used")
-            if self.datafilename is not None:
-                print("Reopening datafile:", self.datafilename)
+            #if self.datafilename is not None:
+            #    print("Reopening datafile:", self.datafilename)
                 #self.dataoutputoption = open(self.datafilename,'a')
                 #Setting simulation reporters
                 #Seems to be necessary to do this again after restart
                 #restart option means that StateDatareport and DCDReporter will append to files
-                self.set_sim_reporters(self.simulation, restart=True)
+            self.set_sim_reporters(self.simulation, restart=True)
         elif chkfile is not None:
             print("chkfile is used")
-            if self.datafilename is not None:
-                print("Reopening datafile:", self.datafilename)
+            #if self.datafilename is not None:
+            #    print("Reopening datafile:", self.datafilename)
                 #self.dataoutputoption = open(self.datafilename,'a')
                 #Setting simulation reporters
                 #Seems to be necessary to do this again after restart
                 #restart option means that StateDatareport and DCDReporter will append to files
-                self.set_sim_reporters(self.simulation, restart=True)
+            self.set_sim_reporters(self.simulation, restart=True)
         else:
             print("Restart false")
             if self.datafilename is not None:
