@@ -1147,8 +1147,8 @@ class OpenMMTheory:
         import openmm
         print(f"Adding custom angle force for atoms: {i}, {j}, {k}  with value: {value} radians with forceconstant={forceconstant}")
         angle_force = openmm.CustomAngleForce("0.5*k*(theta-theta0)^2")
-        angle_force.addGlobalParameter("k",forceconstant)
-        angle_force.addGlobalParameter("theta0", value)
+        angle_force.addGlobalParameter("k",forceconstant*openmm.unit.kilocalorie_per_mole/openmm.unit.radian**2)
+        angle_force.addGlobalParameter("theta0", value*openmm.unit.radian)
         angle_force.addAngle(i, j, k)
         angle_force.setUsesPeriodicBoundaryConditions(False)
         self.system.addForce(angle_force)
@@ -1162,8 +1162,8 @@ class OpenMMTheory:
         torsion_force = openmm.CustomTorsionForce("0.5*k*dtheta^2; dtheta = min(diff, 2*Pi-diff); diff = abs(theta - theta0)")
         #Note: using global here, should be fine 1 torsion
         torsion_force.addGlobalParameter("Pi", math.pi)
-        torsion_force.addGlobalParameter("k",forceconstant)
-        torsion_force.addGlobalParameter("theta0", value)
+        torsion_force.addGlobalParameter("k",forceconstant*openmm.unit.kilocalorie_per_mole/openmm.unit.radian**2)
+        torsion_force.addGlobalParameter("theta0", value*openmm.unit.radian)
         torsion_force.addTorsion(i, j, k, l)
         print("torsion_force getTorsionParameters:", torsion_force.getTorsionParameters(0))
         torsion_force.setUsesPeriodicBoundaryConditions(True)
@@ -5680,14 +5680,15 @@ def get_atoms_outside_box(allcoords, centroid, boxlength):
 
 
 #Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity,centroid):
+def wrap_box_coords_new(allcoords,boxlength,connectivity_dict,connectivity,centroid):
 
+    print("Inside wrap_box_coords_new")
     #Get all indices of atoms outside box
     indices = get_atoms_outside_box(allcoords,centroid,boxlength)
     boxlength_half=boxlength/2
 
 
-    #print("indices:", indices)
+    print("indices:", indices)
 
     #Get indices of all whole molecules that have an atom outisde box
     all_mol_indices = [connectivity[connectivity_dict.get(i)] for i in indices]
@@ -5720,7 +5721,8 @@ def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity,centroid)
     return allcoords
 
 #Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
+def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity,centroid):
+    print("Inside wrap_box_coords_old3")
     #checkpoint = time.time()
     boxlength_half=boxlength/2
     #Get atom indices for atoms that have a x,y or z coordinate outside box
@@ -5779,6 +5781,8 @@ def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
                 allcoords[members, c] += boxlength + boxlength * (abs(colval) // (boxlength * 1.5))
     #print(f"FinalTime:{time.time()-checkpoint}")
     return allcoords
+
+wrap_box_coords=wrap_box_coords_new
 
 def trim_list_of_lists(k):
     k = sorted(k)
