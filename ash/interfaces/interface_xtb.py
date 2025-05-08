@@ -127,9 +127,6 @@ class xTBTheory:
             else:
                 self.xtbdir = xtbdir
 
-                # Setting XTBHOME, required for GFN0
-                os.environ['XTBHOME'] = f"{self.xtbdir}/../share/xtb"
-
             # Solvent line to be passed to run-call
             if solvent != None:
                 self.solvent=solvent
@@ -139,6 +136,8 @@ class xTBTheory:
         else:
             print("unknown runmode. exiting")
             ashexit()
+        # Setting XTBHOME, required for GFN0
+        os.environ['XTBHOME'] = f"{self.xtbdir}/../share/xtb"
 
     # Set numcores method
     def set_numcores(self,numcores):
