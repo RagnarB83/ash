@@ -477,7 +477,7 @@ class WrapTheory(Theory):
         if Grad:
             self.gradient = sum(gradients)
             if self.printlevel == 3:
-                for g,count in enumerate(gradients):
+                for count,g in enumerate(gradients):
                     print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
                 print("Gradient (Combined):", self.gradient)
 
