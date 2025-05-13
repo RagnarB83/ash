@@ -101,6 +101,7 @@ from .interfaces.interface_MNDO import MNDOTheory
 
 from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
 from .interfaces.interface_xtb import xTBTheory
+from .interfaces.interface_DFTB import DFTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
 from .interfaces.interface_MLatom import MLatomTheory
 from .interfaces.interface_DRACO import get_draco_radii
