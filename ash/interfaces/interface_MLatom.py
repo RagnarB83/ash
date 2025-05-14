@@ -29,12 +29,14 @@ import shutil
 
 class MLatomTheory(Theory):
     def __init__(self, printlevel=2, numcores=1, label="mlatom",
-                 method=None, ml_model=None, model_file=None, qm_program=None, ml_program=None, device='cpu'):
+                 method=None, ml_model=None, model_file=None, qm_program=None, ml_program=None, device='cpu',
+                 verbose=2):
         module_init_time=time.time()
         super().__init__()
         self.theorynamelabel="MLatom"
         self.theorytype="QM"
         self.printlevel=printlevel
+
         self.label=label
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
 
@@ -68,6 +70,7 @@ class MLatomTheory(Theory):
         self.ml_model = ml_model
         self.model_file=model_file
         self.device = device  # 'cpu' or 'cuda' (used by Torch-based models/methods)
+        self.verbose=verbose
         print("Checking if method or ml_model was selected")
         print("Method:", self.method)
         #############
@@ -126,10 +129,10 @@ class MLatomTheory(Theory):
                     print("ml_program keyword was not set and is required for KREG. Options are: 'KREG_API' and 'MLatomF'. Exiting.")
                     print("Setting to MLatomF and continuing")
                     ml_program='MLatomF'
-                self.model = ml.models.kreg(model_file=model_file, ml_program=ml_program)
+                self.model = ml.models.kreg(model_file=model_file, ml_program=ml_program, verbose=self.verbose)
             elif ml_model.lower() == 'ani':
                 print("ANI selected")
-                self.model = ml.models.ani(model_file=model_file)
+                self.model = ml.models.ani(model_file=model_file, verbose=self.verbose)
                 print(self.model)
             elif ml_model.lower() == 'dpmd':
                 print("DMPD selected")
@@ -147,19 +150,19 @@ class MLatomTheory(Theory):
                     print("and: pip install dpgen")
                     exit()
 
-                self.model = ml.models.dpmd(model_file=model_file)
+                self.model = ml.models.dpmd(model_file=model_file, verbose=self.verbose)
             elif ml_model.lower() == 'gap':
                 print("GAP selected")
-                self.model = ml.models.gap(model_file=model_file)
+                self.model = ml.models.gap(model_file=model_file, verbose=self.verbose)
             elif ml_model.lower() == 'physnet':
                 print("Physnet selected")
-                self.model = ml.models.physnet(model_file=model_file)
+                self.model = ml.models.physnet(model_file=model_file, verbose=self.verbose)
             elif ml_model.lower() == 'sgdml':
                 print("SGDML selected")
-                self.model = ml.models.sgdml(model_file=model_file)
+                self.model = ml.models.sgdml(model_file=model_file, verbose=self.verbose)
             elif ml_model.lower() == 'mace':
                 print("MACE selected")
-                self.model = ml.models.mace(model_file=model_file)
+                self.model = ml.models.mace(model_file=model_file, verbose=self.verbose)
             else:
                 print("Unknown ml_model selected. Exiting")
                 ashexit()
@@ -220,9 +223,14 @@ class MLatomTheory(Theory):
         molDB = ml.data.molecular_database.from_xyz_file(filename = molDB_xyzfile)
         print(f"Created from file ({molDB_xyzfile}): a", molDB)
 
+
         molDB.add_scalar_properties_from_file(molDB_scalarproperty_file, property_to_learn)
-        if xyz_derivative_property_to_learn == 'energy_gradients':
+        if molDB_xyzvecproperty_file is not None:
+            print("Training on both energies and gradients")
+        #if xyz_derivative_property_to_learn == 'energy_gradients':
             molDB.add_xyz_vectorial_properties_from_file(molDB_xyzvecproperty_file, xyz_derivative_property_to_learn)
+        else:
+            print("Training on only energies")
 
         # Split
         if self.ml_model.lower() == 'kreg':
@@ -232,6 +240,7 @@ class MLatomTheory(Theory):
             subtrainDB, valDB = molDB.split(fraction_of_points_in_splits=split_fraction)
             print(f"subtrainDB {len(subtrainDB)}):", subtrainDB)
             print(f"valDB (size: {len(valDB)}):", valDB)
+
             print("hyperparameters:", hyperparameters)
             if len(hyperparameters) > 0:
                 print("Hyperparameters provided:", hyperparameters)
@@ -258,14 +267,14 @@ class MLatomTheory(Theory):
             else:
                 print("No hyperparameters provided (NOT recommended)")
             print("\nNow training...")
-            self.model.train(molecular_database=molDB,
+            result = self.model.train(molecular_database=molDB,
                             property_to_learn=property_to_learn,
                             xyz_derivative_property_to_learn=xyz_derivative_property_to_learn)
 
         elif self.ml_model.lower() == 'gap':
             print("GAP selected, no splitting")
             print("\nNow training...")
-            self.model.train(molecular_database=molDB,
+            result = self.model.train(molecular_database=molDB,
                             property_to_learn=property_to_learn,
                             xyz_derivative_property_to_learn=xyz_derivative_property_to_learn)
         else:
@@ -281,6 +290,26 @@ class MLatomTheory(Theory):
                             xyz_derivative_property_to_learn=xyz_derivative_property_to_learn)
 
         self.training_done=True
+
+        # Predicting 
+        from mlatom.MLtasks import predicting, analyzing
+        print("Now predicting for molDB")
+        predicting(model=self.model, molecular_database=molDB, value=True, gradient=True)
+        print("Now predicting for subtrainDB")
+        predicting(model=self.model, molecular_database=subtrainDB, value=True, gradient=True)
+        print("Now predicting for valDB")
+        predicting(model=self.model, molecular_database=valDB, value=True, gradient=True)
+
+        # Analyzing
+        self.result_molDB = analyzing(molDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="molDB")
+        self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="valDB")
+        self.result_valDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="valDB")
+
+        print("Statistics saved as attributes:  result_molDB, result_subtrainDB and result_valDB of MLatomTheory object")
+        print()
+        print("self.result_molDB:", self.result_molDB)
+        print("self.result_subtrainDB:", self.result_subtrainDB)
+        print("self.result_valDB:", self.result_valDB)
 
     # General run function
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
