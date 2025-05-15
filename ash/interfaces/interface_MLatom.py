@@ -301,10 +301,15 @@ class MLatomTheory(Theory):
         predicting(model=self.model, molecular_database=valDB, value=True, gradient=True)
 
         # Analyzing
-        self.result_molDB = analyzing(molDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="molDB")
-        self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="valDB")
-        self.result_valDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="valDB")
-
+        if molDB_xyzvecproperty_file is not None:
+            self.result_molDB = analyzing(molDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="molDB")
+            self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="valDB")
+            self.result_valDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="valDB")
+        else:
+            self.result_molDB = analyzing(molDB, ref_value='energy', est_value='estimated_y',  set_name="molDB")
+            self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', set_name="valDB")
+            self.result_valDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', set_name="valDB")
+        
         print("Statistics saved as attributes:  result_molDB, result_subtrainDB and result_valDB of MLatomTheory object")
         print()
         print("self.result_molDB:", self.result_molDB)
