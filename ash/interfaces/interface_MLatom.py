@@ -223,14 +223,16 @@ class MLatomTheory(Theory):
         molDB = ml.data.molecular_database.from_xyz_file(filename = molDB_xyzfile)
         print(f"Created from file ({molDB_xyzfile}): a", molDB)
 
-
+        #Learning energy by default
         molDB.add_scalar_properties_from_file(molDB_scalarproperty_file, property_to_learn)
+        # If XYZvec-property-file provided then we are doing E+G
         if molDB_xyzvecproperty_file is not None:
             print("Training on both energies and gradients")
-        #if xyz_derivative_property_to_learn == 'energy_gradients':
             molDB.add_xyz_vectorial_properties_from_file(molDB_xyzvecproperty_file, xyz_derivative_property_to_learn)
         else:
             print("Training on only energies")
+            # Setting var to None (important)
+            xyz_derivative_property_to_learn=None
 
         # Split
         if self.ml_model.lower() == 'kreg':
