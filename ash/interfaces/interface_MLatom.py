@@ -267,7 +267,7 @@ class MLatomTheory(Theory):
             else:
                 print("No hyperparameters provided (NOT recommended)")
             print("\nNow training...")
-            result = self.model.train(molecular_database=molDB,
+            self.model.train(molecular_database=molDB,
                             property_to_learn=property_to_learn,
                             xyz_derivative_property_to_learn=xyz_derivative_property_to_learn)
 
@@ -303,11 +303,11 @@ class MLatomTheory(Theory):
         # Analyzing
         if molDB_xyzvecproperty_file is not None:
             self.result_molDB = analyzing(molDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="molDB")
-            self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="valDB")
+            self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="subtrainDB")
             self.result_valDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="valDB")
         else:
             self.result_molDB = analyzing(molDB, ref_value='energy', est_value='estimated_y',  set_name="molDB")
-            self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', set_name="valDB")
+            self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', set_name="subtrainDB")
             self.result_valDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', set_name="valDB")
 
         print("Statistics saved as attributes:  result_molDB, result_subtrainDB and result_valDB of MLatomTheory object")
