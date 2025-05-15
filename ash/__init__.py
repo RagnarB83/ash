@@ -103,7 +103,7 @@ from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, r
 from .interfaces.interface_xtb import xTBTheory
 from .interfaces.interface_DFTB import DFTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
-from .interfaces.interface_MLatom import MLatomTheory
+from .interfaces.interface_MLatom import MLatomTheory, Mlatom_print_model_stats
 from .interfaces.interface_DRACO import get_draco_radii
 from .interfaces.interface_Grimme_corrections import DFTD4Theory, calc_DFTD4, calc_gcp, gcpTheory
 from .interfaces.interface_torch import TorchTheory

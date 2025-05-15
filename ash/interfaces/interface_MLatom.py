@@ -9,7 +9,7 @@ import shutil
 ##########################
 # MLatom Theory interface
 ##########################
-# NOTE: we mostly intend to support - ML functionality in MLatom (not all basic QM methods)
+# NOTE: we mostly intend to support - ML functionality in MLatom (not basic QM methods)
 
 # MLatom has 3 types of models:
 # 1) methods: these are pre-trained or at least standalone electronic structure methods
@@ -24,8 +24,6 @@ import shutil
 # NOTES on interface:
 # AIQMx methods require either MNDO or Sparrow as QM-program. Also dftd4.
 # Sparrow lacks AIQMx gradient (for ODM2 part), only energies available.
-
-
 
 class MLatomTheory(Theory):
     def __init__(self, printlevel=2, numcores=1, label="mlatom",
@@ -215,7 +213,7 @@ class MLatomTheory(Theory):
             ashexit()
 
     def train(self, molDB_xyzfile=None, molDB_scalarproperty_file=None,
-              molDB_xyzvecproperty_file=None, split_DB=False, split_fraction=[0.9, 0.1],
+              molDB_xyzvecproperty_file=None, split_fraction=[0.9, 0.1],
               property_to_learn='energy', xyz_derivative_property_to_learn='energy_gradients',
               hyperparameters={}):
 
@@ -311,7 +309,7 @@ class MLatomTheory(Theory):
             self.result_molDB = analyzing(molDB, ref_value='energy', est_value='estimated_y',  set_name="molDB")
             self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', set_name="valDB")
             self.result_valDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', set_name="valDB")
-        
+
         print("Statistics saved as attributes:  result_molDB, result_subtrainDB and result_valDB of MLatomTheory object")
         print()
         print("self.result_molDB:", self.result_molDB)
@@ -397,3 +395,31 @@ class MLatomTheory(Theory):
 
                 print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
                 return self.energy
+
+
+# Print statistics for dict with statistics for many models
+# Assumes a dictionary with modelfilenames as keys and statistics_dict_forDB as values
+def Mlatom_print_model_stats(dbdict=None, dbname="Sub-train", Grad=True):
+    print("-"*30)
+    print(f"       {dbname} database  ")
+    print("-"*30)
+    anykey = list(dbdict.keys())[0]
+    print("Num-samples:", dbdict[anykey]["values"]["length"])
+    print(f"{'':<20s} {'RMSE':>8s} {'MAE':>8s} {'Corr':>8s} {'R^2':>8s} {'pos_off':>8s} {'neg_off':>8s}")
+    valscaling=627.5091 # Eh->kcal/mol
+    for file, stats in dbdict.items():
+        vals=stats["values"]
+        print(f"{file:<20s} {vals['rmse']*valscaling:8.2f} {vals['mae']*valscaling:8.2f} {vals['corr_coef']:8.4f} \
+{vals['r_squared']:8.4f} {vals['pos_off']*valscaling:8.2f}  {vals['neg_off']*valscaling:8.2f}")
+    print()
+    if Grad:
+        print("Gradients (Eh/Bohr)")
+        gradscaling=1.0
+        for file, stats in dbdict.items():
+            try:
+                grads=stats["gradients"]
+                print(f"{file:<20s} {grads['rmse']*gradscaling:8.6f} {grads['mae']*gradscaling:8.6f} {grads['corr_coef']:8.4f} \
+{grads['r_squared']*gradscaling:8.4f} {grads['pos_off']*gradscaling:8.6f}  {grads['neg_off']*gradscaling:8.6f}")
+            except KeyError:
+                print("Found no gradient stats. skipping")
+        print()
