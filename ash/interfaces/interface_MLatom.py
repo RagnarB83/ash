@@ -405,6 +405,7 @@ def Mlatom_print_model_stats(dbdict=None, dbname="Sub-train", Grad=True):
     print("-"*30)
     anykey = list(dbdict.keys())[0]
     print("Num-samples:", dbdict[anykey]["values"]["length"])
+    print("Energies (kcal/mol)")
     print(f"{'':<20s} {'RMSE':>8s} {'MAE':>8s} {'Corr':>8s} {'R^2':>8s} {'pos_off':>8s} {'neg_off':>8s}")
     valscaling=627.5091 # Eh->kcal/mol
     for file, stats in dbdict.items():
