@@ -216,7 +216,7 @@ class MLatomTheory(Theory):
               molDB_xyzvecproperty_file=None, split_fraction=[0.9, 0.1],
               property_to_learn='energy', xyz_derivative_property_to_learn='energy_gradients',
               hyperparameters={}):
-
+        module_init_time=time.time()
         import mlatom as ml
         molDB = ml.data.molecular_database.from_xyz_file(filename = molDB_xyzfile)
         print(f"Created from file ({molDB_xyzfile}): a", molDB)
@@ -315,6 +315,8 @@ class MLatomTheory(Theory):
         print("self.result_molDB:", self.result_molDB)
         print("self.result_subtrainDB:", self.result_subtrainDB)
         print("self.result_valDB:", self.result_valDB)
+
+        print_time_rel(module_init_time, modulename='MLatom train', moduleindex=2)
 
     # General run function
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,

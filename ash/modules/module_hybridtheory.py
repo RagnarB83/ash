@@ -443,7 +443,7 @@ class WrapTheory(Theory):
                                                 elems=elems, Grad=Grad, PC=PC, numcores=numcores,
                                                 label=label, charge=charge, mult=mult)
             if Grad:
-                print(f"Theory: {theory.theorynamelabel}  gradient shape", eg_tuple[1].shape)
+                #print(f"Theory: {theory.theorynamelabel}  gradient shape", eg_tuple[1].shape)
                 energy = eg_tuple[0]
                 tempgrad = eg_tuple[1]
                 # Assemble gradient of correct dimension
