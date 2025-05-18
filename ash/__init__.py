@@ -7,6 +7,9 @@ import numpy as np
 import sys
 import atexit
 import pathlib
+import os
+import glob
+
 # Getting ASH-path
 ashpath = str(pathlib.Path(__file__).parent.resolve())
 print("ashpath:", ashpath)
@@ -20,6 +23,16 @@ print("Sys path:", sys.path)
 
 from .functions.functions_general import create_ash_env_file,blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
     printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit, natural_sort,numlines_in_file
+
+# Test if inputfile has a bad name
+inputfile_base=os.path.splitext(sys.argv[0])[0]
+pyfiles_in_dir =  glob.glob('*.py')
+forbidden_inputfilenames = ['ash', 'openmm', 'xtb', 'mlatom', 'torch', 'pyscf', 'knarr', 'mace']
+for pyfile in pyfiles_in_dir:
+    if os.path.splitext(pyfile)[0] in forbidden_inputfilenames:
+        print(f"Error: Current directory contains file : {inputfile_base}.py with a forbidden name. Please rename it")
+        print("Forbidden names:", forbidden_inputfilenames)
+        ashexit()
 
 #Results dataclass
 from .modules.module_results import ASH_Results,read_results_from_file

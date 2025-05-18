@@ -114,11 +114,18 @@ class MLatomTheory(Theory):
         #############
         #Boolean to check whether training of this object has been done or not
         self.training_done=False
+        #Multi-model run
+        self.multi_model_run=False
+        self.models=None
         if self.ml_model is not None:
             print("ml_model was selected:", ml_model)
             print("model_file:", model_file)
             print("ml_program:", ml_program)
 
+            if isinstance(model_file,list):
+                print("A list of modelfiles has been provided:")
+                print("Enabling multi_model_run")
+                self.multi_model_run=True
             # KREG
             # ml_program is either MLatomF or KREG_API
             if ml_model.lower() == 'kreg':
@@ -127,11 +134,20 @@ class MLatomTheory(Theory):
                     print("ml_program keyword was not set and is required for KREG. Options are: 'KREG_API' and 'MLatomF'. Exiting.")
                     print("Setting to MLatomF and continuing")
                     ml_program='MLatomF'
-                self.model = ml.models.kreg(model_file=model_file, ml_program=ml_program, nthreads=self.numcores)
+                if self.multi_model_run:
+                    self.models=[]
+                    for mfile in model_file:
+                        self.models.append(ml.models.kreg(model_file=mfile, ml_program=ml_program, nthreads=self.numcores))
+                else:
+                    self.model = ml.models.kreg(model_file=model_file, ml_program=ml_program, nthreads=self.numcores)
             elif ml_model.lower() == 'ani':
                 print("ANI selected")
-                self.model = ml.models.ani(model_file=model_file, verbose=self.verbose, device=self.device)
-                print(self.model)
+                if  self.multi_model_run:
+                    self.models=[]
+                    for mfile in model_file:
+                        self.models.append(ml.models.ani(model_file=mfile, verbose=self.verbose, device=self.device))
+                else:
+                    self.model = ml.models.ani(model_file=model_file, verbose=self.verbose, device=self.device)
             elif ml_model.lower() == 'dpmd':
                 print("DMPD selected")
                 # Testing to see if dp is found
@@ -147,34 +163,77 @@ class MLatomTheory(Theory):
                     print("Might be as simple as: mamba install deepmd-kit lammps horovod")
                     print("and: pip install dpgen")
                     exit()
-
-                self.model = ml.models.dpmd(model_file=model_file, verbose=self.verbose)
+                if  self.multi_model_run:
+                    self.models=[]
+                    for mfile in model_file:
+                        self.models.append(ml.models.dpmd(model_file=mfile, verbose=self.verbose))
+                else:
+                    self.model = ml.models.dpmd(model_file=model_file, verbose=self.verbose)
             elif ml_model.lower() == 'gap':
                 print("GAP selected")
-                self.model = ml.models.gap(model_file=model_file, verbose=self.verbose)
+                if  self.multi_model_run:
+                    self.models=[]
+                    for mfile in model_file:
+                        self.models.append(ml.models.gap(model_file=mfile, verbose=self.verbose))
+                else:
+                    self.model = ml.models.gap(model_file=model_file, verbose=self.verbose)
             elif ml_model.lower() == 'physnet':
                 print("Physnet selected")
-                self.model = ml.models.physnet(model_file=model_file, verbose=self.verbose)
+                if  self.multi_model_run:
+                    self.models=[]
+                    for mfile in model_file:
+                        self.models.append(ml.models.physnet(model_file=mfile, verbose=self.verbose))
+                else:
+                    self.model = ml.models.physnet(model_file=model_file, verbose=self.verbose)
             elif ml_model.lower() == 'sgdml':
                 print("SGDML selected")
-                self.model = ml.models.sgdml(model_file=model_file, verbose=self.verbose)
+                if  self.multi_model_run:
+                    self.models=[]
+                    for mfile in model_file:
+                        self.models.append(ml.models.sgdml(model_file=mfile, verbose=self.verbos))
+                else:
+                    self.model = ml.models.sgdml(model_file=model_file, verbose=self.verbose)
             elif ml_model.lower() == 'mace':
                 print("MACE selected")
-                self.model = ml.models.mace(model_file=model_file, verbose=self.verbose)
+                if  self.multi_model_run:
+                    self.models=[]
+                    for mfile in model_file:
+                        self.models.append(ml.models.mace(model_file=mfile, verbose=self.verbose))
+                else:
+                    self.model = ml.models.mace(model_file=model_file, verbose=self.verbose)
             else:
                 print("Unknown ml_model selected. Exiting")
                 ashexit()
-            print("MLatomTheory model created:", self.model)
+            if self.multi_model_run is False:
+                print("MLatomTheory model created:", self.model)
 
             # model_file
-            if self.model_file is not None:
-                print("model_file:", self.model_file)
-                file_present = os.path.isfile(self.model_file)
-                print("File exists:", file_present)
-                # Storing absolute path of file
-                self.model_file=os.path.abspath(self.model_file)
-                print("Absolute path to model_file:", self.model_file)
-
+            if self.multi_model_run:
+                print("Multi-model run is active. Checking if all files exist")
+                self.model_files = [] #New empty list of filenames
+                for mfile in self.model_file:
+                    file_present = os.path.isfile(mfile)
+                    print(f"File {mfile} exists:", file_present)
+                    print("Absolute path to model_file:", self.model_file)
+                    if file_present is False:
+                        print(f"File {mfile} does not exist. Exiting.")
+                        ashexit()
+                    # Storing absolute path of file
+                    self.model_files.append(os.path.abspath(mfile))
+                    print("Absolute path to model_file:", os.path.abspath(mfile))
+            else:
+                if isinstance(self.model_file,str):
+                    print(f"A filename-string ({self.model_file}) was provided, checking if file exists")
+                    file_present = os.path.isfile(self.model_file)
+                    print(f"File {self.model_file} exists:", file_present)
+                    if file_present is False:
+                        print(f"File {self.model_file} does not exist. Exiting.")
+                        ashexit()
+                    # Storing absolute path of file
+                    self.model_file=os.path.abspath(self.model_file)
+                    print("Absolute path to model_file:", self.model_file)
+                else:
+                    print(f"Error: model_file {self.model_file} is not a valid filename")
         # Initialization done
         print_time_rel(module_init_time, modulename='MLatom creation', moduleindex=2)
 
@@ -348,54 +407,68 @@ class MLatomTheory(Theory):
                     print("AIQM1@DFT method was selected. Disp. correction needed")
                 elif 'AIQM1' in self.method:
                     print("AIQM1 method was selected. Disp. correction needed")
-
+        #Multi-run 
+        elif self.models is not None:
+            print("Multiple models present")
         elif self.ml_model is not None:
-            print("A ml_model was selected: ", self.ml_model)
+            print("A single ml_model was selected: ", self.ml_model)
             model = self.model
             if self.training_done is True:
                 print("Training of MLatom model has been performed. Running should work")
             else:
                 print("No training of this object has been done.")
                 print("model file:", self.model_file)
-            if self.model_file is not None:
-                print("A modelfile was specified when MLatomTheory object was created. Checking if it exists")
-                file_present = os.path.isfile(self.model_file)
-                print("File exists:", file_present)
-                if file_present is False:
-                    print("File does not exist. Exiting.")
-                    ashexit()
         else:
             print("No method or ml-model was defined yet.")
             ashexit()
 
         # Run
         if PC is True:
-            print("PC is not yet supported by MLatomTheory interface")
-            # Note: MNDO should support PCs, not sure about sparrow
+            print("PC is not supported by MLatomTheory interface")
             ashexit()
         else:
+            print("Running MLatom singlepoint calculation")
+            if self.multi_model_run:
+                print("Multi-model run")
+                energies=[]
+                gradients=[]
+                for i,model in enumerate(self.models):
+                    print("Running model from file:", self.model_files[i])
+                    model.predict(molecule=molecule,calculate_energy=True,
+                                calculate_energy_gradients=Grad,
+                                calculate_hessian=False)
+                    energy = float(molecule.energy)
+                    print(f"Energy: {energy} Eh")
+                    energies.append(energy)
+                    if Grad:
+                        print("Gradient was calculated.")
+                        gradient = molecule.get_energy_gradients()
+                        if self.printlevel > 2:
+                            print(f"Gradient for model {i}:", gradient)
+                        gradients.append(gradient)
 
-            if Grad is True:
-                print("Running MLatom Energy + Gradient calculation")
+                # Combining model results
+                E_ave = np.mean(energies)
+                E_std = np.std(energies)
+                print(f"Average model energy {E_ave} Eh")
+                print(f"Standard deviation {E_std} Eh")
+                self.energy = E_ave
+                if Grad:
+                    self.gradient = np.mean( np.array(gradients), axis=0 )
+            else:
                 model.predict(molecule=molecule,calculate_energy=True,
-                            calculate_energy_gradients=True,
+                            calculate_energy_gradients=Grad,
                             calculate_hessian=False)
                 self.energy = float(molecule.energy)
-                self.gradient = molecule.get_energy_gradients()
+                if Grad:
+                    print("Gradient was calculated.")
+                    self.gradient = molecule.get_energy_gradients()
                 print("Single-point MLatom energy:", self.energy)
 
-                print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
+            print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
+            if Grad:
                 return self.energy,self.gradient
-
             else:
-                print("Running MLatom Energy calculation")
-                model.predict(molecule=molecule, calculate_energy=True)
-                self.energy = molecule.energy
-                print("Single-point MLatom energy:", self.energy)
-                #std = molecule.aiqm1_nn.energy_standard_deviation
-                #print("std:", std)
-
-                print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
                 return self.energy
 
 
