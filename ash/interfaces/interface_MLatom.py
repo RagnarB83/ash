@@ -221,19 +221,19 @@ class MLatomTheory(Theory):
                     # Storing absolute path of file
                     self.model_files.append(os.path.abspath(mfile))
                     print("Absolute path to model_file:", os.path.abspath(mfile))
-            else:
-                if isinstance(self.model_file,str):
-                    print(f"A filename-string ({self.model_file}) was provided, checking if file exists")
-                    file_present = os.path.isfile(self.model_file)
-                    print(f"File {self.model_file} exists:", file_present)
-                    if file_present is False:
-                        print(f"File {self.model_file} does not exist. Exiting.")
-                        ashexit()
-                    # Storing absolute path of file
-                    self.model_file=os.path.abspath(self.model_file)
-                    print("Absolute path to model_file:", self.model_file)
-                else:
-                    print(f"Error: model_file {self.model_file} is not a valid filename")
+            #else:
+                #if isinstance(self.model_file,str):
+                #    print(f"A filename-string ({self.model_file}) was provided, checking if file exists")
+                #    file_present = os.path.isfile(self.model_file)
+                #    print(f"File {self.model_file} exists:", file_present)
+                #    if file_present is False:
+                #        print(f"File {self.model_file} does not exist. Exiting.")
+                #        ashexit()
+                #    # Storing absolute path of file
+                #    self.model_file=os.path.abspath(self.model_file)
+                #    print("Absolute path to model_file:", self.model_file)
+                #else:
+                #    print(f"Error: model_file {self.model_file} is not a valid filename")
         # Initialization done
         print_time_rel(module_init_time, modulename='MLatom creation', moduleindex=2)
 
