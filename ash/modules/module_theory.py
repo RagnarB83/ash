@@ -1,6 +1,7 @@
 from ash.modules.module_coords import print_coords_for_atoms, print_coords_all
 from ash.functions.functions_general import ashexit, BC
 import numpy as np
+import ash
 # Basic Theory class
 
 class Theory:
@@ -35,7 +36,7 @@ class QMTheory(Theory):
 # Numerical gradient class
 
 class NumGradclass:
-    def __init__(self, theory, npoint=2, displacement=0.00264589,  runmode="serial", printlevel=2):
+    def __init__(self, theory, npoint=2, displacement=0.00264589,  runmode="serial", numcores=1, printlevel=2):
         print("Creating NumGrad wrapper object")
         self.theory=theory
         self.theorytype="QM"
@@ -44,6 +45,7 @@ class NumGradclass:
         self.npoint=npoint
         self.runmode=runmode
         self.printlevel=printlevel
+        self.numcores=numcores
 
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -60,7 +62,7 @@ class NumGradclass:
         numatoms= len(current_coords)
         displacement_bohr = self.displacement*1.88972612546
 
-        list_of_displaced_geos, list_of_displacements = creating_displaced_geos(current_coords, elems, self.displacement,self.npoint, printlevel=2)
+        list_of_displaced_geos, list_of_displacements, all_disp_fragments = creating_displaced_geos(current_coords, elems, self.displacement,self.npoint, charge, mult, printlevel=2)
         if self.runmode == "serial":
             print("Numgrad: runmode is serial")
             print("Running original geometry first")
@@ -79,10 +81,12 @@ class NumGradclass:
                 dispdict[(disp)] = energy
 
         elif self.runmode == "parallel":
-            print("not ready")
-            exit()
+            print("Numgrad: runmode is parallel")
             result = ash.functions.functions_parallel.Job_parallel(fragments=all_disp_fragments, theories=[self.theory], numcores=self.numcores,
                 allow_theory_parallelization=True, Grad=False, printlevel=self.printlevel, copytheory=True)
+            print("result:", result)
+            dispdict = result.energies_dict
+
         # Assemble gradient
         gradient = np.zeros((numatoms,3))
         # 2-point
@@ -110,7 +114,7 @@ class NumGradclass:
 
         return energy, gradient
 
-def creating_displaced_geos(current_coords,elems,displacement,npoint, printlevel=2):
+def creating_displaced_geos(current_coords,elems,displacement,npoint, charge, mult, printlevel=2):
     displacement_bohr=displacement*1.88972612546
     print("Displacement: {:5.4f} Å ({:5.4f} Bohr)".format(displacement,displacement_bohr))
     print("Starting geometry:")
@@ -171,8 +175,8 @@ def creating_displaced_geos(current_coords,elems,displacement,npoint, printlevel
             calclabel="Atom: {} Coord: {} Direction: {}".format(str(atom_disp),str(crd),str(drection))
             stringlabel=f"{disp[0]}_{disp[1]}_{disp[2]}"
         #Create fragment
-        #frag=ash.Fragment(coords=dispgeo, elems=elems,label=stringlabel, printlevel=0, charge=charge, mult=mult)
-        #all_disp_fragments.append(frag)
-        list_of_labels.append(calclabel)
+        frag=ash.Fragment(coords=dispgeo, elems=elems,label=stringlabel, printlevel=0, charge=charge, mult=mult)
+        all_disp_fragments.append(frag)
+        #list_of_labels.append(calclabel)
 
-    return list_of_displaced_geos, list_of_displacements
+    return list_of_displaced_geos, list_of_displacements,all_disp_fragments
