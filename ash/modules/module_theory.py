@@ -124,7 +124,7 @@ class NumGradclass:
         self.energy = orig_energy
         self.gradient = gradient 
 
-        return energy, gradient
+        return self.energy, self.gradient
 
 def creating_displaced_geos(current_coords,elems,displacement,npoint, charge, mult, printlevel=2):
     displacement_bohr=displacement*1.88972612546
