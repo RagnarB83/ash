@@ -4818,7 +4818,7 @@ class OpenMM_MDclass:
 def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.csv",
                              numsteps_per_NPT=10000, max_NPT_cycles=10, pressure=1,
                           volume_threshold=1.3, density_threshold=0.005, temperature=300, timestep=0.001,
-                          traj_frequency=100, trajfilename='equilibration_NPT', trajectory_file_option='DCD', specialatoms=None, specialtraj_frequency=100,
+                          traj_frequency=100, trajfilename='equilibration_NPT', trajectory_file_option='DCD',
                           coupling_frequency=1, enforcePeriodicBox=True, use_mdtraj=True,
                           dummyatomrestraint=False, solute_indices=None, barostat_frequency=25):
     """NPT simulations until volume and density stops changing
@@ -4833,8 +4833,6 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
         temperature (int, optional): [description]. Defaults to 300.
         timestep (float, optional): [description]. Defaults to 0.001.
         traj_frequency (int, optional): [description]. Defaults to 100.
-        specialatoms (list, optional): [description]. Default to None
-        specialtraj_frequency (int, optional): [description]. Default to 100 activate when specialatoms mentioned
         trajectory_file_option (str, optional): [description]. Defaults to 'DCD'.
         coupling_frequency (int, optional): [description]. Defaults to 1.
         barostat_frequency (int, optional): [description]. Defaults to 25 (timesteps).
