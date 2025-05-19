@@ -97,8 +97,8 @@ class NumGradclass:
                     # Pos and neg directions
                     if self.runmode == "parallel":
                         #'0_0_+'
-                        posval = dispdict[f"{atindex}{u}+"]
-                        negval = dispdict[f"{atindex}{u}-"]
+                        posval = dispdict[f"{atindex}_{u}_+"]
+                        negval = dispdict[f"{atindex}_{u}_-"]
                     else:
                         posval = dispdict[(atindex,u,'+')]
                         negval = dispdict[(atindex,u,'-')]
@@ -112,7 +112,7 @@ class NumGradclass:
                     # Pos direction only
                     if self.runmode == "parallel":
                         #'0_0_+'
-                        posval = dispdict[f"{atindex}{u}+"]
+                        posval = dispdict[f"{atindex}_{u}_+"]
                     else:
                         posval = dispdict[(atindex,u,'+')]
                     grad_component=(posval - orig_energy)/displacement_bohr
