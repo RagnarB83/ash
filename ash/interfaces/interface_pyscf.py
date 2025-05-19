@@ -3139,7 +3139,7 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
 
 #Standalone function for reading either pySCF-CHK file or Molden file and returning MO coefficients and occupations
 #Used by pySCFTheory, DiceTheory and BlockTheory
-def pySCF_read_MOs(moreadfile,pyscfobject):
+def pySCF_read_MOs(moreadfile,pyscfobject, motype="scf"):
     import pyscf
     print("Reading MOs from :", moreadfile)
     #Molden read
@@ -3148,9 +3148,13 @@ def pySCF_read_MOs(moreadfile,pyscfobject):
         mol, mo_energy, mo_coefficients, occupations, irrep_labels, spins = pyscf.tools.molden.load(moreadfile)
     #Checkpoint file
     elif '.chk'  in moreadfile:
-        mo_coefficients = pyscf.lib.chkfile.load(moreadfile, 'mcscf/mo_coeff')
-        occupations = pyscf.lib.chkfile.load(moreadfile, 'mcscf/mo_occ')
-    print("Occupations:", occupations)
+        print("Reading checkpoint file")
+        #motype can be e.g. 'scf' or 'mcscf'
+        mo_coefficients = pyscf.lib.chkfile.load(moreadfile, f'{motype}/mo_coeff')
+        print("mo_coefficients:", mo_coefficients)
+        occupations = pyscf.lib.chkfile.load(moreadfile, f'{motype}/mo_occ')
+        print("occupations:", occupations)
+
     print("Length of occupations array:", len(occupations))
     if len(occupations) != pyscfobject.num_orbs:
         print("Occupations array length does NOT match length of MO coefficients in PySCF object")

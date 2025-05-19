@@ -317,13 +317,13 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         print(f"There are {totnumborb} orbitals in the system")
 
         #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
-        if self.moreadfile == None:
+        if self.moreadfile is None:
             print("No checkpoint file given (moreadfile option).")
             print(f"Will calculate PySCF {self.initial_orbitals} (natural) orbitals to use as input in Block CAS job")
-            if self.initial_orbitals not in ['canMP2','MP2','DFMP2', 'DFMP2relax', 'CCSD','CCSD(T)', 'DMRG', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
+            if self.initial_orbitals not in ['RKS', 'UKS', 'RHF', 'UHF', 'canMP2','MP2','DFMP2', 'DFMP2relax', 'CCSD','CCSD(T)', 'DMRG', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
-            print("Options are: MP2, CCSD, CCSD(T), DMRG, AVAS-CASSCF, DMET-CASSCF")
+            print("Options are: RHF, UHF, RKS, UKS, MP2, CCSD, CCSD(T), SHCI, AVAS-CASSCF, DMET-CASSCF")
             #Option to do small-M DMRG-CASCI/CASSCF step
             if self.initial_orbitals == 'DMRG':
                 print("DMRG initial orbital option")
@@ -352,6 +352,12 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals,
                                                                 CAS_AO_labels=self.CAS_AO_labels, elems=elems, numcores=self.numcores)
+            #If
+            elif self.initial_orbitals in ['RHF','UHF','RKS','UKS']:
+                print("Initial orbital option is original SCF orbitals. Using MO-coeffs from ")
+                mo_coefficients = self.pyscftheoryobject.mf.mo_coeff
+                occupations = self.pyscftheoryobject.mf.mo_occ
+                print("occupations:", occupations)
             else:
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)

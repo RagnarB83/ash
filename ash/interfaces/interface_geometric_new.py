@@ -20,7 +20,7 @@ from ash.modules.module_results import ASH_Results
 #Wrapper function around GeomeTRICOptimizerClass
 #NOTE: theory and fragment given to Optimizer function but not part of Class initialization. Only passed to run method
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', force_coordsystem=False, frozenatoms=None, constraints=None,
-                       constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None,
+                       constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None, Numgrad=False,
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
                        modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
     """
@@ -34,7 +34,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
         ashexit()
     #NOTE: Class does not take fragment and theory
     optimizer=GeomeTRICOptimizerClass(charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms,
-                        maxiter=maxiter, ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt,
+                        maxiter=maxiter, ActiveRegion=ActiveRegion, actatoms=actatoms, Numgrad=Numgrad, TSOpt=TSOpt,
                         hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,modelhessian=modelhessian,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                         print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write,
@@ -52,7 +52,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
 class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, charge=None, mult=None, coordsystem='tric',
                      frozenatoms=None, maxiter=250, ActiveRegion=False, actatoms=None,
-                       convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
+                       convergence_setting=None, conv_criteria=None, Numgrad=False, TSOpt=False, hessian=None,
                        print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None,
                        subfrctor=1, MM_PDB_traj_write=False, printlevel=2, force_coordsystem=False):
 
@@ -90,6 +90,7 @@ class GeomeTRICOptimizerClass:
             self.coordsystem=coordsystem
             self.print_atoms_list=print_atoms_list
             self.ActiveRegion=ActiveRegion
+            self.Numgrad=Numgrad #Numerical gradient
             self.TSOpt=TSOpt
             self.subfrctor=subfrctor
             #For MM or QM/MM whether to write PDB-trajectory or not
@@ -546,7 +547,7 @@ class GeomeTRICOptimizerClass:
                 print(f"geomeTRIC Geometry optimization converged in {ashengine.iteration_count} steps!")
                 blankline()
 
-            #QM/MM: Doing final energy evaluation if Truncated PC option was on
+            # QM/MM: Doing final energy evaluation if Truncated PC option was on
             if isinstance(theory,QMMMTheory):
                 if theory.TruncatedPC is True:
                     print("Truncated PC approximation was active. Doing final energy calculation with full PC environment")
@@ -801,8 +802,7 @@ class ASHengineclass:
                 print_coords_for_atoms(currcoords, self.fragment.elems, self.print_atoms_list)
                 print("")
                 print("Note: printed only print_atoms_list (this is not necessarily all atoms) ")
-            E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, charge=self.charge, mult=self.mult,
-                                Grad=True)
+            E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, charge=self.charge, mult=self.mult, Grad=True)
             #label='Iter'+str(self.iteration_count)
             self.iteration_count += 1
             self.energy = E

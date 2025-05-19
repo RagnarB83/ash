@@ -426,16 +426,15 @@ noio
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals,
                                                                 CAS_AO_labels=self.CAS_AO_labels, elems=elems, numcores=self.numcores)
-            #If
             elif self.initial_orbitals in ['RHF','UHF','RKS','UKS']:
                 print("Initial orbital option is original SCF orbitals. Using MO-coeffs from ")
                 mo_coefficients = self.pyscftheoryobject.mf.mo_coeff
                 occupations = self.pyscftheoryobject.mf.mo_occ
                 print("occupations:", occupations)
-            #Assuming MP2/CCSD/CCSD(T) natural orbitals
+            # Assuming MP2/CCSD/CCSD(T) natural orbitals
             else:
                 print("Calling nat-orb option in pyscftheory")
-                #Call pyscftheory method for MP2,CCSD and CCSD(T)
+                # Call pyscftheory method for MP2,CCSD and CCSD(T)
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals,
                                                                 elems=elems, numcores=self.numcores)
