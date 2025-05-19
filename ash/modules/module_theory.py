@@ -95,8 +95,13 @@ class NumGradclass:
                 # Looping over x,yz
                 for u in [0,1,2]:
                     # Pos and neg directions
-                    posval = dispdict[(atindex,u,'+')]
-                    negval = dispdict[(atindex,u,'-')]
+                    if self.runmode == "parallel":
+                        #'0_0_+'
+                        posval = dispdict[f"{atindex}{u}{+}"]
+                        negval = dispdict[f"{atindex}{u}{-}"]
+                    else:
+                        posval = dispdict[(atindex,u,'+')]
+                        negval = dispdict[(atindex,u,'-')]
                     grad_component=(posval - negval)/(2*displacement_bohr)
                     gradient[atindex,u] = grad_component
         # 1-point 
@@ -105,7 +110,11 @@ class NumGradclass:
                 # Looping over x,yz
                 for u in [0,1,2]:
                     # Pos direction only
-                    posval = dispdict[(atindex,u,'+')]
+                    if self.runmode == "parallel":
+                        #'0_0_+'
+                        posval = dispdict[f"{atindex}{u}{+}"]
+                    else:
+                        posval = dispdict[(atindex,u,'+')]
                     grad_component=(posval - orig_energy)/displacement_bohr
                     gradient[atindex,u] = grad_component
 
