@@ -11,6 +11,7 @@ from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel
 from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex
 from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller, read_hessian
 from ash.modules.module_results import ASH_Results
+from ash.modules.module_theory import NumGradclass
 
 ##################################################
 # NEW Interface to geomeTRIC Optimization Library
@@ -20,7 +21,7 @@ from ash.modules.module_results import ASH_Results
 #Wrapper function around GeomeTRICOptimizerClass
 #NOTE: theory and fragment given to Optimizer function but not part of Class initialization. Only passed to run method
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', force_coordsystem=False, frozenatoms=None, constraints=None,
-                       constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None, Numgrad=False,
+                       constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None, NumGrad=False,
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
                        modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
     """
@@ -34,13 +35,19 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
         ashexit()
     #NOTE: Class does not take fragment and theory
     optimizer=GeomeTRICOptimizerClass(charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms,
-                        maxiter=maxiter, ActiveRegion=ActiveRegion, actatoms=actatoms, Numgrad=Numgrad, TSOpt=TSOpt,
+                        maxiter=maxiter, ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt,
                         hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,modelhessian=modelhessian,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                         print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write,
                         printlevel=printlevel, force_coordsystem=force_coordsystem)
 
-    #Providing theory and fragment to run method. Also constraints
+    # If NumGrad then we wrap theory object into NumGrad class object
+    if NumGrad:
+        print("NumGrad flag detected. Wrapping theory object into NumGrad class")
+        print("This enables numerical-gradient calculation for theory")
+        theory = NumGradclass(theory=theory)
+
+    # Providing theory and fragment to run method. Also constraints
     result = optimizer.run(theory=theory, fragment=fragment, charge=charge, mult=mult,
                            constraints=constraints, constrainvalue=constrainvalue)
     if printlevel >= 1:
@@ -52,7 +59,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
 class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, charge=None, mult=None, coordsystem='tric',
                      frozenatoms=None, maxiter=250, ActiveRegion=False, actatoms=None,
-                       convergence_setting=None, conv_criteria=None, Numgrad=False, TSOpt=False, hessian=None,
+                       convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
                        print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None,
                        subfrctor=1, MM_PDB_traj_write=False, printlevel=2, force_coordsystem=False):
 
@@ -90,7 +97,6 @@ class GeomeTRICOptimizerClass:
             self.coordsystem=coordsystem
             self.print_atoms_list=print_atoms_list
             self.ActiveRegion=ActiveRegion
-            self.Numgrad=Numgrad #Numerical gradient
             self.TSOpt=TSOpt
             self.subfrctor=subfrctor
             #For MM or QM/MM whether to write PDB-trajectory or not

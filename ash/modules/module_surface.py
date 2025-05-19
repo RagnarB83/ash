@@ -18,11 +18,12 @@ import ash.functions.functions_parallel
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_results import ASH_Results
 from ash.interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICOptimizerClass
+from ash.modules.module_theory import NumGradclass
 
 # TODO: Remove ORCATheory specific things
 
 def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='UNRELAXED', resultfile='surface_results.txt',
-                 keepoutputfiles=True, keepmofiles=False,runmode='serial', coordsystem='dlc', maxiter=250,
+                 keepoutputfiles=True, keepmofiles=False,runmode='serial', coordsystem='dlc', maxiter=250, NumGrad=False,
                  extraconstraints=None, convergence_setting=None, conv_criteria=None, subfrctor=1,
                  numcores=1, ActiveRegion=False, actatoms=None, RC1_range=None, RC1_type=None, RC1_indices=None,
                  RC2_range=None, RC2_type=None, RC2_indices=None):
@@ -46,6 +47,13 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
     """
     module_init_time=time.time()
     print_line_with_mainheader("CALC_SURFACE FUNCTION")
+
+    # If NumGrad then we wrap theory object into NumGrad class object
+    if NumGrad:
+        print("NumGrad flag detected. Wrapping theory object into NumGrad class")
+        print("This enables numerical-gradient calculation for theory")
+        theory = NumGradclass(theory=theory)
+
 
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "calc_surface", theory=theory)
@@ -513,13 +521,19 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
 # Parallelization and MOREAD complete
 # TODO: Parallelization and Relaxed mode
 def calc_surface_fromXYZ(xyzdir=None, multixyzfile=None, theory=None, charge=None, mult=None, dimension=None, resultfile='surface_results.txt', scantype='UNRELAXED',runmode='serial',
-                         coordsystem='dlc', maxiter=250, extraconstraints=None, convergence_setting=None, conv_criteria=None, subfrctor=1,
+                         coordsystem='dlc', maxiter=250, extraconstraints=None, convergence_setting=None, conv_criteria=None, subfrctor=1, NumGrad=False, 
                          numcores=None, RC1_type=None, RC2_type=None, RC1_indices=None, RC2_indices=None, keepoutputfiles=True,
                          keepmofiles=False,read_mofiles=False, mofilesdir=None):
     module_init_time=time.time()
     print_line_with_mainheader("CALC_SURFACE_FROMXYZ FUNCTION")
 
-    #Checking if charge and mult has been provided
+    # If NumGrad then we wrap theory object into NumGrad class object
+    if NumGrad:
+        print("NumGrad flag detected. Wrapping theory object into NumGrad class")
+        print("This enables numerical-gradient calculation for theory")
+        theory = NumGradclass(theory=theory)
+
+    # Checking if charge and mult has been provided
     if charge == None or mult == None:
         print(BC.FAIL, "Error. charge and mult has not been defined for calc_surface_fromXYZ", BC.END)
         ashexit()

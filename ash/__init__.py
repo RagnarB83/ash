@@ -142,7 +142,7 @@ from .modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy
 from .interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_RMSF, MDtraj_coord_analyze
 
 # Theory, Numgrad
-from .modules.module_theory import Theory, QMTheory, NumGrad
+from .modules.module_theory import Theory, QMTheory, NumGradclass
 
 # QM/MM
 from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy
