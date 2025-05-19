@@ -82,7 +82,7 @@ class NumGradclass:
 
         elif self.runmode == "parallel":
             print("Numgrad: runmode is parallel")
-            origfrag=ash.Fragment(coords=dispgeo, elems=elems,label="orig", printlevel=0, charge=charge, mult=mult)
+            origfrag=ash.Fragment(coords=current_coords, elems=elems,label="orig", printlevel=0, charge=charge, mult=mult)
             all_disp_fragments = [origfrag] + all_disp_fragments
             result = ash.functions.functions_parallel.Job_parallel(fragments=all_disp_fragments, theories=[self.theory], numcores=self.numcores,
                 allow_theory_parallelization=True, Grad=False, printlevel=self.printlevel, copytheory=True)
