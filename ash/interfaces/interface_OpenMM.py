@@ -3447,9 +3447,11 @@ class OpenMM_MDclass:
         self.specialatoms=specialatoms
         self.specialtraj_frequency=specialtraj_frequency
 
-        #Delete privious special trajectory file
+        #Delete previous special and wrapping trajectory file
         if os.path.exists("wrapped_special_traj.xyz"):
             os.remove("wrapped_special_traj.xyz")
+        if os.path.exists("OpenMMMD_traj_wrapped.xyz"):
+            os.remove("OpenMMMD_traj_wrapped.xyz")
 
         # Distinguish between OpenMM theory QM/MM theory or QM theory
         self.dummy_MM=dummy_MM

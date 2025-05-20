@@ -199,6 +199,7 @@ class CFourTheory:
             print("Problem reading energy from Cfour outputfile. Check:", self.filename+'.out')
             ashexit()
         return energy
+
     def cfour_grabgradient(self,file,numatoms,symmetry=False):
         atomcount=0
         grab=False
