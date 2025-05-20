@@ -237,6 +237,22 @@ class MLatomTheory(Theory):
         # Initialization done
         print_time_rel(module_init_time, modulename='MLatom creation', moduleindex=2)
 
+    def check_file_exists(self, file):
+        if file is None:
+            print(f"Error: File is None. Exiting")
+            ashexit()
+        if self.printlevel >= 2:
+            print(f"A filename-string ({file}) was provided, checking if file exists")
+        file_present = os.path.isfile(file)
+        if self.printlevel >= 2:
+            print(f"File {file} exists:", file_present)
+        if file_present is False:
+            print(f"File {file} does not exist. Exiting.")
+            ashexit()
+        # Storing absolute path of file
+        #abs_path_file=os.path.abspath(file)
+        #print("Absolute path to model_file:", abs_path_file)
+
     def setup_mndo(self):
         print("QM program is mndo")
         print("Make sure executable mndo is in your environment")
@@ -407,9 +423,10 @@ class MLatomTheory(Theory):
                     print("AIQM1@DFT method was selected. Disp. correction needed")
                 elif 'AIQM1' in self.method:
                     print("AIQM1 method was selected. Disp. correction needed")
-        #Multi-run 
+        # Multi-run 
         elif self.models is not None:
             print("Multiple models present")
+        # Single-file run
         elif self.ml_model is not None:
             print("A single ml_model was selected: ", self.ml_model)
             model = self.model
@@ -418,6 +435,7 @@ class MLatomTheory(Theory):
             else:
                 print("No training of this object has been done.")
                 print("model file:", self.model_file)
+                self.check_file_exists(self.model_file)
         else:
             print("No method or ml-model was defined yet.")
             ashexit()
@@ -434,6 +452,7 @@ class MLatomTheory(Theory):
                 gradients=[]
                 for i,model in enumerate(self.models):
                     print("Running model from file:", self.model_files[i])
+                    self.check_file_exists(self.model_files[i])
                     model.predict(molecule=molecule,calculate_energy=True,
                                 calculate_energy_gradients=Grad,
                                 calculate_hessian=False)
@@ -450,7 +469,7 @@ class MLatomTheory(Theory):
                 # Combining model results
                 E_ave = np.mean(energies)
                 E_std = np.std(energies)
-                print(f"Average model energy {E_ave} Eh")
+                print(f"\nAverage model energy {E_ave} Eh")
                 print(f"Standard deviation {E_std} Eh")
                 self.energy = E_ave
                 if Grad:

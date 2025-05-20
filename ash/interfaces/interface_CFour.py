@@ -54,11 +54,13 @@ class CFourTheory:
         self.DBOC=DBOC
         self.FIXGEOM='OFF' #Off by default. May be turned on by run-method
         self.BRUECKNER='OFF'
+        self.EXCITE='NONE'
         #Overriding default
         #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
+        if 'CALC' in cfouroptions: self.CALC=cfouroptions['CALC']
+        if 'EXCITE' in cfouroptions: self.EXCITE=cfouroptions['EXCITE']
         if 'BASIS' in cfouroptions: self.basis=cfouroptions['BASIS']
         if 'BRUECKNER' in cfouroptions: self.BRUECKNER=cfouroptions['BRUECKNER']
-        if 'CALC' in cfouroptions: self.CALC=cfouroptions['CALC']
         if 'MEMORY' in cfouroptions: self.memory=cfouroptions['MEMORY']
         if 'MEM_UNIT' in cfouroptions: self.memory_unit=cfouroptions['MEM_UNIT']
         if 'REF' in cfouroptions: self.reference=cfouroptions['REF']
@@ -84,6 +86,7 @@ class CFourTheory:
         #Printing
         print("BASIS:", self.basis)
         print("CALC:", self.CALC)
+        print("EXCITE", self.EXCITE)
         print("MEMORY:", self.memory)
         print("MEM_UNIT:", self.memory_unit)
         print("REFERENCE:", self.reference)
@@ -377,12 +380,11 @@ HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
             print("Reading CFour Hessian from file")
             self.hessian = self.cfour_grabhessian(len(qm_elems),hessfile="FCMFINAL")
         #ENERGY+GRADIENT JOB
-        elif Grad==True:
+        elif Grad:
             print("Warning: Grad=True. FIXGEOM turned on.")
             self.FIXGEOM='ON'
             print("Warning: Grad=True, symmetry turned off.")
             self.symmetry='OFF'
-
             if self.propoption != 'OFF':
                 #TODO: Check whether we can avoid this limitation
                 print("Warning: Cfour property keyword can not be active when doing gradient. Turning off")
@@ -398,6 +400,7 @@ MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},BRUECKNER={self.BRUECKNER},SYMMETRY={self.symmetry}\n\
+EXCITE={self.EXCITE}\n\
 HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
@@ -462,6 +465,7 @@ MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},BRUECKNER={self.BRUECKNER},SYMMETRY={self.symmetry}\n\
+EXCITE={self.EXCITE}\n\
 HFSTABILITY={self.stabilityanalysis})\n\n""")
                 #for specbas in self.specialbasis.items():
                 for el in qm_elems:
