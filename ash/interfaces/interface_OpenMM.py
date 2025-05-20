@@ -3373,7 +3373,7 @@ def read_NPT_statefile(npt_output):
 # Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
               traj_frequency=1000, restartfile_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', specialtraj_frequency=1000, specialatoms=None,
               energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
               anderson_thermostat=False, platform='CPU', constraints=None, restraints=None,
@@ -3385,7 +3385,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, restartfile_frequency=restartfile_frequency, temperature=temperature, integrator=integrator,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, specialtraj_frequency=specialtraj_frequency, specialatoms=specialatoms,
                         energy_file_option=energy_file_option, force_file_option=force_file_option, atomic_units_force_reporter=atomic_units_force_reporter,
                         constraints=constraints, restraints=restraints,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
@@ -3414,7 +3414,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.001,
                  traj_frequency=1000, restartfile_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', specialtraj_frequency=1000, specialatoms=None,
                  energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
                  coupling_frequency=1, printlevel=2, platform='CPU',
                  anderson_thermostat=False, hydrogenmass=1.5, constraints=None, restraints=None,
@@ -3442,6 +3442,14 @@ class OpenMM_MDclass:
 
         #Trajectory filename. Used for trajs in DCD, PDB etc. format, also single PDB snapshots
         self.trajfilename=trajfilename
+
+        #Specialatoms and specialtraj_frequency for special printing
+        self.specialatoms=specialatoms
+        self.specialtraj_frequency=specialtraj_frequency
+
+        #Delete privious special trajectory file
+        if os.path.exists("wrapped_special_traj.xyz"):
+            os.remove("wrapped_special_traj.xyz")
 
         # Distinguish between OpenMM theory QM/MM theory or QM theory
         self.dummy_MM=dummy_MM
@@ -4298,6 +4306,12 @@ class OpenMM_MDclass:
                         print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
                         write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
 
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        print("Writing wrapped coords to trajfile: only for special atoms wrapped") 
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+
                 if step % self.restartfile_frequency == 0:
                     # Writing state and chk files
                     self.write_state_and_chk_files(step)
@@ -4395,6 +4409,13 @@ class OpenMM_MDclass:
                         print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
                         write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
 
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        #print(specialelems)   
+                        print("Writing wrapped coords to trajfile: only for special atoms")    
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+
                 # Now need to update OpenMM external force with new QM-PC force
                  #The QM_PC gradient (link-atom projected, from QM_MM object) is provided to OpenMM external force
                 CheckpointTime = time.time()
@@ -4490,6 +4511,12 @@ class OpenMM_MDclass:
                         write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
                     #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                     #checkpoint = time.time()
+
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        print("Writing wrapped coords to trajfile: only for special atoms")    
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
 
                 if step % self.restartfile_frequency == 0:
                     # Writing state and chk files
@@ -4595,6 +4622,12 @@ class OpenMM_MDclass:
                     #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                     #checkpoint = time.time()
 
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        print("Writing wrapped coords to trajfile: only for special atoms") 
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]   
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+
                 if step % self.restartfile_frequency == 0:
                     # Writing state and chk files
                     self.write_state_and_chk_files(step)
@@ -4676,6 +4709,12 @@ class OpenMM_MDclass:
                     if self.printlevel >= 2:
                         print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
                         write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
+
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        print("Writing wrapped coords to trajfile: only for special atoms")    
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
 
                 if step % self.restartfile_frequency == 0:
                     # Writing state and chk files
@@ -5071,8 +5110,8 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
 #TODO: Decide units for CV biaswidth range and Gaussian height
 #NOTE: Restraints are in Angstrom and kcal/mol^2
 def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
-              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator', specialatoms=None, specialtraj_frequency=1000,
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', 
               coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
               anderson_thermostat=False, restraints=None, flatbottom_restraint_CV1=None, flatbottom_restraint_CV2=None,
               funnel_restraint=None, funnel_parameters=None,
@@ -5124,6 +5163,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
     #Creating MDclass
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints,
+                        specialatoms=specialatoms, specialtraj_frequency=specialtraj_frequency,
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, special_wrapping=special_wrapping, 
@@ -5241,7 +5281,7 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
 
 # Metadynamics-function that used OpenMM_Plumed interface
 def OpenMM_MD_plumed(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
-              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
+              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator', specialatoms=None, specialtraj_frequency=1000,
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
               anderson_thermostat=False, restraints=None, 
@@ -5264,8 +5304,8 @@ def OpenMM_MD_plumed(fragment=None, theory=None, timestep=0.001, simulation_step
 
     #Creating MDclass
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
-                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints, specialatoms=specialatoms, specialtraj_frequency=specialtraj_frequency,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, 
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
                         enforcePeriodicBox=enforcePeriodicBox, special_wrapping=special_wrapping, 
                         special_wrapping_updatepos=special_wrapping_updatepos, wrapping_atoms=wrapping_atoms, 
