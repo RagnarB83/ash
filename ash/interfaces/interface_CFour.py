@@ -89,6 +89,7 @@ class CFourTheory:
         print("BASIS:", self.basis)
         print("CALC:", self.CALC)
         print("EXCITE", self.EXCITE)
+        print("ESTATE_SYM:", self.ESTATE_SYM)
         print("MEMORY:", self.memory)
         print("MEM_UNIT:", self.memory_unit)
         print("REFERENCE:", self.reference)
