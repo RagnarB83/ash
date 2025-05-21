@@ -418,7 +418,7 @@ class MLatomTheory(Theory):
             print("QM program:", self.qm_program)
             print("Creating model")
             if self.method == "AIQM1":
-                model = ml.models.methods(method=self.method, qm_program=self.qm_program, device=self.device)
+                model = ml.models.methods(method=self.method, qm_program=self.qm_program)
             else:
                 #AIQM2 
                 model = ml.models.methods(method=self.method, program=self.qm_program)

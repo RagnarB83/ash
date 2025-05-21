@@ -795,8 +795,11 @@ class Fragment:
         # Create connectivity by default for new topology
         if self.connectivity is None:
             self.calc_connectivity(scale=scale, tol=tol)
-        connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, scale,tol)
+        elif isinstance(self.connectivity, list):
+            if len(self.connectivity) == 0:
+                self.calc_connectivity(scale=scale, tol=tol)
 
+        connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, scale,tol)
         #Looping over molecules defined by connectivity
         for mol in self.connectivity:
             residue = self.pdb_topology.addResidue(resname, chain)
