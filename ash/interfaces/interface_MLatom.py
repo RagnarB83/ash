@@ -2,6 +2,7 @@ import time
 
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader
 from ash.modules.module_theory import Theory
+from ash.interfaces.interface_xtb import create_xtb_pcfile_general, xtbpcgradientgrab
 import numpy as np
 import os
 import shutil
@@ -407,9 +408,17 @@ class MLatomTheory(Theory):
 
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
+        #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
+
         # Prepare for run
         molecule = ml.data.molecule(charge, mult)
-        molecule.read_from_numpy(coordinates=current_coords, species=np.array(elems))
+        molecule.read_from_numpy(coordinates=current_coords, species=np.array(qm_elems))
 
         # mlatom.models
         # Comp chem models, 3 types: methods (used as is), ml_model (requires training), model_tree_node (composite)
@@ -450,54 +459,64 @@ class MLatomTheory(Theory):
             ashexit()
 
         # Run
-        if PC is True:
-            print("PC is not supported by MLatomTheory interface")
-            ashexit()
-        else:
-            print("Running MLatom singlepoint calculation")
-            if self.multi_model_run:
-                print("Multi-model run")
-                energies=[]
-                gradients=[]
-                for i,model in enumerate(self.models):
-                    print("Running model from file:", self.model_files[i])
-                    self.check_file_exists(self.model_files[i])
-                    model.predict(molecule=molecule,calculate_energy=True,
-                                calculate_energy_gradients=Grad,
-                                calculate_hessian=False)
-                    energy = float(molecule.energy)
-                    print(f"Energy: {energy} Eh")
-                    energies.append(energy)
-                    if Grad:
-                        print("Gradient was calculated.")
-                        gradient = molecule.get_energy_gradients()
-                        if self.printlevel > 2:
-                            print(f"Gradient for model {i}:", gradient)
-                        gradients.append(gradient)
-
-                # Combining model results
-                E_ave = np.mean(energies)
-                E_std = np.std(energies)
-                print(f"\nAverage model energy {E_ave} Eh")
-                print(f"Standard deviation {E_std} Eh")
-                self.energy = E_ave
-                if Grad:
-                    self.gradient = np.mean( np.array(gradients), axis=0 )
-            else:
+        print("Running MLatom singlepoint calculation")
+        if self.multi_model_run:
+            print("Multi-model run")
+            energies=[]
+            gradients=[]
+            for i,model in enumerate(self.models):
+                print("Running model from file:", self.model_files[i])
+                self.check_file_exists(self.model_files[i])
                 model.predict(molecule=molecule,calculate_energy=True,
                             calculate_energy_gradients=Grad,
                             calculate_hessian=False)
-                self.energy = float(molecule.energy)
+                energy = float(molecule.energy)
+                print(f"Energy: {energy} Eh")
+                energies.append(energy)
                 if Grad:
                     print("Gradient was calculated.")
-                    self.gradient = molecule.get_energy_gradients()
-                print("Single-point MLatom energy:", self.energy)
+                    gradient = molecule.get_energy_gradients()
+                    if self.printlevel > 2:
+                        print(f"Gradient for model {i}:", gradient)
+                    gradients.append(gradient)
 
-            print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
+            # Combining model results
+            E_ave = np.mean(energies)
+            E_std = np.std(energies)
+            print(f"\nAverage model energy {E_ave} Eh")
+            print(f"Standard deviation {E_std} Eh")
+            self.energy = E_ave
             if Grad:
-                return self.energy,self.gradient
+                self.gradient = np.mean( np.array(gradients), axis=0 )
+        else:
+            # PC
+            if PC is True:
+                print("Pointcharges provided. This is a QM/MM calculation")
+                if self.qm_program == "xtb":
+                    print("QM-program is xtb. Writing pointcharge file")
+                    create_xtb_pcfile_general(current_MM_coords, MMcharges)
+                else:
+                    print("PC-embedded QM/MM calculations are right now only possible if qm_program is xtb (e.g. AIQM2)")
+                    ashexit()
+            model.predict(molecule=molecule,calculate_energy=True,
+                        calculate_energy_gradients=Grad,
+                        calculate_hessian=False)
+            self.energy = float(molecule.energy)
+            print("Single-point MLatom energy:", self.energy)
+            if Grad:
+                print("Gradient was calculated.")
+                self.gradient = molecule.get_energy_gradients()
+                if PC is True:
+                    self.pcgrad = xtbpcgradientgrab(len(MMcharges))
+
+        print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
+        if Grad:
+            if PC:
+                return self.energy,self.gradient, self.pcgrad
             else:
-                return self.energy
+                return self.energy,self.gradient
+        else:
+            return self.energy
 
 
 # Print statistics for dict with statistics for many models

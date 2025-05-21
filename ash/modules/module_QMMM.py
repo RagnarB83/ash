@@ -43,6 +43,10 @@ class QMMMTheory:
 
         # External force energy. Zero except when using openmm_externalforce
         self.extforce_energy = 0.0
+        # Subtractive corrections that might be defined later on
+        # Added due to pbcmm-elstat
+        self.subtractive_correction_E =0.0
+        self.subtractive_correction_G = np.zeros((len(fragment.coords), 3))
 
         # Linkatoms False by default. Later checked.
         self.linkatoms = False
@@ -154,6 +158,9 @@ class QMMMTheory:
 
         if self.embedding.lower() == "elstat" or self.embedding.lower() == "electrostatic" or self.embedding.lower() == "electronic":
             self.embedding="elstat"
+            self.PC = True
+        elif self.embedding.lower() == "pbcmm-elstat" or self.embedding.lower() == "pbcmm-electrostatic" or self.embedding.lower() == "pbcmm-electronic":
+            self.embedding="pbcmm-elstat"
             self.PC = True
         elif self.embedding.lower() == "mechanical" or self.embedding.lower() == "mech":
             self.embedding="mech"
@@ -310,6 +317,14 @@ class QMMMTheory:
                 # TODO: make sure this works for OpenMM and for NonBondedTheory
                 # Updating charges in MM object.
                 self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
+            elif self.embedding.lower() == "pbcmm-elstat":
+                print("PBC Electrostatic embedding enabled.")
+                print("This means that QM-atoms will be zeroed for QM-MM interactions calculated by QM program")
+                print("But MM program will have charged defined for QM-region")
+                self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
+                # Note: possible to set QM-charges to something specific: Mulliken, ESP
+                # specialQMcharges = [something]
+                # self.mm_theory.update_charges(self.qmatoms,specialQMcharges)
 
             if self.mm_theory_name == "OpenMMTheory":
                 # Deleting Coulomb exception interactions involving QM and MM atoms
@@ -749,6 +764,11 @@ class QMMMTheory:
         elif self.embedding.lower() == "elstat":
             return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
                 label=label, charge=charge, mult=mult)
+        elif self.embedding.lower() == "pbcmm-elstat":
+            # Things should be the same except QM-charges have not been zeroed in MM-program
+            # MM-program thus double-counts (SR QM-QM and SR QM-MM) and we need subtractive corrections
+            return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
+                label=label, charge=charge, mult=mult)
         else:
             print("Unknown embedding. Exiting")
             ashexit()
@@ -871,6 +891,7 @@ class QMMMTheory:
                     self.QM_MM_gradient[fullatomindex_qm] += QM1grad_contrib
                     self.QM_MM_gradient[fullatomindex_mm] += MM1grad_contrib
 
+
             print_time_rel(CheckpointTime, modulename='linkatomgrad prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             print_time_rel(Grad_prep_CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             CheckpointTime = time.time()
@@ -936,13 +957,18 @@ class QMMMTheory:
             assert len(self.QM_MM_gradient) == len(self.MMgradient)
             self.QM_MM_gradient = self.QM_MM_gradient + self.MMgradient
 
-        # Final QM/MM Energy.
-        self.QM_MM_energy = self.QMenergy+self.MMenergy
+        # Final QM/MM Energy
+        self.QM_MM_energy = self.QMenergy+self.MMenergy-self.subtractive_correction_E
+
+        # Final QM/MM Gradient
+        # Possible subtractive correction
+        self.QM_MM_gradient -= self.subtractive_correction_G
 
         if self.printlevel >= 2:
             blankline()
             print("{:<20} {:>20.12f}".format("QM energy: ", self.QMenergy))
             print("{:<20} {:>20.12f}".format("MM energy: ", self.MMenergy))
+            print("{:<20} {:>20.12f}".format("Subtractive correction energy: ", self.subtractive_correction_E))
             print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_energy))
             blankline()
 
@@ -1347,7 +1373,7 @@ class QMMMTheory:
 
 
         #Final QM/MM Energy. Possible correction for OpenMM external force term
-        self.QM_MM_energy= self.QMenergy+self.MMenergy-self.extforce_energy
+        self.QM_MM_energy= self.QMenergy+self.MMenergy-self.extforce_energy-self.subtractive_correction_E
         if self.printlevel >= 2:
             blankline()
             if self.embedding.lower() == "elstat":
@@ -1377,7 +1403,7 @@ class QMMMTheory:
                 #print("len(self.QM_PC_gradient):", len(self.QM_PC_gradient))
                 #print("len(self.MMgradient):", len(self.MMgradient))
                 assert len(self.QM_PC_gradient) == len(self.MMgradient)
-                self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
+                self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient-self.subtractive_correction_G
 
 
             if self.printlevel >=3:
