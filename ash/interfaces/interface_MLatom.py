@@ -507,7 +507,7 @@ class MLatomTheory(Theory):
                 print("Gradient was calculated.")
                 self.gradient = molecule.get_energy_gradients()
                 if PC is True:
-                    self.pcgrad = xtbpcgradientgrab(len(MMcharges))
+                    self.pcgrad = xtbpcgradientgrab(len(MMcharges), file="molecule0.pcgrad")
 
         print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
         if Grad:
