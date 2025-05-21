@@ -498,6 +498,7 @@ class OpenMMTheory:
             if self.printlevel > 0:
                 print("Reading OpenMM XML forcefield files and PDB file")
                 print("xmlfiles:", str(xmlfiles).strip("[]"))
+                print("pdbfile:", pdbfile)
                 if pdbfile is None:
                     print("Error:No pdbfile input provided")
                     ashexit()
@@ -3020,7 +3021,7 @@ def openmm_add_bonds_to_topology(topology,connectivity):
 
 # Assumes all atoms of small molecule present (including hydrogens)
 def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0, 70.0, 70.0],
-                           xmlfile=None):
+                           xmlfile=None, LJ_treatment=None, skip_xmlfile=False):
 
     print_line_with_mainheader("SmallMolecule Solvator")
     try:
@@ -3042,7 +3043,8 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     charge, mult = check_charge_mult(charge, mult, "QM", fragment, "solvate_small_molecule")
 
     # Check xmlfile
-    if xmlfile is None:
+    
+    if xmlfile is None and skip_xmlfile is False:
         print("\nNo xmlfile was provided. You must provide one")
         print("If you just need a simple nonbonded model for the solute e.g. for QM/MM then your options are:")
         print("""
@@ -3053,17 +3055,18 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
         ashexit()
 
     # Read XML-file and check for LJ treatment
-    print("Checking xmlfile for LJ treatment")
-    if pygrep('coulomb14scale="0.83333',xmlfile):
-        print("Found Amber-style scaling parameter.")
-        LJ_treatment="amber"
-    elif pygrep('LennardJonesForce',xmlfile):
-        print("Found CHARMM-style format.")
-        LJ_treatment="charmm"
-    else:
-        print("Unknown LJ14 scaling type. Assuming neither CHARMM or Amber")
-        LJ_treatment="normal"
-        print("Using watermodel=TIP3P . Using parameters in:", ashpath + "/databases/forcefields")
+    if skip_xmlfile is False:
+        print("Checking xmlfile for LJ treatment")
+        if pygrep('coulomb14scale="0.83333',xmlfile):
+            print("Found Amber-style scaling parameter.")
+            LJ_treatment="amber"
+        elif pygrep('LennardJonesForce',xmlfile):
+            print("Found CHARMM-style format.")
+            LJ_treatment="charmm"
+        else:
+            print("Unknown LJ14 scaling type. Assuming neither CHARMM or Amber")
+            LJ_treatment="normal"
+            print("Using watermodel=TIP3P . Using parameters in:", ashpath + "/databases/forcefields")
 
         print("LJ_treatment:", LJ_treatment)
 
@@ -3071,7 +3074,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     if watermodel == "tip3p" or watermodel == "TIP3P" :
         print("Using watermodel=TIP3P")
         if LJ_treatment =="amber":
-            waterxmlfile="amber/tip3p_standard.xml"
+            waterxmlfile="amber14/tip3p.xml"
         elif LJ_treatment =="charmm":
             waterxmlfile="charmm36/water.xml"
         elif LJ_treatment == "normal":
@@ -3083,12 +3086,19 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
         ashexit()
 
     # Create forcefield object
-    print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
-    forcefield = openmm_app.forcefield.ForceField(*[xmlfile, waterxmlfile])
+    if skip_xmlfile is True:
+        print("Creating forcefield using XML-files:", waterxmlfile)
+        forcefield = openmm_app.forcefield.ForceField(*[waterxmlfile])
+    else:
+        print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
+        forcefield = openmm_app.forcefield.ForceField(*[xmlfile, waterxmlfile])
 
     #WRITE PDB-file
     #Check if xmlfile contains bonded parameters
-    if pygrep('<Bond',xmlfile):
+    if skip_xmlfile is True:
+        atomnames = [el + "Y" + str(i) for i, el in enumerate(fragment.elems)]
+        pdbfile = write_pdbfile(fragment, outputname="smallmol", dummyname='LIG', atomnames=atomnames)
+    elif pygrep('<Bond',xmlfile):
         print("XML-file contains bonded parameters. Writing PDB-file with connectivity.")
         xyzfile = Fragment.write_xyzfile(fragment, xyzfilename="smallmol.xyz")
         pdbfile = xyz_to_pdb_with_connectivity(xyzfile)

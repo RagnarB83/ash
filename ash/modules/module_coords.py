@@ -788,23 +788,37 @@ class Fragment:
         except ImportError:
             print("Error: OpenMM not found. Cannot define a topology")
             ashexit()
-        print("Defining new basic single-chain, single-residue topology")
+        print("Defining new basic single-chain, multi-residue topology")
         self.pdb_topology = openmm.app.Topology()
         chain = self.pdb_topology.addChain()
-        residue = self.pdb_topology.addResidue(resname, chain)
-
-        # Defaultdictionary to keep track of unique element-atomnames
-        atomnames_dict=defaultdict(int)
-        for el in self.elems:
-            atomnumber = openmm.app.Element.getBySymbol(el).atomic_number
-            element = openmm.app.Element.getByAtomicNumber(atomnumber)
-            # Define unique atomname
-            atomnames_dict[el] += 1
-            atomname = f"{el}{atomnames_dict[el]}"
-            self.pdb_topology.addAtom(atomname, element, residue)
 
         # Create connectivity by default for new topology
+        if self.connectivity is None:
+            self.calc_connectivity(scale=scale, tol=tol)
         connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, scale,tol)
+
+        #Looping over molecules defined by connectivity
+        for mol in self.connectivity:
+            residue = self.pdb_topology.addResidue(resname, chain)
+
+            # Defaultdictionary to keep track of unique element-atomnames
+            atomnames_dict=defaultdict(int)
+            for at in mol:
+                el = self.elems[at]
+                atomnumber = openmm.app.Element.getBySymbol(el).atomic_number
+                element = openmm.app.Element.getByAtomicNumber(atomnumber)
+                # Define unique atomname
+                atomnames_dict[el] += 1
+                atomname = f"{el}{atomnames_dict[el]}"
+
+                # Special handling for obvious water residues. Aids OpenMM recognition
+                if atomname == "O1" and len(mol) == 3:
+                    #print("atomname is O1 and 3-atom residue. Probably water")
+                    #print("using atomname as O instead of O1 aids OpenMM recognition")
+                    atomname="O"
+
+                self.pdb_topology.addAtom(atomname, element, residue)
+
         print("Adding connectivity to PDB topology")
         ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology, connectivity_dict)
 
@@ -847,8 +861,6 @@ class Fragment:
             print("Deleting molecule bond information")
             # Setting list of bonds to empty list
             self.pdb_topology._bonds=[]
-
-
         openmm.app.PDBFile.writeFile(self.pdb_topology, self.coords, file=open(f"{filename}", 'w'))
         print(f"Wrote PDB-file: {filename}")
 
@@ -4228,3 +4240,13 @@ def nuc_nuc_repulsion(coords, charges):
     distances = np.linalg.norm(diff, axis=2)
     np.fill_diagonal(distances, np.inf)
     return 0.5 * np.sum(charges[:, None] * charges[None, :] / distances)
+
+# a: the coordinates b: coordinates for 1 atom
+def find_nearest_atom(a,b):
+	print("Finding nearest coordinates for chosen coordinates:",b)
+	idx_min = np.sum( (a-b)**2, axis=1, keepdims=True).argmin(axis=0)
+	idx_min, a[idx_min]
+	print("Nearest atom index in coordinates:", idx_min)
+	print("Atom coordinates:", a[idx_min])
+	return int(idx_min[0]), a[idx_min]
+

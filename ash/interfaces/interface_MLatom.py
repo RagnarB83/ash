@@ -75,13 +75,18 @@ class MLatomTheory(Theory):
         # METHOD
         #############
         if self.method is not None:
-            if 'AIQM' in self.method :
-                print("An AIQMx method was selected")
+            if 'AIQM1' in self.method :
+                print("An AIQM1 method was selected")
                 print("Warning: this requires setting qm_program keyword as either mndo or sparrow.")
                 print("Also dftd4 D4-dispersion program")
                 if self.qm_program not in ["mndo","sparrow"]:
                     print("QM program keyword is neither mndo or sparrow. Not allowed, exiting.")
                     ashexit()
+            elif 'AIQM2' in self.method :
+                print("An AIQM2 method was selected")
+                print("Warning: this requires setting qm_program keyword as either mndo or sparrow.")
+                print("Also dftd4 D4-dispersion program")
+                self.qm_program="xtb"
             elif 'ANI' in self.method:
                 print("An ANI type method was selected")
                 print("This requires TorchANI and pytorch")
@@ -412,7 +417,11 @@ class MLatomTheory(Theory):
             print("A method was selected: ", self.method)
             print("QM program:", self.qm_program)
             print("Creating model")
-            model = ml.models.methods(method=self.method, qm_program=self.qm_program, device=self.device)
+            if self.method == "AIQM1":
+                model = ml.models.methods(method=self.method, qm_program=self.qm_program, device=self.device)
+            else:
+                #AIQM2 
+                model = ml.models.methods(method=self.method, program=self.qm_program)
             # Create dftd4.json file before running if required
             if 'AIQM' in self.method:
                 print("An AIQMx method was selected")
