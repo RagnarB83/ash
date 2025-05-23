@@ -491,7 +491,7 @@ class xTBTheory:
             else:
                 if self.printlevel >= 2:
                     print("Updating coordinates in xTB calcobject")
-                if len(coords_au) != self.self.stored_numatoms:
+                if len(coords_au) != self.stored_numatoms:
                     print("Warning: Number of coordinates not consistent with previous elements.")
                     print("Creating new xTB calc object")
                     # Storing number of elements
