@@ -297,7 +297,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
         for grad in gradients:
             gradients_file.write(f"{frag.numatoms}\n")
             gradients_file.write(f"gradient {label} \n")
-            for g in gradient:
+            for g in grad:
                 gradients_file.write(f"{g[0]:10.7f} {g[1]:10.7f} {g[2]:10.7f}\n")
         gradients_file.close()
 
