@@ -476,6 +476,8 @@ class xTBTheory:
             #first run call: create new object containing coordinates and settings
             if self.calcobject == None:
                 print("Creating new xTB calc object")
+                # Storing number of elements
+                self.stored_numatoms=len(qm_elems_numbers)
                 self.calcobject = Calculator(param_method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
                 self.calcobject.set_verbosity(self.verbosity)
                 self.calcobject.set_electronic_temperature(self.electronic_temp)
@@ -485,15 +487,30 @@ class xTBTheory:
                 if self.solvent_object != None:
                     print("Setting solvent to:", self.solvent_object)
                     self.calcobject.set_solvent(self.solvent_object)
-            #next run calls: only update coordinates
+            # next run calls: only update coordinates
             else:
                 if self.printlevel >= 2:
                     print("Updating coordinates in xTB calcobject")
-                self.calcobject.update(coords_au)
+                if len(coords_au) != self.self.stored_numatoms:
+                    print("Warning: Number of coordinates not consistent with previous elements.")
+                    print("Creating new xTB calc object")
+                    # Storing number of elements
+                    self.stored_numatoms=len(qm_elems_numbers)
+                    self.calcobject = Calculator(param_method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
+                    self.calcobject.set_verbosity(self.verbosity)
+                    self.calcobject.set_electronic_temperature(self.electronic_temp)
+                    self.calcobject.set_max_iterations(self.maxiter)
+                    self.calcobject.set_accuracy(self.accuracy)
+                    # Solvent
+                    if self.solvent_object != None:
+                        print("Setting solvent to:", self.solvent_object)
+                        self.calcobject.set_solvent(self.solvent_object)
+                else:
+                    self.calcobject.update(coords_au)
 
             #QM/MM pointcharge field
             #calc.
-            if PC==True:
+            if PC is True:
                 if self.printlevel >= 2:
                     print("Using PointCharges")
                 mmcharges=np.array(MMcharges)
