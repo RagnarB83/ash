@@ -46,7 +46,7 @@ class MaceTheory():
         #    ashexit()
 
 
-
+        import torch
         # Device choice
         if platform == 'cuda':
             print("Platfrom CUDA selected. Will attempt to use.")

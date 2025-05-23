@@ -8,9 +8,6 @@ import ash.settings_ash
 from ash.modules.module_coords import elemstonuccharges, write_xyzfile
 from ash.modules.module_theory import Theory
 
-
-
-
 # Basic interface to DFTD4: https://github.com/dftd4/dftd4
 # This interface simply calls DFTD4 on an ASH-Fragment and returns
 # the D4 dispersion energy and gradient
