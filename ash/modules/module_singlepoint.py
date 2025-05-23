@@ -23,7 +23,8 @@ def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
 
 
 # Single-point energy function
-def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, printlevel=2):
+def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, printlevel=2,
+                result_write_to_disk=True):
     """Singlepoint function: runs a single-point energy calculation using ASH theory and ASH fragment.
 
     Args:
@@ -87,7 +88,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
             result.qmmm_energy = theory.QM_MM_energy
             result.mm_energy = theory.MMenergy
             result.qm_energy = theory.QMenergy
-        result.write_to_disk(filename="ASH_SP.result")
+        if result_write_to_disk:
+            result.write_to_disk(filename="ASH_SP.result")
         return result
 
 

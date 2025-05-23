@@ -13,10 +13,13 @@ class MaceTheory():
                  model_file=None, printlevel=2, label="MaceTheory", numcores=1,
                  platform=None, train=False):
         # Early exits
-        #try:
-        #    import torch
-        #except ImportError:
-        #    print("Problem importing torch library. Make sure you have installed torch correctly")
+        try:
+            import mace
+
+        except ImportError:
+            print("Problem importing mace. Make sure you have installed mace-correctly")
+            print("Most likely: pip install mace-torch")
+            print("Most likely: pip install cuequivariance_torch")
         #    ashexit()
 
         if model_name is None and model_object is None and model_file is None and train is False:
@@ -69,31 +72,8 @@ class MaceTheory():
         self.numcores=numcores
 
     def train(self):
-        print("Training not ready")
-        ashexit()
-        # TODO
-        #Distinguish between pure PyTorch training and TorchANI training
-
-    def train_ani(self):
-        pass
-    def load_model(self,model_file):
-        import torch
-        # sTODO: weights only option ?
-        #self.model = torch.jit.load(model_file)
-        self.model = torch.load(model_file, map_location=torch.device('cpu'))
-
-    def save_model(self,filename=None, index=None):
-        import torch
-        if index is not None:
-            print(f"Saving only index: {index} of ensemble model")
-            compiled_model = torch.jit.script(self.model[index])
-        else:
-            compiled_model = torch.jit.script(self.model)
-        if filename is None:
-            filename=self.filename
-        torch.jit.save(compiled_model, filename)
-        print("Torch saved model to file:", filename)
-
+        
+        write_mace_config()
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
@@ -188,13 +168,24 @@ class MaceTheory():
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
 
+#Hyper-parameters to modify
+# num_channels: size-of model. 128 is recommended, 256 (larger more accurate), 64 faster
+# max_L: symmetry of messages. affects speed and accuracy. default 1 (compromise of speed/acc), 2 more accurate and slower, 0 is fast
+# r_max: cutoff radius of local env. Recommended: 4-7 Ang
 
-def write_mace_config(name="model",model="MACE", device='cpu',
-                      train_file="train_data.xyz", valid_file="trainvalid_data.xyz", test_file="traintest_data.xyz",
-                      max_num_epochs=500, 
+
+#NOTE: E0s average is easiest but not recommended. Need to provide isolated atom energies
+
+##todo: seed
+def write_mace_config(name="model",model="MACE", device='cpu', valid_fraction=0.1,
+                      train_file="train_data.xyz", test_file="traintest_data.xyz",
+                      E0s="average",
+                      energy_weight=1, forces_weight=1,
+                      energy_key='energy_REF', forces_key='forces_REF',
+                      max_num_epochs=500, max_L = 0, r_max = 5.0, 
                       num_channels=32,  results_dir= "MACE_models", checkpoints_dir = "MACE_models", log_dir ="MACE_models",
                       model_dir="MACE_models",
-                      swa=True, seed=123, batch_size=10, ):
+                      swa=True, batch_size=10):
 
     import yaml
 
@@ -208,16 +199,15 @@ log_dir= log_dir,
 checkpoints_dir= checkpoints_dir,
 results_dir= results_dir,
 train_file= train_file,
-valid_file= valid_file,
-test_file= test_file,
-energy_key= "energy_xtb",
-forces_key= "forces_xtb",
+valid_fraction= valid_fraction,
+energy_key= energy_key,
+forces_key= forces_key,
+energy_weight=energy_weight,
+forces_weight=forces_weight,
 device= device,
 batch_size= batch_size,
 max_num_epochs= max_num_epochs,
-swa= swa,
-seed= seed,
-    )
-
-    with open('data.yml', 'w') as outfile:
-        yaml.dump(data, outfile, default_flow_style=False)
+swa= swa)
+#E0s=E0s,
+    with open('config.yml', 'w') as outfile:
+        yaml.dump(data, outfile, default_flow_style=False, sort_keys=False)

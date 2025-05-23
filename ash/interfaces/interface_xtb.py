@@ -675,7 +675,7 @@ def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False
     elif 'GFN0' in xtbmethod.upper():
         xtbflag = 0
     else:
-        print("Unknown xtbmethod chosen. Exiting...")
+        print(f"Unknown xtbmethod chosen ({xtbmethod}). Exiting...")
         ashexit()
 
     #Going through what flag to pass to xtb

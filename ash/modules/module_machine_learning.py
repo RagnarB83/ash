@@ -134,17 +134,18 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
         os.chdir('..')
 
     # Remove old files if present
-    for f in ["train_data.xyz", "train_data.energies", "train_data.gradients"]:
+    for f in ["train_data.xyz", "train_data.energies", "train_data.gradients", "train_data_mace.xyz"]:
         try:
             os.remove(f)
         except:
             pass
 
     # LOOP
+    energies=[]
+    gradients=[]
+    fragments=[]
+    labels=[]
     if runmode=="serial":
-        energies_file=open("train_data.energies", "w")
-        if Grad:
-            gradients_file=open("train_data.gradients", "w")
         print("Runmode is serial!")
         print("Will now loop over XYZ-files")
         print("For a large dataset consider using parallel runmode")
@@ -153,15 +154,18 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             basefile=os.path.basename(file)
             label=basefile.split(".")[0]
             frag = Fragment(xyzfile=file, charge=charge, mult=mult)
-
+            frag.label=label
+            labels.append(label)
             # 1: gas 2:solv  or 1: LL  or 2: HL
             print("Now running Theory 1")
-            result_1 = Singlepoint(theory=theory_1, fragment=frag, Grad=Grad)
+            result_1 = Singlepoint(theory=theory_1, fragment=frag, Grad=Grad,
+                                   result_write_to_disk=False)
 
             if delta is True:
                 # Running theory 2
                 print("Now running Theory 2")
-                result_2 = Singlepoint(theory=theory_2, fragment=frag, Grad=Grad)
+                result_2 = Singlepoint(theory=theory_2, fragment=frag, Grad=Grad,
+                                       result_write_to_disk=False)
                 # Delta energy
                 energy = result_2.energy - result_1.energy
                 if Grad is True:
@@ -170,31 +174,19 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
                 energy = result_1.energy
                 if Grad is True:
                     gradient = result_1.gradient
+            # Add E and G to lists
+            energies.append(energy)
+            fragments.append(frag)
+            if Grad:
+                gradients.append(gradient)
 
-            # Create files for ML
-
-            energies_file.write(f"{energy}\n")
-            # Gradients-file
-            if Grad is True:
-                gradients_file.write(f"{frag.numatoms}\n")
-                gradients_file.write(f"gradient {label} \n")
-                for g in gradient:
-                    gradients_file.write(f"{g[0]:10.7f} {g[1]:10.7f} {g[2]:10.7f}\n")
-
-            # MultiXYZ-file
-            write_xyzfile(frag.elems, frag.coords, "train_data", printlevel=2, writemode='a', title=f"coords {label}")
-
-        energies_file.close()
-        if Grad:
-            gradients_file.close()
     elif runmode=="parallel":
         print("Runmode is parallel!")
         print("Will now run parallel calculations")
 
-        #Fragments
+        # Fragments
         print("Looping over fragments first")
         all_fragments=[]
-        labels=[]
         for file in list_of_xyz_files:
             print("Now running file:", file)
             basefile=os.path.basename(file)
@@ -202,13 +194,11 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             labels.append(label)
             # Creating fragment with label
             frag = Fragment(xyzfile=file, charge=charge, mult=mult, label=label)
-            all_fragments.append(frag)
-            write_xyzfile(frag.elems, frag.coords, "train_data", printlevel=2, writemode='a', title=f"coords {label}")
+            frag.label=label
 
         # Parallel run
         print("Making sure numcores is set to 1 for both theories")
         theory_1.set_numcores(1)
-
 
         from ash.functions.functions_parallel import Job_parallel
         print("Now starting in parallel mode Theory1 calculations")
@@ -220,35 +210,113 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             results_theory2 = Job_parallel(fragments=all_fragments, theories=[theory_2], numcores=numcores, Grad=True)
             print("results_theory2.energies_dict:", results_theory2.energies_dict)
 
-        energies_file=open("train_data.energies", "w")
-        if Grad:
-            gradients_file=open("train_data.gradients", "w")
-
-        #Loop over energy dict:
+        # Loop over energy dict:
         for l in labels:
+            print("Label l:", l)
             if delta is True:
                 energy = results_theory2.energies_dict[l] - results_theory1.energies_dict[l]
                 print("energy:", energy)
 
             else:
                 energy = results_theory1.energies_dict[l]
-            # Create files for ML
-            energies_file.write(f"{energy}\n")
-            # Gradients-file
+                print("energy:", energy)
+
+            energies.append(energy)
+
+            # Gradient info
             if Grad:
                 if delta is True:
                     gradient = results_theory2.gradients_dict[l] - results_theory1.gradients_dict[l]
                 else:
                     gradient = results_theory1.gradients_dict[l]
+                gradients.append(gradient)
 
-                # Gradients-file
-                gradients_file.write(f"{frag.numatoms}\n")
-                gradients_file.write(f"gradient {label} \n")
-                for g in gradient:
-                    gradients_file.write(f"{g[0]:10.7f} {g[1]:10.7f} {g[2]:10.7f}\n")
+    #Calculate energies for atoms
+    energies_atoms_dict={}
+    unique_elems_per_frag = [list(set(frag.elems)) for frag in fragments]
+    unique_elems = list(set([j for i in unique_elems_per_frag for j in i]))
 
-        energies_file.close()
-        if Grad:
-            gradients_file.close()
+    from dictionaries_lists import atom_spinmults
+    for uniq_el in unique_elems:
+        mult = atom_spinmults[uniq_el]
+        print("mult:", mult)
+        atomfrag = Fragment(atom=uniq_el, charge=0, mult=mult, printlevel=0)
+        print("Now running Theory 1 for atom:", uniq_el)
+        theory_1.printlevel=0
+        result_1 = Singlepoint(theory=theory_1, fragment=atomfrag, printlevel=0,
+                               result_write_to_disk=False)
+        if delta is True:
+            theory_2.printlevel=0
+            # Running theory 2
+            print("Now running Theory 2 for atom:", uniq_el)
+            result_2 = Singlepoint(theory=theory_2, fragment=atomfrag, printlevel=0,
+                                   result_write_to_disk=False)
+            # Delta energy
+            atomenergy = result_2.energy - result_1.energy
+        else:
+            atomenergy = result_1.energy
+        energies_atoms_dict[uniq_el] = atomenergy
+    print("\nAtomic energies:", energies_atoms_dict)
+    ###########################################
+    # Write final data
+    ###########################################
+    # Write XYZ-file
+    for frag in fragments:
+        # MultiXYZ-file
+        write_xyzfile(frag.elems, frag.coords, "train_data", printlevel=1, writemode='a', title=f"coords {frag.label}")
+
+    # Write energy file
+    energies_file=open("train_data.energies", "w")
+    for energy in energies:
+        # Create file for ML
+        energies_file.write(f"{energy}\n")
+    energies_file.close()
+
+    # Write gradient file
+    if Grad:
+        # Gradients-file
+        gradients_file=open("train_data.gradients", "w")
+        gradients_file.write(f"{frag.numatoms}\n")
+        gradients_file.write(f"gradient {label} \n")
+        for grad in gradients:
+            for g in gradient:
+                gradients_file.write(f"{g[0]:10.7f} {g[1]:10.7f} {g[2]:10.7f}\n")
+        gradients_file.close()
+
+    print("\nNow writing data in MACE-format")
+    print("Fragments labels:",[frag.label for frag in fragments])
+    print("energies:", energies)
+    # Write data file that MACE uses
+    mace_file=open("train_data_mace.xyz", "w")
+
+    # Isolated atoms print
+    for el,en_at in energies_atoms_dict.items():
+        en_ev = en_at*27.211386245988
+        mace_file.write("1\n")
+        mace_file.write(f"Lattice='20.0 0.0 0.0 0.0 20.0 0.0 0.0 0.0 20.0' Properties=species:S:1:pos:R:3:forces_REF:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
+        mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}\
+{-0.0:17.8f}{-0.0:17.8f}{-0.0:17.8f}\n")
+
+    #TODO: Nmols
+    Nmols="1"
     
-    print("All done! Files created:\ntrain_data.xyz\ntrain_data.energies\ntrain_data.gradients")
+    #TODO comp
+    comp="xxx"
+    #molindex
+    molindex=0
+
+    for i in range(len(energies)):
+        #Converting energy to eV
+        energy_ev = energies[i]*27.211386245988
+        #Converting grad to force in eV/Ang
+        force = -1*gradients[i]*51.42206747
+        frag = fragments[i]
+        #New mol
+        mace_file.write(f"{frag.numatoms}\n")
+        mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1:forces_REF:R:3 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
+        for i in range(frag.numatoms):
+            mace_file.write(f"{frag.elems[i]:2s}{frag.coords[i][0]:17.8f}{frag.coords[i][1]:17.8f}{frag.coords[i][2]:17.8f}\
+{molindex:9d}{force[i][0]:17.8f}{force[i][1]:17.8f}{force[i][2]:17.8f}\n")
+    mace_file.close()
+
+    print("All done! Files created:\ntrain_data.xyz\ntrain_data.energies\ntrain_data.gradients\ntrain_data_mace.xyz")
