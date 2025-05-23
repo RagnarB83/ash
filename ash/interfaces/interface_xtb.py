@@ -24,7 +24,7 @@ from ash.modules.module_coords import (
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None,
-                 use_tblite=False, periodic=False, periodic_cell_dimensions=None):
+                 use_tblite=False, periodic=False, periodic_cell_dimensions=None, extraflag=None):
 
         self.theorynamelabel="xTB"
         self.theorytype="QM"
@@ -41,6 +41,9 @@ class xTBTheory:
 
         # Use Tblite library inside xtb or not
         self.use_tblite=use_tblite
+
+        # Passing special extra flag to xtb binary
+        self.extraflag=extraflag
 
         self.periodic=periodic
         self.periodic_cell_dimensions=periodic_cell_dimensions
@@ -215,7 +218,7 @@ class xTBTheory:
                 print(f"Running xtB using {numcores} cores")
                 print("...")
 
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
+            run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
                                     Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores, use_tblite=self.use_tblite)
 
@@ -281,7 +284,7 @@ class xTBTheory:
                 print(f"Running xtB using {numcores} cores")
                 print("...")
 
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
+            run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
                                     Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores,
                                     use_tblite=self.use_tblite)
@@ -393,7 +396,7 @@ class xTBTheory:
                 create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
 
             # Run xTB (note: passing PC and Grad Booleans)
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
+            run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
                                     Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores,
                                     use_tblite=self.use_tblite)
 
@@ -618,8 +621,8 @@ def xtbVEAgrab(file):
     return VEA
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, PC=False,
-    electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1, use_tblite=False):
+def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, PC=False,
+    electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1, use_tblite=False, extraflag=None):
 
     if solvent is None:
         solvent_line1=""
@@ -639,12 +642,15 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Op
             print("No spin polarization")
         spinpol_flag=""
 
-
     # Use tblite or not
     if use_tblite is True:
         tblite_flag="--tblite"
     else:
         tblite_flag=""
+
+    # Optional extraflag
+    if extraflag is None:
+        extraflag=""
 
     basename = coordfile.split('.')[0]
     uhf=mult-1
@@ -687,7 +693,7 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Op
         jobflag="" #NOTE.
 
     command_list=[xtbdir + '/xtb', coordfile, '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
-                '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2]
+                '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2, extraflag]
     # Remove empty arguments
     command_list=list(filter(None, command_list))
 

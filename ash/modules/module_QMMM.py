@@ -92,8 +92,10 @@ class QMMMTheory:
         self.allatoms=list(range(0,len(self.elems)))
         print("All atoms in fragment:", len(self.allatoms))
         self.num_allatoms=len(self.allatoms)
-        # Sorting qmatoms list
-        self.qmatoms = sorted(qmatoms)
+
+        # Sorting qmatoms list making sure only unique values are taken
+        self.qmatoms = sorted(list(set(qmatoms)))
+        #self.qmatoms = sorted(qmatoms)
 
         # All-atom Bool-array for whether atom-index is a QM-atom index or not
         # Used by make_QM_PC_gradient

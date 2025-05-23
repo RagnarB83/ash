@@ -6,14 +6,11 @@ from ash.functions.functions_general import ashexit, BC,print_time_rel
 from ash.functions.functions_general import print_line_with_mainheader
 import ash.constants
 
-# TODO: Make sure energy is a general thing in PyTorch model
-
-# Basic interface to PyTorch with support for TorchANI
 
 
-class TorchTheory():
+class MaceTheory():
     def __init__(self, filename="torch.pt", model_name=None, model_object=None,
-                 model_file=None, printlevel=2, label="TorchTheory", numcores=1,
+                 model_file=None, printlevel=2, label="MaceTheory", numcores=1,
                  platform=None, train=False):
         # Early exits
         try:
@@ -40,6 +37,16 @@ class TorchTheory():
         self.printlevel = printlevel
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
+        try:
+             import mace:
+        except ImportError as e:
+            print("Import error message:", e)
+            print("Problem importing mace or something associated. Make sure you have installed things correctly.")
+            print("Example: pip install mace-torch ")
+            ashexit()
+
+
+
         # Device choice
         if platform == 'cuda':
             print("Platfrom CUDA selected. Will attempt to use.")
@@ -52,54 +59,8 @@ class TorchTheory():
             self.device = torch.device('cpu')
         print("Torch device selected:", self.device)
 
-        ################################
-        # Model selection
-        ################################
-
-        # Model is None initially
-        self.model = None
-
-        if model_file is not None:
-            print("model_file:", model_file)
-            if 'aimnet2' in str(model_file).lower():
-                print("AIMNet2 model selected")
-                self.load_aimnet2_model(model_file=model_file)
-            else:
-                # 
-                self.model = torch.load(model_file, map_location=torch.device('cpu'))
-                #torch.load_state_dict(model_file)
-
-                #If TorchScript saved
-                #self.model = torch.jit.load(model_file)
-
-                #print("self.model:", self.model)
-                #exit()
 
 
-
-            print("Model:", self.model)
-        elif model_name is not None:
-            print("model_name:", model_name)
-            if 'ani' in str(model_name).lower():
-                print("ANI type model selected")
-                self.load_ani_model(model_name)
-            elif 'aimnet2' in str(model_name).lower():
-                print("AIMNet2 model selected")
-                self.load_aimnet2_model(model_name=model_name)
-            else:
-                print("Error: Unknown model_name")
-                ashexit()
-            print("Model:", self.model)
-        elif model_object is not None:
-            self.model=model_object
-            print("Model:", self.model)
-
-        ##############
-        # TRAINING
-        ##############
-        print("Training mode:", train)
-        if train is True:
-            print("Training will be done")
 
     def cleanup(self):
         print("No cleanup implemented")
@@ -133,51 +94,6 @@ class TorchTheory():
         torch.jit.save(compiled_model, filename)
         print("Torch saved model to file:", filename)
 
-    def load_aimnet2_model(self,model_name=None, model_file=None):
-        print("Aimnet2-type model requested")
-        print("Models available: aimnet2")
-        try:
-            from aimnet2calc import AIMNet2Calculator
-        except ImportError as e:
-            print("Import error message:", e)
-            print("Problem importing AIMNet2Calculator or torch libraries. Make sure you have installed AIMNet2 correctly")
-            ashexit()
-
-        # Model selection
-        print("Model:", model_name)
-        print("File:", model_file)
-        if model_name is not None:
-            if str(model_name).lower() == 'aimnet2':
-                self.model = AIMNet2Calculator('aimnet2')
-            else:
-                print("Error: Unknown model and no model_file selected")
-                ashexit()
-        elif model_file is not None:
-            print("Loading file:", model_file)
-            self.model = AIMNet2Calculator(model_file)
-
-    def load_ani_model(self,model):
-        print("ANI-type model requested")
-        print("Models available: ANI1ccx, ANI1x and ANI2x")
-        try:
-            import torchani
-            import torch
-        except ImportError as e:
-            print("Problem importing torchani libraries. Make sure you have installed torchani correctly")
-            print("Import error message:", e)
-            ashexit()
-
-        # Model selection
-        print("Model:", model)
-        if model == 'ANI1ccx':
-            self.model = torchani.models.ANI1ccx(periodic_table_index=True).to(torch.float32).to(self.device)
-        elif model == 'ANI1x':
-            self.model = torchani.models.ANI1x(periodic_table_index=True).to(torch.float32).to(self.device)
-        elif model == 'ANI2x':
-            self.model = torchani.models.ANI2x(periodic_table_index=True).to(torch.float32).to(self.device)
-        else:
-            print("Error: Unknown model and no model_file selected")
-            ashexit()
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
@@ -206,7 +122,7 @@ class TorchTheory():
             ashexit()
         # Check availability of model before proceeding further
         if self.model is None:
-            print("TorchTheory Model has not been defined.")
+            print("MaceTheory Model has not been defined.")
             print("Either load a valid model or train")
             ashexit()
 
@@ -271,3 +187,37 @@ class TorchTheory():
         else:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
+
+
+def write_mace_config(name="model",model="MACE", device='cpu',
+                      train_file="train_data.xyz", valid_file="trainvalid_data.xyz", test_file="traintest_data.xyz",
+                      max_num_epochs=500, 
+                      num_channels=32,  results_dir= "MACE_models", checkpoints_dir = "MACE_models", log_dir ="MACE_models",
+                      model_dir="MACE_models",
+                      swa=True, seed=123, batch_size=10, ):
+
+    import yaml
+
+    data = dict( model= model,
+num_channels= num_channels,
+max_L= max_L,
+r_max= r_max,
+name= name,
+model_dir= model_dir,
+log_dir= log_dir,
+checkpoints_dir= checkpoints_dir,
+results_dir= results_dir,
+train_file= train_file,
+valid_file= valid_file,
+test_file= test_file,
+energy_key= "energy_xtb",
+forces_key= "forces_xtb",
+device= device,
+batch_size= batch_size,
+max_num_epochs= max_num_epochs,
+swa= swa,
+seed= seed,
+    )
+
+    with open('data.yml', 'w') as outfile:
+        yaml.dump(data, outfile, default_flow_style=False)

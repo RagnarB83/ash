@@ -3015,8 +3015,6 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
         print("No connectivity found. Using slow way of finding nearby fragments...")
     atomlist = []
 
-    # print("fragment.connectivity", fragment.connectivity)
-
     for i, c in enumerate(subsetcoords):
         el = subsetelems[i]
         for index, allc in enumerate(fragment.coords):
@@ -3042,6 +3040,50 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
 
                     elematoms = [fragment.elems[i] for i in wholemol]
                     atomlist = atomlist + wholemol
+    atomlist = np.unique(atomlist).tolist()
+    return atomlist
+
+#Similar to QMregionfragexpand but cleaner
+def cut_sphere(fragment=None, center_atom=None, radius=None):
+
+    scale = ash.settings_ash.settings_dict["scale"]
+    tol = ash.settings_ash.settings_dict["tol"]
+
+    coords = fragment.coords
+    center = fragment.coords[center_atom]
+
+    # Calculate distances from center for each coordinate
+    relative_coords = coords - center
+    distances = np.linalg.norm(relative_coords, axis=1)
+    inside_sphere = distances <= radius
+    uncut_indices = np.where(inside_sphere)[0]
+    atomlist=[]
+    for uncut_index in uncut_indices:
+        wholemol = get_molecule_members_loop_np2(fragment.coords, fragment.elems, 99, scale, tol,
+                                                                 atomindex=uncut_index)
+        atomlist = atomlist + wholemol
+    atomlist = np.unique(atomlist).tolist()
+    return atomlist
+
+#Similar to QMregionfragexpand and cut_sphere but a cubic box is cut instead
+def cut_cubic_box(fragment=None, center_atom=None, radius=None):
+
+    scale = ash.settings_ash.settings_dict["scale"]
+    tol = ash.settings_ash.settings_dict["tol"]
+
+    coords = fragment.coords
+    center = fragment.coords[center_atom]
+
+    # Calculate distances from center for each coordinate
+    relative_coords = coords - center
+    inside_box = np.all(np.abs(relative_coords) <= radius, axis=1)
+    uncut_indices = np.where(inside_box)[0]
+    #cut_indices = np.where(~inside_box)[0]
+    atomlist=[]
+    for uncut_index in uncut_indices:
+        wholemol = get_molecule_members_loop_np2(fragment.coords, fragment.elems, 99, scale, tol,
+                                                                 atomindex=uncut_index)
+        atomlist = atomlist + wholemol
     atomlist = np.unique(atomlist).tolist()
     return atomlist
 
