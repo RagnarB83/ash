@@ -12,7 +12,7 @@ from ash.interfaces.interface_mdtraj import MDtraj_slice
 # Also helper tools for Torch and MLatom interfaces
 
 # Function to create ML training data given XYZ-files and 2 ASH theories
-def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=100, random_snapshots=True,
+def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=None, random_snapshots=True,
                                 dcd_pdb_topology=None, nth_frame_in_traj=1,
                                theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1):
     if xyzdir is None and xyz_trajectory is None and dcd_trajectory is None:
@@ -38,6 +38,8 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
 
     print(f"num_snapshots: {num_snapshots} # xyz_trajectory option: number of snapshots to use")
     print(f"random_snapshots: {random_snapshots} # xyz_trajectory option: randomize snapshots or not")
+
+
     print("Theory 1:", theory_1)
     print("Theory 2:", theory_2)
 
@@ -46,6 +48,11 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
         print("XYZ-dir specified.")
         full_list_of_xyz_files=glob.glob(f"{xyzdir}/*.xyz")
         print("Number of XYZ-files in directory:", len(full_list_of_xyz_files))
+        if num_snapshots is None:
+            print("num_snapshots has not been set by user")
+            print("This means that we will take all snapshots")
+            print("Setting num_snapshots to:", len(full_list_of_xyz_files))
+            num_snapshots=len(full_list_of_xyz_files)
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
             print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
@@ -55,7 +62,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             list_of_xyz_files=full_list_of_xyz_files[:num_snapshots]
         print(f"List of XYZ-files to use (num {len(list_of_xyz_files)}):", list_of_xyz_files)
 
-    #DCD TRAJECTORY
+    # DCD TRAJECTORY
     elif dcd_trajectory is not None:
         print("DCD-trajectory specified.")
         #Getting absolute path of file
@@ -73,12 +80,17 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
         xyztraj = MDtraj_slice(dcd_trajectory, dcd_pdb_topology, format='XYZ', frames="all")
         # Splitting XYZ
         os.chdir("xyz_traj_split")
-        print("here")
         split_multimolxyzfile(f"../{xyztraj}", writexyz=True, skipindex=nth_frame_in_traj,return_fragments=False)        
         # Getting list of XYZ-files in directory, properly sorted
         full_list_of_xyz_files=natural_sort(glob.glob(f"molecule*.xyz"))
         print("Created directory xyz_traj_split")
         print("Number of XYZ-files in directory:", len(full_list_of_xyz_files))
+        if num_snapshots is None:
+            print("num_snapshots has not been set by user")
+            print("This means that we will take all snapshots")
+            print("Setting num_snapshots to:", len(full_list_of_xyz_files))
+            num_snapshots=len(full_list_of_xyz_files)
+        
         print("Note: This directory can be used as a directory for the xyzdir option to create_ML_training_data")
         print()
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
@@ -115,6 +127,12 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
         split_multimolxyzfile(xyz_trajectory, writexyz=True, skipindex=1,return_fragments=False)
         # Getting list of XYZ-files in directory, properly sorted
         full_list_of_xyz_files=natural_sort(glob.glob(f"molecule*.xyz"))
+        if num_snapshots is None:
+            print("num_snapshots has not been set by user")
+            print("This means that we will take all snapshots")
+            print("Setting num_snapshots to:", len(full_list_of_xyz_files))
+            num_snapshots=len(full_list_of_xyz_files)
+
         print("Created directory xyz_traj_split")
         print("Number of XYZ-files in directory:", len(full_list_of_xyz_files))
         print("Note: This directory can be used as a directory for the xyzdir option to create_ML_training_data")
@@ -299,7 +317,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
 
     #TODO: Nmols
     Nmols="1"
-    
+
     #TODO comp
     comp="xxx"
     #molindex
