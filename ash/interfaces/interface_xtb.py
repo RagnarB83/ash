@@ -220,7 +220,8 @@ class xTBTheory:
 
             run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
                                     Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
-                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores, use_tblite=self.use_tblite)
+                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores, use_tblite=self.use_tblite,
+                                    extraflag=self.extraflag)
 
             #Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
             self.cleanup_temp()
@@ -287,7 +288,7 @@ class xTBTheory:
             run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
                                     Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores,
-                                    use_tblite=self.use_tblite)
+                                    use_tblite=self.use_tblite, extraflag=self.extraflag)
 
             # Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
             self.cleanup_temp()
@@ -398,7 +399,7 @@ class xTBTheory:
             # Run xTB (note: passing PC and Grad Booleans)
             run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
                                     Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores,
-                                    use_tblite=self.use_tblite)
+                                    use_tblite=self.use_tblite, extraflag=self.extraflag)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")

@@ -13,11 +13,11 @@ class MaceTheory():
                  model_file=None, printlevel=2, label="MaceTheory", numcores=1,
                  platform=None, train=False):
         # Early exits
-        try:
-            import torch
-        except ImportError:
-            print("Problem importing torch library. Make sure you have installed torch correctly")
-            ashexit()
+        #try:
+        #    import torch
+        #except ImportError:
+        #    print("Problem importing torch library. Make sure you have installed torch correctly")
+        #    ashexit()
 
         if model_name is None and model_object is None and model_file is None and train is False:
             print("Error: No model_name, model_object or model_file was selected and train is False.")
@@ -37,13 +37,13 @@ class MaceTheory():
         self.printlevel = printlevel
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-        try:
-             import mace:
-        except ImportError as e:
-            print("Import error message:", e)
-            print("Problem importing mace or something associated. Make sure you have installed things correctly.")
-            print("Example: pip install mace-torch ")
-            ashexit()
+        #try:
+        #     import mace:
+        #except ImportError as e:
+        #    print("Import error message:", e)
+        #    print("Problem importing mace or something associated. Make sure you have installed things correctly.")
+        #    print("Example: pip install mace-torch ")
+        #    ashexit()
 
 
 
