@@ -76,6 +76,8 @@ class MACETheory():
         print("log_dir:", log_dir)
         print("model_dir:", model_dir)
 
+        self.check_file_exists(train_file)
+
         #Write 
         print("\nWriting MACE config file to disk as as:", self.config_filename)
         #write_mace_config(config_file=self.config_filename)
