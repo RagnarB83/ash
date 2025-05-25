@@ -35,6 +35,7 @@ bohr2m = 5.29177210903e-11
 amu2kg = 1.66053906660e-27
 ang2m = 1e-10
 
+
 # R in hartree/K. Converted from 8.31446261815324000 J/Kmol
 R_gasconst = 3.16681161675373E-06
 R_gasconst_JK = 8.31446261815324 #J/mol/K

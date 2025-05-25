@@ -301,7 +301,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
                 gradients_file.write(f"{g[0]:10.7f} {g[1]:10.7f} {g[2]:10.7f}\n")
         gradients_file.close()
 
-    print("\nNow writing data in MACE-format")
+    print("\nNow writing data in MACE-format with energies in units of eV and forces in eV/Å")
     print("Fragments labels:",[frag.label for frag in fragments])
     print("energies:", energies)
     # Write data file that MACE uses
@@ -311,7 +311,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     for el,en_at in energies_atoms_dict.items():
         en_ev = en_at*27.211386245988
         mace_file.write("1\n")
-        mace_file.write(f"Lattice='20.0 0.0 0.0 0.0 20.0 0.0 0.0 0.0 20.0' Properties=species:S:1:pos:R:3:forces_REF:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
+        mace_file.write(f"Properties=species:S:1:pos:R:3:forces_REF:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
         mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}\
 {-0.0:17.8f}{-0.0:17.8f}{-0.0:17.8f}\n")
 
@@ -324,12 +324,12 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     molindex=0
 
     for i in range(len(energies)):
-        #Converting energy to eV
+        # Converting energy to eV
         energy_ev = energies[i]*27.211386245988
-        #Converting grad to force in eV/Ang
+        # Converting grad to force in eV/Ang
         force = -1*gradients[i]*51.42206747
         frag = fragments[i]
-        #New mol
+        # New mol
         mace_file.write(f"{frag.numatoms}\n")
         mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1:forces_REF:R:3 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
         for i in range(frag.numatoms):

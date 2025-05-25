@@ -120,6 +120,7 @@ from .interfaces.interface_MLatom import MLatomTheory, Mlatom_print_model_stats
 from .interfaces.interface_DRACO import get_draco_radii
 from .interfaces.interface_Grimme_corrections import DFTD4Theory, calc_DFTD4, calc_gcp, gcpTheory
 from .interfaces.interface_torch import TorchTheory
+from .interfaces.interface_mace import MACETheory
 from .interfaces.interface_packmol import packmol_solvate
 
 # MM: external and internal
