@@ -61,7 +61,7 @@ class GeomeTRICOptimizerClass:
                      frozenatoms=None, maxiter=250, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
                        print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None,
-                       subfrctor=1, MM_PDB_traj_write=False, printlevel=2, force_coordsystem=False):
+                       subfrctor=1, MM_PDB_traj_write=False, printlevel=2, force_coordsystem=False, result_write_to_disk=True):
 
             self.printlevel=printlevel
             print_line_with_mainheader("geomeTRICOptimizer initialization")
