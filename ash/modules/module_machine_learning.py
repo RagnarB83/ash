@@ -261,12 +261,14 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
         atomfrag = Fragment(atom=uniq_el, charge=0, mult=mult, printlevel=0)
         print("Now running Theory 1 for atom:", uniq_el)
         theory_1.printlevel=0
+        theory_1.cleanup()
         result_1 = Singlepoint(theory=theory_1, fragment=atomfrag, printlevel=0,
                                result_write_to_disk=False)
         if delta is True:
             theory_2.printlevel=0
             # Running theory 2
             print("Now running Theory 2 for atom:", uniq_el)
+            theory_2.cleanup()
             result_2 = Singlepoint(theory=theory_2, fragment=atomfrag, printlevel=0,
                                    result_write_to_disk=False)
             # Delta energy
