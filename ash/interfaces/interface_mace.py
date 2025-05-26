@@ -242,7 +242,7 @@ class MACETheory():
             indices_or_sections=batch.ptr[1:],
             axis=0)[0]
 
-        self.energy = en*ash.constants.evtohar
+        self.energy = float(en*ash.constants.evtohar)
         self.gradient = forces/-51.422067090480645
 
         if Hessian:
