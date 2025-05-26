@@ -11,7 +11,7 @@ class MACETheory():
     def __init__(self, config_filename="config.yml", 
                  filename="mace.model", model_name=None, model_object=None,
                  model_file=None, printlevel=2, label="MACETheory", numcores=1,
-                 platform=None, device="CPU",
+                 platform=None, device="cpu",
                  model="MACE"):
         # Early exits
         try:
@@ -118,6 +118,37 @@ class MACETheory():
         self.device=device
         print("Setting device of object to be ", self.device)
 
+        #############
+        #STATISTICS
+        #############
+
+        # Predicting 
+        #from mlatom.MLtasks import predicting, analyzing
+        #print("Now predicting for molDB")
+        #predicting(model=self.model, molecular_database=molDB, value=True, gradient=True)
+        #print("Now predicting for subtrainDB")
+        #predicting(model=self.model, molecular_database=subtrainDB, value=True, gradient=True)
+        #print("Now predicting for valDB")
+        #predicting(model=self.model, molecular_database=valDB, value=True, gradient=True)
+
+        # Analyzing
+        #if molDB_xyzvecproperty_file is not None:
+        #    self.result_molDB = analyzing(molDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="molDB")
+        #    self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="subtrainDB")
+        #    self.result_valDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', est_grad='estimated_xyz_derivatives_y', set_name="valDB")
+        #else:
+        #    self.result_molDB = analyzing(molDB, ref_value='energy', est_value='estimated_y',  set_name="molDB")
+        #    self.result_subtrainDB = analyzing(subtrainDB, ref_value='energy', est_value='estimated_y', set_name="subtrainDB")
+        #    self.result_valDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', set_name="valDB")
+
+        #print("Statistics saved as attributes:  result_molDB, result_subtrainDB and result_valDB of MLatomTheory object")
+        #print()
+        #print("self.result_molDB:", self.result_molDB)
+        #print("self.result_subtrainDB:", self.result_subtrainDB)
+        #print("self.result_valDB:", self.result_valDB)
+
+
+
     def check_file_exists(self, file):
         import os
         if file is None:
@@ -182,9 +213,9 @@ class MACETheory():
         import torch
 
         # Load model
-        model = torch.load(f=self.model_file, map_location=self.device)
+        print(f"Loading model from file {self.model_file}. Device is: {self.device}")
+        model = torch.load(f=self.model_file, map_location=torch.device(self.device))
         model = model.to(self.device)  # for possible cuda problems
-
         # Simplest to use ase here to create Atoms object
         import ase
         atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
@@ -196,7 +227,6 @@ class MACETheory():
                     config, z_table=z_table, cutoff=float(model.r_max), heads=None)],
             shuffle=False,
             drop_last=False)
-
         # Collect data
         for batch in data_loader:
             batch = batch.to(self.device)
@@ -209,7 +239,7 @@ class MACETheory():
             torch_tools.to_numpy(output["forces"]),
             indices_or_sections=batch.ptr[1:],
             axis=0)[0]
-        
+
         self.energy = en*ash.constants.evtohar
         self.gradient = forces/-51.422067090480645
 

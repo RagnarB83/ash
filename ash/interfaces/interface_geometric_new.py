@@ -21,9 +21,9 @@ from ash.modules.module_theory import NumGradclass
 #Wrapper function around GeomeTRICOptimizerClass
 #NOTE: theory and fragment given to Optimizer function but not part of Class initialization. Only passed to run method
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', force_coordsystem=False, frozenatoms=None, constraints=None,
-                       constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None, NumGrad=False,
+                       constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None, NumGrad=False, 
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
-                       modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
+                       modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2, result_write_to_disk=True):
     """
     Wrapper function around GeomeTRICOptimizerClass
     """
@@ -39,7 +39,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                         hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,modelhessian=modelhessian,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                         print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write,
-                        printlevel=printlevel, force_coordsystem=force_coordsystem)
+                        printlevel=printlevel, force_coordsystem=force_coordsystem, result_write_to_disk=result_write_to_disk)
 
     # If NumGrad then we wrap theory object into NumGrad class object
     if NumGrad:
@@ -109,6 +109,8 @@ class GeomeTRICOptimizerClass:
             #Constraints by default set to None
             self.constraints=None
             ######################
+
+            self.result_write_to_disk=result_write_to_disk
 
             #Setup convergence criteria (sets self.conv_criteria)
             self.convergence_criteria(convergence_setting,conv_criteria)
@@ -590,9 +592,10 @@ class GeomeTRICOptimizerClass:
             blankline()
 
             #Now returning final Results object
-            #Note: could include the geometry in object but can be very large causing printing head-aches on screen, ignoring for now since the geometry is in the Fragment object anyway
+            # Note: could include the geometry in object but can be very large causing printing head-aches on screen, ignoring for now since the geometry is in the Fragment object anyway
             result = ASH_Results(label="Optimizer", energy=finalenergy)
-            result.write_to_disk(filename="ASH_Optimizer.result")
+            if self.result_write_to_disk is True:
+                result.write_to_disk(filename="ASH_Optimizer.result")
             return result
 
 
