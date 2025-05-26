@@ -13,6 +13,7 @@ class MACETheory():
                  model_file=None, printlevel=2, label="MACETheory", numcores=1,
                  platform=None, device="cpu",
                  model="MACE"):
+        
         # Early exits
         try:
             import mace
@@ -205,12 +206,24 @@ class MACETheory():
         # Checking if file exists
         self.check_file_exists(self.model_file)
 
+
         # Call model to get energy
+        import importlib
+        import torch
+        import mace
+
+        print("Reimporting mace/torch")
+        importlib.reload(mace)
+        importlib.reload(torch)
+
+
+
         from mace.cli.eval_configs import main
         from mace import data
         from mace.tools import torch_geometric, torch_tools, utils
         from mace.tools import utils, to_one_hot, atomic_numbers_to_indices
         import torch
+
 
         # Load model
         print(f"Loading model from file {self.model_file}. Device is: {self.device}")

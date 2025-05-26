@@ -503,13 +503,16 @@ def calc_surface(fragment=None, theory=None, charge=None, mult=None, scantype='U
                         print("RC1 value in dict already. Skipping.")
 
     print("surfacedictionary:", surfacedictionary)
-    #Writing dictionary to file
+    # Writing dictionary to file
     write_surfacedict_to_file(surfacedictionary,resultfile, dimension=dimension)
 
     print_time_rel(module_init_time, modulename='calc_surface', moduleindex=0)
     result = ASH_Results(label="Surface calc", surfacepoints=surfacedictionary)
-    result.write_to_disk(filename="ASH_surface.result")
-
+    try:
+        result.write_to_disk(filename="ASH_surface.result")
+    except TypeError as e:
+        print("Problem writing ASH_surface.result object to disk. Skipping.")
+        print("Error message:", e)
     return result
 
 # Calculate surface from XYZ-file collection.
