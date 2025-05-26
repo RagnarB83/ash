@@ -29,7 +29,15 @@ class DFTD4Theory:
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
 
-        frag = ash.Fragment(elems=elems, coords=current_coords,printlevel=0)
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
+
+        frag = ash.Fragment(elems=qm_elems, coords=current_coords,printlevel=0)
         eg = calc_DFTD4(fragment=frag, functional=self.functional, Grad=Grad, printlevel=self.printlevel)
 
 
