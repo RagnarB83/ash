@@ -232,8 +232,12 @@ class MACETheory():
         # Collect data
         for batch in data_loader:
             batch = batch.to(self.device)
-            model = model.float() # Necessary to avoid type problems
-            output = model(batch.to_dict(), compute_stress=False, compute_force=True)
+            try:
+                output = model(batch.to_dict(), compute_stress=False, compute_force=True)
+            except RuntimeError as e:
+                print("RuntimeError occurred. Trying type changes. Message", e)
+                model = model.float() # Necessary to avoid type problems
+                output = model(batch.to_dict(), compute_stress=False, compute_force=True)
 
         # Get energy and forces
         en = torch_tools.to_numpy(output["energy"])[0]
