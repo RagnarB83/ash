@@ -206,18 +206,19 @@ class MACETheory():
         # Checking if file exists
         self.check_file_exists(self.model_file)
 
-
         # Call model to get energy
         from mace.cli.eval_configs import main
         from mace import data
         from mace.tools import torch_geometric, torch_tools, utils
         from mace.tools import utils, to_one_hot, atomic_numbers_to_indices
         import torch
+        from mace.modules.utils import compute_hessians_vmap, compute_hessians_loop, compute_forces
 
         # Load model
         print(f"Loading model from file {self.model_file}. Device is: {self.device}")
         model = torch.load(f=self.model_file, map_location=torch.device(self.device))
         model = model.to(self.device)  # for possible cuda problems
+
         # Simplest to use ase here to create Atoms object
         import ase
         atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
@@ -229,40 +230,54 @@ class MACETheory():
                     config, z_table=z_table, cutoff=float(model.r_max), heads=None)],
             shuffle=False,
             drop_last=False)
-        # Collect data
-        for batch in data_loader:
-            batch = batch.to(self.device)
+
+        #
+        option_1=True
+        if option_1:
+            # Get batch
+            for batch in data_loader:
+                batch = batch.to(self.device)
+            # Run model
             try:
-                output = model(batch.to_dict(), compute_stress=False, compute_force=True)
+                output = model(batch.to_dict(), compute_stress=False, compute_force=False)
             except RuntimeError as e:
                 print("RuntimeError occurred. Trying type changes. Message", e)
-                model = model.float() # Necessary to avoid type problems
-                output = model(batch.to_dict(), compute_stress=False, compute_force=True)
+                model = model.float() # sometimes necessary to avoid type problems
+                output = model(batch.to_dict(), compute_stress=False, compute_force=False)
+            # Grab energy
+            en = torch_tools.to_numpy(output["energy"])[0]
+            # Calculate forces
+            forces = compute_forces(output["energy"], batch["positions"])
 
-        print("output:", output)
-        # Get energy and forces
-        en = torch_tools.to_numpy(output["energy"])[0]
-        forces = np.split(
-            torch_tools.to_numpy(output["forces"]),
-            indices_or_sections=batch.ptr[1:],
-            axis=0)[0]
+            # Hessian 
+            if Hessian:
+                print("Running Hessian")
+                hess = compute_hessians_vmap(forces,batch["positions"])
+                hessian = torch_tools.to_numpy(hess)
+                print("hessian:", hessian)
 
+        # This worked previously
+        else:
+            print("previous regular mode")
+            for batch in data_loader:
+                try:
+                    output = model(batch.to_dict(), compute_stress=False, compute_force=True)
+                except RuntimeError as e:
+                    print("RuntimeError occurred. Trying type changes. Message", e)
+                    model = model.float() # sometimes necessary to avoid type problems
+                    output = model(batch.to_dict(), compute_stress=False, compute_force=True)
+
+            # Get energy and forces
+            en = torch_tools.to_numpy(output["energy"])[0]
+            forces = np.split(
+                torch_tools.to_numpy(output["forces"]),
+                indices_or_sections=batch.ptr[1:],
+                axis=0)[0]
+        # Convert energy and forces to Eh and gradient in Eh/Bohr
         self.energy = float(en*ash.constants.evtohar)
         self.gradient = forces/-51.422067090480645
-
         if Hessian:
-            print("Calculating Hessian")
-            #print("output forces:", output["forces"])
-            exit()
-            #print(type(output["forces"]))
-            #print(output["forces"].__dict__)
-            #from mace.modules.utils import compute_hessians_vmap, compute_hessians_loop
-            #NOTE: current_coords units !!!
-            #hessian1 = compute_hessians_vmap(output["forces"],current_coords)
-            #print("hessian1:", hessian1)
-            #hessian2 = compute_hessians_loop(output["forces"],current_coords)
-            #print("hessian2:", hessian2)
-            #exit()
+            self.hessian = hessian*0.010291772
 
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
