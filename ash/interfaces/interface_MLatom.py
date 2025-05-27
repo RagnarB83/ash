@@ -115,6 +115,10 @@ class MLatomTheory(Theory):
             self.setup_sparrow()
             self.setup_dftd4()
 
+
+        #PC-gradient may be calculated
+        self.pcgrad=None
+
         #############
         # ML_MODEL
         #############
@@ -506,12 +510,13 @@ class MLatomTheory(Theory):
             if Grad:
                 print("Gradient was calculated.")
                 self.gradient = molecule.get_energy_gradients()
-                if PC is True:
+                if PC is True and self.qm_program == "xtb":
                     self.pcgrad = xtbpcgradientgrab(len(MMcharges), file="molecule0.pcgrad")
 
         print_time_rel(module_init_time, modulename='MLatom run', moduleindex=2)
         if Grad:
-            if PC:
+            # If pcgrad was actually calculated
+            if self.pcgrad is not None:
                 return self.energy,self.gradient, self.pcgrad
             else:
                 return self.energy,self.gradient
