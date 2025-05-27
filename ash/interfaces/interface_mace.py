@@ -248,6 +248,7 @@ class MACETheory():
             en = torch_tools.to_numpy(output["energy"])[0]
             # Calculate forces
             forces = compute_forces(output["energy"], batch["positions"])
+            forces = torch_tools.to_numpy(forces)
 
             # Hessian 
             if Hessian:
