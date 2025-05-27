@@ -239,6 +239,7 @@ class MACETheory():
                 model = model.float() # Necessary to avoid type problems
                 output = model(batch.to_dict(), compute_stress=False, compute_force=True)
 
+        print("output:", output)
         # Get energy and forces
         en = torch_tools.to_numpy(output["energy"])[0]
         forces = np.split(
@@ -250,19 +251,18 @@ class MACETheory():
         self.gradient = forces/-51.422067090480645
 
         if Hessian:
-            print("Calculating Hessian (not tested)")
-            for batch in data_loader:
-                hessians = [
-                    model(
-                        batch.to_dict(),
-                        compute_hessian=True, compute_force=True,
-                        compute_stress=False,
-                        training=False)["hessian"]
-                ]
-                hessians = [hessian.detach().cpu().numpy() for hessian in hessians]
-                if self.num_models == 1:
-                    return hessians[0]
-            return hessians
+            print("Calculating Hessian")
+            #print("output forces:", output["forces"])
+            exit()
+            #print(type(output["forces"]))
+            #print(output["forces"].__dict__)
+            #from mace.modules.utils import compute_hessians_vmap, compute_hessians_loop
+            #NOTE: current_coords units !!!
+            #hessian1 = compute_hessians_vmap(output["forces"],current_coords)
+            #print("hessian1:", hessian1)
+            #hessian2 = compute_hessians_loop(output["forces"],current_coords)
+            #print("hessian2:", hessian2)
+            #exit()
 
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
