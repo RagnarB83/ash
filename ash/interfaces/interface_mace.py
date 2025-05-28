@@ -53,6 +53,7 @@ class MACETheory():
                       max_L = 0, r_max = 5.0, num_channels=32,  
                       results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
                       log_dir ="MACE_models", model_dir="MACE_models"):
+        module_init_time=time.time()
         print("Training activated")
         print("Training parameters:")
         print("config_file", config_file)
@@ -148,7 +149,7 @@ class MACETheory():
         #print("self.result_subtrainDB:", self.result_subtrainDB)
         #print("self.result_valDB:", self.result_valDB)
 
-
+        print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} train', moduleindex=2)
 
     def check_file_exists(self, file):
         import os
