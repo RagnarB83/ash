@@ -190,7 +190,6 @@ class MACETheory():
     def model_load(self):
         module_init_time=time.time()
         import torch
-        import time
         # Load model
         print(f"Loading model from file {self.model_file}. Device is: {self.device}")
         self.model = torch.load(f=self.model_file, map_location=torch.device(self.device))
