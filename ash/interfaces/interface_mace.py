@@ -30,7 +30,9 @@ class MACETheory():
         self.filename = filename
         self.printlevel = printlevel
 
-        #self.model=model
+        # Model attribute is None until we have loaded a model
+        self.model=None
+
         self.model_file=model_file
         self.device=device.lower()
 
@@ -124,6 +126,9 @@ class MACETheory():
         self.device=device
         print("Setting device of object to be ", self.device)
 
+        #Load model
+        self.model_load()
+
         #############
         #STATISTICS
         #############
@@ -182,6 +187,16 @@ class MACETheory():
     #    self.result_molDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', 
     #                                  est_grad='estimated_xyz_derivatives_y', set_name="valDB")
 
+    def model_load(self):
+        module_init_time=time.time()
+        import torch
+        import time
+        # Load model
+        print(f"Loading model from file {self.model_file}. Device is: {self.device}")
+        self.model = torch.load(f=self.model_file, map_location=torch.device(self.device))
+        self.model = self.model.to(self.device)  # for possible cuda problems
+        print_time_rel(module_init_time, modulename=f'MACE model-load', moduleindex=2)
+
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
             charge=None, mult=None):
@@ -232,25 +247,21 @@ class MACETheory():
         import torch
         from mace.modules.utils import compute_hessians_vmap, compute_hessians_loop, compute_forces
 
-        # Load model
-        print_time_rel(module_init_time, modulename=f'MACE run-until load', moduleindex=2)
-        print(f"Loading model from file {self.model_file}. Device is: {self.device}")
-        model = torch.load(f=self.model_file, map_location=torch.device(self.device))
-        print_time_rel(module_init_time, modulename=f'MACE run-after load', moduleindex=2)
-        model = model.to(self.device)  # for possible cuda problems
-        print_time_rel(module_init_time, modulename=f'MACE run to', moduleindex=2)
+        if self.model is None:
+            print("Model has not been loaded yet.")
+            self.model_load()
+
         # Simplest to use ase here to create Atoms object
         import ase
         atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
         config = data.config_from_atoms(atoms)
-        z_table = utils.AtomicNumberTable([int(z) for z in model.atomic_numbers])
+        z_table = utils.AtomicNumberTable([int(z) for z in self.model.atomic_numbers])
         # Create dataloader
         data_loader = torch_geometric.dataloader.DataLoader(
             dataset=[data.AtomicData.from_config(
-                    config, z_table=z_table, cutoff=float(model.r_max), heads=None)],
+                    config, z_table=z_table, cutoff=float(self.model.r_max), heads=None)],
             shuffle=False,
             drop_last=False)
-        print_time_rel(module_init_time, modulename=f'MACE run-after creating dataloader', moduleindex=2)
         #
         option_1=True
         if option_1:
@@ -259,20 +270,18 @@ class MACETheory():
                 batch = batch.to(self.device)
             # Run model
             try:
-                output = model(batch.to_dict(), compute_stress=False, compute_force=False)
-                print_time_rel(module_init_time, modulename=f'MACE run-after model batch', moduleindex=2)
+                output = self.model(batch.to_dict(), compute_stress=False, compute_force=False)
+                print_time_rel(module_init_time, modulename=f'MACE run - after energy', moduleindex=2)
             except RuntimeError as e:
                 print("RuntimeError occurred. Trying type changes. Message", e)
-                model = model.float() # sometimes necessary to avoid type problems
-                output = model(batch.to_dict(), compute_stress=False, compute_force=False)
+                self.model = self.model.float() # sometimes necessary to avoid type problems
+                output = self.model(batch.to_dict(), compute_stress=False, compute_force=False)
             # Grab energy
             en = torch_tools.to_numpy(output["energy"])[0]
             # Calculate forces
-            print_time_rel(module_init_time, modulename=f'MACE run- before creating forces', moduleindex=2)
             forces = compute_forces(output["energy"], batch["positions"])
-            print_time_rel(module_init_time, modulename=f'MACE run- after creating forces', moduleindex=2)
+            print_time_rel(module_init_time, modulename=f'MACE run - after forces', moduleindex=2)
             forces = torch_tools.to_numpy(forces)
-            print_time_rel(module_init_time, modulename=f'MACE run- to numpy forces', moduleindex=2)
 
             # Hessian 
             if Hessian:
@@ -286,11 +295,11 @@ class MACETheory():
             print("previous regular mode")
             for batch in data_loader:
                 try:
-                    output = model(batch.to_dict(), compute_stress=False, compute_force=True)
+                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=True)
                 except RuntimeError as e:
                     print("RuntimeError occurred. Trying type changes. Message", e)
-                    model = model.float() # sometimes necessary to avoid type problems
-                    output = model(batch.to_dict(), compute_stress=False, compute_force=True)
+                    self.model = self.model.float() # sometimes necessary to avoid type problems
+                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=True)
 
             # Get energy and forces
             en = torch_tools.to_numpy(output["energy"])[0]
@@ -303,7 +312,6 @@ class MACETheory():
         self.gradient = forces/-51.422067090480645
         if Hessian:
             self.hessian = hessian*0.010291772
-        print_time_rel(module_init_time, modulename=f'MACE run- xx', moduleindex=2)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
