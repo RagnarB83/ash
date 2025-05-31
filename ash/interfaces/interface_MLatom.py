@@ -523,31 +523,3 @@ class MLatomTheory(Theory):
         else:
             return self.energy
 
-
-# Print statistics for dict with statistics for many models
-# Assumes a dictionary with modelfilenames as keys and statistics_dict_forDB as values
-def Mlatom_print_model_stats(dbdict=None, dbname="Sub-train", Grad=True):
-    print("-"*30)
-    print(f"       {dbname} database  ")
-    print("-"*30)
-    anykey = list(dbdict.keys())[0]
-    print("Num-samples:", dbdict[anykey]["values"]["length"])
-    print("Energies (kcal/mol)")
-    print(f"{'':<20s} {'RMSE':>8s} {'MAE':>8s} {'Corr':>8s} {'R^2':>8s} {'pos_off':>8s} {'neg_off':>8s}")
-    valscaling=627.5091 # Eh->kcal/mol
-    for file, stats in dbdict.items():
-        vals=stats["values"]
-        print(f"{file:<20s} {vals['rmse']*valscaling:8.2f} {vals['mae']*valscaling:8.2f} {vals['corr_coef']:8.4f} \
-{vals['r_squared']:8.4f} {vals['pos_off']*valscaling:8.2f}  {vals['neg_off']*valscaling:8.2f}")
-    print()
-    if Grad:
-        print("Gradients (Eh/Bohr)")
-        gradscaling=1.0
-        for file, stats in dbdict.items():
-            try:
-                grads=stats["gradients"]
-                print(f"{file:<20s} {grads['rmse']*gradscaling:8.6f} {grads['mae']*gradscaling:8.6f} {grads['corr_coef']:8.4f} \
-{grads['r_squared']*gradscaling:8.4f} {grads['pos_off']*gradscaling:8.6f}  {grads['neg_off']*gradscaling:8.6f}")
-            except KeyError:
-                print("Found no gradient stats. skipping")
-        print()

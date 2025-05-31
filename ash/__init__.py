@@ -116,7 +116,7 @@ from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, r
 from .interfaces.interface_xtb import xTBTheory
 from .interfaces.interface_DFTB import DFTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
-from .interfaces.interface_MLatom import MLatomTheory, Mlatom_print_model_stats
+from .interfaces.interface_MLatom import MLatomTheory
 from .interfaces.interface_DRACO import get_draco_radii
 from .interfaces.interface_Grimme_corrections import DFTD4Theory, calc_DFTD4, calc_gcp, gcpTheory
 from .interfaces.interface_torch import TorchTheory
@@ -197,7 +197,9 @@ from .modules.module_benchmarking import run_benchmark
 from .interfaces.interface_small_helpers import create_adaptive_minimal_basis_set
 
 #Machine-learning tools
-from .modules.module_machine_learning import create_ML_training_data
+from .modules.module_machine_learning import create_ML_training_data, Ml_print_model_stats
+# To be deleted
+Mlatom_print_model_stats=Ml_print_model_stats
 
 # Plotting
 import ash.modules.module_plotting

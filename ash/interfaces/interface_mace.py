@@ -13,7 +13,6 @@ class MACETheory():
                  model_file=None, printlevel=2, label="MACETheory", numcores=1,
                  platform=None, device="cpu",
                  model="MACE"):
-        
         # Early exits
         try:
             import mace
@@ -54,6 +53,11 @@ class MACETheory():
                       results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
                       log_dir ="MACE_models", model_dir="MACE_models"):
         module_init_time=time.time()
+
+
+        self.train_file=train_file
+        self.valid_fraction=valid_fraction
+
         print("Training activated")
         print("Training parameters:")
         print("config_file", config_file)
@@ -61,7 +65,7 @@ class MACETheory():
         print("model:", model)
         print("device:", device)
         print("Validation set fraction (valid_fraction):", valid_fraction)
-        print("train_file:", train_file)
+        print("train_file:", self.train_file)
         print("E0s:", E0s)
         print("energy_key:", energy_key)
         print("forces_key:", forces_key)
@@ -78,14 +82,14 @@ class MACETheory():
         print("log_dir:", log_dir)
         print("model_dir:", model_dir)
 
-        self.check_file_exists(train_file)
+        self.check_file_exists(self.train_file)
 
         #Write 
         print("\nWriting MACE config file to disk as as:", self.config_filename)
         #write_mace_config(config_file=self.config_filename)
         print()
         write_mace_config(config_file=config_file, name=name, model=model, device=device, 
-                      valid_fraction=valid_fraction, train_file=train_file,E0s=E0s,
+                      valid_fraction=valid_fraction, train_file=self.train_file,E0s=E0s,
                       energy_key=energy_key, forces_key=forces_key,        
                       energy_weight=energy_weight, forces_weight=forces_weight,
                       max_num_epochs=max_num_epochs, swa=swa, batch_size=batch_size,
@@ -164,6 +168,19 @@ class MACETheory():
         if file_present is False:
             print(f"File {file} does not exist. Exiting.")
             ashexit()
+    # Get statistics for training, sub-training and validation set
+    #def get_statistics():
+
+        #FIle ./valid_indices_123.txt contains indices of training set that are validation
+        #Read training file #self.train_file
+        #Get validation set. Convert data into Eh and Eh/Bohr
+        #Create dict: valDB
+        #
+
+    #    from mlatom.MLtasks analyzing
+    #
+    #    self.result_molDB = analyzing(valDB, ref_value='energy', est_value='estimated_y', ref_grad='energy_gradients', 
+    #                                  est_grad='estimated_xyz_derivatives_y', set_name="valDB")
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
@@ -216,10 +233,12 @@ class MACETheory():
         from mace.modules.utils import compute_hessians_vmap, compute_hessians_loop, compute_forces
 
         # Load model
+        print_time_rel(module_init_time, modulename=f'MACE run-until load', moduleindex=2)
         print(f"Loading model from file {self.model_file}. Device is: {self.device}")
         model = torch.load(f=self.model_file, map_location=torch.device(self.device))
+        print_time_rel(module_init_time, modulename=f'MACE run-after load', moduleindex=2)
         model = model.to(self.device)  # for possible cuda problems
-
+        print_time_rel(module_init_time, modulename=f'MACE run to', moduleindex=2)
         # Simplest to use ase here to create Atoms object
         import ase
         atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
@@ -231,7 +250,7 @@ class MACETheory():
                     config, z_table=z_table, cutoff=float(model.r_max), heads=None)],
             shuffle=False,
             drop_last=False)
-
+        print_time_rel(module_init_time, modulename=f'MACE run-after creating dataloader', moduleindex=2)
         #
         option_1=True
         if option_1:
@@ -241,6 +260,7 @@ class MACETheory():
             # Run model
             try:
                 output = model(batch.to_dict(), compute_stress=False, compute_force=False)
+                print_time_rel(module_init_time, modulename=f'MACE run-after model batch', moduleindex=2)
             except RuntimeError as e:
                 print("RuntimeError occurred. Trying type changes. Message", e)
                 model = model.float() # sometimes necessary to avoid type problems
@@ -248,8 +268,11 @@ class MACETheory():
             # Grab energy
             en = torch_tools.to_numpy(output["energy"])[0]
             # Calculate forces
+            print_time_rel(module_init_time, modulename=f'MACE run- before creating forces', moduleindex=2)
             forces = compute_forces(output["energy"], batch["positions"])
+            print_time_rel(module_init_time, modulename=f'MACE run- after creating forces', moduleindex=2)
             forces = torch_tools.to_numpy(forces)
+            print_time_rel(module_init_time, modulename=f'MACE run- to numpy forces', moduleindex=2)
 
             # Hessian 
             if Hessian:
@@ -280,7 +303,7 @@ class MACETheory():
         self.gradient = forces/-51.422067090480645
         if Hessian:
             self.hessian = hessian*0.010291772
-
+        print_time_rel(module_init_time, modulename=f'MACE run- xx', moduleindex=2)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
