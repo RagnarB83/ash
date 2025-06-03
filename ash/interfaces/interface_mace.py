@@ -288,6 +288,7 @@ class MACETheory():
                 hess = compute_hessians_vmap(forces,batch["positions"])
                 hessian = torch_tools.to_numpy(hess)
                 print("hessian:", hessian)
+                print_time_rel(module_init_time, modulename=f'MACE run - after hessian', moduleindex=2)
 
         # This worked previously
         else:

@@ -1301,3 +1301,83 @@ def dominant_atoms_in_CI_tangent(tangent,reactant,product,SP,tsmode_tangent_thre
     print(f"Final TS-mode dominant atoms: {Final_atoms}")
     print()
     return Final_atoms
+
+
+#Standalone geodesic-interpolation function
+def interpolation_geodesic(reactant=None, product=None, images=None):
+    print("Using geodesic-interpolate path generation")
+    print("See Github repository: https://github.com/virtualzx-nad/geodesic-interpolate")
+    print("""If you use this, make sure to cite:
+    Geodesic interpolation for reaction pathways  by
+    Xiaolei Zhu, Keiran C. Thompson, Todd J. Martínez, J. Chem. Phys. 2019, 150, 164103.
+    https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation-for-reaction-pathways
+    """)
+
+    if reactant is None or product is None:
+        print("interpolation_geodesic function requires you to provide ASH fragments as reactant and product keywords")
+        ashexit()
+    if images is None:
+        print("Please provide number of images (images keyword)")
+        ashexit()
+
+
+    # Importing
+    #import ash.external.additional_python_modules.geodesicinterpolate as geodesic_interpolate
+    from ash.external.additional_python_modules.geodesicinterpolate.geodesic_interpolate.interpolation import redistribute
+    from ash.external.additional_python_modules.geodesicinterpolate.geodesic_interpolate import Geodesic
+    from ash.external.additional_python_modules.geodesicinterpolate.geodesic_interpolate.fileio import read_xyz, write_xyz
+    import logging
+    logger = logging.getLogger(__name__)
+
+    #Dummy arguments object
+    class Arg:
+        def __init__(self, filename=None,nimages=None, tol=2e-3, save_raw=None,
+                        scaling=None, dist_cutoff=None, friction=1e-3, maxiter=50,microiter=20,
+                        sweep=None, output="interpolated.xyz"):
+
+            self.filename=filename
+            self.nimages=nimages
+            self.tol=tol
+            self.save_raw=save_raw
+            self.scaling=scaling
+            self.dist_cutoff=dist_cutoff
+            self.friction=friction
+            self.maxiter=maxiter
+            self.microiter=microiter
+            self.sweep=sweep
+            self.output=output
+
+    args = Arg(filename="R_P_combined.xyz", nimages=images+2, tol=2e-3, maxiter=15, scaling=1.7,
+                friction=1e-2, dist_cutoff=3, sweep=None, output="geodesic_guess_path.xyz")
+
+    # Creating combined XYZ-file
+    reactant.printlevel=1
+    reactant.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='w')
+    product.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='a')
+
+    # Read the initial geometries.
+    symbols, X = read_xyz(args.filename)
+    logger.info('Loaded %d geometries from %s', len(X), args.filename)
+
+    # First redistribute number of images.  Perform interpolation if too few and subsampling if too many
+    # images are given
+    raw = redistribute(symbols, X, args.nimages, tol=args.tol * 5)
+    # if args.save_raw is not None:
+    #    write_xyz(args.save_raw, symbols, raw)
+
+    # Perform smoothing by minimizing distance in Cartesian coordinates with redundant internal metric
+    # to find the appropriate geodesic curve on the hyperspace.
+    smoother = Geodesic(symbols, raw, args.scaling, threshold=args.dist_cutoff, friction=args.friction)
+    if args.sweep is None:
+        args.sweep = len(symbols) > 35
+    try:
+        if args.sweep:
+            smoother.sweep(tol=args.tol, max_iter=args.maxiter, micro_iter=args.microiter)
+        else:
+            smoother.smooth(tol=args.tol, max_iter=args.maxiter)
+    finally:
+        # Save the smoothed path to output file.  try block is to ensure output is saved if one ^C the
+        # process, or there is an error
+        logging.info('Saving final path to file %s', args.output)
+        write_xyz(args.output, symbols, smoother.path)
+    print("Wrote XYZ-trajectory file: geodesic_guess_path.xyz")

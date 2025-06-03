@@ -150,7 +150,7 @@ from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_
 from .modules.module_polembed import PolEmbedTheory
 
 # Knarr
-from .interfaces.interface_knarr import NEB, NEBTS
+from .interfaces.interface_knarr import NEB, NEBTS, interpolation_geodesic
 
 #VMD
 from .interfaces.interface_VMD import write_VMD_script_cube
