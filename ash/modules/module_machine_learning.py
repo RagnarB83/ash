@@ -173,17 +173,25 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             label=basefile.split(".")[0]
             frag = Fragment(xyzfile=file, charge=charge, mult=mult)
             frag.label=label
-            labels.append(label)
             # 1: gas 2:solv  or 1: LL  or 2: HL
             print("Now running Theory 1")
-            result_1 = Singlepoint(theory=theory_1, fragment=frag, Grad=Grad,
+            try:
+                result_1 = Singlepoint(theory=theory_1, fragment=frag, Grad=Grad,
                                    result_write_to_disk=False)
-
+            except:
+                print("Problem with theory calculation")
+                print(f"Will skip file {file} in training")
+                continue
             if delta is True:
                 # Running theory 2
                 print("Now running Theory 2")
-                result_2 = Singlepoint(theory=theory_2, fragment=frag, Grad=Grad,
-                                       result_write_to_disk=False)
+                try:
+                    result_2 = Singlepoint(theory=theory_2, fragment=frag, Grad=Grad,
+                                        result_write_to_disk=False)
+                except:
+                    print("Problem with theory calculation")
+                    print(f"Will skip file {file} in training")
+                    continue
                 # Delta energy
                 energy = result_2.energy - result_1.energy
                 if Grad is True:
@@ -195,6 +203,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             # Add E and G to lists
             energies.append(energy)
             fragments.append(frag)
+            labels.append(label)
             if Grad:
                 gradients.append(gradient)
 
@@ -277,6 +286,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             atomenergy = result_1.energy
         energies_atoms_dict[uniq_el] = atomenergy
     print("\nAtomic energies:", energies_atoms_dict)
+
     ###########################################
     # Write final data
     ###########################################
@@ -340,6 +350,8 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     mace_file.close()
 
     print("All done! Files created:\ntrain_data.xyz\ntrain_data.energies\ntrain_data.gradients\ntrain_data_mace.xyz")
+    print("Number of user-chosen snapshots:", num_snapshots)
+    print("Number of successfully generated datapoints:", len(energies))
 
 
 # Print statistics for dict with statistics for many models
