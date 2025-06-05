@@ -88,7 +88,7 @@ from .modules.module_surface import calc_surface, calc_surface_fromXYZ, read_sur
 from .interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, MolecularOrbitalGrab, \
     run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size, orca_frag_guess, orblocfind, ORCAfinalenergygrab, \
     read_ORCA_json_file, write_ORCA_json_file, create_GBW_from_json_file, create_ORCA_json_file,get_densities_from_ORCA_json,grab_ORCA_wfn, \
-        new_ORCA_natorbsfile_from_density, ORCA_orbital_setup, create_ORCA_FCIDUMP
+        new_ORCA_natorbsfile_from_density, ORCA_orbital_setup, create_ORCA_FCIDUMP, print_gradient_in_ORCAformat
 import ash.interfaces.interface_ORCA
 
 from .interfaces.interface_Psi4 import Psi4Theory
