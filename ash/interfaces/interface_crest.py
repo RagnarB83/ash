@@ -5,9 +5,74 @@ import shutil
 import subprocess as sp
 
 from ash.modules.module_coords import split_multimolxyzfile
-from ash.functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel, pygrep
+from ash.functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel,check_program_location
 from ash.modules.module_coords import check_charge_mult, Fragment
 import ash.settings_ash
+
+# New crest interface that supports any ASH level of theory
+def new_call_crest(fragment=None, theory=None, crestdir=None, runtype="ancopt", numcores=1, charge=None, mult=None):
+
+    if fragment is None or theory is None:
+        print("new_call_crest requires a valid ASH fragment and valid ASH Theory object")
+        ashexit()
+    if charge is None or mult is None:
+        print("Charge and multiplicity not provided to new_call_crest")
+        print("Checking if defined inside fragment")
+        if fragment.charge is not None:
+            charge=fragment.charge
+            mult=fragment.mult
+        else:
+            print("Found not charge defined in fragment either. Exiting ")
+            ashexit()
+
+    crestdir=check_program_location(crestdir,'crestdir','crest')
+
+    # Write initial XYZ-file
+    fragment.write_xyzfile(xyzfilename="struc.xyz")
+
+    # Pickle for serializing theory object
+    import pickle
+    # Serialize theory object for later use
+    theoryfilename="theory.saved"
+    pickle.dump(theory, open(theoryfilename, "wb" ))
+
+    # Write ASH inputfile: ash_input.py
+    ashinput=f"""
+from ash import *
+from ash.interfaces.interface_ORCA import print_gradient_in_ORCAformat
+import pickle
+
+frag = Fragment(xyzfile="genericinp.xyz", charge={charge},mult={mult})
+#Unpickling theory object
+theory = pickle.load(open(\"{theoryfilename}\", \"rb\" ))
+result = Singlepoint(theory=theory, fragment=frag, Grad=True)
+print_gradient_in_ORCAformat(result.energy,result.gradient,"genericinp", extrabasename="")
+    """
+    with open("ash_input.py", "w") as f:
+        f.write(ashinput)
+    # Write toml file
+    # Note: crest created dirs caleld calculation.level.X etc. and enters them
+    tomlinput=f"""# CREST 3 input file
+input = "struc.xyz"
+runtype="{runtype}"
+threads = {numcores}
+
+[calculation]
+elog="energies.log"
+
+[[calculation.level]]
+method = "generic"
+binary = "python3 ../ash_input.py"
+gradfile = "genericinp.engrad"
+gradtype = "engrad"
+uhf = {mult-1}
+chrg = {charge}"""
+    with open("input.toml", "w") as f:
+        f.write(tomlinput)
+
+    print("Now calling CREST like this: crest --input input.toml")
+    process = sp.run([crestdir + '/crest', '--input', 'input.toml'])
+
 
 #Very simple crest interface
 def call_crest(fragment=None, xtbmethod=None, crestdir=None, charge=None, mult=None, solvent=None, energywindow=6, numcores=1,

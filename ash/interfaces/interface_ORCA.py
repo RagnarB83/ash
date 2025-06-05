@@ -2599,13 +2599,13 @@ H    2.453295744  -1.445998564  -1.389381355
     print("Corrected interaction energy: {} kcal/mol".format(deltaE_corrected))
 
 
-def print_gradient_in_ORCAformat(energy,gradient,basename):
+def print_gradient_in_ORCAformat(energy,gradient,basename, extrabasename="_EXT"):
     numatoms=len(gradient)
-    with open(basename+"_EXT"+".engrad", "w") as f:
+    with open(basename+extrabasename+".engrad", "w") as f:
         f.write("#\n")
         f.write("# Number of atoms\n")
         f.write("#\n")
-        f.write("{}\n".format(numatoms))
+        f.write(f"         {numatoms}\n")
         f.write("#\n")
         f.write("# The current total energy in E\n")
         f.write("#\n")
@@ -2616,6 +2616,9 @@ def print_gradient_in_ORCAformat(energy,gradient,basename):
         for g in gradient:
             for gg in g:
                 f.write("{}\n".format(gg))
+        f.write("#\n")
+        f.write("# The atomic numbers and current coordinates in Bohr\n")
+        f.write("#\n")
 
 def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None, charge=None, mult=None):
     import stat
