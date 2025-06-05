@@ -207,7 +207,7 @@ from .modules.module_plotting import reactionprofile_plot, contourplot, plot_Spe
 
 # Other
 import ash.interfaces.interface_crest
-from .interfaces.interface_crest import call_crest, call_crest_entropy, get_crest_conformers
+from .interfaces.interface_crest import call_crest, call_crest_entropy, get_crest_conformers, new_call_crest
 
 # Initialize settings
 import ash.settings_ash

@@ -9,8 +9,9 @@ from ash.functions.functions_general import ashexit, BC, int_ranges, listdiff, p
 from ash.modules.module_coords import check_charge_mult, Fragment
 import ash.settings_ash
 
-# New crest interface that supports any ASH level of theory
+# New crest interface that supports ASH levels of theory (Limitation: must be picklable)
 def new_call_crest(fragment=None, theory=None, crestdir=None, runtype="ancopt", numcores=1, charge=None, mult=None):
+    module_init_time=time.time()
 
     if fragment is None or theory is None:
         print("new_call_crest requires a valid ASH fragment and valid ASH Theory object")
@@ -44,7 +45,7 @@ import pickle
 
 frag = Fragment(xyzfile="genericinp.xyz", charge={charge},mult={mult})
 #Unpickling theory object
-theory = pickle.load(open(\"{theoryfilename}\", \"rb\" ))
+theory = pickle.load(open(\"../{theoryfilename}\", \"rb\" ))
 result = Singlepoint(theory=theory, fragment=frag, Grad=True)
 print_gradient_in_ORCAformat(result.energy,result.gradient,"genericinp", extrabasename="")
     """
@@ -72,6 +73,16 @@ chrg = {charge}"""
 
     print("Now calling CREST like this: crest --input input.toml")
     process = sp.run([crestdir + '/crest', '--input', 'input.toml'])
+
+    print_time_rel(module_init_time, modulename='crest run', moduleindex=0)
+
+    # Get conformers
+    try:
+        list_conformers, list_xtb_energies = get_crest_conformers(charge=charge, mult=mult)
+        module_init_time
+    except:
+        return
+
 
 
 #Very simple crest interface
