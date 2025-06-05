@@ -5,7 +5,7 @@ import shutil
 import subprocess as sp
 
 from ash.modules.module_coords import split_multimolxyzfile
-from ash.functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel,check_program_location
+from ash.functions.functions_general import ashexit, BC, int_ranges, listdiff, print_line_with_subheader1,print_time_rel,pygrep, check_program_location
 from ash.modules.module_coords import check_charge_mult, Fragment
 import ash.settings_ash
 
