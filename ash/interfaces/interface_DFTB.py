@@ -13,7 +13,7 @@ import ash.settings_ash
 class DFTBTheory():
     def __init__(self, dftbdir=None, hamiltonian="XTB", xtb_method="GFN2-xTB", printlevel=2, label="DFTB",
                  numcores=1, slaterkoster_dict=None, maxmom_dict=None, Gauss_blur_width=0.0,
-                 ThirdOrderFull=False, ThirdOrder=False):
+                 SCC=True, ThirdOrderFull=False, ThirdOrder=False):
 
         self.theorynamelabel="DFTB"
         self.label=label
@@ -31,6 +31,9 @@ class DFTBTheory():
         self.numcores=numcores
         self.slaterkoster_dict=slaterkoster_dict
         self.Gauss_blur_width=Gauss_blur_width
+
+        #Second-order DFTB2
+        self.SCC=SCC
 
         # Third-order
         self.ThirdOrderFull=ThirdOrderFull
@@ -108,7 +111,7 @@ class DFTBTheory():
         # Write inputfile
         write_DFTB_input(self.hamiltonian,self.xtb_method,xyzfilename+'.xyz',qm_elems,current_coords,charge,mult, PC=PC, Grad=Grad,
                          slaterkoster_dict=self.slaterkoster_dict, maxmom_dict=self.maxmom_dict, MMcharges=MMcharges, MMcoords=current_MM_coords,
-                         Gauss_blur_width=self.Gauss_blur_width, ThirdOrderFull=self.ThirdOrderFull, ThirdOrder=self.ThirdOrder)
+                         Gauss_blur_width=self.Gauss_blur_width, SCC=self.SCC, ThirdOrderFull=self.ThirdOrderFull, ThirdOrder=self.ThirdOrder)
 
         print_time_rel(module_init_time, modulename=f'DFTB prep-run', moduleindex=3)
         # Run DFTB
