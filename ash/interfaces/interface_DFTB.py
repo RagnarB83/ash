@@ -13,7 +13,7 @@ import ash.settings_ash
 class DFTBTheory():
     def __init__(self, dftbdir=None, hamiltonian="XTB", xtb_method="GFN2-xTB", printlevel=2, label="DFTB",
                  numcores=1, slaterkoster_dict=None, maxmom_dict=None, hubbard_derivs_dict=None, Gauss_blur_width=0.0,
-                 SCC=True, ThirdOrderFull=False, ThirdOrder=False):
+                 SCC=True, ThirdOrderFull=False, ThirdOrder=False, hcorrection_zeta=None):
 
         self.theorynamelabel="DFTB"
         self.label=label
@@ -39,6 +39,7 @@ class DFTBTheory():
         self.slaterkoster_dict=slaterkoster_dict
         self.Gauss_blur_width=Gauss_blur_width
         self.hubbard_derivs_dict=hubbard_derivs_dict
+        self.hcorrection_zeta=hcorrection_zeta
 
         #Second-order DFTB2
         self.SCC=SCC
@@ -72,6 +73,7 @@ class DFTBTheory():
             print("SCC:", self.SCC)
             print("ThirdorderFull:", self.ThirdOrderFull)
             print("Thirdorder:", self.ThirdOrder)
+            print("Hcorrection zeta:", self.hcorrection_zeta)
             if self.SCC is False and self.ThirdOrderFull is False:
                 print("SCC and ThirdorderFull is False. This is the DFTB method")
             elif self.SCC is True and self.ThirdOrderFull is False:
@@ -137,7 +139,7 @@ class DFTBTheory():
         write_DFTB_input(self.hamiltonian,self.xtb_method,xyzfilename+'.xyz',qm_elems,current_coords,charge,mult, PC=PC, Grad=Grad,
                          slaterkoster_dict=self.slaterkoster_dict, maxmom_dict=self.maxmom_dict, MMcharges=MMcharges, MMcoords=current_MM_coords,
                          Gauss_blur_width=self.Gauss_blur_width, SCC=self.SCC, ThirdOrderFull=self.ThirdOrderFull, ThirdOrder=self.ThirdOrder,
-                         hubbard_derivs_dict=self.hubbard_derivs_dict)
+                         hubbard_derivs_dict=self.hubbard_derivs_dict, hcorrection_zeta=self.hcorrection_zeta)
 
         print_time_rel(module_init_time, modulename=f'DFTB prep-run', moduleindex=3)
         # Run DFTB
@@ -174,7 +176,7 @@ class DFTBTheory():
 #
 def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, SCC=True,
                      slaterkoster_dict=None, maxmom_dict=None, Gauss_blur_width=0.0, ThirdOrderFull=False, ThirdOrder=False,
-                     hubbard_derivs_dict=None):
+                     hubbard_derivs_dict=None, hcorrection_zeta=None):
 
     # Open file
     f = open("dftb_in.hsd", "w")
@@ -215,7 +217,10 @@ def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult
             SCCkeyword="Yes"
         else:
             SCCkeyword="No"
-        
+        if hcorrection_zeta is not None:
+            inputlines.append("  HCorrection  = Damping {\n")
+            inputlines.append(f"   Exponent = {hcorrection_zeta}\n")
+            inputlines.append("   }\n")
         if ThirdOrderFull is True:
             ThirdOrderFullkeyword="Yes"
         else:
