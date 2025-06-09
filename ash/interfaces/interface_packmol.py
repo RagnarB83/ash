@@ -4,6 +4,9 @@ import shutil
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
 from ash.modules.module_coords import writepdb_with_connectivity
 import ash.settings_ash
+from rdkit import Chem
+from rdkit.Chem import Descriptors, Atom
+from rdkit.Geometry import Point3D
 
 # Basic packmol interface
 
@@ -51,29 +54,39 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
         #    print("Error: Only one input file is allowed when using density as input!")
         #    ashexit()
         # read file to get mass
-        for  ligand_file in ligand_files:
-            if ligand_file.endswith(".pdb"):
-                frag = ash.Fragment(pdbfile=ligand_file, use_atomnames_as_elements=True,printlevel=0)
-                print(f"{ligand_file} MW:", frag.mass, "g/mol")
-            elif ligand_file.endswith(".mol"):
+        for i,ligand_file in enumerate(ligand_files):
+            if ligand_file.endswith((".pdb", ".mol2")):
+                mw_lig = calculate_mw_from_pdb_or_mol2(ligand_file)
+                print(f"{ligand_file} MW:", mw_lig, "g/mol")
+            elif ligand_file.endswith((".xyz")):
                 frag = ash.Fragment(xyzfile=ligand_file, printlevel=0)
-                print(f"{ligand_file} MW:", frag.mass, "g/mol")
+                mw_lig = frag.mass
+                ligand_file = ligand_file.rsplit('.', 1)[0] + ".pdb"  # remove .xyz, add .pdb
+                frag.write_pdbfile(ligand_file)
+                print(f"Converted {ligand_file} from xyz to pdb format.")
+                print(f"{ligand_file} MW:", mw_lig, "g/mol")
+                ligand_files[i] = ligand_file  # update the ligand file name
             else:
-                print(f"Unsupported ligand file format: {ligand_file}")
+                print(f"Unsupported ligand file format: {ligand_file} || Supported formats: .pdb, .mol2,.xyz")
                 ashexit()
-            ligands_mass.append(frag.mass)
+            ligands_mass.append(mw_lig)
 
-        for solvent_file in solvent_files:
-            if solvent_file.endswith(".pdb"):
-                frag = ash.Fragment(pdbfile=solvent_file, use_atomnames_as_elements=True,printlevel=0)
-                print(f"{solvent_file} MW:", frag.mass, "g/mol")
-            elif solvent_file.endswith(".mol"):
+        for i,solvent_file in enumerate(solvent_files):
+            if solvent_file.endswith((".pdb", ".mol2")):
+                mw_solvent = calculate_mw_from_pdb_or_mol2(solvent_file)
+                print(f"{solvent_file} MW:", mw_solvent, "g/mol")
+            elif solvent_file.endswith((".xyz")):
                 frag = ash.Fragment(xyzfile=solvent_file, printlevel=0)
-                print(f"{solvent_file} MW:", frag.mass, "g/mol")
+                mw_solvent = frag.mass
+                solvent_file = solvent_file.rsplit('.', 1)[0] + ".pdb"  # remove .xyz, add .pdb
+                frag.write_pdbfile(solvent_file)
+                print(f"Converted {solvent_file} from xyz to pdb format.")
+                print(f"{solvent_file} MW:", mw_solvent, "g/mol")
+                solvent_files[i] = solvent_file  # update the solvent file name
             else:
-                print(f"Unsupported solvent file format: {solvent_file}")
+                print(f"Unsupported solvent file format: {solvent_file} || Supported formats: .pdb, .mol2, .xyz")
                 ashexit()
-            solvents_mass.append(frag.mass)
+            solvents_mass.append(mw_solvent)
         
         # Volumes from coordinates
         volume = (max_coordinates[0]-min_coordinates[0])*(max_coordinates[1]-min_coordinates[1])*(max_coordinates[2]-min_coordinates[2])
@@ -148,7 +161,7 @@ output {result_file}.{filetype}
             ligands_input += f"""
         structure {struct_file}
         number {num_mol}
-        fixed {min_coordinates[0]} {min_coordinates[1]} {min_coordinates[2]} {max_coordinates[0]} {max_coordinates[1]} {max_coordinates[2]}
+        inside {shape} {min_coordinates[0]} {min_coordinates[1]} {min_coordinates[2]} {max_coordinates[0]} {max_coordinates[1]} {max_coordinates[2]}
         end structure
         """
     
@@ -210,4 +223,19 @@ def check_packmol_location(packmoldir, binary_name="packmol", dirname="packmoldi
                 ashexit()
     return finaldir
 
+def calculate_mw_from_pdb_or_mol2(file):
+    if file.endswith(".pdb"):
+        mol = Chem.MolFromPDBFile(file, removeHs=False)
+    elif file.endswith(".mol2"):
+        mol = Chem.MolFromMol2File(file, removeHs=False)
+    else:
+        print(f"Unsupported file format for MW calculation: {file}")
+        return None
+
+    if mol is None:
+        print(f"Failed to read molecule from {file}")
+        return None
+
+    mw = Descriptors.MolWt(mol)
+    return mw
 
