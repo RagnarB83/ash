@@ -12,7 +12,7 @@ import ash.settings_ash
 
 class DFTBTheory():
     def __init__(self, dftbdir=None, hamiltonian="XTB", xtb_method="GFN2-xTB", printlevel=2, label="DFTB",
-                 numcores=1, slaterkoster_dict=None, maxmom_dict=None, Gauss_blur_width=0.0,
+                 numcores=1, slaterkoster_dict=None, maxmom_dict=None, hubbard_derivs_dict=None, Gauss_blur_width=0.0,
                  SCC=True, ThirdOrderFull=False, ThirdOrder=False):
 
         self.theorynamelabel="DFTB"
@@ -25,12 +25,20 @@ class DFTBTheory():
         # Finding DFTB
         self.dftbdir = check_program_location(dftbdir,"dftbdir", "dftb+")
 
+        if hamiltonian != "XTB":
+            print("DFTB Hamiltonian is not XTB. SlaterKoster files are requires")
+            if slaterkoster_dict is None:
+                print("Error: No dictionary of Slater-Koster files provided (slaterkoster_dict keyword). This is necessary")
+                ashexit()
+            hamiltonian="DFTB"
+
         self.printlevel=printlevel
         self.hamiltonian=hamiltonian
         self.xtb_method=xtb_method
         self.numcores=numcores
         self.slaterkoster_dict=slaterkoster_dict
         self.Gauss_blur_width=Gauss_blur_width
+        self.hubbard_derivs_dict=hubbard_derivs_dict
 
         #Second-order DFTB2
         self.SCC=SCC
@@ -40,20 +48,37 @@ class DFTBTheory():
         self.ThirdOrder=ThirdOrder
 
 
-        if hamiltonian != "XTB":
-            print("DFTB Hamiltonian is not XTB. SlaterKoster files are requires")
-            if self.slaterkoster_dict is None:
-                print("Error: No dictionary of Slater-Koster files provided (slaterkoster_dict keyword). This is necessary")
-                ashexit()
-
         if maxmom_dict is None:
-            print("Warning: No maxmom_dict (dictionary of Maximum Angular Momenta for each element) provided")
+            print("Warning: No maxmom_dict keyword (dictionary of Maximum Angular Momenta for each element) provided")
             print("ASH will guess the maxmoms for each element before running")
-            self.maxmom_dict={'H':'s', 'B':'p', 'C':'p', 'N':'p', 'O':'p', 'F':'p', 
-                                       'Al':'p', 'Si':'p', 'P':'p', 'S':'p', 'Cl':'p'}
+            print("Check this!")
+            self.maxmom_dict={'H':'s', 'B':'p', 'C':'p', 'N':'p', 'O':'p', 'F':'p', 'Ca':'p', 'K':'p', 'Mg':'p', 'Na':'p',
+                                       'Al':'p', 'Si':'p', 'P':'d', 'S':'d', 'Cl':'d', 'Br':'d', 'I':'d','Zn':'d'}
             print("self.maxmom_dict:", self.maxmom_dict)
         else:
             self.maxmom_dict=maxmom_dict
+        
+        if hubbard_derivs_dict is None:
+            print("Warning: No Hubbard derivatives dictionary provided (hubbard_derivs_dict keyword)")
+            if self.ThirdOrderFull is True or self.ThirdOrder is True:
+                print("Error: For DFTB3 (third-order term) calculations a dictionary of atomic Hubbard derivatives must be provided")
+                print("Check parameter repository for information")
+                ashexit()
+
+        print("Hamiltonian:", self.hamiltonian)
+        if self.hamiltonian == "XTB":
+            print("xtb method:", self.xtb_method)
+        elif self.hamiltonian == "DFTB":
+            print("SCC:", self.SCC)
+            print("ThirdorderFull:", self.ThirdOrderFull)
+            print("Thirdorder:", self.ThirdOrder)
+            if self.SCC is False and self.ThirdOrderFull is False:
+                print("SCC and ThirdorderFull is False. This is the DFTB method")
+            elif self.SCC is True and self.ThirdOrderFull is False:
+                print("SCC is True and ThirdorderFull is False. This is the DFTB2 method")
+            elif self.SCC is True and self.ThirdOrderFull is True:
+                print("SCC is True and ThirdorderFull is True. This is the DFTB3 method")
+
 
     # Set numcores method
     def set_numcores(self,numcores):
@@ -111,7 +136,8 @@ class DFTBTheory():
         # Write inputfile
         write_DFTB_input(self.hamiltonian,self.xtb_method,xyzfilename+'.xyz',qm_elems,current_coords,charge,mult, PC=PC, Grad=Grad,
                          slaterkoster_dict=self.slaterkoster_dict, maxmom_dict=self.maxmom_dict, MMcharges=MMcharges, MMcoords=current_MM_coords,
-                         Gauss_blur_width=self.Gauss_blur_width, SCC=self.SCC, ThirdOrderFull=self.ThirdOrderFull, ThirdOrder=self.ThirdOrder)
+                         Gauss_blur_width=self.Gauss_blur_width, SCC=self.SCC, ThirdOrderFull=self.ThirdOrderFull, ThirdOrder=self.ThirdOrder,
+                         hubbard_derivs_dict=self.hubbard_derivs_dict)
 
         print_time_rel(module_init_time, modulename=f'DFTB prep-run', moduleindex=3)
         # Run DFTB
@@ -147,7 +173,8 @@ class DFTBTheory():
             return self.energy
 #
 def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, SCC=True,
-                     slaterkoster_dict=None, maxmom_dict=None, Gauss_blur_width=0.0, ThirdOrderFull=False, ThirdOrder=False):
+                     slaterkoster_dict=None, maxmom_dict=None, Gauss_blur_width=0.0, ThirdOrderFull=False, ThirdOrder=False,
+                     hubbard_derivs_dict=None):
 
     # Open file
     f = open("dftb_in.hsd", "w")
@@ -200,6 +227,11 @@ def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult
         inputlines.append(f"  Scc = {SCCkeyword}"+'\n')
         inputlines.append(f"  ThirdOrderFull = {ThirdOrderFullkeyword}"+'\n')
         inputlines.append(f"  ThirdOrder = {ThirdOrderkeyword}"+'\n')
+        if hubbard_derivs_dict is not None:
+            inputlines.append("  HubbardDerivs {\n")
+            for k,v in hubbard_derivs_dict.items():
+                inputlines.append(f"    {k} = {v}\n")
+            inputlines.append("   }\n")
         # SlaterKosterFiles
         inputlines.append("  SlaterKosterFiles {"+'\n')
         for atompair,fpath in slaterkoster_dict.items():
