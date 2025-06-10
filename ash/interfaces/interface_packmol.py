@@ -4,9 +4,7 @@ import shutil
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
 from ash.modules.module_coords import writepdb_with_connectivity
 import ash.settings_ash
-from rdkit import Chem
-from rdkit.Chem import Descriptors, Atom
-from rdkit.Geometry import Point3D
+
 
 # Basic packmol interface
 
@@ -56,7 +54,8 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
         # read file to get mass
         for i,ligand_file in enumerate(ligand_files):
             if ligand_file.endswith((".pdb", ".mol2")):
-                mw_lig = calculate_mw_from_pdb_or_mol2(ligand_file)
+                frag = ash.Fragment(pdbfile=ligand_file, printlevel=0)
+                mw_lig = frag.mass
                 print(f"{ligand_file} MW:", mw_lig, "g/mol")
             elif ligand_file.endswith((".xyz")):
                 frag = ash.Fragment(xyzfile=ligand_file, printlevel=0)
@@ -73,7 +72,8 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
 
         for i,solvent_file in enumerate(solvent_files):
             if solvent_file.endswith((".pdb", ".mol2")):
-                mw_solvent = calculate_mw_from_pdb_or_mol2(solvent_file)
+                frag = ash.Fragment(pdbfile=solvent_file, printlevel=0)
+                mw_solvent = frag.mass
                 print(f"{solvent_file} MW:", mw_solvent, "g/mol")
             elif solvent_file.endswith((".xyz")):
                 frag = ash.Fragment(xyzfile=solvent_file, printlevel=0)
@@ -222,20 +222,3 @@ def check_packmol_location(packmoldir, binary_name="packmol", dirname="packmoldi
                 print("For problems: see installation instructions: https://m3g.github.io/packmol/userguide.shtml")
                 ashexit()
     return finaldir
-
-def calculate_mw_from_pdb_or_mol2(file):
-    if file.endswith(".pdb"):
-        mol = Chem.MolFromPDBFile(file, removeHs=False)
-    elif file.endswith(".mol2"):
-        mol = Chem.MolFromMol2File(file, removeHs=False)
-    else:
-        print(f"Unsupported file format for MW calculation: {file}")
-        return None
-
-    if mol is None:
-        print(f"Failed to read molecule from {file}")
-        return None
-
-    mw = Descriptors.MolWt(mol)
-    return mw
-
