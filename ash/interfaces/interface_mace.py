@@ -9,10 +9,8 @@ import ash.constants
 
 class MACETheory():
     def __init__(self, config_filename="config.yml", 
-                 filename="mace.model", model_name=None, model_object=None,
-                 model_file=None, printlevel=2, label="MACETheory", numcores=1,
-                 platform=None, device="cpu",
-                 model="MACE"):
+                 filename="mace.model", model_file=None, printlevel=2, 
+                 label="MACETheory", numcores=1, device="cpu"):
         # Early exits
         try:
             import mace
@@ -338,10 +336,10 @@ class MACETheory():
 def write_mace_config(config_file="config.yml", name="model",model="MACE", device='cpu', 
                       valid_fraction=0.1, train_file="train_data_mace.xyz",E0s=None,
                       energy_key='energy_REF', forces_key='forces_REF',        
-                      energy_weight=1, forces_weight=1,
+                      energy_weight=1, forces_weight=100,
                       max_num_epochs=500, swa=True, batch_size=10,
                       max_L = 0, r_max = 5.0, 
-                      num_channels=32,  
+                      num_channels=128,
                       results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
                       log_dir ="MACE_models", model_dir="MACE_models"):
 
