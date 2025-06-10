@@ -13,6 +13,7 @@ dependencies:
   - xtb
   - xtb-python
   - typing_extensions
+  - rdkit
   - pip:
     - geometric
     - pyscf
