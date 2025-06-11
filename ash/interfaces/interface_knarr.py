@@ -1011,13 +1011,22 @@ class KnarrCalculator:
                 #Getting 1D coords array from Knarr, converting to regular, creating ASH fragment
                 image_coords_1d = path.GetCoords()[image_number * path.ndimIm : (image_number + 1) * path.ndimIm]
                 image_coords=np.reshape(image_coords_1d, (numatoms, 3))
-                if self.ActiveRegion == True:
+                if self.ActiveRegion:
                     print("Warning: NEB-parallel with ActiveRegion is highly experimental")
                     currcoords=image_coords
                     # Defining full_coords as original coords temporarily
                     #full_coords = self.full_fragment_reactant.coords
                     #Creating deep copy of reactant coordinates as it will be modified
-                    full_coords = copy.deepcopy(self.full_fragment_reactant.coords)
+                    #full_coords = copy.deepcopy(self.full_fragment_reactant.coords)
+
+                    #Closer to reactant
+                    if min([0,self.numimages-1], key=lambda x:abs(x-image_number)) == 0:
+                        full_coords = copy.deepcopy(self.full_fragment_reactant.coords)
+                    #Closer to product
+                    elif min([0,self.numimages-1], key=lambda x:abs(x-image_number)) == self.numimages-1 :
+                        full_coords = copy.deepcopy(self.full_fragment_product.coords)
+
+
                     # Replacing act-region coordinates with coords from currcoords
                     for i, c in enumerate(full_coords):
                         if i in self.actatoms:
@@ -1027,6 +1036,7 @@ class KnarrCalculator:
                     full_current_image_coords = full_coords
                     full_frag=ash.Fragment(coords=full_current_image_coords, elems=self.full_fragment_reactant.elems,charge=self.charge, mult=self.mult, label="image_"+str(image_number), printlevel=self.printlevel)
                     all_image_fragments.append(full_frag)
+                    self.full_coords_images_dict[image_number] = copy.deepcopy(full_current_image_coords)
                 else:
                     #NO active region
                     frag=ash.Fragment(coords=image_coords, elems=self.fragment1.elems,charge=self.charge, mult=self.mult, label="image_"+str(image_number), printlevel=self.printlevel)
