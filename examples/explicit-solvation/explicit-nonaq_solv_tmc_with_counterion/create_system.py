@@ -63,7 +63,7 @@ counterion.write_pdbfile_openmm("ION", skip_connectivity=True, resname="ION")
 # SOLVENT BOX
 ###############################
 # Create a X Å cubic box of acetonitrile molecules corresponding to a density of 0.786 g/ml
-packmol_solvate(inputfiles=[f"{solvent_name}.pdb"], density=solvent_density,
+packmol_solvate(solvent_files=[f"{solvent_name}.pdb"], total_density=solvent_density,
     min_coordinates=[0,0,0], max_coordinates=[box_size,box_size,box_size])
 
 # NPT equilibration. Will give optimal box dimensions
