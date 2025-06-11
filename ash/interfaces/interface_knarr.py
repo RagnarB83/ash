@@ -399,7 +399,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     TS_guess=None
 
     #ActiveRegion feature
-    if ActiveRegion==True:
+    if ActiveRegion:
         print("Active Region option Active. Passing only active-region coordinates to Knarr.")
         if actatoms is None:
             print("You must include actatoms keyword (with list of atom indices) to NEB for ActiveRegion True")
@@ -436,23 +436,27 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
 
     else:
+
+        new_reactant = reactant
+        new_product = product
+
         if TS_guess_file != None:
             TS_guess = ash.Fragment(xyzfile=TS_guess_file, charge=charge, mult=mult, printlevel=0)
             #Writing XYZ-file for TSguess
             TS_guess.write_xyzfile(xyzfilename="TSguess.xyz")
 
         #Create Knarr calculator from ASH theory
-        calculator = KnarrCalculator(theory, fragment1=reactant, fragment2=product, numcores=numcores,
+        calculator = KnarrCalculator(theory, fragment1=new_reactant, fragment2=new_product, numcores=numcores,
                                      ActiveRegion=False, runmode=runmode,numimages=total_num_images, charge=charge, mult=mult,
                                      FreeEnd=free_end, printlevel=printlevel,mofilesdir=mofilesdir)
 
         # Symbols list for Knarr
-        Knarr_symbols = [y for y in reactant.elems for i in range(3)]
+        Knarr_symbols = [y for y in new_reactant.elems for i in range(3)]
 
         # Create KNARR Atom objects. Used in path generation
-        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+        react = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_reactant.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
                                     ndof=numatoms * 3, constraints=constr, pbc=False)
-        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
+        prod = KNARRatom.atom.Atom(coords=coords_to_Knarr(new_product.coords), symbols=Knarr_symbols, ndim=numatoms * 3,
                                    ndof=numatoms * 3, constraints=constr, pbc=False)
 
 
@@ -491,7 +495,7 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     #images provided => Meaning intermediate images
     print("Number of images chosen:", images)
     print("Free_end option:", free_end)
-    if free_end == True:
+    if free_end:
         print("Endpoints have been chosen to be free. Reactant and product geometries will thus also be active during NEB optimization.")
         print(f"There are {total_num_images} active images including endpoints.")
         print("Warning: Check that you have chosen an appropriate number of CPU cores for runmode=parallel")
@@ -534,71 +538,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
             os.remove("knarr_path.xyz")
         elif interpolation.upper() == "GEODESIC":
-            print("Using geodesic-interpolate path generation")
-            print("See Github repository: https://github.com/virtualzx-nad/geodesic-interpolate")
-            print("""If you use this, make sure to cite:
-Geodesic interpolation for reaction pathways  by
-Xiaolei Zhu, Keiran C. Thompson, Todd J. Martínez, J. Chem. Phys. 2019, 150, 164103.
-https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation-for-reaction-pathways
-""")
-            # Importing
-            #import ash.external.additional_python_modules.geodesicinterpolate as geodesic_interpolate
-            from ash.external.additional_python_modules.geodesicinterpolate.geodesic_interpolate.interpolation import redistribute
-            from ash.external.additional_python_modules.geodesicinterpolate.geodesic_interpolate import Geodesic
-            from ash.external.additional_python_modules.geodesicinterpolate.geodesic_interpolate.fileio import read_xyz, write_xyz
-            import logging
-            logger = logging.getLogger(__name__)
-
-            #Dummy arguments object
-            class Arg:
-                def __init__(self, filename=None,nimages=None, tol=2e-3, save_raw=None,
-                             scaling=None, dist_cutoff=None, friction=1e-3, maxiter=50,microiter=20,
-                             sweep=None, output="interpolated.xyz"):
-
-                    self.filename=filename
-                    self.nimages=nimages
-                    self.tol=tol
-                    self.save_raw=save_raw
-                    self.scaling=scaling
-                    self.dist_cutoff=dist_cutoff
-                    self.friction=friction
-                    self.maxiter=maxiter
-                    self.microiter=microiter
-                    self.sweep=sweep
-                    self.output=output
-
-            args = Arg(filename="R_P_combined.xyz", nimages=images+2, tol=2e-3, maxiter=15, scaling=1.7,
-                       friction=1e-2, dist_cutoff=3, sweep=None, output="initial_guess_path.xyz")
-
-            # Creating combined XYZ-file
-            reactant.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='w')
-            product.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='a')
-
-            # Read the initial geometries.
-            symbols, X = read_xyz(args.filename)
-            logger.info('Loaded %d geometries from %s', len(X), args.filename)
-
-            # First redistribute number of images.  Perform interpolation if too few and subsampling if too many
-            # images are given
-            raw = redistribute(symbols, X, args.nimages, tol=args.tol * 5)
-            # if args.save_raw is not None:
-            #    write_xyz(args.save_raw, symbols, raw)
-
-            # Perform smoothing by minimizing distance in Cartesian coordinates with redundant internal metric
-            # to find the appropriate geodesic curve on the hyperspace.
-            smoother = Geodesic(symbols, raw, args.scaling, threshold=args.dist_cutoff, friction=args.friction)
-            if args.sweep is None:
-                args.sweep = len(symbols) > 35
-            try:
-                if args.sweep:
-                    smoother.sweep(tol=args.tol, max_iter=args.maxiter, micro_iter=args.microiter)
-                else:
-                    smoother.smooth(tol=args.tol, max_iter=args.maxiter)
-            finally:
-                # Save the smoothed path to output file.  try block is to ensure output is saved if one ^C the
-                # process, or there is an error
-                logging.info('Saving final path to file %s', args.output)
-                write_xyz(args.output, symbols, smoother.path)
+            interpolxyzfile = interpolation_geodesic(reactant=new_reactant, product=new_product, images=images)
+            os.rename(interpolxyzfile, "initial_guess_path.xyz")
 
         print("\nReading initial path")
         # Reading initial path from XYZ file.
@@ -608,7 +549,7 @@ https://pubs.aip.org/aip/jcp/article/150/16/164103/198363/Geodesic-interpolation
     else:
         print("Restart_file option active")
         print(f"Restart-file: {restart_file} will be read and used as guess path instead of interpolation trajectory")
-        #Reading user-defined path from XYZ file.
+        # Reading user-defined path from XYZ file.
         rp, ndim, nim, symb = ReadTraj(restart_file)
         path = InitializePathObject(nim, react)
         path.SetCoords(rp)
@@ -935,7 +876,7 @@ class KnarrCalculator:
                                 else:
                                     if self.printlevel >= 1:
                                         print("Will use ORCATheory settings")
-                if self.ActiveRegion == True:
+                if self.ActiveRegion:
                     currcoords=image_coords
                     # Defining full_coords as original coords temporarily
                     #full_coords = self.full_fragment_reactant.coords
@@ -1381,3 +1322,4 @@ def interpolation_geodesic(reactant=None, product=None, images=None):
         logging.info('Saving final path to file %s', args.output)
         write_xyz(args.output, symbols, smoother.path)
     print("Wrote XYZ-trajectory file: geodesic_guess_path.xyz")
+    return "geodesic_guess_path.xyz"

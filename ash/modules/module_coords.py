@@ -2542,7 +2542,8 @@ def flexible_align(fragmentA, fragmentB, rotate_only=False, translate_only=False
 # Allows subset match (same set of indices or 2 sets of indices for each fragment)
 # Also simpler option: heavyatomsonly=True (ignores H-atoms)
 #NOTE: no reordering
-def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, printlevel=2):
+def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, printlevel=2,
+                   write_aligned_structure=False):
     print("calculate_RMSD function")
 
     #Do chosen subset
@@ -2579,7 +2580,23 @@ def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, prin
         subsetA_coords=fragmentA.coords
         subsetB_coords=fragmentB.coords
 
-    rmsdval = kabsch_rmsd(subsetA_coords, subsetB_coords)
+
+    #Use geometric function to get translation and rotation matrices for the subsets
+    import geometric
+    trans, rot = geometric.molecule.get_rotate_translate(subsetA_coords,subsetB_coords)
+    Anew = np.dot(fragmentA.coords, rot) + trans
+
+    #RMSD
+    rmsdval = np.sqrt(((Anew-subsetB_coords)**2).sum()/len(Anew))
+    #xrmsdval = kabsch_rmsd(subsetB_coords,Anew)
+    
+    if printlevel > 1:
+        print("RMSD:", rmsdval)
+
+    if write_aligned_structure:
+        print("write_aligned_structure active")
+        newfrag = Fragment(elems=fragmentA.elems, coords=Anew)
+        newfrag.write_xyzfile("A_aligned.xyz")
 
 
     return rmsdval

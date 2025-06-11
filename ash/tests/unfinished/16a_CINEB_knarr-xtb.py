@@ -1,6 +1,4 @@
 from ash import *
-import sys
-import interface_knarr
 
 #SN2 reaction
 react="""
@@ -26,4 +24,4 @@ Product=Fragment(coordsstring=prod)
 xtbcalc = xTBTheory(charge=0, mult=1, xtbmethod='GFN2', runmode='library')
 
 
-interface_knarr.NEB(reactant=Reactant, product=Product, theory=xtbcalc, images=10)
+NEB(reactant=Reactant, product=Product, theory=xtbcalc, images=10)
