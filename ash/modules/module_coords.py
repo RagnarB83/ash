@@ -2584,7 +2584,7 @@ def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, prin
     #Use geometric function to get translation and rotation matrices for the subsets
     import geometric
     trans, rot = geometric.molecule.get_rotate_translate(subsetA_coords,subsetB_coords)
-    Anew = np.dot(fragmentA.coords, rot) + trans
+    Anew = np.dot(subsetA_coords, rot) + trans
 
     #RMSD
     rmsdval = np.sqrt(((Anew-subsetB_coords)**2).sum()/len(Anew))
@@ -2596,7 +2596,7 @@ def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, prin
     if write_aligned_structure:
         print("write_aligned_structure active")
         newfrag = Fragment(elems=fragmentA.elems, coords=Anew)
-        newfrag.write_xyzfile("A_aligned.xyz")
+        newfrag.write_xyzfile("structA_aligned.xyz")
 
 
     return rmsdval
