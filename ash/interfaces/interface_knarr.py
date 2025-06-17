@@ -538,6 +538,9 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             shutil.copyfile("knarr_path.xyz","initial_guess_path.xyz")
             os.remove("knarr_path.xyz")
         elif interpolation.upper() == "GEODESIC":
+            if ActiveRegion is True:
+                print("Error: Currently, geodesic interpolations are not compatible with ActiveRegion=True. Use IDPP interpolation instead")
+                ashexit()
             interpolxyzfile = interpolation_geodesic(reactant=new_reactant, product=new_product, images=images)
             os.rename(interpolxyzfile, "initial_guess_path.xyz")
 
