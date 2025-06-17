@@ -72,8 +72,8 @@ Optimizer(theory=ORCAcalc,fragment=HF_frag)
 #Numerical frequencies
 NumFreq(theory=ORCAcalc,fragment=HF_frag)
 
-#Molecular dynamics calculation for 2 ps
-OpenMM_MD(fragment=HF_frag, theory=ORCAcalc, timestep=0.001, simulation_time=2)
+#DFT Molecular dynamics simulation for 2 ps with a 0.001 ps (1 fs) timestep
+MolecularDynamics(fragment=HF_frag, theory=ORCAcalc, timestep=0.001, simulation_time=2)
 
  ```
 
@@ -84,17 +84,19 @@ from ash import *
 
 # Defining a fragment
 fragment = Fragment(pdbfile="system.pdb")
-#QM-method and QM-region
+# QM-method and QM-region
 qm_orca = ORCATheory(orcasimpleinput="! r2SCAN-3c tightscf", numcores=8)
-#MM Theory
-omm  = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "specialresidue.xml"], pdbfile="system.pdb", periodic=True)
+# MM Theory
+omm  = OpenMMTheory(xmlfiles=["charmm36.xml", "charmm36/water.xml", "specialresidue.xml"], 
+                    pdbfile="system.pdb", periodic=True)
 
-#QM/MM Theory
+# QM/MM Theory
 qmatoms = [93,94,95,96,97,133,134,135, 2001,2002]
-qm_mm = QMMMTheory(qm_theory= qm_orca, mm_theory= omm, fragment=fragment, qm_charge=-1, qm_mult=6,  qmatoms= qmatoms, printlevel=1)
+qm_mm = QMMMTheory(qm_theory= qm_orca, mm_theory= omm, fragment=fragment, 
+                    qm_charge=-1, qm_mult=6,  qmatoms= qmatoms, printlevel=1)
 
-#Geometry optimization
+# Geometry optimization
 Optimizer(theory=qm_mm,fragment=fragment, actatoms=qmatoms)
-#or Molecular dynamics
+# or Molecular dynamics
 MolecularDynamics(fragment=fragment, theory=qm_mm, timestep=0.001, simulation_time=2)
  ```

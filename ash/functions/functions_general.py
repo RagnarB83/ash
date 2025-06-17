@@ -509,6 +509,11 @@ def islist(l):
     else:
         return False
 
+def numlines_in_file(file):
+    with open(file, 'r') as fp:
+        numlines = len(fp.readlines())
+    return numlines
+
 
 # Read lines of file by slurping.
 #def readlinesfile(filename):

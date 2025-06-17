@@ -62,16 +62,16 @@ def import_mp(version='multiprocessing'):
 
 
 #########################################
-#Job_parallel: General PARALLEL function.
+# Job_parallel: General PARALLEL function.
 #########################################
-#Used for standalone SP calculations, NumFreq, surfacescans and NEB
-#Can also be used for optimization and relaxed scans by providing Opt keyword or optimizer object
+# Used for standalone SP calculations, NumFreq, surfacescans and NEB
+# Can also be used for optimization and relaxed scans by providing Opt keyword or optimizer object
 
-#will run over fragments or fragmentfiles, over theories or both
-#mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
-#NOTE: Experimental copytheory option
-#NOTE: Can now either use built-in multiprocessing library or more reliable fork multiprocess.
-#The latter uses dill serialization and should be more reliable
+# will run over fragments or fragmentfiles, over theories or both
+# mofilesdir. Directory containing MO-files (GBW files for ORCA). Usef for multiple fragment option
+# NOTE: Experimental copytheory option
+# NOTE: Can now either use built-in multiprocessing library or more reliable fork multiprocess.
+# The latter uses dill serialization and should be more reliable
 
 #Used to be Singlepoint_parallel. Default behaviour is single-point
 def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=None, mofilesdir=None,

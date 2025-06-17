@@ -788,23 +788,40 @@ class Fragment:
         except ImportError:
             print("Error: OpenMM not found. Cannot define a topology")
             ashexit()
-        print("Defining new basic single-chain, single-residue topology")
+        print("Defining new basic single-chain, multi-residue topology")
         self.pdb_topology = openmm.app.Topology()
         chain = self.pdb_topology.addChain()
-        residue = self.pdb_topology.addResidue(resname, chain)
-
-        # Defaultdictionary to keep track of unique element-atomnames
-        atomnames_dict=defaultdict(int)
-        for el in self.elems:
-            atomnumber = openmm.app.Element.getBySymbol(el).atomic_number
-            element = openmm.app.Element.getByAtomicNumber(atomnumber)
-            # Define unique atomname
-            atomnames_dict[el] += 1
-            atomname = f"{el}{atomnames_dict[el]}"
-            self.pdb_topology.addAtom(atomname, element, residue)
 
         # Create connectivity by default for new topology
+        if self.connectivity is None:
+            self.calc_connectivity(scale=scale, tol=tol)
+        elif isinstance(self.connectivity, list):
+            if len(self.connectivity) == 0:
+                self.calc_connectivity(scale=scale, tol=tol)
+
         connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, scale,tol)
+        #Looping over molecules defined by connectivity
+        for mol in self.connectivity:
+            residue = self.pdb_topology.addResidue(resname, chain)
+
+            # Defaultdictionary to keep track of unique element-atomnames
+            atomnames_dict=defaultdict(int)
+            for at in mol:
+                el = self.elems[at]
+                atomnumber = openmm.app.Element.getBySymbol(el).atomic_number
+                element = openmm.app.Element.getByAtomicNumber(atomnumber)
+                # Define unique atomname
+                atomnames_dict[el] += 1
+                atomname = f"{el}{atomnames_dict[el]}"
+
+                # Special handling for obvious water residues. Aids OpenMM recognition
+                if atomname == "O1" and len(mol) == 3:
+                    #print("atomname is O1 and 3-atom residue. Probably water")
+                    #print("using atomname as O instead of O1 aids OpenMM recognition")
+                    atomname="O"
+
+                self.pdb_topology.addAtom(atomname, element, residue)
+
         print("Adding connectivity to PDB topology")
         ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology, connectivity_dict)
 
@@ -847,8 +864,6 @@ class Fragment:
             print("Deleting molecule bond information")
             # Setting list of bonds to empty list
             self.pdb_topology._bonds=[]
-
-
         openmm.app.PDBFile.writeFile(self.pdb_topology, self.coords, file=open(f"{filename}", 'w'))
         print(f"Wrote PDB-file: {filename}")
 
@@ -2527,7 +2542,8 @@ def flexible_align(fragmentA, fragmentB, rotate_only=False, translate_only=False
 # Allows subset match (same set of indices or 2 sets of indices for each fragment)
 # Also simpler option: heavyatomsonly=True (ignores H-atoms)
 #NOTE: no reordering
-def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, printlevel=2):
+def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, printlevel=2,
+                   write_aligned_structure=False):
     print("calculate_RMSD function")
 
     #Do chosen subset
@@ -2564,7 +2580,23 @@ def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, prin
         subsetA_coords=fragmentA.coords
         subsetB_coords=fragmentB.coords
 
-    rmsdval = kabsch_rmsd(subsetA_coords, subsetB_coords)
+
+    #Use geometric function to get translation and rotation matrices for the subsets
+    import geometric
+    trans, rot = geometric.molecule.get_rotate_translate(subsetA_coords,subsetB_coords)
+    Anew = np.dot(subsetA_coords, rot) + trans
+
+    #RMSD
+    rmsdval = np.sqrt(((Anew-subsetB_coords)**2).sum()/len(Anew))
+    #xrmsdval = kabsch_rmsd(subsetB_coords,Anew)
+    
+    if printlevel > 1:
+        print("RMSD:", rmsdval)
+
+    if write_aligned_structure:
+        print("write_aligned_structure active")
+        newfrag = Fragment(elems=fragmentA.elems, coords=Anew)
+        newfrag.write_xyzfile("structA_aligned.xyz")
 
 
     return rmsdval
@@ -3000,8 +3032,6 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
         print("No connectivity found. Using slow way of finding nearby fragments...")
     atomlist = []
 
-    # print("fragment.connectivity", fragment.connectivity)
-
     for i, c in enumerate(subsetcoords):
         el = subsetelems[i]
         for index, allc in enumerate(fragment.coords):
@@ -3027,6 +3057,50 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
 
                     elematoms = [fragment.elems[i] for i in wholemol]
                     atomlist = atomlist + wholemol
+    atomlist = np.unique(atomlist).tolist()
+    return atomlist
+
+#Similar to QMregionfragexpand but cleaner
+def cut_sphere(fragment=None, center_atom=None, radius=None):
+
+    scale = ash.settings_ash.settings_dict["scale"]
+    tol = ash.settings_ash.settings_dict["tol"]
+
+    coords = fragment.coords
+    center = fragment.coords[center_atom]
+
+    # Calculate distances from center for each coordinate
+    relative_coords = coords - center
+    distances = np.linalg.norm(relative_coords, axis=1)
+    inside_sphere = distances <= radius
+    uncut_indices = np.where(inside_sphere)[0]
+    atomlist=[]
+    for uncut_index in uncut_indices:
+        wholemol = get_molecule_members_loop_np2(fragment.coords, fragment.elems, 99, scale, tol,
+                                                                 atomindex=uncut_index)
+        atomlist = atomlist + wholemol
+    atomlist = np.unique(atomlist).tolist()
+    return atomlist
+
+#Similar to QMregionfragexpand and cut_sphere but a cubic box is cut instead
+def cut_cubic_box(fragment=None, center_atom=None, radius=None):
+
+    scale = ash.settings_ash.settings_dict["scale"]
+    tol = ash.settings_ash.settings_dict["tol"]
+
+    coords = fragment.coords
+    center = fragment.coords[center_atom]
+
+    # Calculate distances from center for each coordinate
+    relative_coords = coords - center
+    inside_box = np.all(np.abs(relative_coords) <= radius, axis=1)
+    uncut_indices = np.where(inside_box)[0]
+    #cut_indices = np.where(~inside_box)[0]
+    atomlist=[]
+    for uncut_index in uncut_indices:
+        wholemol = get_molecule_members_loop_np2(fragment.coords, fragment.elems, 99, scale, tol,
+                                                                 atomindex=uncut_index)
+        atomlist = atomlist + wholemol
     atomlist = np.unique(atomlist).tolist()
     return atomlist
 
@@ -4228,3 +4302,13 @@ def nuc_nuc_repulsion(coords, charges):
     distances = np.linalg.norm(diff, axis=2)
     np.fill_diagonal(distances, np.inf)
     return 0.5 * np.sum(charges[:, None] * charges[None, :] / distances)
+
+# a: the coordinates b: coordinates for 1 atom
+def find_nearest_atom(a,b):
+	print("Finding nearest coordinates for chosen coordinates:",b)
+	idx_min = np.sum( (a-b)**2, axis=1, keepdims=True).argmin(axis=0)
+	idx_min, a[idx_min]
+	print("Nearest atom index in coordinates:", idx_min)
+	print("Atom coordinates:", a[idx_min])
+	return int(idx_min[0]), a[idx_min]
+

@@ -22,9 +22,10 @@ import copy
 
 class PySCFTheory:
     def __init__(self, printsetting=False, printlevel=2, numcores=1, label="pyscf", platform='CPU', GPU_pcgrad=False,
-                  scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry='C1',
+                  mf_object=None,
+                  scf_type=None, basis=None, basis_file=None, cartesian_basis=None, ecp=None, functional=None, gridlevel=5, symmetry=False,
                   guess='minao', dm=None, moreadfile=None, write_chkfile_name='pyscf.chk', do_pop_analysis=True,
-                  noautostart=False, autostart=True, fcidumpfile=None,
+                  noautostart=False, autostart=True, fcidumpfile=None, fcidumpfile_molpro_orbsym=False,
                   soscf=False, damping=None, diis_method='DIIS', diis_start_cycle=0, level_shift=None,
                   fractional_occupation=False, scf_maxiter=50, scf_noiter=False, direct_scf=True, GHF_complex=False, collinear_option='mcol',
                   NMF=False, NMF_sigma=None, NMF_distribution='FD', stability_analysis=False,
@@ -58,60 +59,61 @@ class PySCFTheory:
         print_line_with_mainheader("PySCFTheory initialization")
 
         #EARLY EXITS
-
         #Exit early if no SCF-type
         if scf_type is None:
             print("Error: You must select an scf_type, e.g. 'RHF', 'UHF', 'GHF', 'RKS', 'UKS', 'GKS'")
             ashexit()
-        if basis is None and basis_file is None and fcidumpfile is None:
-            print("Error: You must either provide a basis or a basis_file keyword . Basis can a name (string) or dict (elements as keys)")
-            print("basis_file should be a string of the filename containing basis set for each element, in NWChem format")
-            print("Best to download basis set from https://www.basissetexchange.org/")
-            ashexit()
-        if basis_file is not None and not os.path.isfile(basis_file):
-            print("Error: basis_file does not exist. Exiting")
-            ashexit()
-        if auxbasis_file is not None and not os.path.isfile(auxbasis_file):
-            print("Error: auxbasis_file does not exist. Exiting")
-            ashexit()
-        if functional is not None:
-            if self.printlevel >= 1:
-                print(f"Functional keyword: {functional} chosen. DFT is on!")
-            if scf_type == 'RHF':
-                print("Changing RHF to RKS")
-                scf_type='RKS'
-            if scf_type == 'UHF':
-                print("Changing UHF to UKS")
-                scf_type='UKS'
-            if "dm21" in self.functional.lower():
-                print("A DM21-type functional selected. This requires DM21 installation")
-                try:
-                    import density_functional_approximation_dm21 as dm21
-                except ModuleNotFoundError as e:
-                    print("Error importing density_functional_approximation_dm21 library. Exiting")
-                    print("Make sure DM21 is installed in the Python environment. See https://github.com/google-deepmind/deepmind-research/tree/master/density_functional_approximation_dm21")
+        if mf_object is None:
+            print("No input mf object")
+            if basis is None and basis_file is None and fcidumpfile is None:
+                print("Error: You must either provide a basis or a basis_file keyword . Basis can a name (string) or dict (elements as keys)")
+                print("basis_file should be a string of the filename containing basis set for each element, in NWChem format")
+                print("Best to download basis set from https://www.basissetexchange.org/")
+                ashexit()
+            if basis_file is not None and not os.path.isfile(basis_file):
+                print("Error: basis_file does not exist. Exiting")
+                ashexit()
+            if auxbasis_file is not None and not os.path.isfile(auxbasis_file):
+                print("Error: auxbasis_file does not exist. Exiting")
+                ashexit()
+            if functional is not None:
+                if self.printlevel >= 1:
+                    print(f"Functional keyword: {functional} chosen. DFT is on!")
+                if scf_type == 'RHF':
+                    print("Changing RHF to RKS")
+                    scf_type='RKS'
+                if scf_type == 'UHF':
+                    print("Changing UHF to UKS")
+                    scf_type='UKS'
+                if "dm21" in self.functional.lower():
+                    print("A DM21-type functional selected. This requires DM21 installation")
+                    try:
+                        import density_functional_approximation_dm21 as dm21
+                    except ModuleNotFoundError as e:
+                        print("Error importing density_functional_approximation_dm21 library. Exiting")
+                        print("Make sure DM21 is installed in the Python environment. See https://github.com/google-deepmind/deepmind-research/tree/master/density_functional_approximation_dm21")
+                        ashexit()
+            else:
+                if scf_type == 'RKS' or scf_type == 'UKS':
+                    print("Error: RKS/UKS chosen but no functional. Exiting")
                     ashexit()
-        else:
-            if scf_type == 'RKS' or scf_type == 'UKS':
-                print("Error: RKS/UKS chosen but no functional. Exiting")
-                ashexit()
-        if NMF is True:
-            if NMF_distribution is None:
-                print("NMF requires NMF_distribution keyword. Exiting")
-                ashexit()
-            if NMF_sigma is None:
-                print("NMF requires NMF_sigma keyword. Exiting")
-                ashexit()
-        if BS is True:
-            if atomstoflip is None:
-                print("Error: BS is True but atomstoflip is not set. This is required. Exiting")
-                ashexit()
-            if scf_type == 'RHF' or scf_type == 'RKS':
-                print("SCF-type has to be unrestricted for BS. Exiting")
-                ashexit()
-            if HSmult is None:
-                print("Error: BS is True but HSmult is not set. This is required. Exiting")
-                ashexit()
+            if NMF is True:
+                if NMF_distribution is None:
+                    print("NMF requires NMF_distribution keyword. Exiting")
+                    ashexit()
+                if NMF_sigma is None:
+                    print("NMF requires NMF_sigma keyword. Exiting")
+                    ashexit()
+            if BS is True:
+                if atomstoflip is None:
+                    print("Error: BS is True but atomstoflip is not set. This is required. Exiting")
+                    ashexit()
+                if scf_type == 'RHF' or scf_type == 'RKS':
+                    print("SCF-type has to be unrestricted for BS. Exiting")
+                    ashexit()
+                if HSmult is None:
+                    print("Error: BS is True but HSmult is not set. This is required. Exiting")
+                    ashexit()
         if CC is True and CCmethod is None:
             print("Error: Need to choose CCmethod, e.g. 'CCSD', 'CCSD(T)")
             ashexit()
@@ -124,6 +126,14 @@ class PySCFTheory:
                     print("Example: if CASSCF_mults=[1,3] you should set CASSCF_numstates=[2,4] for 2 singlet and 4 triplet states")
                     ashexit()
 
+        # User-provided mf object
+        if mf_object is not None:
+            print("User-provided mf object. Will use this instead of creating a new one")
+            print("Warning: this will ignore most other input")
+            print("mf_object:", mf_object)
+            self.mf_object=mf_object
+        else:
+            self.mf_object=None
         #Store optional properties of pySCF run job in a dict
         self.properties ={}
 
@@ -194,7 +204,7 @@ class PySCFTheory:
             self.noautostart=True
         #FCIDUMP file as read-in option
         self.fcidumpfile=fcidumpfile
-
+        self.fcidumpfile_molpro_orbsym=fcidumpfile_molpro_orbsym # Boolean. True/False
 
         #CAS
         self.CAS=CAS
@@ -402,12 +412,21 @@ class PySCFTheory:
     def read_fcidump_file(self,fcidumpfile):
         import pyscf.tools.fcidump
         
-        #Read FCI dump and return dictionary with integrals etc
-        result = pyscf.tools.fcidump.read(fcidumpfile)
-        #Defining here
-        self.num_basis_functions = result["NORB"]
-        #H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
-        self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=False)
+        # Read FCI dump and return dictionary with integrals etc
+        fcidump_parse = pyscf.tools.fcidump.read(fcidumpfile)
+        # Defining here
+        self.num_basis_functions = fcidump_parse["NORB"]
+
+        # Issue with pyscf reading FCIDUMP FILE when ORBSYM is present but we want no symmetry
+        # We get a SymadaptedRHF object etc. causing problems
+        if self.symmetry is None and 'ORBSYM' in fcidump_parse:
+            print("PySCFTheory symmetry option set to None but there is orbsym in fcidump")
+            print("To avoid creating a symmetry-adapted mf object, we removed symmetry info")
+            fcidump_parse.pop("ORBSYM",None)
+            self.mf = fcidump_to_scf(fcidump_parse, molpro_orbsym=self.fcidumpfile_molpro_orbsym)
+        else:
+            # H1, H2, ECORE, NORB, NELEC, MS, ORBSYM, ISYM
+            self.mf = pyscf.tools.fcidump.to_scf(fcidumpfile, molpro_orbsym=self.fcidumpfile_molpro_orbsym)
 
     # Create FCIDUMP file from either mf object (provided or internal)
     def create_fcidump_file(self, mf=None, dump_from_mos=False, mo_coeff=None, 
@@ -501,7 +520,14 @@ class PySCFTheory:
 
     def write_orbitals_to_Moldenfile(self,mol, mo_coeffs, occupations, mo_energies=None, label="orbs"):
         from pyscf.tools import molden
-        print("Writing orbitals to disk as Molden file")
+        print("Writing Molden file")
+
+        # Skipping if basis set is missing
+        if mol.basis is None:
+            print("Warning: pyscf mol object contains no basis set. Can not create proper MOldenfile")
+            print("Skipping Moldenfile creation")
+            return None
+        
         if mo_energies is None:
             print("No MO energies. Setting to 0.0")
             mo_energies = np.array([0.0 for i in occupations])
@@ -764,13 +790,11 @@ class PySCFTheory:
         print()
         print("Running population analysis")
 
-        #TODO: gpu4pyscf errors for Mulliken pop analysis. Probably fixed later
+        #TODO: gpu4pyscf errors for Mulliken pop analysis.
         #For now, we return
-        #if self.platform == 'GPU':
-        #    print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
-        #    #import gpu4pyscf
-        #    #mull_pop_func = gpu4pyscf.dft.RKS.mulliken_pop
-        #    return
+        if self.platform == 'GPU':
+            print("GPU4PySCF does not support Mulliken population analysis right now. Returning")
+            return
         #else:
         mull_pop_func = pyscf.scf.rhf.mulliken_pop
         mull_spinpop_func = pyscf.scf.uhf.mulliken_spin_pop
@@ -781,8 +805,6 @@ class PySCFTheory:
             if unrestricted is False:
                 if dm is None:
                     dm = mf.make_rdm1()
-                #print("dm:", dm)
-                #print("dm.shape:", dm.shape)
                 mulliken_populations =mull_pop_func(self.mol,dm, verbose=verbose)
                 print(f"{label} Mulliken charges:", mulliken_populations[1])
             elif unrestricted is True:
@@ -1348,8 +1370,6 @@ class PySCFTheory:
             else:
                 #Regular CASSCF
                 print("Running CASSCF object")
-                print(casscf.__dict__)
-                print("CASSCF FCI solver:", casscf.fcisolver.__dict__)
                 casscf_result = casscf.run(orbitals, natorb=True)
                 print("casscf_result:", casscf_result)
                 e_tot = casscf_result.e_tot
@@ -1878,6 +1898,8 @@ class PySCFTheory:
         self.mol.charge = charge
         self.mol.spin = mult-1
 
+        print("self.mol.symmetry:", self.mol.symmetry)
+
         #cartesian basis or not
         if cartesian_basis is not None:
             print("Setting cartesian basis flag to:", cartesian_basis)
@@ -2350,7 +2372,6 @@ class PySCFTheory:
 
         #Grid printing
         scf_result = mf.run(dm)
-
         #Grid
         if 'KS' in self.scf_type:
             print("Number of gridpoints used in calculation:", len(self.mf.grids.coords))
@@ -2488,27 +2509,29 @@ class PySCFTheory:
         # BASIS
         #####################
 
-        if self.fcidumpfile is None:
+        #Only define basis set if regular job (not FCIDUMP or read-in MF)
+        if self.fcidumpfile is None and self.mf_object is None:
             self.define_basis(elems=qm_elems)
-            self.num_basis_functions=len(self.mol.ao_labels())
-
+        print("Building pyscf mol object")
         self.mol.build()
-
+        # Defining number of basis functions
+        self.num_basis_functions=len(self.mol.ao_labels())
         if self.printlevel >= 1:
             print("Number of basis functions:", self.num_basis_functions)
+        
         ############################
         # CREATE MF OBJECT
         ############################
-        #if self.platform == 'GPU':
-        #    print("Platform is GPU")
-        #    self.create_mf_for_gpu() #Creates self.mf
-        #else:
-        if self.fcidumpfile is None:
-            self.create_mf() #Creates self.mf
-        else:
+        if self.fcidumpfile is not None:
             print("FCIDUMP file read-in")
             print("Creating mf object from FCIDUMPfile")
             self.read_fcidump_file(self.fcidumpfile)
+        elif self.mf_object is not None:
+            print("An mf object already exits. Using.")
+            self.mf=self.mf_object
+        else:
+            print("Now creating mf object")
+            self.create_mf() #Creates self.mf
 
         #GHF/GKS
         if self.scf_type == 'GHF' or self.scf_type == 'GKS':
@@ -2570,7 +2593,6 @@ class PySCFTheory:
         if self.platform == 'GPU':
             print("GPU platform requested. Will now convert mf object to GPU")
             self.mf = self.mf.to_gpu()
-
         ##############################
         #EMBEDDING OPTIONS
         ##############################
@@ -2622,8 +2644,9 @@ class PySCFTheory:
             #GPU CHANGE
             if self.platform == 'GPU':
                 print("GPU SCF calculation done.")
-                print("Converting mf object back to CPU")
-                self.mf = self.mf.to_cpu()
+                if Grad is False:
+                    print("Converting mf object back to CPU")
+                    self.mf = self.mf.to_cpu()
 
 
             #Possible stability analysis
@@ -2804,7 +2827,11 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
                     checkpoint=time.time()
-                self.gradient = self.mf.nuc_grad_method().kernel()
+                print("")
+                print("mf:", self.mf)
+                g = self.mf.nuc_grad_method()
+                print("g:", g)
+                self.gradient = g.kernel()
                 print_time_rel(checkpoint, modulename='pyscf_gradient', moduleindex=2)
 
             #Applying dispersion gradient last
@@ -3112,7 +3139,7 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
 
 #Standalone function for reading either pySCF-CHK file or Molden file and returning MO coefficients and occupations
 #Used by pySCFTheory, DiceTheory and BlockTheory
-def pySCF_read_MOs(moreadfile,pyscfobject):
+def pySCF_read_MOs(moreadfile,pyscfobject, motype="scf"):
     import pyscf
     print("Reading MOs from :", moreadfile)
     #Molden read
@@ -3121,9 +3148,13 @@ def pySCF_read_MOs(moreadfile,pyscfobject):
         mol, mo_energy, mo_coefficients, occupations, irrep_labels, spins = pyscf.tools.molden.load(moreadfile)
     #Checkpoint file
     elif '.chk'  in moreadfile:
-        mo_coefficients = pyscf.lib.chkfile.load(moreadfile, 'mcscf/mo_coeff')
-        occupations = pyscf.lib.chkfile.load(moreadfile, 'mcscf/mo_occ')
-    print("Occupations:", occupations)
+        print("Reading checkpoint file")
+        #motype can be e.g. 'scf' or 'mcscf'
+        mo_coefficients = pyscf.lib.chkfile.load(moreadfile, f'{motype}/mo_coeff')
+        print("mo_coefficients:", mo_coefficients)
+        occupations = pyscf.lib.chkfile.load(moreadfile, f'{motype}/mo_occ')
+        print("occupations:", occupations)
+
     print("Length of occupations array:", len(occupations))
     if len(occupations) != pyscfobject.num_orbs:
         print("Occupations array length does NOT match length of MO coefficients in PySCF object")
@@ -3597,7 +3628,7 @@ def DFA_error_analysis(fragment=None, DFA_obj=None, REF_obj=None, DFA_DM=None, R
 
 #MANUAL creation of mol and mf if 1-el, 2-el and overlap integrals are available
 def create_pyscf_mol_and_mf(numel=None, mult=None, nuc_repulsion_energy=None,
-    one_el_integrals=None, two_el_integrals=None, overlap=None, verbosity=4 ):
+    one_el_integrals=None, two_el_integrals=None, overlap=None, verbosity=4, symmetry=False ):
     from pyscf import gto
     import numpy as np
     #Create empty mol object
@@ -3610,10 +3641,17 @@ def create_pyscf_mol_and_mf(numel=None, mult=None, nuc_repulsion_energy=None,
     #Nuc repulsion energy
     mol.energy_nuc = lambda *args: nuc_repulsion_energy
     mol.incore_anyway = True
+    #Symmetry
+    mol.symmetry=symmetry
 
+    #print("mol dict", mol.__dict__)
     #mol.build()
     #MF
     mf = mol.RHF()
+    #print("mf type:", mf)
+    #print("mf.mol dict", mf.mol.__dict__)
+    #exit()
+    #exit()
 
     #1-el integrals
     h1 = one_el_integrals
@@ -3656,3 +3694,47 @@ def half_inv_overlap(S):
     Stemp = SVAL_minhalf*np.transpose(Svec)
     S_minhalf = Svec * Stemp
     return S_minhalf
+
+#Modified FCIDUMP file to mf function
+# Instead of reading file it reads the already parsed file as dict
+def fcidump_to_scf(fciparsed, molpro_orbsym=False, mf=None, **kwargs):
+    from pyscf import gto
+    import numpy
+    ctx = fciparsed
+    mol = gto.M()
+    mol.nelectron = ctx['NELEC']
+    mol.spin = ctx['MS2']
+    norb = mol.nao = ctx['NORB']
+    if 'ECORE' in ctx:
+        mol.energy_nuc = lambda *args: ctx['ECORE']
+    mol.incore_anyway = True
+
+    if 'ORBSYM' in ctx:
+        mol.symmetry = True
+        mol.groupname = 'N/A'
+        orbsym = numpy.asarray(ctx['ORBSYM'])
+        mol.irrep_id = list(set(orbsym))
+        mol.irrep_name = [('IR%d' % ir) for ir in mol.irrep_id]
+        so = numpy.eye(norb)
+        mol.symm_orb = []
+        for ir in mol.irrep_id:
+            mol.symm_orb.append(so[:,orbsym==ir])
+
+    if mf is None:
+        mf = mol.RHF(**kwargs)
+    else:
+        mf.mol = mol
+    h1 = ctx['H1']
+    idx, idy = numpy.tril_indices(norb, -1)
+    if h1[idx,idy].max() == 0:
+        h1[idx,idy] = h1[idy,idx]
+    else:
+        h1[idy,idx] = h1[idx,idy]
+    mf.get_hcore = lambda *args: h1
+    mf.get_ovlp = lambda *args: numpy.eye(norb)
+    mf._eri = ctx['H2']
+    intor_symmetric = mf.mol.intor_symmetric
+    mf.mol.intor_symmetric = lambda intor, **kwargs: numpy.eye(norb) \
+        if intor == 'int1e_ovlp' else intor_symmetric(intor, **kwargs)
+
+    return mf

@@ -610,8 +610,9 @@ def read_ciffile(file):
     symmopgrab_oldsyntax=False
     cellunits=None
     atomsitecolumns=[]
-    with open(file) as f:
+    with open(file, encoding='utf-8') as f:
         for line in f:
+            #print("line:",line)
             if 'cell_formula_units_Z' in line:
                 cellunits=int(line.split()[-1])
                 print("Found {} cell_formula_units_Z in CIF file".format(cellunits))
@@ -688,7 +689,7 @@ def read_ciffile(file):
                         #    coords.append([x_coord, y_coord, z_coord])
             if 'data_' in line:
                 newmol = True
-            if '_atom_site_' in line:
+            if '_atom_site_' in line and '#' not in line:
                 atomsitecolumns.append(line.split()[0])
             if '_atom_site_fract_z' in line:
                 fractgrab=True

@@ -498,6 +498,7 @@ class OpenMMTheory:
             if self.printlevel > 0:
                 print("Reading OpenMM XML forcefield files and PDB file")
                 print("xmlfiles:", str(xmlfiles).strip("[]"))
+                print("pdbfile:", pdbfile)
                 if pdbfile is None:
                     print("Error:No pdbfile input provided")
                     ashexit()
@@ -1147,8 +1148,8 @@ class OpenMMTheory:
         import openmm
         print(f"Adding custom angle force for atoms: {i}, {j}, {k}  with value: {value} radians with forceconstant={forceconstant}")
         angle_force = openmm.CustomAngleForce("0.5*k*(theta-theta0)^2")
-        angle_force.addGlobalParameter("k",forceconstant)
-        angle_force.addGlobalParameter("theta0", value)
+        angle_force.addGlobalParameter("k",forceconstant*openmm.unit.kilocalorie_per_mole/openmm.unit.radian**2)
+        angle_force.addGlobalParameter("theta0", value*openmm.unit.radian)
         angle_force.addAngle(i, j, k)
         angle_force.setUsesPeriodicBoundaryConditions(False)
         self.system.addForce(angle_force)
@@ -1162,8 +1163,8 @@ class OpenMMTheory:
         torsion_force = openmm.CustomTorsionForce("0.5*k*dtheta^2; dtheta = min(diff, 2*Pi-diff); diff = abs(theta - theta0)")
         #Note: using global here, should be fine 1 torsion
         torsion_force.addGlobalParameter("Pi", math.pi)
-        torsion_force.addGlobalParameter("k",forceconstant)
-        torsion_force.addGlobalParameter("theta0", value)
+        torsion_force.addGlobalParameter("k",forceconstant*openmm.unit.kilocalorie_per_mole/openmm.unit.radian**2)
+        torsion_force.addGlobalParameter("theta0", value*openmm.unit.radian)
         torsion_force.addTorsion(i, j, k, l)
         print("torsion_force getTorsionParameters:", torsion_force.getTorsionParameters(0))
         torsion_force.setUsesPeriodicBoundaryConditions(True)
@@ -2673,7 +2674,10 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             waterxmlfile = "amber14/tip3pfb.xml" #NOTE: this is not actually TIP3P but a reparaterized version
         elif watermodel.lower () == 'tip3p':
                 modeller_solvent_name="tip3p"
-                waterxmlfile = "amber14/tip3p.xml"
+                if forcefield == 'Amber14':
+                    waterxmlfile = "amber14/tip3p.xml"
+                else:
+                    waterxmlfile = "tip3p.xml"
         print("Waterxmlfile selected:", waterxmlfile)
 
 
@@ -3017,7 +3021,7 @@ def openmm_add_bonds_to_topology(topology,connectivity):
 
 # Assumes all atoms of small molecule present (including hydrogens)
 def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=None, solvent_boxdims=[70.0, 70.0, 70.0],
-                           xmlfile=None):
+                           xmlfile=None, LJ_treatment=None, skip_xmlfile=False):
 
     print_line_with_mainheader("SmallMolecule Solvator")
     try:
@@ -3039,7 +3043,8 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     charge, mult = check_charge_mult(charge, mult, "QM", fragment, "solvate_small_molecule")
 
     # Check xmlfile
-    if xmlfile is None:
+    
+    if xmlfile is None and skip_xmlfile is False:
         print("\nNo xmlfile was provided. You must provide one")
         print("If you just need a simple nonbonded model for the solute e.g. for QM/MM then your options are:")
         print("""
@@ -3050,17 +3055,18 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
         ashexit()
 
     # Read XML-file and check for LJ treatment
-    print("Checking xmlfile for LJ treatment")
-    if pygrep('coulomb14scale="0.83333',xmlfile):
-        print("Found Amber-style scaling parameter.")
-        LJ_treatment="amber"
-    elif pygrep('LennardJonesForce',xmlfile):
-        print("Found CHARMM-style format.")
-        LJ_treatment="charmm"
-    else:
-        print("Unknown LJ14 scaling type. Assuming neither CHARMM or Amber")
-        LJ_treatment="normal"
-        print("Using watermodel=TIP3P . Using parameters in:", ashpath + "/databases/forcefields")
+    if skip_xmlfile is False:
+        print("Checking xmlfile for LJ treatment")
+        if pygrep('coulomb14scale="0.83333',xmlfile):
+            print("Found Amber-style scaling parameter.")
+            LJ_treatment="amber"
+        elif pygrep('LennardJonesForce',xmlfile):
+            print("Found CHARMM-style format.")
+            LJ_treatment="charmm"
+        else:
+            print("Unknown LJ14 scaling type. Assuming neither CHARMM or Amber")
+            LJ_treatment="normal"
+            print("Using watermodel=TIP3P . Using parameters in:", ashpath + "/databases/forcefields")
 
         print("LJ_treatment:", LJ_treatment)
 
@@ -3068,7 +3074,7 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
     if watermodel == "tip3p" or watermodel == "TIP3P" :
         print("Using watermodel=TIP3P")
         if LJ_treatment =="amber":
-            waterxmlfile="amber/tip3p_standard.xml"
+            waterxmlfile="amber14/tip3p.xml"
         elif LJ_treatment =="charmm":
             waterxmlfile="charmm36/water.xml"
         elif LJ_treatment == "normal":
@@ -3080,12 +3086,19 @@ def solvate_small_molecule(fragment=None, charge=None, mult=None, watermodel=Non
         ashexit()
 
     # Create forcefield object
-    print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
-    forcefield = openmm_app.forcefield.ForceField(*[xmlfile, waterxmlfile])
+    if skip_xmlfile is True:
+        print("Creating forcefield using XML-files:", waterxmlfile)
+        forcefield = openmm_app.forcefield.ForceField(*[waterxmlfile])
+    else:
+        print("Creating forcefield using XML-files:", xmlfile, waterxmlfile)
+        forcefield = openmm_app.forcefield.ForceField(*[xmlfile, waterxmlfile])
 
     #WRITE PDB-file
     #Check if xmlfile contains bonded parameters
-    if pygrep('<Bond',xmlfile):
+    if skip_xmlfile is True:
+        atomnames = [el + "Y" + str(i) for i, el in enumerate(fragment.elems)]
+        pdbfile = write_pdbfile(fragment, outputname="smallmol", dummyname='LIG', atomnames=atomnames)
+    elif pygrep('<Bond',xmlfile):
         print("XML-file contains bonded parameters. Writing PDB-file with connectivity.")
         xyzfile = Fragment.write_xyzfile(fragment, xyzfilename="smallmol.xyz")
         pdbfile = xyz_to_pdb_with_connectivity(xyzfile)
@@ -3369,28 +3382,30 @@ def read_NPT_statefile(npt_output):
 
 # Wrapper function for OpenMM_MDclass
 def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
-              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              traj_frequency=1000, restartfile_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', specialtraj_frequency=1000, specialatoms=None,
               energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
               anderson_thermostat=False, platform='CPU', constraints=None, restraints=None,
-              enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
+              enforcePeriodicBox=True, special_wrapping=False, special_wrapping_updatepos=False, wrapping_atoms=None, 
+              dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
               centerforce_atoms=None, centerforce_constant=1.0, centerforce_distance=10.0, centerforce_center=None,
-              barostat_frequency=25, specialbox=False, chkfile=None, statefile=None):
+              barostat_frequency=25,  chkfile=None, statefile=None):
     print_line_with_mainheader("OpenMM MD wrapper function")
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
-                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        traj_frequency=traj_frequency, restartfile_frequency=restartfile_frequency, temperature=temperature, integrator=integrator,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, specialtraj_frequency=specialtraj_frequency, specialatoms=specialatoms,
                         energy_file_option=energy_file_option, force_file_option=force_file_option, atomic_units_force_reporter=atomic_units_force_reporter,
                         constraints=constraints, restraints=restraints,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
-                        enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
+                        enforcePeriodicBox=enforcePeriodicBox, special_wrapping=special_wrapping, special_wrapping_updatepos=special_wrapping_updatepos, 
+                        wrapping_atoms=wrapping_atoms, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, printlevel=printlevel, hydrogenmass=hydrogenmass,
                         plumed_object=plumed_object, add_centerforce=add_centerforce,trajfilename=trajfilename,
                         centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
                         centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
-                        barostat_frequency=barostat_frequency, specialbox=specialbox,
+                        barostat_frequency=barostat_frequency, 
                         chkfile=chkfile, statefile=statefile)
     if simulation_steps is not None:
         md.run(simulation_steps=simulation_steps)
@@ -3408,15 +3423,16 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
 
 class OpenMM_MDclass:
     def __init__(self, fragment=None, theory=None, charge=None, mult=None, timestep=0.001,
-                 traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+                 traj_frequency=1000, restartfile_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
+                 barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', specialtraj_frequency=1000, specialatoms=None,
                  energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
                  coupling_frequency=1, printlevel=2, platform='CPU',
                  anderson_thermostat=False, hydrogenmass=1.5, constraints=None, restraints=None,
-                 enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
+                 enforcePeriodicBox=True, special_wrapping=False, special_wrapping_updatepos=False, wrapping_atoms=None,
+                 dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
                  centerforce_atoms=None, centerforce_constant=1.0, centerforce_distance=10.0, centerforce_center=None,
-                 barostat_frequency=25, specialbox=False,
+                 barostat_frequency=25, 
                  chkfile=None, statefile=None):
         module_init_time = time.time()
         import openmm
@@ -3437,6 +3453,16 @@ class OpenMM_MDclass:
         #Trajectory filename. Used for trajs in DCD, PDB etc. format, also single PDB snapshots
         self.trajfilename=trajfilename
 
+        #Specialatoms and specialtraj_frequency for special printing
+        self.specialatoms=specialatoms
+        self.specialtraj_frequency=specialtraj_frequency
+
+        #Delete previous special and wrapping trajectory file
+        if os.path.exists("wrapped_special_traj.xyz"):
+            os.remove("wrapped_special_traj.xyz")
+        if os.path.exists("OpenMMMD_traj_wrapped.xyz"):
+            os.remove("OpenMMMD_traj_wrapped.xyz")
+
         # Distinguish between OpenMM theory QM/MM theory or QM theory
         self.dummy_MM=dummy_MM
 
@@ -3446,14 +3472,92 @@ class OpenMM_MDclass:
         #Determine centroid of original fragment coordinates
         self.centroid_system = get_centroid(fragment.coords)
 
+        #Theory_runtype
+        self.theory_runtype=None
+
+        self.openmmobject=None
+        self.QM_MM_object=None
+        self.ONIOM_object=None
+        self.wraptheory_object=None
         #Case: OpenMMTheory
+        print("Analyzing theory input to OpenMM_MDclass")
         if isinstance(theory, OpenMMTheory):
+            print("This is an OpenMMTheory object")
             self.openmmobject = theory
             self.QM_MM_object = None
+            if self.dummy_MM is True:
+                self.theory_runtype ="dummy_MM"
+            else:
+                self.theory_runtype ="MM"
         #Case: QM/MM theory with OpenMM mm_theory
         elif isinstance(theory, ash.QMMMTheory):
+            print("This is an QMMMTheory object")
             self.QM_MM_object = theory
             self.openmmobject = theory.mm_theory
+            self.theory_runtype ="QMMM"
+
+            #Making sure QM/MM object will exit before calculating MM part
+            self.QM_MM_object.exit_after_customexternalforce_update=True
+            print("Turning on externalforce option.")
+            self.QM_MM_object.openmm_externalforce = True
+            #NOTE: Now creating externalforceobject as part of this MD object instead (previously QM/MM object)
+            self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
+            # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
+            # (it would calculate OpenMM energy twice) so turning on in case forgotten
+        #CASE: ONIOMTHeory that might containOpenMMTheory
+        elif isinstance(theory, ash.ONIOMTheory):
+            print("This is an ONIOMTheory object")
+            print("ONIOMTheory objects are not currently supported")
+            #self.QM_MM_object = theory
+            self.ONIOM_object = theory
+            self.theory_runtype ="ONIOM"
+
+            for t in theory.theories_N:
+                if isinstance(t,OpenMMTheory):
+                    print("Found OpenMMTheory object inside ONIOMTheory")
+                    self.openmmobject=t
+                    print("Problem: ONIOMTheory containing an OpenMMTheory is currently not supported yet. Complain to developer")
+                    ashexit()
+            #If nothing found then we create:
+            if self.openmmobject is None:
+                #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
+                self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
+                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+            print("Turning on externalforce option.")
+            self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
+
+
+        #Case: WrapTheory that might contain OpenMMTheory and QMMMTheory as component or subcomponent
+        elif isinstance(theory, ash.WrapTheory):
+            print("This is an WrapTheory object. Inspecting the components")
+            self.theory_runtype ="WRAP"
+
+            #Checking if OpenMMTheory object inside WrapTheory object
+            for t in theory.theories:
+                if isinstance(t,OpenMMTheory):
+                    print("Found OpenMMTheory object inside WrapTheory")
+                    self.openmmobject=t
+                elif isinstance(t,ash.QMMMTheory):
+                    print("Found QMMMTheory object inside WrapTheory")
+                    self.QM_MM_object=t
+                    #Making sure QM/MM object will exit before calculating MM part
+                    self.QM_MM_object.exit_after_customexternalforce_update=True
+                    print("Turning on externalforce option.")
+                    self.QM_MM_object.openmm_externalforce = True
+                    if isinstance(t.mm_theory,OpenMMTheory):
+                        print("Found OpenMMTheory object inside QMMMTheory object of WrapTheory object")
+                        self.openmmobject=t.mm_theory
+            
+            #If nothing found then we create:
+            if self.openmmobject is None:
+                #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
+                self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
+                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+            self.wraptheory_object = theory
+
+            print("Turning on externalforce option.")
+            self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
+
         #Case: OpenMM with external QM
         else:
             #NOTE: Recognize QM theories here ??
@@ -3466,8 +3570,11 @@ class OpenMM_MDclass:
             #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
             self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
                                 hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+            print("Creating new OpenMM custom external force for external QM theory.")
+            self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
             self.QM_MM_object = None
             self.qmtheory=theory
+            self.theory_runtype ="QM"
 
         #Basic restraints (bond,angle,torsion)
         if restraints is not None:
@@ -3499,6 +3606,7 @@ class OpenMM_MDclass:
         self.coupling_frequency = coupling_frequency
         self.timestep = timestep
         self.traj_frequency = int(traj_frequency)
+        self.restartfile_frequency=restartfile_frequency
         self.plumed_object = plumed_object
         self.barostat_frequency = barostat_frequency
         self.trajectory_file_option=trajectory_file_option
@@ -3517,6 +3625,11 @@ class OpenMM_MDclass:
             print("System is non-periodic. Setting enforcePeriodicBox to False")
             #Non-periodic. Setting enforcePeriodicBox to False (otherwise nonsense)
             self.enforcePeriodicBox=False
+
+        #Optional wrapping_atoms (anchoratoms)
+        self.special_wrapping = special_wrapping
+        self. special_wrapping_updatepos = special_wrapping_updatepos #Testing: update positions in simulation object after wrapping
+        self.wrapping_atoms=wrapping_atoms
 
         print_line_with_subheader2("MD system parameters")
         print("Temperature: {} K".format(self.temperature))
@@ -3540,9 +3653,10 @@ class OpenMM_MDclass:
         print("Will write trajectory in format:", self.trajectory_file_option)
         print("Trajectory write frequency:", self.traj_frequency)
         print("enforcePeriodicBox:", self.enforcePeriodicBox)
+        print("special_wrapping:", self.special_wrapping)
+        print("special_wrapping_updatepos:", special_wrapping_updatepos)
+        print("wrapping_atoms:", self.wrapping_atoms)
         print("")
-        #specialbox for QM/MM
-        self.specialbox=specialbox
 
         if self.openmmobject.autoconstraints is None:
             print(f"""{BC.WARNING}
@@ -3673,21 +3787,22 @@ class OpenMM_MDclass:
             self.plumedcustomforce = self.openmmobject.add_custom_external_force()
 
         # QM/MM MD
-        if self.QM_MM_object is not None:
-            print("QM_MM_object provided. Switching to QM/MM loop.")
-            #print("QM/MM requires enforcePeriodicBox to be False.")
-            #True sometimes means we end up with solute in corner of box (wrong for nonPBC QM code)
-
-
-            # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
-            # (it would calculate OpenMM energy twice) so turning on in case forgotten
-            if self.QM_MM_object.openmm_externalforce is False:
-                print("QM/MM object was not set to have 'openmm_externalforce=True'.")
-                print("Turning on externalforce option.")
-                self.QM_MM_object.openmm_externalforce = True
-                #NOTE: Now creating externalforceobject as part of this MD object instead (previously QM/MM object)
-                self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
-
+        #if self.QM_MM_object is not None:
+        #    print("QM_MM_object provided. Switching to QM/MM loop.")
+        #    #print("QM/MM requires enforcePeriodicBox to be False.")
+        #    #True sometimes means we end up with solute in corner of box (wrong for nonPBC QM code)
+        #
+        #    #Making sure QM/MM object will exit before calculating MM part
+        #    self.QM_MM_object.exit_after_customexternalforce_update=True
+        #
+        #    # OpenMM_MD with QM/MM object does not make sense without openmm_externalforce
+        #    # (it would calculate OpenMM energy twice) so turning on in case forgotten
+        #    if self.QM_MM_object.openmm_externalforce is False:
+        #        print("QM/MM object was not set to have 'openmm_externalforce=True'.")
+        #        print("Turning on externalforce option.")
+        #        self.QM_MM_object.openmm_externalforce = True
+        #        #NOTE: Now creating externalforceobject as part of this MD object instead (previously QM/MM object)
+        #        self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
         # CENTER COORDINATES HERE on SOLUTE HERE ??
         # NOTE: Deprecated most likely
         #centercoordinates = False
@@ -3727,7 +3842,6 @@ class OpenMM_MDclass:
     #Set sim reporters. Needs to be done after simulation is created and not modified anymore
     def set_sim_reporters(self,simulation,restart=False):
         import openmm
-
         #CheckpointReporter
         print("Creating CheckpointReporter that will write a restartable checkpointfile every X steps")
         checkpointfilename='OpenMM_MD.chk'
@@ -3796,6 +3910,45 @@ class OpenMM_MDclass:
             except:
                 pass
         print("simulation.reporters:", simulation.reporters)
+
+    # For OpenMM native MTD
+    def mtd_step(self,step,meta_object,metadyn_settings):
+        checkpoint=time.time()
+        cv1scaling=1
+        cv2scaling=1
+        meta_object.step(self.simulation, 1)
+        print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+        checkpoint = time.time()
+
+        #getCollectiveVariables
+        if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
+            if self.printlevel >= 2:
+                print("MTD: Writing current collective variables to disk")
+            current_cv = meta_object.getCollectiveVariables(self.simulation)
+            if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
+                cv1scaling=10
+            elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
+                cv1scaling=180/np.pi
+            if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
+                cv2scaling=10
+            elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
+                cv2scaling=180/np.pi
+            currtime = step*self.timestep #Time in ps
+            with open(f'colvar', 'a') as f:
+                if metadyn_settings["numCVs"] == 2:
+                    f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
+                elif metadyn_settings["numCVs"] == 1:
+                    f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
+        print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+        checkpoint = time.time()
+        return
+
+    def write_state_and_chk_files(self,step):
+        # Saving state and chkfile to disk
+        print(f"Step {step}. Saving a statefile and checkpointfile : OpenMM_MD_state.xml and OpenMM_MD_checkpoint.chk")
+        print("Can be used to restart a simulation (statefile and chkfile keywords) using the same coordinates and velocities.")
+        self.simulation.saveState('OpenMM_MD_state.xml')
+        self.simulation.saveCheckpoint('OpenMM_MD_checkpoint.chk')
 
     # Simulation loop.
     #NOTE: process_id passed by Simple_parallel function when doing multiprocessing, e.g. Plumed multiwalker metadynamics
@@ -3920,11 +4073,7 @@ class OpenMM_MDclass:
             #Writing metadyn_settings dict to disk
             import json
             json.dump(metadyn_settings, open(f"{biasdir}/ASH_MTD_parameters.txt",'w'))
-        #Case: QM MD
-        if self.externalqm is True:
-            print("Creating new OpenMM custom external force for external QM theory.")
-            #NOTE: If we run sim 1-by-one we constantly add 
-            self.qmcustomforce = self.openmmobject.add_custom_external_force()
+
 
         #Possible restraints added
         if restraints != None:
@@ -3990,7 +4139,34 @@ class OpenMM_MDclass:
         #    pass
 
         #Make sure file associated with StateDataReporter is open
-        if restart is False:
+        if restart is True:
+            print("Restart true. Reusing simulation reporters")
+            #if self.datafilename is not None:
+            #    print("Reopening datafile:", self.datafilename)
+                #self.dataoutputoption = open(self.datafilename,'a')
+                #Setting simulation reporters
+                #Seems to be necessary to do this again after restart
+                #restart option means that StateDatareport and DCDReporter will append to files
+            self.set_sim_reporters(self.simulation, restart=True)
+        elif statefile is not None:
+            print("statefile is used")
+            #if self.datafilename is not None:
+            #    print("Reopening datafile:", self.datafilename)
+                #self.dataoutputoption = open(self.datafilename,'a')
+                #Setting simulation reporters
+                #Seems to be necessary to do this again after restart
+                #restart option means that StateDatareport and DCDReporter will append to files
+            self.set_sim_reporters(self.simulation, restart=True)
+        elif chkfile is not None:
+            print("chkfile is used")
+            #if self.datafilename is not None:
+            #    print("Reopening datafile:", self.datafilename)
+                #self.dataoutputoption = open(self.datafilename,'a')
+                #Setting simulation reporters
+                #Seems to be necessary to do this again after restart
+                #restart option means that StateDatareport and DCDReporter will append to files
+            self.set_sim_reporters(self.simulation, restart=True)
+        else:
             print("Restart false")
             if self.datafilename is not None:
                 #RB addition: Delete file after each run
@@ -4003,21 +4179,169 @@ class OpenMM_MDclass:
             #Setup data and simulation reporters for simulation object
             self.set_sim_reporters(self.simulation)
 
+            print("self.positions:", self.positions)
             # Setting coordinates of OpenMM object from current fragment.coords
             self.openmmobject.set_positions(self.positions,self.simulation)
-        else:
-            print("Restart true. Reusing simulation reporters")
-            if self.datafilename is not None:
-                print("Reopening datafile:", self.datafilename)
-                #self.dataoutputoption = open(self.datafilename,'a')
-                #Setting simulation reporters
-                #Seems to be necessary to do this again after restart
-                #restart option means that StateDatareport and DCDReporter will append to files
-                self.set_sim_reporters(self.simulation, restart=True)
-
         print()
 
-        if self.QM_MM_object is not None:
+        ###########################################
+        # PBC and Wrapping
+        ###########################################
+        #Defining boxvectors in case we need
+        if self.openmmobject.Periodic is True:
+            print("Periodic Boundary Conditions used.")
+
+            if self.enforcePeriodicBox is True:
+                print("EnforcePeriodic Box is True. Wrapping enforced by OpenMM.")
+                print("Warning: in case of problematic wrapping for e.g. QM/MM, try enabling special_wrapping=True")
+            # Wrapping handled by mdtraj
+            if self.special_wrapping is True:
+                print("special_wrapping is True. Wrapping will be handled in each step by mdtraj library")
+                print("Importing mdtraj")
+                try:
+                    import mdtraj
+                except:
+                    print("Error: mdtraj not found, needs to be installed (pip install mdtraj)")
+                    exit()
+                #Defining boxvectors for wrapping
+                boxvectors = self.simulation.context.getState().getPeriodicBoxVectors(asNumpy=True)
+                #Convert topology from openmm format to mdtraj format
+                mdtrajtopology = mdtraj.Topology.from_openmm(self.openmmobject.topology)
+                #Choosing wrapping_atoms depending on theory-type
+                if self.wrapping_atoms is None:
+                    print("No wrapping_atoms keyword has been set to center on.")
+                    if self.theory_runtype == "WRAP":
+                        print("Theory-runtype is WRAP but no wrapping_atoms have been set.")
+                        if self.QM_MM_object is not None:
+                            print("Found QMMMTheory object. Using QM-region atoms as wrapping_atoms")
+                            wrapping_atoms=self.QM_MM_object.qmatoms
+                        elif self.ONIOM_object is not None:
+                            print("Found  ONIOMTheory object. Using Region1-atoms as wrapping_atoms")
+                            wrapping_atoms=self.ONIOM_object.regions_N[0]
+                        else:
+                            print("Error: wrapping_atoms need to be set")
+                            ashexit()
+                    elif self.theory_runtype == "QMMM":
+                        print("Theory-runtype is QMMM. Using QMatoms as wrapping_atoms")
+                        wrapping_atoms=self.QM_MM_object.qmatoms
+                    elif self.theory_runtype == "ONIOM":
+                        print("Theory_runtype is ONIOM. Using Region1-atoms as wrapping_atoms")
+                        wrapping_atoms=self.ONIOM_object.regions_N[0]
+                    elif self.theory_runtype == "QM":
+                        print("Theory_runtype is QM but no wrapping_atoms have been set.")
+                        print("Exiting")
+                        ashexit()
+                    elif self.theory_runtype == "dummy_MM":
+                        print("Theory_runtype is dummy_MM but no wrapping_atoms have been set.")
+                        print("Exiting")
+                        ashexit()
+                    elif self.theory_runtype == "MM":
+                        print("Theory_runtype is MM. No achoratoms needed")
+                        wrapping_atoms=None
+                    print("wrapping_atoms have been set to:", wrapping_atoms)
+                else:
+                    wrapping_atoms=self.wrapping_atoms
+                    print(f"Will use atoms {wrapping_atoms} for wrapping")
+
+
+        ###############################################################################
+        # MD LOOP for each Theory-Runtype: WRAP, QMMM, QM, ONIOM, dummy_MM, MM
+        ###############################################################################
+        if self.theory_runtype == "WRAP":
+            print("WrapTheory run beginning")
+
+            #Get connectivity from OpenMM topology
+            connectivity = []
+            for resi in self.openmmobject.topology.residues():
+                resatoms = [i.index for i in list(resi.atoms())]
+                connectivity.append(resatoms)
+            #Convert to dict
+            connectivity_dict = create_conn_dict(connectivity)
+
+            #MD LOOP
+            for step in range(simulation_steps):
+                checkpoint_begin_step = time.time()
+                checkpoint = time.time()
+                if self.printlevel >= 2:
+                    print("Step:", step)
+                else:
+                    if step % self.traj_frequency == 0:
+                        print("Step:", step)
+
+                #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
+                current_state=self.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                checkpoint = time.time()
+                # Get current coordinates from state to use for THEORY step
+                current_coords = np.array(current_state.getPositions(asNumpy=True))*10
+                checkpoint = time.time()
+                print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                
+                #Periodic wrapping handling
+                if self.openmmobject.Periodic is True:
+                    if self.special_wrapping is True:
+                        if self.printlevel >= 2:
+                            print("special_wrapping is True. Wrapping handled by mdtraj")
+                        checkpoint = time.time()
+                        #Wrapping
+                        #current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
+                        current_coords = diff_wrap_box_coords(current_coords/10.0, boxvectors, 
+                                                              mdtrajtopology,wrapping_atoms)
+                        print_time_rel(checkpoint, modulename="wrapping via diff_wrap_box_coords")
+                        checkpoint = time.time()
+                        # Optional position update
+                        if self.special_wrapping_updatepos is True:
+                            print("special_wrapping_update is True. Updating positions")
+                            self.openmmobject.set_positions(current_coords,self.simulation)
+                            print_time_rel(checkpoint, modulename="set positions update", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                            checkpoint = time.time()
+
+                # Run WrapTheory step to get full system QM+PC gradient.
+                wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
+                                      charge=self.charge, mult=self.mult)
+                
+                #NOTE: if WrapTheory contains QMMMTheory then wrapgradient does not have MM contribution (only QM_PC from QM/MM and other theory contributino)
+                print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+
+                # Now need to update OpenMM external force with new force
+                CheckpointTime = time.time()
+                self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,
+                                                               wrapgradient,self.simulation)
+                print_time_rel(CheckpointTime, modulename='update custom external force', moduleindex=2,
+                                currprintlevel=self.printlevel, currthreshold=2)
+                checkpoint = time.time()
+
+                #Printing step-info or write-trajectory at regular intervals
+                if step % self.traj_frequency == 0:
+
+                    if self.printlevel >= 2:
+                        print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
+
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        print("Writing wrapped coords to trajfile: only for special atoms wrapped") 
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+
+                if step % self.restartfile_frequency == 0:
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
+
+                #OpenMM metadynamics
+                if metadynamics is True:
+                    if self.printlevel >= 2:
+                        print("Now calling OpenMM native metadynamics and taking 1 step")
+                    self.mtd_step(step,meta_object,metadyn_settings)
+                else:
+                    self.simulation.step(1)
+                    print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                    checkpoint = time.time()
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+
+
+        elif self.theory_runtype == "QMMM":
+        #if self.QM_MM_object is not None:
             print("QM/MM MD run beginning")
             #CASE: QM/MM. Custom external force needs to have been created in OpenMMTheory (should be handled by init)
 
@@ -4047,40 +4371,42 @@ class OpenMM_MDclass:
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
                 checkpoint = time.time()
                 print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                #Periodic handling. Important choice for QM/MM.
+
+                #Periodic wrapping handling
                 if self.openmmobject.Periodic is True:
-                    if self.printlevel >= 2:
-                        print("Periodic QM/MM is on")
-                    if self.enforcePeriodicBox is True:
-                        #NOTE: All is fine also if we have frozen a large part of the system
+                    if self.special_wrapping is True:
                         if self.printlevel >= 2:
-                            print("enforcePeriodicBox is True. Wrapping handling by OpenMM")
-                    elif self.enforcePeriodicBox is False:
-                        if self.printlevel >= 2:
-                            print("enforcePeriodicBox is False. Wrapping handled by ASH")
-                            print("Note: only cubic PBC boxes supported")
+                            print("special_wrapping is True. Wrapping handled by mdtraj")
                         checkpoint = time.time()
-                        #Using original center of box
-                        current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
-                        print_time_rel(checkpoint, modulename="wrapping")
+                        #Wrapping
+                        #current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
+                        current_coords = diff_wrap_box_coords(current_coords/10.0, boxvectors, 
+                                                              mdtrajtopology,wrapping_atoms)
+                        print_time_rel(checkpoint, modulename="wrapping via diff_wrap_box_coords")
+                        checkpoint = time.time()
+                        # Optional position update
+                        if self.special_wrapping_updatepos is True:
+                            print("special_wrapping_update is True. Updating positions")
+                            self.openmmobject.set_positions(current_coords,self.simulation)
+                            print_time_rel(checkpoint, modulename="set positions update", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                            checkpoint = time.time()
 
-                #TODO: Translate box coordinates so that they are centered on solute
-                #Do manually or use mdtraj, mdanalysis or something??
-                #if self.specialbox is True:
-                #    print("not ready")
-                #    ashexit()
-                #    solute_coords = np.take(current_coords, solute_indices, axis=0)
-                #    changed_origin_coords = change_origin_to_centroid(self.fragment.coords, subsetcoords=solute_coords)
-                #    current_coords = center_coordinates(current_coords,)
-
-                checkpoint = time.time()
                 # Run QM/MM step to get full system QM+PC gradient.
                 self.QM_MM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
                                       exit_after_customexternalforce_update=True, charge=self.charge, mult=self.mult)
                 print_time_rel(checkpoint, modulename="QM/MM run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                checkpoint = time.time()
+                
+
+
+
+                if step % self.restartfile_frequency == 0:
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
 
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+
                     # Manual step info option
                     #NOTE: Can't do it because the MM-energy has not been calculated yet when we do customexternalforceupdate option
                     #if self.printlevel >= 2:
@@ -4093,7 +4419,14 @@ class OpenMM_MDclass:
                     #write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_unwrapped", printlevel=1, writemode='a')
                     if self.printlevel >= 2:
                         print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
-                    write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
+
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        #print(specialelems)   
+                        print("Writing wrapped coords to trajfile: only for special atoms")    
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
 
                 # Now need to update OpenMM external force with new QM-PC force
                  #The QM_PC gradient (link-atom projected, from QM_MM object) is provided to OpenMM external force
@@ -4113,56 +4446,16 @@ class OpenMM_MDclass:
                 if metadynamics is True:
                     if self.printlevel >= 2:
                         print("Now calling OpenMM native metadynamics and taking 1 step")
-                    cv1scaling=1
-                    cv2scaling=1
-                    meta_object.step(self.simulation, 1)
-                    print_time_rel(checkpoint, modulename="mtd sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                    checkpoint = time.time()
-
-                    #getCollectiveVariables
-                    if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
-                        if self.printlevel >= 2:
-                            print("MTD: Writing current collective variables to disk")
-                        current_cv = meta_object.getCollectiveVariables(self.simulation)
-                        if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
-                            cv1scaling=10
-                        elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
-                            cv1scaling=180/np.pi
-                        if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
-                            cv2scaling=10
-                        elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
-                            cv2scaling=180/np.pi
-                        currtime = step*self.timestep #Time in ps
-                        with open(f'colvar', 'a') as f:
-                            if metadyn_settings["numCVs"] == 2:
-                                f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
-                            elif metadyn_settings["numCVs"] == 1:
-                                f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
-                    print_time_rel(checkpoint, modulename="mtd colvar-flush", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                    checkpoint = time.time()
+                    self.mtd_step(step,meta_object,metadyn_settings)
                 else:
                     self.simulation.step(1)
                     print_time_rel(checkpoint, modulename="openmmobject sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                     checkpoint = time.time()
-                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-
-                # NOTE: Better to use OpenMM-plumed interface
-                # After MM step, grab coordinates and forces
-                #if self.plumed_object is not None:
-                #    print("Plumed active. Untested. Hopefully works.")
-                #    ashexit()
-                #    #Necessary to call again
-                #    current_state_forces=simulation.context.getState(getForces=True, enforcePeriodicBox=self.enforcePeriodicBox,)
-                #    current_coords = np.array(current_state.getPositions(asNumpy=True)) #in nm
-                #    current_forces = np.array(current_state_forces.getForces(asNumpy=True)) # in kJ/mol /nm
-                #    # Plumed object needs to be configured for OpenMM
-                #    energy, newforces = self.plumed_object.run(coords=current_coords, forces=current_forces,
-                #                                               step=step)
-                #    self.openmmobject.update_custom_external_force(self.plumedcustomforce, newforces,simulation)
+                    print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
         #External QM for OpenMMtheory
-        #Used to run QM dynamics with OpenMM
-        elif self.externalqm is True:
+        # TODO: Think about possible wrapping
+        elif self.theory_runtype == "QM":
             if self.printlevel >= 2:
                 print("External QM with OpenMM option")
             for step in range(simulation_steps):
@@ -4179,6 +4472,24 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="get current coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
 
+                #Periodic wrapping handling
+                if self.openmmobject.Periodic is True:
+                    if self.special_wrapping is True:
+                        if self.printlevel >= 2:
+                            print("special_wrapping is True. Wrapping handled by mdtraj")
+                        checkpoint = time.time()
+                        #Wrapping
+                        #current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
+                        current_coords = diff_wrap_box_coords(current_coords/10.0, boxvectors, 
+                                                              mdtrajtopology,wrapping_atoms)
+                        print_time_rel(checkpoint, modulename="wrapping via diff_wrap_box_coords")
+                        checkpoint = time.time()
+                        # Optional position update
+                        if self.special_wrapping_updatepos is True:
+                            print("special_wrapping_update is True. Updating positions")
+                            self.openmmobject.set_positions(current_coords,self.simulation)
+                            print_time_rel(checkpoint, modulename="set positions update", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                            checkpoint = time.time()
 
                 # Run QM step to get full system QM gradient.
                 # Updates OpenMM object with QM forces
@@ -4186,7 +4497,7 @@ class OpenMM_MDclass:
                 if self.printlevel >= 2:
                     print("Energy:", energy)
                 print_time_rel(checkpoint, modulename="QM run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                self.openmmobject.update_custom_external_force(self.qmcustomforce,gradient,self.simulation)
+                self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,gradient,self.simulation)
 
                 #Calculate energy associated with external force so that we can subtract it later
                 #TODO: take this and QM energy and add to print_current_step_info
@@ -4196,9 +4507,11 @@ class OpenMM_MDclass:
 
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
+
                     # Manual step info option
                     if self.printlevel >= 2:
                         print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
+
                     #print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2)
                     #checkpoint = time.time()
                     if self.energy_file_option != None:
@@ -4211,6 +4524,15 @@ class OpenMM_MDclass:
                     #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
                     #checkpoint = time.time()
 
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        print("Writing wrapped coords to trajfile: only for special atoms")    
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+
+                if step % self.restartfile_frequency == 0:
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
 
                 #OpenMM metadynamics
                 if metadynamics is True:
@@ -4243,9 +4565,117 @@ class OpenMM_MDclass:
                     self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+        
+        # 
+        elif self.theory_runtype == "ONIOM":
+            if self.printlevel >= 2:
+                print("ONIOM MD")
+            for step in range(simulation_steps):
+                checkpoint_begin_step = time.time()
+                checkpoint = time.time()
+                if self.printlevel >= 2:
+                    print("Step:", step)
+                #Get state of simulation. Gives access to coords, velocities, forces, energy etc.
+                current_state=self.simulation.context.getState(getPositions=True, enforcePeriodicBox=self.enforcePeriodicBox, getEnergy=True)
+                print_time_rel(checkpoint, modulename="get OpenMM state", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                checkpoint = time.time()
+                # Get current coordinates from state to use for ONIOM step
+                current_coords = np.array(current_state.getPositions(asNumpy=True))*10
+                print_time_rel(checkpoint, modulename="get current coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                checkpoint = time.time()
 
+                #Periodic wrapping handling
+                if self.openmmobject.Periodic is True:
+                    if self.special_wrapping is True:
+                        if self.printlevel >= 2:
+                            print("special_wrapping is True. Wrapping handled by mdtraj")
+                        checkpoint = time.time()
+                        #Wrapping
+                        #current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
+                        current_coords = diff_wrap_box_coords(current_coords/10.0, boxvectors, 
+                                                              mdtrajtopology,wrapping_atoms)
+                        print_time_rel(checkpoint, modulename="wrapping via diff_wrap_box_coords")
+                        checkpoint = time.time()
+                        # Optional position update
+                        if self.special_wrapping_updatepos is True:
+                            print("special_wrapping_update is True. Updating positions")
+                            self.openmmobject.set_positions(current_coords,self.simulation)
+                            print_time_rel(checkpoint, modulename="set positions update", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                            checkpoint = time.time()
 
-        #TODO: Delete at some point once testing and debugging are over
+                # Run  step to get full system ONIOM gradient.
+                # Updates OpenMM object with ONIOM forces
+                energy,gradient=self.ONIOM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True, charge=self.charge, mult=self.mult)
+                if self.printlevel >= 2:
+                    print("Energy:", energy)
+                print_time_rel(checkpoint, modulename="ONIOMTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,gradient,self.simulation)
+
+                #Calculate energy associated with external force so that we can subtract it later
+                #TODO: take this and QM energy and add to print_current_step_info
+                extforce_energy=3*np.mean(sum(gradient*current_coords*1.88972612546))
+                if self.printlevel >= 2:
+                    print("extforce_energy:", extforce_energy)
+
+                #Printing step-info or write-trajectory at regular intervals
+                if step % self.traj_frequency == 0:
+
+                    # Manual step info option
+                    if self.printlevel >= 2:
+                        print_current_step_info(step,current_state,self.openmmobject, qm_energy=energy)
+
+                    if self.energy_file_option != None:
+                        with open(self.energy_file_option,"a") as f:
+                            f.write(f"{energy}\n")
+
+                    # Manual trajectory option
+                    if self.trajectory_file_option =="XYZ":
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
+                    #print_time_rel(checkpoint, modulename="OpenMM_MD writetraj", moduleindex=2)
+                    #checkpoint = time.time()
+
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        print("Writing wrapped coords to trajfile: only for special atoms") 
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]   
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+
+                if step % self.restartfile_frequency == 0:
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
+
+                #OpenMM metadynamics
+                if metadynamics is True:
+                    if self.printlevel >= 2:
+                        print("Now calling OpenMM native metadynamics and taking 1 step")
+                    meta_object.step(self.simulation, 1)
+
+                    #getCollectiveVariables
+                    cv1scaling=1
+                    cv2scaling=1
+                    if step % metadyn_settings["saveFrequency"]*metadyn_settings["frequency"] == 0:
+                        if self.printlevel >= 2:
+                            print("MTD: Writing current collective variables to disk")
+                        current_cv = meta_object.getCollectiveVariables(self.simulation)
+                        if metadyn_settings["CV1_type"] == "distance" or metadyn_settings["CV1_type"] == "bond" or metadyn_settings["CV1_type"] == "rmsd":
+                            cv1scaling=10
+                        elif metadyn_settings["CV1_type"] == "dihedral" or metadyn_settings["CV1_type"] == "torsion" or metadyn_settings["CV1_type"] == "angle":
+                            cv1scaling=180/np.pi
+                        if metadyn_settings["CV2_type"] == "distance" or metadyn_settings["CV2_type"] == "bond" or metadyn_settings["CV2_type"] == "rmsd":
+                            cv2scaling=10
+                        elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
+                            cv2scaling=180/np.pi
+                        currtime = step*self.timestep #Time in ps
+                        with open(f'colvar', 'a') as f:
+                            if metadyn_settings["numCVs"] == 2:
+                                f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
+                            elif metadyn_settings["numCVs"] == 1:
+                                f.write(f"{currtime} {current_cv[0]*cv1scaling}\n")
+                else:
+                    self.simulation.step(1)
+                print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+        #TODO: Delete
         elif self.dummy_MM is True:
             print("Dummy MM option")
             for step in range(simulation_steps):
@@ -4260,30 +4690,65 @@ class OpenMM_MDclass:
                 current_coords = np.array(current_state.getPositions(asNumpy=True))*10
                 print_time_rel(checkpoint, modulename="get current coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 checkpoint = time.time()
+                
+                #Periodic wrapping handling
+                if self.openmmobject.Periodic is True:
+                    if self.special_wrapping is True:
+                        if self.printlevel >= 2:
+                            print("special_wrapping is True. Wrapping handled by mdtraj")
+                        checkpoint = time.time()
+                        #Wrapping
+                        #current_coords = wrap_box_coords(current_coords,boxlength,connectivity_dict,connectivity,self.centroid_system)
+                        current_coords = diff_wrap_box_coords(current_coords/10.0, boxvectors, 
+                                                              mdtrajtopology,wrapping_atoms)
+                        print_time_rel(checkpoint, modulename="wrapping via diff_wrap_box_coords")
+                        checkpoint = time.time()
+                        # Optional position update
+                        if self.special_wrapping_updatepos is True:
+                            print("special_wrapping_update is True. Updating positions")
+                            self.openmmobject.set_positions(current_coords,self.simulation)
+                            print_time_rel(checkpoint, modulename="set positions update", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                            checkpoint = time.time()
+
                 #Printing step-info or write-trajectory at regular intervals
                 if step % self.traj_frequency == 0:
                     # Manual step info option
                     print_current_step_info(step,current_state,self.openmmobject)
-                    print_time_rel(checkpoint, modulename="print_current_step_info", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-                    checkpoint = time.time()
 
                     if self.trajectory_file_option =="XYZ":
                         write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj", printlevel=1, writemode='a')
 
+                    if self.printlevel >= 2:
+                        print("Writing wrapped coords to trajfile: OpenMMMD_traj_wrapped.xyz (for debugging)")
+                        write_xyzfile(self.fragment.elems, current_coords, "OpenMMMD_traj_wrapped", printlevel=1, writemode='a')
+
+                if self.specialatoms is not None:
+                    if step % self.specialtraj_frequency == 0:
+                        specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        print("Writing wrapped coords to trajfile: only for special atoms")    
+                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+
+                if step % self.restartfile_frequency == 0:
+                    # Writing state and chk files
+                    self.write_state_and_chk_files(step)
 
                 self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-        else:
+        elif self.theory_runtype == "MM":
+            if self.printlevel >= 2:
+                print("External QM with OpenMM option")
             #OpenMM metadynamics
-            if metadynamics == True:
+            if metadynamics is True:
                 print("Now calling OpenMM native metadynamics")
                 meta_object.step(self.simulation, simulation_steps)
             else:
                 print("Regular classical OpenMM MD option chosen.")
-                #This is the fastest option as getState is never called in each loop iteration like above
                 # Running all steps in one go
                 self.simulation.step(simulation_steps)
+        else:
+            print(f"Error: Unrecognized Theory runtype ({self.theory_runtype}) for MD. This might mean that this ASH Theory object is not yet supported for running MD. Exiting.")
+            ashexit()
 
         print_line_with_subheader2("OpenMM MD simulation finished!")
         print_time_rel(module_init_time, modulename="OpenMM_MD run", moduleindex=1)
@@ -4657,21 +5122,22 @@ def find_alternate_locations_residues(pdbfile, use_higher_occupancy=False):
 #TODO: Decide units for CV biaswidth range and Gaussian height
 #NOTE: Restraints are in Angstrom and kcal/mol^2
 def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
-              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
-              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
+              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator', specialatoms=None, specialtraj_frequency=1000,
+              barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', 
               coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
               anderson_thermostat=False, restraints=None, flatbottom_restraint_CV1=None, flatbottom_restraint_CV2=None,
               funnel_restraint=None, funnel_parameters=None,
-              enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
+              enforcePeriodicBox=True, special_wrapping=False, special_wrapping_updatepos=False, wrapping_atoms=None,
+              dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, add_centerforce=False,
               centerforce_atoms=None, centerforce_distance=10.0, centerforce_constant=1.0, centerforce_center=None,
-              barostat_frequency=25, specialbox=False,
+              barostat_frequency=25, 
               CV1_atoms=None, CV2_atoms=None, CV1_type=None, CV2_type=None, biasfactor=6,
               height=1, reference_xyzfile=None,
               CV1_biaswidth=0.5, CV2_biaswidth=0.5, CV1_range=None, CV2_range=None,
               CV1_parameters=None, CV2_parameters=None,
               user_cvforce1=None, user_biasvar1=None, user_cvforce2=None, user_biasvar2=None,
-              frequency=1, savefrequency=10, printlevel=2,
+              frequency=1, savefrequency=10, printlevel=2, chkfile=None, statefile=None,
               biasdir='.', multiplewalkers=False, numcores=1, walkerid=None):
     print_line_with_mainheader("OpenMM metadynamics")
 
@@ -4709,14 +5175,17 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
     #Creating MDclass
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
                         traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints,
+                        specialatoms=specialatoms, specialtraj_frequency=specialtraj_frequency,
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
-                        enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
+                        enforcePeriodicBox=enforcePeriodicBox, special_wrapping=special_wrapping, 
+                        special_wrapping_updatepos=special_wrapping_updatepos, wrapping_atoms=wrapping_atoms,
+                        dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, platform=platform, hydrogenmass=hydrogenmass,
-                        add_centerforce=add_centerforce,trajfilename=trajfilename,
+                        add_centerforce=add_centerforce,trajfilename=trajfilename, chkfile=chkfile, statefile=statefile,
                         centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
                         centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
-                        barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
+                        barostat_frequency=barostat_frequency,  printlevel=printlevel)
 
     #
     if user_cvforce1 is not None:
@@ -4824,14 +5293,15 @@ def OpenMM_metadynamics(fragment=None, theory=None, timestep=0.001, simulation_s
 
 # Metadynamics-function that used OpenMM_Plumed interface
 def OpenMM_MD_plumed(fragment=None, theory=None, timestep=0.001, simulation_steps=None, simulation_time=None,
-              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator',
+              traj_frequency=1000, temperature=300, integrator='LangevinMiddleIntegrator', specialatoms=None, specialtraj_frequency=1000,
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory',
               coupling_frequency=1, charge=None, mult=None, platform='CPU', hydrogenmass=1.5, constraints=None,
               anderson_thermostat=False, restraints=None, 
-              enforcePeriodicBox=True, dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
+              enforcePeriodicBox=True, special_wrapping=False, special_wrapping_updatepos=False, wrapping_atoms=None, 
+              dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
               datafilename=None, dummy_MM=False, add_centerforce=False,
               centerforce_atoms=None, centerforce_distance=10.0, centerforce_constant=1.0, centerforce_center=None,
-              barostat_frequency=25, specialbox=False,
+              barostat_frequency=25,  chkfile=None, statefile=None,
               plumed_input_string=None, printlevel=2, numcores=1):
     print_line_with_mainheader("OpenMM metadynamics using OpenMM-Plumed interface")
 
@@ -4846,15 +5316,17 @@ def OpenMM_MD_plumed(fragment=None, theory=None, timestep=0.001, simulation_step
 
     #Creating MDclass
     md = OpenMM_MDclass(fragment=fragment, theory=theory, charge=charge, mult=mult, timestep=timestep,
-                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints,
-                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option,
+                        traj_frequency=traj_frequency, temperature=temperature, integrator=integrator, constraints=constraints, specialatoms=specialatoms, specialtraj_frequency=specialtraj_frequency,
+                        barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, 
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat,
-                        enforcePeriodicBox=enforcePeriodicBox, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
+                        enforcePeriodicBox=enforcePeriodicBox, special_wrapping=special_wrapping, 
+                        special_wrapping_updatepos=special_wrapping_updatepos, wrapping_atoms=wrapping_atoms, 
+                        dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
                         datafilename=datafilename, dummy_MM=dummy_MM, platform=platform, hydrogenmass=hydrogenmass,
                         add_centerforce=add_centerforce,trajfilename=trajfilename,
-                        centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant,
+                        centerforce_atoms=centerforce_atoms, centerforce_constant=centerforce_constant, chkfile=chkfile, statefile=statefile,
                         centerforce_distance=centerforce_distance, centerforce_center=centerforce_center,
-                        barostat_frequency=barostat_frequency, specialbox=specialbox, printlevel=printlevel)
+                        barostat_frequency=barostat_frequency,  printlevel=printlevel)
 
     #Load OpenMM.app
     import openmm
@@ -5401,14 +5873,15 @@ def get_atoms_outside_box(allcoords, centroid, boxlength):
 
 
 #Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity,centroid):
+def wrap_box_coords_new(allcoords,boxlength,connectivity_dict,connectivity,centroid):
 
+    print("Inside wrap_box_coords_new")
     #Get all indices of atoms outside box
     indices = get_atoms_outside_box(allcoords,centroid,boxlength)
     boxlength_half=boxlength/2
 
 
-    #print("indices:", indices)
+    print("indices:", indices)
 
     #Get indices of all whole molecules that have an atom outisde box
     all_mol_indices = [connectivity[connectivity_dict.get(i)] for i in indices]
@@ -5441,7 +5914,8 @@ def wrap_box_coords(allcoords,boxlength,connectivity_dict,connectivity,centroid)
     return allcoords
 
 #Function to wrap coordinates of whole molecules outside box
-def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
+def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity,centroid):
+    print("Inside wrap_box_coords_old3")
     #checkpoint = time.time()
     boxlength_half=boxlength/2
     #Get atom indices for atoms that have a x,y or z coordinate outside box
@@ -5500,6 +5974,25 @@ def wrap_box_coords_old3(allcoords,boxlength,connectivity_dict,connectivity):
                 allcoords[members, c] += boxlength + boxlength * (abs(colval) // (boxlength * 1.5))
     #print(f"FinalTime:{time.time()-checkpoint}")
     return allcoords
+
+
+def diff_wrap_box_coords(coords_nm, boxvectors, mdtrajtopology,anchoratoms):
+    #Import mdtraj library
+    import mdtraj
+    #Creating Trajectory object for geometry
+    traj = mdtraj.Trajectory(coords_nm,mdtrajtopology)
+    #Setting PBC vectors
+    traj.unitcell_vectors=np.array(boxvectors).reshape(1, 3,3)
+    # Anchoratoms (usually QM-region or similar)
+    anchors = [set(traj.topology.atom(i) for i in anchoratoms)]
+    # Re-imaging trajectory
+    imaged = traj.image_molecules(anchor_molecules=anchors)
+    return imaged._xyz[0]*10.0
+
+
+
+#wrap_box_coords=wrap_box_coords_new
+wrap_box_coords=diff_wrap_box_coords
 
 def trim_list_of_lists(k):
     k = sorted(k)

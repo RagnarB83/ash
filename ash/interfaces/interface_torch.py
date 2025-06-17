@@ -65,7 +65,18 @@ class TorchTheory():
                 print("AIMNet2 model selected")
                 self.load_aimnet2_model(model_file=model_file)
             else:
-                self.load_model(model_file)
+                # 
+                self.model = torch.load(model_file, map_location=torch.device('cpu'))
+                #torch.load_state_dict(model_file)
+
+                #If TorchScript saved
+                #self.model = torch.jit.load(model_file)
+
+                #print("self.model:", self.model)
+                #exit()
+
+
+
             print("Model:", self.model)
         elif model_name is not None:
             print("model_name:", model_name)
@@ -107,7 +118,8 @@ class TorchTheory():
     def load_model(self,model_file):
         import torch
         # sTODO: weights only option ?
-        self.model = torch.jit.load(model_file)
+        #self.model = torch.jit.load(model_file)
+        self.model = torch.load(model_file, map_location=torch.device('cpu'))
 
     def save_model(self,filename=None, index=None):
         import torch
@@ -224,6 +236,13 @@ class TorchTheory():
             # dtype has to be float32 to get compatible Tensor for coordinate and nuc-charges
             coords_torch = torch.tensor(np.array([current_coords], dtype='float32'), requires_grad=True, device=self.device)
             nuc_charges_torch = torch.tensor(np.array([elemstonuccharges(qm_elems)]), device=self.device)
+            print("coords_torch:", coords_torch)
+            print("nuc_charges_torch:", nuc_charges_torch)
+            energy_tensor = self.model((nuc_charges_torch, coords_torch))
+            print("here")
+            print("energy_tensor:", energy_tensor)
+            exit()
+            
             energy_tensor = self.model((nuc_charges_torch, coords_torch)).energies
             self.energy = energy_tensor.item()
 

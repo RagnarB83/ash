@@ -5,12 +5,14 @@ import numpy as np
 import os
 import sys
 import glob
+from functools import reduce
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
 from ash.constants import ang2bohr, harkcal
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep,pygrep2,find_program
 from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 from ash.interfaces.interface_pyscf import pySCF_read_MOs
+from ash.functions.functions_elstructure import DM_AO_to_MO
 
 #Interface to Block: Block2 primarily via PySCF and also directly via FCIdump
 # Possibly later include Block 1.5 and Stackblock (currently no need)
@@ -26,10 +28,11 @@ class BlockTheory:
     def __init__(self, blockdir=None, pyscftheoryobject=None, blockversion='Block2', filename='input.dat', printlevel=2,
                 moreadfile=None, initial_orbitals='MP2', memory=20000, frozencore=True, fcidumpfile=None,
                 active_space=None, active_space_range=None, cas_nmin=None, cas_nmax=None, macroiter=0,
-                Block_direct=False, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
+                Block_direct=False, num_el=None, maxM=1000, tol=1e-10, scratchdir=None, singlet_embedding=False,
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
-                FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False,
-                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block", print_WF_coeffs=False):
+                FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False, DMRG_DoRDM2=False,
+                SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block", print_WF_coeffs=False,
+                groupname=None, orbsym=None):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
@@ -47,8 +50,9 @@ class BlockTheory:
 
         #Check for PySCFTheory object
         if pyscftheoryobject is None:
-            print("Error: No pyscftheoryobject was provided. This is required")
-            ashexit()
+            if Block_direct is False:
+                print("Error: No pyscftheoryobject was provided. This is required unless Block_direct is True")
+                ashexit()
 
         #MAKING SURE WE HAVE BLOCK
         #TODO: Look for regular block binary also here??
@@ -91,6 +95,18 @@ class BlockTheory:
         self.numcores=numcores
         self.hybrid_num_mpi_procs=hybrid_num_mpi_procs
         self.hybrid_num_threads=hybrid_num_threads
+
+        # SYMMETRY handling
+        self.groupname=groupname #Default None, set to e.g. 'd2' string
+        self.orbsym=orbsym
+        if self.groupname is not None:
+            print("Using symmetry. Groupname:", self.groupname)
+            if orbsym is None:
+                print("Error: orbsym keyword should be set. should be list of integers representing irrep ids of each orb")
+                ashexit()
+            self.orbsym=orbsym
+
+
         #SETTING NUMCORES by setting prefix
         self.block_parallelization=block_parallelization
         if self.block_parallelization == 'MPI':
@@ -131,6 +147,7 @@ class BlockTheory:
         self.memory=memory #Memory in MB (total) assigned to PySCF mcscf object
         self.initial_orbitals=initial_orbitals #Initial orbitals to be used (unless moreadfile option)
         self.DMRG_DoRDM=DMRG_DoRDM
+        self.DMRG_DoRDM2=DMRG_DoRDM2
         #post-DMRG
         self.FIC_MRCI=FIC_MRCI
         self.SC_NEVPT2_Wick=SC_NEVPT2_Wick
@@ -149,6 +166,10 @@ class BlockTheory:
         print("Block_direct:", Block_direct)
         if self.Block_direct is True:
             print("FCIDUMP file:", self.fcidumpfile)
+            if num_el is None:
+                print("Error: Block_direct option requires number of electrons to be set")
+                ashexit()
+            self.num_el=num_el
         print("Frozencore:", self.frozencore)
         print("moreadfile:", self.moreadfile)
         print("Initial orbitals:", self.initial_orbitals)
@@ -168,7 +189,35 @@ class BlockTheory:
         print("SC_NEVPT2:", SC_NEVPT2)
         print("SC_NEVPT2_Mcompression:",SC_NEVPT2_Mcompression)
 
+    #Write inputfile: Only for Block-direct
+    #TODO: schedule
+    def write_inputfile(self,mult):
+        # RDM options
+        rdm1keyword=""
+        rdm2keyword=""
+        if self.DMRG_DoRDM:
+            rdm1keyword="onepdm"
+        if self.DMRG_DoRDM2:
+            rdm2keyword="twopdm"
 
+        inputfilestring=f"""sym c1
+orbitals {self.fcidumpfile}
+
+nelec {self.num_el}
+spin {int(mult-1)}
+irrep 1
+
+hf_occ integral
+schedule default
+maxM {self.maxM}
+maxiter 300
+num_thrds {self.numcores}
+{rdm1keyword}
+{rdm2keyword}
+"""
+        print("Writing inputfile:", self.filename)
+        with open(self.filename,'w') as f:
+            f.write(inputfilestring)
 
 
     def load_pyscf(self):
@@ -243,10 +292,17 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
     def call_block_directly(self):
         module_init_time=time.time()
         print("Calling Block executable directly")
-        print(f"Running Block with ({self.numcores} MPI processes)")
-        with open('output.dat', "w") as outfile:
-            sp.call(['mpirun', '-np', str(self.numcores), ' --bind-to none', self.block_binary, self.filename], stdout=outfile)
-        print_time_rel(module_init_time, modulename='Block-direct-run', moduleindex=2)
+        if self.block_parallelization == 'MPI':
+            print(f"Running Block with ({self.numcores} MPI processes)")
+            with open('output.dat', "w") as outfile:
+                sp.call(['mpirun', '-np', str(self.numcores), ' --bind-to none', self.block_binary, self.filename], stdout=outfile)
+        else:
+            print(f"Running Block with ({self.numcores} cores (OpenMP))")
+            with open('output.dat', "w") as outfile:
+                sp.call([self.block_binary, self.filename], stdout=outfile)
+        
+        self.energy=float(pygrep("DMRG Energy =","output.dat")[-1])
+        print_time_rel(module_init_time, modulename='Block-direct-run', moduleindex=2)            
 
     #Set up initial orbitals
     #This returns a set of MO-coeffs and occupations either from checkpointfile or from MP2/CC job
@@ -259,14 +315,15 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         else:
             totnumborb=len(self.pyscftheoryobject.mf.mo_occ)
         print(f"There are {totnumborb} orbitals in the system")
+
         #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
-        if self.moreadfile == None:
+        if self.moreadfile is None:
             print("No checkpoint file given (moreadfile option).")
-            print(f"Will calculate PySCF {self.initial_orbitals} natural orbitals to use as input in Block CAS job")
-            if self.initial_orbitals not in ['canMP2','MP2','DFMP2', 'DFMP2relax', 'CCSD','CCSD(T)', 'DMRG', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
+            print(f"Will calculate PySCF {self.initial_orbitals} (natural) orbitals to use as input in Block CAS job")
+            if self.initial_orbitals not in ['RKS', 'UKS', 'RHF', 'UHF', 'canMP2','MP2','DFMP2', 'DFMP2relax', 'CCSD','CCSD(T)', 'DMRG', 'AVAS-CASSCF', 'DMET-CASSCF','CASSCF']:
                 print("Error: Unknown initial_orbitals choice. Exiting.")
                 ashexit()
-            print("Options are: MP2, CCSD, CCSD(T), DMRG, AVAS-CASSCF, DMET-CASSCF")
+            print("Options are: RHF, UHF, RKS, UKS, MP2, CCSD, CCSD(T), SHCI, AVAS-CASSCF, DMET-CASSCF")
             #Option to do small-M DMRG-CASCI/CASSCF step
             if self.initial_orbitals == 'DMRG':
                 print("DMRG initial orbital option")
@@ -295,6 +352,12 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 occupations, mo_coefficients = self.pyscftheoryobject.calculate_natural_orbitals(self.pyscftheoryobject.mol,
                                                                 self.pyscftheoryobject.mf, method=self.initial_orbitals,
                                                                 CAS_AO_labels=self.CAS_AO_labels, elems=elems, numcores=self.numcores)
+            #If
+            elif self.initial_orbitals in ['RHF','UHF','RKS','UKS']:
+                print("Initial orbital option is original SCF orbitals. Using MO-coeffs from ")
+                mo_coefficients = self.pyscftheoryobject.mf.mo_coeff
+                occupations = self.pyscftheoryobject.mf.mo_occ
+                print("occupations:", occupations)
             else:
                 print("Calling nat-orb option in pyscftheory")
                 #Call pyscftheory method for MP2,CCSD and CCSD(T)
@@ -388,8 +451,33 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and DMRG")
             #Creating pyscf CAS-CI object and setting fcisolver to DMRGCI
+            #print("self.pyscftheoryobject.mol:", self.pyscftheoryobject.mol)
+            #print("self.pyscftheoryobject.mol:", self.pyscftheoryobject.mol.__dict__)
+            #print("----------------")
+            #print("self.pyscftheoryobject.mf.mol:", self.pyscftheoryobject.mf.mol)
+            #print("self.pyscftheoryobject.mf.mol:", self.pyscftheoryobject.mf.mol.__dict__)
+            #exit()
+            #print("self.pyscftheoryobject.mf", self.pyscftheoryobject.mf)
             self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf, self.norb, self.nelec)
+            #print("self.mch:", self.mch)
             self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, maxM=self.maxM, tol=self.tol)
+            #print("self.mch.fcisolver:", self.mch.fcisolver)
+            #print("self.mch.fcisolver wfnsym:", self.mch.fcisolver.wfnsym)
+            #print("1self.mch.fcisolver.groupname:", self.mch.fcisolver.groupname)
+            if self.groupname is not None:
+                print("Setting groupname for mch.fcisolver and orbsym in mch")
+                self.mch.fcisolver.groupname=self.groupname
+                self.mch.orbsym=self.orbsym
+                self.mch.mol.groupname=self.groupname
+
+            if self.mch.mol.groupname == "N/A":
+                self.mch.mol.groupname = 'C1'
+
+            #print("2self.mch.fcisolver.groupname:", self.mch.fcisolver.groupname)
+            #print("self.mch.orbsym:", self.mch.orbsym)
+            #print("self.mch.mol:", self.mch.mol)
+            #print("self.mch.mol dict:", self.mch.mol.__dict__)
+            #print("self.mch.mol.groupname:", self.mch.mol.groupname)
             #self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
             #self.mch = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
             #self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf, self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
@@ -538,6 +626,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         # Run PySCF to get integrals and MOs. This would probably only be an SCF
         if self.Block_direct != True:
+            print("Now running input PySCFTheory object")
             self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
         # Get frozen-core
@@ -553,20 +642,41 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         # Setup initial_orbitals only if DMRG job has not been run before, otherwise we reuse previous
 
-        if self.runcalls == 1:
-            print("First runcall.")
-            print("Doing initial orbital setup")
-            mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
-            print("Doing active space setup")
-            self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
+        if self.Block_direct is True:
+            print("Running Block directly")
+            self.write_inputfile(mult)
+            self.call_block_directly()
         else:
-            print("Not first runcall. Reusing previous initial orbitals")
-            mo_coeffs = self.mch.mo_coeff
+            if self.runcalls == 1:
+                print("First runcall.")
+                print("Doing initial orbital setup")
+                # Natural orbital 
+                if self.initial_orbitals != "HF":
+                    print
+                    mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
+                    print("Doing active space setup")
+                    self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
+                # Regular HF orbitals in mf object
+                else:
+                    print("initial_orbitals : HF")
+                    print("WIll simply use MO coefficients and occupations from run mf object")
+                    mo_coeffs = self.pyscftheoryobject.mf.mo_coeff
+                    occupations = self.pyscftheoryobject.mf.mo_occ
+                    if self.active_space is None:
+                        print("Error: initial_orbitals=HF option requires active_space to be set : e.g. active_space=[2,10] for 2 el in 10 orbs")
+                        ashexit()
+                    self.nelec = self.active_space[0]
+                    self.norb = self.active_space[1]
 
-        print("Setting up DMRG job")
-        self.setup_DMRG_job(verbose=5, rdmoption=None)
-        print("Running DMRG")
-        self.DMRG_run(mo_coeffs)
+
+            else:
+                print("Not first runcall. Reusing previous initial orbitals")
+                mo_coeffs = self.mch.mo_coeff
+
+            print("Setting up DMRG job")
+            self.setup_DMRG_job(verbose=5, rdmoption=None)
+            print("Running DMRG")
+            self.DMRG_run(mo_coeffs)
 
         dmrg_energy = self.energy
         print("DMRG energy:", dmrg_energy)
@@ -597,17 +707,108 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         self.properties['energy'] = self.energy
 
         # RDM and Natural orbitals
-        if self.DMRG_DoRDM is True:
-            print("DMRG DoRDM is True. Calculating RDM1 and creating DMRG natural orbitals")
-            rdm1 = self.mch.make_rdm1(ao_repr=True)
-            try:
-                print("Attempting DMRG spin-rdm")
-                rdm1s = self.mch.make_rdm1s(ao_repr=True)
-            except:
-                print("Problem with DMRG spin-rdm")
+        if self.Block_direct:
+
+             if self.DMRG_DoRDM is True:
+                # RDMs are present in files
+                #NOTE: Possible issues with definition:
+                #https://github.com/sanshar/Block/issues/56
+                print("Reading RDM-files calculated by Block2")
+                # RDM1 in MO basis but reordered???
+                print("Reading node0/1pdm.npy")
+                rdm1_MO_temp = np.load("node0/1pdm.npy")
+                #1pdm.npy has alpha and beta sets
+                #For RHF we can just do:
+                rdm1_MO=rdm1_MO_temp[0]*2
+                #TODO: test for open-shell
+                print("rdm1_MO:", rdm1_MO)
+                self.properties['rdm1_MO'] = rdm1_MO #MO basis
+                if self.DMRG_DoRDM2:
+                    print("Reading RDM2 file :node0/2pdm.npy")
+                    rdm2 = np.load("node0/2pdm.npy")
+                    #TODO test
+                    self.properties['rdm2_MO'] = rdm2
+
+        else:
+            if self.DMRG_DoRDM is True:
+                rdm1_AO=None
+                rdm1_MO=None
+                print("DMRG DoRDM is True. Calculating RDM and creating DMRG natural orbitals")
+                if self.DMRG_DoRDM2 is True:
+                    print("DMRG DoRDM2 is True. Calculating RDM1 and RDM2")
+
+                    # RDMs in MO basis
+                    rdm1_MO, rdm2_MO = make_rdm12_MO(self.mch)
+                    print("rdm1 (MO):", rdm1_MO)
+
+                    self.properties['rdm1_MO'] = rdm1_MO #MO basis
+                    self.properties['rdm2_MO'] = rdm2_MO #MO basis
+                    # MO->AO conversion requires MO coefficients
+                    #TODO: Add proper check to see if we have MO coefficients
+                    #if np.allclose(self.pyscftheoryobject.mf.mo_coeff, np.eye(self.pyscftheoryobject.mf.mo_coeff.shape[0])):
+                    #    print("MO coefficients close to identity. Means we don't have MO coeffs, probably read in from FCIDUMP")
+                    #    print("Skipping MO->AO conversion")
+                    #    exit()
+                    #rdm1_AO = rdm1_MO_to_AO(rdm1_MO,self.pyscftheoryobject.mf.mo_coeff)
+                    #rdm2_AO = rdm2_MO_to_AO(rdm2_MO,self.pyscftheoryobject.mf.mo_coeff)
+                    #print("rdm1_AO:", rdm1_AO)
+                    # RDMs in AO basis
+                    #rdm1_AO, rdm2_AO = pyscf.mcscf.addons.make_rdm12(self.mch)
+                    #np.save("DMRG_rdm1_AObasis", rdm1_AO)
+                    #np.save("DMRG_rdm2_AObasis", rdm2_AO)
+                    np.save("DMRG_rdm1_MObasis", rdm1_MO)
+                    np.save("DMRG_rdm2_MObasis", rdm2_MO)
+                    np.savetxt("DMRG_rdm1_MObasis.txt", rdm1_MO)
+
+                    # Converting RDM1 from AO to MO
+                    #S=self.pyscftheoryobject.mf.mol.intor_symmetric("int1e_ovlp")
+                    #if len(S) == 0:
+                    #    print("No overlap matrix found")
+                    #    print("Skipping rdm AO->MO conversion")
+                    #    rdm1_MO=None
+                    #else:
+                    #    rdm1_MO = DM_AO_to_MO(rdm1_AO, self.pyscftheoryobject.mf.mo_coeff,S)
+                    #    print("rdm1_(MO):", rdm1_MO)
+                else:
+                    print("Doing only RDM1")
+
+                    rdm1_MO, rdm2_MO = make_rdm12_MO(self.mch)
+                    print("rdm1_(MO):", rdm1_MO)
+                    self.properties['rdm1_MO'] = rdm1_MO #MO basis
+                    #rdm1_AO = rdm1_MO_to_AO(rdm1_MO,self.pyscftheoryobject.mf.mo_coeff)
+                    #print("rdm1_(AO):", rdm1_AO)
+                    np.save("DMRG_rdm1_MObasis", rdm1_MO)
+                    np.save("DMRG_rdm1_MObasis.txt", rdm1_MO)
+                    #np.save("DMRG_rdm1_AObasis", rdm1_AO)
+                    #np.savetxt("DMRG_rdm1_AObasis.txt", rdm1_AO)
+                    # Converting RDM1 from AO to MO
+                    #S=self.pyscftheoryobject.mf.mol.intor_symmetric("int1e_ovlp")
+                    #if len(S) == 0:
+                    #    print("No overlap matrix found")
+                    #    print("Skipping rdm AO->MO conversion")
+                    #    rdm1_MO=None
+                    #else:
+                    #    rdm1_MO = DM_AO_to_MO(rdm1_AO, self.pyscftheoryobject.mf.mo_coeff,S)
+                    #    print("rdm1_(MO):", rdm1_MO)
+                    #np.save("DMRG_rdm1_MObasis", rdm1_MO)
+                    #np.savetxt("DMRG_rdm1_MObasis.txt", rdm1_MO)
+
+                # Setting properties for a possible future job
+                #self.properties['rdm1_AO'] = rdm1_AO #AO basis
+
+                #Spin RDM
+                try:
+                    print("Attempting DMRG spin-rdm")
+                    rdm1s = self.mch.make_rdm1s(ao_repr=True)
+                    self.properties['rdm1s_AO'] = rdm1s #AO basis
+                    np.savetxt("DMRG_rdm1s_AObasis.txt", rdm1s)
+                except:
+                    print("Problem with DMRG spin-rdm")
 
             # Natural orbitals
-            occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)
+            occupations, mo_coefficients = pyscf.mcscf.addons.make_natural_orbitals(self.mch)            
+            self.properties['natural_occupations'] = occupations
+            self.properties['natural_orbitals'] = mo_coefficients
             print("DMRG natural orbital occupations:", occupations)
             print("\nWriting natural orbitals to Moldenfile")
             self.pyscftheoryobject.write_orbitals_to_Moldenfile(self.pyscftheoryobject.mol,
@@ -615,23 +816,22 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             # Mulliken analysis
             try:
                 print("Attempting Mulliken analysis")
-                self.pyscftheoryobject.run_population_analysis(self.pyscftheoryobject.mf, unrestricted=False, dm=rdm1, type='Mulliken', label='DMRG')
+                self.pyscftheoryobject.run_population_analysis(self.pyscftheoryobject.mf, unrestricted=False, dm=rdm1_MO, type='Mulliken', label='DMRG')
                 pyscf.scf.uhf.mulliken_spin_pop(self.pyscftheoryobject.mol, rdm1s, s=self.pyscftheoryobject.mf.get_ovlp(), verbose=3)
             except:
                 pass
 
             # Dipole moment
             print("Now doing dipole")
-            dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1, label=f"{self.label}_DMRG_M_{self.maxM}")
-
-            # Setting properties for a possible future job
-            self.properties['rdm1'] = rdm1
-            self.properties['natural_occupations'] = occupations
-            self.properties['natural_orbitals'] = mo_coefficients
-            self.properties['dipole'] = dipole
+            try:
+                dipole = self.pyscftheoryobject.get_dipole_moment(dm=rdm1_AO, label=f"{self.label}_DMRG_M_{self.maxM}")
+                self.properties['dipole'] = dipole
+            except:
+                pass
 
         # Gradient
-        self.gradient = self.mch.nuc_grad_method().kernel()
+        if Grad:
+            self.gradient = self.mch.nuc_grad_method().kernel()
 
         print("Block is finished")
         # Cleanup Block scratch stuff (big files)
@@ -645,3 +845,35 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         else:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel}Theory run', moduleindex=2)
             return self.energy
+
+
+# Standalone function to get rdm1 and 2 in MO and AO basis
+def make_rdm12_MO(casscf, mo_coeff=None, ci=None):
+    import pyscf
+    def _is_uhf_mo(mo_coeff):
+        return not (isinstance(mo_coeff, np.ndarray) and mo_coeff.ndim == 2)
+    if ci is None: ci = casscf.ci
+    if mo_coeff is None: mo_coeff = casscf.mo_coeff
+    assert (not _is_uhf_mo(mo_coeff))
+    nelecas = casscf.nelecas
+    ncas = casscf.ncas
+    ncore = casscf.ncore
+    nmo = mo_coeff.shape[1]
+    casdm1, casdm2 = casscf.fcisolver.make_rdm12(ci, ncas, nelecas)
+    rdm1_MO, rdm2_MO = pyscf.mcscf.addons._make_rdm12_on_mo(casdm1, casdm2, ncore, ncas, nmo)
+    return rdm1_MO, rdm2_MO
+
+#RDM1 MO->AO
+def rdm1_MO_to_AO(rdm1,mo_coeff):
+    rdm1_AO = reduce(np.dot, (mo_coeff, rdm1, mo_coeff.T))
+    return rdm1_AO
+
+#RDM2 MO->AO
+def rdm2_MO_to_AO(rdm2,mo_coeff):
+    nmo = mo_coeff.shape[1]
+    rdm2_AO = np.dot(mo_coeff, rdm2.reshape(nmo,-1))
+    rdm2_AO = np.dot(rdm2.reshape(-1,nmo), mo_coeff.T)
+    rdm2_AO = rdm2.reshape(nmo,nmo,nmo,nmo).transpose(2,3,0,1)
+    rdm2_AO = np.dot(mo_coeff, rdm2_AO.reshape(nmo,-1))
+    rdm2_AO = np.dot(rdm2_AO.reshape(-1,nmo), mo_coeff.T)
+    return rdm2_AO.reshape(nmo,nmo,nmo,nmo)

@@ -9,10 +9,12 @@
 <Type name="HT" class="H" element="H" mass="1.00784"/>
 </AtomTypes>
 <Residues>
-<Residue name="MOL">
-<Atom name="O1" type="OT"/>
+<Residue name="WAT">
+<Atom name="O" type="OT"/>
 <Atom name="H1" type="HT"/>
 <Atom name="H2" type="HT"/>
+</Residue>
+<Residue name="MOL">
 <Atom name="C1" type="CX"/>
 <Atom name="H3" type="HX"/>
 <Atom name="H4" type="HX"/>

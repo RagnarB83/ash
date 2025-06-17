@@ -24,7 +24,7 @@ from ash.modules.module_coords import (
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None,
-                 use_tblite=False, periodic=False, periodic_cell_dimensions=None):
+                 use_tblite=False, periodic=False, periodic_cell_dimensions=None, extraflag=None):
 
         self.theorynamelabel="xTB"
         self.theorytype="QM"
@@ -41,6 +41,9 @@ class xTBTheory:
 
         # Use Tblite library inside xtb or not
         self.use_tblite=use_tblite
+
+        # Passing special extra flag to xtb binary
+        self.extraflag=extraflag
 
         self.periodic=periodic
         self.periodic_cell_dimensions=periodic_cell_dimensions
@@ -127,6 +130,9 @@ class xTBTheory:
             else:
                 self.xtbdir = xtbdir
 
+            # Setting XTBHOME, required for GFN0
+            os.environ['XTBHOME'] = f"{self.xtbdir}/../share/xtb"
+
             # Solvent line to be passed to run-call
             if solvent != None:
                 self.solvent=solvent
@@ -136,6 +142,7 @@ class xTBTheory:
         else:
             print("unknown runmode. exiting")
             ashexit()
+
 
     # Set numcores method
     def set_numcores(self,numcores):
@@ -211,9 +218,10 @@ class xTBTheory:
                 print(f"Running xtB using {numcores} cores")
                 print("...")
 
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
+            run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
                                     Hessian=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
-                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores, use_tblite=self.use_tblite)
+                                    accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores, use_tblite=self.use_tblite,
+                                    extraflag=self.extraflag)
 
             #Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
             self.cleanup_temp()
@@ -277,10 +285,10 @@ class xTBTheory:
                 print(f"Running xtB using {numcores} cores")
                 print("...")
 
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
+            run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult,
                                     Opt=True, maxiter=self.maxiter, electronic_temp=self.electronic_temp, solvent=self.solvent,
                                     accuracy=self.accuracy, printlevel=self.printlevel, numcores=numcores,
-                                    use_tblite=self.use_tblite)
+                                    use_tblite=self.use_tblite, extraflag=self.extraflag)
 
             # Cleanup temp files to avoid interference with future calculations, e.g. old pcharge file can mess up xtb calcs with and without pc-embedding
             self.cleanup_temp()
@@ -389,9 +397,9 @@ class xTBTheory:
                 create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
 
             # Run xTB (note: passing PC and Grad Booleans)
-            run_xtb_SP_serial(self.xtbdir, self.xtbmethod, coordfile, charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
+            run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
                                     Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores,
-                                    use_tblite=self.use_tblite)
+                                    use_tblite=self.use_tblite, extraflag=self.extraflag)
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -437,24 +445,24 @@ class xTBTheory:
             qm_elems_numbers=np.array(elemstonuccharges(qm_elems))
             assert len(coords_au) == len(qm_elems_numbers)
             #Choosing method
-            if self.xtbmethod == 'GFN2':
+            if 'GFN2' in self.xtbmethod.upper():
                 if self.printlevel >= 2:
                     print("Using GFN2 parameterization")
                 param_method=Param.GFN2xTB
-            elif self.xtbmethod == 'GFN1':
+            elif 'GFN1' in self.xtbmethod.upper():
                 if self.printlevel >= 2:
                     print("Using GFN1 parameterization")
                 param_method=Param.GFN1xTB
-            elif self.xtbmethod == 'GFN0':
+            elif 'GFN0' in self.xtbmethod.upper():
                 if self.printlevel >= 2:
                     print("Using GFN0 parameterization")
                 param_method=Param.GFN0xTB
-            elif self.xtbmethod == 'GFNFF':
+            elif 'GFNFF' in self.xtbmethod.upper():
                 if self.printlevel >= 2:
                     print("Using GFNFF parameterization")
                     print("warning: experimental")
                 param_method=Param.GFNFF
-            elif self.xtbmethod == 'IPEA':
+            elif 'IPEA' in self.xtbmethod.upper() :
                 if self.printlevel >= 2:
                     print("Using IPEA parameterization")
                 param_method=Param.IPEAxTB
@@ -468,6 +476,8 @@ class xTBTheory:
             #first run call: create new object containing coordinates and settings
             if self.calcobject == None:
                 print("Creating new xTB calc object")
+                # Storing number of elements
+                self.stored_numatoms=len(qm_elems_numbers)
                 self.calcobject = Calculator(param_method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
                 self.calcobject.set_verbosity(self.verbosity)
                 self.calcobject.set_electronic_temperature(self.electronic_temp)
@@ -477,15 +487,30 @@ class xTBTheory:
                 if self.solvent_object != None:
                     print("Setting solvent to:", self.solvent_object)
                     self.calcobject.set_solvent(self.solvent_object)
-            #next run calls: only update coordinates
+            # next run calls: only update coordinates
             else:
                 if self.printlevel >= 2:
                     print("Updating coordinates in xTB calcobject")
-                self.calcobject.update(coords_au)
+                if len(coords_au) != self.stored_numatoms:
+                    print("Warning: Number of coordinates not consistent with previous elements.")
+                    print("Creating new xTB calc object")
+                    # Storing number of elements
+                    self.stored_numatoms=len(qm_elems_numbers)
+                    self.calcobject = Calculator(param_method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
+                    self.calcobject.set_verbosity(self.verbosity)
+                    self.calcobject.set_electronic_temperature(self.electronic_temp)
+                    self.calcobject.set_max_iterations(self.maxiter)
+                    self.calcobject.set_accuracy(self.accuracy)
+                    # Solvent
+                    if self.solvent_object != None:
+                        print("Setting solvent to:", self.solvent_object)
+                        self.calcobject.set_solvent(self.solvent_object)
+                else:
+                    self.calcobject.update(coords_au)
 
             #QM/MM pointcharge field
             #calc.
-            if PC==True:
+            if PC is True:
                 if self.printlevel >= 2:
                     print("Using PointCharges")
                 mmcharges=np.array(MMcharges)
@@ -548,10 +573,10 @@ class xTBTheory:
                 print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                 return self.energy
 
-#Grab Final single point energy
+# Grab Final single point energy
 def xtbfinalenergygrab(file):
     Energy=None
-    with open(file) as f:
+    with open(file, encoding='utf-8') as f:
         for line in f:
             if 'TOTAL ENERGY' in line:
                 Energy=float(line.split()[-3])
@@ -614,8 +639,8 @@ def xtbVEAgrab(file):
     return VEA
 
 # Run xTB single-point job
-def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, PC=False,
-    electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1, use_tblite=False):
+def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False, Hessian=False, maxiter=500, PC=False,
+    electronic_temp=300, accuracy=0.1, solvent=None, printlevel=2, numcores=1, use_tblite=False, extraflag=None):
 
     if solvent is None:
         solvent_line1=""
@@ -635,12 +660,15 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Op
             print("No spin polarization")
         spinpol_flag=""
 
-
     # Use tblite or not
     if use_tblite is True:
         tblite_flag="--tblite"
     else:
         tblite_flag=""
+
+    # Optional extraflag
+    if extraflag is None:
+        extraflag=""
 
     basename = coordfile.split('.')[0]
     uhf=mult-1
@@ -664,7 +692,7 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Op
     elif 'GFN0' in xtbmethod.upper():
         xtbflag = 0
     else:
-        print("Unknown xtbmethod chosen. Exiting...")
+        print(f"Unknown xtbmethod chosen ({xtbmethod}). Exiting...")
         ashexit()
 
     #Going through what flag to pass to xtb
@@ -683,7 +711,7 @@ def run_xtb_SP_serial(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Op
         jobflag="" #NOTE.
 
     command_list=[xtbdir + '/xtb', coordfile, '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
-                '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2]
+                '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2, extraflag]
     # Remove empty arguments
     command_list=list(filter(None, command_list))
 
@@ -883,9 +911,9 @@ def create_xtb_pcfile_general(coords,pchargelist,hardness=1000):
 
 
 # Grab pointcharge gradient (Eh/Bohr) from xtb pcgrad file
-def xtbpcgradientgrab(numatoms):
+def xtbpcgradientgrab(numatoms, file="pcgrad"):
     gradient = np.zeros((numatoms, 3))
-    with open('pcgrad') as pgradfile:
+    with open(file) as pgradfile:
         for count,line in enumerate(pgradfile):
             val_x=float(line.split()[0])
             val_y = float(line.split()[1])

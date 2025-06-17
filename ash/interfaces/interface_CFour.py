@@ -54,11 +54,15 @@ class CFourTheory:
         self.DBOC=DBOC
         self.FIXGEOM='OFF' #Off by default. May be turned on by run-method
         self.BRUECKNER='OFF'
+        self.EXCITE='NONE'
+        self.ESTATE_SYM=None
         #Overriding default
         #self.basis='SPECIAL' is preferred (element-specific basis definitions) but can be overriden like this
+        if 'CALC' in cfouroptions: self.CALC=cfouroptions['CALC']
+        if 'EXCITE' in cfouroptions: self.EXCITE=cfouroptions['EXCITE']
+        if 'ESTATE_SYM' in cfouroptions: self.ESTATE_SYM=cfouroptions['ESTATE_SYM']
         if 'BASIS' in cfouroptions: self.basis=cfouroptions['BASIS']
         if 'BRUECKNER' in cfouroptions: self.BRUECKNER=cfouroptions['BRUECKNER']
-        if 'CALC' in cfouroptions: self.CALC=cfouroptions['CALC']
         if 'MEMORY' in cfouroptions: self.memory=cfouroptions['MEMORY']
         if 'MEM_UNIT' in cfouroptions: self.memory_unit=cfouroptions['MEM_UNIT']
         if 'REF' in cfouroptions: self.reference=cfouroptions['REF']
@@ -84,6 +88,8 @@ class CFourTheory:
         #Printing
         print("BASIS:", self.basis)
         print("CALC:", self.CALC)
+        print("EXCITE", self.EXCITE)
+        print("ESTATE_SYM:", self.ESTATE_SYM)
         print("MEMORY:", self.memory)
         print("MEM_UNIT:", self.memory_unit)
         print("REFERENCE:", self.reference)
@@ -193,6 +199,7 @@ class CFourTheory:
             print("Problem reading energy from Cfour outputfile. Check:", self.filename+'.out')
             ashexit()
         return energy
+
     def cfour_grabgradient(self,file,numatoms,symmetry=False):
         atomcount=0
         grab=False
@@ -377,11 +384,17 @@ HFSTABILITY={self.stabilityanalysis},VIB=ANALYTIC)\n\n""")
             print("Reading CFour Hessian from file")
             self.hessian = self.cfour_grabhessian(len(qm_elems),hessfile="FCMFINAL")
         #ENERGY+GRADIENT JOB
-        elif Grad==True:
+        elif Grad:
             print("Warning: Grad=True. FIXGEOM turned on.")
             self.FIXGEOM='ON'
             print("Warning: Grad=True, symmetry turned off.")
             self.symmetry='OFF'
+
+            #Excited states
+            if self.ESTATE_SYM is not None:
+                estatesymstring=f",ESTATE_SYM={self.ESTATE_SYM}"
+            else:
+                estatesymstring=""
 
             if self.propoption != 'OFF':
                 #TODO: Check whether we can avoid this limitation
@@ -398,6 +411,7 @@ MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},BRUECKNER={self.BRUECKNER},SYMMETRY={self.symmetry}\n\
+EXCITE={self.EXCITE}{estatesymstring}\n\
 HFSTABILITY={self.stabilityanalysis},DERIV_LEVEL=1)\n\n""")
                 for el in qm_elems:
                     if len(self.specialbasis) > 0:
@@ -451,6 +465,13 @@ HFSTABILITY={self.stabilityanalysis},DBOC=ON)\n\n""")
                 writestringtofile("0", "pcharges")
             else:
                 self.FIXGEOM='OFF'
+
+            #Excited states
+            if self.ESTATE_SYM is not None:
+                estatesymstring=f",ESTATE_SYM={self.ESTATE_SYM}"
+            else:
+                estatesymstring=""
+
             with open("ZMAT", 'w') as inpfile:
                 inpfile.write('ASH-created inputfile\n')
                 for el,c in zip(qm_elems,current_coords):
@@ -462,6 +483,7 @@ MEM_UNIT={self.memory_unit},MEMORY={self.memory},SCF_MAXCYC={self.scf_maxcyc}\n\
 GUESS={self.guessoption},PROP={self.propoption},CC_PROG={self.cc_prog},ABCDTYPE={self.ABCDTYPE}\n\
 SCF_CONV={self.scf_conv},EXTERN_POT={self.EXTERN_POT},FIXGEOM={self.FIXGEOM}\n\
 LINEQ_CONV={self.lineq_conv},CC_MAXCYC={self.cc_maxcyc},BRUECKNER={self.BRUECKNER},SYMMETRY={self.symmetry}\n\
+EXCITE={self.EXCITE}estatesymstring\n\
 HFSTABILITY={self.stabilityanalysis})\n\n""")
                 #for specbas in self.specialbasis.items():
                 for el in qm_elems:

@@ -129,7 +129,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
 
     if tol_scale is not None and doci:
 
-        if tol_scale <= 1:
+        if tol_scale < 1:
             raise ValueError("Tol scale is too low")
 
         tol_max_f = tol_scale * tol_max_fci

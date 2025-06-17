@@ -23,6 +23,10 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
 
+    if fragment is None or theory is None:
+        print("AnFreq requires a fragment and a theory object")
+        ashexit()
+
     # Checking for linearity. Determines how many Trans+Rot modes
     if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
         TRmodenum=5

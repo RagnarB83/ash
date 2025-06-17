@@ -2331,8 +2331,10 @@ def yoshimine_sort(a,b,c,d):
 # TODO: unrestricted case
 # TODO: symmetry
 # Confirmed to work for MRCC
+# symmetry_option= 0 no symmetry (avoiding ISYM and ORBSYM keywords)
 def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_repulsion_energy=None, header_format="MRCC",
-                            num_corr_el=None, filename=None, int_threshold=1e-16, scf_type="RHF", mult=None):
+                            num_corr_el=None, filename=None, int_threshold=1e-16, scf_type="RHF", mult=None,
+                            symmetry_option=0, orbsym=None):
 
     print("\nASH_write_integralfile")
     print()
@@ -2355,22 +2357,38 @@ def ASH_write_integralfile(two_el_integrals=None, one_el_integrals=None, nuc_rep
 
     # Header
     if header_format == "FCIDUMP":
-        #NORB: number of basis functions
-        #NELEC: number of correlated electrons
-        #MS2: TODO
-        #isym: 
-        #orbsym
-        isym=1
-        orbsymstring=','.join(str(1) for i in range(0,basis_dim))
         ms2=mult-1 # unpaired electrons
         uhf_option_string = ""
         if scf_type == "UHF":
             uhf_option_string = "UHF=.TRUE.,"
-        header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
+        #NORB: number of basis functions
+        #NELEC: number of correlated electrons
+        #ISYM: integer representing symmetry, 
+        #isym: list of symmetry indices integers
+        #orbsym
+        if symmetry_option == 0:
+            orbsymstring=','.join(str(1) for i in range(0,basis_dim))
+            header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
 ORBSYM={orbsymstring},
-ISYM={isym},{uhf_option_string}
+ISYM=1,{uhf_option_string}
 &END
 """
+        else:
+            print("Symmetry option:", symmetry_option)
+            print("ISYM will be set to :", symmetry_option)
+            print("orbsym:", orbsym)
+            if orbsym is None:
+                print("Error: orbsym must be a list of symmetry indices for each orbital")
+                ashexit()
+            # Activating symmetry
+            isym=symmetry_option
+            orbsymstring=','.join(str(i) for i in orbsym)
+            #orbsymstring=','.join(str(1) for i in range(0,basis_dim))
+            header=f"""&FCI NORB={basis_dim}, NELEC={num_corr_el}, MS2={ms2},
+    ORBSYM={orbsymstring},
+    ISYM={isym},{uhf_option_string}
+    &END
+    """
         if filename is None:
             filename="FCIDUMP"
             print("FCIDUMP option:, filename set to:", filename)

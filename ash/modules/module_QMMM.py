@@ -16,7 +16,7 @@ class QMMMTheory:
     def __init__(self, qm_theory=None, qmatoms=None, fragment=None, mm_theory=None, charges=None,
                 embedding="elstat", printlevel=2, numcores=1, actatoms=None, frozenatoms=None, excludeboundaryatomlist=None,
                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
-                qm_charge=None, qm_mult=None, chargeboundary_method="shift",
+                qm_charge=None, qm_mult=None, chargeboundary_method="shift", exit_after_customexternalforce_update=False,
                 dipole_correction=True, linkatom_method='simple', linkatom_simple_distance=None,
                 linkatom_forceproj_method="adv", linkatom_ratio=0.723, linkatom_type='H'):
 
@@ -43,6 +43,10 @@ class QMMMTheory:
 
         # External force energy. Zero except when using openmm_externalforce
         self.extforce_energy = 0.0
+        # Subtractive corrections that might be defined later on
+        # Added due to pbcmm-elstat
+        self.subtractive_correction_E =0.0
+        self.subtractive_correction_G = np.zeros((len(fragment.coords), 3))
 
         # Linkatoms False by default. Later checked.
         self.linkatoms = False
@@ -65,6 +69,8 @@ class QMMMTheory:
         # NOTE: affects runmode
         self.openmm_externalforce = openmm_externalforce
 
+        self.exit_after_customexternalforce_update=exit_after_customexternalforce_update
+
         # Theory level definitions
         self.printlevel=printlevel
         self.qm_theory=qm_theory
@@ -86,8 +92,10 @@ class QMMMTheory:
         self.allatoms=list(range(0,len(self.elems)))
         print("All atoms in fragment:", len(self.allatoms))
         self.num_allatoms=len(self.allatoms)
-        # Sorting qmatoms list
-        self.qmatoms = sorted(qmatoms)
+
+        # Sorting qmatoms list making sure only unique values are taken
+        self.qmatoms = sorted(list(set(qmatoms)))
+        #self.qmatoms = sorted(qmatoms)
 
         # All-atom Bool-array for whether atom-index is a QM-atom index or not
         # Used by make_QM_PC_gradient
@@ -152,6 +160,9 @@ class QMMMTheory:
 
         if self.embedding.lower() == "elstat" or self.embedding.lower() == "electrostatic" or self.embedding.lower() == "electronic":
             self.embedding="elstat"
+            self.PC = True
+        elif self.embedding.lower() == "pbcmm-elstat" or self.embedding.lower() == "pbcmm-electrostatic" or self.embedding.lower() == "pbcmm-electronic":
+            self.embedding="pbcmm-elstat"
             self.PC = True
         elif self.embedding.lower() == "mechanical" or self.embedding.lower() == "mech":
             self.embedding="mech"
@@ -308,6 +319,14 @@ class QMMMTheory:
                 # TODO: make sure this works for OpenMM and for NonBondedTheory
                 # Updating charges in MM object.
                 self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
+            elif self.embedding.lower() == "pbcmm-elstat":
+                print("PBC Electrostatic embedding enabled.")
+                print("This means that QM-atoms will be zeroed for QM-MM interactions calculated by QM program")
+                print("But MM program will have charged defined for QM-region")
+                self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
+                # Note: possible to set QM-charges to something specific: Mulliken, ESP
+                # specialQMcharges = [something]
+                # self.mm_theory.update_charges(self.qmatoms,specialQMcharges)
 
             if self.mm_theory_name == "OpenMMTheory":
                 # Deleting Coulomb exception interactions involving QM and MM atoms
@@ -716,6 +735,12 @@ class QMMMTheory:
             print("QM Module:", self.qm_theory_name)
             print("MM Module:", self.mm_theory_name)
 
+
+        # exit_after_customexternalforce_update can be enabled both at runtime and by initialization
+        if self.exit_after_customexternalforce_update is True:
+            exit_after_customexternalforce_update=self.exit_after_customexternalforce_update
+
+
         # OPTION: QM-region charge/mult from QMMMTheory definition
         # If qm_charge/qm_mult defined then we use. Otherwise charge/mult may have been defined by jobtype-function and passed on via run
         if self.qm_charge is not None:
@@ -739,6 +764,11 @@ class QMMMTheory:
             return self.mech_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
                 label=label, charge=charge, mult=mult)
         elif self.embedding.lower() == "elstat":
+            return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
+                label=label, charge=charge, mult=mult)
+        elif self.embedding.lower() == "pbcmm-elstat":
+            # Things should be the same except QM-charges have not been zeroed in MM-program
+            # MM-program thus double-counts (SR QM-QM and SR QM-MM) and we need subtractive corrections
             return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
                 label=label, charge=charge, mult=mult)
         else:
@@ -863,6 +893,7 @@ class QMMMTheory:
                     self.QM_MM_gradient[fullatomindex_qm] += QM1grad_contrib
                     self.QM_MM_gradient[fullatomindex_mm] += MM1grad_contrib
 
+
             print_time_rel(CheckpointTime, modulename='linkatomgrad prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             print_time_rel(Grad_prep_CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             CheckpointTime = time.time()
@@ -909,10 +940,10 @@ class QMMMTheory:
                     print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                     # NOTE: Now moved mm_theory.update_custom_external_force call to MD simulation instead
                     # as we don't have access to simulation object here anymore. Uses self.QM_PC_gradient
-                    if exit_after_customexternalforce_update==True:
+                    if exit_after_customexternalforce_update is True:
                         print_if_level(f"OpenMM custom external force updated. Exit requested", self.printlevel,2)
                         # This is used if OpenMM MD is handling forces and dynamics
-                        return
+                        return  self.QMenergy,self.QM_MM_gradient
 
                 self.MMenergy, self.MMgradient = self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms, Grad=True)
             else:
@@ -928,13 +959,18 @@ class QMMMTheory:
             assert len(self.QM_MM_gradient) == len(self.MMgradient)
             self.QM_MM_gradient = self.QM_MM_gradient + self.MMgradient
 
-        # Final QM/MM Energy.
-        self.QM_MM_energy = self.QMenergy+self.MMenergy
+        # Final QM/MM Energy
+        self.QM_MM_energy = self.QMenergy+self.MMenergy-self.subtractive_correction_E
+
+        # Final QM/MM Gradient
+        # Possible subtractive correction
+        self.QM_MM_gradient -= self.subtractive_correction_G
 
         if self.printlevel >= 2:
             blankline()
             print("{:<20} {:>20.12f}".format("QM energy: ", self.QMenergy))
             print("{:<20} {:>20.12f}".format("MM energy: ", self.MMenergy))
+            print("{:<20} {:>20.12f}".format("Subtractive correction energy: ", self.subtractive_correction_E))
             print("{:<20} {:>20.12f}".format("QM/MM energy: ", self.QM_MM_energy))
             blankline()
 
@@ -1312,7 +1348,8 @@ class QMMMTheory:
                 CheckpointTime = time.time()
                 #print("QM/MM Grad is True")
                 #Provide QM_PC_gradient to OpenMMTheory
-                if self.openmm_externalforce == True:
+
+                if self.openmm_externalforce is True:
                     print_if_level(f"OpenMM externalforce is True", self.printlevel,2)
                     #Calculate energy associated with external force so that we can subtract it later
                     #self.extforce_energy = 3 * np.mean(np.sum(self.QM_PC_gradient * current_coords * 1.88972612546, axis=0))
@@ -1322,10 +1359,10 @@ class QMMMTheory:
                     print_time_rel(CheckpointTime, modulename='extforce prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
                     #NOTE: Now moved mm_theory.update_custom_external_force call to MD simulation instead
                     # as we don't have access to simulation object here anymore. Uses self.QM_PC_gradient
-                    if exit_after_customexternalforce_update==True:
+                    if exit_after_customexternalforce_update is True:
                         print_if_level(f"OpenMM custom external force updated. Exit requested", self.printlevel,2)
                         #This is used if OpenMM MD is handling forces and dynamics
-                        return
+                        return self.QMenergy-self.extforce_energy, self.QM_PC_gradient
 
                 self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms, Grad=True)
             else:
@@ -1338,7 +1375,7 @@ class QMMMTheory:
 
 
         #Final QM/MM Energy. Possible correction for OpenMM external force term
-        self.QM_MM_energy= self.QMenergy+self.MMenergy-self.extforce_energy
+        self.QM_MM_energy= self.QMenergy+self.MMenergy-self.extforce_energy-self.subtractive_correction_E
         if self.printlevel >= 2:
             blankline()
             if self.embedding.lower() == "elstat":
@@ -1368,34 +1405,17 @@ class QMMMTheory:
                 #print("len(self.QM_PC_gradient):", len(self.QM_PC_gradient))
                 #print("len(self.MMgradient):", len(self.MMgradient))
                 assert len(self.QM_PC_gradient) == len(self.MMgradient)
-                self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient
+                self.QM_MM_gradient=self.QM_PC_gradient+self.MMgradient-self.subtractive_correction_G
 
 
             if self.printlevel >=3:
                 print("Printlevel >=3: Printing all gradients to disk")
-                #print("QM gradient (au/Bohr):")
-                #module_coords.print_coords_all(self.QMgradient, self.qmelems, self.qmatoms)
                 ash.modules.module_coords.write_coords_all(self.QMgradient_wo_linkatoms, self.qmelems, indices=self.qmatoms, file="QMgradient-without-linkatoms_{}".format(label), description="QM gradient w/o linkatoms {} (au/Bohr):".format(label))
-
                 #Writing QM+Linkatoms gradient
                 ash.modules.module_coords.write_coords_all(self.QMgradient, self.qmelems+['L' for i in range(self.num_linkatoms)], indices=self.qmatoms+[0 for i in range(self.num_linkatoms)], file="QMgradient-with-linkatoms_{}".format(label), description="QM gradient with linkatoms {} (au/Bohr):".format(label))
-
-                #blankline()
-                #print("PC gradient (au/Bohr):")
-                #module_coords.print_coords_all(self.PCgradient, self.mmelems, self.mmatoms)
                 ash.modules.module_coords.write_coords_all(self.PCgradient, self.mmelems, indices=self.mmatoms, file="PCgradient_{}".format(label), description="PC gradient {} (au/Bohr):".format(label))
-                #blankline()
-                #print("QM+PC gradient (au/Bohr):")
-                #module_coords.print_coords_all(self.QM_PC_gradient, self.elems, self.allatoms)
                 ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_{}".format(label), description="QM+PC gradient {} (au/Bohr):".format(label))
-                #blankline()
-                #print("MM gradient (au/Bohr):")
-                #module_coords.print_coords_all(self.MMgradient, self.elems, self.allatoms)
                 ash.modules.module_coords.write_coords_all(self.MMgradient, self.elems, indices=self.allatoms, file="MMgradient_{}".format(label), description="MM gradient {} (au/Bohr):".format(label))
-                #blankline()
-                #print("Total QM/MM gradient (au/Bohr):")
-                #print("")
-                #module_coords.print_coords_all(self.QM_MM_gradient, self.elems,self.allatoms)
                 ash.modules.module_coords.write_coords_all(self.QM_MM_gradient, self.elems, indices=self.allatoms, file="QM_MMgradient_{}".format(label), description="QM/MM gradient {} (au/Bohr):".format(label))
             if self.printlevel >= 2:
                 print(BC.WARNING,BC.BOLD,"------------ENDING QM/MM MODULE-------------",BC.END)

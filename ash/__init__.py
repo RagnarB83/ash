@@ -7,6 +7,9 @@ import numpy as np
 import sys
 import atexit
 import pathlib
+import os
+import glob
+
 # Getting ASH-path
 ashpath = str(pathlib.Path(__file__).parent.resolve())
 print("ashpath:", ashpath)
@@ -19,7 +22,17 @@ sys.path.insert(0, ashpath)
 print("Sys path:", sys.path)
 
 from .functions.functions_general import create_ash_env_file,blankline, BC, listdiff, print_time_rel, print_time_rel_and_tot, pygrep, \
-    printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit, natural_sort
+    printdebug, read_intlist_from_file, frange, writelisttofile, load_julia_interface, read_datafile, write_datafile, ashexit, natural_sort,numlines_in_file
+
+# Test if inputfile has a bad name
+inputfile_base=os.path.splitext(sys.argv[0])[0]
+pyfiles_in_dir =  glob.glob('*.py')
+forbidden_inputfilenames = ['ash', 'openmm', 'xtb', 'mlatom', 'torch', 'pyscf', 'knarr', 'mace']
+for pyfile in pyfiles_in_dir:
+    if os.path.splitext(pyfile)[0] in forbidden_inputfilenames:
+        print(f"Error: Current directory contains file : {inputfile_base}.py with a forbidden name. Please rename it")
+        print("Forbidden names:", forbidden_inputfilenames)
+        ashexit()
 
 #Results dataclass
 from .modules.module_results import ASH_Results,read_results_from_file
@@ -30,7 +43,7 @@ from .modules.module_coords import get_molecules_from_trajectory, eldict_covrad,
     write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile, split_multimolxyzfile,distance_between_atoms, \
     angle_between_atoms, dihedral_between_atoms, pdb_to_smiles, xyz_to_pdb_with_connectivity, writepdb_with_connectivity, mol_to_pdb, sdf_to_pdb
 from .modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_system_CHARMM, getwaterconstraintslist,\
-    QMregionfragexpand, QMPC_fragexpand, read_xyzfiles, Reaction, define_XH_constraints, simple_get_water_constraints, print_internal_coordinate_table,\
+    QMregionfragexpand, cut_sphere, cut_cubic_box, QMPC_fragexpand, read_xyzfiles, Reaction, define_XH_constraints, simple_get_water_constraints, print_internal_coordinate_table,\
     flexible_align_pdb, flexible_align_xyz, flexible_align, insert_solute_into_solvent, nuc_nuc_repulsion, calculate_RMSD
 
 # Singlepoint
@@ -75,7 +88,7 @@ from .modules.module_surface import calc_surface, calc_surface_fromXYZ, read_sur
 from .interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, MolecularOrbitalGrab, \
     run_orca_mapspc, make_molden_file_ORCA, grab_coordinates_from_ORCA_output, ICE_WF_CFG_CI_size, orca_frag_guess, orblocfind, ORCAfinalenergygrab, \
     read_ORCA_json_file, write_ORCA_json_file, create_GBW_from_json_file, create_ORCA_json_file,get_densities_from_ORCA_json,grab_ORCA_wfn, \
-        new_ORCA_natorbsfile_from_density, ORCA_orbital_setup, create_ORCA_FCIDUMP
+        new_ORCA_natorbsfile_from_density, ORCA_orbital_setup, create_ORCA_FCIDUMP, print_gradient_in_ORCAformat
 import ash.interfaces.interface_ORCA
 
 from .interfaces.interface_Psi4 import Psi4Theory
@@ -101,11 +114,13 @@ from .interfaces.interface_MNDO import MNDOTheory
 
 from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
 from .interfaces.interface_xtb import xTBTheory
+from .interfaces.interface_DFTB import DFTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
 from .interfaces.interface_MLatom import MLatomTheory
 from .interfaces.interface_DRACO import get_draco_radii
 from .interfaces.interface_Grimme_corrections import DFTD4Theory, calc_DFTD4, calc_gcp, gcpTheory
 from .interfaces.interface_torch import TorchTheory
+from .interfaces.interface_mace import MACETheory
 from .interfaces.interface_packmol import packmol_solvate
 
 # MM: external and internal
@@ -125,14 +140,17 @@ small_molecule_parameterizor=small_molecule_parameterizer
 from .modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy, coulombcharge, LennardJones, \
     LJCoulombv2, LJCoulomb, MMforcefield_read
 #MDtraj
-from .interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_RMSF, MDtraj_coord_analyze
+from .interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_RMSF, MDtraj_RMSD, MDtraj_coord_analyze
+
+# Theory, Numgrad
+from .modules.module_theory import Theory, QMTheory, NumGradclass
 
 # QM/MM
 from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy
 from .modules.module_polembed import PolEmbedTheory
 
 # Knarr
-from .interfaces.interface_knarr import NEB, NEBTS
+from .interfaces.interface_knarr import NEB, NEBTS, interpolation_geodesic
 
 #VMD
 from .interfaces.interface_VMD import write_VMD_script_cube
@@ -179,7 +197,9 @@ from .modules.module_benchmarking import run_benchmark
 from .interfaces.interface_small_helpers import create_adaptive_minimal_basis_set
 
 #Machine-learning tools
-from .modules.module_machine_learning import create_ML_training_data
+from .modules.module_machine_learning import create_ML_training_data, Ml_print_model_stats
+# To be deleted
+Mlatom_print_model_stats=Ml_print_model_stats
 
 # Plotting
 import ash.modules.module_plotting
@@ -187,7 +207,7 @@ from .modules.module_plotting import reactionprofile_plot, contourplot, plot_Spe
 
 # Other
 import ash.interfaces.interface_crest
-from .interfaces.interface_crest import call_crest, call_crest_entropy, get_crest_conformers
+from .interfaces.interface_crest import call_crest, call_crest_entropy, get_crest_conformers, new_call_crest
 
 # Initialize settings
 import ash.settings_ash

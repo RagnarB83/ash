@@ -32,7 +32,7 @@ cubefiles=[]
 
 for gfile in orbfiles:
     gfile_base=str(os.path.splitext(gfile)[0])
-    #Check if Cube-file exits already
+    #Check if Cube-file exists already
     if os.path.exists(gfile_base+".molden.input_mwfn.cube"):
         print("Orbital file:", gfile)
         print("Cube-file exists already:", gfile_base+".molden.input_mwfn.cube")

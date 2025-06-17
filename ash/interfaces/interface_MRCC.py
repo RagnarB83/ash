@@ -479,6 +479,7 @@ def grab_dipole_moment(outfile):
 
 # Write MRCC rudimentary inputfile (fort.56) file with list of occupations
 #NOTE: For frozen-core calculations the occupations should only be for active electrons
+# WARNING: dens should be set to -2
 def MRCC_write_basic_inputfile(occupations=None, filename="fort.56", scf_type="RHF",
                                ex_level=4, nsing=1, ntrip=0, rest=0, CC_CI=1, dens=0, CS=1,
                                spatial=1, HF=1, ndoub=0, nacto=0, nactv=0, tol=9, maxex=0,

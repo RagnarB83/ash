@@ -11,6 +11,7 @@ from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel
 from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex
 from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller, read_hessian
 from ash.modules.module_results import ASH_Results
+from ash.modules.module_theory import NumGradclass
 
 ##################################################
 # NEW Interface to geomeTRIC Optimization Library
@@ -20,9 +21,9 @@ from ash.modules.module_results import ASH_Results
 #Wrapper function around GeomeTRICOptimizerClass
 #NOTE: theory and fragment given to Optimizer function but not part of Class initialization. Only passed to run method
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', force_coordsystem=False, frozenatoms=None, constraints=None,
-                       constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None,
+                       constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None, NumGrad=False, 
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
-                       modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2):
+                       modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2, result_write_to_disk=True):
     """
     Wrapper function around GeomeTRICOptimizerClass
     """
@@ -38,9 +39,15 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
                         hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,modelhessian=modelhessian,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                         print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write,
-                        printlevel=printlevel, force_coordsystem=force_coordsystem)
+                        printlevel=printlevel, force_coordsystem=force_coordsystem, result_write_to_disk=result_write_to_disk)
 
-    #Providing theory and fragment to run method. Also constraints
+    # If NumGrad then we wrap theory object into NumGrad class object
+    if NumGrad:
+        print("NumGrad flag detected. Wrapping theory object into NumGrad class")
+        print("This enables numerical-gradient calculation for theory")
+        theory = NumGradclass(theory=theory)
+
+    # Providing theory and fragment to run method. Also constraints
     result = optimizer.run(theory=theory, fragment=fragment, charge=charge, mult=mult,
                            constraints=constraints, constrainvalue=constrainvalue)
     if printlevel >= 1:
@@ -54,7 +61,7 @@ class GeomeTRICOptimizerClass:
                      frozenatoms=None, maxiter=250, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
                        print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None,
-                       subfrctor=1, MM_PDB_traj_write=False, printlevel=2, force_coordsystem=False):
+                       subfrctor=1, MM_PDB_traj_write=False, printlevel=2, force_coordsystem=False, result_write_to_disk=True):
 
             self.printlevel=printlevel
             print_line_with_mainheader("geomeTRICOptimizer initialization")
@@ -102,6 +109,8 @@ class GeomeTRICOptimizerClass:
             #Constraints by default set to None
             self.constraints=None
             ######################
+
+            self.result_write_to_disk=result_write_to_disk
 
             #Setup convergence criteria (sets self.conv_criteria)
             self.convergence_criteria(convergence_setting,conv_criteria)
@@ -546,7 +555,7 @@ class GeomeTRICOptimizerClass:
                 print(f"geomeTRIC Geometry optimization converged in {ashengine.iteration_count} steps!")
                 blankline()
 
-            #QM/MM: Doing final energy evaluation if Truncated PC option was on
+            # QM/MM: Doing final energy evaluation if Truncated PC option was on
             if isinstance(theory,QMMMTheory):
                 if theory.TruncatedPC is True:
                     print("Truncated PC approximation was active. Doing final energy calculation with full PC environment")
@@ -583,9 +592,10 @@ class GeomeTRICOptimizerClass:
             blankline()
 
             #Now returning final Results object
-            #Note: could include the geometry in object but can be very large causing printing head-aches on screen, ignoring for now since the geometry is in the Fragment object anyway
+            # Note: could include the geometry in object but can be very large causing printing head-aches on screen, ignoring for now since the geometry is in the Fragment object anyway
             result = ASH_Results(label="Optimizer", energy=finalenergy)
-            result.write_to_disk(filename="ASH_Optimizer.result")
+            if self.result_write_to_disk is True:
+                result.write_to_disk(filename="ASH_Optimizer.result")
             return result
 
 
@@ -801,8 +811,7 @@ class ASHengineclass:
                 print_coords_for_atoms(currcoords, self.fragment.elems, self.print_atoms_list)
                 print("")
                 print("Note: printed only print_atoms_list (this is not necessarily all atoms) ")
-            E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, charge=self.charge, mult=self.mult,
-                                Grad=True)
+            E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, charge=self.charge, mult=self.mult, Grad=True)
             #label='Iter'+str(self.iteration_count)
             self.iteration_count += 1
             self.energy = E
