@@ -2,6 +2,7 @@ from ash.modules.module_coords import print_coords_for_atoms, print_coords_all
 from ash.functions.functions_general import ashexit, BC
 import numpy as np
 import ash
+import os
 # Basic Theory class
 
 class Theory:
@@ -34,7 +35,6 @@ class QMTheory(Theory):
 
 
 # Numerical gradient class
-
 class NumGradclass:
     def __init__(self, theory, npoint=2, displacement=0.00264589,  runmode="serial", numcores=1, printlevel=2):
         print("Creating NumGrad wrapper object")
@@ -125,6 +125,81 @@ class NumGradclass:
         self.gradient = gradient 
 
         return self.energy, self.gradient
+
+
+# MEPC-gradient class
+class MECPGradclass:
+    def __init__(self, theory_1=None,theory_2=None, charge_1=None, charge_2=None, 
+                 mult_1=None, mult_2=None, runmode="serial", numcores=1, printlevel=2):
+        print("Creating MECPGrad wrapper object")
+
+        if charge_1 is None or charge_2 is None:
+            print("Error: Please set both charge_1 and charge_2!")
+            ashexit()
+        if mult_1 is None or mult_2 is None:
+            print("Error: Please set both mult_1 and mult_2!")
+            ashexit()
+        self.theory_1=theory_1
+        self.theory_2=theory_2
+        self.charge_1=charge_1
+        self.charge_2=charge_2
+        self.mult_1=mult_1
+        self.mult_2=mult_2
+        self.theorytype="QM"
+        self.theorynamelabel="MECPGrad"
+        self.runmode=runmode
+        self.printlevel=printlevel
+        self.numcores=numcores
+
+
+    def set_numcores(self,numcores):
+        self.numcores=numcores
+
+    def cleanup(self):
+        print("Cleanup method called but not yet implemented for MECPGrad")
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
+            charge=None, mult=None):
+
+        print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} WRAPPER -------------", BC.END)
+
+        numatoms = len(current_coords)
+        # Theory 1
+        #Creating dir
+        try:
+            os.mkdir("theory1")
+        except FileExistsError:
+            pass
+        os.chdir("theory1")
+        print(f"Running Theory 1 with charge {self.charge_1} and mult {self.mult_1}")
+        energy_1,gradient_1 = self.theory_1.run(current_coords=current_coords, elems=elems, Grad=True, 
+                                   label="theory1", charge=self.charge_1, mult=self.mult_1)
+        os.chdir("..")
+
+        # Theory 2
+        # Creating dir
+        try:
+            os.mkdir("theory2")
+        except FileExistsError:
+            pass
+        os.chdir("theory2")
+        print(f"Running Theory 2 with charge {self.charge_2} and mult {self.mult_2}")
+        energy_2,gradient_2 = self.theory_2.run(current_coords=current_coords, elems=elems, Grad=True, 
+                                   label="theory2", charge=self.charge_2, mult=self.mult_2)
+        os.chdir("..")
+        x1 = (gradient_1-gradient_2)
+        x1norm= x1/np.linalg.norm(x1)
+        f = 2*(energy_1-energy_2)*x1norm
+        g = gradient_1 - np.dot(x1norm.flatten(),gradient_1.flatten())*x1norm
+        # Surface crossing gradient
+        g_sc = g + f
+        self.gradient=g_sc
+        self.energy=energy_1-energy_2
+        print("E1:", energy_1)
+        print("E2:", energy_2)
+        return self.energy, self.gradient
+
 
 def creating_displaced_geos(current_coords,elems,displacement,npoint, charge, mult, printlevel=2):
     displacement_bohr=displacement*1.88972612546

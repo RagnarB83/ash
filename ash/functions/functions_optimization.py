@@ -6,6 +6,7 @@ import ash.constants
 from ash.functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC
 from ash.modules.module_coords import write_xyzfile
 from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_coords import print_coords_for_atoms
 #import ash
 
 
@@ -34,23 +35,11 @@ def write_xyz_trajectory(file, coords, elems, titleline):
             f.write(line+'\n')
 
 #########################
-#GEOMETRY OPTIMIZERS    #
+# GEOMETRY OPTIMIZERS    #
 #########################
-#TODO: Implement maxmove scaling step thing
-#TODO: Implement xtB Hessian option into LBFGS as starting Hessian??
-#TODO: Fix Newton-Rhapson. Write so that we can easily take NR-step using whatever Hessian
-
-
-#TODO: More complex optimizer options:
-# https://github.com/eljost/pysisyphus/tree/master/pysisyphus/optimizers
-# Has QN, RFO, LBFGS, etc, linesearches etc.
-# Add Pele: https://pele-python.github.io/pele/quenching.html
-# Add stuff from ASE: https://wiki.fysik.dtu.dk/ase/ase/optimize.html  Maybe GP minimizer??
-# https://wiki.fysik.dtu.dk/ase/_modules/ase/optimize/gpmin/gpmin.html#GPMin
-# Interface DL-FIND (internal coords, HDLC etc.): https://www.chemshell.org/dl-find
 
 #ASH Cartesian Optimizer function for basic usage
-def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
+def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNARR-LBFGS', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
     if fragment is not None:
         pass
     else:
@@ -65,6 +54,8 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='', 
             ashexit()
     if frozen_atoms is None:
         frozen_atoms=[]
+
+    print_atoms_list = fragment.allatoms
 
     #Check charge/mult
     charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "SimpleOpt", theory=theory)
@@ -122,18 +113,13 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='', 
     elems=fragment.elems
 
     #OPTIMIZATION LOOP
-    #TODO: think about whether we should switch to fragment object for geometry handling
     for step in range(1,maxiter):
         CheckpointTime = time.time()
         blankline()
         print("GEOMETRY OPTIMIZATION STEP", step)
-        print("Current geometry (Å):")
-        #if theory.__class__.__name__ == "QMMMTheory":
-        #    print("geometry print-out currently disabled...")
-        #    #print_coords_all(current_coords,elems, indices=fragment.allatoms, labels=theory.hybridatomlabels, labels2=actfrozen_labels)
-        #else:
-        #    print_coords_all(current_coords, elems, indices=fragment.allatoms, labels=actfrozen_labels)
-        blankline()
+        print(f"Current geometry (Å) in step {step} (print_atoms_list region)")
+        print("-------------------------------------------------")
+        print_coords_for_atoms(current_coords, fragment.elems, print_atoms_list)
 
         #Running E+G theory job.
         E, Grad = theory.run(current_coords=current_coords, elems=fragment.elems, Grad=True, charge=charge, mult=mult)
