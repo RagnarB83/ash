@@ -40,7 +40,9 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 
 
 #ASH Cartesian Optimizer function for basic usage
-def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNARR-LBFGS', maxiter=50, frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
+def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNARR-LBFGS', maxiter=50, 
+              frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
+
     if fragment is not None:
         pass
     else:
