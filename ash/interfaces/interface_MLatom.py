@@ -434,8 +434,7 @@ class MLatomTheory(Theory):
                 model = ml.models.methods(method=self.method, qm_program=self.qm_program)
             elif self.method == "AIQM2":
                 # AIQM2 
-                model = ml.models.methods(method="aiqm2", program=self.qm_program,
-                                          qm_program_kwargs={'read_keywords_from_file':'xtbkw'})
+                model = ml.models.methods(method="aiqm2", program=self.qm_program)
             else:
                 model = ml.models.methods(method=self.method, program=self.qm_program)
             # Create dftd4.json file before running if required
