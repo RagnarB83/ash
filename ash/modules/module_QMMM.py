@@ -825,7 +825,7 @@ class QMMMTheory:
             QMenergy=0.0;self.linkatoms=False
             QMgradient=np.array([0.0, 0.0, 0.0])
         else:
-            #Calling QM theory, providing current QM and MM coordinates.
+            # Calling QM theory, providing current QM and MM coordinates.
             if Grad is True:
                 QMenergy, QMgradient = self.qm_theory.run(current_coords=used_qmcoords, qm_elems=self.current_qmelems, Grad=True, 
                                                           PC=False, numcores=numcores, charge=charge, mult=mult)
@@ -887,11 +887,14 @@ class QMMMTheory:
                     else:
                         print("Unknown linkatom_forceproj_method. Exiting")
                         ashexit()
-                    print("QM1grad contrib:", QM1grad_contrib)
-                    print("MM1grad contrib:", MM1grad_contrib)
+                    #print("QM1grad contrib:", QM1grad_contrib)
+                    #print("MM1grad contrib:", MM1grad_contrib)
                     # Updating full QM_MM_gradient
                     self.QM_MM_gradient[fullatomindex_qm] += QM1grad_contrib
                     self.QM_MM_gradient[fullatomindex_mm] += MM1grad_contrib
+
+            # Defining QM_PC_gradient for simplicity (used by OpenMM_MD)
+            self.QM_PC_gradient = self.QM_MM_gradient
 
 
             print_time_rel(CheckpointTime, modulename='linkatomgrad prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)

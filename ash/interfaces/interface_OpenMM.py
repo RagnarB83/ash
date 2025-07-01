@@ -899,7 +899,7 @@ class OpenMMTheory:
         self.system = potential.createMixedSystem(self.topology, self.system, mlatoms)
 
     # Function to write PDB-file if everything is available
-    def write_pdbfile(self, outputname="system"):
+    def write_pdbfile(self, positions=None, outputname="system"):
         import openmm
         import openmm.app
         print("Writing PDB-file using OpenMMTheory object")
@@ -916,6 +916,9 @@ class OpenMMTheory:
                 range(len(coords_nm))] * openmm.unit.nanometer
             openmm.app.PDBFile.writeFile(self.topology, pos, open(f'{outputname}.pdb', 'w'))
         #NOTE: If pdb-file is defined we could grab coordinates from there. However, they will be the same so what is the point
+        elif positions is not None:
+            print("Using input positions")
+            openmm.app.PDBFile.writeFile(self.topology, positions, open(f'{outputname}.pdb', 'w'))
         else:
             print("Found neither system positions defined or an ASH fragment file. Can not write PDB-file.")
             ashexit()
@@ -4321,8 +4324,9 @@ class OpenMM_MDclass:
                 if self.specialatoms is not None:
                     if step % self.specialtraj_frequency == 0:
                         specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        special_coords = np.take(current_coords, self.specialatoms, axis=0)
                         print("Writing wrapped coords to trajfile: only for special atoms wrapped") 
-                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+                        write_xyzfile(specialelems, special_coords, "wrapped_special_traj", printlevel=1, writemode='a')
 
                 if step % self.restartfile_frequency == 0:
                     # Writing state and chk files
@@ -4424,15 +4428,16 @@ class OpenMM_MDclass:
                 if self.specialatoms is not None:
                     if step % self.specialtraj_frequency == 0:
                         specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        special_coords = np.take(current_coords, self.specialatoms, axis=0)
                         #print(specialelems)   
                         print("Writing wrapped coords to trajfile: only for special atoms")    
-                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+                        write_xyzfile(specialelems, special_coords, "wrapped_special_traj", printlevel=1, writemode='a')
 
                 # Now need to update OpenMM external force with new QM-PC force
                  #The QM_PC gradient (link-atom projected, from QM_MM object) is provided to OpenMM external force
                 CheckpointTime = time.time()
                 self.openmmobject.update_custom_external_force(self.openmm_externalforceobject,
-                                                               self.QM_MM_object.QM_PC_gradient,self.simulation)
+                                                            self.QM_MM_object.QM_PC_gradient,self.simulation)  
                 print_time_rel(CheckpointTime, modulename='update custom external force', moduleindex=2,
                                 currprintlevel=self.printlevel, currthreshold=2)
 
@@ -4527,8 +4532,9 @@ class OpenMM_MDclass:
                 if self.specialatoms is not None:
                     if step % self.specialtraj_frequency == 0:
                         specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        special_coords = np.take(current_coords, self.specialatoms, axis=0)
                         print("Writing wrapped coords to trajfile: only for special atoms")    
-                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+                        write_xyzfile(specialelems, special_coords, "wrapped_special_traj", printlevel=1, writemode='a')
 
                 if step % self.restartfile_frequency == 0:
                     # Writing state and chk files
@@ -4638,7 +4644,8 @@ class OpenMM_MDclass:
                     if step % self.specialtraj_frequency == 0:
                         print("Writing wrapped coords to trajfile: only for special atoms") 
                         specialelems = [self.fragment.elems[i] for i in self.specialatoms]   
-                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+                        special_coords = np.take(current_coords, self.specialatoms, axis=0)
+                        write_xyzfile(specialelems, special_coords, "wrapped_special_traj", printlevel=1, writemode='a')
 
                 if step % self.restartfile_frequency == 0:
                     # Writing state and chk files
@@ -4725,8 +4732,9 @@ class OpenMM_MDclass:
                 if self.specialatoms is not None:
                     if step % self.specialtraj_frequency == 0:
                         specialelems = [self.fragment.elems[i] for i in self.specialatoms]
+                        special_coords = np.take(current_coords, self.specialatoms, axis=0)
                         print("Writing wrapped coords to trajfile: only for special atoms")    
-                        write_xyzfile(specialelems, current_coords, "wrapped_special_traj", printlevel=1, writemode='a')
+                        write_xyzfile(specialelems, special_coords, "wrapped_special_traj", printlevel=1, writemode='a')
 
                 if step % self.restartfile_frequency == 0:
                     # Writing state and chk files
