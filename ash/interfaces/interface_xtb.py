@@ -7,6 +7,7 @@ import time
 import ash.constants
 import ash.settings_solvation
 import ash.settings_ash
+from ash.modules.module_theory import Theory
 from ash.modules.module_coords import write_xyzfile
 from ash.functions.functions_general import (
     ashexit, blankline, reverse_lines, print_time_rel, BC, 
@@ -20,7 +21,7 @@ from ash.modules.module_coords import (
 )
 
 # Interface to the preliminary g-xTB implementation (warning: only numerical gradient)
-class gxTBTheory(ash.Theory):
+class gxTBTheory(Theory):
     def __init__(self, method=None, printlevel=2, numcores=1):
         super().__init__()
         self.theorynamelabel = "gxtb"
