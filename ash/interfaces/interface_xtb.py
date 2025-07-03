@@ -27,18 +27,18 @@ class gxTBTheory(Theory):
         self.theorynamelabel = "gxtb"
         self.printlevel = printlevel
 
-    # Check if gxtb in PATH
-    from pathlib import Path
-    home = Path.home()
-    if os.path.isfile(f"{home}/.gxtb") is False:
-        print("~/.gxtb file does not exist")
-        ashexit()
-    if os.path.isfile(f"{home}/.eeq") is False:
-        print("~/.eeq file does not exist")
-        ashexit()
-    if os.path.isfile(f"{home}/.basisq") is False:
-        print("~/.basisq file does not exist")
-        ashexit()
+        # Check if gxtb in PATH
+        from pathlib import Path
+        home = Path.home()
+        if os.path.isfile(f"{home}/.gxtb") is False:
+            print("~/.gxtb file does not exist")
+            ashexit()
+        if os.path.isfile(f"{home}/.eeq") is False:
+            print("~/.eeq file does not exist")
+            ashexit()
+        if os.path.isfile(f"{home}/.basisq") is False:
+            print("~/.basisq file does not exist")
+            ashexit()
 
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
