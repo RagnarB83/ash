@@ -47,7 +47,8 @@ class OpenMMTheory:
                  delete_QM1_MM1_bonded=False, applyconstraints_in_run=False,
                  constraints=None, bondconstraints=None,
                  restraints=None, frozen_atoms=None, fragment=None, dummysystem=False,
-                 autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None, residuetemplate_choice=None):
+                 autoconstraints='HBonds', hydrogenmass=1.5, rigidwater=True, changed_masses=None, residuetemplate_choice=None,
+                 RPMD_num_copies=32):
 
 
         self.printlevel=printlevel
@@ -143,6 +144,10 @@ class OpenMMTheory:
         if self.printlevel > 0:
             print("Hydrogenmass option:", self.hydrogenmass)
 
+
+        # RPMD PIMD: Number of copies in ring polymer MD
+        # Active when RPMDIntegrator is used
+        self.RPMD_num_copies=RPMD_num_copies
 
         # Setting for controlling whether QM1-MM1 bonded terms are deleted or not in a QM/MM job
         # See modify_bonded_forces
@@ -1578,10 +1583,16 @@ class OpenMMTheory:
             self.integrator = openmm.VariableLangevinIntegrator(self.temperature * openmm.unit.kelvin,
                                                                      self.coupling_frequency / openmm.unit.picosecond,
                                                                      self.timestep * openmm.unit.picoseconds)
+        elif self.integrator_name == 'RPMDIntegrator':
+            print("RPMDIntegrator will be used")
+            print("Warning: Autoconstraints, rigidwater and other contraints must have been disabled.")
+            print(f"RPMD number of copies set to {self.RPMD_num_copies}. Use RPMD_num_copies keyword to change")
+            self.integrator = openmm.RPMDIntegrator(self.RPMD_num_copies, self.temperature * openmm.unit.kelvin,self.coupling_frequency / openmm.unit.picosecond,
+                                                    self.timestep * openmm.unit.picoseconds)
         else:
             print(BC.FAIL,
                   "Unknown integrator.\n Valid integrator keywords are: VerletIntegrator, VariableVerletIntegrator, "
-                  "LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator ",
+                  "LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VariableLangevinIntegrator, RPMDIntegrator ",
                   BC.END)
             ashexit()
         #print_time_rel(timeA, modulename="create integrator",currprintlevel=self.printlevel)
@@ -4182,7 +4193,6 @@ class OpenMM_MDclass:
             #Setup data and simulation reporters for simulation object
             self.set_sim_reporters(self.simulation)
 
-            print("self.positions:", self.positions)
             # Setting coordinates of OpenMM object from current fragment.coords
             self.openmmobject.set_positions(self.positions,self.simulation)
         print()
