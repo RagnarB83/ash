@@ -113,7 +113,7 @@ from .interfaces.interface_ccpy import ccpyTheory
 from .interfaces.interface_MNDO import MNDOTheory
 
 from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
-from .interfaces.interface_xtb import xTBTheory
+from .interfaces.interface_xtb import xTBTheory, gxTBTheory
 from .interfaces.interface_DFTB import DFTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
 from .interfaces.interface_MLatom import MLatomTheory
@@ -143,7 +143,7 @@ from .modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy
 from .interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_RMSF, MDtraj_RMSD, MDtraj_coord_analyze
 
 # Theory, Numgrad
-from .modules.module_theory import Theory, QMTheory, NumGradclass
+from .modules.module_theory import Theory, QMTheory, NumGradclass, MECPGradclass
 
 # QM/MM
 from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy

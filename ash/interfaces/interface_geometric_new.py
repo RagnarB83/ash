@@ -526,7 +526,8 @@ class GeomeTRICOptimizerClass:
             #Also now passing list of atoms to print in each step.
             ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=self.ActiveRegion, actatoms=self.actatoms,
                 print_atoms_list=self.print_atoms_list, MM_PDB_traj_write=self.MM_PDB_traj_write,
-                charge=charge, mult=mult, conv_criteria=self.conv_criteria, fragment=fragment, printlevel=self.printlevel)
+                charge=charge, mult=mult, conv_criteria=self.conv_criteria, fragment=fragment, printlevel=self.printlevel,
+                maxiter=self.maxiter)
 
             #Defining args object, containing engine object
             final_geometric_args=geomeTRICArgsObject(ashengine,self.constraintsfile,coordsys=self.coordsystem,
@@ -628,7 +629,7 @@ class geomeTRICArgsObject:
 #Defining ASH engine class used to communicate with geomeTRIC
 class ASHengineclass:
     def __init__(self,geometric_molf, theory, ActiveRegion=False, actatoms=None,print_atoms_list=None, charge=None, mult=None, conv_criteria=None, fragment=None,
-        MM_PDB_traj_write=False, printlevel=2):
+        MM_PDB_traj_write=False, printlevel=2, maxiter=None):
         #MM_PDB_traj_write on/off. Can be pretty big files
         self.MM_PDB_traj_write=MM_PDB_traj_write
         #Defining M attribute of engine object as geomeTRIC Molecule object
@@ -640,6 +641,8 @@ class ASHengineclass:
         self.full_current_coords=[]
         #Manual iteration count
         self.iteration_count=0
+        #Maxiter 
+        self.maxiter=maxiter
         #Defining initial E
         self.energy = 0
         #Active atoms
@@ -713,6 +716,12 @@ class ASHengineclass:
     #Defining calculator.
     #Read_data and copydir not used (dummy variables)
     def calc(self,coords,tmp, read_data=None, copydir=None):
+
+        print("")
+        if self.iteration_count == self.maxiter:
+            print("Maxiter reached. ASH is stopping.")
+            exit()
+
         #print("read_data:", read_data)
         #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
         if self.printlevel >= 1:
@@ -802,6 +811,7 @@ class ASHengineclass:
             return {'energy': E, 'gradient': Grad_act.flatten()}
         else:
             self.full_current_coords=currcoords
+            self.fragment.replace_coords(self.fragment.elems, self.full_current_coords, conn=False)
             #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
             self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
             #print("Current geometry (Å) in step {}".format(self.iteration_count))

@@ -432,8 +432,10 @@ class MLatomTheory(Theory):
             print("Creating model")
             if self.method == "AIQM1":
                 model = ml.models.methods(method=self.method, qm_program=self.qm_program)
+            elif self.method == "AIQM2":
+                # AIQM2 
+                model = ml.models.methods(method="aiqm2", program=self.qm_program)
             else:
-                #AIQM2 
                 model = ml.models.methods(method=self.method, program=self.qm_program)
             # Create dftd4.json file before running if required
             if 'AIQM' in self.method:

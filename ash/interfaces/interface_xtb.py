@@ -7,6 +7,8 @@ import time
 import ash.constants
 import ash.settings_solvation
 import ash.settings_ash
+from ash.modules.module_theory import Theory
+from ash.modules.module_coords import write_xyzfile
 from ash.functions.functions_general import (
     ashexit, blankline, reverse_lines, print_time_rel, BC, 
     print_line_with_mainheader, print_if_level
@@ -18,9 +20,58 @@ from ash.modules.module_coords import (
     check_charge_mult
 )
 
+# Interface to the preliminary g-xTB implementation (warning: only numerical gradient)
+class gxTBTheory(Theory):
+    def __init__(self, method=None, printlevel=2, numcores=1):
+        super().__init__()
+        self.theorynamelabel = "gxtb"
+        self.printlevel = printlevel
+
+        # Check if gxtb in PATH
+        from pathlib import Path
+        home = Path.home()
+        if os.path.isfile(f"{home}/.gxtb") is False:
+            print("~/.gxtb file does not exist")
+            ashexit()
+        if os.path.isfile(f"{home}/.eeq") is False:
+            print("~/.eeq file does not exist")
+            ashexit()
+        if os.path.isfile(f"{home}/.basisq") is False:
+            print("~/.basisq file does not exist")
+            ashexit()
+
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
+            charge=None, mult=None):
+
+        module_init_time=time.time()
+        numatoms=len(current_coords)
+        write_xyzfile(elems, current_coords, "gxtb", printlevel=2, writemode='w', title="title")
+        command_list=["gxtb", "-c", "gxtb.xyz"]
+
+        if Grad:
+            command_list.append("-grad")
+        print("Running gtb like this:", command_list)
+        with open('gxtb.out', 'w') as ofile:
+            sp.run(command_list, env=os.environ, stdout=ofile, stderr=ofile)
+
+        if Grad:
+            self.energy, self.gradient = xtbgradientgrab(numatoms)
+            print_time_rel(module_init_time, modulename='gxtb run', moduleindex=2)
+            return self.energy, self.gradient
+        else:
+            # Grab energy
+            with open("energy") as f:
+                for l in f:
+                    if '$' not in l:
+                        energy = float(l.split()[1])
+            self.energy=energy
+            print_time_rel(module_init_time, modulename='gxtb run', moduleindex=2)
+            return self.energy
+
 # Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
 # TODO: QM/MM pointcharges for library
-
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None,

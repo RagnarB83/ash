@@ -88,6 +88,9 @@ class QMMMTheory:
         self.elems=fragment.elems
         self.connectivity=fragment.connectivity
 
+        self.excludeboundaryatomlist=excludeboundaryatomlist
+        self.unusualboundary = unusualboundary
+
         # Region definitions
         self.allatoms=list(range(0,len(self.elems)))
         print("All atoms in fragment:", len(self.allatoms))
@@ -276,7 +279,7 @@ class QMMMTheory:
             ash.modules.module_coords.print_coords_for_atoms(self.coords, self.elems, self.qmatoms, labels=self.qmatoms)
             print()
             self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, conn_scale,
-                conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
+                conn_tolerance, excludeboundaryatomlist=self.excludeboundaryatomlist, unusualboundary=self.unusualboundary)
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
@@ -825,7 +828,7 @@ class QMMMTheory:
             QMenergy=0.0;self.linkatoms=False
             QMgradient=np.array([0.0, 0.0, 0.0])
         else:
-            #Calling QM theory, providing current QM and MM coordinates.
+            # Calling QM theory, providing current QM and MM coordinates.
             if Grad is True:
                 QMenergy, QMgradient = self.qm_theory.run(current_coords=used_qmcoords, qm_elems=self.current_qmelems, Grad=True, 
                                                           PC=False, numcores=numcores, charge=charge, mult=mult)
@@ -887,11 +890,14 @@ class QMMMTheory:
                     else:
                         print("Unknown linkatom_forceproj_method. Exiting")
                         ashexit()
-                    print("QM1grad contrib:", QM1grad_contrib)
-                    print("MM1grad contrib:", MM1grad_contrib)
+                    #print("QM1grad contrib:", QM1grad_contrib)
+                    #print("MM1grad contrib:", MM1grad_contrib)
                     # Updating full QM_MM_gradient
                     self.QM_MM_gradient[fullatomindex_qm] += QM1grad_contrib
                     self.QM_MM_gradient[fullatomindex_mm] += MM1grad_contrib
+
+            # Defining QM_PC_gradient for simplicity (used by OpenMM_MD)
+            self.QM_PC_gradient = self.QM_MM_gradient
 
 
             print_time_rel(CheckpointTime, modulename='linkatomgrad prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
@@ -1890,7 +1896,9 @@ def compute_decomposed_QM_MM_energy(fragment=None, theory=None):
     ######################################
     # Extra calculation to decompose E_QM_pol into pure E_QM and elstatc energy
     #Defining a mechanical QM/MM object for the purpose of getting the pure QM-energy (no polarization)
-    QM_MM_mech = QMMMTheory(fragment=fragment, qm_theory=theory.qm_theory, mm_theory=theory.mm_theory, qmatoms=theory.qmatoms, embedding='mech', qm_charge=theory.qm_charge, qm_mult=theory.qm_mult, printlevel=0)
+    QM_MM_mech = QMMMTheory(fragment=fragment, qm_theory=theory.qm_theory, mm_theory=theory.mm_theory, qmatoms=theory.qmatoms, 
+                            embedding='mech', qm_charge=theory.qm_charge, qm_mult=theory.qm_mult, printlevel=0,
+                            unusualboundary=theory.unusualboundary, excludeboundaryatomlist=theory.excludeboundaryatomlist)
 
     #Single-point energy calculation of mechanical QM/MM object. Taking only QM-energy
     result_mech = ash.Singlepoint(theory=QM_MM_mech, fragment=fragment, printlevel=0)
