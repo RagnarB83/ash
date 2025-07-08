@@ -88,6 +88,9 @@ class QMMMTheory:
         self.elems=fragment.elems
         self.connectivity=fragment.connectivity
 
+        self.excludeboundaryatomlist=excludeboundaryatomlist
+        self.unusualboundary = unusualboundary
+
         # Region definitions
         self.allatoms=list(range(0,len(self.elems)))
         print("All atoms in fragment:", len(self.allatoms))
@@ -276,7 +279,7 @@ class QMMMTheory:
             ash.modules.module_coords.print_coords_for_atoms(self.coords, self.elems, self.qmatoms, labels=self.qmatoms)
             print()
             self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, conn_scale,
-                conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=unusualboundary)
+                conn_tolerance, excludeboundaryatomlist=self.excludeboundaryatomlist, unusualboundary=self.unusualboundary)
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
@@ -1893,7 +1896,9 @@ def compute_decomposed_QM_MM_energy(fragment=None, theory=None):
     ######################################
     # Extra calculation to decompose E_QM_pol into pure E_QM and elstatc energy
     #Defining a mechanical QM/MM object for the purpose of getting the pure QM-energy (no polarization)
-    QM_MM_mech = QMMMTheory(fragment=fragment, qm_theory=theory.qm_theory, mm_theory=theory.mm_theory, qmatoms=theory.qmatoms, embedding='mech', qm_charge=theory.qm_charge, qm_mult=theory.qm_mult, printlevel=0)
+    QM_MM_mech = QMMMTheory(fragment=fragment, qm_theory=theory.qm_theory, mm_theory=theory.mm_theory, qmatoms=theory.qmatoms, 
+                            embedding='mech', qm_charge=theory.qm_charge, qm_mult=theory.qm_mult, printlevel=0,
+                            unusualboundary=theory.unusualboundary, excludeboundaryatomlist=theory.excludeboundaryatomlist)
 
     #Single-point energy calculation of mechanical QM/MM object. Taking only QM-energy
     result_mech = ash.Singlepoint(theory=QM_MM_mech, fragment=fragment, printlevel=0)
