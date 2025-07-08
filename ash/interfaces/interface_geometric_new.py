@@ -811,6 +811,7 @@ class ASHengineclass:
             return {'energy': E, 'gradient': Grad_act.flatten()}
         else:
             self.full_current_coords=currcoords
+            self.fragment.replace_coords(self.fragment.elems, self.full_current_coords, conn=False)
             #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
             self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
             #print("Current geometry (Å) in step {}".format(self.iteration_count))
