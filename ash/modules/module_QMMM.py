@@ -18,7 +18,8 @@ class QMMMTheory:
                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
                 qm_charge=None, qm_mult=None, chargeboundary_method="shift", exit_after_customexternalforce_update=False,
                 dipole_correction=True, linkatom_method='simple', linkatom_simple_distance=None,
-                linkatom_forceproj_method="adv", linkatom_ratio=0.723, linkatom_type='H'):
+                linkatom_forceproj_method="adv", linkatom_ratio=0.723, linkatom_type='H',
+                update_QMregion_charges=False):
 
         module_init_time = time.time()
         timeA = time.time()
@@ -47,6 +48,11 @@ class QMMMTheory:
         # Added due to pbcmm-elstat
         self.subtractive_correction_E =0.0
         self.subtractive_correction_G = np.zeros((len(fragment.coords), 3))
+
+        # update_QMregion_charges
+        # After each QM-region calculation, the charges of the QM-region may have been calculated
+        # These charges can be used to update the charges of the whole system. Only used for mechanical embedding
+        self.update_QMregion_charges=update_QMregion_charges
 
         # Linkatoms False by default. Later checked.
         self.linkatoms = False
@@ -838,6 +844,33 @@ class QMMMTheory:
 
         print_time_rel(CheckpointTime, modulename='QM step', moduleindex=2,currprintlevel=self.printlevel, currthreshold=1)
         CheckpointTime = time.time()
+
+        for i in self.qmatoms:
+            print(f"XX QM atom {i} has charge : {self.charges[i]}")
+
+        ############################
+        # Update QM-region charges
+        ############################
+
+        if self.update_QMregion_charges:
+            print("update_QMregion_charges is True")
+            print("Will try to find charges attribute in QM-object")
+            try:
+                newqmcharges = self.qm_theory.charges
+            except:
+                print("error: found no charges attribute of QMTheory object. update_QMregion_charges can not be used")
+                ashexit()
+
+            print("newqmcharges:", newqmcharges)
+            for i, index in enumerate(self.qmatoms):
+                self.charges[index] = newqmcharges[i]
+            print("Updating charges of QM-region in MMTheory object")
+            self.mm_theory.update_charges(self.qmatoms,[i for i in newqmcharges])
+
+            print("Charges of QM-region")
+            for i in self.qmatoms:
+                print(f"QM atom {i} has charge : {self.charges[i]}")
+
 
         ##################################################################################
         # QM/MM gradient: Initializing and then adding QM gradient, linkatom gradient
