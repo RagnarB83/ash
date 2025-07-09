@@ -862,6 +862,8 @@ class QMMMTheory:
                 ashexit()
 
             print("newqmcharges:", newqmcharges)
+            #Removing linkatoms
+            newqmcharges = newqmcharges[0:-self.num_linkatoms]
             for i, index in enumerate(self.qmatoms):
                 self.charges[index] = newqmcharges[i]
             print("Updating charges of QM-region in MMTheory object")
