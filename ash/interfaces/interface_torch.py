@@ -228,7 +228,7 @@ class TorchTheory():
             self.energy = results["energy"].item() / ash.constants.hartoeV
 
             # Charges
-            self.charges = results["charges"]
+            self.charges = results["charges"].tolist()
             print("AIMNet2 charges:", self.charges)
 
             if Grad:
