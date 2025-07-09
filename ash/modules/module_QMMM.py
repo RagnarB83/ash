@@ -863,9 +863,9 @@ class QMMMTheory:
                 self.charges[index] = newqmcharges[i]
             print("Updating charges of QM-region in MMTheory object")
             self.mm_theory.update_charges(self.qmatoms,[i for i in newqmcharges])
-            print("Charges of QM-region is now:")
-            for i in self.qmatoms:
-                print(f"QM atom {i} has charge : {self.charges[i]}")
+        print("Defined charges of QM-region:")
+        for i in self.qmatoms:
+            print(f"QM atom {i} has charge : {self.charges[i]}")
 
         ##################################################################################
         # QM/MM gradient: Initializing and then adding QM gradient, linkatom gradient
