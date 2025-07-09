@@ -865,6 +865,8 @@ class QMMMTheory:
             for i, index in enumerate(self.qmatoms):
                 self.charges[index] = newqmcharges[i]
             print("Updating charges of QM-region in MMTheory object")
+            print("len newqmcharges:", len(newqmcharges))
+            print("len self.qmatoms", len(self.qmatoms))
             self.mm_theory.update_charges(self.qmatoms,[i for i in newqmcharges])
 
             print("Charges of QM-region")
