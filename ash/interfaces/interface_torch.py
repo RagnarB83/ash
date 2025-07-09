@@ -246,8 +246,7 @@ class TorchTheory():
             energy_tensor = self.model((nuc_charges_torch, coords_torch))
             print("here")
             print("energy_tensor:", energy_tensor)
-            exit()
-            
+
             energy_tensor = self.model((nuc_charges_torch, coords_torch)).energies
             self.energy = energy_tensor.item()
 
