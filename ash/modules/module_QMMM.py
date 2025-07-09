@@ -845,9 +845,6 @@ class QMMMTheory:
         print_time_rel(CheckpointTime, modulename='QM step', moduleindex=2,currprintlevel=self.printlevel, currthreshold=1)
         CheckpointTime = time.time()
 
-        for i in self.qmatoms:
-            print(f"XX QM atom {i} has charge : {self.charges[i]}")
-
         ############################
         # Update QM-region charges
         ############################
@@ -860,23 +857,15 @@ class QMMMTheory:
             except:
                 print("error: found no charges attribute of QMTheory object. update_QMregion_charges can not be used")
                 ashexit()
-
-            print("newqmcharges:", newqmcharges)
             #Removing linkatoms
-            print("self.num_linkatoms:", self.num_linkatoms)
             newqmcharges = newqmcharges[0:-self.num_linkatoms]
-            print("newqmcharges:", newqmcharges)
             for i, index in enumerate(self.qmatoms):
                 self.charges[index] = newqmcharges[i]
             print("Updating charges of QM-region in MMTheory object")
-            print("len newqmcharges:", len(newqmcharges))
-            print("len self.qmatoms", len(self.qmatoms))
             self.mm_theory.update_charges(self.qmatoms,[i for i in newqmcharges])
-
-            print("Charges of QM-region")
+            print("Charges of QM-region is now:")
             for i in self.qmatoms:
                 print(f"QM atom {i} has charge : {self.charges[i]}")
-
 
         ##################################################################################
         # QM/MM gradient: Initializing and then adding QM gradient, linkatom gradient
