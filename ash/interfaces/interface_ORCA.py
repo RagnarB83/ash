@@ -9,7 +9,7 @@ import copy
 
 import ash.modules.module_coords
 from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, \
-    pygrep, search_list_of_lists_for_index,print_if_level, writestringtofile, check_program_location
+    pygrep, search_list_of_lists_for_index,print_if_level, writestringtofile, check_program_location, listdiff
 from ash.modules.module_singlepoint import Singlepoint
 from ash.modules.module_coords import check_charge_mult
 import ash.functions.functions_elstructure
@@ -2645,15 +2645,16 @@ def create_ASH_otool(basename=None, theoryfile=None, scriptlocation=None, charge
     os.chmod(scriptlocation+"/otool_external", st.st_mode | stat.S_IEXEC)
 
 # Using ORCA as External Optimizer for ASH
-#Will only work for theories that can be pickled: not OpenMMTheory, probably not QMMMTheory
+#Will only work for theories that can be pickled.
 def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=None, mult=None,
-                            ORCA_jobkeyword="Opt"):
+                            ORCA_jobkeyword="Opt", ORCA_blockinput="", actatoms=None):
+
     print_line_with_mainheader("ORCA_External_Optimizer")
-    if fragment == None or theory == None:
+    if fragment is None or theory is None:
         print("ORCA_External_Optimizer requires fragment and theory keywords")
         ashexit()
 
-    if charge == None or mult == None:
+    if charge is None or mult is None:
         print(BC.WARNING,"Warning: Charge/mult was not provided to ORCA_External_Optimizer",BC.END)
         if fragment.charge != None and fragment.mult != None:
             print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
@@ -2691,15 +2692,34 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
     xyzfile="ASH-xyzfile.xyz"
     fragment.write_xyzfile(xyzfile)
 
+    # Active atoms become inverted constraints
+    constraintsblock=""
+    if actatoms is not None:
+        print("Activeatoms list was provided. This means that we need to provide constraints to ORCA")
+        frozenatoms = listdiff(fragment.allatoms,actatoms)
+        print("Freezing the non-active atoms:", frozenatoms)
+        cons=[]
+        for f in frozenatoms:
+            cons.append(f"{{C {f} C}}\n")
+        consstring=''.join(cons)
+        constraintsblock=f"""%geom Constraints
+{consstring}end
+end
+"""
     #ORCA input file
     with open(basename+".inp", 'w') as o:
         o.write(f"! ExtOpt {ORCA_jobkeyword}\n")
         o.write("\n")
+        o.write(f"{ORCA_blockinput}")
+        o.write(f"{constraintsblock}")
         o.write("*xyzfile {} {} {}\n".format(charge,mult,xyzfile))
 
-    #Call ORCA to do geometry optimization
+    #Call ORCA to do Opt/GOAT etc. job
     with open(basename+'.out', 'w') as ofile:
         process = sp.run(['orca', basename+'.inp'], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+
+    if 'GOAT' in ORCA_jobkeyword.upper():
+        print("GOAT keyword found. ")
 
     #Check if ORCA finished
     ORCAfinished, iter = checkORCAfinished(basename+'.out')
@@ -2717,8 +2737,6 @@ def ORCA_External_Optimizer(fragment=None, theory=None, orcadir=None, charge=Non
     fragment.coords=coords
 
     #Grabbing final energy
-    #energy = ORCAfinalenergygrab(basename+".out")
-    #energy = pygrep(,f"{basename}.out")
     energylines = pygrep2("FINAL SINGLE POINT ENERGY (From external program)",f"{basename}.out", errors="ignore")
     energy = float(energylines[-1].split()[-1])
     print("Final energy from external ORCA optimization:", energy)
