@@ -371,7 +371,8 @@ class WrapTheory(Theory):
     Combines 2 theories to give a modified energy and modified gradient
     """
     def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None,
-                 theory1_atoms=None, theory2_atoms=None, theory3_atoms=None):
+                 theory1_atoms=None, theory2_atoms=None, theory3_atoms=None,
+                 theory_operators=None):
         super().__init__()
 
         self.theorytype="QM"
@@ -387,6 +388,7 @@ class WrapTheory(Theory):
         self.theory2_atoms=theory2_atoms
         self.theory3_atoms=theory3_atoms
 
+
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
         print("Creating WrapTheory object")
 
@@ -401,6 +403,15 @@ class WrapTheory(Theory):
                 print("Error: Either theories keyword or theory1 and theory2 have to be provided to WrapTheory")
                 ashexit()
             self.theories=[theory1,theory2]
+
+        # Operators: '+' or '-' for each theory
+        # By default we sum
+        self.theory_operators=theory_operators
+        if self.theory_operators is not None:
+            print("self.theory_operators option active!")
+            if len(self.theory_operators) != len(self.theories):
+                print(f"Error: Number of theory-operators {len(self.theory_operators)} is not equal to number of theories {len(self.theories)}")
+                ashexit()
 
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -469,17 +480,52 @@ class WrapTheory(Theory):
         print("\nAll WrapTheory calculations are done!\n")
 
         # Combine energy and gradient
-        self.energy = sum(energies)
-        if self.printlevel == 2:
-            for count,e in enumerate(energies):
-                print(f"Energy ({self.theories[count].theorynamelabel}):", e)
-            print("Energy (Combined):", self.energy)
-        if Grad:
-            self.gradient = sum(gradients)
-            if self.printlevel == 3:
-                for count,g in enumerate(gradients):
-                    print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
-                print("Gradient (Combined):", self.gradient)
+
+        # Regular summation
+        if self.theory_operators is None:
+            self.energy = sum(energies)
+            if self.printlevel == 2:
+                for count,e in enumerate(energies):
+                    print(f"Energy ({self.theories[count].theorynamelabel}):", e)
+                print("Energy (Combined):", self.energy)
+            if Grad:
+                self.gradient = sum(gradients)
+                if self.printlevel == 3:
+                    for count,g in enumerate(gradients):
+                        print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
+                    print("Gradient (Combined):", self.gradient)
+        # User-defined operations
+        else:
+            print("theory_operators option is active.")
+            print("theory_operators:", self.theory_operators)
+            self.energy=0.0
+            for e,op in zip(energies,self.theory_operators):
+                if op == '+':
+                    self.energy+=e
+                elif op == '-':
+                    self.energy-=e
+                else:
+                    print("Error: unknown operator:", op)
+                    ashexit()
+            if self.printlevel == 2:
+                for count,e in enumerate(energies):
+                    print(f"Energy ({self.theories[count].theorynamelabel}):", e)
+                print("Energy (Combined):", self.energy)
+            if Grad:
+                self.gradient=np.zeros((full_dimension,3))
+                for g,op in zip(gradients,self.theory_operators):
+                    if op == '+':
+                        self.gradient+=g
+                    elif op == '-':
+                        self.gradient-=g
+                    else:
+                        print("Error: unknown operator:", op)
+                        ashexit()
+
+                if self.printlevel == 3:
+                    for count,g in enumerate(gradients):
+                        print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
+                    print("Gradient (Combined):", self.gradient)
 
         if Grad:
             return self.energy, self.gradient
