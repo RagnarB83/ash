@@ -484,13 +484,13 @@ class WrapTheory(Theory):
         # Regular summation
         if self.theory_operators is None:
             self.energy = sum(energies)
-            if self.printlevel == 2:
+            if self.printlevel > 1:
                 for count,e in enumerate(energies):
                     print(f"Energy ({self.theories[count].theorynamelabel}):", e)
                 print("Energy (Combined):", self.energy)
             if Grad:
                 self.gradient = sum(gradients)
-                if self.printlevel == 3:
+                if self.printlevel > 2:
                     for count,g in enumerate(gradients):
                         print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
                     print("Gradient (Combined):", self.gradient)
@@ -507,7 +507,7 @@ class WrapTheory(Theory):
                 else:
                     print("Error: unknown operator:", op)
                     ashexit()
-            if self.printlevel == 2:
+            if self.printlevel > 1:
                 for count,e in enumerate(energies):
                     print(f"Energy ({self.theories[count].theorynamelabel}):", e)
                 print("Energy (Combined):", self.energy)
@@ -522,7 +522,7 @@ class WrapTheory(Theory):
                         print("Error: unknown operator:", op)
                         ashexit()
 
-                if self.printlevel == 3:
+                if self.printlevel > 2:
                     for count,g in enumerate(gradients):
                         print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
                     print("Gradient (Combined):", self.gradient)
