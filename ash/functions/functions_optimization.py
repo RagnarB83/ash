@@ -3,7 +3,7 @@ import time
 import os
 
 import ash.constants
-from ash.functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC
+from ash.functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC,listdiff
 from ash.modules.module_coords import write_xyzfile
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_coords import print_coords_for_atoms
@@ -41,7 +41,7 @@ def write_xyz_trajectory(file, coords, elems, titleline):
 
 #ASH Cartesian Optimizer function for basic usage
 def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNARR-LBFGS', maxiter=50, 
-              frozen_atoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
+              frozen_atoms=None, actatoms=None, RMSGtolerance=0.0001, MaxGtolerance=0.0003, FIRE_timestep=0.00009):
 
     if fragment is not None:
         pass
@@ -57,6 +57,9 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNA
             ashexit()
     if frozen_atoms is None:
         frozen_atoms=[]
+    if actatoms is not None:
+        print("Actatoms provided:", actatoms)
+        frozen_atoms = listdiff(fragment.allatoms,actatoms)
 
     print_atoms_list = fragment.allatoms
 
