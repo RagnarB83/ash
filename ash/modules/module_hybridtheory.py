@@ -371,7 +371,8 @@ class WrapTheory(Theory):
     Combines 2 theories to give a modified energy and modified gradient
     """
     def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None,
-                 theory1_atoms=None, theory2_atoms=None, theory3_atoms=None,
+                 theory1_atoms=None, theory2_atoms=None, theory3_atoms=None, theory4_atoms=None,
+                 theory5_atoms=None,
                  theory_operators=None):
         super().__init__()
 
@@ -387,6 +388,8 @@ class WrapTheory(Theory):
         self.theory1_atoms=theory1_atoms
         self.theory2_atoms=theory2_atoms
         self.theory3_atoms=theory3_atoms
+        self.theory4_atoms=theory4_atoms
+        self.theory5_atoms=theory5_atoms
 
 
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
@@ -448,6 +451,14 @@ class WrapTheory(Theory):
                 print("theory3_atoms has been set:", self.theory3_atoms)
                 chosen_coords = np.take(current_coords, self.theory3_atoms, axis=0)
                 chosen_elems = [qm_elems[i] for i in self.theory3_atoms]
+            elif i+1 == 4 and self.theory4_atoms is not None:
+                print("theory4_atoms has been set:", self.theory4_atoms)
+                chosen_coords = np.take(current_coords, self.theory4_atoms, axis=0)
+                chosen_elems = [qm_elems[i] for i in self.theory4_atoms]
+            elif i+1 == 5 and self.theory5_atoms is not None:
+                print("theory5_atoms has been set:", self.theory5_atoms)
+                chosen_coords = np.take(current_coords, self.theory5_atoms, axis=0)
+                chosen_elems = [qm_elems[i] for i in self.theory5_atoms]
             eg_tuple = theory.run(current_coords=chosen_coords,
                                                 current_MM_coords=current_MM_coords,
                                                 MMcharges=MMcharges, qm_elems=chosen_elems,
