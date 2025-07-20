@@ -371,7 +371,9 @@ class WrapTheory(Theory):
     Combines 2 theories to give a modified energy and modified gradient
     """
     def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None,
-                 theory1_atoms=None, theory2_atoms=None, theory3_atoms=None):
+                 theory1_atoms=None, theory2_atoms=None, theory3_atoms=None, theory4_atoms=None,
+                 theory5_atoms=None,
+                 theory_operators=None):
         super().__init__()
 
         self.theorytype="QM"
@@ -386,6 +388,9 @@ class WrapTheory(Theory):
         self.theory1_atoms=theory1_atoms
         self.theory2_atoms=theory2_atoms
         self.theory3_atoms=theory3_atoms
+        self.theory4_atoms=theory4_atoms
+        self.theory5_atoms=theory5_atoms
+
 
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
         print("Creating WrapTheory object")
@@ -401,6 +406,15 @@ class WrapTheory(Theory):
                 print("Error: Either theories keyword or theory1 and theory2 have to be provided to WrapTheory")
                 ashexit()
             self.theories=[theory1,theory2]
+
+        # Operators: '+' or '-' for each theory
+        # By default we sum
+        self.theory_operators=theory_operators
+        if self.theory_operators is not None:
+            print("self.theory_operators option active!")
+            if len(self.theory_operators) != len(self.theories):
+                print(f"Error: Number of theory-operators {len(self.theory_operators)} is not equal to number of theories {len(self.theories)}")
+                ashexit()
 
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -437,6 +451,14 @@ class WrapTheory(Theory):
                 print("theory3_atoms has been set:", self.theory3_atoms)
                 chosen_coords = np.take(current_coords, self.theory3_atoms, axis=0)
                 chosen_elems = [qm_elems[i] for i in self.theory3_atoms]
+            elif i+1 == 4 and self.theory4_atoms is not None:
+                print("theory4_atoms has been set:", self.theory4_atoms)
+                chosen_coords = np.take(current_coords, self.theory4_atoms, axis=0)
+                chosen_elems = [qm_elems[i] for i in self.theory4_atoms]
+            elif i+1 == 5 and self.theory5_atoms is not None:
+                print("theory5_atoms has been set:", self.theory5_atoms)
+                chosen_coords = np.take(current_coords, self.theory5_atoms, axis=0)
+                chosen_elems = [qm_elems[i] for i in self.theory5_atoms]
             eg_tuple = theory.run(current_coords=chosen_coords,
                                                 current_MM_coords=current_MM_coords,
                                                 MMcharges=MMcharges, qm_elems=chosen_elems,
@@ -469,17 +491,52 @@ class WrapTheory(Theory):
         print("\nAll WrapTheory calculations are done!\n")
 
         # Combine energy and gradient
-        self.energy = sum(energies)
-        if self.printlevel == 2:
-            for count,e in enumerate(energies):
-                print(f"Energy ({self.theories[count].theorynamelabel}):", e)
-            print("Energy (Combined):", self.energy)
-        if Grad:
-            self.gradient = sum(gradients)
-            if self.printlevel == 3:
-                for count,g in enumerate(gradients):
-                    print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
-                print("Gradient (Combined):", self.gradient)
+
+        # Regular summation
+        if self.theory_operators is None:
+            self.energy = sum(energies)
+            if self.printlevel > 1:
+                for count,e in enumerate(energies):
+                    print(f"Energy ({self.theories[count].theorynamelabel}):", e)
+                print("Energy (Combined):", self.energy)
+            if Grad:
+                self.gradient = sum(gradients)
+                if self.printlevel > 2:
+                    for count,g in enumerate(gradients):
+                        print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
+                    print("Gradient (Combined):", self.gradient)
+        # User-defined operations
+        else:
+            print("theory_operators option is active.")
+            print("theory_operators:", self.theory_operators)
+            self.energy=0.0
+            for e,op in zip(energies,self.theory_operators):
+                if op == '+':
+                    self.energy+=e
+                elif op == '-':
+                    self.energy-=e
+                else:
+                    print("Error: unknown operator:", op)
+                    ashexit()
+            if self.printlevel > 1:
+                for count,e in enumerate(energies):
+                    print(f"Energy ({self.theories[count].theorynamelabel}):", e)
+                print("Energy (Combined):", self.energy)
+            if Grad:
+                self.gradient=np.zeros((full_dimension,3))
+                for g,op in zip(gradients,self.theory_operators):
+                    if op == '+':
+                        self.gradient+=g
+                    elif op == '-':
+                        self.gradient-=g
+                    else:
+                        print("Error: unknown operator:", op)
+                        ashexit()
+
+                if self.printlevel > 2:
+                    for count,g in enumerate(gradients):
+                        print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
+                    print("Gradient (Combined):", self.gradient)
 
         if Grad:
             return self.energy, self.gradient

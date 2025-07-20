@@ -228,7 +228,7 @@ class TorchTheory():
             self.energy = results["energy"].item() / ash.constants.hartoeV
 
             # Charges
-            self.charges = results["charges"]
+            self.charges = results["charges"].tolist()
             print("AIMNet2 charges:", self.charges)
 
             if Grad:
@@ -246,8 +246,7 @@ class TorchTheory():
             energy_tensor = self.model((nuc_charges_torch, coords_torch))
             print("here")
             print("energy_tensor:", energy_tensor)
-            exit()
-            
+
             energy_tensor = self.model((nuc_charges_torch, coords_torch)).energies
             self.energy = energy_tensor.item()
 

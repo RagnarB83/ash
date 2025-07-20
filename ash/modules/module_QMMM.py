@@ -18,7 +18,8 @@ class QMMMTheory:
                 unusualboundary=False, openmm_externalforce=False, TruncatedPC=False, TruncPCRadius=55, TruncatedPC_recalc_iter=50,
                 qm_charge=None, qm_mult=None, chargeboundary_method="shift", exit_after_customexternalforce_update=False,
                 dipole_correction=True, linkatom_method='simple', linkatom_simple_distance=None,
-                linkatom_forceproj_method="adv", linkatom_ratio=0.723, linkatom_type='H'):
+                linkatom_forceproj_method="adv", linkatom_ratio=0.723, linkatom_type='H',
+                update_QMregion_charges=False):
 
         module_init_time = time.time()
         timeA = time.time()
@@ -47,6 +48,11 @@ class QMMMTheory:
         # Added due to pbcmm-elstat
         self.subtractive_correction_E =0.0
         self.subtractive_correction_G = np.zeros((len(fragment.coords), 3))
+
+        # update_QMregion_charges
+        # After each QM-region calculation, the charges of the QM-region may have been calculated
+        # These charges can be used to update the charges of the whole system. Only used for mechanical embedding
+        self.update_QMregion_charges=update_QMregion_charges
 
         # Linkatoms False by default. Later checked.
         self.linkatoms = False
@@ -731,7 +737,7 @@ class QMMMTheory:
         return polarizability
     # General run
     def run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None,
-            current_MM_coords=None, MMcharges=None, qm_elems=None, PC=None):
+            current_MM_coords=None, MMcharges=None, qm_elems=None, PC=None, mm_elems=None):
 
         if self.printlevel >= 2:
             print(BC.WARNING, BC.BOLD, "------------RUNNING QM/MM MODULE-------------", BC.END)
@@ -838,6 +844,28 @@ class QMMMTheory:
 
         print_time_rel(CheckpointTime, modulename='QM step', moduleindex=2,currprintlevel=self.printlevel, currthreshold=1)
         CheckpointTime = time.time()
+
+        ############################
+        # Update QM-region charges
+        ############################
+
+        if self.update_QMregion_charges:
+            print("update_QMregion_charges is True")
+            print("Will try to find charges attribute in QM-object")
+            try:
+                newqmcharges = self.qm_theory.charges
+            except:
+                print("error: found no charges attribute of QMTheory object. update_QMregion_charges can not be used")
+                ashexit()
+            #Removing linkatoms
+            newqmcharges = newqmcharges[0:-self.num_linkatoms]
+            for i, index in enumerate(self.qmatoms):
+                self.charges[index] = newqmcharges[i]
+            print("Updating charges of QM-region in MMTheory object")
+            self.mm_theory.update_charges(self.qmatoms,[i for i in newqmcharges])
+        print("Defined charges of QM-region:")
+        for i in self.qmatoms:
+            print(f"QM atom {i} has charge : {self.charges[i]}")
 
         ##################################################################################
         # QM/MM gradient: Initializing and then adding QM gradient, linkatom gradient
@@ -1132,6 +1160,8 @@ class QMMMTheory:
         #########################################################################################
 
         # Split current_coords into MM-part and QM-part efficiently.
+        print("current_coords:", current_coords)
+        print("self.xatom_mask:", self.xatom_mask)
         used_mmcoords, used_qmcoords = current_coords[~self.xatom_mask], current_coords[self.xatom_mask]
 
         if self.linkatoms is True:
@@ -1275,7 +1305,7 @@ class QMMMTheory:
             CheckpointTime = time.time()
             self.make_QM_PC_gradient() #populates self.QM_PC_gradient
             print_time_rel(CheckpointTime, modulename='QMpcgrad prepare', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
-
+            #ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_{}_init".format(label), description="QM+PC gradient {} (au/Bohr):".format(label))
             #LINKATOM FORCE PROJECTION
             if self.linkatoms is True:
                 CheckpointTime = time.time()
@@ -1309,10 +1339,10 @@ class QMMMTheory:
                     #print("QM1grad contrib:", QM1grad_contrib)
                     #print("MM1grad contrib:", MM1grad_contrib)
 
-                    self.QM_PC_gradient[fullatomindex_qm] = QM1grad_contrib
-                    self.QM_PC_gradient[fullatomindex_mm] = MM1grad_contrib
+                    self.QM_PC_gradient[fullatomindex_qm] += QM1grad_contrib
+                    self.QM_PC_gradient[fullatomindex_mm] += MM1grad_contrib
 
-
+            #ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_{}_afterlink".format(label), description="QM+PC gradient {} (au/Bohr):".format(label))
             print_time_rel(CheckpointTime, modulename='linkatomgrad prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             print_time_rel(Grad_prep_CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             CheckpointTime = time.time()

@@ -331,7 +331,7 @@ class MACETheory():
 # num_channels: size-of model. 128 is recommended, 256 (larger more accurate), 64 faster
 # max_L: symmetry of messages. affects speed and accuracy. default 1 (compromise of speed/acc), 2 more accurate and slower, 0 is fast
 # r_max: cutoff radius of local env. Recommended: 4-7 Ang
-#NOTE: E0s="average" is easiest but not recommended. Can provide 
+#NOTE: E0s="average" is easiest but not recommended.
 ##todo: seed
 def write_mace_config(config_file="config.yml", name="model",model="MACE", device='cpu', 
                       valid_fraction=0.1, train_file="train_data_mace.xyz",E0s=None,

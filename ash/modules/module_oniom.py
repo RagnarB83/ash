@@ -619,6 +619,14 @@ class ONIOMTheory(Theory):
                     theory.modify_bonded_forces(other_region)
                     # NOTE: Fullsystem coordinates still passed here
                     res = theory.run(current_coords=full_coords, elems=full_elems, Grad=Grad, numcores=theory.numcores, label=label)
+                # if the theory is QM/MM then this
+                elif theory.theorytype == "QM/MM":
+                    print("Case: Theory is QM/MM object")
+                    print("Warning: A subtractive correction for a region where the theory is a QM/MM Theory does not make much sense")
+                    print("Warning: Using only the QM-theory part of the QM/MM object to calculate the subtraction")
+                    res = theory.qm_theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=theory.numcores,
+                                                    PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges, mm_elems=mm_elems_for_qmprogram,
+                                                    label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
                 else:
                     res = theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=theory.numcores,
                                                     PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges, mm_elems=mm_elems_for_qmprogram,
