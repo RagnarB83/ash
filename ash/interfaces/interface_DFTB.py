@@ -13,7 +13,8 @@ import ash.settings_ash
 class DFTBTheory():
     def __init__(self, dftbdir=None, hamiltonian="XTB", xtb_method="GFN2-xTB", printlevel=2, label="DFTB",
                  numcores=1, slaterkoster_dict=None, maxmom_dict=None, hubbard_derivs_dict=None, Gauss_blur_width=0.0,
-                 SCC=True, ThirdOrderFull=False, ThirdOrder=False, hcorrection_zeta=None):
+                 SCC=True, ThirdOrderFull=False, ThirdOrder=False, hcorrection_zeta=None,
+                 MaxSCCIterations=300):
 
         self.theorynamelabel="DFTB"
         self.label=label
@@ -41,8 +42,10 @@ class DFTBTheory():
         self.hubbard_derivs_dict=hubbard_derivs_dict
         self.hcorrection_zeta=hcorrection_zeta
 
-        #Second-order DFTB2
+        # Second-order DFTB2
         self.SCC=SCC
+        # SCC max iterations
+        self.MaxSCCIterations=MaxSCCIterations
 
         # Third-order
         self.ThirdOrderFull=ThirdOrderFull
@@ -139,7 +142,8 @@ class DFTBTheory():
         write_DFTB_input(self.hamiltonian,self.xtb_method,xyzfilename+'.xyz',qm_elems,current_coords,charge,mult, PC=PC, Grad=Grad,
                          slaterkoster_dict=self.slaterkoster_dict, maxmom_dict=self.maxmom_dict, MMcharges=MMcharges, MMcoords=current_MM_coords,
                          Gauss_blur_width=self.Gauss_blur_width, SCC=self.SCC, ThirdOrderFull=self.ThirdOrderFull, ThirdOrder=self.ThirdOrder,
-                         hubbard_derivs_dict=self.hubbard_derivs_dict, hcorrection_zeta=self.hcorrection_zeta)
+                         hubbard_derivs_dict=self.hubbard_derivs_dict, hcorrection_zeta=self.hcorrection_zeta,
+                         MaxSCCIterations=self.MaxSCCIterations)
 
         print_time_rel(module_init_time, modulename=f'DFTB prep-run', moduleindex=3)
         # Run DFTB
@@ -176,7 +180,7 @@ class DFTBTheory():
 #
 def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, SCC=True,
                      slaterkoster_dict=None, maxmom_dict=None, Gauss_blur_width=0.0, ThirdOrderFull=False, ThirdOrder=False,
-                     hubbard_derivs_dict=None, hcorrection_zeta=None):
+                     hubbard_derivs_dict=None, hcorrection_zeta=None, MaxSCCIterations=300):
 
     # Open file
     f = open("dftb_in.hsd", "w")
@@ -230,6 +234,7 @@ def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult
         else:
             ThirdOrderkeyword="No"
         inputlines.append(f"  Scc = {SCCkeyword}"+'\n')
+        inputlines.append(f"  MaxSCCIterations = {MaxSCCIterations}\n")
         inputlines.append(f"  ThirdOrderFull = {ThirdOrderFullkeyword}"+'\n')
         inputlines.append(f"  ThirdOrder = {ThirdOrderkeyword}"+'\n')
         if hubbard_derivs_dict is not None:
