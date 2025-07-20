@@ -2258,7 +2258,7 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
     # NOTE: These lists are only defined for CHARMM files currently. Not Amber or GROMACS
     if openmmobject is not None:
         atomnames = openmmobject.atomnames
-        print(atomnames)
+        #print(atomnames)
         resnames = openmmobject.resnames
         residlabels = openmmobject.resids
         segmentlabels = openmmobject.segmentnames

@@ -1305,7 +1305,7 @@ class QMMMTheory:
             CheckpointTime = time.time()
             self.make_QM_PC_gradient() #populates self.QM_PC_gradient
             print_time_rel(CheckpointTime, modulename='QMpcgrad prepare', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
-
+            #ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_{}_init".format(label), description="QM+PC gradient {} (au/Bohr):".format(label))
             #LINKATOM FORCE PROJECTION
             if self.linkatoms is True:
                 CheckpointTime = time.time()
@@ -1339,10 +1339,10 @@ class QMMMTheory:
                     #print("QM1grad contrib:", QM1grad_contrib)
                     #print("MM1grad contrib:", MM1grad_contrib)
 
-                    self.QM_PC_gradient[fullatomindex_qm] = QM1grad_contrib
-                    self.QM_PC_gradient[fullatomindex_mm] = MM1grad_contrib
+                    self.QM_PC_gradient[fullatomindex_qm] += QM1grad_contrib
+                    self.QM_PC_gradient[fullatomindex_mm] += MM1grad_contrib
 
-
+            #ash.modules.module_coords.write_coords_all(self.QM_PC_gradient, self.elems, indices=self.allatoms, file="QM+PCgradient_{}_afterlink".format(label), description="QM+PC gradient {} (au/Bohr):".format(label))
             print_time_rel(CheckpointTime, modulename='linkatomgrad prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             print_time_rel(Grad_prep_CheckpointTime, modulename='QM/MM gradient prepare', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             CheckpointTime = time.time()
