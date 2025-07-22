@@ -11,6 +11,8 @@ import ash.modules.module_coords
 from ash.modules.module_coords import check_charge_mult, check_multiplicity,read_xyzfile,write_multi_xyz_file, Fragment
 from ash.modules.module_results import ASH_Results
 import ash.interfaces.interface_ORCA
+from ash.modules.module_QMMM import QMMMTheory
+from ash.modules.module_oniom import ONIOMTheory
 from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
@@ -135,8 +137,23 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     # Hessatoms list is allatoms (if hessatoms list not provided). If hessatoms provided we do a partial Hessian
     if hessatoms is None:
         print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
-        hessatoms=allatoms
-        projection=True
+        if isinstance(theory,QMMMTheory):
+            print("Theory object provided is a QM/MM Theory")
+            print("Error: No hessatoms option was provided. This is required for QM/MM Theories")
+            print("Please provide a list of atom indices to the hessatoms keyword of NumFreq to define the partial Hessian")
+            print("For QM/MM numerical frequencies you want the list of hessatoms to be the same atoms used to define the \nactive-region in the optimization (or the QM-region)")
+            print("Exiting now.")
+            ashexit()
+        elif isinstance(theory,ONIOMTheory):
+            print("Theory object provided is a ONIOM Theory")
+            print("Error: No hessatoms option was provided. This is required for ONIOM Theories")
+            print("Please provide a list of atom indices to the hessatoms keyword of NumFreq to define the partial Hessian")
+            print("For ONIOM numerical frequencies you want the list of hessatoms to be the same atoms used to define the \nactive-region in the optimization (or Region1)")
+            print("Exiting now.")
+            ashexit()
+        else:
+            hessatoms=allatoms
+            projection=True
     elif len(hessatoms) == fragment.numatoms:
         print("Hessatoms list provided but equal to number of fragment atoms. Rot+trans projection is on!")
         projection=True
