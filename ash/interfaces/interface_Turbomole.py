@@ -264,13 +264,19 @@ class TurbomoleTheory:
                   numcores=self.numcores)
             self.gradient = grab_gradient(len(current_coords))
 
+            if PC:
+                self.pcgradient = grab_pcgradient(len(MMcharges))
+
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
         # Grab gradient if calculated
         if Grad is True:
-            return self.energy, self.gradient
+            if PC:
+                return self.energy, self.gradient, self.pcgradient
+            else:
+                return self.energy, self.gradient
         else:
             return self.energy
 
@@ -406,3 +412,17 @@ def grab_gradient(numatoms):
             counter+=1
 
     return gradient
+
+def grab_pcgradient(numpc,filename="pc_gradient"):
+    pcgradient = np.zeros((numpc,3))
+    with open(filename, 'r') as gradfile:
+        gradlines = gradfile.readlines()
+    counter=0
+    for i,line in enumerate(gradlines):
+        if '$end' in line:
+            break
+        if i > 0:
+            pcgradient[counter] = [float(j.replace('D','E')) for j in line.split()]
+            counter+=1
+
+    return pcgradient
