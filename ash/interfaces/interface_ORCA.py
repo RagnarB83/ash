@@ -771,10 +771,9 @@ end"""
         if Hessian is True:
             print("Reading Hessian from file:", self.filename+".hess")
             self.hessian = Hessgrab(self.filename+".hess")
-
             self.ir_intensities = grab_IR_intensities(self.filename+'.hess')
 
-        if Grad == True:
+        if Grad is True:
             grad =ORCAgradientgrab(engradfile)
             self.grad = self.grad + grad
             if self.printlevel >= 3:
@@ -1299,7 +1298,6 @@ def grab_IR_intensities(filename):
     intensities=[]
     with open(filename) as f:
         for line in f:
-            print(line)
             if grab:
                 if len(line.split()) == 6:
                     intens = float(line.split()[2])

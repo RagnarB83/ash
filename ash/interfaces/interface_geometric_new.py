@@ -5,6 +5,7 @@ import time
 
 import ash.constants
 from ash.modules.module_QMMM import QMMMTheory
+#from ash.modules.module_oniom import ONIOMTheory
 from ash.interfaces.interface_OpenMM import OpenMMTheory
 from ash.modules.module_coords import print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile,write_coords_all
 from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,print_line_with_subheader1,print_if_level
@@ -134,14 +135,18 @@ class GeomeTRICOptimizerClass:
         def print_atoms_output_setting(self,theory,fragment):
             #What atoms to print in outputfile in each opt-step. Example choice: QM-region only
             #If not specified then active-region or all-atoms
-            if self.print_atoms_list == None:
+            if self.print_atoms_list is None:
                 #Print-atoms list not specified. What to do:
-                if self.ActiveRegion == True:
+                if self.ActiveRegion is True:
                     #If QM/MM object then QM-region:
                     if isinstance(theory,QMMMTheory):
                         print("Theory class: QMMMTheory")
                         print("Will by default print only QM-region in output (use print_atoms_list option to change)")
                         self.print_atoms_list=theory.qmatoms
+                    elif isinstance(theory,ash.ONIOMTheory):
+                        print("Theory class: ONIOMTheory")
+                        print("Will by default print only Region1 in output (use print_atoms_list option to change)")
+                        self.print_atoms_list=theory.regions_N[0]
                     else:
                         #Print actatoms since using Active Region (can be too much)
                         self.print_atoms_list=self.actatoms

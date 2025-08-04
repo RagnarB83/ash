@@ -1160,8 +1160,6 @@ class QMMMTheory:
         #########################################################################################
 
         # Split current_coords into MM-part and QM-part efficiently.
-        print("current_coords:", current_coords)
-        print("self.xatom_mask:", self.xatom_mask)
         used_mmcoords, used_qmcoords = current_coords[~self.xatom_mask], current_coords[self.xatom_mask]
 
         if self.linkatoms is True:

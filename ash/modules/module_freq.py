@@ -20,7 +20,7 @@ import ash.constants
 # Checked by analytic_hessian attribute True
 #TODO: IR/Raman intensities
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, masses=None,
-           pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100,
+           pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, printlevel=2,
            scaling_factor=1.0, symmetry_number=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
@@ -114,7 +114,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
 # ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial',
         temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, Raman=False,
-        scaling_factor=1.0, symmetry_number=None):
+        scaling_factor=1.0, symmetry_number=None, force_projection=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     ################
@@ -160,6 +160,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     else:
         print("Hessatoms list provided, partial Hessian. Turning off rot+trans projection")
         projection=False
+
+    if force_projection is not None:
+        print("Warning: force_projection keyword in use!")
+        if force_projection is True:
+            print("force_projection set to True. Turning projection on")
+            projection=True
+        elif force_projection is False:
+            print("force_projection set to to False. Turning projection off")
+            projection=False
+    
     # Making sure hessatoms list is sorted
     hessatoms.sort()
     # If hessatoms_masses list was provided
@@ -496,16 +506,21 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     symm_hessian=(hessian+hessian.transpose())/2
     hessian=symm_hessian
 
-    # Diagonalize mass-weighted Hessian
-
-    # Get partial matrix by deleting atoms not present in list.
-    hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
-
     # Use input masses if given, otherwise take from frament
     if hessatoms_masses == None:
         hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
         hessmasses=hessatoms_masses
+
+    print("hessian:", hessian)
+    # Mass-weighted Hessian (in case we need it)
+    mwhessian, massmatrix = massweight(hessian, hessmasses, numatoms)
+    #print("mwhessian:", mwhessian)
+    #exit()
+    # Get partial matrix by deleting atoms not present in list.
+    hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
+
+
 
     hesscoords = np.take(fragment.coords,hessatoms, axis=0)
     print("Elements:", hesselems)

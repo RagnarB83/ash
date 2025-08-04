@@ -948,6 +948,13 @@ class Fragment:
 
         if (len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes)) is False:
             print(BC.FAIL,"Error. Missing entries in list.")
+            print("Len atomlist:", len(self.atomlist))
+            print("Len elems:", len(self.elems))
+            print("Len coords:", len(self.coords))
+            print("Len atomcharges:", len(self.atomcharges))
+            print("Len atomtypes:", len(self.atomtypes))
+            print("Len fragmenttype_labels:", len(self.fragmenttype_labels))
+            print("fragmenttype_labels:", self.fragmenttype_labels)
             print("This should not have happened. File a bugreport", BC.END)
             ashexit()
         with open(filename, 'w') as outfile:
