@@ -14,7 +14,7 @@ class TurbomoleTheory:
     def __init__(self, TURBODIR=None, turbomoledir=None, filename='XXX', printlevel=2, label="Turbomole",
                 numcores=1, parallelization='SMP', functional=None, gridsize="m4", scfconf=7, symmetry="c1", rij=True,
                 basis=None, jbasis=None, scfiterlimit=50, maxcor=500, ricore=500,
-                mp2=False):
+                mp2=False, pointcharge_type=None, pc_gaussians=None):
 
         self.theorynamelabel="Turbomole"
         self.label=label
@@ -37,6 +37,14 @@ class TurbomoleTheory:
         self.parallelization=parallelization
         self.mpi_is_setup=False
         self.smp_is_setup=False
+
+        #Special pointcharges options in Turbomole
+        self.pointcharge_type=pointcharge_type
+        self.pc_gaussians=pc_gaussians
+        # if pointcharge_type is None then regular pointcharges
+        # if pointcharge_type is 'gaussians' then we have smeared Gaussian charges. This will require pc_gaussians array to be defined (list of Gaussian alpha values for all charges)
+        # if pointcharge_type is 'mxrank=Z' where Z is max multipole rank then we are doing point-multipole embedding. TODO: input not yet ready
+        # if pointcharge_type is 'pe'. Polarizable embedding. TODO: not yet ready
 
         # Basis set
         if basis is None:
@@ -224,7 +232,9 @@ class TurbomoleTheory:
         #
         create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
                             symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
-                            scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore)
+                            scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore,
+                            pcharges=MMcharges, pccoords=current_MM_coords, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
+
         #################
         # Run Turbomole
         #################
@@ -298,7 +308,8 @@ def create_coord_file(elems,coords, write_unit='BOHR', periodic_info=None, filen
         coordfile.write("$end\n")
 
 def create_control_file(functional="lh12ct-ssifpw92", gridsize="m4", scfconf="7", symmetry="c1", rij=True, dft=True, mp2=False,
-                        basis="def2-SVP", jbasis="def2-SVP", scfiterlimit=30, maxcor=500, ricore=500):
+                        basis="def2-SVP", jbasis="def2-SVP", scfiterlimit=30, maxcor=500, ricore=500,
+                        pcharges=None, pccoords=None, pointcharge_type=None, pc_gaussians=None):
 
 #Skipping orb section for now
 #$closed shells
@@ -339,10 +350,37 @@ mp2"""
         controlstring += f"""\n$ricore      {maxcor}
 $rij"""
 
+    # Point charge handling
+    if pcharges is not None:
+        if pointcharge_type is None:
+            pointcharge_type=""
+        controlstring += f"""\n$point_charges file=pointcharges\n"""
+        controlstring += f"""$point_charge_gradients file=pc_gradient\n"""
+        controlstring += f"""$drvopt
+   point charges on"""
+
+        pcstring=""
+
+        for i,(charge,pcoord) in enumerate(zip(pcharges,pccoords)):
+            if pointcharge_type == "gaussians":
+                alpha = pc_gaussians[i]
+                pcstring += f"""{pcoord[0]} {pcoord[1]} {pcoord[2]} {charge} {alpha}\n"""
+            elif 'mxrank' in pointcharge_type:
+                print("mxrank pointcharge_type chosen. Not ready")
+                exit()
+                #if '2' in pointcharge_type:
+                #    pcstring += f"""{pcoord[0]} {pcoord[1]} {pcoord[2]} {charge} \n"""            
+                #elif '3' in pointcharge_type:
+                #    pcstring += f"""{pcoord[0]} {pcoord[1]} {pcoord[2]} {charge} \n"""      
+            else:
+                pcstring += f"""{pcoord[0]} {pcoord[1]} {pcoord[2]} {charge} \n"""
+        with open('pointcharges', 'w') as pcfile:
+            pcfile.write(f"$point_charges {pointcharge_type} \n")
+            pcfile.write(pcstring)
+            pcfile.write("$end\n")
     controlstring+="\n$end"
 
     writestringtofile(controlstring, 'control')
-
 
 
 def grab_energy_from_energyfile(column=1):
