@@ -233,7 +233,7 @@ class TurbomoleTheory:
         create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
                             symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
                             scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore,
-                            pcharges=MMcharges, pccoords=current_MM_coords, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
+                            pcharges=MMcharges, pccoords=current_MM_coords*1.88972612546, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
 
         #################
         # Run Turbomole
