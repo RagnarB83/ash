@@ -2,6 +2,7 @@ import os
 import glob
 import shutil
 import random
+import numpy as np
 
 from ash.modules.module_coords import write_xyzfile, split_multimolxyzfile
 from ash.functions.functions_general import natural_sort,ashexit
@@ -317,39 +318,50 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     print("Fragments labels:",[frag.label for frag in fragments])
     print("energies:", energies)
     # Write data file that MACE uses
-    mace_file=open("train_data_mace.xyz", "w")
+    
+    with open("train_data_mace.xyz", "w") as mace_file:
+        print("Writing isolated atom reference energies....")
+        for el, an_at in energies_atoms_dict.items():
+            en_ev = an_at * 27.211386245988
+            mace_file.write("1\n")
+            if Grad:
+                mace_file.write(f"Properties=species:S:1:pos:R:3:forces_REF:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
+                mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}"
+                                f"{-0.0:17.8f}{-0.0:17.8f}{-0.0:17.8f}\n")
+            else:
+                mace_file.write(f"Properties=species:S:1:pos:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
+                mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}\n")
 
-    # Isolated atoms print
-    for el,en_at in energies_atoms_dict.items():
-        en_ev = en_at*27.211386245988
-        mace_file.write("1\n")
-        mace_file.write(f"Properties=species:S:1:pos:R:3:forces_REF:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
-        mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}\
-{-0.0:17.8f}{-0.0:17.8f}{-0.0:17.8f}\n")
 
-    #TODO: Nmols
-    Nmols="1"
+        #TODO: Nmols
+        Nmols="1"
 
-    #TODO comp
-    comp="xxx"
-    #molindex
-    molindex=0
+        #TODO comp
+        comp="xxx"
+        #molindex
+        molindex=0
 
-    for i in range(len(energies)):
-        # Converting energy to eV
-        energy_ev = energies[i]*27.211386245988
-        # Converting grad to force in eV/Ang
-        force = -1*gradients[i]*51.42206747
-        frag = fragments[i]
-        # New mol
-        mace_file.write(f"{frag.numatoms}\n")
-        mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1:forces_REF:R:3 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
-        for i in range(frag.numatoms):
-            mace_file.write(f"{frag.elems[i]:2s}{frag.coords[i][0]:17.8f}{frag.coords[i][1]:17.8f}{frag.coords[i][2]:17.8f}\
-{molindex:9d}{force[i][0]:17.8f}{force[i][1]:17.8f}{force[i][2]:17.8f}\n")
-    mace_file.close()
+        for i in range(len(energies)):
+            # Converting energy to eV
+            frag = fragments[i]
+            energy_ev = energies[i]*27.211386245988
+            mace_file.write(f"{frag.numatoms}\n")
+            if Grad:
+                force = -1 * np.array(gradients[i]) * 51.42206747
+                mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1:forces_REF:R:3 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
+                for j in range(frag.numatoms): # Bug fix: inner loop variable was i, now j
+                    mace_file.write(f"{frag.elems[j]:2s}{frag.coords[j][0]:17.8f}{frag.coords[j][1]:17.8f}{frag.coords[j][2]:17.8f}"
+                                    f"{molindex:9d}{force[j][0]:17.8f}{force[j][1]:17.8f}{force[j][2]:17.8f}\n")
+            else:
+                # Write without forces
+                mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
+                for j in range(frag.numatoms): # Bug fix: inner loop variable was i, now j
+                    mace_file.write(f"{frag.elems[j]:2s}{frag.coords[j][0]:17.8f}{frag.coords[j][1]:17.8f}{frag.coords[j][2]:17.8f}"
+                                    f"{molindex:9d}\n")
 
-    print("All done! Files created:\ntrain_data.xyz\ntrain_data.energies\ntrain_data.gradients\ntrain_data_mace.xyz")
+    print("All done! Files created:\ntrain_data.xyz\ntrain_data.energies\ntrain_data_mace.xyz")
+    if Grad:
+        print("train_data.gradients")
     print("Number of user-chosen snapshots:", num_snapshots)
     print("Number of successfully generated datapoints:", len(energies))
 
