@@ -10,7 +10,7 @@ import ash.constants
 class MACETheory():
     def __init__(self, config_filename="config.yml", 
                  filename="mace.model", model_file=None, printlevel=2, 
-                 label="MACETheory", numcores=1, device="cpu"):
+                 label="MACETheory", numcores=1, device="cpu", return_zero_gradient=False):
         # Early exits
         try:
             import mace
@@ -29,7 +29,7 @@ class MACETheory():
         self.printlevel = printlevel
 
         # Ignore predicted forces and return zero gradient
-        self.return_zero_gradient=False
+        self.return_zero_gradient=return_zero_gradient
 
         # Model attribute is None until we have loaded a model
         self.model=None
