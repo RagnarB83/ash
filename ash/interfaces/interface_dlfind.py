@@ -351,7 +351,10 @@ class DLFIND_optimizerClass:
             self.fragment.coords=coords*0.5291772109303
             # Get Hessian
             #TODO: parallelization
-            if self.hessian_choice == "numfreq":
+            if type(self.hessian_choice) == np.ndarray:
+                print("A Numpy array was detected as Hessian choice. Passing over to DL-FIND")
+                hessian = self.hessian_choice
+            elif self.hessian_choice == "numfreq":
                 print("NumFreq option requested")
                 print("NumFreq Npoint:", self.numfreq_npoint)
 
@@ -372,6 +375,14 @@ class DLFIND_optimizerClass:
                                                numcores=self.theory.numcores, use_xtb_feature=True, 
                                                charge=charge, mult=mult)
                 hessian = np.loadtxt("Hessian_from_xtb")
+            elif 'file:' in self.hessian_choice:
+                print("A file was detected as Hessian choice:", self.hessian_choice)
+                hessianfile = self.hessian_choice.replace("file:","")
+                if os.path.isfile(hessianfile) is False:
+                    print(f"File {hessianfile} does not exist.")
+                    ashexit()
+                hessian=hessian = np.loadtxt(hessianfile)
+
             elif self.hessian_choice == "random":
                 hessian = np.random.random((nvar,nvar))
             print("ASH hessian:", hessian)
@@ -417,9 +428,9 @@ class DLFIND_optimizerClass:
             # Traj-writing for regular opt
             if self.icoord < 100:
                 self.dlfind_opt_cycles+=1
-                print("="*70)
-                print(f"DLFIND OPTIMIZATION CYCLE {self.dlfind_opt_cycles}")
-                print("="*70)
+                #print("="*70)
+                #print(f"DLFIND OPTIMIZATION CYCLE {self.dlfind_opt_cycles}")
+                #print("="*70)
                 #Storing current coordinates
                 #traj_coords.append(np.array(coordinates_ang))
                 print("Writing regular-opt traj")
