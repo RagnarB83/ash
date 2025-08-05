@@ -28,6 +28,9 @@ class MACETheory():
         self.filename = filename
         self.printlevel = printlevel
 
+        # Ignore predicted forces and return zero gradient
+        self.return_zero_gradient=False
+
         # Model attribute is None until we have loaded a model
         self.model=None
 
@@ -275,10 +278,13 @@ class MACETheory():
                 output = self.model(batch.to_dict(), compute_stress=False, compute_force=False)
             # Grab energy
             en = torch_tools.to_numpy(output["energy"])[0]
-            # Calculate forces
-            forces = compute_forces(output["energy"], batch["positions"])
-            print_time_rel(module_init_time, modulename=f'MACE run - after forces', moduleindex=2)
-            forces = torch_tools.to_numpy(forces)
+
+            # Grad Boolean
+            if Grad:
+                # Calculate forces
+                forces = compute_forces(output["energy"], batch["positions"])
+                print_time_rel(module_init_time, modulename=f'MACE run - after forces', moduleindex=2)
+                forces = torch_tools.to_numpy(forces)
 
             # Hessian 
             if Hessian:
@@ -293,28 +299,37 @@ class MACETheory():
             print("previous regular mode")
             for batch in data_loader:
                 try:
-                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=True)
+                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=Grad)
                 except RuntimeError as e:
                     print("RuntimeError occurred. Trying type changes. Message", e)
                     self.model = self.model.float() # sometimes necessary to avoid type problems
-                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=True)
+                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=Grad)
 
             # Get energy and forces
             en = torch_tools.to_numpy(output["energy"])[0]
+
+        # Convert energy and forces to Eh and gradient in Eh/Bohr
+        self.energy = float(en*ash.constants.evtohar)
+        if Grad:
             forces = np.split(
                 torch_tools.to_numpy(output["forces"]),
                 indices_or_sections=batch.ptr[1:],
                 axis=0)[0]
-        # Convert energy and forces to Eh and gradient in Eh/Bohr
-        self.energy = float(en*ash.constants.evtohar)
-        self.gradient = forces/-51.422067090480645
+            self.gradient = forces/-51.422067090480645
         if Hessian:
             self.hessian = hessian*0.010291772
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
+        # Special option
+        if self.return_zero_gradient:
+            print("Warning: return_zero_gradient option active")
+            print("Returning zero gradient instead of real gradient")
+            self.gradient = np.zeros((len(current_coords), 3))
+            print("self.gradient:", self.gradient)
+
         # Return E and G if Grad
-        if Grad is True:
+        if Grad:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy, self.gradient
         # Returning E only
