@@ -52,7 +52,7 @@ class MACETheory():
                       energy_key='energy_REF', forces_key='forces_REF',        
                       energy_weight=1, forces_weight=100,
                       max_num_epochs=500, swa=True, batch_size=10,
-                      max_L = 0, r_max = 5.0, num_channels=128,  
+                      max_L = 1, r_max = 5.0, num_channels=128,  
                       results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
                       log_dir ="MACE_models", model_dir="MACE_models"):
         module_init_time=time.time()
@@ -353,7 +353,7 @@ def write_mace_config(config_file="config.yml", name="model",model="MACE", devic
                       energy_key='energy_REF', forces_key='forces_REF',        
                       energy_weight=1, forces_weight=100,
                       max_num_epochs=500, swa=True, batch_size=10,
-                      max_L = 0, r_max = 5.0, 
+                      max_L = 1, r_max = 5.0, 
                       num_channels=128,
                       results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
                       log_dir ="MACE_models", model_dir="MACE_models"):
