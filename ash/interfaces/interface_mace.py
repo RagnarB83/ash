@@ -52,7 +52,7 @@ class MACETheory():
                       energy_key='energy_REF', forces_key='forces_REF',        
                       energy_weight=1, forces_weight=100,
                       max_num_epochs=500, swa=True, batch_size=10,
-                      max_L = 1, r_max = 5.0, num_channels=128,  
+                      max_L = 0, r_max = 5.0, num_channels=128,  
                       results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
                       log_dir ="MACE_models", model_dir="MACE_models"):
         module_init_time=time.time()
@@ -278,6 +278,7 @@ class MACETheory():
                 output = self.model(batch.to_dict(), compute_stress=False, compute_force=False)
             # Grab energy
             en = torch_tools.to_numpy(output["energy"])[0]
+            self.energy = float(en*ash.constants.evtohar)
 
             # Grad Boolean
             if Grad:
@@ -285,6 +286,7 @@ class MACETheory():
                 forces = compute_forces(output["energy"], batch["positions"])
                 print_time_rel(module_init_time, modulename=f'MACE run - after forces', moduleindex=2)
                 forces = torch_tools.to_numpy(forces)
+                self.gradient = forces/-51.422067090480645
 
             # Hessian 
             if Hessian:
@@ -307,15 +309,14 @@ class MACETheory():
 
             # Get energy and forces
             en = torch_tools.to_numpy(output["energy"])[0]
-
-        # Convert energy and forces to Eh and gradient in Eh/Bohr
-        self.energy = float(en*ash.constants.evtohar)
-        if Grad:
-            forces = np.split(
-                torch_tools.to_numpy(output["forces"]),
-                indices_or_sections=batch.ptr[1:],
-                axis=0)[0]
-            self.gradient = forces/-51.422067090480645
+            self.energy = float(en*ash.constants.evtohar)
+            if Grad:
+                forces = np.split(
+                    torch_tools.to_numpy(output["forces"]),
+                    indices_or_sections=batch.ptr[1:],
+                    axis=0)[0]
+                self.gradient = forces/-51.422067090480645
+        
         if Hessian:
             self.hessian = hessian*0.010291772
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
@@ -353,7 +354,7 @@ def write_mace_config(config_file="config.yml", name="model",model="MACE", devic
                       energy_key='energy_REF', forces_key='forces_REF',        
                       energy_weight=1, forces_weight=100,
                       max_num_epochs=500, swa=True, batch_size=10,
-                      max_L = 1, r_max = 5.0, 
+                      max_L = 0, r_max = 5.0, 
                       num_channels=128,
                       results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
                       log_dir ="MACE_models", model_dir="MACE_models"):
