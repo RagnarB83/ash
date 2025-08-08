@@ -394,6 +394,25 @@ class GeomeTRICOptimizerClass:
                     hessianfile="Hessian_from_partial"
                     write_hessian(combined_hessian,hessfile=hessianfile)
                     self.hessian="file:"+hessianfile
+                elif self.hessian == "partial2":
+                    print("Partial Numpoint=2 Hessian option requested")
+
+                    if self.partial_hessian_atoms is None:
+                        print("hessian='partial' option requires setting the partial_hessian_atoms option. Exiting.")
+                        ashexit()
+
+                    print("Now doing partial Hessian calculation using atoms:", self.partial_hessian_atoms)
+                    #Note: hardcoding runmode='serial' for now
+                    result_freq = ash.NumFreq(theory=theory, fragment=fragment, printlevel=0, npoint=2, hessatoms=self.partial_hessian_atoms, runmode='serial', numcores=1)
+                    #Combine partial exact Hessian with model Hessian(Almloef, Lindh, Schlegel or unit)
+                    #Large Hessian is the actatoms Hessian if actatoms provided
+
+                    combined_hessian = approximate_full_Hessian_from_smaller(fragment,result_freq.hessian, self.partial_hessian_atoms, large_atomindices=actatoms, restHessian=modelhessian)
+
+                    #Write combined Hessian to disk
+                    hessianfile="Hessian_from_partial"
+                    write_hessian(combined_hessian,hessfile=hessianfile)
+                    self.hessian="file:"+hessianfile
                 elif "file:" in self.hessian:
                     hessianfile = self.hessian.replace("file:","")
 
