@@ -288,15 +288,15 @@ class MACETheory():
             # Grad Boolean
             if Grad:
                 # Calculate forces
-                forces = compute_forces(output["energy"], batch["positions"])
+                forces_tensor = compute_forces(output["energy"], batch["positions"])
                 print_time_rel(module_init_time, modulename=f'MACE run - after forces', moduleindex=2)
-                forces = torch_tools.to_numpy(forces)
-                self.gradient = forces/-51.422067090480645
+                forces_np = torch_tools.to_numpy(forces_tensor)
+                self.gradient = forces_np/-51.422067090480645
 
             # Hessian 
             if Hessian:
                 print("Running Hessian")
-                hess = compute_hessians_vmap(forces,batch["positions"])
+                hess = compute_hessians_vmap(forces_tensor,batch["positions"])
                 hessian = torch_tools.to_numpy(hess)
                 print("hessian:", hessian)
                 print_time_rel(module_init_time, modulename=f'MACE run - after hessian', moduleindex=2)
