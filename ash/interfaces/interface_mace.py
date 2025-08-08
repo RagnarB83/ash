@@ -240,6 +240,10 @@ class MACETheory():
         # Checking if file exists
         self.check_file_exists(self.model_file)
 
+        #Making sure Grad is True
+        if Hessian:
+            Grad=True
+
         # Call model to get energy
         from mace.cli.eval_configs import main
         from mace import data
