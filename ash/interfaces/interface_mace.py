@@ -5,6 +5,7 @@ from ash.modules.module_coords import elemstonuccharges
 from ash.functions.functions_general import ashexit, BC,print_time_rel
 from ash.functions.functions_general import print_line_with_mainheader
 import ash.constants
+
 # Simple interface to MACE for both using and training
 
 class MACETheory():

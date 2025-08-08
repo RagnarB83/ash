@@ -309,6 +309,7 @@ def ComputeEffectiveNEBForce(forces, it, ndim, nim, ci, r, energy,
 
     tang = GetTangent(ndim, nim, r, energy, tangent_type, pbc, cell)
     ksp = ComputeSpringCoefficient(nim, energy_weighted, springconst, springconst2, energy)
+    print("Current springconstants are:", *ksp)
     fsp_parallel = ComputeFspringParallel(ndim, nim, r, tang, ksp, ci, energy, spring_type, pbc, cell)
     freal_perp, freal_paral = ComputeForcesPerp(ndim, nim, tang, forces)
     if perpspring_type > 0:
