@@ -507,12 +507,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     hessian=symm_hessian
 
     # Use input masses if given, otherwise take from frament
-    if hessatoms_masses == None:
+    if hessatoms_masses is None:
+        print("allatoms:", allatoms)
+        print("hessatoms:", hessatoms)
+        print("fragment.list_of_masses:", fragment.list_of_masses)
         hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
         hessmasses=hessatoms_masses
 
     print("hessian:", hessian)
+    print("hessmasses:",hessmasses)
     # Mass-weighted Hessian (in case we need it)
     mwhessian, massmatrix = massweight(hessian, hessmasses, numatoms)
     #print("mwhessian:", mwhessian)
