@@ -1348,7 +1348,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     #else:
     #    capping_atom_hessian_indices=[]
 #NOTE: Trans+rot projection off right now
-def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='Almloef', projection=False,
+def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='zero', projection=False,
                                           charge=None, mult=None, xtbmethod="GFN1"):
     print("approximate_full_Hessian_from_smaller")
     print()
