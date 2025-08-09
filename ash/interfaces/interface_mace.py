@@ -276,11 +276,12 @@ class MACETheory():
             # Run model
             try:
                 output = self.model(batch.to_dict(), compute_stress=False, compute_force=False)
-                print_time_rel(module_init_time, modulename=f'MACE run - after energy', moduleindex=2)
+
             except RuntimeError as e:
                 print("RuntimeError occurred. Trying type changes. Message", e)
                 self.model = self.model.float() # sometimes necessary to avoid type problems
                 output = self.model(batch.to_dict(), compute_stress=False, compute_force=False)
+            print_time_rel(module_init_time, modulename=f'MACE run - after energy', moduleindex=2)
             # Grab energy
             en = torch_tools.to_numpy(output["energy"])[0]
             self.energy = float(en*ash.constants.evtohar)
