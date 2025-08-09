@@ -2163,7 +2163,11 @@ def project_rot_and_trans(coords,mass,Hessian):
     TotDOF = 3*na
 
     #mass weighted Hessian matrix
+    print("len Hessian", len(Hessian))
+    print("mass:", mass)
     invsqrtm3 = 1.0/np.sqrt(np.repeat(mass, 3))
+    print("invsqrtm3:", invsqrtm3)
+    print("len invsqrtm3", len(invsqrtm3))
     wHessian = Hessian.copy() * np.outer(invsqrtm3, invsqrtm3)
 
     # Compute the center of mass
