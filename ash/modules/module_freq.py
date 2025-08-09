@@ -1354,8 +1354,23 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
     print()
     write_hessian(hessian_small,hessfile="smallhessian")
 
-    #If hessatoms provided then that is the size of the actual large Hessian
-    if large_atomindices is not None:
+    # large_atomindices not provided
+    if large_atomindices is None:
+        #Size of Hessian as big as fragment
+        hess_size=fragment.numatoms*3
+        print("Hessian dimension", hess_size)
+        #If Hessian is for full fragment then we use the input atomindices directly
+        correct_small_atomindices=small_atomindices
+        usedfragment=fragment
+    # large_atomindices not provided
+    elif len(large_atomindices) == 0:
+        #Size of Hessian as big as fragment
+        hess_size=fragment.numatoms*3
+        print("Hessian dimension", hess_size)
+        #If Hessian is for full fragment then we use the input atomindices directly
+        correct_small_atomindices=small_atomindices
+        usedfragment=fragment
+    elif len(large_atomindices) > 0:
         print("small_atomindices:", small_atomindices)
         print("large_atomindices:", large_atomindices)
         hess_size=len(large_atomindices)*3
@@ -1373,15 +1388,12 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
         #Create new fragment from large_atomindices
         subcoords, subelems = fragment.get_coords_for_atoms(large_atomindices)
         usedfragment = ash.Fragment(elems=subelems,coords=subcoords, printlevel=0, charge=fragment.charge, mult=fragment.mult)
-
-
     else:
-        #Size of Hessian as big as fragment
-        hess_size=fragment.numatoms*3
-        print("Hessian dimension", hess_size)
-        #If Hessian is for full fragment then we use the input atomindices directly
-        correct_small_atomindices=small_atomindices
-        usedfragment=fragment
+        print("small_atomindices:", small_atomindices)
+        print("large_atomindices:", large_atomindices)
+        print("Something went wrong")
+        ashexit()
+
 
     print("Initializing full size Hessian of dimension:", hess_size)
     fullhessian=np.zeros((hess_size,hess_size))
