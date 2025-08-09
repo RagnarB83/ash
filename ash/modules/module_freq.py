@@ -212,7 +212,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     displacement_bohr = displacement * ash.constants.ang2bohr
     print("Starting Numerical Frequencies job for fragment")
-    print("System size:", numatoms)
     print("Hessian atoms:", hessatoms)
     if hessatoms != allatoms:
         print("This is a partial Hessian job.")
@@ -515,12 +514,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     else:
         hessmasses=hessatoms_masses
 
-    print("hessian:", hessian)
     print("hessmasses:",hessmasses)
     # Mass-weighted Hessian (in case we need it)
-    mwhessian, massmatrix = massweight(hessian, hessmasses, numatoms)
-    #print("mwhessian:", mwhessian)
-    #exit()
+    mwhessian, massmatrix = massweight(hessian, hessmasses)
     # Get partial matrix by deleting atoms not present in list.
     hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
 
@@ -645,7 +641,7 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
     else:
         print("No projection of rotational and translational modes will be done!")
         # Massweight Hessian
-        mwhessian, massmatrix = massweight(hessian, masses, numatoms)
+        mwhessian, massmatrix = massweight(hessian, masses)
         # Diagonalize mass-weighted Hessian
         evalues, evectors = np.linalg.eigh(mwhessian)
         evectors = np.transpose(evectors)
@@ -703,7 +699,8 @@ def calc_IR_Intensities(hessmasses,evectors,dipole_derivs):
 
 
 # Massweight Hessian
-def massweight(matrix,masses,numatoms):
+def massweight(matrix,masses):
+    numatoms=len(masses)
     mass_mat = np.zeros( (3*numatoms,3*numatoms), dtype = float )
     molwt = [ masses[int(i)] for i in range(numatoms) for j in range(3) ]
     for i in range(len(molwt)):
@@ -1812,8 +1809,8 @@ def write_normalmode(modenumber,fragment=None, freqdict=None):
 def comparenormalmodes(hessianA,hessianB,massesA,massesB):
     numatoms=len(massesA)
     # Massweight Hessians
-    mwhessianA, massmatrixA = massweight(hessianA, massesA, numatoms)
-    mwhessianB, massmatrixB = massweight(hessianB, massesB, numatoms)
+    mwhessianA, massmatrixA = massweight(hessianA, massesA)
+    mwhessianB, massmatrixB = massweight(hessianB, massesB)
 
     # Diagonalize mass-weighted Hessian
     evaluesA, evectorsA = np.linalg.eigh(mwhessianA)
