@@ -7,10 +7,20 @@ from ash.functions.functions_general import print_line_with_mainheader
 import ash.constants
 
 # Simple interface to Fairchem
-# Models in version 2: uma-s-1p1 (faster,very good), uma-m-1p1 (slower,best)
+
+# Use: 
+
+# VIA MODEL NAMES
+# Models available in version 2: uma-s-1p1 (faster,very good), uma-m-1p1 (slower,best)
+# Example: model = "uma-s-1p1"  
+# Requires hugging-face token activated in shell
+# e.g. export HF_TOKEN=xxxxxxx
+
+#Via model_file
+#model_file="uma-s-1p1.pt"
 
 class FairchemTheory():
-    def __init__(self, model="uma-s-1p1", task_name=None, device="cuda"):
+    def __init__(self, model_name=None, model_file="", task_name=None, device="cuda"):
 
         # Early exits
         try:
@@ -36,7 +46,8 @@ class FairchemTheory():
 
         self.task_name=task_name
         self.device=device
-        self.model=model
+        self.model_name=model_name
+        self.model_file=model_file
 
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -53,8 +64,18 @@ class FairchemTheory():
 
         from fairchem.core import pretrained_mlip, FAIRChemCalculator
 
-        predictor = pretrained_mlip.get_predict_unit(self.model, device=self.device)
-        calc = FAIRChemCalculator(predictor, task_name=self.task_name)
+        if self.model_name is not None:
+            print("Model set:", self.model_name)
+            predictor = pretrained_mlip.get_predict_unit(self.model_name, device=self.device)
+            calc = FAIRChemCalculator(predictor, task_name=self.task_name)
+        elif self.model_file is not None:
+            print("Model-file set:", self.model_file)
+            calc = FAIRChemCalculator.from_model_checkpoint(self.model_file, task_name=self.task_name)
+        else:
+            print("Error:Neither model or model_file was set")
+            ashexit()
+
+        
 
         import ase
         atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
