@@ -12,7 +12,7 @@ import ash.constants
 
 # VIA MODEL NAMES
 # Models available in version 2: uma-s-1p1 (faster,very good), uma-m-1p1 (slower,best)
-# Example: model = "uma-s-1p1"  
+# Example: model_name = "uma-s-1p1"  
 # Requires hugging-face token activated in shell
 # e.g. export HF_TOKEN=xxxxxxx
 
