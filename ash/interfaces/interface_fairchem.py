@@ -56,6 +56,7 @@ class FairchemTheory():
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
             charge=None, mult=None):
 
+        module_init_time=time.time()
         # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
@@ -99,6 +100,7 @@ class FairchemTheory():
 
             self.gradient = forces/-51.422067090480645
 
+        print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
         if Grad:
             return self.energy, self.gradient
         else:
