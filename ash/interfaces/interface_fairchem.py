@@ -20,7 +20,7 @@ import ash.constants
 #model_file="uma-s-1p1.pt"
 
 class FairchemTheory():
-    def __init__(self, model_name=None, model_file=None, task_name=None, device="cuda"):
+    def __init__(self, model_name=None, model_file=None, task_name=None, device="cuda", seed=41):
 
         # Early exits
         try:
@@ -48,6 +48,7 @@ class FairchemTheory():
         self.device=device
         self.model_name=model_name
         self.model_file=model_file
+        self.seed=seed
 
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -67,10 +68,12 @@ class FairchemTheory():
         if self.model_name is not None:
             print("Model set:", self.model_name)
             predictor = pretrained_mlip.get_predict_unit(self.model_name, device=self.device)
-            calc = FAIRChemCalculator(predictor, task_name=self.task_name)
+            calc = FAIRChemCalculator(predictor, task_name=self.task_name, seed=self.seed)
         elif self.model_file is not None:
             print("Model-file set:", self.model_file)
-            calc = FAIRChemCalculator.from_model_checkpoint(self.model_file, task_name=self.task_name)
+            calc = FAIRChemCalculator.from_model_checkpoint(self.model_file, 
+                                                            task_name=self.task_name, device=self.device,
+                                                            seed=self.seed)
         else:
             print("Error:Neither model or model_file was set")
             ashexit()
