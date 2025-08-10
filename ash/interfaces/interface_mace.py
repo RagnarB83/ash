@@ -19,6 +19,7 @@ class MACETheory():
             print("Problem importing mace. Make sure you have installed mace-correctly")
             print("Most likely you need to do: pip install mace-torch")
             print("Also recommended: pip install cuequivariance_torch")
+            ashexit()
 
         self.theorytype = 'QM'
         self.theorynamelabel = 'MACE'
