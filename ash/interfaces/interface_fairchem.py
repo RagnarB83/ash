@@ -20,7 +20,7 @@ import ash.constants
 #model_file="uma-s-1p1.pt"
 
 class FairchemTheory():
-    def __init__(self, model_name=None, model_file=None, task_name=None, device="cuda", seed=41):
+    def __init__(self, model_name=None, model_file=None, task_name=None, device="cuda", seed=41, numcores=1):
 
         # Early exits
         try:
@@ -49,6 +49,7 @@ class FairchemTheory():
         self.model_name=model_name
         self.model_file=model_file
         self.seed=seed
+        self.numcores=numcores
 
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
