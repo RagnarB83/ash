@@ -82,6 +82,75 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     except:
         pass
 
+    class ASHcalc(Calculator):
+        def __init__(self, fragment=None, theory=None, plumed=None, charge=None, mult=None):
+            self.gradientcalls=0
+            self.fragment=fragment
+            self.theory=theory
+            self.results={}
+            self.name='ash'
+            self.parameters={}
+            self.atoms=None
+            self.forces=[]
+            self.plumedobj=plumed
+            self.charge=charge
+            self.mult=mult
+        def get_potential_energy(self, atomsobj):
+            return self.potenergy
+        def get_forces(self, atomsobj):
+            timeA = time.time()
+            print("Called ASHcalc get_forces")
+            # Check if coordinates have changed. If not, return old forces
+            if np.array_equal(atomsobj.get_positions(), fragment.coords) == True:
+                #coordinates have not changed
+                print("Coordinates unchanged.")
+                if len(self.forces)==0:
+                    print("No forces available (1st step?). Will do calulation")
+                else:
+                    print("Returning old forces")
+                    print_time_rel(timeA, modulename="get_forces: returning old forces")
+                    return self.forces
+            print("Will calculate new forces")
+
+            self.gradientcalls+=1
+
+            #Copy ASE coords into ASH fragment
+            self.fragment.coords=copy.copy(atomsobj.positions)
+            #print("Current coordinates:", self.fragment.coords)
+            #Calculate E+G
+            result = Singlepoint(theory=self.theory, fragment=self.fragment, Grad=True, charge=self.charge, mult=self.mult)
+            energy = result.energy
+            gradient = result.gradient
+            #Converting E and G from Eh and Eh/Bohr to ASE units: eV and eV/Angstrom
+            self.potenergy=energy*ash.constants.hartoeV
+            print("units.Hartree:", units.Hartree)
+            print("units.Bohr:", units.Bohr)
+            self.forces=-gradient* units.Hartree / units.Bohr
+            #Adding forces to results also (sometimes called)
+            self.results['forces'] = self.forces
+            #print("potenergy:", self.potenergy)
+            #print("self.forces before plumed:", self.forces)
+
+            #DO PLUMED-STEP HERE
+            if self.plumedobj!=None:
+                print("Plumed active.")
+                print("Calling Plumed")
+                #Note: this updates self.forces. No need to use returned forces
+                energy, forces = self.plumedobj.run(coords=fragment.coords, forces=self.forces, step=self.gradientcalls-1)
+                #TODO: Use Plumed energy ??
+                #print("energy from plumed:", energy)
+                #print("self.forces after plumed:", self.forces)
+                #print("forces returned from plumed", forces)
+                #self.potenergy=energy
+                #self.forces=forces
+                #self.potenergy, self.forces = plumed_ash(energy,forces)
+                #energy, forces = plumedlib.cv_calculation(istep, pos, vel, box, jobforces, jobenergy)
+
+
+            print("ASHcalc get_forces done")
+            print_time_rel(timeA, modulename="get_forces : new")
+            return self.forces
+
 
     #Option 2: Dummy ASE class where we create the attributes and methods we want
     #Too complicated
