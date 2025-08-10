@@ -79,7 +79,11 @@ class FairchemTheory():
 
         import ase
         atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
+        #Setting charge/mult
+        atoms.info["charge"] = charge
+        atoms.info["spin"] = mult
 
+        #Assigning calculator
         atoms.calc = calc
 
         # Energy

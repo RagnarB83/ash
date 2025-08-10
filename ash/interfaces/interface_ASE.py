@@ -158,7 +158,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
     #Creating ASE-style atoms object
     #atoms = ASEatoms(fragment=fragment, theory=theory)
     print("Creating ASE atoms object")
-    atoms = ase.atoms.Atoms(fragment.elems,positions=fragment.coords, charge=charge, spin=mult)
+    atoms = ase.atoms.Atoms(fragment.elems,positions=fragment.coords)
 
     #Periodic boundary conditions (UNTESTED)
     if PBC == True:
