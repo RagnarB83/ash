@@ -52,41 +52,52 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
         #    print("Error: Only one input file is allowed when using density as input!")
         #    ashexit()
         # read file to get mass
-        for i,ligand_file in enumerate(ligand_files):
-            if ligand_file.endswith((".pdb", ".mol2")):
-                frag = ash.Fragment(pdbfile=ligand_file, printlevel=0)
-                mw_lig = frag.mass
-                print(f"{ligand_file} MW:", mw_lig, "g/mol")
-            elif ligand_file.endswith((".xyz")):
-                frag = ash.Fragment(xyzfile=ligand_file, printlevel=0)
-                mw_lig = frag.mass
-                ligand_file = ligand_file.rsplit('.', 1)[0] + ".pdb"  # remove .xyz, add .pdb
-                frag.write_pdbfile(ligand_file)
-                print(f"Converted {ligand_file} from xyz to pdb format.")
-                print(f"{ligand_file} MW:", mw_lig, "g/mol")
-                ligand_files[i] = ligand_file  # update the ligand file name
-            else:
-                print(f"Unsupported ligand file format: {ligand_file} || Supported formats: .pdb, .mol2,.xyz")
-                ashexit()
-            ligands_mass.append(mw_lig)
+        if ligand_files != None:
+            print("Ligand files provided, will calculate mass of ligands and solvents to determine number of molecules for each solvent.")
+            for i,ligand_file in enumerate(ligand_files):
+                if ligand_file.endswith((".pdb", ".mol2")):
+                    frag = ash.Fragment(pdbfile=ligand_file, printlevel=0)
+                    mw_lig = frag.mass
+                    print(f"{ligand_file} MW:", mw_lig, "g/mol")
+                elif ligand_file.endswith((".xyz")):
+                    frag = ash.Fragment(xyzfile=ligand_file, printlevel=0)
+                    mw_lig = frag.mass
+                    ligand_file = ligand_file.rsplit('.', 1)[0] + ".pdb"  # remove .xyz, add .pdb
+                    frag.write_pdbfile(ligand_file)
+                    print(f"Converted {ligand_file} from xyz to pdb format.")
+                    print(f"{ligand_file} MW:", mw_lig, "g/mol")
+                    ligand_files[i] = ligand_file  # update the ligand file name
+                else:
+                    print(f"Unsupported ligand file format: {ligand_file} || Supported formats: .pdb, .mol2,.xyz")
+                    ashexit()
+                ligands_mass.append(mw_lig)
+        else:
+            print("No ligand files provided, will not calculate mass of ligands.")
+            ligands_mass = []
 
-        for i,solvent_file in enumerate(solvent_files):
-            if solvent_file.endswith((".pdb", ".mol2")):
-                frag = ash.Fragment(pdbfile=solvent_file, printlevel=0)
-                mw_solvent = frag.mass
-                print(f"{solvent_file} MW:", mw_solvent, "g/mol")
-            elif solvent_file.endswith((".xyz")):
-                frag = ash.Fragment(xyzfile=solvent_file, printlevel=0)
-                mw_solvent = frag.mass
-                solvent_file = solvent_file.rsplit('.', 1)[0] + ".pdb"  # remove .xyz, add .pdb
-                frag.write_pdbfile(solvent_file)
-                print(f"Converted {solvent_file} from xyz to pdb format.")
-                print(f"{solvent_file} MW:", mw_solvent, "g/mol")
-                solvent_files[i] = solvent_file  # update the solvent file name
-            else:
-                print(f"Unsupported solvent file format: {solvent_file} || Supported formats: .pdb, .mol2, .xyz")
-                ashexit()
-            solvents_mass.append(mw_solvent)
+
+        if solvent_files != None:
+            print("Solvent files provided, will calculate mass of solvents to determine number of molecules for each solvent.")
+            for i,solvent_file in enumerate(solvent_files):
+                if solvent_file.endswith((".pdb", ".mol2")):
+                    frag = ash.Fragment(pdbfile=solvent_file, printlevel=0)
+                    mw_solvent = frag.mass
+                    print(f"{solvent_file} MW:", mw_solvent, "g/mol")
+                elif solvent_file.endswith((".xyz")):
+                    frag = ash.Fragment(xyzfile=solvent_file, printlevel=0)
+                    mw_solvent = frag.mass
+                    solvent_file = solvent_file.rsplit('.', 1)[0] + ".pdb"  # remove .xyz, add .pdb
+                    frag.write_pdbfile(solvent_file)
+                    print(f"Converted {solvent_file} from xyz to pdb format.")
+                    print(f"{solvent_file} MW:", mw_solvent, "g/mol")
+                    solvent_files[i] = solvent_file  # update the solvent file name
+                else:
+                    print(f"Unsupported solvent file format: {solvent_file} || Supported formats: .pdb, .mol2, .xyz")
+                    ashexit()
+                solvents_mass.append(mw_solvent)
+        else:
+            print("No solvent files provided, will not calculate mass of solvents.")
+            solvents_mass = []
         
         # Volumes from coordinates
         volume = (max_coordinates[0]-min_coordinates[0])*(max_coordinates[1]-min_coordinates[1])*(max_coordinates[2]-min_coordinates[2])
@@ -125,13 +136,19 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
     # PRINT
     print("Ligand Inputfiles:", ligand_files)
     print("Num_mols Ligands:", num_mols_ligands)
-    for f,m in zip(ligand_files,num_mols_ligands):
-        print(f"{f} : {m} molecules")
+    if ligand_files != None:
+        for f,m in zip(ligand_files,num_mols_ligands):
+            print(f"{f} : {m} molecules")
+    else:
+        print("No ligands provided, will not pack ligands.")
 
     print("Solvent Inputfiles:", solvent_files)
     print("Solvent Ratio:", solvents_ratio)
-    for f,m in zip(solvent_files,solvent_molecule_counts):
-        print(f"{f} : {m} molecules")
+    if solvent_files != None:
+        for f,m in zip(solvent_files,solvent_molecule_counts):
+            print(f"{f} : {m} molecules")
+    else:
+        print("No solvents provided, will not pack solvents.")
     
 
     # WRITING INPUTFILE
@@ -144,27 +161,31 @@ output {result_file}.{filetype}
     input_main=""
     ligands_input = ""
     solvents_input = ""
-    if len(ligand_files) == 1 and num_mols_ligands[0] == 1:
-        print("Only one ligand present, will fix it's position in the center of the box.")
-        min_coordinates_single = [(max_coordinates[i] + min_coordinates[i]) / 2 for i in range(3)]
-        max_coordinates_single = [(max_coordinates[i] + min_coordinates[i]) / 2 for i in range(3)]
-        for struct_file, num_mol in zip(ligand_files, num_mols_ligands):
-            ligands_input = f"""
-        structure {struct_file}
-        number {num_mol}
-        fixed {min_coordinates_single[0]} {min_coordinates_single[1]} {min_coordinates_single[2]} {max_coordinates_single[0]} {max_coordinates_single[1]} {max_coordinates_single[2]}
-        end structure
-        """
+    if ligand_files != None:
+        if len(ligand_files) == 1 and num_mols_ligands[0] == 1:
+            print("Only one ligand present, will fix it's position in the center of the box.")
+            min_coordinates_single = [(max_coordinates[i] + min_coordinates[i]) / 2 for i in range(3)]
+            max_coordinates_single = [(max_coordinates[i] + min_coordinates[i]) / 2 for i in range(3)]
+            for struct_file, num_mol in zip(ligand_files, num_mols_ligands):
+                ligands_input = f"""
+            structure {struct_file}
+            number {num_mol}
+            fixed {min_coordinates_single[0]} {min_coordinates_single[1]} {min_coordinates_single[2]} {max_coordinates_single[0]} {max_coordinates_single[1]} {max_coordinates_single[2]}
+            end structure
+            """
+        else:
+            print("Multiple ligands present, will use the provided box coordinates for packing.")
+            for struct_file, num_mol in zip(ligand_files, num_mols_ligands):
+                ligands_input += f"""
+            structure {struct_file}
+            number {num_mol}
+            inside {shape} {min_coordinates[0]} {min_coordinates[1]} {min_coordinates[2]} {max_coordinates[0]} {max_coordinates[1]} {max_coordinates[2]}
+            end structure
+            """
     else:
-        print("Multiple ligands present, will use the provided box coordinates for packing.")
-        for struct_file, num_mol in zip(ligand_files, num_mols_ligands):
-            ligands_input += f"""
-        structure {struct_file}
-        number {num_mol}
-        inside {shape} {min_coordinates[0]} {min_coordinates[1]} {min_coordinates[2]} {max_coordinates[0]} {max_coordinates[1]} {max_coordinates[2]}
-        end structure
-        """
-    
+        print("No ligands provided, will not pack ligands.")
+        ligands_input = ""
+        
     for struct_file,num_mol in zip(solvent_files,solvent_molecule_counts):
         solvents_input +=f"""
     structure {struct_file}
