@@ -138,6 +138,8 @@ class TorchTheory():
 
     def load_aimnet_model(self,model_name=None, model_file=None, aimnet_mode="old"):
         print("Aimnet-type model requested")
+
+        #To be deleted
         if aimnet_mode == "old":
             print("Warning: aimnet_model option is 'old'. Will try to import old aimnet2calc (repo AIMNet2)")
             try:
@@ -166,7 +168,9 @@ class TorchTheory():
                 import ase
             except ImportError as e:
                 print("Import error message:", e)
-                print("Problem importing AIMNet2ASE or torch libraries. Make sure you have installed AIMNet2 correctly")
+                print("Problem importing AIMNet2ASE, ase or torch libraries. Make sure you have installed AIMNet2 correctly")
+                print("See repo info: https://github.com/isayevlab/aimnetcentral" )
+                print("Possible solution: pip install git+https://github.com/isayevlab/aimnetcentral.git")
                 ashexit()     
             # Model selection
             print("Model:", model_name)
