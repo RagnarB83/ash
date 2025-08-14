@@ -266,6 +266,10 @@ class TorchTheory():
             en = atoms.get_potential_energy()
             self.energy = float(en*ash.constants.evtohar)
 
+            # Charges
+            self.charges = atoms.get_charges()
+            print("AIMNet2 charges:", self.charges)
+
             if Grad:
                 forces = atoms.get_forces()
                 self.gradient = forces/-51.422067090480645
