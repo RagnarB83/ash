@@ -14,7 +14,7 @@ import ash.constants
 class TorchTheory():
     def __init__(self, filename="torch.pt", model_name=None, model_object=None,
                  model_file=None, printlevel=2, label="TorchTheory", numcores=1,
-                 platform=None, train=False):
+                 platform=None, train=False, aimnet_mode="new"):
         # Early exits
         try:
             import torch
@@ -26,7 +26,7 @@ class TorchTheory():
             print("Error: No model_name, model_object or model_file was selected and train is False.")
             print("Either give as input:")
             print("1. pretrained model_file as input (model_file keyword")
-            print("2. give a valid model_name (e.g. ANI2x, requires TorchANI installed")
+            print("2. give a valid model_name (e.g. ANI2x, AimNet2 requires TorchANI/AimNet2 to be installed")
             print("3. give a Torch NN object as input (model_object keyword")
             print("4. set train keyword to True")
             ashexit()
@@ -56,6 +56,9 @@ class TorchTheory():
         # Model selection
         ################################
 
+        #OLD vs. new Aimnet2 mode
+        self.aimnet_mode=aimnet_mode
+
         # Model is None initially
         self.model = None
 
@@ -63,7 +66,7 @@ class TorchTheory():
             print("model_file:", model_file)
             if 'aimnet2' in str(model_file).lower():
                 print("AIMNet2 model selected")
-                self.load_aimnet2_model(model_file=model_file)
+                self.load_aimnet_model(model_file=model_file, aimnet_mode=self.aimnet_mode)
             else:
                 # 
                 self.model = torch.load(model_file, map_location=torch.device('cpu'))
@@ -85,7 +88,7 @@ class TorchTheory():
                 self.load_ani_model(model_name)
             elif 'aimnet2' in str(model_name).lower():
                 print("AIMNet2 model selected")
-                self.load_aimnet2_model(model_name=model_name)
+                self.load_aimnet_model(model_name=model_name, aimnet_mode=self.aimnet_mode)
             else:
                 print("Error: Unknown model_name")
                 ashexit()
@@ -133,28 +136,42 @@ class TorchTheory():
         torch.jit.save(compiled_model, filename)
         print("Torch saved model to file:", filename)
 
-    def load_aimnet2_model(self,model_name=None, model_file=None):
-        print("Aimnet2-type model requested")
-        print("Models available: aimnet2")
-        try:
-            from aimnet2calc import AIMNet2Calculator
-        except ImportError as e:
-            print("Import error message:", e)
-            print("Problem importing AIMNet2Calculator or torch libraries. Make sure you have installed AIMNet2 correctly")
-            ashexit()
+    def load_aimnet_model(self,model_name=None, model_file=None, aimnet_mode="old"):
+        print("Aimnet-type model requested")
+        if aimnet_mode == "old":
+            print("Warning: aimnet_model option is 'old'. Will try to import old aimnet2calc (repo AIMNet2)")
+            try:
+                from aimnet2calc import AIMNet2Calculator
+            except ImportError as e:
+                print("Import error message:", e)
+                print("Problem importing AIMNet2Calculator or torch libraries. Make sure you have installed AIMNet2 correctly")
+                ashexit()
 
-        # Model selection
-        print("Model:", model_name)
-        print("File:", model_file)
-        if model_name is not None:
-            if str(model_name).lower() in ['aimnet2','aimnet2nse','aimnet2_qr','aimnet2_b973c', 'aimnet2_wb97m']:
+            # Model selection
+            print("Model:", model_name)
+            print("File:", model_file)
+            if model_name is not None:
                 self.model = AIMNet2Calculator(str(model_name).lower())
+            elif model_file is not None:
+                print("Loading file:", model_file)
+                self.model = AIMNet2Calculator(model_file)
             else:
                 print("Error: Unknown model and no model_file selected")
                 ashexit()
-        elif model_file is not None:
-            print("Loading file:", model_file)
-            self.model = AIMNet2Calculator(model_file)
+
+        elif aimnet_mode == "new":
+            print("Warning: aimnet_model option is 'new'. Will try to import new aimnet2 (repo aimnetcentral)")
+            try:
+                from aimnet.calculators import AIMNet2ASE
+                import ase
+            except ImportError as e:
+                print("Import error message:", e)
+                print("Problem importing AIMNet2ASE or torch libraries. Make sure you have installed AIMNet2 correctly")
+                ashexit()     
+            # Model selection
+            print("Model:", model_name)
+            print("File:", model_file)
+            self.model = AIMNet2ASE(model_name)
 
     def load_ani_model(self,model):
         print("ANI-type model requested")
@@ -221,7 +238,7 @@ class TorchTheory():
         # Call model to get energy
 
         # AIMNet2
-        if 'aimnet2' in str(self.model).lower():
+        if 'aimnet2' in str(self.model).lower() and self.aimnet_mode =="old":
             input_data = {'coord':current_coords, 'numbers':elemstonuccharges(qm_elems), 'charge':charge, 'mult':mult}
             results = self.model(input_data, forces=Grad, stress=False, hessian=Hessian)
             print("results:", results)
@@ -235,17 +252,31 @@ class TorchTheory():
                 self.gradient = -1*(0.03674932217565499/1.88972612546)*results["forces"].detach().cpu().numpy()
             if Hessian:
                 self.hessian = (0.03674932217565499/1.88972612546/1.88972612546)*results["hessian"].detach().cpu().numpy()
+        # new aimnet2
+        if 'aimnet2' in str(self.model).lower() and self.aimnet_mode =="new": 
+            import ase
+            atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
+            # Assigning calculator
+            #Setting charge and mult in model
+            self.model.charge=charge
+            self.model.mult=mult
+            atoms.calc = self.model
+
+            # Energy
+            en = atoms.get_potential_energy()
+            self.energy = float(en*ash.constants.evtohar)
+
+            if Grad:
+                forces = atoms.get_forces()
+                self.gradient = forces/-51.422067090480645
+
         # TorchANI
         else:
             # Converting coordinates and element information to Torch tensors
             # dtype has to be float32 to get compatible Tensor for coordinate and nuc-charges
             coords_torch = torch.tensor(np.array([current_coords], dtype='float32'), requires_grad=True, device=self.device)
             nuc_charges_torch = torch.tensor(np.array([elemstonuccharges(qm_elems)]), device=self.device)
-            print("coords_torch:", coords_torch)
-            print("nuc_charges_torch:", nuc_charges_torch)
             energy_tensor = self.model((nuc_charges_torch, coords_torch))
-            print("here")
-            print("energy_tensor:", energy_tensor)
 
             energy_tensor = self.model((nuc_charges_torch, coords_torch)).energies
             self.energy = energy_tensor.item()
