@@ -1,6 +1,6 @@
 import time
 import numpy as np
-
+import os
 from ash.modules.module_coords import elemstonuccharges
 from ash.functions.functions_general import ashexit, BC,print_time_rel
 from ash.functions.functions_general import print_line_with_mainheader
@@ -51,6 +51,10 @@ class FairchemTheory():
         self.seed=seed
         self.numcores=numcores
 
+        if self.device.lower() == 'cpu':
+            #Works ??
+            os.environ['OMP_NUM_THREADS'] = str(numcores)
+
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
@@ -80,8 +84,6 @@ class FairchemTheory():
             print("Error:Neither model or model_file was set")
             ashexit()
 
-        
-
         import ase
         atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
         #Setting charge/mult
@@ -97,7 +99,6 @@ class FairchemTheory():
 
         if Grad:
             forces = atoms.get_forces()
-
             self.gradient = forces/-51.422067090480645
 
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)

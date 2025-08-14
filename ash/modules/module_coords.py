@@ -2594,7 +2594,7 @@ def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, prin
     Anew = np.dot(subsetA_coords, rot) + trans
 
     #RMSD
-    rmsdval = np.sqrt(((Anew-subsetB_coords)**2).sum()/len(Anew))
+    rmsdval = float(np.sqrt(((Anew-subsetB_coords)**2).sum()/len(Anew)))
     #xrmsdval = kabsch_rmsd(subsetB_coords,Anew)
     
     if printlevel > 1:

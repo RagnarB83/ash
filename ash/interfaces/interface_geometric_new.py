@@ -5,6 +5,7 @@ import time
 
 import ash.constants
 from ash.modules.module_QMMM import QMMMTheory
+from ash.modules.module_theory import MicroIterativeclass
 #from ash.modules.module_oniom import ONIOMTheory
 from ash.interfaces.interface_OpenMM import OpenMMTheory
 from ash.modules.module_coords import print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile,write_coords_all
@@ -750,6 +751,11 @@ class ASHengineclass:
         #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
         if self.printlevel >= 1:
             print("Convergence criteria:", self.conv_criteria)
+
+        # 
+        if isinstance(self.theory,MicroIterativeclass):
+            print("Micro-iterative option active")
+            self.theory.engine=self
 
         print()
         #Updating coords in object

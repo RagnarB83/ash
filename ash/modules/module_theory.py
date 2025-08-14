@@ -267,3 +267,78 @@ def creating_displaced_geos(current_coords,elems,displacement,npoint, charge, mu
         #list_of_labels.append(calclabel)
 
     return list_of_displaced_geos, list_of_displacements,all_disp_fragments
+
+
+
+
+
+# MicroIterativeclass class
+class MicroIterativeclass:
+    def __init__(self, theory=None, numcores=1, printlevel=2):
+
+        self.theory=theory
+        self.theorytype="QM"
+        self.iterationcount=0
+
+        self.engine=None
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+                elems=None, Grad=False, Hessian=False, PC=False, numcores=None, restart=False, label=None,
+                charge=None, mult=None, ):
+
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
+
+        # RUN
+        self.microiters_active=False
+        print("Iteration:", self.iterationcount)
+        if self.iterationcount == 0:
+            #Do regular calculation
+            eg = self.theory.run(current_coords=current_coords, qm_elems=qm_elems, Grad=Grad, 
+                                                PC=False, numcores=numcores, charge=charge, mult=mult)
+            self.microiters_active=True
+        
+        # Micro-iterations
+        else:
+            if self.microiters_active:
+                print("Micro-iterations active ")
+                print("Doing special optimization of outer-region only")
+                # Do special outer region optimization
+                # Calling special optimizer here
+                
+                # Do special inner region optimization?
+                # Calling special optimizer here
+                
+                #Check for convergence ?
+                self.microiters_active=False
+            else:
+                print("Micro-iterations are finished. Doing regular run")
+                eg = self.theory.run(current_coords=current_coords, qm_elems=qm_elems, Grad=Grad, 
+                                                    PC=False, numcores=numcores, charge=charge, mult=mult)
+
+
+            #print("self.engine", self.engine)
+            #self.engine.actatoms=self.theory.qmatoms
+            #self.engine.ActiveRegion=True
+            #Either somehow modify actatoms of ASHengine in geometric
+
+            # Or do a special optimization here
+
+        #Grab
+        if Grad:
+            self.energy, self.gradient = eg
+        else:
+            self.energy = eg
+
+
+        self.iterationcount+=1
+
+        if Grad:
+            return self.energy, self.gradient
+        else:
+            return self.energy,
