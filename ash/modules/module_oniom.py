@@ -589,7 +589,7 @@ class ONIOMTheory(Theory):
                     else:
                         print("Case: Electrostatic embedding but no linkatoms")
                         pointcharges = np.array(charges_qmregionzeroed)
-                        pointcharges=[pointcharges[x] for x in PCregion]
+                        pointcharges=[float(pointcharges[x]) for x in PCregion]
 
                     print("Region Num pointcharges after shift:", len(pointcharges))
                     print("Region Num pointchargecoords after shift:", len(pointchargecoords))
@@ -630,8 +630,14 @@ class ONIOMTheory(Theory):
                     res = theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=theory.numcores,
                                                     PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges, mm_elems=mm_elems_for_qmprogram,
                                                     label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
+                print("here")
+                print("res:", res)
+                print("PC:", PC)
+                print("Grad:", Grad)
                 if PC and Grad:
                     e,g,pg = res
+                elif PC and not Grad:
+                    e = res
                 elif not PC and Grad:
                     e,g = res
                 elif not PC and not Grad:

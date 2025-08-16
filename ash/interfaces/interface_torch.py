@@ -56,6 +56,9 @@ class TorchTheory():
         # Model selection
         ################################
 
+        # Charges initialized
+        self.charges=[0.0,0.0]
+
         #OLD vs. new Aimnet2 mode
         self.aimnet_mode=aimnet_mode
 
@@ -77,8 +80,6 @@ class TorchTheory():
 
                 #print("self.model:", self.model)
                 #exit()
-
-
 
             print("Model:", self.model)
         elif model_name is not None:
@@ -138,6 +139,7 @@ class TorchTheory():
 
     def load_aimnet_model(self,model_name=None, model_file=None, aimnet_mode="old"):
         print("Aimnet-type model requested")
+
 
         #To be deleted
         if aimnet_mode == "old":
