@@ -12,7 +12,7 @@ import ash.modules.module_coords
 #Peatoms: polarizable atoms. MMatoms: nonpolarizable atoms (e.g. TIP3P)
 class PolEmbedTheory:
     def __init__(self, fragment=None, qm_theory=None, qmatoms=None, peatoms=None, mmatoms=None, pot_create=True,
-                 potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', daltondir=None, pdbfile=None,
+                 potfilename='System', pot_option=None, pyframe=False, PElabel_pyframe='MM', NPElabel_pyframe="MM", daltondir=None, pdbfile=None,
                  scratchdir=".", workdir="."):
         module_init_time=time.time()
         print(BC.WARNING,BC.BOLD,"------------Defining PolEmbedTheory object-------------", BC.END)
@@ -24,6 +24,7 @@ class PolEmbedTheory:
         self.pyframe=pyframe
         self.pot_option=pot_option
         self.PElabel_pyframe = PElabel_pyframe
+        self.NPElabel_pyframe=NPElabel_pyframe
         self.potfilename = potfilename
         self.scratchdir=scratchdir
         self.workdir=workdir
@@ -140,12 +141,16 @@ class PolEmbedTheory:
                     print("self.PElabel_pyframe", self.PElabel_pyframe)
                     solventPol = system.get_fragments_by_name(names=[self.PElabel_pyframe])
                     print("solventPol:", solventPol)
+                    print("Adding region")
                     system.add_region(name='solventpol', fragments=solventPol, use_standard_potentials=True,
                           standard_potential_model='SEP')
+                    
                     # Non-polarizable region
                     if mmatoms is not None:
                         print("Doing nonpol region")
-                        solventNonPol = system.get_fragments_by_name(names=['LIG'])
+                        solventNonPol = system.get_fragments_by_name(names=[self.NPElabel_pyframe])
+                        print("solventNonPol:", solventNonPol)
+                        exit()
                         system.add_region(name='solventnonpol', fragments=solventNonPol, use_standard_potentials=True,
                           standard_potential_model='TIP3P')
 
@@ -192,11 +197,14 @@ class PolEmbedTheory:
                     #os.environ['PATH'] = daltondir + ':'+os.environ['PATH']
                     #print("Current PATH is:", os.environ['PATH'])
                     #TODO: Create pot file from scratch. Requires LoProp and Dalton I guess
+                    print("here")
                     system = pyframe.MolecularSystem(input_file=pdbfile)
                     core = system.get_fragments_by_name(names=['QM'])
                     system.set_core_region(fragments=core, program='Dalton', basis='pcset-1')
                     # solvent = system.get_fragments_by_distance(reference=core, distance=4.0)
                     solvent = system.get_fragments_by_name(names=[self.PElabel_pyframe])
+                    print("solvent:", solvent)
+                    print("core:", core)
                     #multipole_model='LoProp',
                     #multipole_method='DFT',
                     #multipole_xcfun='PBE0',
@@ -218,7 +226,12 @@ class PolEmbedTheory:
                     project.mpi_procs_per_job = 1
                     project.print_info()
                     print("Creating embedding potential")
+                    print("system:", system)
+                    print(system.__dict__)
+                    print("project:", project)
+                    print(project.__dict__)
                     project.create_embedding_potential(system)
+                    print("Create")
                     project.write_core(system)
                     project.write_potential(system)
                     self.potfile=self.potfilename+'.pot'

@@ -109,7 +109,7 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
         Avo_N = 6.02214076E+23
         volume_ml = 1.00E-24*volume
         #num_mol = math.ceil((density*volume_ml*Avo_N)/MW)
-        print("Total Desity Desired:", total_density, "g/ml")
+        print("Total Density Desired:", total_density, "g/ml")
         print("Volume of box:", volume, "A^3")
         print("Will compute mass of ligands and solvents and calculate number of molecules for each solvent based on ratio and total density.")
 

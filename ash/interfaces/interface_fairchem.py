@@ -55,7 +55,6 @@ class FairchemTheory():
             #Works ??
             os.environ['OMP_NUM_THREADS'] = str(numcores)
 
-
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
             charge=None, mult=None):
@@ -86,11 +85,11 @@ class FairchemTheory():
 
         import ase
         atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
-        #Setting charge/mult
+        # Setting charge/mult
         atoms.info["charge"] = charge
         atoms.info["spin"] = mult
 
-        #Assigning calculator
+        # Assigning calculator
         atoms.calc = calc
 
         # Energy

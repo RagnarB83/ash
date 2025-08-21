@@ -170,8 +170,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             print("force_projection set to to False. Turning projection off")
             projection=False
     
-    # Making sure hessatoms list is sorted
-    hessatoms.sort()
+    # Making sure hessatoms list is sorted and only contains unique values
+    #hessatoms.sort()
+    hessatoms = sorted(list(set(hessatoms)))
+    
     # If hessatoms_masses list was provided
     if hessatoms_masses != None:
         if len(hessatoms_masses) != len(hessatoms):

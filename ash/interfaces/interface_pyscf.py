@@ -2278,11 +2278,9 @@ class PySCFTheory:
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
             try:
                 if os.path.exists(self.potfile):
-                    pass
-                else:
-                    print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
-                    ashexit()
+                    print(BC.FAIL, "Potfile: ", self.potfile, "exists!", BC.END)
             except:
+                print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
                 ashexit()
             # TODO: Adapt to RKS vs. UKS etc.
             self.mf = pyscf.solvent.PE(pyscf.scf.RKS(self.mol), self.potfile)

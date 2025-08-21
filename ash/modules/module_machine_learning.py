@@ -13,11 +13,11 @@ from ash.interfaces.interface_mdtraj import MDtraj_slice
 # Also helper tools for Torch and MLatom interfaces
 
 # Function to create ML training data given XYZ-files and 2 ASH theories
-def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=None, random_snapshots=True,
+def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=None, random_snapshots=True,
                                 dcd_pdb_topology=None, nth_frame_in_traj=1,
                                theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1):
-    if xyzdir is None and xyz_trajectory is None and dcd_trajectory is None:
-        print("Error: create_ML_training_data requires xyzdir, xyz_trajectory or dcd_trajectory option to be set!")
+    if xyz_dir is None and xyz_trajectory is None and dcd_trajectory is None:
+        print("Error: create_ML_training_data requires xyz_dir, xyz_trajectory or dcd_trajectory option to be set!")
         ashexit()
 
     if theory_1 is None:
@@ -30,7 +30,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     else:
         delta=False
 
-    print("xyzdir:", xyzdir)
+    print("xyz_dir:", xyz_dir)
     print("xyz_trajectory:", xyz_trajectory)
     print("dcd_trajectory:", dcd_trajectory)
     print("Charge:", charge)
@@ -45,9 +45,9 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     print("Theory 2:", theory_2)
 
     # XYZ DIRECTORY
-    if xyzdir is not None:
+    if xyz_dir is not None:
         print("XYZ-dir specified.")
-        full_list_of_xyz_files=glob.glob(f"{xyzdir}/*.xyz")
+        full_list_of_xyz_files=glob.glob(f"{xyz_dir}/*.xyz")
         print("Number of XYZ-files in directory:", len(full_list_of_xyz_files))
         if num_snapshots is None:
             print("num_snapshots has not been set by user")
@@ -92,7 +92,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             print("Setting num_snapshots to:", len(full_list_of_xyz_files))
             num_snapshots=len(full_list_of_xyz_files)
         
-        print("Note: This directory can be used as a directory for the xyzdir option to create_ML_training_data")
+        print("Note: This directory can be used as a directory for the xyz_dir option to create_ML_training_data")
         print()
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
@@ -136,7 +136,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
 
         print("Created directory xyz_traj_split")
         print("Number of XYZ-files in directory:", len(full_list_of_xyz_files))
-        print("Note: This directory can be used as a directory for the xyzdir option to create_ML_training_data")
+        print("Note: This directory can be used as a directory for the xyz_dir option to create_ML_training_data")
         print()
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
