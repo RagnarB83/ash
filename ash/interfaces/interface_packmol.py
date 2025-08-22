@@ -106,7 +106,6 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
         else:
             print("No solvent files provided, will not calculate mass of solvents.")
             solvents_mass = []
-        
         volume = 0.0
         if shape.lower() == "box":
             volume = (max_coordinates[0]-min_coordinates[0])*(max_coordinates[1]-min_coordinates[1])*(max_coordinates[2]-min_coordinates[2])
@@ -114,7 +113,6 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
         elif shape.lower() == "sphere":
             volume = (4.0/3.0) * math.pi * (sphere_radius ** 3)
             print("Volume of sphere:", volume, "A^3")
-
         Avo_N = 6.02214076E+23
         volume_ml = 1.00E-24*volume
         print("Total Density Desired:", total_density, "g/ml")
@@ -127,6 +125,7 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
             solvent_total_mass = 1
         else:
             solvent_total_mass = sum([solvents_mass[i] * solvents_ratio[i] for i in range(len(solvents_mass))])
+
 
         if solvent_files:
             total_mass = total_density * volume_ml * Avo_N
