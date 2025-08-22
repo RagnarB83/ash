@@ -98,7 +98,7 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
         else:
             print("No solvent files provided, will not calculate mass of solvents.")
             solvents_mass = []
-        
+
         # Volumes from coordinates
         volume = (max_coordinates[0]-min_coordinates[0])*(max_coordinates[1]-min_coordinates[1])*(max_coordinates[2]-min_coordinates[2])
         #print("Volume of box:", volume, "A^3")
@@ -115,7 +115,7 @@ def packmol_solvate(packmoldir=None,ligand_files=None, num_mols_ligands=None, so
 
         ligand_total_mass = sum([ligands_mass[i] * num_mols_ligands[i] for i in range(len(ligands_mass))])
         print("Total mass of ligands:", ligand_total_mass, "g/mol")
-       
+
         solvent_total_mass = sum([solvents_mass[i] * solvents_ratio[i] for i in range(len(solvents_mass))])
 
         total_mass = total_density * volume_ml * Avo_N  # total mass in grams

@@ -75,7 +75,7 @@ class gxTBTheory(Theory):
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None,
-                 use_tblite=False, periodic=False, periodic_cell_dimensions=None, extraflag=None):
+                 use_tblite=False, periodic=False, periodic_cell_dimensions=None, extraflag=None, grab_charges=False):
 
         self.theorynamelabel="xTB"
         self.theorytype="QM"
@@ -95,6 +95,9 @@ class xTBTheory:
 
         # Passing special extra flag to xtb binary
         self.extraflag=extraflag
+
+        # Grab xTB charges in every run if chosen
+        self.grab_charges=grab_charges
 
         self.periodic=periodic
         self.periodic_cell_dimensions=periodic_cell_dimensions
@@ -160,7 +163,7 @@ class xTBTheory:
                 self.solvent_object=None
         # Inputfile
         elif self.runmode=='inputfile':
-            if xtbdir == None:
+            if xtbdir is None:
                 print(BC.WARNING, "No xtbdir argument passed to xTBTheory. Attempting to find xtbdir variable inside settings_ash", BC.END)
                 try:
                     print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
@@ -454,6 +457,9 @@ class xTBTheory:
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
+
+            if self.grab_charges:
+                self.charges = grabatomcharges_xTB_output(self.filename+'.out', chargemodel="CM5")
 
             # Check if finished. Grab energy
             if Grad is True:
