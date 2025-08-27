@@ -240,6 +240,10 @@ class TurbomoleTheory:
                             pcharges=MMcharges, pccoords=current_MM_coords, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
         else:
             print("controlfile option chosen: ", self.controlfile)
+            if os.path.isfile(self.controlfile) is False:
+                print(f"Error: File {self.controlfile} does not exist!")
+                ashexit()
+            print("Copying file to: control")
             shutil.copyfile(self.controlfile, './' + 'control')
         #################
         # Run Turbomole
