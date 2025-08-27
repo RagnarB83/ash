@@ -239,6 +239,7 @@ class TurbomoleTheory:
             print("Skipping control file generation")
         # Create controlfile
         elif self.controlfile is None:
+            print("Creating controlfile")
             create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
                             symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
                             scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore, charge=charge, mult=mult,
