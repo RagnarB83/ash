@@ -197,7 +197,7 @@ class TurbomoleTheory:
 
         print(BC.OKBLUE, BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
         #Checking if charge and mult has been provided
-        if charge == None or mult == None:
+        if charge is None or mult is None:
             print(BC.FAIL, f"Error. charge and mult has not been defined for {self.theorynamelabel}Theory.run method", BC.END)
             ashexit()
 
@@ -232,7 +232,7 @@ class TurbomoleTheory:
         #
         create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
                             symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
-                            scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore,
+                            scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore, charge=charge, mult=mult,
                             pcharges=MMcharges, pccoords=current_MM_coords, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
 
         #################
@@ -314,10 +314,13 @@ def create_coord_file(elems,coords, write_unit='BOHR', periodic_info=None, filen
         coordfile.write("$end\n")
 
 def create_control_file(functional="lh12ct-ssifpw92", gridsize="m4", scfconf="7", symmetry="c1", rij=True, dft=True, mp2=False,
-                        basis="def2-SVP", jbasis="def2-SVP", scfiterlimit=30, maxcor=500, ricore=500,
+                        basis="def2-SVP", jbasis="def2-SVP", scfiterlimit=30, maxcor=500, ricore=500, charge=None, mult=None,
                         pcharges=None, pccoords=None, pointcharge_type=None, pc_gaussians=None):
     if pccoords is not None:
         pccoords=pccoords*1.88972612546
+
+    ehtline=f"$eht charge={charge} unpaired={mult-1}"
+
 
 #Skipping orb section for now
 #$closed shells
@@ -331,6 +334,7 @@ $atoms
     basis ={basis}
     jbas  ={jbasis}
 $basis    file=basis
+{ehtline}
 $scfmo   file=mos
 $scfiterlimit       {scfiterlimit}
 $scfdamp   start=0.300  step=0.050  min=0.100
