@@ -13,7 +13,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 class TurbomoleTheory:
     def __init__(self, TURBODIR=None, turbomoledir=None, filename='XXX', printlevel=2, label="Turbomole",
                 numcores=1, parallelization='SMP', functional=None, gridsize="m4", scfconf=7, symmetry="c1", rij=True,
-                basis=None, jbasis=None, scfiterlimit=50, maxcor=500, ricore=500, controlfile=None,
+                basis=None, jbasis=None, scfiterlimit=50, maxcor=500, ricore=500, controlfile=None,skip_control_gen=False,
                 mp2=False, pointcharge_type=None, pc_gaussians=None):
 
         self.theorynamelabel="Turbomole"
@@ -40,6 +40,8 @@ class TurbomoleTheory:
 
         # controlfile from user
         self.controlfile=controlfile
+        # Skip controlfile  gen (assumes that the control file is present in dir)
+        self.skip_control_gen=False
 
         #Special pointcharges options in Turbomole
         self.pointcharge_type=pointcharge_type
@@ -232,12 +234,16 @@ class TurbomoleTheory:
         # Create coord file
         create_coord_file(qm_elems,current_coords)
 
-        #
-        if self.controlfile is None:
+        # Skip control file generation
+        if self.skip_control_gen is True:
+            print("Skipping control file generation")
+        # Create controlfile
+        elif self.controlfile is None:
             create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
                             symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
                             scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore, charge=charge, mult=mult,
                             pcharges=MMcharges, pccoords=current_MM_coords, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
+        # User-controlled controlfile
         else:
             print("controlfile option chosen: ", self.controlfile)
             if os.path.isfile(self.controlfile) is False:
