@@ -41,7 +41,7 @@ class TurbomoleTheory:
         # controlfile from user
         self.controlfile=controlfile
         # Skip controlfile  gen (assumes that the control file is present in dir)
-        self.skip_control_gen=False
+        self.skip_control_gen=skip_control_gen
 
         #Special pointcharges options in Turbomole
         self.pointcharge_type=pointcharge_type
@@ -207,7 +207,6 @@ class TurbomoleTheory:
             ashexit()
 
         print("Job label:", label)
-        print(f"{self.theorynamelabel} input:")
 
 
         #Coords provided to run
