@@ -384,6 +384,7 @@ class ONIOMTheory(Theory):
 
     def run(self, current_coords=None, Grad=False, elems=None, charge=None, mult=None, label=None, numcores=None):
 
+        module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
         # Charge/mult. Note: ignoring charge/mult from run keyword.
@@ -630,10 +631,6 @@ class ONIOMTheory(Theory):
                     res = theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=theory.numcores,
                                                     PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges, mm_elems=mm_elems_for_qmprogram,
                                                     label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
-                print("here")
-                print("res:", res)
-                print("PC:", PC)
-                print("Grad:", Grad)
                 if PC and Grad:
                     e,g,pg = res
                 elif PC and not Grad:
@@ -742,7 +739,7 @@ class ONIOMTheory(Theory):
             ashexit()
 
         print("Final ONIOM energy:", self.energy)
-
+        print_time_rel(module_init_time, modulename='ONIOM run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
         if Grad:
             return self.energy,self.gradient
         else:

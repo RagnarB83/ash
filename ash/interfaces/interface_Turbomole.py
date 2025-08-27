@@ -233,7 +233,7 @@ class TurbomoleTheory:
         create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
                             symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
                             scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore,
-                            pcharges=MMcharges, pccoords=current_MM_coords*1.88972612546, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
+                            pcharges=MMcharges, pccoords=current_MM_coords, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
 
         #################
         # Run Turbomole
@@ -316,6 +316,8 @@ def create_coord_file(elems,coords, write_unit='BOHR', periodic_info=None, filen
 def create_control_file(functional="lh12ct-ssifpw92", gridsize="m4", scfconf="7", symmetry="c1", rij=True, dft=True, mp2=False,
                         basis="def2-SVP", jbasis="def2-SVP", scfiterlimit=30, maxcor=500, ricore=500,
                         pcharges=None, pccoords=None, pointcharge_type=None, pc_gaussians=None):
+    if pccoords is not None:
+        pccoords=pccoords*1.88972612546
 
 #Skipping orb section for now
 #$closed shells

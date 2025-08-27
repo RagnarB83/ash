@@ -3264,13 +3264,12 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
                 print("Determined ratio:", linkatom_ratio)
                 print("not yet ready")
                 ashexit()
-            print("Ratio used:", linkatom_ratio)
             r_QM1_MM1 = distance(qmatom_coords, mmatom_coords)
             # See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
             linkatom_coords = linkatom_ratio *(mmatom_coords - qmatom_coords) + qmatom_coords
             #linkatom_distance =  r_QM1_MM1 * (bondpairs_eq_dict[(elems[dict_item[0]], 'H')] / bondpairs_eq_dict[(elems[dict_item[0]], elems[dict_item[1]])])
             linkatom_distance = distance(qmatom_coords, linkatom_coords)
-            print("Linkatom distance (QM1-L) determined to be:", linkatom_distance)
+            print(f"Linkatom distance (QM1-L) determined to be: {linkatom_distance} (using ratio {linkatom_ratio})")
         elif linkatom_method == 'simple':
             #print("Linkatom method: simple")
             if linkatom_simple_distance is None:
