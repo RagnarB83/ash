@@ -224,12 +224,6 @@ class TurbomoleTheory:
             else:
                 qm_elems = elems
 
-        # Delete old files
-        files=['coord','control','energy','gradient']
-        for f in files:
-            if os.path.exists(f):
-                os.remove(f)
-
         # Create coord file
         create_coord_file(qm_elems,current_coords)
 
@@ -238,6 +232,12 @@ class TurbomoleTheory:
             print("Skipping control file generation")
         # Create controlfile
         elif self.controlfile is None:
+            # Delete old files
+            files=['coord','control','energy','gradient']
+            for f in files:
+                if os.path.exists(f):
+                    os.remove(f)
+
             print("Creating controlfile")
             create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
                             symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
@@ -245,12 +245,18 @@ class TurbomoleTheory:
                             pcharges=MMcharges, pccoords=current_MM_coords, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
         # User-controlled controlfile
         else:
+            # Delete old files
+            files=['coord','control','energy','gradient']
+            for f in files:
+                if os.path.exists(f):
+                    os.remove(f)
             print("controlfile option chosen: ", self.controlfile)
             if os.path.isfile(self.controlfile) is False:
                 print(f"Error: File {self.controlfile} does not exist!")
                 ashexit()
             print("Copying file to: control")
             shutil.copyfile(self.controlfile, './' + 'control')
+        
         #################
         # Run Turbomole
         #################
