@@ -13,7 +13,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 class TurbomoleTheory:
     def __init__(self, TURBODIR=None, turbomoledir=None, filename='XXX', printlevel=2, label="Turbomole",
                 numcores=1, parallelization='SMP', functional=None, gridsize="m4", scfconf=7, symmetry="c1", rij=True,
-                basis=None, jbasis=None, scfiterlimit=50, maxcor=500, ricore=500,
+                basis=None, jbasis=None, scfiterlimit=50, maxcor=500, ricore=500, controlfile=None,
                 mp2=False, pointcharge_type=None, pc_gaussians=None):
 
         self.theorynamelabel="Turbomole"
@@ -37,6 +37,9 @@ class TurbomoleTheory:
         self.parallelization=parallelization
         self.mpi_is_setup=False
         self.smp_is_setup=False
+
+        # controlfile from user
+        self.controlfile=controlfile
 
         #Special pointcharges options in Turbomole
         self.pointcharge_type=pointcharge_type
@@ -230,11 +233,14 @@ class TurbomoleTheory:
         create_coord_file(qm_elems,current_coords)
 
         #
-        create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
+        if self.controlfile is None:
+            create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
                             symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
                             scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore, charge=charge, mult=mult,
                             pcharges=MMcharges, pccoords=current_MM_coords, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
-
+        else:
+            print("controlfile option chosen: ", self.controlfile)
+            shutil.copyfile(self.controlfile, './' + 'control')
         #################
         # Run Turbomole
         #################
