@@ -52,11 +52,12 @@ class TurbomoleTheory:
         # if pointcharge_type is 'pe'. Polarizable embedding. TODO: not yet ready
 
         # Basis set
-        if basis is None:
-            print(BC.WARNING, f"No basis set provided to {self.theorynamelabel}Theory. Exiting...", BC.END)
-            ashexit()
-        else:
-            self.basis=basis
+        if controlfile is None:
+            print("No controlfile provided. This requires basis to be provided")
+            if basis is None:
+                print(BC.WARNING, f"No basis set provided to {self.theorynamelabel}Theory. Exiting...", BC.END)
+                ashexit()
+        self.basis=basis
 
         # MP2
         if self.mp2 is True:
