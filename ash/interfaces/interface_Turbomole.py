@@ -224,14 +224,14 @@ class TurbomoleTheory:
             else:
                 qm_elems = elems
 
-        # Create coord file
-        create_coord_file(qm_elems,current_coords)
-
         # Delete old files (except control)
-        files=['coord','energy','gradient']
+        files=['energy','gradient']
         for f in files:
             if os.path.exists(f):
                 os.remove(f)
+
+        # Create coord file
+        create_coord_file(qm_elems,current_coords)
 
         # Skip control file generation
         if self.skip_control_gen is True:
