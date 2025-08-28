@@ -51,7 +51,7 @@ class TurbomoleTheory:
         # if pointcharge_type is 'mxrank=Z' where Z is max multipole rank then we are doing point-multipole embedding. TODO: input not yet ready
         # if pointcharge_type is 'pe'. Polarizable embedding. TODO: not yet ready
 
-        # Basis set
+        # Basis set check
         if controlfile is None:
             print("No controlfile provided. This requires basis to be provided")
             if basis is None:
@@ -59,8 +59,15 @@ class TurbomoleTheory:
                 ashexit()
         self.basis=basis
 
+        # User controlfile
+        if self.controlfile is not None:
+            #Assuming
+            self.turbo_scf_exe="ridft"
+            self.turbo_exe_grad="rdgrad"
+            self.filename_scf="ridft"
+            self.filename_grad="rdgrad"
         # MP2
-        if self.mp2 is True:
+        elif self.mp2 is True:
             self.rij=False
             self.dft=False
             if functional is not None:
