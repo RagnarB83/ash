@@ -19,7 +19,7 @@ class TurbomoleTheory:
         self.theorynamelabel="Turbomole"
         self.label=label
         self.theorytype="QM"
-        self.analytic_hessian=False
+        self.analytic_hessian=True
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         #
@@ -201,10 +201,10 @@ class TurbomoleTheory:
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
-            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
             charge=None, mult=None):
         module_init_time=time.time()
-        if numcores == None:
+        if numcores is None:
             numcores = self.numcores
 
         print(BC.OKBLUE, BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
@@ -297,6 +297,15 @@ class TurbomoleTheory:
 
             if PC:
                 self.pcgradient = grab_pcgradient(len(MMcharges))
+
+        # HESSIAN
+        if Hessian is True:
+            print("Running Turbomole-Hessian executable: aoforce")
+            self.run_turbo(self.turbomoledir,"aoforce", exe="aoforce", parallelization=self.parallelization,
+                  numcores=self.numcores)
+
+            self.hessian=None
+            print("Hessian:", self.hessian)
 
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
