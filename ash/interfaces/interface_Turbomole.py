@@ -304,7 +304,7 @@ class TurbomoleTheory:
             self.run_turbo(self.turbomoledir,"aoforce", exe="aoforce", parallelization=self.parallelization,
                   numcores=self.numcores)
 
-            self.hessian=None
+            self.hessian=turbomole_grabhessian(len(current_coords),hessfile="hessian")
             print("Hessian:", self.hessian)
 
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
@@ -472,3 +472,16 @@ def grab_pcgradient(numpc,filename="pc_gradient"):
             counter+=1
 
     return pcgradient
+
+def turbomole_grabhessian(numatoms,hessfile="hessian"):
+    hessdim=3*numatoms
+    hessian=np.zeros((hessdim,hessdim))
+    i=0
+    with open(hessfile) as f:
+        for line in f:
+            if '$' not in line:
+                vals = line.split()[2:]
+                for n,v in enumerate(vals):
+                    hessian[i,n] = float(v)
+                i = int(line.split()[0])-1
+    return hessian
