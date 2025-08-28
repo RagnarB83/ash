@@ -261,6 +261,9 @@ class TurbomoleTheory:
         #################
 
         print("Running Turbomole executable:", self.turbo_scf_exe)
+        if os.path.isfile("control") is False:
+            print("No control file present. Exiting")
+            ashexit()
         # SCF-energy only
         self.run_turbo(self.turbomoledir,self.filename_scf, exe=self.turbo_scf_exe, parallelization=self.parallelization,
                   numcores=self.numcores)
