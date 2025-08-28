@@ -95,15 +95,14 @@ class TurbomoleTheory:
                 self.turbo_exe_grad="grad"
                 self.filename_scf="dscf"
                 self.filename_grad="grad"
+            print("jbasis:", jbasis)
+            # Checking for ridft and jbas
+            if self.turbo_scf_exe =="ridft" and jbasis is None:
+                print("No jbasis provided for ridft. Exiting...")
+                ashexit()
+            else:
+                self.jbasis=jbasis
         print("self.turbo_scf_exe:", self.turbo_scf_exe)
-        print("jbasis:", jbasis)
-        # Checking for ridft and jbas
-        if self.turbo_scf_exe =="ridft" and jbasis is None:
-            print("No jbasis provided for ridft. Exiting...")
-            ashexit()
-        else:
-            self.jbasis=jbasis
-
         # Checking OpenMPI
         if numcores != 1:
             print(f"Parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version is available in your environment")
