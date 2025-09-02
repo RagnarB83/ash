@@ -459,7 +459,8 @@ class xTBTheory:
                 print("------------xTB calculation done-----")
 
             if self.grab_charges:
-                self.charges = grabatomcharges_xTB_output(self.filename+'.out', chargemodel="CM5")
+                # Reading default xTB charges from file charges
+                self.charges = grabatomcharges_xTB()
 
             # Check if finished. Grab energy
             if Grad is True:
