@@ -843,8 +843,9 @@ class QMMMTheory:
             except:
                 print("error: found no charges attribute of QMTheory object. update_QMregion_charges can not be used")
                 ashexit()
-            #Removing linkatoms
-            newqmcharges = newqmcharges[0:-self.num_linkatoms]
+            # Removing linkatoms
+            if self.num_linkatoms > 0:
+                newqmcharges = newqmcharges[0:-self.num_linkatoms]
             for i, index in enumerate(self.qmatoms):
                 self.charges[index] = newqmcharges[i]
             print("Updating charges of QM-region in MMTheory object")
