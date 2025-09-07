@@ -12,7 +12,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 
 class TurbomoleTheory:
     def __init__(self, TURBODIR=None, turbomoledir=None, filename='XXX', printlevel=2, label="Turbomole",
-                numcores=1, parallelization='SMP', functional=None, gridsize="m4", scfconf=7, symmetry="c1", rij=True,
+                numcores=1, parallelization='SMP', functional=None, gridsize="m4", scfconv=7, symmetry="c1", rij=True,
                 basis=None, jbasis=None, scfiterlimit=50, maxcor=500, ricore=500, controlfile=None,skip_control_gen=False,
                 mp2=False, pointcharge_type=None, pc_gaussians=None):
 
@@ -26,7 +26,7 @@ class TurbomoleTheory:
         self.scfiterlimit=scfiterlimit
         self.functional=functional
         self.symmetry=symmetry
-        self.scfconf=scfconf
+        self.scfconv=scfconv
         self.gridsize=gridsize
         self.basis=basis
         self.jbasis=jbasis
@@ -61,11 +61,16 @@ class TurbomoleTheory:
 
         # User controlfile
         if self.controlfile is not None:
-            #Assuming
-            self.turbo_scf_exe="ridft"
-            self.turbo_exe_grad="rdgrad"
-            self.filename_scf="ridft"
-            self.filename_grad="rdgrad"
+            if self.rij is True:
+                self.turbo_scf_exe="ridft"
+                self.turbo_exe_grad="rdgrad"
+                self.filename_scf="ridft"
+                self.filename_grad="rdgrad"
+            else:
+                self.turbo_scf_exe="dscf"
+                self.turbo_exe_grad="grad"
+                self.filename_scf="dscf"
+                self.filename_grad="grad"
         # MP2
         elif self.mp2 is True:
             self.rij=False
@@ -108,9 +113,7 @@ class TurbomoleTheory:
             print(f"Parallel job requested with numcores: {numcores} . Make sure that the correct OpenMPI version is available in your environment")
             print("parallelization:", self.parallelization)
             if self.parallelization == 'MPI':
-                print("Parallelization is MPI. Checking availability of OpenMPI")
-                #exit()
-                #check_OpenMPI()
+                print("Parallelization is MPI.")
 
         # Finding Turbomole
         if TURBODIR is not None:
@@ -137,7 +140,6 @@ class TurbomoleTheory:
 
         # Setting environment variable TURBODIR (for basis set )
         os.environ['TURBODIR'] = self.TURBODIR
-        print("TURBODIR:", self.TURBODIR)
 
         # Printlevel
         self.printlevel=printlevel
@@ -177,7 +179,7 @@ class TurbomoleTheory:
         print("PATH:", os.environ['PATH'])
         self.smp_is_setup=True
 
-    def run_turbo(self,turbomoledir,filename, exe="ridft", numcores=1, parallelization=None):
+    def run_turbo(self,filename, exe="ridft", numcores=1, parallelization=None):
         print(f"Running executable {exe} and writing to output {filename}.out")
 
         with open(filename+'.out', 'w') as ofile:
@@ -250,7 +252,7 @@ class TurbomoleTheory:
                 os.remove('control')
 
             print("Creating controlfile")
-            create_control_file(functional=self.functional, gridsize=self.gridsize, scfconf=self.scfconf, dft=self.dft,
+            create_control_file(functional=self.functional, gridsize=self.gridsize, scfconv=self.scfconv, dft=self.dft,
                             symmetry="c1", basis=self.basis, jbasis=self.jbasis, rij=self.rij, mp2=self.mp2,
                             scfiterlimit=self.scfiterlimit, maxcor=self.maxcor, ricore=self.ricore, charge=charge, mult=mult,
                             pcharges=MMcharges, pccoords=current_MM_coords, pointcharge_type=self.pointcharge_type, pc_gaussians=self.pc_gaussians)
@@ -272,7 +274,7 @@ class TurbomoleTheory:
             print("No control file present. Exiting")
             ashexit()
         # SCF-energy only
-        self.run_turbo(self.turbomoledir,self.filename_scf, exe=self.turbo_scf_exe, parallelization=self.parallelization,
+        self.run_turbo(self.filename_scf, exe=self.turbo_scf_exe, parallelization=self.parallelization,
                   numcores=self.numcores)
         self.energy = grab_energy_from_energyfile()
         print("SCF Energy:", self.energy)
@@ -291,7 +293,7 @@ class TurbomoleTheory:
             print("Running Turbomole-gradient executable")
             print("self.turbo_exe_grad:", self.turbo_exe_grad)
             print("self.filename_grad:", self.filename_grad)
-            self.run_turbo(self.turbomoledir,self.filename_grad, exe=self.turbo_exe_grad, parallelization=self.parallelization,
+            self.run_turbo(self.filename_grad, exe=self.turbo_exe_grad, parallelization=self.parallelization,
                   numcores=self.numcores)
             self.gradient = grab_gradient(len(current_coords))
 
@@ -301,7 +303,7 @@ class TurbomoleTheory:
         # HESSIAN
         if Hessian is True:
             print("Running Turbomole-Hessian executable: aoforce")
-            self.run_turbo(self.turbomoledir,"aoforce", exe="aoforce", parallelization=self.parallelization,
+            self.run_turbo("aoforce", exe="aoforce", parallelization=self.parallelization,
                   numcores=self.numcores)
 
             self.hessian=turbomole_grabhessian(len(current_coords),hessfile="hessian")
@@ -353,7 +355,7 @@ def create_coord_file(elems,coords, write_unit='BOHR', periodic_info=None, filen
             coordfile.write(f"{periodic_info[0]} {periodic_info[1]} {periodic_info[2]} {periodic_info[3]} {periodic_info[4]} {periodic_info[5]}\n")
         coordfile.write("$end\n")
 
-def create_control_file(functional="lh12ct-ssifpw92", gridsize="m4", scfconf="7", symmetry="c1", rij=True, dft=True, mp2=False,
+def create_control_file(functional="lh12ct-ssifpw92", gridsize="m4", scfconv="7", symmetry="c1", rij=True, dft=True, mp2=False,
                         basis="def2-SVP", jbasis="def2-SVP", scfiterlimit=30, maxcor=500, ricore=500, charge=None, mult=None,
                         pcharges=None, pccoords=None, pointcharge_type=None, pc_gaussians=None):
     if pccoords is not None:
@@ -384,7 +386,7 @@ $maxcor    {maxcor} # MiB  per_core
 $scforbitalshift  automatic=.1
 $energy    file=energy
 $grad    file=gradient
-$scfconv   {scfconf}
+$scfconv   {scfconv}
 """
 
     if dft is True:
