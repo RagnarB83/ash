@@ -490,8 +490,8 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
             self.mch.canonicalization = True
             self.mch.natorb = True
-            self.mch.chkfile = "DMRG-CASSCF.chk"
-        #Settings
+            self.mch.chkfile = f"DMRG-CASSCF_{self.maxM}.chk"
+        # Settings
         if self.block_parallelization == 'MPI':
             print("blocblock_parallelization_mpi is set to MPI")
             print("block2-mpi version needs to be installed for this to work")
