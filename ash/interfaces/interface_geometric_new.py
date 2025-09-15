@@ -22,7 +22,8 @@ from ash.modules.module_theory import NumGradclass
 
 #Wrapper function around GeomeTRICOptimizerClass
 #NOTE: theory and fragment given to Optimizer function but not part of Class initialization. Only passed to run method
-def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', force_coordsystem=False, frozenatoms=None, constraints=None,
+def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', force_coordsystem=False, frozenatoms=None, 
+                       constraints=None, constraintsinputfile=None,
                        constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None, NumGrad=False, 
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
                        modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2, result_write_to_disk=True):
@@ -39,6 +40,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
     optimizer=GeomeTRICOptimizerClass(charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms,
                         maxiter=maxiter, ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt,
                         hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,modelhessian=modelhessian,
+                        constraintsinputfile=constraintsinputfile,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                         print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write,
                         printlevel=printlevel, force_coordsystem=force_coordsystem, result_write_to_disk=result_write_to_disk)
@@ -62,6 +64,7 @@ class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, charge=None, mult=None, coordsystem='tric',
                      frozenatoms=None, maxiter=250, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
+                       constraintsinputfile=None,
                        print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None,
                        subfrctor=1, MM_PDB_traj_write=False, printlevel=2, force_coordsystem=False, result_write_to_disk=True):
 
@@ -101,6 +104,7 @@ class GeomeTRICOptimizerClass:
             self.ActiveRegion=ActiveRegion
             self.TSOpt=TSOpt
             self.subfrctor=subfrctor
+
             #For MM or QM/MM whether to write PDB-trajectory or not
             self.MM_PDB_traj_write=MM_PDB_traj_write
             #Hessian stuff
@@ -110,6 +114,8 @@ class GeomeTRICOptimizerClass:
 
             #Constraints by default set to None
             self.constraints=None
+            # Optional user-constraintsfile in geometric syntax
+            self.constraintsinputfile=constraintsinputfile
             ######################
 
             self.result_write_to_disk=result_write_to_disk
@@ -507,6 +513,13 @@ class GeomeTRICOptimizerClass:
             bondconstraints, angleconstraints, dihedralconstraints = self.define_constraints(constraints)
             self.write_constraintsfile(self.frozenatoms,bondconstraints,constrainvalue,angleconstraints,
                                        dihedralconstraints)
+
+            if self.constraintsinputfile is not None:
+                print("constraintsinputfile provided:", self.constraintsinputfile)
+                if os.path.isfile(self.constraintsinputfile) is False:
+                    print(f"Error:File {self.constraintsinputfile} does not exist")
+                    ashexit()
+                self.constraintsfile=self.constraintsinputfile
             #################
 
 
@@ -518,7 +531,7 @@ class GeomeTRICOptimizerClass:
                 return result.energy
 
             #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
-            if self.ActiveRegion == True:
+            if self.ActiveRegion is True:
                 self.setup_active_region_geometry(fragment)
             #Whole system
             else:

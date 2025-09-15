@@ -456,7 +456,7 @@ def convert_MRCC_Molden_file(mrccoutputfile=None, moldenfile=None, mrccdensityfi
     if os.path.isfile("mrccnew.molden") is False:
         print("Error: Multiwfn failed to create new Molden file. Exiting.")
         ashexit()
-    print("Created new Molden file: ")
+    print("Created new Molden file: mrccnew.molden")
     print("This file contains the natural orbitals of the correlated density from MRCC")
 
 
