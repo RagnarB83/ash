@@ -3144,6 +3144,21 @@ def pySCF_read_MOs(moreadfile,pyscfobject, motype="scf"):
     #Checkpoint file
     elif '.chk'  in moreadfile:
         print("Reading checkpoint file")
+        # Looking for keys in file
+        f = h5py.File(moreadfile, 'r')
+        keys = list(f.keys())
+        keys.remove('mol') #Removing mol
+        print("Found (non-mol) keys in checkpointfile:", keys)
+        if motype not in keys:
+            print(f"Error:Motype {motype} not in keys")
+            if len(keys) == 1:
+                print("Only 1 non-mol key present in chkfile.")
+                print(f"Warning: Setting motype to be : {keys[0]} and continuing")
+                motype=keys[0]
+            else:
+                print("Error:Multiple keys, not sure which one to pick. Exiting.")
+                ashexit()
+        
         #motype can be e.g. 'scf' or 'mcscf'
         mo_coefficients = pyscf.lib.chkfile.load(moreadfile, f'{motype}/mo_coeff')
         print("mo_coefficients:", mo_coefficients)
