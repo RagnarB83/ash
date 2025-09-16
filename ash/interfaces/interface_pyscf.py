@@ -3136,6 +3136,7 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
 #Used by pySCFTheory, DiceTheory and BlockTheory
 def pySCF_read_MOs(moreadfile,pyscfobject, motype="scf"):
     import pyscf
+    import h5py
     print("Reading MOs from :", moreadfile)
     #Molden read
     if '.molden' in moreadfile:
