@@ -196,7 +196,7 @@ output {result_file}.{filetype}
                 center_z = (max_coordinates[2] + min_coordinates[2]) / 2
             elif shape.lower() == 'sphere':
                 center_x, center_y, center_z = sphere_center
-            
+
             ligands_input = f"""
 structure {ligand_files[0]}
   number 1

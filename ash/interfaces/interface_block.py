@@ -413,7 +413,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.nelec = round(sum(occupations[self.active_space_range[0]:self.active_space_range[1]]))
             print(f"Selected active space from range: CAS({self.nelec},{self.norb})")
         else:
-            print(f"Active space determined from {self.initial_orbitals} NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
+            print(f"Active space determined from occupation threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
 
             if self.cas_nmin == None or self.cas_nmax == None:
                 print("You need to set cas_nmin and cas_nmax parameters")

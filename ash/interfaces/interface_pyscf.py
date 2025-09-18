@@ -33,6 +33,7 @@ class PySCFTheory:
                   TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, auxbasis_file=None, sgx=False, magmom=None,
+                  solvation=None, solvation_eps=78.0, SMD_solvent='water', solvation_method='IEF-PCM',
                   pe=False, potfile=None, filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4,
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False, cc_conv_tol_normt=1e-06, cc_conv_tol=1e-07,
@@ -151,8 +152,17 @@ class PySCFTheory:
 
         #CPPE Polarizable Embedding options
         self.pe=pe
-        #Potfile from user or passed on via QM/MM Theory object ?
+        # Potfile from user or passed on via QM/MM Theory object ?
         self.potfile=potfile
+
+        # Continuum solvation
+        self.solvation=solvation #
+        # Controls PCM and ddCOSMO Epislon behaviour
+        self.solvation_eps=solvation_eps
+        # For solvation='PCM' method options: 'IEF-PCM', 'C-PCM', 'SS(V)PE', 'COSMO' 
+        self.solvation_method=solvation_method
+        # SMD-only
+        self.SMD_solvent=SMD_solvent
 
         # SCF
         self.platform=platform
@@ -2247,7 +2257,6 @@ class PySCFTheory:
             #TODO: Gaussian blur option
             print("PC True. Adding pointcharges")
 
-
             #GPU vs. CPU
             if self.platform == 'GPU':
                 print("QM/MM embedding for GPU. Adding pointcharges via create_mm_mol from gpu4pyscf")
@@ -2284,6 +2293,28 @@ class PySCFTheory:
                 ashexit()
             # TODO: Adapt to RKS vs. UKS etc.
             self.mf = pyscf.solvent.PE(pyscf.scf.RKS(self.mol), self.potfile)
+        # Continuum solvation
+        elif self.solvation is not None:
+            print("Adding continuum solvation to mf object")
+            import pyscf.solvent
+            if self.solvation =="ddCOSMO":
+                print("Solvation is ddCOSMO")
+                print("solvation_eps:", self.solvation_eps)
+                self.mf = self.mf.DDCOSMO()
+                self.mf.with_solvent.eps = self.solvation_eps # 
+            elif self.solvation =="PCM":
+                print("Solvation is PCM")
+                print("solvation_eps:", self.solvation_eps)
+                print("solvation_method:", self.solvation_method)
+                self.mf = self.mf.PCM()
+                self.mf.with_solvent.eps = self.solvation_eps # 
+                self.mf.with_solvent.method = self.solvation_method # IEF-PCM, C-PCM, SS(V)PE, COSMO
+            elif self.solvation =="SMD":
+                print("Solvation is SMD. Using SMD_solvent:", self.SMD_solvent)
+                self.mf = self.mf.SMD()
+                print("self.mf", self.mf)
+                self.mf.with_solvent.solvent =self.SMD_solvent
+
 
     def run_BS_SCF(self, mult=None, dm=None):
         print("\nBroken-symmetry SCF procedure")
@@ -2882,6 +2913,7 @@ class PySCFTheory:
             print("mf_ir.ir_inten:", mf_ir.ir_inten)
             self.ir_intensities=mf_ir.ir_inten
 
+        self.energy=float(self.energy)
         if self.printlevel >= 1:
             print()
             print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
