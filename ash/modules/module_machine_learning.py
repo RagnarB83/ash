@@ -3,6 +3,7 @@ import glob
 import shutil
 import random
 import numpy as np
+import statistics
 
 from ash.modules.module_coords import write_xyzfile, split_multimolxyzfile
 from ash.functions.functions_general import natural_sort,ashexit
