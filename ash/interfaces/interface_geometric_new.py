@@ -23,7 +23,7 @@ from ash.modules.module_theory import NumGradclass
 #Wrapper function around GeomeTRICOptimizerClass
 #NOTE: theory and fragment given to Optimizer function but not part of Class initialization. Only passed to run method
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', force_coordsystem=False, frozenatoms=None, 
-                       constraints=None, constraintsinputfile=None,
+                       constraints=None, constraintsinputfile=None, irc=False,
                        constrainvalue=False, maxiter=250, ActiveRegion=False, actatoms=None, NumGrad=False, 
                        convergence_setting=None, conv_criteria=None, print_atoms_list=None, TSOpt=False, hessian=None, partial_hessian_atoms=None,
                        modelhessian=None, subfrctor=1, MM_PDB_traj_write=False, printlevel=2, result_write_to_disk=True):
@@ -40,7 +40,7 @@ def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coord
     optimizer=GeomeTRICOptimizerClass(charge=charge, mult=mult, coordsystem=coordsystem, frozenatoms=frozenatoms,
                         maxiter=maxiter, ActiveRegion=ActiveRegion, actatoms=actatoms, TSOpt=TSOpt,
                         hessian=hessian, partial_hessian_atoms=partial_hessian_atoms,modelhessian=modelhessian,
-                        constraintsinputfile=constraintsinputfile,
+                        constraintsinputfile=constraintsinputfile,irc=irc,
                         convergence_setting=convergence_setting, conv_criteria=conv_criteria,
                         print_atoms_list=print_atoms_list, subfrctor=subfrctor, MM_PDB_traj_write=MM_PDB_traj_write,
                         printlevel=printlevel, force_coordsystem=force_coordsystem, result_write_to_disk=result_write_to_disk)
@@ -64,7 +64,7 @@ class GeomeTRICOptimizerClass:
         def __init__(self,theory=None, charge=None, mult=None, coordsystem='tric',
                      frozenatoms=None, maxiter=250, ActiveRegion=False, actatoms=None,
                        convergence_setting=None, conv_criteria=None, TSOpt=False, hessian=None,
-                       constraintsinputfile=None,
+                       constraintsinputfile=None, irc=False,
                        print_atoms_list=None, partial_hessian_atoms=None, modelhessian=None,
                        subfrctor=1, MM_PDB_traj_write=False, printlevel=2, force_coordsystem=False, result_write_to_disk=True):
 
@@ -104,6 +104,9 @@ class GeomeTRICOptimizerClass:
             self.ActiveRegion=ActiveRegion
             self.TSOpt=TSOpt
             self.subfrctor=subfrctor
+
+            #IRC
+            self.irc=irc
 
             #For MM or QM/MM whether to write PDB-trajectory or not
             self.MM_PDB_traj_write=MM_PDB_traj_write
@@ -570,7 +573,7 @@ class GeomeTRICOptimizerClass:
             #Defining args object, containing engine object
             final_geometric_args=geomeTRICArgsObject(ashengine,self.constraintsfile,coordsys=self.coordsystem,
                 maxiter=self.maxiter, conv_criteria=self.conv_criteria, transition=self.TSOpt, hessian=self.hessian, subfrctor=self.subfrctor,
-                verbose=0)
+                verbose=0, irc=self.irc)
 
             if self.printlevel >= 1:
                 print("Convergence criteria:", self.conv_criteria)
@@ -619,7 +622,7 @@ class GeomeTRICOptimizerClass:
             fragment.set_energy(finalenergy)
 
             #Active region XYZ-file
-            if self.ActiveRegion==True:
+            if self.ActiveRegion is True:
                 write_XYZ_for_atoms(fragment.coords, fragment.elems, self.actatoms, "Fragment-optimized_Active")
             #QM-region XYZ-file
             if isinstance(theory,QMMMTheory):
@@ -639,13 +642,14 @@ class GeomeTRICOptimizerClass:
 
 
 class geomeTRICArgsObject:
-    def __init__(self,eng,constraintsfile, coordsys, maxiter, conv_criteria, transition,hessian,subfrctor,verbose):
+    def __init__(self,eng,constraintsfile, coordsys, maxiter, conv_criteria, transition,hessian,subfrctor,verbose,irc):
         self.coordsys=coordsys
         self.maxiter=maxiter
         self.transition=transition
         self.hessian=hessian
         self.subfrctor=subfrctor
         self.verbose=verbose
+        self.irc=irc
         #self.convergence_criteria=conv_criteria
         #self.converge=conv_criteria
         #Setting these to be part of kwargs that geometric reads
