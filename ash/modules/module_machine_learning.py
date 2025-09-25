@@ -9,6 +9,7 @@ from ash.modules.module_coords import write_xyzfile, split_multimolxyzfile
 from ash.functions.functions_general import natural_sort,ashexit
 from ash import Singlepoint, Fragment
 from ash.interfaces.interface_mdtraj import MDtraj_slice
+from ash.modules.module_plotting import ASH_plot
 
 # Collection of functions related to machine learning and data analysis
 # Also helper tools for Torch and MLatom interfaces
@@ -399,7 +400,7 @@ def Ml_print_model_stats(dbdict=None, dbname="Sub-train", Grad=True):
         print()
 
 
-def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=1, selection='energy', threshold=0.1, num_snaps=5):
+def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=1, selection='energy', threshold=0.1, num_snaps=5, label=""):
     print("-"*50)
     print("query_by_committee function")
     print("-"*50)
@@ -469,6 +470,30 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
 
     df = df.applymap(format_cell)
     print(df)
+
+
+    # PLOT data
+    try:
+        print("Attempting to plot")
+        # Create ASH_plot object named edplot
+        eplot = ASH_plot("Plotname", num_subplots=1, x_axislabel="x-axis", y_axislabel='y-axis')
+        eplot.addseries(0, x_list=list(range(0,len(stdevs_e))), y_list=stdevs_e, label='Stdev-E', color='blue', line=True, scatter=True)
+        eplot.savefig(f"stdevE_per_snap_{label}")
+
+        # Create ASH_plot object named edplot
+        eplot = ASH_plot("Plotname", num_subplots=1, x_axislabel="x-axis", y_axislabel='y-axis')
+        eplot.addseries(0, x_list=list(range(0,len(stdevs_g))), y_list=stdevs_g, label='Stdev-G', color='blue', line=True, scatter=True)
+        eplot.savefig(f"stdevG_per_snap_{label}")
+
+        # Create ASH_plot object named edplot
+        eplot = ASH_plot("Plotname", num_subplots=1, x_axislabel="x-axis", y_axislabel='y-axis')
+        eplot.addseries(0, x_list=list(range(0,len(stdevs_g_p))), y_list=stdevs_g_p, label='Stdev-Gp', color='blue', line=True, scatter=True)
+        eplot.savefig(f"stdevGp_per_snap_{label}")
+    except:
+        print("Failed to plot")
+        pass
+
+
     if selection == "energy":
         print("Selection option is energy")
         print("Threshold:", threshold)
@@ -477,6 +502,30 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
         # Get snapshots above threshold and up to num_snaps
         above_thresh_indices = np.where(stdevs_e > threshold)[0]
         filtered_arr = stdevs_e[above_thresh_indices]
+        top_indices_in_filtered = np.argsort(filtered_arr)[-num_snaps:][::-1]
+        top_indices = above_thresh_indices[top_indices_in_filtered]
+        chosen_configs = [configs[i] for i in top_indices]
+        print("chosen_configs:", chosen_configs)
+    elif selection == "gradient":
+        print("Selection option is gradient")
+        print("Threshold:", threshold)
+        print("Number of snapshots to grab:", num_snaps)
+
+        # Get snapshots above threshold and up to num_snaps
+        above_thresh_indices = np.where(stdevs_g > threshold)[0]
+        filtered_arr = stdevs_g[above_thresh_indices]
+        top_indices_in_filtered = np.argsort(filtered_arr)[-num_snaps:][::-1]
+        top_indices = above_thresh_indices[top_indices_in_filtered]
+        chosen_configs = [configs[i] for i in top_indices]
+        print("chosen_configs:", chosen_configs)
+    elif selection == "gradient2":
+        print("Selection option is stdevs_g_p")
+        print("Threshold:", threshold)
+        print("Number of snapshots to grab:", num_snaps)
+
+        # Get snapshots above threshold and up to num_snaps
+        above_thresh_indices = np.where(stdevs_g_p > threshold)[0]
+        filtered_arr = stdevs_g_p[above_thresh_indices]
         top_indices_in_filtered = np.argsort(filtered_arr)[-num_snaps:][::-1]
         top_indices = above_thresh_indices[top_indices_in_filtered]
         chosen_configs = [configs[i] for i in top_indices]
