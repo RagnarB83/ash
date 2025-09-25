@@ -498,40 +498,29 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
         print("Selection option is energy")
         print("Threshold:", threshold)
         print("Number of snapshots to grab:", num_snaps)
-
-        # Get snapshots above threshold and up to num_snaps
-        above_thresh_indices = np.where(stdevs_e > threshold)[0]
-        filtered_arr = stdevs_e[above_thresh_indices]
-        top_indices_in_filtered = np.argsort(filtered_arr)[-num_snaps:][::-1]
-        top_indices = above_thresh_indices[top_indices_in_filtered]
-        chosen_configs = [configs[i] for i in top_indices]
-        print("chosen_configs:", chosen_configs)
+        used_metric=stdevs_e
     elif selection == "gradient":
         print("Selection option is gradient")
         print("Threshold:", threshold)
         print("Number of snapshots to grab:", num_snaps)
-
-        # Get snapshots above threshold and up to num_snaps
-        above_thresh_indices = np.where(stdevs_g > threshold)[0]
-        filtered_arr = stdevs_g[above_thresh_indices]
-        top_indices_in_filtered = np.argsort(filtered_arr)[-num_snaps:][::-1]
-        top_indices = above_thresh_indices[top_indices_in_filtered]
-        chosen_configs = [configs[i] for i in top_indices]
-        print("chosen_configs:", chosen_configs)
+        used_metric=stdevs_g
     elif selection == "gradient2":
         print("Selection option is stdevs_g_p")
         print("Threshold:", threshold)
         print("Number of snapshots to grab:", num_snaps)
-
-        # Get snapshots above threshold and up to num_snaps
-        above_thresh_indices = np.where(stdevs_g_p > threshold)[0]
-        filtered_arr = stdevs_g_p[above_thresh_indices]
-        top_indices_in_filtered = np.argsort(filtered_arr)[-num_snaps:][::-1]
-        top_indices = above_thresh_indices[top_indices_in_filtered]
-        chosen_configs = [configs[i] for i in top_indices]
-        print("chosen_configs:", chosen_configs)
+        used_metric=stdevs_g_p
     else:
         print("Error")
         exit()
+
+    # Get snapshots above threshold and up to num_snaps
+    above_thresh_indices = np.where(used_metric > threshold)[0]
+    print(f"Found {len(above_thresh_indices)} snapshots above threshold")
+    filtered_arr = used_metric[above_thresh_indices]
+    top_indices_in_filtered = np.argsort(filtered_arr)[-num_snaps:][::-1]
+    top_indices = above_thresh_indices[top_indices_in_filtered]
+    chosen_configs = [configs[i] for i in top_indices]
+    print("chosen_configs:", chosen_configs)
+
     print(f"Found {len(chosen_configs)} configs with high stdevs")
     return chosen_configs
