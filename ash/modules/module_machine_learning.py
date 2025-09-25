@@ -15,7 +15,7 @@ from ash.interfaces.interface_mdtraj import MDtraj_slice
 
 # Function to create ML training data given XYZ-files and 2 ASH theories
 def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=None, random_snapshots=True,
-                                dcd_pdb_topology=None, nth_frame_in_traj=1,
+                                dcd_pdb_topology=None, nth_frame_in_traj=1, printlevel=2,
                                theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1):
     print("-"*50)
     print("create_ML_training_data function")
@@ -182,7 +182,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             print("Now running Theory 1")
             try:
                 result_1 = Singlepoint(theory=theory_1, fragment=frag, Grad=Grad,
-                                   result_write_to_disk=False)
+                                   result_write_to_disk=False,printlevel=printlevel)
             except:
                 print("Problem with theory calculation")
                 print(f"Will skip file {file} in training")
@@ -192,7 +192,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
                 print("Now running Theory 2")
                 try:
                     result_2 = Singlepoint(theory=theory_2, fragment=frag, Grad=Grad,
-                                        result_write_to_disk=False)
+                                        result_write_to_disk=False,printlevel=printlevel)
                 except:
                     print("Problem with theory calculation")
                     print(f"Will skip file {file} in training")
@@ -277,14 +277,14 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         theory_1.printlevel=0
         theory_1.cleanup()
         result_1 = Singlepoint(theory=theory_1, fragment=atomfrag, printlevel=0,
-                               result_write_to_disk=False)
+                               result_write_to_disk=False,printlevel=printlevel)
         if delta is True:
             theory_2.printlevel=0
             # Running theory 2
             print("Now running Theory 2 for atom:", uniq_el)
             theory_2.cleanup()
             result_2 = Singlepoint(theory=theory_2, fragment=atomfrag, printlevel=0,
-                                   result_write_to_disk=False)
+                                   result_write_to_disk=False,printlevel=printlevel)
             # Delta energy
             atomenergy = result_2.energy - result_1.energy
         else:
