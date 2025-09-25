@@ -124,8 +124,8 @@ class MACETheory():
         print()
         if self.model_file is not None:
             print("Model_file attribute was previously set at initialization.")
-            print(f"Moving and renaming file {results_dir}/{name}_stagetwo_compiled.model   to :  {self.modelfile}")
-            shutil.move(f"{results_dir}/{name}_stagetwo_compiled.model", self.modelfile)
+            print(f"Moving and renaming file {results_dir}/{name}_stagetwo_compiled.model   to :  {self.model_file}")
+            shutil.move(f"{results_dir}/{name}_stagetwo_compiled.model", self.model_file)
         else:
             self.model_file=f"{results_dir}/{name}_stagetwo_compiled.model"
         print("model_file attribute is:", self.model_file )
