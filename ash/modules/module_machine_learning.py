@@ -277,14 +277,14 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         theory_1.printlevel=0
         theory_1.cleanup()
         result_1 = Singlepoint(theory=theory_1, fragment=atomfrag, printlevel=0,
-                               result_write_to_disk=False,printlevel=printlevel)
+                               result_write_to_disk=False)
         if delta is True:
             theory_2.printlevel=0
             # Running theory 2
             print("Now running Theory 2 for atom:", uniq_el)
             theory_2.cleanup()
             result_2 = Singlepoint(theory=theory_2, fragment=atomfrag, printlevel=0,
-                                   result_write_to_disk=False,printlevel=printlevel)
+                                   result_write_to_disk=False)
             # Delta energy
             atomenergy = result_2.energy - result_1.energy
         else:
