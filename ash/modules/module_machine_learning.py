@@ -17,6 +17,9 @@ from ash.interfaces.interface_mdtraj import MDtraj_slice
 def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=None, random_snapshots=True,
                                 dcd_pdb_topology=None, nth_frame_in_traj=1,
                                theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1):
+    print("-"*50)
+    print("create_ML_training_data function")
+    print("-"*50)
     if xyz_dir is None and xyz_trajectory is None and dcd_trajectory is None:
         print("Error: create_ML_training_data requires xyz_dir, xyz_trajectory or dcd_trajectory option to be set!")
         ashexit()
@@ -394,3 +397,92 @@ def Ml_print_model_stats(dbdict=None, dbname="Sub-train", Grad=True):
             except KeyError:
                 print("Found no gradient stats. skipping")
         print()
+
+
+def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=1, selection='energy', threshold=0.1, num_snaps=5):
+    print("-"*50)
+    print("query_by_committee function")
+    print("-"*50)
+    import pandas as pd
+    configs_energies=[]
+    configs_grads=[]
+    # Loop over all other-configs with all mltheories
+    for config in configs:
+        energies=[]
+        gradients=[]
+
+        # 
+        if isinstance(config,str):
+            frag = Fragment(xyzfile=config, charge=charge, mult=mult, printlevel=0)
+        if isinstance(config,Fragment):
+            frag=config
+
+        for mltheory in mltheories:
+            # Running ML (or deltaML) energy
+            res1 = Singlepoint(theory=mltheory, fragment=frag,Grad=Grad, printlevel=0)
+            energies.append(res1.energy)
+            if Grad is True:
+                gradients.append(res1.gradient)
+        configs_energies.append(energies)
+        configs_grads.append(gradients)
+    # Get stdevs
+    print("configs_energies:", configs_energies)
+    stdevs_e = [statistics.stdev(i) for i in configs_energies]
+    #Grad
+    stdevs_g=[]
+    stdevs_g_p = []
+    for config_g in configs_grads:
+        # Global stdev
+        combined = np.concatenate([a.ravel() for a in config_g])
+        # Pooled
+        magnitudes = [np.linalg.norm(F, axis=1) for F in config_g]
+        std = np.std(combined, axis=0)
+        std_p = np.std(np.concatenate(magnitudes),axis=0)
+        stdevs_g.append(std)
+        stdevs_g_p.append(std_p)
+
+    stdevs_e = np.array(stdevs_e)
+    print("stdevs_e:", stdevs_e)
+    print("stdevs_g:", stdevs_g)
+    print()
+    print("stdevs_g_p:", stdevs_g_p)
+
+    # Build a dictionary of top-5 snapshots per metric
+    top_snapshots = {}
+    for name, m in zip(["Std_E","Std_G","STtd_G_pooled"], [np.array(stdevs_e),np.array(stdevs_g),np.array(stdevs_g_p)]):
+        top5_indices = np.argsort(m)[-num_snaps:][::-1]
+        top5_values = m[top5_indices]
+        top_snapshots[name] = [
+            (int(idx), float(val)) for idx, val in zip(top5_indices, top5_values)
+        ]
+    # Convert to a DataFrame
+    df = pd.DataFrame(top_snapshots)
+    # extract just the indices to check duplicates
+    all_indices = [x[0] for col in df.columns for x in df[col]]
+    duplicate_indices = {idx for idx in all_indices if all_indices.count(idx) > 1}
+
+    # Step 4: format cells, highlighting duplicates with a marker (★)
+    def format_cell(cell):
+        idx, val = cell
+        marker = " ★" if idx in duplicate_indices else ""
+        return f"{idx} ({val:.4f}){marker}"
+
+    df = df.applymap(format_cell)
+    print(df)
+    if selection == "energy":
+        print("Selection option is energy")
+        print("Threshold:", threshold)
+        print("Number of snapshots to grab:", num_snaps)
+
+        # Get snapshots above threshold and up to num_snaps
+        above_thresh_indices = np.where(stdevs_e > threshold)[0]
+        filtered_arr = stdevs_e[above_thresh_indices]
+        top_indices_in_filtered = np.argsort(filtered_arr)[-num_snaps:][::-1]
+        top_indices = above_thresh_indices[top_indices_in_filtered]
+        chosen_configs = [configs[i] for i in top_indices]
+        print("chosen_configs:", chosen_configs)
+    else:
+        print("Error")
+        exit()
+    print(f"Found {len(chosen_configs)} configs with high stdevs")
+    return chosen_configs
