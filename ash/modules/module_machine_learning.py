@@ -420,7 +420,7 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
 
         for mltheory in mltheories:
             # Running ML (or deltaML) energy
-            res1 = Singlepoint(theory=mltheory, fragment=frag,Grad=Grad, printlevel=0)
+            res1 = Singlepoint(theory=mltheory, fragment=frag,Grad=Grad, printlevel=0,result_write_to_disk=False)
             energies.append(res1.energy)
             if Grad is True:
                 gradients.append(res1.gradient)
