@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import shutil
 
 from ash.modules.module_coords import elemstonuccharges
 from ash.functions.functions_general import ashexit, BC,print_time_rel
@@ -121,8 +122,13 @@ class MACETheory():
         print(f"The final models are located in directory: {results_dir}")
         print(f"Recommended model files to use for production: {results_dir}/{name}_compiled.model and {results_dir}/{name}_stagetwo_compiled.model")
         print()
-        self.model_file=f"{results_dir}/{name}_stagetwo_compiled.model"
-        print("Setting model_file attribute to:", self.model_file )
+        if self.model_file is not None:
+            print("Model_file attribute was previously set at initialization.")
+            print(f"Moving and renaming file {results_dir}/{name}_stagetwo_compiled.model   to :  {self.modelfile}")
+            shutil.move(f"{results_dir}/{name}_stagetwo_compiled.model", self.modelfile)
+        else:
+            self.model_file=f"{results_dir}/{name}_stagetwo_compiled.model"
+        print("model_file attribute is:", self.model_file )
         print("MACETheory object can now be used directly.")
 
         # If we train with a specific device we would want to use that same device for evaluation/prediction

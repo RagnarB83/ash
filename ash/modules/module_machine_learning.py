@@ -522,5 +522,5 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
     chosen_configs = [configs[i] for i in top_indices]
     print("chosen_configs:", chosen_configs)
 
-    print(f"Found {len(chosen_configs)} configs with high stdevs")
+    print(f"Selected {len(chosen_configs)} configs with high stdevs")
     return chosen_configs
