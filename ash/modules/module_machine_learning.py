@@ -177,7 +177,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             print("\nNow running file:", file)
             basefile=os.path.basename(file)
             label=basefile.split(".")[0]
-            frag = Fragment(xyzfile=file, charge=charge, mult=mult)
+            frag = Fragment(xyzfile=file, charge=charge, mult=mult,printlevel=printlevel)
             frag.label=label
             # 1: gas 2:solv  or 1: LL  or 2: HL
             print("Now running Theory 1")
