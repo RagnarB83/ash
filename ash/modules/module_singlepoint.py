@@ -66,7 +66,8 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
             result.qmmm_energy = theory.QM_MM_energy
             result.mm_energy = theory.MMenergy
             result.qm_energy = theory.QMenergy
-        result.write_to_disk(filename="ASH_SP.result")
+        if result_write_to_disk:
+            result.write_to_disk(filename="ASH_SP.result")
         return result
     # Run a single-point energy job without gradient (default)
     else:
