@@ -2677,12 +2677,12 @@ class PySCFTheory:
             #GPU CHANGE
             if self.platform == 'GPU':
                 print("GPU SCF calculation done.")
-                print("Grad:", Grad)
-                print("Hessian:", Hessian)
-                if Grad is False:
-                    print("Converting mf object back to CPU")
+                if Grad is False :
+                    print("Grad False: Converting mf object back to CPU")
                     self.mf = self.mf.to_cpu()
-
+                if Hessian is False :
+                    print("Hessian False: Converting mf object back to CPU")
+                    self.mf = self.mf.to_cpu()
 
             #Possible stability analysis
             self.run_stability_analysis()
