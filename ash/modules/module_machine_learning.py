@@ -272,7 +272,6 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     from dictionaries_lists import atom_spinmults
     for uniq_el in unique_elems:
         mult = atom_spinmults[uniq_el]
-        print("mult:", mult)
         atomfrag = Fragment(atom=uniq_el, charge=0, mult=mult, printlevel=0)
         print("Now running Theory 1 for atom:", uniq_el)
         theory_1.printlevel=0
@@ -428,8 +427,9 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
         configs_grads.append(gradients)
     # Get stdevs
     print("configs_energies:", configs_energies)
-    stdevs_e = [statistics.stdev(i) for i in configs_energies]
-    #Grad
+    stdevs_e = np.array([statistics.stdev(i) for i in configs_energies])
+    ranges_e = np.array([max(i) - min(i)for i in configs_energies])
+    # Grad
     stdevs_g=[]
     stdevs_g_p = []
     for config_g in configs_grads:
@@ -441,16 +441,12 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
         std_p = np.std(np.concatenate(magnitudes),axis=0)
         stdevs_g.append(std)
         stdevs_g_p.append(std_p)
-
-    stdevs_e = np.array(stdevs_e)
-    print("stdevs_e:", stdevs_e)
-    print("stdevs_g:", stdevs_g)
-    print()
-    print("stdevs_g_p:", stdevs_g_p)
+    stdevs_g=np.array(stdevs_g)
+    stdevs_g_p=np.array(stdevs_g_p)
 
     # Build a dictionary of top-5 snapshots per metric
     top_snapshots = {}
-    for name, m in zip(["Std_E","Std_G","STtd_G_pooled"], [np.array(stdevs_e),np.array(stdevs_g),np.array(stdevs_g_p)]):
+    for name, m in zip(["Std_E","Range_E","Std_G","STtd_G_pooled"], [stdevs_e,ranges_e,stdevs_g,stdevs_g_p]):
         top5_indices = np.argsort(m)[-num_snaps:][::-1]
         top5_values = m[top5_indices]
         top_snapshots[name] = [
@@ -470,7 +466,6 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
 
     df = df.applymap(format_cell)
     print(df)
-
 
     # PLOT data
     try:
@@ -494,11 +489,16 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
         pass
 
 
-    if selection == "energy":
-        print("Selection option is energy")
+    if selection == "energy-stdev":
+        print("Selection option is energy-stdev")
         print("Threshold:", threshold)
         print("Number of snapshots to grab:", num_snaps)
         used_metric=stdevs_e
+    elif selection == "energy-range":
+        print("Selection option is energy-range")
+        print("Threshold:", threshold)
+        print("Number of snapshots to grab:", num_snaps)
+        used_metric=ranges_e
     elif selection == "gradient":
         print("Selection option is gradient")
         print("Threshold:", threshold)
