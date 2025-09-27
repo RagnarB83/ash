@@ -2899,7 +2899,7 @@ class PySCFTheory:
             if self.platform == "GPU":
                 #from pyscf.prop.infrared.rhf import Infrared, kernel_dipderiv
                 from gpu4pyscf.properties import ir
-                freq, intensity = ir.eval_ir_freq_intensity(self.mf, hessian)
+                freq, intensity = ir.eval_ir_freq_intensity(self.mf, hessinfo)
                 self.ir_intensities=intensity
             else:
                 from pyscf.prop.infrared.rhf import Infrared
