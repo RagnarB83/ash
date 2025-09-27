@@ -399,7 +399,7 @@ def Ml_print_model_stats(dbdict=None, dbname="Sub-train", Grad=True):
         print()
 
 
-def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=1, selection='energy', threshold=0.1, num_snaps=5, label=""):
+def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=1, selection='energy-stdev', threshold=0.1, num_snaps=5, label=""):
     print("-"*50)
     print("query_by_committee function")
     print("-"*50)
