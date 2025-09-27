@@ -1106,12 +1106,7 @@ class PySCFTheory:
 
     def run_hessian(self):
         print("Running meanfield Hessian")
-        #import pyscf.hessian
-        print("self.mf:", self.mf)
-        print("self.mf dict:", self.mf.__dict__)
         self.hessian_obj = self.mf.Hessian()
-        print("self.hessian_obj:", self.hessian_obj)
-        print("self.hessian_obj: dict", self.hessian_obj.__dict__)
         hessian = self.hessian_obj.kernel()
         return hessian
 
@@ -2891,7 +2886,6 @@ class PySCFTheory:
         ##############
         if Hessian:
             hessinfo = self.run_hessian()
-            print("hessinfo:", hessinfo)
             hessian = hessinfo.transpose(0,2,1,3).reshape(3*3,3*3)
             self.hessian=hessian
             try:
