@@ -6,7 +6,7 @@ import numpy as np
 import statistics
 
 from ash.modules.module_coords import write_xyzfile, split_multimolxyzfile
-from ash.functions.functions_general import natural_sort,ashexit
+from ash.functions.functions_general import natural_sort,ashexit,listdiff
 from ash import Singlepoint, Fragment
 from ash.interfaces.interface_mdtraj import MDtraj_slice
 from ash.modules.module_plotting import ASH_plot
@@ -524,3 +524,133 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
 
     print(f"Selected {len(chosen_configs)} configs with high stdevs")
     return chosen_configs
+
+
+ # TODO: COMBINE TRAINING FILES
+def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxiter=10, theory_1=None, theory_2=None, Grad=True,
+                        init_base_cfgs=25, threshold=0.0001, max_add_snaps=5, maxepochs=100, selection="energy-range",
+                        noupdate=False, random_selection=False, random_seed_set=False, seed=42,
+                        charge=None, mult=None, runmode="serial", numcores=1):
+
+    if ml_theories is None:
+        print("Error: ml_theories needs to be set (list of ASH MLTheories)")
+        ashexit()
+    if e_f_weights is None:
+        print("Error: e_f_weights needs to be set (list of ASH MLTheories)")
+        ashexit()
+    if len(ml_theories) != len(e_f_weights):
+        print("Error: Length of ml_theories list and length of e_f_weights must be the same")
+        ashexit()
+
+    if training_dir is None:
+        print("Error: training_dir needs to be set (path to XYZ-directory)")
+        ashexit()
+
+    if theory_1 is None:
+        print("Error: theory_1 needs to be set")
+        ashexit()
+    if charge is None or mult is None:
+        print("Error: Charge/mult need to be set")
+        ashexit()
+
+    print("training_dir:", training_dir)
+    print("Max Loop Iterations:", maxiter)
+    print("Initial base configurations:", init_base_cfgs)
+    print("Selector:", selection)
+    print(f"Energy threshold: {threshold} Eh")
+    print("Number of snapshots added per loop iteration:", max_add_snaps)
+    print("Number of po")
+    print("random_seed_set:", random_seed_set)
+
+    print("theory_1:", theory_1)
+    print("theory_2:", theory_2)
+    print("Grad:", Grad)
+
+    print("noupdate:", noupdate)
+    print("random_selection:", random_selection)
+
+    # Move
+    def move_chosen_files(chosen,dirname):
+        for f in chosen:
+            shutil.move(f, f"{dirname}/{os.path.basename(f)}")
+
+    #Delete old dirs
+    print("Deleting possible old dirs: current_set base")
+    for d in ["current_set", "base"]:
+        try:
+            shutil.rmtree(d)
+        except:
+            pass
+    # Copy full dir over as current-set
+    print("Copying whole training dir to current_set")
+    shutil.copytree(training_dir, "./current_set")
+    xyzdir="current_set"
+    # Read all XYZ-files as list
+    xyzfiles = glob.glob(f"{xyzdir}/*xyz")
+    print("Number of xyzfiles in Original DIR:", len(xyzfiles))
+    # Create base dir
+    os.mkdir("base")
+
+    # Choose base set:
+    # This can be replaced by a list of chosen XYZ-files instead
+    if random_seed_set:
+        random.seed(42)
+    base_cfgs = random.sample(xyzfiles, init_base_cfgs)
+
+    #Move chosen base configs to base
+    move_chosen_files(base_cfgs,"base")
+
+
+    # ACTIVE LEARNING LOOP
+    chosen_cfgs=[]
+    for iter in range(maxiter):
+        print("="*50)
+        print(f"ACTIVE LEARNING ITERATION {iter}")
+        print("="*50)
+        # Base CFGS and rest configs
+        base_cfgs += chosen_cfgs
+        other_cfgs = listdiff(xyzfiles,base_cfgs)
+        print(f"NUM CURRENT BASE CONFIGS : {len(base_cfgs)}")
+        print([os.path.basename(i) for i in base_cfgs])
+        print(f"NUM CURRENT OTHER CONFIGS : {len(other_cfgs)}")
+        print()
+        # Create training data for base
+        # Note: should be rewritten for only other_cfgs and then combine train_data_mace.xyz files
+        create_ML_training_data(xyz_dir=f"{xyzdir}/../base", random_snapshots=True, printlevel=0,
+                                   theory_1=theory_1, theory_2=theory_2, charge=charge, mult=mult, Grad=Grad, runmode=runmode, numcores=numcores)
+
+        # TODO: COMBINE TRAINING FILES
+
+        #ML Theories
+        for i,(ml,efw) in enumerate(zip(ml_theories, e_f_weights)):
+            # Unique model filename
+            ml.model_file=f"ML_ep{maxepochs}_ew_{e_f_weights[i][0]}_fw_{e_f_weights[i][1]}_iter{iter}.model"
+            # Train with selected epochs and weights
+            ml.train(max_num_epochs=maxepochs, energy_weight=e_f_weights[i][0], forces_weight=e_f_weights[i][1])
+        
+
+        # Check consistency of models and choose outliers
+        chosen_cfgs = query_by_committee(mltheories=ml_theories, configs=other_cfgs, Grad=Grad, threshold=threshold,
+                        num_snaps=max_add_snaps, label=str(iter), selection=selection)
+        if random_selection is True:
+            if random_seed_set:
+                random.seed(seed)
+            chosen_cfgs = random.sample(other_cfgs, max_add_snaps)
+
+        if len(chosen_cfgs) == 0:
+            print("No new cfgs found. Exiting loop")
+            print("Final number of cfgs in base:", len(base_cfgs))
+            print("ACTIVE LEARNING COMPLETE!")
+            break
+        if noupdate is True:
+            chosen_cfgs=[]
+        else:
+            #Move chosen configs to base
+            move_chosen_files(chosen_cfgs,"base")
+
+    print("Active learning is complete.")
+    if iter == maxiter:
+        print("Warning: Active learning loop did not converge. Check the results carefully")
+    else:
+        print("Active learning loop converged")
+        print("Final set of configurations are found in directory: base")
