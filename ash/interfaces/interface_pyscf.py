@@ -1106,7 +1106,9 @@ class PySCFTheory:
 
     def run_hessian(self):
         print("Running meanfield Hessian")
-        import pyscf.hessian
+        #import pyscf.hessian
+        print("self.mf:", self.mf)
+        print("self.mf dict:", self.mf.__dict__)
         self.hessian_obj = self.mf.Hessian()
         print("self.hessian_obj:", self.hessian_obj)
         print("self.hessian_obj: dict", self.hessian_obj.__dict__)
