@@ -2889,13 +2889,6 @@ class PySCFTheory:
             hessian = hessinfo.transpose(0,2,1,3).reshape(len(current_coords)*3,len(current_coords)*3)
             print("hessinfo:", hessinfo)
             self.hessian=hessian
-            try:
-                print("Attempting IR intensity calculation (requires pyscf.prop library)")
-            except ModuleNotFoundError:
-                print("pyscf IR intensity requires installation of pyscf.prop module")
-                print("See: https://github.com/pyscf/properties")
-                print("You can install with: pip install git+https://github.com/pyscf/properties")
-                ashexit()
 
             if self.platform == "GPU":
                 #from pyscf.prop.infrared.rhf import Infrared, kernel_dipderiv
@@ -2903,6 +2896,13 @@ class PySCFTheory:
                 freq, intensity = ir.eval_ir_freq_intensity(self.mf, self.hessian_obj)
                 self.ir_intensities=intensity
             else:
+                try:
+                    print("Attempting IR intensity calculation (requires pyscf.prop library)")
+                except ModuleNotFoundError:
+                    print("pyscf IR intensity requires installation of pyscf.prop module")
+                    print("See: https://github.com/pyscf/properties")
+                    print("You can install with: pip install git+https://github.com/pyscf/properties")
+                    ashexit()
                 from pyscf.prop.infrared.rhf import Infrared
                 mf_ir = Infrared(self.mf)
                 mf_ir.mf_hess=self.hessian_obj
