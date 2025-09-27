@@ -2908,7 +2908,7 @@ class PySCFTheory:
                 mf_ir.mf_hess=self.hessian_obj
                 mf_ir.run()
                 print("mf_ir.ir_inten:", mf_ir.ir_inten)
-            self.ir_intensities=mf_ir.ir_inten
+                self.ir_intensities=mf_ir.ir_inten
 
         self.energy=float(self.energy)
         if self.printlevel >= 1:
