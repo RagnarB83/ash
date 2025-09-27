@@ -2887,6 +2887,7 @@ class PySCFTheory:
         if Hessian:
             hessinfo = self.run_hessian()
             hessian = hessinfo.transpose(0,2,1,3).reshape(len(current_coords)*3,len(current_coords)*3)
+            print("hessinfo:", hessinfo)
             self.hessian=hessian
             try:
                 print("Attempting IR intensity calculation (requires pyscf.prop library)")
@@ -2899,7 +2900,7 @@ class PySCFTheory:
             if self.platform == "GPU":
                 #from pyscf.prop.infrared.rhf import Infrared, kernel_dipderiv
                 from gpu4pyscf.properties import ir
-                freq, intensity = ir.eval_ir_freq_intensity(self.mf, hessinfo)
+                freq, intensity = ir.eval_ir_freq_intensity(self.mf, self.hessian_obj)
                 self.ir_intensities=intensity
             else:
                 from pyscf.prop.infrared.rhf import Infrared
