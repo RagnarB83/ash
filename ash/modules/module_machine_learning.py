@@ -428,7 +428,7 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
     # Get stdevs
     print("configs_energies:", configs_energies)
     stdevs_e = np.array([statistics.stdev(i) for i in configs_energies])
-    ranges_e = np.array([max(i) - min(i)for i in configs_energies])
+    ranges_e = np.array([abs(abs(max(i)) - abs(min(i)))for i in configs_energies])
     # Grad
     stdevs_g=[]
     stdevs_g_p = []
