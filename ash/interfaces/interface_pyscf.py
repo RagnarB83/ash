@@ -2677,6 +2677,8 @@ class PySCFTheory:
             #GPU CHANGE
             if self.platform == 'GPU':
                 print("GPU SCF calculation done.")
+                print("Grad:", Grad)
+                print("Hessian:", Hessian)
                 if Grad is False:
                     print("Converting mf object back to CPU")
                     self.mf = self.mf.to_cpu()
