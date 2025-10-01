@@ -228,6 +228,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             # Creating fragment with label
             frag = Fragment(xyzfile=file, charge=charge, mult=mult, label=label)
             frag.label=label
+            all_fragments.append(frag)
 
         # Parallel run
         print("Making sure numcores is set to 1 for both theories")
@@ -597,9 +598,8 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
         random.seed(42)
     base_cfgs = random.sample(xyzfiles, init_base_cfgs)
 
-    #Move chosen base configs to base
+    # Move chosen base configs to base
     move_chosen_files(base_cfgs,"base")
-
 
     # ACTIVE LEARNING LOOP
     chosen_cfgs=[]
@@ -617,7 +617,8 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
         # Create training data for base
         # Note: should be rewritten for only other_cfgs and then combine train_data_mace.xyz files
         create_ML_training_data(xyz_dir=f"{xyzdir}/../base", random_snapshots=True, printlevel=0,
-                                   theory_1=theory_1, theory_2=theory_2, charge=charge, mult=mult, Grad=Grad, runmode=runmode, numcores=numcores)
+                                   theory_1=theory_1, theory_2=theory_2, charge=charge, mult=mult, Grad=Grad, 
+                                   runmode=runmode, numcores=numcores)
 
         # TODO: COMBINE TRAINING FILES
 
@@ -627,7 +628,6 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
             ml.model_file=f"ML_ep{maxepochs}_ew_{e_f_weights[i][0]}_fw_{e_f_weights[i][1]}_iter{iter}.model"
             # Train with selected epochs and weights
             ml.train(max_num_epochs=maxepochs, energy_weight=e_f_weights[i][0], forces_weight=e_f_weights[i][1])
-        
 
         # Check consistency of models and choose outliers
         chosen_cfgs = query_by_committee(mltheories=ml_theories, configs=other_cfgs, Grad=Grad, threshold=threshold,
