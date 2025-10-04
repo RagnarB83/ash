@@ -216,10 +216,8 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     elif runmode=="parallel":
         print("Runmode is parallel!")
         print("Will now run parallel calculations")
-
         # Fragments
         print("Looping over fragments first")
-        all_fragments=[]
         for file in list_of_xyz_files:
             print("Now running file:", file)
             basefile=os.path.basename(file)
@@ -228,7 +226,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             # Creating fragment with label
             frag = Fragment(xyzfile=file, charge=charge, mult=mult, label=label)
             frag.label=label
-            all_fragments.append(frag)
+            fragments.append(frag)
 
         # Parallel run
         print("Making sure numcores is set to 1 for both theories")
@@ -236,12 +234,12 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
 
         from ash.functions.functions_parallel import Job_parallel
         print("Now starting in parallel mode Theory1 calculations")
-        results_theory1 = Job_parallel(fragments=all_fragments, theories=[theory_1], numcores=numcores, Grad=True)
+        results_theory1 = Job_parallel(fragments=fragments, theories=[theory_1], numcores=numcores, Grad=True)
         print("results_theory1.energies_dict:", results_theory1.energies_dict)
         if delta is True:
             theory_2.set_numcores(1)
             print("Now starting in parallel mode Theory2 calculations")
-            results_theory2 = Job_parallel(fragments=all_fragments, theories=[theory_2], numcores=numcores, Grad=True)
+            results_theory2 = Job_parallel(fragments=fragments, theories=[theory_2], numcores=numcores, Grad=True)
             print("results_theory2.energies_dict:", results_theory2.energies_dict)
 
         # Loop over energy dict:
@@ -265,7 +263,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
                     gradient = results_theory1.gradients_dict[l]
                 gradients.append(gradient)
 
-    #Calculate energies for atoms
+    # Calculate energies for atoms
     energies_atoms_dict={}
     unique_elems_per_frag = [list(set(frag.elems)) for frag in fragments]
     unique_elems = list(set([j for i in unique_elems_per_frag for j in i]))
@@ -323,7 +321,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     print("Fragments labels:",[frag.label for frag in fragments])
     print("energies:", energies)
     # Write data file that MACE uses
-    
+
     with open("train_data_mace.xyz", "w") as mace_file:
         print("Writing isolated atom reference energies....")
         for el, an_at in energies_atoms_dict.items():
@@ -336,14 +334,9 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             else:
                 mace_file.write(f"Properties=species:S:1:pos:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
                 mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}\n")
-
-
-        #TODO: Nmols
+        #TODO: Nmols, comp, molindex ?
         Nmols="1"
-
-        #TODO comp
         comp="xxx"
-        #molindex
         molindex=0
 
         for i in range(len(energies)):
