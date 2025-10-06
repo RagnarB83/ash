@@ -45,7 +45,8 @@ class PySCFTheory:
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None,
-                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=None):
+                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=None,
+                  neo=False, nuc_basis=None):
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
@@ -135,7 +136,8 @@ class PySCFTheory:
             self.mf_object=mf_object
         else:
             self.mf_object=None
-        #Store optional properties of pySCF run job in a dict
+        
+        # Store optional properties of pySCF run job in a dict
         self.properties ={}
 
         #Setting meanfield object as None
@@ -163,6 +165,10 @@ class PySCFTheory:
         self.solvation_method=solvation_method
         # SMD-only
         self.SMD_solvent=SMD_solvent
+
+        # NEO (requires special pyscf)
+        self.neo=neo
+        self.nuc_basis=nuc_basis
 
         # SCF
         self.platform=platform
@@ -1890,29 +1896,45 @@ class PySCFTheory:
 
 
     #Create mol object (self.mol) via method
-    def create_mol(self, qm_elems, current_coords, charge, mult, cartesian_basis=None):
+    def create_mol(self, qm_elems, current_coords, charge, mult, cartesian_basis=None, neo=False,
+                   nuc_basis=None,quantum_nuc=None):
         if self.printlevel >= 1:
             print("Creating mol object")
         import pyscf
 
-        #Defining pyscf mol object and populating
-        self.mol = pyscf.gto.Mole()
-
-        #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
-        self.mol.verbose = 3
-
         coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
-        self.mol.atom = coords_string
-        self.mol.symmetry = self.symmetry
-        self.mol.charge = charge
-        self.mol.spin = mult-1
+        # NEO (requires special pyscf)
+        if neo:
+            print("neo option activated. Warning: requires special pyscf with neo")
+            print("See: https://github.com/theorychemyang/pyscf")
+            print("Attempting to import neo module from pyscf")
+            from pyscf import neo
+            print("pyscf.neo imported")
+            print("quantum_nuc:", quantum_nuc)
+            print("nuc_basis:",nuc_basis)
+            self.mol = neo.M(atom=coords_string, charge=charge, spin=mult-1, nuc_basis=nuc_basis, 
+                             quantum_nuc=['H'],verbose=4)
+            print("self.mol", self.mol)
+        else:
+            #Defining pyscf mol object and populating
+            self.mol = pyscf.gto.Mole()
+            #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
+            self.mol.verbose = 3
 
-        print("self.mol.symmetry:", self.mol.symmetry)
+            self.mol.atom = coords_string
+            self.mol.symmetry = self.symmetry
+            self.mol.charge = charge
+            self.mol.spin = mult-1
 
-        #cartesian basis or not
-        if cartesian_basis is not None:
-            print("Setting cartesian basis flag to:", cartesian_basis)
-            self.mol.cart = cartesian_basis
+            print("self.mol.symmetry:", self.mol.symmetry)
+
+            #cartesian basis or not
+            if cartesian_basis is not None:
+                print("Setting cartesian basis flag to:", cartesian_basis)
+                self.mol.cart = cartesian_basis
+        
+  
+
     #Update mol object with coordinates or charge/mult
     #def update_mol(self, qm_elems, current_coords, charge, mult):
     #    coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
@@ -2531,7 +2553,15 @@ class PySCFTheory:
         #####################
         #CREATE MOL OBJECT
         #####################
-        self.create_mol(qm_elems, current_coords, charge, mult, cartesian_basis=self.cartesian_basis)
+        qH_atoms=None
+        if self.neo:
+            print("NEO mode. Selecting all H-atoms")
+            qH_atoms = [i for i,j in enumerate( qm_elems) if j == 'H']
+            print("qH-atom indices:", qH_atoms)
+            #TODO: skip link atoms needed
+
+        self.create_mol(qm_elems, current_coords, charge, mult, cartesian_basis=self.cartesian_basis,
+                        neo=self.neo, quantum_nuc=qH_atoms, nuc_basis=self.nuc_basis)
 
         #####################
         # BASIS
@@ -2557,6 +2587,16 @@ class PySCFTheory:
         elif self.mf_object is not None:
             print("An mf object already exits. Using.")
             self.mf=self.mf_object
+        elif self.neo is True:
+            print("Now creating neo mf object")
+            from pyscf import neo
+            # Full DF
+            if self.df_ne is True:
+                self.mf = neo.CDFT(mol, xc=DFT_E_XC).density_fit(auxbasis=self.auxbasis, df_ne=True)
+            elif self.df_ne is False and self.densityfit is True:
+                self.mf = neo.CDFT(mol, xc=DFT_E_XC).density_fit(auxbasis=self.auxbasis)
+            else:
+                self.mf = neo.CDFT(self.mol, xc=self.functional)
         else:
             print("Now creating mf object")
             self.create_mf() #Creates self.mf

@@ -603,10 +603,10 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
                 xtbcalc.cleanup()
 
             #Now doing actual OPT
-            optenergy = ash.interfaces.interface_geometric_new.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
+            optresult = ash.interfaces.interface_geometric_new.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
             theory.cleanup()
-            energy=optenergy
-            optenergies.append(optenergy)
+            energy=optresult.energy
+            optenergies.append(optresult.energy)
             #Rename optimized XYZ-file
             filenamestring_suffix="" #nothing for now
             os.rename("Fragment-optimized.xyz",os.path.splitext(fragment.label)[0]+filenamestring_suffix+".xyz")

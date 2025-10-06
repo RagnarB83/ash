@@ -583,7 +583,7 @@ class Fragment:
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
         self.elems = [atom.element.symbol for atom in pdb.topology.atoms()]
 
-        #Topology
+        # Topology
         self.pdb_topology = pdb.topology
 
     def read_xyzfile(self, filename, scale=None, tol=None, readchargemult=False, conncalc=True):

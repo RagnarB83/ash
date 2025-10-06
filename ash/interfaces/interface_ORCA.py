@@ -1260,11 +1260,11 @@ def tddftintens_grab(file):
     with open(file) as f:
         for line in f:
             if tddftgrab==True:
-                if len(line.split()) == 8:
-                        intensities.append(float(line.split()[3]))
+                if '->' in line:
+                        intensities.append(float(line.split()[-5]))
                 if len(line.split()) == 0:
                     tddftgrab=False
-            if 'State   Energy    Wavelength  fosc         T2        TX        TY        TZ' in line:
+            if 'fosc(D2)' in line:
                 tddftgrab=True
     return intensities
 
