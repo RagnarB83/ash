@@ -2592,9 +2592,9 @@ class PySCFTheory:
             from pyscf import neo
             # Full DF
             if self.df_ne is True:
-                self.mf = neo.CDFT(mol, xc=DFT_E_XC).density_fit(auxbasis=self.auxbasis, df_ne=True)
+                self.mf = neo.CDFT(self.mol, xc=self.functional).density_fit(auxbasis=self.auxbasis, df_ne=True)
             elif self.df_ne is False and self.densityfit is True:
-                self.mf = neo.CDFT(mol, xc=DFT_E_XC).density_fit(auxbasis=self.auxbasis)
+                self.mf = neo.CDFT(self.mol, xc=self.functional).density_fit(auxbasis=self.auxbasis)
             else:
                 self.mf = neo.CDFT(self.mol, xc=self.functional)
         else:
