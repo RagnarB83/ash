@@ -405,6 +405,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             print('%4ls %6s %8ls %5ls %8ls %8ls %8ls %8ls %8ls' %
                     ('it', 'dS', 'dE', 'CI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
             print(f"Thresholds:                {tol_rms_f:8.4f} {tol_max_f:8.4f} {tol_rms_fci:8.4f} {tol_max_fci:8.4f}")
+            print("Debug (TO BE REMOVED): energies of all images", path.GetEnergy())
+            print("Ereactant:", Ereactant)
             print("%4i %6.2lf %8.3lf %5li %8.4lf %8.4lf %8.4lf %8.4lf %8.4lf @"
                    % (it, s[-1], 23.060541945329334*(path.GetEnergy()[ci] - Ereactant), ci, rmsf_noci,
                       maxf_noci, rmsf_ci, maxf_ci, np.max(abs(step))))
