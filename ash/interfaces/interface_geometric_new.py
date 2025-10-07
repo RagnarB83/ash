@@ -535,7 +535,7 @@ class GeomeTRICOptimizerClass:
                 print("System contains 1 atom, optimization makes no sense.")
                 print("Doing single-point energy calculation instead")
                 result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
-                return result.energy
+                return result
 
             #ActiveRegion option where geomeTRIC only sees the QM part that is being optimized
             if self.ActiveRegion is True:
