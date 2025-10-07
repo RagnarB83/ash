@@ -326,9 +326,9 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
             #calculator.Compute(path)
             #RB change:
             calculator.Compute(path, list_to_compute=range(0, path.GetNim()))
-            if it == 0 and not second_run:
-                Ereactant = path.GetEnergy()[0]
-                Eproduct = path.GetEnergy()[-1]
+            #if it == 0 and not second_run:
+            Ereactant = path.GetEnergy()[0]
+            Eproduct = path.GetEnergy()[-1]
         else:
             calculator.Compute(path, list_to_compute=range(1, path.GetNim() - 1))
             path.SetEnergy(Ereactant, x=0)
