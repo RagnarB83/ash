@@ -614,7 +614,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
                 os.rename("Fragment-optimized.xyz",os.path.splitext(fragment.label)[0]+filenamestring_suffix+".xyz")
                 shutil.copy(os.path.splitext(fragment.label)[0]+filenamestring_suffix+".xyz",finalxyzdir)
             else:
-                shutil.copy(filename,finalxyzdir)
+                shutil.copy(f"{xyzdir}/{filename}",finalxyzdir)
             
             # Freq job after OPt
             if Freq is True:
