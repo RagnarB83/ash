@@ -46,7 +46,7 @@ class PySCFTheory:
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None,
                   PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=None,
-                  neo=False, nuc_basis=None):
+                  neo=False, nuc_basis="pb4d", quantum_nuc_indices=None, df_ne=False):
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
@@ -169,6 +169,8 @@ class PySCFTheory:
         # NEO (requires special pyscf)
         self.neo=neo
         self.nuc_basis=nuc_basis
+        self.quantum_nuc_indices=quantum_nuc_indices
+        self.df_ne=df_ne
 
         # SCF
         self.platform=platform
@@ -518,7 +520,7 @@ class PySCFTheory:
             mo_energies=self.mf.mo_energy
             mo_occupations=self.mf.mo_occ
 
-        #UHF/UKS
+        # UHF/UKS
         if mo_energies.ndim == 2:
             print("ALPHA SET")
             print(header)
@@ -528,7 +530,7 @@ class PySCFTheory:
             print(header)
             for j,(mo_en_b,mo_occ_b) in enumerate(zip(mo_energies[1], mo_occupations[1])):
                 print(f"""{j:4d} {mo_occ_b:10.5f} {mo_en_b:20.10f} {mo_en_b*27.2114:20.10f}""")
-        #RHF/RKS:
+        # RHF/RKS:
         else:
             print(header)
             for i,(mo_en_a,mo_occ_a) in enumerate(zip(mo_energies, mo_occupations)):
@@ -805,6 +807,10 @@ class PySCFTheory:
         import pyscf
         print()
         print("Running population analysis")
+
+        if self.neo is True:
+            print("neo. skipping pop analysis")
+            return
 
         #TODO: gpu4pyscf errors for Mulliken pop analysis.
         #For now, we return
@@ -1912,9 +1918,9 @@ class PySCFTheory:
             print("pyscf.neo imported")
             print("quantum_nuc:", quantum_nuc)
             print("nuc_basis:",nuc_basis)
+            print("coords_string:", coords_string)
             self.mol = neo.M(atom=coords_string, charge=charge, spin=mult-1, nuc_basis=nuc_basis, 
-                             quantum_nuc=['H'],verbose=4)
-            print("self.mol", self.mol)
+                             quantum_nuc=quantum_nuc,verbose=4)
         else:
             #Defining pyscf mol object and populating
             self.mol = pyscf.gto.Mole()
@@ -2297,7 +2303,11 @@ class PySCFTheory:
                 #self.mf = pyscf.qmmm.mm_charge(self.mf, MM_coords, MMcharges)
                 #Newer syntax
                 mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
-                self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
+                if self.neo:
+                    mmradii=[1e-8*0.52917721092 for i in MMcharges]
+                    self.mf = pyscf.qmmm.itrf.mm_charge(self.mf, MM_coords, MMcharges)
+                else:
+                    self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
             #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
             print("QM/MM mf object created:", self.mf)
 
@@ -2424,7 +2434,8 @@ class PySCFTheory:
         scf_result = mf.run(dm)
         #Grid
         if 'KS' in self.scf_type:
-            print("Number of gridpoints used in calculation:", len(self.mf.grids.coords))
+            if self.neo is False:
+                print("Number of gridpoints used in calculation:", len(self.mf.grids.coords))
         E_tot = scf_result.e_tot
         if self.printlevel >=1:
             print("SCF done!")
@@ -2437,23 +2448,24 @@ class PySCFTheory:
                 print("E_xc:", E_xc)
 
         #Setting number of orbitals as attribute of object
-        print(self.mf)
+        #print(self.mf.mol.nuclear_basis)
+        #exit()
         if self.platform == 'GPU':
             import gpu4pyscf
             import gpu4pyscf.qmmm
-            print("self.mf:", self.mf)
-            print(self.mf.__dict__)
             #TODO: need to account for UKS here later
-            #if isinstance(self.mf, gpu4pyscf.qmmm.pbc.itrf.QMMMRKS):
             self.num_orbs = len(self.mf.mo_energy)
-            #else:
-            #    self.num_orbs = len(self.mf.mo_energy[0])
         else:
             if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS) :
                 self.num_orbs = len(self.mf.mo_occ) # Restricted
+            #NEO
+            elif hasattr(self.mf.mol,'nuclear_basis'):
+                if self.mf.mo_occ['e'].ndim == 2:
+                    self.num_orbs = len(self.mf.mo_occ['e'][0]) # Unrestricted                
+                else:
+                    self.num_orbs = len(self.mf.mo_occ['e']) # Restricted
             else:
                 self.num_orbs = len(self.mf.mo_occ[0]) 
-            
         if self.printlevel >= 1:
             print("Number of orbitals:", self.num_orbs)
 
@@ -2555,9 +2567,13 @@ class PySCFTheory:
         #####################
         qH_atoms=None
         if self.neo:
-            print("NEO mode. Selecting all H-atoms")
-            qH_atoms = [i for i,j in enumerate( qm_elems) if j == 'H']
-            print("qH-atom indices:", qH_atoms)
+            print("NEO mode.")
+            if self.quantum_nuc_indices is None:
+                print("No quantum_nuc_indices provided. Selecting all H-atoms")
+                qH_atoms = [i for i,j in enumerate( qm_elems) if j == 'H']
+                print("qH-atom indices:", qH_atoms)
+            else:
+                qH_atoms=self.quantum_nuc_indices
             #TODO: skip link atoms needed
 
         self.create_mol(qm_elems, current_coords, charge, mult, cartesian_basis=self.cartesian_basis,
@@ -2570,8 +2586,11 @@ class PySCFTheory:
         #Only define basis set if regular job (not FCIDUMP or read-in MF)
         if self.fcidumpfile is None and self.mf_object is None:
             self.define_basis(elems=qm_elems)
-        print("Building pyscf mol object")
-        self.mol.build()
+
+        #Skip build if neo enabled
+        if self.neo is False:
+            print("Building pyscf mol object")
+            self.mol.build()
         # Defining number of basis functions
         self.num_basis_functions=len(self.mol.ao_labels())
         if self.printlevel >= 1:
@@ -2624,7 +2643,8 @@ class PySCFTheory:
         #####################
         #DFT
         #####################
-        self.set_DFT_options()
+        if self.neo is False:
+            self.set_DFT_options()
 
         ###################
         #SCF CONVERGENCE
@@ -2724,47 +2744,49 @@ class PySCFTheory:
 
             #Orbital and Occupation printing
             if self.printlevel >1:
-                self.print_orbital_en_and_occ()
-
-            #Possible population analysis (if dm=None then taken from mf object)
-            if self.scf_type == 'RHF' or self.scf_type == 'RKS':
-                self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
-                if self.printlevel >1:
-                    print("Total num. orbitals:", self.num_scf_orbitals_alpha)
-                if self.printlevel >1:
-                    if self.do_pop_analysis:
+                if self.neo is False:
+                    self.print_orbital_en_and_occ()
+            if self.neo is False:
+                #Possible population analysis (if dm=None then taken from mf object)
+                if self.scf_type == 'RHF' or self.scf_type == 'RKS':
+                    self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
+                    if self.printlevel >1:
+                        print("Total num. orbitals:", self.num_scf_orbitals_alpha)
+                    if self.printlevel >1:
+                        if self.do_pop_analysis:
+                            self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
+                elif self.scf_type == 'GHF' or self.scf_type == 'GKS':
+                    self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
+                    print("GHF/GKS job")
+                    print("scf_result:", scf_result)
+                    if self.printlevel >1:
+                        print("Total num. orbitals:", self.num_scf_orbitals_alpha)
+                    if self.printlevel >1:
+                        self.mf.canonicalize(self.mf.mo_coeff, self.mf.mo_occ)
+                        self.mf.analyze()
+                        #self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
+                        #print("GHF/GKS spinsquare:", pyscf.scf.spin_square(self.mf.mo_coeff, s=None))
+                        s2, spinmult = self.mf.spin_square()
+                        print("GHF/GKS <S**2>:", s2)
+                        print("GHF/GKS spinmult:", spinmult)
+                elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS':
+                    #NOTE: not checked
+                    self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
+                    if self.printlevel >1:
+                        print("Total num. orbitals:", self.num_scf_orbitals_alpha)
+                    if self.printlevel >1:
                         self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
-            elif self.scf_type == 'GHF' or self.scf_type == 'GKS':
-                self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
-                print("GHF/GKS job")
-                print("scf_result:", scf_result)
-                if self.printlevel >1:
-                    print("Total num. orbitals:", self.num_scf_orbitals_alpha)
-                if self.printlevel >1:
-                    self.mf.canonicalize(self.mf.mo_coeff, self.mf.mo_occ)
-                    self.mf.analyze()
-                    #self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
-                    #print("GHF/GKS spinsquare:", pyscf.scf.spin_square(self.mf.mo_coeff, s=None))
+                else:
+                    #UHF/UKS
+                    print("scf_result:", scf_result)
+                    self.num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
+                    if self.printlevel >1:
+                        print("Total num. orbitals:", self.num_scf_orbitals_alpha)
+                    if self.printlevel >1:
+                        self.run_population_analysis(self.mf, dm=None, unrestricted=True, type='Mulliken', label='SCF')
                     s2, spinmult = self.mf.spin_square()
-                    print("GHF/GKS <S**2>:", s2)
-                    print("GHF/GKS spinmult:", spinmult)
-            elif self.scf_type == 'ROHF' or self.scf_type == 'ROKS':
-                #NOTE: not checked
-                self.num_scf_orbitals_alpha=len(scf_result.mo_occ)
-                if self.printlevel >1:
-                    print("Total num. orbitals:", self.num_scf_orbitals_alpha)
-                if self.printlevel >1:
-                    self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
-            else:
-                #UHF/UKS
-                self.num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
-                if self.printlevel >1:
-                    print("Total num. orbitals:", self.num_scf_orbitals_alpha)
-                if self.printlevel >1:
-                    self.run_population_analysis(self.mf, dm=None, unrestricted=True, type='Mulliken', label='SCF')
-                s2, spinmult = self.mf.spin_square()
-                print("UHF/UKS <S**2>:", s2)
-                print(f"UHF/UKS spinmult: {spinmult}\n")
+                    print("UHF/UKS <S**2>:", s2)
+                    print(f"UHF/UKS spinmult: {spinmult}\n")
             if self.printlevel >=1:
                 print("SCF Dipole moment:")
             try:
