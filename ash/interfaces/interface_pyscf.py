@@ -1903,7 +1903,7 @@ class PySCFTheory:
 
     #Create mol object (self.mol) via method
     def create_mol(self, qm_elems, current_coords, charge, mult, cartesian_basis=None, neo=False,
-                   nuc_basis=None,quantum_nuc=None):
+                   nuc_basis=None,quantum_nuc=None, current_MM_coords=None, MMcharges=None):
         if self.printlevel >= 1:
             print("Creating mol object")
         import pyscf
@@ -1919,8 +1919,13 @@ class PySCFTheory:
             print("quantum_nuc:", quantum_nuc)
             print("nuc_basis:",nuc_basis)
             print("coords_string:", coords_string)
+            mm_mol=None
+            if MMcharges is not None:
+                print("MMcharges found. Setting up mm_mol object for NEO-QMMM")
+                import pyscf.qmmm
+                mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(current_MM_coords, charges=MMcharges, radii=self.radii)
             self.mol = neo.M(atom=coords_string, charge=charge, spin=mult-1, nuc_basis=nuc_basis, 
-                             quantum_nuc=quantum_nuc,verbose=4)
+                             quantum_nuc=quantum_nuc,verbose=4, mm_mol=mm_mol)
         else:
             #Defining pyscf mol object and populating
             self.mol = pyscf.gto.Mole()
@@ -2304,8 +2309,9 @@ class PySCFTheory:
                 #Newer syntax
                 mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(MM_coords, MMcharges)
                 if self.neo:
-                    mmradii=[1e-8*0.52917721092 for i in MMcharges]
-                    self.mf = pyscf.qmmm.itrf.mm_charge(self.mf, MM_coords, MMcharges)
+                    pass
+                    #mmradii=[1e-8*0.52917721092 for i in MMcharges]
+                    #self.mf = pyscf.qmmm.itrf.mm_charge(self.mf, MM_coords, MMcharges)
                 else:
                     self.mf = pyscf.qmmm.itrf.qmmm_for_scf(self.mf, mm_mol)
             #pyscf.qmmm.itrf.add_mm_charges(self.mf, MM_coords, MMcharges)
@@ -2431,6 +2437,7 @@ class PySCFTheory:
             print("Running SCF")
 
         #Grid printing
+
         scf_result = mf.run(dm)
         #Grid
         if 'KS' in self.scf_type:
@@ -2577,7 +2584,7 @@ class PySCFTheory:
             #TODO: skip link atoms needed
 
         self.create_mol(qm_elems, current_coords, charge, mult, cartesian_basis=self.cartesian_basis,
-                        neo=self.neo, quantum_nuc=qH_atoms, nuc_basis=self.nuc_basis)
+                        neo=self.neo, quantum_nuc=qH_atoms, nuc_basis=self.nuc_basis, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
 
         #####################
         # BASIS
@@ -2937,7 +2944,11 @@ class PySCFTheory:
                 print_time_rel(checkpoint, modulename='pySCF make_rdm1 for PC', moduleindex=2)
                 current_MM_coords_bohr = current_MM_coords*ash.constants.ang2bohr
                 checkpoint=time.time()
-                self.pcgrad = pyscf_pointcharge_gradient(self.mol,np.array(current_MM_coords_bohr),np.array(MMcharges),dm, GPU=self.GPU_pcgrad)
+                if self.neo is True:
+                    self.pcgrad = g.grad_mm()
+                    print("self.pcgrad:", self.pcgrad)
+                else:
+                    self.pcgrad = pyscf_pointcharge_gradient(self.mol,np.array(current_MM_coords_bohr),np.array(MMcharges),dm, GPU=self.GPU_pcgrad)
                 print_time_rel(checkpoint, modulename='pyscf_pointcharge_gradient', moduleindex=2)
 
             if self.printlevel >1:
