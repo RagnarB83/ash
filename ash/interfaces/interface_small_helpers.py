@@ -9,6 +9,7 @@ import ash.settings_ash
 # Small helpers
 #./qvSZP --struc nh3.xyz --chrg 0 --bfile /homelocal/rb269145/CALCDIR/qvSZP-test/qvSZP-2.1/q-vSZP_basis/basisq --efile --efile /homelocal/rb269145/CALCDIR/qvSZP-test/qvSZP-2.1/q-vSZP_basis/ecpq
 
+
 def create_adaptive_minimal_basis_set(directory=None, fragment=None, xyzfile=None, bin_name="qvSZP",
                                       basisfile_path=None, ecpfile_path=None, charge=None):
 
