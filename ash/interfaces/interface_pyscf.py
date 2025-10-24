@@ -930,6 +930,9 @@ class PySCFTheory:
                 chkfile_scftype="UHF"
             elif 2.0 in self.chkfileobject["mo_occ"]:
                 chkfile_scftype="RHF"
+            else:
+                print("Problem reading occupations from chkfile. Ignoring and continuing")
+                return False 
             #Checking if mismatch between chkfile info and chosen scf-type
             #TODO: In principle we could convert RKS-info from chkfile to UKS-info and vice versa
             if chkfile_scftype == "UHF":
@@ -2623,6 +2626,9 @@ class PySCFTheory:
                 self.mf = neo.CDFT(self.mol, xc=self.functional).density_fit(auxbasis=self.auxbasis)
             else:
                 self.mf = neo.CDFT(self.mol, xc=self.functional)
+        elif self.functional.lower() == "skala":
+            from skala.pyscf import SkalaKS
+            self.mf=SkalaKS(self.mol, xc="skala")
         else:
             print("Now creating mf object")
             self.create_mf() #Creates self.mf
@@ -2918,7 +2924,7 @@ class PySCFTheory:
                     print("Gradient for postSCF methods  is not implemented in ASH interface")
                     #TODO: Enable TDDFT, CASSCF, MP2, CC gradient etc
                     ashexit()
-            #Caluclate regular SCF gradient
+            #Calculate regular SCF gradient
             else:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
@@ -2945,8 +2951,9 @@ class PySCFTheory:
                 current_MM_coords_bohr = current_MM_coords*ash.constants.ang2bohr
                 checkpoint=time.time()
                 if self.neo is True:
+                    print("NEO-QM/MM pointcharge gradient:")
+                    # Easiest way of getting the pointcharge gradient with the NEO-QM/MM
                     self.pcgrad = g.grad_mm()
-                    print("self.pcgrad:", self.pcgrad)
                 else:
                     self.pcgrad = pyscf_pointcharge_gradient(self.mol,np.array(current_MM_coords_bohr),np.array(MMcharges),dm, GPU=self.GPU_pcgrad)
                 print_time_rel(checkpoint, modulename='pyscf_pointcharge_gradient', moduleindex=2)
