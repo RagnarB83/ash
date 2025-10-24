@@ -347,10 +347,11 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
 #ASH NEB function. Calls Knarr
 def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.026, tol_rms_fci=0.013, cichange_freqcheck=5,
-        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, Singleiter=False,
+        tol_turn_on_ci=1.0,  runmode='serial', numcores=1, Singleiter=False, 
         charge=None, mult=None,printlevel=1, ActiveRegion=False, actatoms=None,
         interpolation="IDPP", idpp_maxiter=700, idpp_springconst=5.0, zoom=False,
-        restart_file=None, TS_guess_file=None, mofilesdir=None):
+        restart_file=None, TS_guess_file=None, mofilesdir=None,
+        energy_weighted=True, springconst=1.0, springconst2=10.0):
 
     print_line_with_mainheader("Nudged elastic band calculation (via interface to KNARR)")
     module_init_time=time.time()
@@ -475,6 +476,12 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
     #neb_settings["TOL_MAX_F"] = tol_max_f
     #neb_settings["TOL_RMS_F"] = tol_rms_f
     neb_settings["TOL_TURN_ON_CI"] = tol_turn_on_ci
+
+    #Springs
+    neb_settings["ENERGY_WEIGHTED"] = energy_weighted
+    neb_settings["SPRINGCONST"] = springconst
+    neb_settings["SPRINGCONST2"] = springconst2
+
     optimizer["MAX_ITER"] = maxiter
     #Turning on ZOOM
     neb_settings["ZOOM"] = zoom

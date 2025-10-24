@@ -11,6 +11,8 @@ import ash.modules.module_coords
 from ash.modules.module_coords import check_charge_mult, check_multiplicity,read_xyzfile,write_multi_xyz_file, Fragment
 from ash.modules.module_results import ASH_Results
 import ash.interfaces.interface_ORCA
+from ash.modules.module_QMMM import QMMMTheory
+from ash.modules.module_oniom import ONIOMTheory
 from ash.interfaces.interface_ORCA import read_ORCA_Hessian
 import ash.constants
 
@@ -18,7 +20,7 @@ import ash.constants
 # Checked by analytic_hessian attribute True
 #TODO: IR/Raman intensities
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, masses=None,
-           pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100,
+           pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, printlevel=2,
            scaling_factor=1.0, symmetry_number=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
@@ -112,7 +114,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
 # ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial',
         temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, Raman=False,
-        scaling_factor=1.0, symmetry_number=None):
+        scaling_factor=1.0, symmetry_number=None, force_projection=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
     ################
@@ -135,16 +137,43 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     # Hessatoms list is allatoms (if hessatoms list not provided). If hessatoms provided we do a partial Hessian
     if hessatoms is None:
         print("No Hessatoms provided. Full Hessian assumed. Rot+trans projection is on!")
-        hessatoms=allatoms
-        projection=True
+        if isinstance(theory,QMMMTheory):
+            print("Theory object provided is a QM/MM Theory")
+            print("Error: No hessatoms option was provided. This is required for QM/MM Theories")
+            print("Please provide a list of atom indices to the hessatoms keyword of NumFreq to define the partial Hessian")
+            print("For QM/MM numerical frequencies you want the list of hessatoms to be the same atoms used to define the \nactive-region in the optimization (or the QM-region)")
+            print("Exiting now.")
+            ashexit()
+        elif isinstance(theory,ONIOMTheory):
+            print("Theory object provided is a ONIOM Theory")
+            print("Error: No hessatoms option was provided. This is required for ONIOM Theories")
+            print("Please provide a list of atom indices to the hessatoms keyword of NumFreq to define the partial Hessian")
+            print("For ONIOM numerical frequencies you want the list of hessatoms to be the same atoms used to define the \nactive-region in the optimization (or Region1)")
+            print("Exiting now.")
+            ashexit()
+        else:
+            hessatoms=allatoms
+            projection=True
     elif len(hessatoms) == fragment.numatoms:
         print("Hessatoms list provided but equal to number of fragment atoms. Rot+trans projection is on!")
         projection=True
     else:
         print("Hessatoms list provided, partial Hessian. Turning off rot+trans projection")
         projection=False
-    # Making sure hessatoms list is sorted
-    hessatoms.sort()
+
+    if force_projection is not None:
+        print("Warning: force_projection keyword in use!")
+        if force_projection is True:
+            print("force_projection set to True. Turning projection on")
+            projection=True
+        elif force_projection is False:
+            print("force_projection set to to False. Turning projection off")
+            projection=False
+    
+    # Making sure hessatoms list is sorted and only contains unique values
+    #hessatoms.sort()
+    hessatoms = sorted(list(set(hessatoms)))
+    
     # If hessatoms_masses list was provided
     if hessatoms_masses != None:
         if len(hessatoms_masses) != len(hessatoms):
@@ -185,7 +214,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     displacement_bohr = displacement * ash.constants.ang2bohr
     print("Starting Numerical Frequencies job for fragment")
-    print("System size:", numatoms)
     print("Hessian atoms:", hessatoms)
     if hessatoms != allatoms:
         print("This is a partial Hessian job.")
@@ -479,16 +507,22 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     symm_hessian=(hessian+hessian.transpose())/2
     hessian=symm_hessian
 
-    # Diagonalize mass-weighted Hessian
-
-    # Get partial matrix by deleting atoms not present in list.
-    hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
-
     # Use input masses if given, otherwise take from frament
-    if hessatoms_masses == None:
+    if hessatoms_masses is None:
+        print("allatoms:", allatoms)
+        print("hessatoms:", hessatoms)
+        print("fragment.list_of_masses:", fragment.list_of_masses)
         hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
         hessmasses=hessatoms_masses
+
+    print("hessmasses:",hessmasses)
+    # Mass-weighted Hessian (in case we need it)
+    mwhessian, massmatrix = massweight(hessian, hessmasses)
+    # Get partial matrix by deleting atoms not present in list.
+    hesselems = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, elems)
+
+
 
     hesscoords = np.take(fragment.coords,hessatoms, axis=0)
     print("Elements:", hesselems)
@@ -609,7 +643,7 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
     else:
         print("No projection of rotational and translational modes will be done!")
         # Massweight Hessian
-        mwhessian, massmatrix = massweight(hessian, masses, numatoms)
+        mwhessian, massmatrix = massweight(hessian, masses)
         # Diagonalize mass-weighted Hessian
         evalues, evectors = np.linalg.eigh(mwhessian)
         evectors = np.transpose(evectors)
@@ -667,7 +701,8 @@ def calc_IR_Intensities(hessmasses,evectors,dipole_derivs):
 
 
 # Massweight Hessian
-def massweight(matrix,masses,numatoms):
+def massweight(matrix,masses):
+    numatoms=len(masses)
     mass_mat = np.zeros( (3*numatoms,3*numatoms), dtype = float )
     molwt = [ masses[int(i)] for i in range(numatoms) for j in range(3) ]
     for i in range(len(molwt)):
@@ -1315,14 +1350,29 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     #else:
     #    capping_atom_hessian_indices=[]
 #NOTE: Trans+rot projection off right now
-def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='Almloef', projection=False,
+def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='zero', projection=False,
                                           charge=None, mult=None, xtbmethod="GFN1"):
     print("approximate_full_Hessian_from_smaller")
     print()
     write_hessian(hessian_small,hessfile="smallhessian")
 
-    #If hessatoms provided then that is the size of the actual large Hessian
-    if large_atomindices is not None:
+    # large_atomindices not provided
+    if large_atomindices is None:
+        #Size of Hessian as big as fragment
+        hess_size=fragment.numatoms*3
+        print("Hessian dimension", hess_size)
+        #If Hessian is for full fragment then we use the input atomindices directly
+        correct_small_atomindices=small_atomindices
+        usedfragment=fragment
+    # large_atomindices not provided
+    elif len(large_atomindices) == 0:
+        #Size of Hessian as big as fragment
+        hess_size=fragment.numatoms*3
+        print("Hessian dimension", hess_size)
+        #If Hessian is for full fragment then we use the input atomindices directly
+        correct_small_atomindices=small_atomindices
+        usedfragment=fragment
+    elif len(large_atomindices) > 0:
         print("small_atomindices:", small_atomindices)
         print("large_atomindices:", large_atomindices)
         hess_size=len(large_atomindices)*3
@@ -1340,15 +1390,12 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
         #Create new fragment from large_atomindices
         subcoords, subelems = fragment.get_coords_for_atoms(large_atomindices)
         usedfragment = ash.Fragment(elems=subelems,coords=subcoords, printlevel=0, charge=fragment.charge, mult=fragment.mult)
-
-
     else:
-        #Size of Hessian as big as fragment
-        hess_size=fragment.numatoms*3
-        print("Hessian dimension", hess_size)
-        #If Hessian is for full fragment then we use the input atomindices directly
-        correct_small_atomindices=small_atomindices
-        usedfragment=fragment
+        print("small_atomindices:", small_atomindices)
+        print("large_atomindices:", large_atomindices)
+        print("Something went wrong")
+        ashexit()
+
 
     print("Initializing full size Hessian of dimension:", hess_size)
     fullhessian=np.zeros((hess_size,hess_size))
@@ -1776,8 +1823,8 @@ def write_normalmode(modenumber,fragment=None, freqdict=None):
 def comparenormalmodes(hessianA,hessianB,massesA,massesB):
     numatoms=len(massesA)
     # Massweight Hessians
-    mwhessianA, massmatrixA = massweight(hessianA, massesA, numatoms)
-    mwhessianB, massmatrixB = massweight(hessianB, massesB, numatoms)
+    mwhessianA, massmatrixA = massweight(hessianA, massesA)
+    mwhessianB, massmatrixB = massweight(hessianB, massesB)
 
     # Diagonalize mass-weighted Hessian
     evaluesA, evectorsA = np.linalg.eigh(mwhessianA)

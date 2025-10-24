@@ -2,21 +2,27 @@ import os
 import glob
 import shutil
 import random
+import numpy as np
+import statistics
 
 from ash.modules.module_coords import write_xyzfile, split_multimolxyzfile
-from ash.functions.functions_general import natural_sort,ashexit
+from ash.functions.functions_general import natural_sort,ashexit,listdiff
 from ash import Singlepoint, Fragment
 from ash.interfaces.interface_mdtraj import MDtraj_slice
+from ash.modules.module_plotting import ASH_plot
 
 # Collection of functions related to machine learning and data analysis
 # Also helper tools for Torch and MLatom interfaces
 
 # Function to create ML training data given XYZ-files and 2 ASH theories
-def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=None, random_snapshots=True,
-                                dcd_pdb_topology=None, nth_frame_in_traj=1,
+def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=None, random_snapshots=True,
+                                dcd_pdb_topology=None, nth_frame_in_traj=1, printlevel=2,
                                theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1):
-    if xyzdir is None and xyz_trajectory is None and dcd_trajectory is None:
-        print("Error: create_ML_training_data requires xyzdir, xyz_trajectory or dcd_trajectory option to be set!")
+    print("-"*50)
+    print("create_ML_training_data function")
+    print("-"*50)
+    if xyz_dir is None and xyz_trajectory is None and dcd_trajectory is None:
+        print("Error: create_ML_training_data requires xyz_dir, xyz_trajectory or dcd_trajectory option to be set!")
         ashexit()
 
     if theory_1 is None:
@@ -29,7 +35,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     else:
         delta=False
 
-    print("xyzdir:", xyzdir)
+    print("xyz_dir:", xyz_dir)
     print("xyz_trajectory:", xyz_trajectory)
     print("dcd_trajectory:", dcd_trajectory)
     print("Charge:", charge)
@@ -44,9 +50,9 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     print("Theory 2:", theory_2)
 
     # XYZ DIRECTORY
-    if xyzdir is not None:
+    if xyz_dir is not None:
         print("XYZ-dir specified.")
-        full_list_of_xyz_files=glob.glob(f"{xyzdir}/*.xyz")
+        full_list_of_xyz_files=glob.glob(f"{xyz_dir}/*.xyz")
         print("Number of XYZ-files in directory:", len(full_list_of_xyz_files))
         if num_snapshots is None:
             print("num_snapshots has not been set by user")
@@ -91,7 +97,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             print("Setting num_snapshots to:", len(full_list_of_xyz_files))
             num_snapshots=len(full_list_of_xyz_files)
         
-        print("Note: This directory can be used as a directory for the xyzdir option to create_ML_training_data")
+        print("Note: This directory can be used as a directory for the xyz_dir option to create_ML_training_data")
         print()
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
@@ -135,7 +141,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
 
         print("Created directory xyz_traj_split")
         print("Number of XYZ-files in directory:", len(full_list_of_xyz_files))
-        print("Note: This directory can be used as a directory for the xyzdir option to create_ML_training_data")
+        print("Note: This directory can be used as a directory for the xyz_dir option to create_ML_training_data")
         print()
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
@@ -171,13 +177,13 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             print("\nNow running file:", file)
             basefile=os.path.basename(file)
             label=basefile.split(".")[0]
-            frag = Fragment(xyzfile=file, charge=charge, mult=mult)
+            frag = Fragment(xyzfile=file, charge=charge, mult=mult,printlevel=printlevel)
             frag.label=label
             # 1: gas 2:solv  or 1: LL  or 2: HL
             print("Now running Theory 1")
             try:
                 result_1 = Singlepoint(theory=theory_1, fragment=frag, Grad=Grad,
-                                   result_write_to_disk=False)
+                                   result_write_to_disk=False,printlevel=printlevel)
             except:
                 print("Problem with theory calculation")
                 print(f"Will skip file {file} in training")
@@ -187,7 +193,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
                 print("Now running Theory 2")
                 try:
                     result_2 = Singlepoint(theory=theory_2, fragment=frag, Grad=Grad,
-                                        result_write_to_disk=False)
+                                        result_write_to_disk=False,printlevel=printlevel)
                 except:
                     print("Problem with theory calculation")
                     print(f"Will skip file {file} in training")
@@ -210,10 +216,8 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     elif runmode=="parallel":
         print("Runmode is parallel!")
         print("Will now run parallel calculations")
-
         # Fragments
         print("Looping over fragments first")
-        all_fragments=[]
         for file in list_of_xyz_files:
             print("Now running file:", file)
             basefile=os.path.basename(file)
@@ -222,6 +226,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
             # Creating fragment with label
             frag = Fragment(xyzfile=file, charge=charge, mult=mult, label=label)
             frag.label=label
+            fragments.append(frag)
 
         # Parallel run
         print("Making sure numcores is set to 1 for both theories")
@@ -229,12 +234,12 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
 
         from ash.functions.functions_parallel import Job_parallel
         print("Now starting in parallel mode Theory1 calculations")
-        results_theory1 = Job_parallel(fragments=all_fragments, theories=[theory_1], numcores=numcores, Grad=True)
+        results_theory1 = Job_parallel(fragments=fragments, theories=[theory_1], numcores=numcores, Grad=True)
         print("results_theory1.energies_dict:", results_theory1.energies_dict)
         if delta is True:
             theory_2.set_numcores(1)
             print("Now starting in parallel mode Theory2 calculations")
-            results_theory2 = Job_parallel(fragments=all_fragments, theories=[theory_2], numcores=numcores, Grad=True)
+            results_theory2 = Job_parallel(fragments=fragments, theories=[theory_2], numcores=numcores, Grad=True)
             print("results_theory2.energies_dict:", results_theory2.energies_dict)
 
         # Loop over energy dict:
@@ -258,7 +263,7 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
                     gradient = results_theory1.gradients_dict[l]
                 gradients.append(gradient)
 
-    #Calculate energies for atoms
+    # Calculate energies for atoms
     energies_atoms_dict={}
     unique_elems_per_frag = [list(set(frag.elems)) for frag in fragments]
     unique_elems = list(set([j for i in unique_elems_per_frag for j in i]))
@@ -266,7 +271,6 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     from dictionaries_lists import atom_spinmults
     for uniq_el in unique_elems:
         mult = atom_spinmults[uniq_el]
-        print("mult:", mult)
         atomfrag = Fragment(atom=uniq_el, charge=0, mult=mult, printlevel=0)
         print("Now running Theory 1 for atom:", uniq_el)
         theory_1.printlevel=0
@@ -317,39 +321,45 @@ def create_ML_training_data(xyzdir=None, dcd_trajectory=None, xyz_trajectory=Non
     print("Fragments labels:",[frag.label for frag in fragments])
     print("energies:", energies)
     # Write data file that MACE uses
-    mace_file=open("train_data_mace.xyz", "w")
 
-    # Isolated atoms print
-    for el,en_at in energies_atoms_dict.items():
-        en_ev = en_at*27.211386245988
-        mace_file.write("1\n")
-        mace_file.write(f"Properties=species:S:1:pos:R:3:forces_REF:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
-        mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}\
-{-0.0:17.8f}{-0.0:17.8f}{-0.0:17.8f}\n")
+    with open("train_data_mace.xyz", "w") as mace_file:
+        print("Writing isolated atom reference energies....")
+        for el, an_at in energies_atoms_dict.items():
+            en_ev = an_at * 27.211386245988
+            mace_file.write("1\n")
+            if Grad:
+                mace_file.write(f"Properties=species:S:1:pos:R:3:forces_REF:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
+                mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}"
+                                f"{-0.0:17.8f}{-0.0:17.8f}{-0.0:17.8f}\n")
+            else:
+                mace_file.write(f"Properties=species:S:1:pos:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
+                mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}\n")
+        #TODO: Nmols, comp, molindex ?
+        Nmols="1"
+        comp="xxx"
+        molindex=0
 
-    #TODO: Nmols
-    Nmols="1"
+        for i in range(len(energies)):
+            # Converting energy to eV
+            frag = fragments[i]
+            energy_ev = energies[i]*27.211386245988
+            mace_file.write(f"{frag.numatoms}\n")
+            if Grad:
+                force = -1 * np.array(gradients[i]) * 51.42206747
+                mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1:forces_REF:R:3 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
+                for j in range(frag.numatoms): # Bug fix: inner loop variable was i, now j
+                    mace_file.write(f"{frag.elems[j]:2s}{frag.coords[j][0]:17.8f}{frag.coords[j][1]:17.8f}{frag.coords[j][2]:17.8f}"
+                                    f"{molindex:9d}{force[j][0]:17.8f}{force[j][1]:17.8f}{force[j][2]:17.8f}\n")
+            else:
+                # Write without forces
+                mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
+                for j in range(frag.numatoms): # Bug fix: inner loop variable was i, now j
+                    mace_file.write(f"{frag.elems[j]:2s}{frag.coords[j][0]:17.8f}{frag.coords[j][1]:17.8f}{frag.coords[j][2]:17.8f}"
+                                    f"{molindex:9d}\n")
 
-    #TODO comp
-    comp="xxx"
-    #molindex
-    molindex=0
-
-    for i in range(len(energies)):
-        # Converting energy to eV
-        energy_ev = energies[i]*27.211386245988
-        # Converting grad to force in eV/Ang
-        force = -1*gradients[i]*51.42206747
-        frag = fragments[i]
-        # New mol
-        mace_file.write(f"{frag.numatoms}\n")
-        mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1:forces_REF:R:3 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
-        for i in range(frag.numatoms):
-            mace_file.write(f"{frag.elems[i]:2s}{frag.coords[i][0]:17.8f}{frag.coords[i][1]:17.8f}{frag.coords[i][2]:17.8f}\
-{molindex:9d}{force[i][0]:17.8f}{force[i][1]:17.8f}{force[i][2]:17.8f}\n")
-    mace_file.close()
-
-    print("All done! Files created:\ntrain_data.xyz\ntrain_data.energies\ntrain_data.gradients\ntrain_data_mace.xyz")
+    print("All done! Files created:\ntrain_data.xyz\ntrain_data.energies\ntrain_data_mace.xyz")
+    if Grad:
+        print("train_data.gradients")
     print("Number of user-chosen snapshots:", num_snapshots)
     print("Number of successfully generated datapoints:", len(energies))
 
@@ -381,3 +391,259 @@ def Ml_print_model_stats(dbdict=None, dbname="Sub-train", Grad=True):
             except KeyError:
                 print("Found no gradient stats. skipping")
         print()
+
+
+def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=1, selection='energy-stdev', threshold=0.1, num_snaps=5, label=""):
+    print("-"*50)
+    print("query_by_committee function")
+    print("-"*50)
+    import pandas as pd
+    configs_energies=[]
+    configs_grads=[]
+    # Loop over all other-configs with all mltheories
+    for config in configs:
+        energies=[]
+        gradients=[]
+
+        # 
+        if isinstance(config,str):
+            frag = Fragment(xyzfile=config, charge=charge, mult=mult, printlevel=0)
+        if isinstance(config,Fragment):
+            frag=config
+
+        for mltheory in mltheories:
+            # Running ML (or deltaML) energy
+            res1 = Singlepoint(theory=mltheory, fragment=frag,Grad=Grad, printlevel=0,result_write_to_disk=False)
+            energies.append(res1.energy)
+            if Grad is True:
+                gradients.append(res1.gradient)
+        configs_energies.append(energies)
+        configs_grads.append(gradients)
+    # Get stdevs
+    print("configs_energies:", configs_energies)
+    stdevs_e = np.array([statistics.stdev(i) for i in configs_energies])
+    ranges_e = np.array([abs(abs(max(i)) - abs(min(i)))for i in configs_energies])
+    # Grad
+    stdevs_g=[]
+    stdevs_g_p = []
+    for config_g in configs_grads:
+        # Global stdev
+        combined = np.concatenate([a.ravel() for a in config_g])
+        # Pooled
+        magnitudes = [np.linalg.norm(F, axis=1) for F in config_g]
+        std = np.std(combined, axis=0)
+        std_p = np.std(np.concatenate(magnitudes),axis=0)
+        stdevs_g.append(std)
+        stdevs_g_p.append(std_p)
+    stdevs_g=np.array(stdevs_g)
+    stdevs_g_p=np.array(stdevs_g_p)
+
+    # Build a dictionary of top-5 snapshots per metric
+    top_snapshots = {}
+    for name, m in zip(["Std_E","Range_E","Std_G","STtd_G_pooled"], [stdevs_e,ranges_e,stdevs_g,stdevs_g_p]):
+        top5_indices = np.argsort(m)[-num_snaps:][::-1]
+        top5_values = m[top5_indices]
+        top_snapshots[name] = [
+            (int(idx), float(val)) for idx, val in zip(top5_indices, top5_values)
+        ]
+    # Convert to a DataFrame
+    df = pd.DataFrame(top_snapshots)
+    # extract just the indices to check duplicates
+    all_indices = [x[0] for col in df.columns for x in df[col]]
+    duplicate_indices = {idx for idx in all_indices if all_indices.count(idx) > 1}
+
+    # Step 4: format cells, highlighting duplicates with a marker (★)
+    def format_cell(cell):
+        idx, val = cell
+        marker = " ★" if idx in duplicate_indices else ""
+        return f"{idx} ({val:.4f}){marker}"
+
+    df = df.applymap(format_cell)
+    print(df)
+
+    # PLOT data
+    try:
+        print("Attempting to plot")
+        # Create ASH_plot object named edplot
+        eplot = ASH_plot("Plotname", num_subplots=1, x_axislabel="x-axis", y_axislabel='y-axis')
+        eplot.addseries(0, x_list=list(range(0,len(stdevs_e))), y_list=stdevs_e, label='Stdev-E', color='blue', line=True, scatter=True)
+        eplot.savefig(f"stdevE_per_snap_{label}")
+
+        # Create ASH_plot object named edplot
+        eplot = ASH_plot("Plotname", num_subplots=1, x_axislabel="x-axis", y_axislabel='y-axis')
+        eplot.addseries(0, x_list=list(range(0,len(stdevs_g))), y_list=stdevs_g, label='Stdev-G', color='blue', line=True, scatter=True)
+        eplot.savefig(f"stdevG_per_snap_{label}")
+
+        # Create ASH_plot object named edplot
+        eplot = ASH_plot("Plotname", num_subplots=1, x_axislabel="x-axis", y_axislabel='y-axis')
+        eplot.addseries(0, x_list=list(range(0,len(stdevs_g_p))), y_list=stdevs_g_p, label='Stdev-Gp', color='blue', line=True, scatter=True)
+        eplot.savefig(f"stdevGp_per_snap_{label}")
+    except:
+        print("Failed to plot")
+        pass
+
+
+    if selection == "energy-stdev":
+        print("Selection option is energy-stdev")
+        print("Threshold:", threshold)
+        print("Number of snapshots to grab:", num_snaps)
+        used_metric=stdevs_e
+    elif selection == "energy-range":
+        print("Selection option is energy-range")
+        print("Threshold:", threshold)
+        print("Number of snapshots to grab:", num_snaps)
+        used_metric=ranges_e
+    elif selection == "gradient":
+        print("Selection option is gradient")
+        print("Threshold:", threshold)
+        print("Number of snapshots to grab:", num_snaps)
+        used_metric=stdevs_g
+    elif selection == "gradient2":
+        print("Selection option is stdevs_g_p")
+        print("Threshold:", threshold)
+        print("Number of snapshots to grab:", num_snaps)
+        used_metric=stdevs_g_p
+    else:
+        print("Error")
+        exit()
+
+    # Get snapshots above threshold and up to num_snaps
+    above_thresh_indices = np.where(used_metric > threshold)[0]
+    print(f"Found {len(above_thresh_indices)} snapshots above threshold")
+    filtered_arr = used_metric[above_thresh_indices]
+    top_indices_in_filtered = np.argsort(filtered_arr)[-num_snaps:][::-1]
+    top_indices = above_thresh_indices[top_indices_in_filtered]
+    chosen_configs = [configs[i] for i in top_indices]
+    print("chosen_configs:", chosen_configs)
+
+    print(f"Selected {len(chosen_configs)} configs with high stdevs")
+    return chosen_configs
+
+
+ # TODO: COMBINE TRAINING FILES
+def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxiter=10, theory_1=None, theory_2=None, Grad=True,
+                        init_base_cfgs=25, threshold=0.0001, max_add_snaps=5, maxepochs=100, selection="energy-range",
+                        noupdate=False, random_selection=False, random_seed_set=False, seed=42,
+                        charge=None, mult=None, runmode="serial", numcores=1):
+
+    if ml_theories is None:
+        print("Error: ml_theories needs to be set (list of ASH MLTheories)")
+        ashexit()
+    if e_f_weights is None:
+        print("Error: e_f_weights needs to be set (list of ASH MLTheories)")
+        ashexit()
+    if len(ml_theories) != len(e_f_weights):
+        print("Error: Length of ml_theories list and length of e_f_weights must be the same")
+        ashexit()
+
+    if training_dir is None:
+        print("Error: training_dir needs to be set (path to XYZ-directory)")
+        ashexit()
+
+    if theory_1 is None:
+        print("Error: theory_1 needs to be set")
+        ashexit()
+    if charge is None or mult is None:
+        print("Error: Charge/mult need to be set")
+        ashexit()
+
+    print("training_dir:", training_dir)
+    print("Max Loop Iterations:", maxiter)
+    print("Initial base configurations:", init_base_cfgs)
+    print("Selector:", selection)
+    print(f"Energy threshold: {threshold} Eh")
+    print("Number of snapshots added per loop iteration:", max_add_snaps)
+    print("Number of po")
+    print("random_seed_set:", random_seed_set)
+
+    print("theory_1:", theory_1)
+    print("theory_2:", theory_2)
+    print("Grad:", Grad)
+
+    print("noupdate:", noupdate)
+    print("random_selection:", random_selection)
+
+    # Move
+    def move_chosen_files(chosen,dirname):
+        for f in chosen:
+            shutil.move(f, f"{dirname}/{os.path.basename(f)}")
+
+    #Delete old dirs
+    print("Deleting possible old dirs: current_set base")
+    for d in ["current_set", "base"]:
+        try:
+            shutil.rmtree(d)
+        except:
+            pass
+    # Copy full dir over as current-set
+    print("Copying whole training dir to current_set")
+    shutil.copytree(training_dir, "./current_set")
+    xyzdir="current_set"
+    # Read all XYZ-files as list
+    xyzfiles = glob.glob(f"{xyzdir}/*xyz")
+    print("Number of xyzfiles in Original DIR:", len(xyzfiles))
+    # Create base dir
+    os.mkdir("base")
+
+    # Choose base set:
+    # This can be replaced by a list of chosen XYZ-files instead
+    if random_seed_set:
+        random.seed(42)
+    base_cfgs = random.sample(xyzfiles, init_base_cfgs)
+
+    # Move chosen base configs to base
+    move_chosen_files(base_cfgs,"base")
+
+    # ACTIVE LEARNING LOOP
+    chosen_cfgs=[]
+    for iter in range(maxiter):
+        print("="*50)
+        print(f"ACTIVE LEARNING ITERATION {iter}")
+        print("="*50)
+        # Base CFGS and rest configs
+        base_cfgs += chosen_cfgs
+        other_cfgs = listdiff(xyzfiles,base_cfgs)
+        print(f"NUM CURRENT BASE CONFIGS : {len(base_cfgs)}")
+        print([os.path.basename(i) for i in base_cfgs])
+        print(f"NUM CURRENT OTHER CONFIGS : {len(other_cfgs)}")
+        print()
+        # Create training data for base
+        # Note: should be rewritten for only other_cfgs and then combine train_data_mace.xyz files
+        create_ML_training_data(xyz_dir=f"{xyzdir}/../base", random_snapshots=True, printlevel=0,
+                                   theory_1=theory_1, theory_2=theory_2, charge=charge, mult=mult, Grad=Grad, 
+                                   runmode=runmode, numcores=numcores)
+
+        # TODO: COMBINE TRAINING FILES
+
+        #ML Theories
+        for i,(ml,efw) in enumerate(zip(ml_theories, e_f_weights)):
+            # Unique model filename
+            ml.model_file=f"ML_ep{maxepochs}_ew_{e_f_weights[i][0]}_fw_{e_f_weights[i][1]}_iter{iter}.model"
+            # Train with selected epochs and weights
+            ml.train(max_num_epochs=maxepochs, energy_weight=e_f_weights[i][0], forces_weight=e_f_weights[i][1])
+
+        # Check consistency of models and choose outliers
+        chosen_cfgs = query_by_committee(mltheories=ml_theories, configs=other_cfgs, Grad=Grad, threshold=threshold,
+                        num_snaps=max_add_snaps, label=str(iter), selection=selection)
+        if random_selection is True:
+            if random_seed_set:
+                random.seed(seed)
+            chosen_cfgs = random.sample(other_cfgs, max_add_snaps)
+
+        if len(chosen_cfgs) == 0:
+            print("No new cfgs found. Exiting loop")
+            print("Final number of cfgs in base:", len(base_cfgs))
+            print("ACTIVE LEARNING COMPLETE!")
+            break
+        if noupdate is True:
+            chosen_cfgs=[]
+        else:
+            #Move chosen configs to base
+            move_chosen_files(chosen_cfgs,"base")
+
+    print("Active learning is complete.")
+    if iter == maxiter:
+        print("Warning: Active learning loop did not converge. Check the results carefully")
+    else:
+        print("Active learning loop converged")
+        print("Final set of configurations are found in directory: base")

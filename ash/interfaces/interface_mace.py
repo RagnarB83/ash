@@ -1,16 +1,18 @@
 import time
 import numpy as np
+import shutil
 
 from ash.modules.module_coords import elemstonuccharges
 from ash.functions.functions_general import ashexit, BC,print_time_rel
 from ash.functions.functions_general import print_line_with_mainheader
 import ash.constants
+
 # Simple interface to MACE for both using and training
 
 class MACETheory():
     def __init__(self, config_filename="config.yml", 
                  filename="mace.model", model_file=None, printlevel=2, 
-                 label="MACETheory", numcores=1, device="cpu"):
+                 label="MACETheory", numcores=1, device="cpu", return_zero_gradient=False):
         # Early exits
         try:
             import mace
@@ -18,6 +20,7 @@ class MACETheory():
             print("Problem importing mace. Make sure you have installed mace-correctly")
             print("Most likely you need to do: pip install mace-torch")
             print("Also recommended: pip install cuequivariance_torch")
+            ashexit()
 
         self.theorytype = 'QM'
         self.theorynamelabel = 'MACE'
@@ -27,6 +30,9 @@ class MACETheory():
         self.config_filename=config_filename
         self.filename = filename
         self.printlevel = printlevel
+
+        # Ignore predicted forces and return zero gradient
+        self.return_zero_gradient=return_zero_gradient
 
         # Model attribute is None until we have loaded a model
         self.model=None
@@ -116,8 +122,13 @@ class MACETheory():
         print(f"The final models are located in directory: {results_dir}")
         print(f"Recommended model files to use for production: {results_dir}/{name}_compiled.model and {results_dir}/{name}_stagetwo_compiled.model")
         print()
-        self.model_file=f"{results_dir}/{name}_stagetwo_compiled.model"
-        print("Setting model_file attribute to:", self.model_file )
+        if self.model_file is not None:
+            print("Model_file attribute was previously set at initialization.")
+            print(f"Moving and renaming file {results_dir}/{name}_stagetwo_compiled.model   to :  {self.model_file}")
+            shutil.move(f"{results_dir}/{name}_stagetwo_compiled.model", self.model_file)
+        else:
+            self.model_file=f"{results_dir}/{name}_stagetwo_compiled.model"
+        print("model_file attribute is:", self.model_file )
         print("MACETheory object can now be used directly.")
 
         # If we train with a specific device we would want to use that same device for evaluation/prediction
@@ -236,6 +247,10 @@ class MACETheory():
         # Checking if file exists
         self.check_file_exists(self.model_file)
 
+        #Making sure Grad is True
+        if Hessian:
+            Grad=True
+
         # Call model to get energy
         from mace.cli.eval_configs import main
         from mace import data
@@ -268,22 +283,28 @@ class MACETheory():
             # Run model
             try:
                 output = self.model(batch.to_dict(), compute_stress=False, compute_force=False)
-                print_time_rel(module_init_time, modulename=f'MACE run - after energy', moduleindex=2)
+
             except RuntimeError as e:
                 print("RuntimeError occurred. Trying type changes. Message", e)
                 self.model = self.model.float() # sometimes necessary to avoid type problems
                 output = self.model(batch.to_dict(), compute_stress=False, compute_force=False)
+            print_time_rel(module_init_time, modulename=f'MACE run - after energy', moduleindex=2)
             # Grab energy
             en = torch_tools.to_numpy(output["energy"])[0]
-            # Calculate forces
-            forces = compute_forces(output["energy"], batch["positions"])
-            print_time_rel(module_init_time, modulename=f'MACE run - after forces', moduleindex=2)
-            forces = torch_tools.to_numpy(forces)
+            self.energy = float(en*ash.constants.evtohar)
+
+            # Grad Boolean
+            if Grad:
+                # Calculate forces
+                forces_tensor = compute_forces(output["energy"], batch["positions"])
+                print_time_rel(module_init_time, modulename=f'MACE run - after forces', moduleindex=2)
+                forces_np = torch_tools.to_numpy(forces_tensor)
+                self.gradient = forces_np/-51.422067090480645
 
             # Hessian 
             if Hessian:
                 print("Running Hessian")
-                hess = compute_hessians_vmap(forces,batch["positions"])
+                hess = compute_hessians_vmap(forces_tensor,batch["positions"])
                 hessian = torch_tools.to_numpy(hess)
                 print("hessian:", hessian)
                 print_time_rel(module_init_time, modulename=f'MACE run - after hessian', moduleindex=2)
@@ -293,28 +314,36 @@ class MACETheory():
             print("previous regular mode")
             for batch in data_loader:
                 try:
-                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=True)
+                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=Grad)
                 except RuntimeError as e:
                     print("RuntimeError occurred. Trying type changes. Message", e)
                     self.model = self.model.float() # sometimes necessary to avoid type problems
-                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=True)
+                    output = self.model(batch.to_dict(), compute_stress=False, compute_force=Grad)
 
             # Get energy and forces
             en = torch_tools.to_numpy(output["energy"])[0]
-            forces = np.split(
-                torch_tools.to_numpy(output["forces"]),
-                indices_or_sections=batch.ptr[1:],
-                axis=0)[0]
-        # Convert energy and forces to Eh and gradient in Eh/Bohr
-        self.energy = float(en*ash.constants.evtohar)
-        self.gradient = forces/-51.422067090480645
+            self.energy = float(en*ash.constants.evtohar)
+            if Grad:
+                forces = np.split(
+                    torch_tools.to_numpy(output["forces"]),
+                    indices_or_sections=batch.ptr[1:],
+                    axis=0)[0]
+                self.gradient = forces/-51.422067090480645
+        
         if Hessian:
             self.hessian = hessian*0.010291772
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
+        # Special option
+        if self.return_zero_gradient:
+            print("Warning: return_zero_gradient option active")
+            print("Returning zero gradient instead of real gradient")
+            self.gradient = np.zeros((len(current_coords), 3))
+            print("self.gradient:", self.gradient)
+
         # Return E and G if Grad
-        if Grad is True:
+        if Grad:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy, self.gradient
         # Returning E only

@@ -2037,7 +2037,7 @@ Molden file created by ASH (using orca format)
     #Basis set
     ###########
     #TODO. Check
-    shell_to_angmom = {"s":0,"p":1,"d":2,"f":3}
+    shell_to_angmom = {"s":0,"p":1,"d":2,"f":3,"g":4}
     gtostring="""[GTO]
 """
     #Looping over each atom in AO_basis object

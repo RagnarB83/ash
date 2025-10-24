@@ -583,7 +583,7 @@ class Fragment:
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
         self.elems = [atom.element.symbol for atom in pdb.topology.atoms()]
 
-        #Topology
+        # Topology
         self.pdb_topology = pdb.topology
 
     def read_xyzfile(self, filename, scale=None, tol=None, readchargemult=False, conncalc=True):
@@ -948,6 +948,13 @@ class Fragment:
 
         if (len(self.atomlist) == len(self.elems) == len(self.coords) == len(self.atomcharges) == len(self.fragmenttype_labels) == len(self.atomtypes)) is False:
             print(BC.FAIL,"Error. Missing entries in list.")
+            print("Len atomlist:", len(self.atomlist))
+            print("Len elems:", len(self.elems))
+            print("Len coords:", len(self.coords))
+            print("Len atomcharges:", len(self.atomcharges))
+            print("Len atomtypes:", len(self.atomtypes))
+            print("Len fragmenttype_labels:", len(self.fragmenttype_labels))
+            print("fragmenttype_labels:", self.fragmenttype_labels)
             print("This should not have happened. File a bugreport", BC.END)
             ashexit()
         with open(filename, 'w') as outfile:
@@ -2587,7 +2594,7 @@ def calculate_RMSD(fragmentA, fragmentB, subset=None, heavyatomsonly=False, prin
     Anew = np.dot(subsetA_coords, rot) + trans
 
     #RMSD
-    rmsdval = np.sqrt(((Anew-subsetB_coords)**2).sum()/len(Anew))
+    rmsdval = float(np.sqrt(((Anew-subsetB_coords)**2).sum()/len(Anew)))
     #xrmsdval = kabsch_rmsd(subsetB_coords,Anew)
     
     if printlevel > 1:
@@ -3257,13 +3264,12 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
                 print("Determined ratio:", linkatom_ratio)
                 print("not yet ready")
                 ashexit()
-            print("Ratio used:", linkatom_ratio)
             r_QM1_MM1 = distance(qmatom_coords, mmatom_coords)
             # See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
             linkatom_coords = linkatom_ratio *(mmatom_coords - qmatom_coords) + qmatom_coords
             #linkatom_distance =  r_QM1_MM1 * (bondpairs_eq_dict[(elems[dict_item[0]], 'H')] / bondpairs_eq_dict[(elems[dict_item[0]], elems[dict_item[1]])])
             linkatom_distance = distance(qmatom_coords, linkatom_coords)
-            print("Linkatom distance (QM1-L) determined to be:", linkatom_distance)
+            print(f"Linkatom distance (QM1-L) determined to be: {linkatom_distance} (using ratio {linkatom_ratio})")
         elif linkatom_method == 'simple':
             #print("Linkatom method: simple")
             if linkatom_simple_distance is None:

@@ -3882,17 +3882,16 @@ class OpenMM_MDclass:
                 openmm.app.PDBReporter(self.trajfilename+'.pdb', self.traj_frequency,
                                                          enforcePeriodicBox=self.enforcePeriodicBox))
         elif self.trajectory_file_option == 'DCD':
-            # NOTE: Disabling for now
-            # with open('initial_MDfrag_step1.pdb', 'w') as f: openmm.app.pdbfile.PDBFile
-            # .writeModel(openmmobject.topology, self.simulation.context.getState(getPositions=True,
-            # enforcePeriodicBox=enforcePeriodicBox).getPositions(), f)
-            # print("Wrote PDB")
-
             #Note: using append keyword here if restarting
-            print('DCDReporter added')
+            # Check first if file exists for restart (OpenMM errors otherwise)
+            if restart is True and os.path.isfile(f"{self.trajfilename}.dcd") is False:
+                print("Warning: restart option was active but trajectory file not existing. Will create new file")
+                restart=False
+
             simulation.reporters.append(
                 openmm.app.DCDReporter(self.trajfilename+'.dcd', self.traj_frequency, append=restart,
                                                          enforcePeriodicBox=self.enforcePeriodicBox))
+            print('DCDReporter added')
         elif self.trajectory_file_option == 'NetCDFReporter':
             print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import()

@@ -78,6 +78,7 @@ class ASH_plot():
         #Labels for each series
         self.labels=[]
 
+
         print("Subplots:", self.num_subplots)
         print("Figure size:", figsize)
 
@@ -178,7 +179,7 @@ class ASH_plot():
         self.labels.append(label)
 
         #Using x_list and y_list unless not provided
-        if surfacedictionary == None:
+        if surfacedictionary is None:
             #If Python lists
             if (type(x_list) != list and type(x_list) != np.ndarray) or ((type(y_list) != list and type(y_list) != np.ndarray)):
                 print(BC.FAIL,"Please provide either a valid x_list and y_list (can be Python lists or Numpy arrays) or a surfacedictionary (Python dict)", BC.END)
@@ -196,16 +197,12 @@ class ASH_plot():
             for key in sorted(surfacedictionary.keys()):
                 x.append(float(key))
                 y.append(surfacedictionary[key])
-            print("x:",x)
-            print("y:",y)
         #Optional scaling of x or y-values
         x = [i*x_scaling for i in x]
         y = [i*y_scaling for i in y]
 
         #Scatterplot
         if scatter is True:
-            print("x:", x)
-            print("y:", y)
             curraxes.scatter(x,y, color=color, marker = marker,  s=pointsize, linewidth=scatter_linewidth, label=label)
         #Lineplot
         if line is True:

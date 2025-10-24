@@ -367,7 +367,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
 
         else:
             print("Will read MOs from file:", self.moreadfile)
-            mo_coefficients, occupations = pySCF_read_MOs(self.moreadfile,self.pyscftheoryobject)
+            mo_coefficients, occupations = pySCF_read_MOs(self.moreadfile,self.pyscftheoryobject, motype="mcscf")
 
         #Check if occupations are sensible (may be nonsense if CCSD/CAS calc failed)
         if True in [i > 2.00001 for i in occupations]:
@@ -413,7 +413,7 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.nelec = round(sum(occupations[self.active_space_range[0]:self.active_space_range[1]]))
             print(f"Selected active space from range: CAS({self.nelec},{self.norb})")
         else:
-            print(f"Active space determined from {self.initial_orbitals} NO threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
+            print(f"Active space determined from occupation threshold parameters: cas_nmin={self.cas_nmin} and cas_nmax={self.cas_nmax}")
 
             if self.cas_nmin == None or self.cas_nmax == None:
                 print("You need to set cas_nmin and cas_nmax parameters")
@@ -490,7 +490,8 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
             self.mch.canonicalization = True
             self.mch.natorb = True
-        #Settings
+            self.mch.chkfile = f"DMRG-CASSCF_{self.maxM}.chk"
+        # Settings
         if self.block_parallelization == 'MPI':
             print("blocblock_parallelization_mpi is set to MPI")
             print("block2-mpi version needs to be installed for this to work")

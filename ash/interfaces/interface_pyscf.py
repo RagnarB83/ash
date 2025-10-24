@@ -33,6 +33,7 @@ class PySCFTheory:
                   TDDFT=False, tddft_numstates=10, NTO=False, NTO_states=None,
                   mom=False, mom_occindex=0, mom_virtindex=1, mom_spinmanifold=0,
                   dispersion=None, densityfit=False, auxbasis=None, auxbasis_file=None, sgx=False, magmom=None,
+                  solvation=None, solvation_eps=78.0, SMD_solvent='water', solvation_method='IEF-PCM',
                   pe=False, potfile=None, filename='pyscf', memory=3100, conv_tol=1e-8, verbose_setting=4,
                   CC=False, CCmethod=None, CC_direct=False, frozen_core_setting='Auto', cc_maxcycle=200, cc_diis_space=6,
                   CC_density=False, cc_conv_tol_normt=1e-06, cc_conv_tol=1e-07,
@@ -44,7 +45,8 @@ class PySCFTheory:
                   cas_nmin=None, cas_nmax=None, losc=False, loscfunctional=None, LOSC_method='postSCF',
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None,
-                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=None):
+                  PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=None,
+                  neo=False, nuc_basis=None):
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
@@ -134,7 +136,8 @@ class PySCFTheory:
             self.mf_object=mf_object
         else:
             self.mf_object=None
-        #Store optional properties of pySCF run job in a dict
+        
+        # Store optional properties of pySCF run job in a dict
         self.properties ={}
 
         #Setting meanfield object as None
@@ -151,8 +154,21 @@ class PySCFTheory:
 
         #CPPE Polarizable Embedding options
         self.pe=pe
-        #Potfile from user or passed on via QM/MM Theory object ?
+        # Potfile from user or passed on via QM/MM Theory object ?
         self.potfile=potfile
+
+        # Continuum solvation
+        self.solvation=solvation #
+        # Controls PCM and ddCOSMO Epislon behaviour
+        self.solvation_eps=solvation_eps
+        # For solvation='PCM' method options: 'IEF-PCM', 'C-PCM', 'SS(V)PE', 'COSMO' 
+        self.solvation_method=solvation_method
+        # SMD-only
+        self.SMD_solvent=SMD_solvent
+
+        # NEO (requires special pyscf)
+        self.neo=neo
+        self.nuc_basis=nuc_basis
 
         # SCF
         self.platform=platform
@@ -1096,7 +1112,6 @@ class PySCFTheory:
 
     def run_hessian(self):
         print("Running meanfield Hessian")
-        import pyscf.hessian
         self.hessian_obj = self.mf.Hessian()
         hessian = self.hessian_obj.kernel()
         return hessian
@@ -1881,29 +1896,45 @@ class PySCFTheory:
 
 
     #Create mol object (self.mol) via method
-    def create_mol(self, qm_elems, current_coords, charge, mult, cartesian_basis=None):
+    def create_mol(self, qm_elems, current_coords, charge, mult, cartesian_basis=None, neo=False,
+                   nuc_basis=None,quantum_nuc=None):
         if self.printlevel >= 1:
             print("Creating mol object")
         import pyscf
 
-        #Defining pyscf mol object and populating
-        self.mol = pyscf.gto.Mole()
-
-        #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
-        self.mol.verbose = 3
-
         coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
-        self.mol.atom = coords_string
-        self.mol.symmetry = self.symmetry
-        self.mol.charge = charge
-        self.mol.spin = mult-1
+        # NEO (requires special pyscf)
+        if neo:
+            print("neo option activated. Warning: requires special pyscf with neo")
+            print("See: https://github.com/theorychemyang/pyscf")
+            print("Attempting to import neo module from pyscf")
+            from pyscf import neo
+            print("pyscf.neo imported")
+            print("quantum_nuc:", quantum_nuc)
+            print("nuc_basis:",nuc_basis)
+            self.mol = neo.M(atom=coords_string, charge=charge, spin=mult-1, nuc_basis=nuc_basis, 
+                             quantum_nuc=['H'],verbose=4)
+            print("self.mol", self.mol)
+        else:
+            #Defining pyscf mol object and populating
+            self.mol = pyscf.gto.Mole()
+            #Mol system printing. Hardcoding to 3 as otherwise too much PySCF printing
+            self.mol.verbose = 3
 
-        print("self.mol.symmetry:", self.mol.symmetry)
+            self.mol.atom = coords_string
+            self.mol.symmetry = self.symmetry
+            self.mol.charge = charge
+            self.mol.spin = mult-1
 
-        #cartesian basis or not
-        if cartesian_basis is not None:
-            print("Setting cartesian basis flag to:", cartesian_basis)
-            self.mol.cart = cartesian_basis
+            print("self.mol.symmetry:", self.mol.symmetry)
+
+            #cartesian basis or not
+            if cartesian_basis is not None:
+                print("Setting cartesian basis flag to:", cartesian_basis)
+                self.mol.cart = cartesian_basis
+        
+  
+
     #Update mol object with coordinates or charge/mult
     #def update_mol(self, qm_elems, current_coords, charge, mult):
     #    coords_string=ash.modules.module_coords.create_coords_string(qm_elems,current_coords)
@@ -2247,7 +2278,6 @@ class PySCFTheory:
             #TODO: Gaussian blur option
             print("PC True. Adding pointcharges")
 
-
             #GPU vs. CPU
             if self.platform == 'GPU':
                 print("QM/MM embedding for GPU. Adding pointcharges via create_mm_mol from gpu4pyscf")
@@ -2278,14 +2308,34 @@ class PySCFTheory:
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
             try:
                 if os.path.exists(self.potfile):
-                    pass
-                else:
-                    print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
-                    ashexit()
+                    print(BC.FAIL, "Potfile: ", self.potfile, "exists!", BC.END)
             except:
+                print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
                 ashexit()
             # TODO: Adapt to RKS vs. UKS etc.
             self.mf = pyscf.solvent.PE(pyscf.scf.RKS(self.mol), self.potfile)
+        # Continuum solvation
+        elif self.solvation is not None:
+            print("Adding continuum solvation to mf object")
+            import pyscf.solvent
+            if self.solvation =="ddCOSMO":
+                print("Solvation is ddCOSMO")
+                print("solvation_eps:", self.solvation_eps)
+                self.mf = self.mf.DDCOSMO()
+                self.mf.with_solvent.eps = self.solvation_eps # 
+            elif self.solvation =="PCM":
+                print("Solvation is PCM")
+                print("solvation_eps:", self.solvation_eps)
+                print("solvation_method:", self.solvation_method)
+                self.mf = self.mf.PCM()
+                self.mf.with_solvent.eps = self.solvation_eps # 
+                self.mf.with_solvent.method = self.solvation_method # IEF-PCM, C-PCM, SS(V)PE, COSMO
+            elif self.solvation =="SMD":
+                print("Solvation is SMD. Using SMD_solvent:", self.SMD_solvent)
+                self.mf = self.mf.SMD()
+                print("self.mf", self.mf)
+                self.mf.with_solvent.solvent =self.SMD_solvent
+
 
     def run_BS_SCF(self, mult=None, dm=None):
         print("\nBroken-symmetry SCF procedure")
@@ -2503,7 +2553,15 @@ class PySCFTheory:
         #####################
         #CREATE MOL OBJECT
         #####################
-        self.create_mol(qm_elems, current_coords, charge, mult, cartesian_basis=self.cartesian_basis)
+        qH_atoms=None
+        if self.neo:
+            print("NEO mode. Selecting all H-atoms")
+            qH_atoms = [i for i,j in enumerate( qm_elems) if j == 'H']
+            print("qH-atom indices:", qH_atoms)
+            #TODO: skip link atoms needed
+
+        self.create_mol(qm_elems, current_coords, charge, mult, cartesian_basis=self.cartesian_basis,
+                        neo=self.neo, quantum_nuc=qH_atoms, nuc_basis=self.nuc_basis)
 
         #####################
         # BASIS
@@ -2529,6 +2587,16 @@ class PySCFTheory:
         elif self.mf_object is not None:
             print("An mf object already exits. Using.")
             self.mf=self.mf_object
+        elif self.neo is True:
+            print("Now creating neo mf object")
+            from pyscf import neo
+            # Full DF
+            if self.df_ne is True:
+                self.mf = neo.CDFT(self.mol, xc=self.functional).density_fit(auxbasis=self.auxbasis, df_ne=True)
+            elif self.df_ne is False and self.densityfit is True:
+                self.mf = neo.CDFT(self.mol, xc=self.functional).density_fit(auxbasis=self.auxbasis)
+            else:
+                self.mf = neo.CDFT(self.mol, xc=self.functional)
         else:
             print("Now creating mf object")
             self.create_mf() #Creates self.mf
@@ -2644,10 +2712,9 @@ class PySCFTheory:
             #GPU CHANGE
             if self.platform == 'GPU':
                 print("GPU SCF calculation done.")
-                if Grad is False:
-                    print("Converting mf object back to CPU")
+                if Grad is False and Hessian is False:
+                    print("Grad/Hessian False: Converting mf object back to CPU")
                     self.mf = self.mf.to_cpu()
-
 
             #Possible stability analysis
             self.run_stability_analysis()
@@ -2826,11 +2893,8 @@ class PySCFTheory:
             else:
                 if self.printlevel >1:
                     print("Calculating regular SCF gradient")
-                    checkpoint=time.time()
-                print("")
-                print("mf:", self.mf)
+                checkpoint=time.time()
                 g = self.mf.nuc_grad_method()
-                print("g:", g)
                 self.gradient = g.kernel()
                 print_time_rel(checkpoint, modulename='pyscf_gradient', moduleindex=2)
 
@@ -2862,31 +2926,31 @@ class PySCFTheory:
         ##############
         if Hessian:
             hessinfo = self.run_hessian()
+            hessian = hessinfo.transpose(0,2,1,3).reshape(len(current_coords)*3,len(current_coords)*3)
             print("hessinfo:", hessinfo)
-            hessian = hessinfo.transpose(0,2,1,3).reshape(3*3,3*3)
             self.hessian=hessian
-            try:
-                print("Attempting IR intensity calculation (requires pyscf.prop library)")
-                
-                from pyscf.prop.infrared.rhf import Infrared, kernel_dipderiv
-                
-            except ModuleNotFoundError:
-                print("pyscf IR intensity requires installation of pyscf.prop module")
-                print("See: https://github.com/pyscf/properties")
-                print("You can install with: pip install git+https://github.com/pyscf/properties")
-                ashexit()
 
-            mf_ir = Infrared(self.mf)
-            mf_ir.mf_hess=self.hessian_obj
-            mf_ir.run()
-            #Could run dipole derivatives directly also
-            #dipderiv = kernel_dipderiv(mf_ir)
-            #print("dipderiv:", dipderiv)
-            #mf_ir.summary()
-            #mf_ir.ir_inten
-            print("mf_ir.ir_inten:", mf_ir.ir_inten)
-            self.ir_intensities=mf_ir.ir_inten
+            if self.platform == "GPU":
+                #from pyscf.prop.infrared.rhf import Infrared, kernel_dipderiv
+                from gpu4pyscf.properties import ir
+                freq, intensity = ir.eval_ir_freq_intensity(self.mf, self.hessian_obj)
+                self.ir_intensities=intensity
+            else:
+                try:
+                    print("Attempting IR intensity calculation (requires pyscf.prop library)")
+                except ModuleNotFoundError:
+                    print("pyscf IR intensity requires installation of pyscf.prop module")
+                    print("See: https://github.com/pyscf/properties")
+                    print("You can install with: pip install git+https://github.com/pyscf/properties")
+                    ashexit()
+                from pyscf.prop.infrared.rhf import Infrared
+                mf_ir = Infrared(self.mf)
+                mf_ir.mf_hess=self.hessian_obj
+                mf_ir.run()
+                print("mf_ir.ir_inten:", mf_ir.ir_inten)
+                self.ir_intensities=mf_ir.ir_inten
 
+        self.energy=float(self.energy)
         if self.printlevel >= 1:
             print()
             print(BC.OKBLUE, BC.BOLD, "------------ENDING PYSCF INTERFACE-------------", BC.END)
@@ -3141,6 +3205,7 @@ def pyscf_CCSD_T_natorb_selection(fragment=None, pyscftheoryobject=None, numcore
 #Used by pySCFTheory, DiceTheory and BlockTheory
 def pySCF_read_MOs(moreadfile,pyscfobject, motype="scf"):
     import pyscf
+    import h5py
     print("Reading MOs from :", moreadfile)
     #Molden read
     if '.molden' in moreadfile:
@@ -3149,6 +3214,21 @@ def pySCF_read_MOs(moreadfile,pyscfobject, motype="scf"):
     #Checkpoint file
     elif '.chk'  in moreadfile:
         print("Reading checkpoint file")
+        # Looking for keys in file
+        f = h5py.File(moreadfile, 'r')
+        keys = list(f.keys())
+        keys.remove('mol') #Removing mol
+        print("Found (non-mol) keys in checkpointfile:", keys)
+        if motype not in keys:
+            print(f"Error:Motype {motype} not in keys")
+            if len(keys) == 1:
+                print("Only 1 non-mol key present in chkfile.")
+                print(f"Warning: Setting motype to be : {keys[0]} and continuing")
+                motype=keys[0]
+            else:
+                print("Error:Multiple keys, not sure which one to pick. Exiting.")
+                ashexit()
+        
         #motype can be e.g. 'scf' or 'mcscf'
         mo_coefficients = pyscf.lib.chkfile.load(moreadfile, f'{motype}/mo_coeff')
         print("mo_coefficients:", mo_coefficients)

@@ -121,6 +121,7 @@ from .interfaces.interface_DRACO import get_draco_radii
 from .interfaces.interface_Grimme_corrections import DFTD4Theory, calc_DFTD4, calc_gcp, gcpTheory
 from .interfaces.interface_torch import TorchTheory
 from .interfaces.interface_mace import MACETheory
+from .interfaces.interface_fairchem import FairchemTheory
 from .interfaces.interface_packmol import packmol_solvate
 
 # MM: external and internal
@@ -171,6 +172,7 @@ from .modules.module_molcrys import molcrys, Fragmenttype
 
 # Geometry optimization
 from .functions.functions_optimization import SimpleOpt, BernyOpt
+from .interfaces.interface_dlfind import DLFIND_optimizer
 
 # geomeTRIC interface
 from .interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICOptimizerClass

@@ -6,13 +6,12 @@ import copy
 from collections import defaultdict
 import math
 
-import ash
 from ash.functions.functions_general import BC, ashexit, print_time_rel,print_line_with_mainheader,listdiff, printdebug
 from ash.modules.module_theory import Theory
-from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
-from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB_output
+from ash.interfaces.interface_ORCA import grabatomcharges_ORCA, ORCATheory
+from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB_output,xTBTheory
 from ash.modules.module_QMMM import linkatom_force_adv, linkatom_force_lever,linkatom_force_chainrule
-
+from ash.modules.module_coords import print_coords_for_atoms,get_boundary_atoms,get_linkatom_positions,distance,get_connected_atoms
 
 #TODO: deal with GBW file and ORCA autostart mismatching for different regions and theory-levels
 # Keep separate GBW files for each region and theory-level
@@ -137,9 +136,9 @@ class ONIOMTheory(Theory):
             atomlabels = ["HL" if b in self.regions_N[0] else "LL" for b in self.fragment.allatoms]
             # If HL-LL covalent boundary issue and ASH exits then printing QM-coordinates is useful
             print("\nFull-system coordinates (before any linkatoms):")
-            ash.modules.module_coords.print_coords_for_atoms(self.fragment.coords, self.fragment.elems, self.fragment.allatoms, labels=atomlabels)
+            print_coords_for_atoms(self.fragment.coords, self.fragment.elems, self.fragment.allatoms, labels=atomlabels)
             print()
-            self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.regions_N[0], self.fragment.coords, self.fragment.elems, conn_scale,
+            self.boundaryatoms = get_boundary_atoms(self.regions_N[0], self.fragment.coords, self.fragment.elems, conn_scale,
                 conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=None)
         elif len(self.theories_N) == 3:
             self.theorylabels = ["HL","IL", "LL"]
@@ -148,12 +147,12 @@ class ONIOMTheory(Theory):
             print("atomlabels:", atomlabels)
             # If HL-LL covalent boundary issue and ASH exits then printing QM-coordinates is useful
             print("\nFull-system coordinates (before any linkatoms):")
-            ash.modules.module_coords.print_coords_for_atoms(self.fragment.coords, self.fragment.elems, self.fragment.allatoms, labels=atomlabels)
+            print_coords_for_atoms(self.fragment.coords, self.fragment.elems, self.fragment.allatoms, labels=atomlabels)
             #
-            self.boundaryatoms_HL_ML = ash.modules.module_coords.get_boundary_atoms(self.regions_N[0], self.fragment.coords, self.fragment.elems, conn_scale,
+            self.boundaryatoms_HL_ML = get_boundary_atoms(self.regions_N[0], self.fragment.coords, self.fragment.elems, conn_scale,
                 conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=None)
             print("boundaryatoms_HL_ML:", self.boundaryatoms_HL_ML)
-            self.boundaryatoms_ML_LL = ash.modules.module_coords.get_boundary_atoms(self.regions_N[1], self.fragment.coords, self.fragment.elems, conn_scale,
+            self.boundaryatoms_ML_LL = get_boundary_atoms(self.regions_N[1], self.fragment.coords, self.fragment.elems, conn_scale,
                 conn_tolerance, excludeboundaryatomlist=excludeboundaryatomlist, unusualboundary=None)
             print("boundaryatoms_ML_LL:", self.boundaryatoms_ML_LL)
             print("XX")
@@ -202,7 +201,7 @@ class ONIOMTheory(Theory):
         checkpoint=time.time()
         # Get linkatom coordinates
         # NOTE: Option to change linkatom_distance, now 1.08736
-        self.linkatoms_dict = ash.modules.module_coords.get_linkatom_positions(self.boundaryatoms,region_atoms, 
+        self.linkatoms_dict = get_linkatom_positions(self.boundaryatoms,region_atoms, 
                                                                                current_coords, elems, linkatom_type=self.linkatom_type,
                                                                                linkatom_method=self.linkatom_method,
                                                                                linkatom_simple_distance=self.linkatom_simple_distance,
@@ -238,7 +237,7 @@ class ONIOMTheory(Theory):
         # Coordinates and distance
         mm1coords=np.array(current_coords[mm1index])
         mm2coords=np.array(current_coords[mm2index])
-        MM_distance = ash.modules.module_coords.distance(mm1coords,mm2coords) # Distance between MM1 and MM2
+        MM_distance = distance(mm1coords,mm2coords) # Distance between MM1 and MM2
 
         # Normalize vector
         def vnorm(p1):
@@ -369,7 +368,7 @@ class ONIOMTheory(Theory):
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         self.MMboundarydict={}
         for (QM1atom,MM1atom) in boundaryatoms.items():
-            connatoms = ash.modules.module_coords.get_connected_atoms(self.fragment.coords, self.fragment.elems, scale,tol, MM1atom)
+            connatoms = get_connected_atoms(self.fragment.coords, self.fragment.elems, scale,tol, MM1atom)
             #Deleting QM-atom from connatoms list
             connatoms.remove(QM1atom)
             self.MMboundarydict[MM1atom] = connatoms
@@ -385,6 +384,7 @@ class ONIOMTheory(Theory):
 
     def run(self, current_coords=None, Grad=False, elems=None, charge=None, mult=None, label=None, numcores=None):
 
+        module_init_time=time.time()
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
         # Charge/mult. Note: ignoring charge/mult from run keyword.
@@ -410,14 +410,14 @@ class ONIOMTheory(Theory):
             # TODO: How to do this in general
             # Check if the low-level theory is compatible with some charge model
             # Should probably do this in init instead though
-            if isinstance(ll_theory, ash.ORCATheory):
+            if isinstance(ll_theory, ORCATheory):
                 print(f"Theory is ORCATheory. Using {self.chargemodel} charge model")
                 if self.chargemodel == "CM5" or self.chargemodel.lower() == "hirshfeld":
                     ll_theory.extraline+="\n! hirshfeld "
                 else:
                     print("Unknown charge model")
                     ashexit()
-            elif isinstance(ll_theory, ash.xTBTheory):
+            elif isinstance(ll_theory, xTBTheory):
                  print(f"Theory is xTBTheory. Using default xtb charge model")
             else:
                 print("Problem: Theory-level not compatible with pointcharge-creation")
@@ -445,11 +445,11 @@ class ONIOMTheory(Theory):
         if self.embedding.lower() == "elstat" and self.full_pointcharges is None:
             print("Grabbing atom charges for whole system")
             print("Chargemodel:", self.chargemodel)
-            if isinstance(ll_theory_full, ash.ORCATheory):
+            if isinstance(ll_theory_full, ORCATheory):
                 self.full_pointcharges = grabatomcharges_ORCA(self.chargemodel,f"{ll_theory_full.filename}.out")
                 # Remove ll_theory.extraline from ORCATheory for next LL calculations
                 ll_theory.extraline=""
-            elif isinstance(ll_theory_full, ash.xTBTheory):
+            elif isinstance(ll_theory_full, xTBTheory):
                 print(f"{ll_theory_full.filename}.out")
                 # Note: format issue
                 # self.full_pointcharges = grabatomcharges_xTB_output(ll_theory.filename+'.out', chargemodel=self.chargemodel)
@@ -590,7 +590,7 @@ class ONIOMTheory(Theory):
                     else:
                         print("Case: Electrostatic embedding but no linkatoms")
                         pointcharges = np.array(charges_qmregionzeroed)
-                        pointcharges=[pointcharges[x] for x in PCregion]
+                        pointcharges=[float(pointcharges[x]) for x in PCregion]
 
                     print("Region Num pointcharges after shift:", len(pointcharges))
                     print("Region Num pointchargecoords after shift:", len(pointchargecoords))
@@ -633,6 +633,8 @@ class ONIOMTheory(Theory):
                                                     label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
                 if PC and Grad:
                     e,g,pg = res
+                elif PC and not Grad:
+                    e = res
                 elif not PC and Grad:
                     e,g = res
                 elif not PC and not Grad:
@@ -737,7 +739,7 @@ class ONIOMTheory(Theory):
             ashexit()
 
         print("Final ONIOM energy:", self.energy)
-
+        print_time_rel(module_init_time, modulename='ONIOM run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
         if Grad:
             return self.energy,self.gradient
         else:

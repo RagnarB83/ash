@@ -25,7 +25,7 @@ class GPAWTheory(QMTheory):
 
         self.theorynamelabel="GPAW"
         self.theorytype="QM"
-        self.analytic_hessian=True
+        self.analytic_hessian=False
         self.printlevel=printlevel
         self.label=label
         self.numcores=numcores

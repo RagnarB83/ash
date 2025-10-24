@@ -602,17 +602,21 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
                 xtbcalc.Opt(fragment=fragment, charge=fragment.charge, mult=fragment.mult)
                 xtbcalc.cleanup()
 
-            #Now doing actual OPT
-            optenergy = ash.interfaces.interface_geometric_new.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
+            # Now doing actual OPT
+            optresult = ash.interfaces.interface_geometric_new.geomeTRICOptimizer(theory=theory, fragment=fragment, coordsystem='tric', charge=fragment.charge, mult=fragment.mult)
             theory.cleanup()
-            energy=optenergy
-            optenergies.append(optenergy)
-            #Rename optimized XYZ-file
+            energy=optresult.energy
+            optenergies.append(optresult.energy)
+            # Rename optimized XYZ-file
             filenamestring_suffix="" #nothing for now
-            os.rename("Fragment-optimized.xyz",os.path.splitext(fragment.label)[0]+filenamestring_suffix+".xyz")
-            shutil.copy(os.path.splitext(fragment.label)[0]+filenamestring_suffix+".xyz",finalxyzdir)
-
-            #Freq job after OPt
+            # In case of atoms
+            if fragment.numatoms > 1:
+                os.rename("Fragment-optimized.xyz",os.path.splitext(fragment.label)[0]+filenamestring_suffix+".xyz")
+                shutil.copy(os.path.splitext(fragment.label)[0]+filenamestring_suffix+".xyz",finalxyzdir)
+            else:
+                shutil.copy(f"{xyzdir}/{filename}",finalxyzdir)
+            
+            # Freq job after OPt
             if Freq is True:
                 print("Performing Numerical Frequency job on Optimized fragment.")
                 thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, displacement=0.005, numcores=theory.numcores, runmode='serial', charge=fragment.charge, mult=fragment.mult)

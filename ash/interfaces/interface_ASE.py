@@ -151,6 +151,7 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
             print_time_rel(timeA, modulename="get_forces : new")
             return self.forces
 
+
     #Option 2: Dummy ASE class where we create the attributes and methods we want
     #Too complicated
 

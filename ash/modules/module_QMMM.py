@@ -259,20 +259,6 @@ class QMMMTheory:
                 print(BC.FAIL,"This does not make sense. Check coordinates and forcefield files. Exiting...", BC.END)
                 ashexit()
 
-            # Add possible exception for QM-QM atoms here.
-            # Maybe easier to just just set charges to 0. LJ for QM-QM still needs to be done by MM code
-            # if self.mm_theory_name == "OpenMMTheory":
-            #
-                # print("Now adding exceptions for frozen atoms")
-                # if len(self.frozenatoms) > 0:
-                #    print("Here adding exceptions for OpenMM")
-                #    print("Frozen-atom exceptions currently inactive...")
-                # print("Num frozen atoms: ", len(self.frozenatoms))
-                # Disabling for now, since so bloody slow. Need to speed up
-                # mm_theory.addexceptions(self.frozenatoms)
-
-            # Check if we need linkatoms by getting boundary atoms dict:
-
             # Update: Tolerance modification to make sure we definitely catch connected atoms and get QM-MM boundary right.
             # Scale=1.0 and tol=0.1 fails for S-C bond in rubredoxin from a classical MD run
             # Bumping up a bit here.
@@ -857,8 +843,9 @@ class QMMMTheory:
             except:
                 print("error: found no charges attribute of QMTheory object. update_QMregion_charges can not be used")
                 ashexit()
-            #Removing linkatoms
-            newqmcharges = newqmcharges[0:-self.num_linkatoms]
+            # Removing linkatoms
+            if self.num_linkatoms > 0:
+                newqmcharges = newqmcharges[0:-self.num_linkatoms]
             for i, index in enumerate(self.qmatoms):
                 self.charges[index] = newqmcharges[i]
             print("Updating charges of QM-region in MMTheory object")
@@ -1160,8 +1147,6 @@ class QMMMTheory:
         #########################################################################################
 
         # Split current_coords into MM-part and QM-part efficiently.
-        print("current_coords:", current_coords)
-        print("self.xatom_mask:", self.xatom_mask)
         used_mmcoords, used_qmcoords = current_coords[~self.xatom_mask], current_coords[self.xatom_mask]
 
         if self.linkatoms is True:
