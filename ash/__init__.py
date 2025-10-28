@@ -37,6 +37,10 @@ for pyfile in pyfiles_in_dir:
 #Results dataclass
 from .modules.module_results import ASH_Results,read_results_from_file
 
+# SOAP
+import ash.modules.module_SOAP
+from .modules.module_SOAP import SOAPSimilarity,frame_descriptor
+
 # Fragment class and coordinate functions
 import ash.modules.module_coords
 from .modules.module_coords import get_molecules_from_trajectory, eldict_covrad, write_pdbfile, Fragment, read_xyzfile, \
@@ -147,7 +151,7 @@ from .interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_
 from .modules.module_theory import Theory, QMTheory, NumGradclass, MECPGradclass
 
 # QM/MM
-from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy
+from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy, QM_MM_Polarizable_LJ
 from .modules.module_polembed import PolEmbedTheory
 
 # Knarr
