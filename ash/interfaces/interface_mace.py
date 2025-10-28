@@ -50,7 +50,7 @@ class MACETheory():
     def set_numcores(self,numcores):
         self.numcores=numcores
 
-    def train(self, config_file="config.yml", name="model",model="MACE", device='cpu',
+    def train(self, config_file="config.yml", name="model",model="MACE", device=None,
                       valid_fraction=0.1, train_file="train_data_mace.xyz",E0s=None,
                       energy_key='energy_REF', forces_key='forces_REF',        
                       energy_weight=1, forces_weight=100,
@@ -63,6 +63,10 @@ class MACETheory():
 
         self.train_file=train_file
         self.valid_fraction=valid_fraction
+
+        if device is None:
+            print("Warning: device not passed to train. Using object's device attribute:", self.device)
+            device=self.device
 
         print("Training activated")
         print("Training parameters:")
@@ -329,7 +333,7 @@ class MACETheory():
                     indices_or_sections=batch.ptr[1:],
                     axis=0)[0]
                 self.gradient = forces/-51.422067090480645
-        
+
         if Hessian:
             self.hessian = hessian*0.010291772
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
