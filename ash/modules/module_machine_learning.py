@@ -700,7 +700,9 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
         base_cfgs += chosen_cfgs
 
     print("Active learning is complete.")
-    if iter == maxiter:
+    print("iter:", iter)
+    print("maxiter:", maxiter)
+    if iter == maxiter-1:
         print("Warning: Active learning loop did not converge. Check the results carefully")
     else:
         print("Active learning loop converged")
