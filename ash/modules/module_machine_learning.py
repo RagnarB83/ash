@@ -606,6 +606,7 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
     # Choose base set:
     # This can be replaced by a list of chosen XYZ-files instead
     if random_seed_set:
+        print("Using random seed:", seed)
         random.seed(seed)
     base_cfgs = random.sample(xyzfiles, init_base_cfgs)
 
@@ -678,6 +679,7 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
         #
         if random_selection is True:
             if random_seed_set:
+                print("Using random seed:", seed)
                 random.seed(seed)
             chosen_cfgs = random.sample(other_cfgs, max_add_snaps)
 
