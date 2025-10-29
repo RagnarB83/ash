@@ -606,7 +606,7 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
     # Choose base set:
     # This can be replaced by a list of chosen XYZ-files instead
     if random_seed_set:
-        random.seed(42)
+        random.seed(seed)
     base_cfgs = random.sample(xyzfiles, init_base_cfgs)
 
     # Move chosen base configs to base
