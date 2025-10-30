@@ -4188,17 +4188,17 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
         if MOPlot is True:
             # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
             ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
-            ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+            ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-')
             if hftyp_I == "UHF":
                 ax.plot(x, occDOS_beta, 'C2', label='betaMO')
-                ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+                ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-')
 
 
         ##############
         # TDDFT-STATES
         ###############
         ax.plot(x, tddftDOS, 'C3', label='TDDFT')
-        ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-', use_line_collection=True)
+        ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-')
         plt.xlabel('eV')
         plt.ylabel('Intensity')
         #################################

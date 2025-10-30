@@ -578,7 +578,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
 
         ax.plot(x, spectrum, label=plotname, color=color)
         if plot_sticks is True:
-            ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt=color, use_line_collection=True)
+            ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt=color)
         plt.xlabel(unit)
         plt.ylabel('Intensity')
         #################################

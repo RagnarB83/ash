@@ -2595,3 +2595,11 @@ end"""
     #TODO: Option to plot difference density also
 
     return metrics_dict
+
+def boltzmann_populations(energies, temperature=298.15):
+	beta = 1/(ash.constants.R_gasconst_kcalK*temperature)
+
+	rel_energies=np.array([en-min(energies) for en in energies])*ash.constants.hartokcal
+	boltzmann_factors = np.exp(-1*rel_energies * beta)
+	populations = boltzmann_factors / np.sum(boltzmann_factors)
+	return populations

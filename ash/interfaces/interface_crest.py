@@ -248,7 +248,7 @@ def call_crest_entropy(fragment=None, crestdir=None, charge=None, mult=None, num
 
 #Grabbing crest conformers. Goes inside rest-calc dir and finds file called crest_conformers.xyz
 #Creating ASH fragments for each conformer
-def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.xyz", charge=None, mult=None):
+def get_crest_conformers(S='crest-calc',conf_file="crest_conformers.xyz", charge=None, mult=None):
     print("")
     print("Now finding Crest conformers and creating ASH fragments...")
     os.chdir(crest_calcdir)
@@ -259,7 +259,7 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
 
     #Getting energies from title lines
     for i in all_titles:
-        en=float(i)
+        en=float(i[0])
         list_xtb_energies.append(en)
 
     for (els,cs,eny) in zip(all_elems,all_coords,list_xtb_energies):
