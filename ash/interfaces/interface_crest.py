@@ -248,7 +248,7 @@ def call_crest_entropy(fragment=None, crestdir=None, charge=None, mult=None, num
 
 #Grabbing crest conformers. Goes inside rest-calc dir and finds file called crest_conformers.xyz
 #Creating ASH fragments for each conformer
-def get_crest_conformers(S='crest-calc',conf_file="crest_conformers.xyz", charge=None, mult=None):
+def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.xyz", charge=None, mult=None):
     print("")
     print("Now finding Crest conformers and creating ASH fragments...")
     os.chdir(crest_calcdir)

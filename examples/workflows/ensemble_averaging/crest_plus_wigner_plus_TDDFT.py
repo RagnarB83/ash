@@ -2,7 +2,7 @@ from ash import *
 from ash.functions.functions_elstructure import boltzmann_populations
 from ash.interfaces.interface_ORCA import tddftgrab, tddftintens_grab
 
-numcores=1
+numcores=10
 
 #########
 #System
@@ -16,20 +16,20 @@ num_wigner_samples=10
 # Theories
 #############
 ll_theory = xTBTheory(xtbmethod="GFN2")
-#hl_theory = ORCATheory(orcasimpleinput="! CAM-B3LYP 6-311++G(d,p) CPCM(DMSO) tightscf")
-hl_theory = ORCATheory(orcasimpleinput="! hf-3c")
+hl_theory = ORCATheory(orcasimpleinput="! CAM-B3LYP 6-311++G(d,p) CPCM(DMSO) tightscf", numcores=numcores)
+#hl_theory = ORCATheory(orcasimpleinput="! hf-3c")
 # Spectroscopy theory
 blocks="""%tddft
 nroots 10
 tda false
 end
 """
-tddft_theory = ORCATheory(orcasimpleinput="! CAM-B3LYP 6-311++G(d,p) CPCM(DMSO) tightscf",orcablocks=blocks)
+tddft_theory = ORCATheory(orcasimpleinput="! CAM-B3LYP 6-311++G(d,p) CPCM(DMSO) tightscf",orcablocks=blocks, numcores=numcores)
 
 #############################
 # 1. Conformational sampling
 #############################
-new_call_crest(fragment=frag, theory=ll_theory, runtype="imtd-gc", numcores=1)
+new_call_crest(fragment=frag, theory=ll_theory, runtype="imtd-gc", numcores=numcores)
 
 #Get xtB conformers as fragments
 frags = get_molecules_from_trajectory("crest_conformers.xyz")
