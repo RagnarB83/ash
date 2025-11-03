@@ -2597,9 +2597,12 @@ end"""
     return metrics_dict
 
 def boltzmann_populations(energies, temperature=298.15):
-	beta = 1/(ash.constants.R_gasconst_kcalK*temperature)
+    print("Inside boltzmann_populations function")
+    beta = 1/(ash.constants.R_gasconst_kcalK*temperature)
 
-	rel_energies=np.array([en-min(energies) for en in energies])*ash.constants.hartokcal
-	boltzmann_factors = np.exp(-1*rel_energies * beta)
-	populations = boltzmann_factors / np.sum(boltzmann_factors)
-	return populations
+    rel_energies=np.array([en-min(energies) for en in energies])*ash.constants.hartokcal
+    print("Relative energies (kcal/mol):", rel_energies)
+    boltzmann_factors = np.exp(-1*rel_energies * beta)
+    populations = boltzmann_factors / np.sum(boltzmann_factors)
+    print("Boltzmann populations at", temperature, "K:", populations)
+    return populations

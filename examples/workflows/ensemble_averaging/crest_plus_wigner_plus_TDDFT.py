@@ -29,7 +29,8 @@ tddft_theory = ORCATheory(orcasimpleinput="! CAM-B3LYP 6-311++G(d,p) CPCM(DMSO) 
 #############################
 # 1. Conformational sampling
 #############################
-new_call_crest(fragment=frag, theory=ll_theory, runtype="imtd-gc", numcores=numcores)
+#new_call_crest(fragment=frag, theory=ll_theory, runtype="imtd-gc", numcores=numcores)
+call_crest(fragment=frag, xtbmethod='GFN2-xTB', charge=charge, mult=mult, energywindow=6, numcores=numcores)
 
 #Get xtB conformers as fragments
 frags = get_molecules_from_trajectory("crest_conformers.xyz")

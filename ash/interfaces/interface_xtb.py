@@ -75,7 +75,8 @@ class gxTBTheory(Theory):
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None,
-                 use_tblite=False, periodic=False, periodic_cell_dimensions=None, extraflag=None, grab_charges=False):
+                 use_tblite=False, periodic=False, periodic_cell_dimensions=None, extraflag=None, grab_charges=False,
+                 grab_BOs=False):
 
         self.theorynamelabel="xTB"
         self.theorytype="QM"
@@ -96,8 +97,12 @@ class xTBTheory:
         # Passing special extra flag to xtb binary
         self.extraflag=extraflag
 
-        # Grab xTB charges in every run if chosen
+        # Grab xTB charges in every run if enabled
         self.grab_charges=grab_charges
+        
+        # Grab Bond orders (Wiberg BOs) in every run if enabled
+        self.grab_BOs=grab_BOs
+        self.BOs=None
 
         self.periodic=periodic
         self.periodic_cell_dimensions=periodic_cell_dimensions
@@ -461,6 +466,10 @@ class xTBTheory:
             if self.grab_charges:
                 # Reading default xTB charges from file charges
                 self.charges = grabatomcharges_xTB()
+            if self.grab_BOs:
+                # Reading default xTB charges from file charges
+                self.BOs = grab_bondorder_matrix(len(qm_elems))
+
 
             # Check if finished. Grab energy
             if Grad is True:
@@ -1023,3 +1032,13 @@ def grab_dipole_moment(outfile):
             if ' dipole moment from electron density' in line:
                 grab=True
     return dipole_moment
+
+def grab_bondorder_matrix(numatoms):
+    BO = np.zeros((numatoms, numatoms))
+    with open("wbo") as f:
+        lines=f.readlines()
+    for l in lines:
+        i,j,b=l.split()
+        BO[int(i)-1,int(j)-1] = float(b)
+        BO[int(j)-1,int(i)-1] = float(b)
+    return BO
