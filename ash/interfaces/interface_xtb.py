@@ -1054,6 +1054,8 @@ class tbliteTheory(Theory):
     def __init__(self, method=None, printlevel=2, numcores=1, spinpol=False, solvation_method=None, solvent_name=None, solvent_eps=None,
                  maxiter=500, electronic_temp=9.5e-4, accuracy=1.0, grab_BOs=False, grab_charges=False, grab_DM=False):
         super().__init__()
+        print_line_with_mainheader("tblite INTERFACE")
+        print("method:", method)
         self.theorytype="QM"
         self.analytic_hessian=False
         self.theorynamelabel = "tblite"
@@ -1155,7 +1157,7 @@ class tbliteTheory(Theory):
             self.BOs = results.get("bond-orders")
         #DM
         if self.grab_DM:
-            self.charges = results.get("density_matrix")
+            self.DM = results.get("density-matrix")
 
         #Gradient
         if Grad:
