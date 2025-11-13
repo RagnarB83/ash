@@ -1042,3 +1042,129 @@ def grab_bondorder_matrix(numatoms):
         BO[int(i)-1,int(j)-1] = float(b)
         BO[int(j)-1,int(i)-1] = float(b)
     return BO
+
+
+
+#TODO:
+# periodic
+# PCs
+
+# Interface to tbliteTheory
+class tbliteTheory(Theory):
+    def __init__(self, method=None, printlevel=2, numcores=1, spinpol=False, solvation_method=None, solvent_name=None, solvent_eps=None,
+                 maxiter=500, electronic_temp=9.5e-4, accuracy=1.0, grab_BOs=False, grab_charges=False, grab_DM=False):
+        super().__init__()
+        self.theorytype="QM"
+        self.analytic_hessian=False
+        self.theorynamelabel = "tblite"
+        self.printlevel = printlevel
+        self.method=method
+
+        #
+        self.accuracy=accuracy
+        self.maxiter=maxiter
+        self.electronic_temp=electronic_temp
+        self.spinpol=spinpol
+        # Solvation
+        self.solvation_method=solvation_method
+        self.solvent_name=solvent_name
+        self.solvent_eps=solvent_eps
+
+        #
+        self.grab_BOs=grab_BOs
+        self.grab_charges=grab_charges
+        self.grab_DM=grab_DM
+
+        # Parallelization
+        print("Setting number of cores for tblite to: OMP_NUM_THREADS=", numcores)
+        os.environ['OMP_NUM_THREADS'] = str(numcores)
+
+        try:
+            import tblite
+        except Exception as e:
+            print("Problem importing xTtbliteB library. Have you installed tblite properly ?")
+            print("See: https://github.com/tblite/tblite")
+            print("Installation might be done like this:")
+            print("  mamba install tblite")
+            print("  mamba install tblite-python")
+            print("Full error message:", e)
+            ashexit(code=9)
+
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
+            charge=None, mult=None):
+
+        module_init_time=time.time()
+        import tblite.interface as tb
+
+
+
+        # Checking if charge and mult has been provided
+        if charge is None or mult is None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for tbliteTheory.run method", BC.END)
+            ashexit()
+
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
+
+        #Preparing coords
+        coords_au=np.array(current_coords)*ash.constants.ang2bohr
+        qm_elems_numbers=np.array(elemstonuccharges(qm_elems))
+
+        # Creating xtb calculator object
+        # TODO: Update object instead of creating new every time
+        xtb = tb.Calculator(self.method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
+
+        # set attributes
+        xtb.set("max-iter", self.maxiter)
+        xtb.set("temperature", self.electronic_temp)
+        xtb.set("accuracy", self.accuracy)
+        xtb.set("verbosity",self.printlevel)
+        # Spinpolarization
+        if self.spinpol:
+            print("activating spin polarization")
+            xtb.add("spin-polarization")
+        # Solvation
+        if self.solvation_method is not None:
+            print("activating solvation method:", self.solvation_method)
+            if 'alpb' in self.solvation_method.lower():
+                print("ALPB solvation model with solvent:", self.solvent_name)
+                xtb.add("alpb-solvation", self.solvent_name)
+            elif 'gbsa' in self.solvation_method.lower():
+                print("GBSA solvation model with solvent:", self.solvent_name)
+                xtb.add("gbsa-solvation", self.solvent_name)
+            elif 'cpcm' in self.solvation_method.lower():
+                print("CPCM solvation model with eps:", self.solvent_eps)
+                xtb.add("cpcm-solvation", self.solvent_eps)
+            
+        #Run
+        results = xtb.singlepoint()
+
+        self.energy = results.get("energy")
+        #Charges
+        if self.grab_charges:
+            self.charges = results.get("charges")
+        #Bond orders
+        if self.grab_BOs:
+            self.BOs = results.get("bond-orders")
+        #DM
+        if self.grab_DM:
+            self.charges = results.get("density_matrix")
+
+        #Gradient
+        if Grad:
+            self.gradient = results.get("gradient")
+
+
+        if Grad:
+            print_time_rel(module_init_time, modulename='tblite run', moduleindex=2)
+            return self.energy, self.gradient
+        else:
+            print_time_rel(module_init_time, modulename='tblite run', moduleindex=2)
+            return self.energy
