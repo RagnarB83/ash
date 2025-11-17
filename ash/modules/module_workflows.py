@@ -202,7 +202,8 @@ def thermochemprotocol_single(fragment=None, Opt_theory=None, SP_theory=None, nu
     print("-------------------------------------------------------------------------")
     print("THERMOCHEM PROTOCOL-single: Step 3. High-level single-point calculation")
     print("-------------------------------------------------------------------------")
-
+    if SP_theory is None:
+        SP_theory=Opt_theory
     result_step3 = ash.Singlepoint(fragment=fragment, theory=SP_theory, charge=charge, mult=mult)
     FinalE = result_step3.energy
     #Get energy components

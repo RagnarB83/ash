@@ -259,7 +259,7 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
 
     #Getting energies from title lines
     for i in all_titles:
-        en=float(i)
+        en=float(i[0])
         list_xtb_energies.append(en)
 
     for (els,cs,eny) in zip(all_elems,all_coords,list_xtb_energies):

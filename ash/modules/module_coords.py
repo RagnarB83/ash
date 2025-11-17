@@ -1936,7 +1936,7 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1,return_fragments=Fal
             # Grab title
             if titlegrab is True:
                 if len(line.split()) > 0:
-                    all_titles.append(line.split()[-1])
+                    all_titles.append(line.split())
                 else:
                     all_titles.append("NA")
                 titlegrab = False
