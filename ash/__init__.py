@@ -38,8 +38,9 @@ for pyfile in pyfiles_in_dir:
 from .modules.module_results import ASH_Results,read_results_from_file
 
 # SOAP
-import ash.modules.module_SOAP
-from .modules.module_SOAP import SOAPSimilarity,frame_descriptor
+import ash.modules.module_descriptors
+from .modules.module_descriptors import frame_SOAPdescriptor, frame_DMdescriptor, calc_BOmatrix_tblite, frame_BOMdescriptor, \
+plot_soap_clusters, get_atom_labels,create_heatmap, SelectDiverseFrames
 
 # Fragment class and coordinate functions
 import ash.modules.module_coords
@@ -151,7 +152,7 @@ from .interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_
 from .modules.module_theory import Theory, QMTheory, NumGradclass, MECPGradclass
 
 # QM/MM
-from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy, QM_MM_Polarizable_LJ
+from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy #, QM_MM_Polarizable_LJ
 from .modules.module_polembed import PolEmbedTheory
 
 # Knarr
