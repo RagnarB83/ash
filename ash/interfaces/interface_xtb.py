@@ -1052,7 +1052,7 @@ def grab_bondorder_matrix(numatoms):
 # Interface to tbliteTheory
 class tbliteTheory(Theory):
     def __init__(self, method=None, printlevel=2, numcores=1, spinpol=False, solvation_method=None, solvent_name=None, solvent_eps=None,
-                 maxiter=500, electronic_temp=9.5e-4, accuracy=1.0, grab_BOs=False, grab_charges=False, grab_DM=False):
+                 maxiter=500, electronic_temp=9.5e-4, accuracy=1.0, grab_BOs=False, grab_charges=False, grab_DM=False, autostart=True):
         super().__init__()
         print_line_with_mainheader("tblite INTERFACE")
         print("method:", method)
@@ -1076,6 +1076,13 @@ class tbliteTheory(Theory):
         self.grab_BOs=grab_BOs
         self.grab_charges=grab_charges
         self.grab_DM=grab_DM
+
+
+        # Autostart
+        self.autostart=autostart
+        # Results. Used to store results after run, can be used to restart
+        # Initially None, will be set after run
+        self.results=None
 
         # Parallelization
         print("Setting number of cores for tblite to: OMP_NUM_THREADS=", numcores)
@@ -1146,22 +1153,28 @@ class tbliteTheory(Theory):
                 xtb.add("cpcm-solvation", self.solvent_eps)
             
         #Run
-        results = xtb.singlepoint()
+        if self.autostart is True and self.results is not None:
+            print("Auto-starting tblite calculation using previous results object")
+            print("Warning: if this leads to problems, set autostart=False in tbliteTheory")
+            self.results = xtb.singlepoint(self.results)
+        else:
+            print("Starting new tblite singlepoint calculation")
+            self.results = xtb.singlepoint()
 
-        self.energy = results.get("energy")
+        self.energy = self.results.get("energy")
         #Charges
         if self.grab_charges:
-            self.charges = results.get("charges")
+            self.charges = self.results.get("charges")
         #Bond orders
         if self.grab_BOs:
-            self.BOs = results.get("bond-orders")
+            self.BOs = self.results.get("bond-orders")
         #DM
         if self.grab_DM:
-            self.DM = results.get("density-matrix")
+            self.DM = self.results.get("density-matrix")
 
         #Gradient
         if Grad:
-            self.gradient = results.get("gradient")
+            self.gradient = self.results.get("gradient")
 
 
         if Grad:
