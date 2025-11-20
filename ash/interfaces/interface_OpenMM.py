@@ -1497,14 +1497,9 @@ class OpenMMTheory:
         import itertools
         print("Add exceptions/exclusions. Removing i-j interactions for list:", len(atomlist), "atoms")
 
-        # Has duplicates
-        # [self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i in atomlist for j in atomlist]
-        # https://stackoverflow.com/questions/942543/operation-on-every-pair-of-element-in-a-list
-        # [self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
         numexceptions = 0
         numexclusions = 0
         printdebug("self.system.getForces() ", self.system.getForces())
-        # print("self.nonbonded_force:", self.nonbonded_force)
 
         for force in self.system.getForces():
             printdebug("force:", force)
@@ -1847,69 +1842,18 @@ class OpenMMTheory:
         for force in self.system.getForces():
             if isinstance(force, openmm.NonbondedForce):
                 for exc in range(force.getNumExceptions()):
-                    # print(force.getExceptionParameters(exc))
+                    #print(force.getExceptionParameters(exc))
                     # force.getExceptionParameters(exc)
                     p1, p2, chargeprod, sigmaij, epsilonij = force.getExceptionParameters(exc)
                     if p1 in atomlist or p2 in atomlist:
-                        # print("p1: {} and p2: {}".format(p1,p2))
-                        # print("chargeprod:", chargeprod)
-                        # print("sigmaij:", sigmaij)
-                        # print("epsilonij:", epsilonij)
+                        #print("p1: {} and p2: {}".format(p1,p2))
+                        #print("chargeprod:", chargeprod)
+                        #print("sigmaij:", sigmaij)
+                        #print("epsilonij:", epsilonij)
                         chargeprod._value = 0.0
                         force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
-                        # print("New:", force.getExceptionParameters(exc))
+                        #print("New:", force.getExceptionParameters(exc))
         print_time_rel(timeA, modulename="delete_exceptions")
-
-    # # Function to
-    # def zero_nonbondedforce(self, atomlist, zeroCoulomb=True, zeroLJ=True):
-    #     timeA = time.time()
-    #     print("Zero-ing nonbondedforce")
-
-    #     def charge_sigma_epsilon(charge, sigma, epsilon):
-    #         if zeroCoulomb is True:
-    #             newcharge = charge
-    #             newcharge._value = 0.0
-
-    #         else:
-    #             newcharge = charge
-    #         if zeroLJ is True:
-    #             newsigma = sigma
-    #             newsigma._value = 0.0
-    #             newepsilon = epsilon
-    #             newepsilon._value = 0.0
-    #         else:
-    #             newsigma = sigma
-    #             newepsilon = epsilon
-    #         return [newcharge, newsigma, newepsilon]
-
-    #     # Zero all nonbonding interactions for atomlist
-    #     for force in self.system.getForces():
-    #         if isinstance(force, openmm.NonbondedForce):
-    #             # Setting single particle parameters
-    #             for atomindex in atomlist:
-    #                 oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
-    #                 newpars = charge_sigma_epsilon(oldcharge, oldsigma, oldepsilon)
-    #                 print(newpars)
-    #                 force.setParticleParameters(atomindex, newpars[0], newpars[1], newpars[2])
-    #             print("force.getNumExceptions() ", force.getNumExceptions())
-    #             print("force.getNumExceptionParameterOffsets() ", force.getNumExceptionParameterOffsets())
-    #             print("force.getNonbondedMethod():", force.getNonbondedMethod())
-    #             print("force.getNumGlobalParameters() ", force.getNumGlobalParameters())
-    #             # Now doing exceptions
-    #             for exc in range(force.getNumExceptions()):
-    #                 print(force.getExceptionParameters(exc))
-    #                 force.getExceptionParameters(exc)
-    #                 p1, p2, chargeprod, sigmaij, epsilonij = force.getExceptionParameters(exc)
-    #                 # chargeprod._value=0.0
-    #                 # sigmaij._value=0.0
-    #                 # epsilonij._value=0.0
-    #                 newpars2 = charge_sigma_epsilon(chargeprod, sigmaij, epsilonij)
-    #                 force.setExceptionParameters(exc, p1, p2, newpars2[0], newpars2[1], newpars2[2])
-    #                 # print("New:", force.getExceptionParameters(exc))
-    #             # force.updateParametersInContext(self.simulation.context)
-    #         elif isinstance(force, openmm.CustomNonbondedForce):
-    #             print("customnonbondedforce not implemented")
-    #             ashexit()
 
     # Updating LJ interactions in OpenMM object. Used to set LJ sites to zero e.g. so that they do not contribute
     # Can be used to get QM-MM LJ interaction energy
