@@ -1049,6 +1049,8 @@ def grab_bondorder_matrix(numatoms):
 # periodic
 # PCs
 
+# TODO : file-restart capability via npz
+
 # Interface to tbliteTheory
 class tbliteTheory(Theory):
     def __init__(self, method=None, printlevel=2, numcores=1, spinpol=False, solvation_method=None, solvent_name=None, solvent_eps=None,

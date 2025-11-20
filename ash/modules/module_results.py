@@ -119,7 +119,12 @@ class ASH_Results:
                     print(f"{k} : {v}")
                 #print(f"{k} : {v}")
         # Dump new dict
-        f.write(json.dumps(newdict, allow_nan=True))
+        try:
+            f.write(json.dumps(newdict, allow_nan=True))
+        except TypeError as e:
+            print("Error writing ASH_Results to disk:", e)
+            print("Skipping writing to disk")
+            return
         f.close()
 
 # Read ASH-Results data from disk
