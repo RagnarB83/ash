@@ -19,7 +19,8 @@ import ash.constants
 #model_file="uma-s-1p1.pt"
 
 class FairchemTheory():
-    def __init__(self, model_name=None, model_file=None, task_name=None, device="cuda", seed=41, numcores=1):
+    def __init__(self, model_name=None, model_file=None, task_name=None, device="cuda", seed=41, numcores=1,
+                 printlevel=2):
 
         module_init_time=time.time()
         # Early exits
@@ -43,7 +44,7 @@ class FairchemTheory():
 
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-
+        self.printlevel=printlevel
         self.task_name=task_name
         self.device=device
         self.model_name=model_name
@@ -78,6 +79,8 @@ class FairchemTheory():
             charge=None, mult=None):
 
         module_init_time=time.time()
+        if self.printlevel >= 2:
+            print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
         # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
@@ -101,12 +104,15 @@ class FairchemTheory():
         # Energy
         en = self.atoms.get_potential_energy()
         self.energy = float(en*ash.constants.evtohar)
-
+        if self.printlevel >= 2:
+            print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         if Grad:
             forces = self.atoms.get_forces()
             self.gradient = forces/-51.422067090480645
 
         self.runcalls+=1
+        if self.printlevel >= 2:
+            print(BC.OKBLUE,BC.BOLD,f"------------ENDING {self.theorynamelabel}-INTERFACE-------------", BC.END)
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
 
         if Grad:
