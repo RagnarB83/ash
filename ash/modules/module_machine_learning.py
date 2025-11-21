@@ -145,7 +145,6 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             print("Deleted old xyz_traj_split")
         except:
             pass
-        print("here")
         os.mkdir("xyz_traj_split")
         os.chdir("xyz_traj_split")
 
@@ -193,8 +192,8 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print("Runmode is serial!")
         print("Will now loop over XYZ-files")
         print("For a large dataset consider using parallel runmode")
-        for file in list_of_xyz_files:
-            print("\nNow running file:", file)
+        for n,file in enumerate(list_of_xyz_files):
+            print(f"\nNow running file ({n}/{len(list_of_xyz_files)}): {file}")
             basefile=os.path.basename(file)
             label=basefile.split(".")[0]
             frag = Fragment(xyzfile=file, charge=charge, mult=mult,printlevel=printlevel)
@@ -236,6 +235,8 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     elif runmode=="parallel":
         print("Runmode is parallel!")
         print("Will now run parallel calculations")
+        print(f"Total number of calculations: {len(list_of_xyz_files)}")
+        print(f"Number of CPU cores available: {numcores}")
         # Fragments
         print("Looping over fragments first")
         for file in list_of_xyz_files:
@@ -249,7 +250,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             fragments.append(frag)
 
         # Parallel run
-        print("Making sure numcores is set to 1 for both theories")
+        print("Warning: Making sure numcores is set to 1 for both theories")
         theory_1.set_numcores(1)
 
         from ash.functions.functions_parallel import Job_parallel

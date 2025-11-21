@@ -1,5 +1,4 @@
 import time
-import numpy as np
 import os
 from ash.modules.module_coords import elemstonuccharges
 from ash.functions.functions_general import ashexit, BC,print_time_rel
@@ -8,11 +7,11 @@ import ash.constants
 
 # Simple interface to Fairchem
 
-# Use: 
+# Use:
 
 # VIA MODEL NAMES
 # Models available in version 2: uma-s-1p1 (faster,very good), uma-m-1p1 (slower,best)
-# Example: model_name = "uma-s-1p1"  
+# Example: model_name = "uma-s-1p1"
 # Requires hugging-face token activated in shell
 # e.g. export HF_TOKEN=xxxxxxx
 
@@ -22,6 +21,7 @@ import ash.constants
 class FairchemTheory():
     def __init__(self, model_name=None, model_file=None, task_name=None, device="cuda", seed=41, numcores=1):
 
+        module_init_time=time.time()
         # Early exits
         try:
             import fairchem
@@ -51,9 +51,27 @@ class FairchemTheory():
         self.seed=seed
         self.numcores=numcores
 
+        # Counter for runcalls
+        self.runcalls=0
+
         if self.device.lower() == 'cpu':
             #Works ??
             os.environ['OMP_NUM_THREADS'] = str(numcores)
+
+        from fairchem.core import pretrained_mlip, FAIRChemCalculator
+        if self.model_name is not None:
+            print("Model set:", self.model_name)
+            predictor = pretrained_mlip.get_predict_unit(self.model_name, device=self.device)
+            self.calc = FAIRChemCalculator(predictor, task_name=self.task_name, seed=self.seed)
+        elif self.model_file is not None:
+            print("Model-file set:", self.model_file)
+            self.calc = FAIRChemCalculator.from_model_checkpoint(self.model_file,
+                                                            task_name=self.task_name, device=self.device,
+                                                            seed=self.seed)
+        else:
+            print("Error:Neither model or model_file was set")
+            ashexit()
+        print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} init', moduleindex=2)
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
@@ -68,39 +86,29 @@ class FairchemTheory():
             else:
                 qm_elems = elems
 
-        from fairchem.core import pretrained_mlip, FAIRChemCalculator
-
-        if self.model_name is not None:
-            print("Model set:", self.model_name)
-            predictor = pretrained_mlip.get_predict_unit(self.model_name, device=self.device)
-            calc = FAIRChemCalculator(predictor, task_name=self.task_name, seed=self.seed)
-        elif self.model_file is not None:
-            print("Model-file set:", self.model_file)
-            calc = FAIRChemCalculator.from_model_checkpoint(self.model_file, 
-                                                            task_name=self.task_name, device=self.device,
-                                                            seed=self.seed)
+        if self.runcalls == 0:
+            print("First runcall. Creating atoms object")
+            import ase
+            self.atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
+            self.atoms.info["charge"] = charge
+            self.atoms.info["spin"] = mult
+            # Assigning calculator
+            self.atoms.calc =self.calc
         else:
-            print("Error:Neither model or model_file was set")
-            ashexit()
-
-        import ase
-        atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
-        # Setting charge/mult
-        atoms.info["charge"] = charge
-        atoms.info["spin"] = mult
-
-        # Assigning calculator
-        atoms.calc = calc
+            print("Updating coordinates in atoms object")
+            self.atoms.set_positions(current_coords)
 
         # Energy
-        en = atoms.get_potential_energy()
+        en = self.atoms.get_potential_energy()
         self.energy = float(en*ash.constants.evtohar)
 
         if Grad:
-            forces = atoms.get_forces()
+            forces = self.atoms.get_forces()
             self.gradient = forces/-51.422067090480645
 
+        self.runcalls+=1
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+
         if Grad:
             return self.energy, self.gradient
         else:
