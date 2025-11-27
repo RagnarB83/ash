@@ -277,6 +277,7 @@ class QMMMTheory:
                 print("Boundaryatoms (QM:MM pairs):", self.boundaryatoms)
                 print("Note: used connectivity settings, scale={} and tol={} to determine boundary.".format(conn_scale,conn_tolerance))
                 self.linkatoms = True
+                print("Linkatom_forceprojection_method:", self.linkatom_forceproj_method)
                 # Get MM boundary information. Stored as self.MMboundarydict
                 self.get_MMboundary(conn_scale,conn_tolerance)
             else:
@@ -1822,14 +1823,14 @@ def linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad):
         C[i,i] = C[i,i] + 1.0
 
     # Multiplying C matrix with Linkatom gradient
-    g_x=C[0,0]*Lgrad[0]+C[0,1]*Lgrad[1]+C[0,2]*Lgrad[2]
-    g_y=C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2]
-    g_z=C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2]
+    g_x=float(C[0,0]*Lgrad[0]+C[0,1]*Lgrad[1]+C[0,2]*Lgrad[2])
+    g_y=float(C[1,0]*Lgrad[0]+C[1,1]*Lgrad[1]+C[1,2]*Lgrad[2])
+    g_z=float(C[2,0]*Lgrad[0]+C[2,1]*Lgrad[1]+C[2,2]*Lgrad[2])
 
     # Multiplying B matrix with Linkatom gradient
-    gg_x=B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2]
-    gg_y=B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2]
-    gg_z=B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2]
+    gg_x=float(B[0,0]*Lgrad[0]+B[0,1]*Lgrad[1]+B[0,2]*Lgrad[2])
+    gg_y=float(B[1,0]*Lgrad[0]+B[1,1]*Lgrad[1]+B[1,2]*Lgrad[2])
+    gg_z=float(B[2,0]*Lgrad[0]+B[2,1]*Lgrad[1]+B[2,2]*Lgrad[2])
 
     # Return QM1_gradient and MM1_gradient contribution (to be added)
     return [g_x,g_y,g_z],[gg_x,gg_y,gg_z]

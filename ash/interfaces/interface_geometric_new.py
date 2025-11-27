@@ -9,7 +9,7 @@ from ash.modules.module_theory import MicroIterativeclass
 #from ash.modules.module_oniom import ONIOMTheory
 from ash.interfaces.interface_OpenMM import OpenMMTheory
 from ash.modules.module_coords import print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile,write_coords_all
-from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,print_line_with_subheader1,print_if_level
+from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,print_line_with_subheader1,print_if_level, pygrep2
 from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex
 from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller, read_hessian
 from ash.modules.module_results import ASH_Results
@@ -564,17 +564,17 @@ class GeomeTRICOptimizerClass:
                 print("Actual error message:", e)
                 ashexit(code=9)
 
-            #Read geometry from XYZ-file into geomeTRIC Molecule object
+            # Read geometry from XYZ-file into geomeTRIC Molecule object
             mol_geometric_frag=geometric.molecule.Molecule("initialxyzfiletric.xyz")
 
-            #Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
-            #Also now passing list of atoms to print in each step.
+            # Defining ASHengineclass engine object containing geometry and theory. ActiveRegion boolean passed.
+            # Also now passing list of atoms to print in each step.
             ashengine = ASHengineclass(mol_geometric_frag,theory, ActiveRegion=self.ActiveRegion, actatoms=self.actatoms,
                 print_atoms_list=self.print_atoms_list, MM_PDB_traj_write=self.MM_PDB_traj_write,
                 charge=charge, mult=mult, conv_criteria=self.conv_criteria, fragment=fragment, printlevel=self.printlevel,
                 maxiter=self.maxiter)
 
-            #Defining args object, containing engine object
+            # Defining args object, containing engine object
             final_geometric_args=geomeTRICArgsObject(ashengine,self.constraintsfile,coordsys=self.coordsystem,
                 maxiter=self.maxiter, conv_criteria=self.conv_criteria, transition=self.TSOpt, hessian=self.hessian, subfrctor=self.subfrctor,
                 verbose=0, irc=self.irc,rigid=self.rigid,enforce_constraints=self.enforce_constraints)
@@ -695,8 +695,11 @@ class ASHengineclass:
         self.ActiveRegion=ActiveRegion
         #Defining current_coords for full system (not only act region)
         self.full_current_coords=[]
-        #Manual iteration count
+        #E+G count 
+        self.EG_count=0
+        # Proper iteration count
         self.iteration_count=0
+
         #Maxiter 
         self.maxiter=maxiter
         #Defining initial E
@@ -772,7 +775,6 @@ class ASHengineclass:
     #Defining calculator.
     #Read_data and copydir not used (dummy variables)
     def calc(self,coords,tmp, read_data=None, copydir=None):
-
         print("")
         if self.iteration_count == self.maxiter:
             print("Maxiter reached. ASH is stopping.")
@@ -868,7 +870,16 @@ class ASHengineclass:
 
             #print_time_rel(timeA, modulename='geometric ASHcalc.calc writetraj full', moduleindex=2)
             timeA=time.time()
-            self.iteration_count += 1
+
+            # Read last line of geometric_OPTtraj.log to get step
+            step_lines = pygrep2("Step ", "geometric_OPTtraj.log", print_output=False, errors=None)
+            if len(step_lines) > 0:
+                iteration=step_lines[-1].split()[1]
+                self.iteration_count=int(iteration)
+            self.EG_count += 1
+
+
+
             return {'energy': E, 'gradient': Grad_act.flatten()}
         else:
             self.full_current_coords=currcoords
@@ -884,7 +895,12 @@ class ASHengineclass:
                 print("Note: printed only print_atoms_list (this is not necessarily all atoms) ")
             E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, charge=self.charge, mult=self.mult, Grad=True)
             #label='Iter'+str(self.iteration_count)
-            self.iteration_count += 1
+            # Read last line of geometric_OPTtraj.log to get step
+            step_lines = pygrep2("Step ", "geometric_OPTtraj.log", print_output=False, errors=None)
+            if len(step_lines) > 0:
+                iteration=step_lines[-1].split()[1]
+                self.iteration_count=int(iteration)
+            self.EG_count += 1
             self.energy = E
             return {'energy': E, 'gradient': Grad.flatten()}
 

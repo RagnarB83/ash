@@ -4318,3 +4318,27 @@ def find_nearest_atom(a,b):
 	print("Atom coordinates:", a[idx_min])
 	return int(idx_min[0]), a[idx_min]
 
+# Very simple dummy topology (no connectivity or bonds)
+def define_dummy_topology(elems,scale=1.0, tol=0.1, resname="MOL"):
+        try:
+            import openmm.app
+        except ImportError:
+            print("Error: OpenMM not found. Cannot define a topology")
+            ashexit()
+        print("Defining new basic single-chain, multi-residue topology")
+        pdb_topology = openmm.app.Topology()
+        chain = pdb_topology.addChain()
+        #Looping over molecules defined by connectivity
+        residue = pdb_topology.addResidue(resname, chain)
+
+        # Defaultdictionary to keep track of unique element-atomnames
+        atomnames_dict=defaultdict(int)
+        for el in elems:
+            #el = elems[at]
+            atomnumber = openmm.app.Element.getBySymbol(el).atomic_number
+            element = openmm.app.Element.getByAtomicNumber(atomnumber)
+            # Define unique atomname
+            atomnames_dict[el] += 1
+            atomname = f"{el}{atomnames_dict[el]}"
+            pdb_topology.addAtom(atomname, element, residue)
+        return pdb_topology

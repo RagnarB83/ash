@@ -2658,7 +2658,7 @@ class PySCFTheory:
         # PLATFORM CHANGE
         #############################
         #Testing to convert mf object to GPU before QM/MM
-        if self.platform == 'GPU':
+        if self.platform.upper() == 'GPU':
             print("GPU platform requested. Will now convert mf object to GPU")
             self.mf = self.mf.to_gpu()
         ##############################

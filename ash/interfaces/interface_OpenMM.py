@@ -483,10 +483,18 @@ class OpenMMTheory:
             # Create list of atomnames, used in PDB topology and XML file
             atomnames_full=[j+str(i) for i,j in enumerate(fragment.elems)]
             # Write PDB-file frag.pdb with dummy atomnames
-            write_pdbfile(fragment, outputname="frag", atomnames=atomnames_full)
+            #write_pdbfile(fragment, outputname="frag", atomnames=atomnames_full)
             # Load PDB-file and create topology
-            pdb = openmm.app.PDBFile("frag.pdb")
-            self.topology = pdb.topology
+            #pdb = openmm.app.PDBFile("frag.pdb")
+            #self.topology = pdb.topology
+
+            #Creating new 
+            #fragment.define_topology()
+            #self.topology = fragment.pdb_topology
+            from ash.modules.module_coords import define_dummy_topology
+            self.topology = define_dummy_topology(fragment.elems)
+            print("self.topology:", self.topology)
+            print("self.topology dict:", self.topology.__dict__)
 
             # Create dummy XML file
             xmlfile = write_xmlfile_nonbonded(filename="dummy.xml", resnames=["DUM"], atomnames_per_res=[atomnames_full], atomtypes_per_res=[fragment.elems],
@@ -3207,9 +3215,9 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
     LJforcelines = []
     for resname, atomtypelist, chargelist, sigmalist, epsilonlist in zip(resnames, atomtypes_per_res, charges_per_res,
                                                                          sigmas_per_res, epsilons_per_res):
-        print("atomtypelist:", atomtypelist)
-        print("chargelist.", chargelist)
-        print("sigmalist", sigmalist)
+        #print("atomtypelist:", atomtypelist)
+        #print("chargelist.", chargelist)
+        #print("sigmalist", sigmalist)
         for atype, charge, sigma, epsilon in zip(atomtypelist, chargelist, sigmalist, epsilonlist):
             if charmm == True:
                 #LJ parameters zero here
@@ -3465,22 +3473,28 @@ class OpenMM_MDclass:
         #CASE: ONIOMTHeory that might containOpenMMTheory
         elif isinstance(theory, ash.ONIOMTheory):
             print("This is an ONIOMTheory object")
-            print("ONIOMTheory objects are not currently supported")
+            #print("ONIOMTheory objects are not currently supported")
+            self.theory_runtype ="ONIOM"
             #self.QM_MM_object = theory
             self.ONIOM_object = theory
-            self.theory_runtype ="ONIOM"
+            #MMtheory_index = [t.theorytype for t in theory.theories_N].index("MM")
+            #print("MM theory found at index:", MMtheory_index)
+            #self.openmmobject = theory.theories_N[MMtheory_index]
+            #print("self.openmmobject:", self.openmmobject)
 
-            for t in theory.theories_N:
-                if isinstance(t,OpenMMTheory):
-                    print("Found OpenMMTheory object inside ONIOMTheory")
-                    self.openmmobject=t
-                    print("Problem: ONIOMTheory containing an OpenMMTheory is currently not supported yet. Complain to developer")
-                    ashexit()
-            #If nothing found then we create:
+            #for t in theory.theories_N:
+            #    if isinstance(t,OpenMMTheory):
+            #        print("Found OpenMMTheory object inside ONIOMTheory")
+            #        self.openmmobject=t
+            #        print("Warnign: ONIOMTheory containing an OpenMMTheory object is currently not officially supported yet. Complain to developer")
+            #        #ashexit()
+            
+            #RB NOTE: Creating a new OpenMMTheory object regardless of whether one exists in the ONIOMTheory
             if self.openmmobject is None:
+                print("Creating new OpenMMTheory object to drive simulation")
                 #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
                 self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
-                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+                                hydrogenmass=hydrogenmass, constraints=constraints,) #NOTE: might add more options here
             print("Turning on externalforce option.")
             self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
 
@@ -4564,6 +4578,8 @@ class OpenMM_MDclass:
 
                 # Run  step to get full system ONIOM gradient.
                 # Updates OpenMM object with ONIOM forces
+                #Note: Unlike QM/MM we don't do any exit_after_customexternalforce_update here because ONIOM object does not update OpenMM object itself
+                # Easier. Drawback that we may have 2 OpenMMTheory objects defined.
                 energy,gradient=self.ONIOM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True, charge=self.charge, mult=self.mult)
                 if self.printlevel >= 2:
                     print("Energy:", energy)

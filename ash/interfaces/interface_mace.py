@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import shutil
+import os 
 
 from ash.modules.module_coords import elemstonuccharges
 from ash.functions.functions_general import ashexit, BC,print_time_rel
@@ -12,7 +13,8 @@ import ash.constants
 class MACETheory():
     def __init__(self, config_filename="config.yml", 
                  filename="mace.model", model_file=None, printlevel=2, 
-                 label="MACETheory", numcores=1, device="cpu", return_zero_gradient=False):
+                 label="MACETheory", numcores=1, device="cpu", return_zero_gradient=False,
+                 energy_weight=None, forces_weight=None, max_num_epochs=None, valid_fraction=None):
         # Early exits
         try:
             import mace
@@ -37,6 +39,12 @@ class MACETheory():
         # Model attribute is None until we have loaded a model
         self.model=None
 
+        # Training parameters
+        self.energy_weight=energy_weight
+        self.forces_weight=forces_weight
+        self.max_num_epochs=max_num_epochs
+        self.valid_fraction=valid_fraction
+
         self.model_file=model_file
         self.device=device.lower()
 
@@ -59,6 +67,15 @@ class MACETheory():
                       results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
                       log_dir ="MACE_models", model_dir="MACE_models"):
         module_init_time=time.time()
+
+        if self.energy_weight is not None:
+            energy_weight=self.energy_weight
+        if self.forces_weight is not None:
+            forces_weight=self.forces_weight
+        if self.max_num_epochs is not None:
+            max_num_epochs=self.max_num_epochs
+        if self.valid_fraction is not None:
+            valid_fraction=self.valid_fraction
 
 
         self.train_file=train_file
@@ -131,7 +148,7 @@ class MACETheory():
             print(f"Moving and renaming file {results_dir}/{name}_stagetwo_compiled.model   to :  {self.model_file}")
             shutil.move(f"{results_dir}/{name}_stagetwo_compiled.model", self.model_file)
         else:
-            self.model_file=f"{results_dir}/{name}_stagetwo_compiled.model"
+            self.model_file=f"{os.path.abspath(os.getcwd())}/{results_dir}/{name}_stagetwo_compiled.model"
         print("model_file attribute is:", self.model_file )
         print("MACETheory object can now be used directly.")
 

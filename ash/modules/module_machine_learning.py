@@ -193,7 +193,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print("Will now loop over XYZ-files")
         print("For a large dataset consider using parallel runmode")
         for n,file in enumerate(list_of_xyz_files):
-            print(f"\nNow running file ({n}/{len(list_of_xyz_files)}): {file}")
+            print(f"\nNow running file ({n+1}/{len(list_of_xyz_files)}): {file}")
             basefile=os.path.basename(file)
             label=basefile.split(".")[0]
             frag = Fragment(xyzfile=file, charge=charge, mult=mult,printlevel=printlevel)
