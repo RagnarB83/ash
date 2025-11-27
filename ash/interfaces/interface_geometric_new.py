@@ -598,7 +598,7 @@ class GeomeTRICOptimizerClass:
              ###################################
             if self.printlevel >= 1:
                 blankline()
-                print(f"geomeTRIC Geometry optimization converged in {ashengine.iteration_count} steps!")
+                print(f"geomeTRIC Geometry optimization converged in {ashengine.iteration_count+1} steps!")
                 blankline()
 
             # QM/MM: Doing final energy evaluation if Truncated PC option was on
