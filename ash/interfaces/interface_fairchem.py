@@ -74,7 +74,7 @@ class FairchemTheory():
             ashexit()
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} init', moduleindex=2)
 
-    def cleanup():
+    def cleanup(self):
         pass
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
