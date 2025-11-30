@@ -100,6 +100,14 @@ class FairchemTheory():
             self.atoms.info["spin"] = mult
             # Assigning calculator
             self.atoms.calc =self.calc
+        elif len(self.atoms.numbers) != len(current_coords):
+            print("Number-of-atoms mismatch (new molecule?). Creating new atoms object")
+            import ase
+            self.atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
+            self.atoms.info["charge"] = charge
+            self.atoms.info["spin"] = mult
+            # Assigning calculator
+            self.atoms.calc =self.calc
         else:
             print("Updating coordinates in atoms object")
             self.atoms.set_positions(current_coords)

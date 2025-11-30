@@ -1164,6 +1164,7 @@ class tbliteTheory(Theory):
             self.results = xtb.singlepoint()
 
         self.energy = self.results.get("energy")
+        print("Tblite energy:", self.energy)
         #Charges
         if self.grab_charges:
             self.charges = self.results.get("charges")
