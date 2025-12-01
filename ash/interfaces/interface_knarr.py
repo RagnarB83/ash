@@ -440,7 +440,6 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
 
         new_reactant = reactant
         new_product = product
-
         if TS_guess_file != None:
             TS_guess = ash.Fragment(xyzfile=TS_guess_file, charge=charge, mult=mult, printlevel=0)
             #Writing XYZ-file for TSguess
@@ -548,7 +547,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
             if ActiveRegion is True:
                 print("Error: Currently, geodesic interpolations are not compatible with ActiveRegion=True. Use IDPP interpolation instead")
                 ashexit()
-            interpolxyzfile = interpolation_geodesic(reactant=new_reactant, product=new_product, images=images)
+            # Geodesic interpolation. If TS_guess has been defined then R,TSguess and P structures are used, otherwise just R and P
+            interpolxyzfile = interpolation_geodesic(reactant=new_reactant, product=new_product, tsguess=TS_guess, images=images)
             os.rename(interpolxyzfile, "initial_guess_path.xyz")
 
         print("\nReading initial path")
@@ -564,9 +564,8 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         path = InitializePathObject(nim, react)
         path.SetCoords(rp)
 
-
     print("Starting NEB")
-    #Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
+    # Setting printlevel of theory during E+Grad steps  1=very-little, 2=more, 3=lots, 4=verymuch
     print("NEB printlevel is:", printlevel)
     theory.printlevel=printlevel
     print("Theory print level will now be set to:", theory.printlevel)
@@ -591,7 +590,6 @@ def NEB(reactant=None, product=None, theory=None, images=8, CI=True, free_end=Fa
         #Now finding highest energy image
         Saddlepoint_fragment = prepare_saddlepoint(path,neb_settings,reactant,calculator,ActiveRegion,actatoms,charge,mult, numatoms, "IDPP", write_tangent=False)
         print("WARNING: This is a highly approximate guess for the saddlepoint, based on the highest energy image from a single-iteration NEB.")
-        #return Saddlepoint_fragment, calculator.energies_dict
 
         #Returning result object
         result = ASH_Results(label="NEB-Singleiter calc", energy=Saddlepoint_fragment.energy, geometry=Saddlepoint_fragment.coords,
@@ -1265,7 +1263,7 @@ def dominant_atoms_in_CI_tangent(tangent,reactant,product,SP,tsmode_tangent_thre
 
 
 #Standalone geodesic-interpolation function
-def interpolation_geodesic(reactant=None, product=None, images=None):
+def interpolation_geodesic(reactant=None, product=None, tsguess=None, images=None):
     print("Using geodesic-interpolate path generation")
     print("See Github repository: https://github.com/virtualzx-nad/geodesic-interpolate")
     print("""If you use this, make sure to cite:
@@ -1314,6 +1312,10 @@ def interpolation_geodesic(reactant=None, product=None, images=None):
     # Creating combined XYZ-file
     reactant.printlevel=1
     reactant.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='w')
+    # Add TSguess geometry if present
+    if tsguess is not None:
+        print("A TS guess structure was defined and will be used during interpolation")
+        tsguess.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='a')
     product.write_xyzfile(xyzfilename="R_P_combined.xyz", writemode='a')
 
     # Read the initial geometries.
