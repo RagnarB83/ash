@@ -81,7 +81,8 @@ class xTBTheory:
         self.theorytype="QM"
         self.analytic_hessian=False
 
-        # Hardness of pointcharge. GAM factor. Big number means PC behaviour
+        # Hardness of pointcharge. GAM factor. Big number means PC behaviour. 
+        # If hardness is set to 'elements', xtb's element-specific hardness is used (see https://xtb-docs.readthedocs.io/en/latest/pcem.html).
         self.hardness=hardness_PC
 
         # Accuracy (0.1 it quite tight)
