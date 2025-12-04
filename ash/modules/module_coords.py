@@ -3795,13 +3795,15 @@ def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, 
 
         #Note: theory needs to be set
         if charge is None or mult is None:
-            print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
-            print("Checking if present in QM/MM object")
+            if printlevel >= 1:
+                print(BC.WARNING,f"Warning: Charge/mult was not provided to {jobtype}",BC.END)
+                print("Checking if present in QM/MM object")
             if theory.qm_charge != None and theory.qm_mult != None:
-                print("Found qm_charge and qm_mult attributes.")
                 charge=theory.qm_charge
                 mult=theory.qm_mult
-                print(f"Using charge={charge} and mult={mult}")
+                if printlevel >= 1:
+                    print("Found qm_charge and qm_mult attributes.")
+                    print(f"Using charge={charge} and mult={mult}")
             elif fragment.charge != None and fragment.mult != None:
                 print(BC.WARNING,"Fragment contains charge/mult information: Charge: {} Mult: {} Using this instead".format(fragment.charge,fragment.mult), BC.END)
                 print(BC.WARNING,"Make sure this is what you want!", BC.END)
