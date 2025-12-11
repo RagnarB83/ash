@@ -621,6 +621,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
                 print("Performing Numerical Frequency job on Optimized fragment.")
                 thermochem = ash.NumFreq(fragment=fragment, theory=theory, npoint=2, displacement=0.005, numcores=theory.numcores, runmode='serial', charge=fragment.charge, mult=fragment.mult)
                 theory.cleanup()
+            # High-level calc
             if Highlevel is True:
                 print("Performing Highlevel on Optimized fragment.")
                 hl_result = ash.Singlepoint(theory=HL_theory, fragment=fragment, charge=fragment.charge, mult=fragment.mult)
