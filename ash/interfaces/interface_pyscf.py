@@ -2492,7 +2492,6 @@ class PySCFTheory:
     #Independent method to run SCF using previously defined mf object and possible input dm
     def run_SCF(self,mf=None, dm=None, max_cycle=None):
         import pyscf
-        import pyscf.dft
         if self.printlevel >= 1:
             print("\nInside run_SCF")
         module_init_time=time.time()
@@ -2542,18 +2541,19 @@ class PySCFTheory:
         if self.platform == 'GPU':
             import gpu4pyscf
             import gpu4pyscf.qmmm
-            print("self.mf:", self.mf)
-            print(self.mf.__dict__)
-            #TODO: need to account for UKS here later
             #if isinstance(self.mf, gpu4pyscf.qmmm.pbc.itrf.QMMMRKS):
             self.num_orbs = len(self.mf.mo_energy)
             #else:
             #    self.num_orbs = len(self.mf.mo_energy[0])
         else:
-            print("here:", self.mf)
-            if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS) or isinstance(self.mf, pyscf.pbc.dft.rks.RKS):
+            if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS):
                 self.num_orbs = len(self.mf.mo_occ) # Restricted
+            elif self.periodic:
+                import pyscf.pbc
+                if isinstance(self.mf, pyscf.pbc.dft.rks.RKS):
+                    self.num_orbs = len(self.mf.mo_occ) # Restricted
             else:
+                #UHF/UKS
                 self.num_orbs = len(self.mf.mo_occ[0]) 
             
         if self.printlevel >= 1:

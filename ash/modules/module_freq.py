@@ -440,7 +440,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 #IR
                 #IR intensities if dipoles available
                 if len(displacement_dipole_dictionary) > 0:
-                    if len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
+                    if None in displacement_dipole_dictionary.values():
+                        pass
+                    elif len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
                         disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
                         dd_deriv = (disp_dipole - original_dipole)/displacement_bohr
                         dipole_derivs[hessindex,:] = dd_deriv
@@ -484,7 +486,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
                 #IR intensities if dipoles available
                 if len(displacement_dipole_dictionary) > 0:
-                    if len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
+                    if None in displacement_dipole_dictionary.values():
+                        pass
+                    elif len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
                         disp_dipole_pos = np.array(displacement_dipole_dictionary[lookup_string_pos])
                         disp_dipole_neg = np.array(displacement_dipole_dictionary[lookup_string_neg])
                         dd_deriv = (disp_dipole_pos - disp_dipole_neg)/(2*displacement_bohr)
@@ -858,33 +862,45 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
         print("\nDoing rotatational analysis:")
         # Moments of inertia (amu A^2 ), eigenvalues
         center = get_center(coords,elems=elems)
-        rinertia = list(inertia(elems,coords,center))
+        #rinertia = list(inertia(elems,coords,center))
+        rinertia = [float(i) for i in inertia(elems,coords,center)]
+        
         print("Moments of inertia (amu Å^2):", rinertia)
         #Changing units to m and kg
         I=np.array(rinertia)*ash.constants.amu2kg*ash.constants.ang2m**2
         #Average
         I_av=(I[0]+I[1]+I[2])/3
-        #Rotational temperatures
-        #k_b_JK or R_JK
-        rot_temps_x=ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * I[0])
-        rot_temps_y=ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * I[1])
-        rot_temps_z=ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * I[2])
-        print("Rotational temperatures: {}, {}, {} K".format(rot_temps_x,rot_temps_y,rot_temps_z))
-        #Rotational constants
-        rotconstants = calc_rotational_constants(fragment, printlevel=1)
         #Rotational energy and entropy
         if moltype == "atom":
             q_r=1.0
             S_rot=0.0
             E_rot=0.0
         elif moltype == "linear":
+            #Rotational temperatures (linear case)
+            rot_temps=[]
+            for in_I in I:
+                if in_I != 0.0:
+                    rot_temps.append(float(ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * in_I)))
+            print("Rotational temperatures: {} K".format(rot_temps))
+            rot_temps_x=rot_temps[0]
             #Symmetry number
             sigma_r=1.0
             q_r=(1/sigma_r)*(temp/(rot_temps_x))
             S_rot=ash.constants.R_gasconst*(math.log(q_r)+1.0)
             E_rot=ash.constants.R_gasconst*temp
+            #Rotational constants
+            rotconstants = calc_rotational_constants(fragment, printlevel=1)
         else:
             #Nonlinear case
+            
+            #Rotational temperatures
+            rot_temps_x=ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * I[0])
+            rot_temps_y=ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * I[1])
+            rot_temps_z=ash.constants.h_planck**2 / (8*math.pi**2 * ash.constants.k_b_JK * I[2])
+            print("Rotational temperatures: {}, {}, {} K".format(rot_temps_x,rot_temps_y,rot_temps_z))
+            #Rotational constants
+            rotconstants = calc_rotational_constants(fragment, printlevel=1)
+
             if symmetry_number is None:
                 print("Case: nonlinear system and no user-provided symmetry_number.")
                 print("Setting symmetry number to 1.0 (appropriate for C1, Ci and Cs pointgroups)")
@@ -1262,7 +1278,8 @@ def calc_rotational_constants(frag, printlevel=2):
     coords=frag.coords
     elems=frag.elems
     center = get_center(coords,elems=elems)
-    rinertia = list(inertia(elems,coords,center))
+    #rinertia = list(inertia(elems,coords,center))
+    rinertia = [float(i) for i in inertia(elems,coords,center)]
 
     #Converting from moments of inertia in amu A^2 to rotational constants in Ghz.
     #COnversion factor from http://openmopac.net/manual/thermochemistry.html
@@ -1974,8 +1991,9 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
         return True
     #Linear check via moments of inertia
     center = get_center(coords,elems=elems)
-    rinertia = list(inertia(elems,coords,center))
-    #print("rinertia:", rinertia)
+    #rinertia = list(inertia(elems,coords,center))
+    rinertia = [float(i) for i in inertia(elems,coords,center)]
+    print("rinertia:", rinertia)
     #Checking if rinertia contains an almost zero-value
     if any([abs(i) < threshold for i in rinertia]) is True:
         #print("Small value detected: ", rinertia)
