@@ -356,11 +356,11 @@ class DLFIND_optimizerClass:
             #Print-atoms list not specified. What to do:
             if self.actatoms is not None:
                 #If QM/MM object then QM-region:
-                if isinstance(theory,QMMMTheory):
+                if isinstance(self.theory,QMMMTheory):
                     print("Theory class: QMMMTheory")
                     print("Will by default print only QM-region in output (use print_atoms_list option to change)")
                     self.print_atoms_list=self.theory.qmatoms
-                elif isinstance(theory,ONIOMTheory):
+                elif isinstance(self.theory,ONIOMTheory):
                     print("Theory class: ONIOMTheory")
                     print("Will by default print only Region1 in output (use print_atoms_list option to change)")
                     self.print_atoms_list=self.theory.regions_N[0]

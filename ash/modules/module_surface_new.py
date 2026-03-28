@@ -422,7 +422,7 @@ def calc_surface(
 # FROM XYZ
 def calc_surface_fromXYZ(
     xyzdir=None, multixyzfile=None, theory=None, charge=None, mult=None, optimizer="geometric",
-    dimension=None, resultfile='surface_results.txt',
+    dimension=None, resultfile='surface_results.txt', printlevel=2,
     scantype='UNRELAXED', runmode='serial',
     coordsystem='dlc', maxiter=250, extraconstraints=None,
     convergence_setting=None, conv_criteria=None, subfrctor=1, NumGrad=False,
@@ -657,14 +657,11 @@ def calc_surface_fromXYZ(
             results = ash.functions.functions_parallel.Job_parallel(**kwargs)
 
         else:  # RELAXED
-            if obt_object is True:
-                print("An optimizer object was provided.")
-            else:
-                optimizer = Optimizerclass(
-                    maxiter=maxiter, 
-                    convergence_setting=convergence_setting, 
-                    **opt_arguments,
-                )
+            optimizer = Optimizerclass(
+                maxiter=maxiter, 
+                convergence_setting=convergence_setting, 
+                **opt_arguments,
+            )
             kwargs = dict(
                 fragments=surfacepointfragments_list,
                 theories=[theory],
