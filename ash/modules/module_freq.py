@@ -437,10 +437,11 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 Hessrow=(grad_pos_1d - original_grad_1d)/displacement_bohr
                 hessian[hessindex,:]=Hessrow
                 grad_pos_1d=0
-                #IR
                 #IR intensities if dipoles available
                 if len(displacement_dipole_dictionary) > 0:
-                    if None in displacement_dipole_dictionary.values():
+                    # Make sure it's not a dict of None's
+                    if any(value is None for value in displacement_dipole_dictionary.values()):
+                        #print("None values in displacement_dipole_dictionary. Skipping IR")
                         pass
                     elif len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
                         disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
@@ -486,7 +487,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
                 #IR intensities if dipoles available
                 if len(displacement_dipole_dictionary) > 0:
-                    if None in displacement_dipole_dictionary.values():
+                    # Make sure it's not a dict of None's
+                    if any(value is None for value in displacement_dipole_dictionary.values()):
+                        #print("None values in displacement_dipole_dictionary. Skipping IR")
                         pass
                     elif len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
                         disp_dipole_pos = np.array(displacement_dipole_dictionary[lookup_string_pos])

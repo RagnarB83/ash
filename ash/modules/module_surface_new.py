@@ -6,7 +6,8 @@ import time
 import itertools
 import numpy as np
 #import ash
-from ash.functions.functions_general import frange, BC, natural_sort, print_line_with_mainheader,print_line_with_subheader1,print_time_rel, ashexit
+from ash.functions.functions_general import frange, BC, natural_sort, print_line_with_mainheader, \
+    print_line_with_subheader1,print_time_rel, ashexit, print_if_level
 import ash.functions.functions_parallel
 from ash.modules.module_coords import check_charge_mult, write_CIF_file, write_POSCAR_file, write_XSF_file
 from ash.modules.module_results import ASH_Results
@@ -17,7 +18,7 @@ from ash.constants import ang2bohr
 
 # New rewritten calc_surface function
 def calc_surface(
-    fragment=None, theory=None, charge=None, mult=None, optimizer='geometric',
+    fragment=None, theory=None, charge=None, mult=None, optimizer='geometric', printlevel=2,
     scantype='UNRELAXED', resultfile='surface_results.txt',
     keepoutputfiles=True, keepmofiles=False,
     runmode='serial', coordsystem='dlc', maxiter=250,
@@ -73,44 +74,78 @@ def calc_surface(
     """
     module_init_time = time.time()
     print_line_with_mainheader("CALC_SURFACE FUNCTION")
- 
-    if optimizer.lower() == "geometric":
-        print("Optimizer to use for surface scan: geomeTRIC")
-        Optimizer=geomeTRICOptimizer
-        Optimizerclass=GeomeTRICOptimizerClass
-        opt_arguments = {
-                'coordsystem': coordsystem,
-                'maxiter': maxiter,
-                'convergence_setting': convergence_setting,
-                'conv_criteria': conv_criteria,
-                'subfrctor': subfrctor,
-                'force_noPBC': force_noPBC,
-                'PBC_format_option': PBC_format_option,
-                'ActiveRegion': ActiveRegion,
-                'constrainvalue':True, 'result_write_to_disk':False,
-            }
-    elif optimizer.lower() in ['dlfind','dl-find']:
-        print("Optimizer to use for surface scan: DL-FIND")
-        Optimizer=DLFIND_optimizer
-        Optimizerclass=DLFIND_optimizerClass
-        opt_arguments={'maxcycle':maxiter,'iopt':3, 'icoord':1}
-        # Build connectivity once
-        conn = _build_connectivity(fragment.coords, fragment.elems)
+
+    # NOW SETTING UP OPTIMIZER
+
+    if isinstance(optimizer,str):
+        if optimizer.lower() == "geometric":
+            print("Optimizer to use for surface scan: geomeTRIC")
+            opt_arguments = {
+                    'coordsystem': coordsystem,
+                    'maxiter': maxiter,
+                    'convergence_setting': convergence_setting,
+                    'conv_criteria': conv_criteria,
+                    'subfrctor': subfrctor,
+                    'force_noPBC': force_noPBC, 'PBC_format_option': PBC_format_option,
+                    'ActiveRegion': ActiveRegion, 
+                    'result_write_to_disk':False,
+                    'printlevel':printlevel,
+                    }
+            # Creating optimizer object
+            optimizerobj = GeomeTRICOptimizerClass(**opt_arguments)
+            # For geomeTRIC we use constrainvalue True
+            extraoopt_run_kws={'constrainvalue':True}
+            # For geometric we don't have to preset
+            presetting_geometry_required=False
+
+        elif optimizer.lower() in ['dlfind','dl-find']:
+            print("Optimizer to use for surface scan: DL-FIND")
+            #Optimizer=DLFIND_optimizer
+            #Optimizerclass=DLFIND_optimizerClass
+            opt_arguments={'maxcycle':maxiter,'iopt':3, 'icoord':1, 'printlevel':printlevel}
+
+            # Creating optimizer object
+            optimizerobj = DLFIND_optimizerClass(**opt_arguments)
+            extraoopt_run_kws={}
+            # DL-FIND: need to be preset
+            presetting_geometry_required=True
+        else:
+            print("Wrong optimizer option chosen. Valid options are: geometric and dlfind")
+            ashexit()
+    elif isinstance(optimizer,GeomeTRICOptimizerClass):
+        print("A GeomeTRICOptimizerClass object was provided")
+        optimizerobj=optimizer
+        # For geomeTRIC we use constrainvalue True
+        extraoopt_run_kws={'constrainvalue':True}
+        # For geometric we don't have to preset
+        presetting_geometry_required=False
+    elif isinstance(optimizer,DLFIND_optimizerClass):
+        print("A DLFIND_optimizerClass object was provided")
+        optimizerobj=optimizer
+        opt_arguments={}
+        extraoopt_run_kws={}
+        # DL-FIND: need to be preset
+        presetting_geometry_required=True
     else:
-        print("Wrong optimizer option chosen. Valid options are: geometric and dlfind")
+        print("optimizer keyword should either be a string (geometric or dlfind) or an Optimizer object (GeomeTRICOptimizerClass or DLFIND_optimizerClass)")
         ashexit()
 
+    # Build connectivity once
+    conn = _build_connectivity(fragment.coords, fragment.elems)
+
+    # Changing printlevel of fragment
+    fragment.printlevel=printlevel
 
     # -- NumGrad wrapping ---------------------------------------------------
     if NumGrad:
         print("NumGrad flag detected. Wrapping theory object into NumGrad class")
         theory = NumGradclass(theory=theory)
- 
+
     # -- Charge/mult check --------------------------------------------------
     charge, mult = check_charge_mult(
         charge, mult, theory.theorytype, fragment, "calc_surface", theory=theory,
     )
- 
+
     # -- Build RC_list (legacy compat) --------------------------------------
     if RC_list is None:
         RC_list = _legacy_to_rc_list(
@@ -128,18 +163,18 @@ def calc_surface(
     for i, vl in enumerate(RC_value_lists):
         print(f"RCvalue{i + 1}_list: {vl}")
     print(f"Number of surfacepoints to calculate: {totalnumpoints}")
- 
+
     # -- Read existing results ----------------------------------------------
     surfacedictionary = read_surfacedict_from_file(resultfile, dimension=dimension)
     print("Initial surfacedictionary:", surfacedictionary)
- 
+
     # -- Output-file policy -------------------------------------------------
     keepoutputfiles, keepmofiles = _silence_outputfiles_for_special_theories(
         theory, keepoutputfiles, keepmofiles,
     )
     print("keepoutputfiles:", keepoutputfiles)
     print("keepmofiles:", keepmofiles)
- 
+
     # -- PBC setup ----------------------------------------------------------
     if getattr(theory, "periodic", False):
         print(
@@ -149,10 +184,10 @@ def calc_surface(
         print("Set force_noPBC=True if you do not want cell-parameter optimisation.")
         print(f"PBC_format_option: {PBC_format_option}")
     convert_to_pbcfile = _select_pbc_converter(PBC_format_option)
- 
+
     # -- Create/reset output directories ------------------------------------
     _setup_directories(theory)
- 
+
     # -----------------------------------------------------------------------
     # PARALLEL MODE
     # -----------------------------------------------------------------------
@@ -161,9 +196,9 @@ def calc_surface(
         if numcores == 1:
             print("Error: numcores must be > 1 for parallel runmode. Exiting.")
             ashexit()
- 
+
         surfacepointfragments_list = []
- 
+
         if scantype.upper() == 'UNRELAXED':
             # Geometry-setting pass with ZeroTheory
             zerotheory = ash.ZeroTheory()
@@ -175,16 +210,30 @@ def calc_surface(
                 print(f"======= Surfacepoint {pointcount}/{totalnumpoints}: {label} =======")
                 if key in surfacedictionary:
                     continue
-                allconstraints = set_constraints_nd(RC_list, rc_values, extraconstraints, fragment=fragment)
-                print("allconstraints:", allconstraints)
-                Optimizer(
-                    fragment=fragment, theory=zerotheory, 
-                    constraints=allconstraints,
-                    actatoms=actatoms,
-                    **opt_arguments,
-                )
+                allconstraints = set_constraints_nd(RC_list, rc_values, extraconstraints, fragment=fragment,
+                                                    printlevel=printlevel)
+                print_if_level(f"allconstraints: {allconstraints}",printlevel,2)
+
+                # Copying fragment
                 newfrag = copy.copy(fragment)
+                newfrag.printlevel=printlevel
                 newfrag.label = key
+
+                # Here we modify geometry
+                print_if_level(f"For an unrelaxed scan we need to modify geometry first (done in serial fashion)",printlevel,2)
+                print_if_level(f"set_geometry_via_restraint: {set_geometry_via_restraint}",printlevel,2)
+                if set_geometry_via_restraint is True:
+                    print_if_level(f"Modifying geometry to set constraints via DL-FIND restraint optimization",printlevel,2)
+                    # NOTE: passing extraconstraints if any
+                    _preset_geometry_restraint(newfrag, RC_list, rc_values, optimizerobj,
+                                opt_arguments, charge, mult,printlevel=1, extraconstraints=extraconstraints,
+                                extraoopt_run_kws=extraoopt_run_kws,
+                                force_constant=10000.0)
+                else:
+                    print_if_level(f"Modifying geometry to set constraints via coordinate manipulation",printlevel,2)
+                    _set_geometry_direct(newfrag, RC_list, rc_values, conn=conn)
+                _verify_geometry(fragment, RC_list, rc_values, printlevel=printlevel)
+
                 xyzname = f"{label}.xyz"
                 newfrag.write_xyzfile(xyzfilename=xyzname)
                 shutil.move(xyzname, f"surface_xyzfiles/{xyzname}")
@@ -198,8 +247,6 @@ def calc_surface(
 
         elif scantype.upper() == 'RELAXED':
             print("Warning: Relaxed scans in parallel mode are experimental")
-            optimizer = Optimizerclass(
-                actatoms=actatoms, **opt_arguments)
             pointcount = 0
             for rc_values in itertools.product(*RC_value_lists):
                 pointcount += 1
@@ -208,21 +255,25 @@ def calc_surface(
                 print(f"======= Surfacepoint {pointcount}/{totalnumpoints}: {label} =======")
                 if key in surfacedictionary:
                     continue
-                allconstraints = set_constraints_nd(RC_list, rc_values, extraconstraints, fragment=fragment)
-                print("allconstraints:", allconstraints)
+                allconstraints = set_constraints_nd(RC_list, rc_values, extraconstraints, fragment=fragment,
+                                                    printlevel=printlevel)
+                print_if_level(f"allconstraints: {allconstraints}", printlevel,2) 
                 newfrag = copy.copy(fragment)
-                if optimizer == "dlfind":
-                    print("For DL-FIND we need to modify geometry first to the desired constraint value.")
-                    print("set_geometry_via_restraint keyword is:", set_geometry_via_restraint)
+                newfrag.printlevel=printlevel
+
+                if presetting_geometry_required:
+                    print_if_level(f"For DL-FIND we need to modify geometry first to the desired constraint value.",printlevel,2)
+                    print_if_level(f"set_geometry_via_restraint: {set_geometry_via_restraint}",printlevel,2)
                     if set_geometry_via_restraint is True:
-                        print("Modifying geometry to get constraint value via DL-FIND restraint optimization")
-                        _preset_geometry_restraint(newfrag, RC_list, rc_values, optimizer,
-                                    opt_arguments, charge, mult,printlevel=1,
+                        print_if_level(f"Modifying geometry to get constraint value via DL-FIND restraint optimization",printlevel,2)
+                        _preset_geometry_restraint(newfrag, RC_list, rc_values, optimizerobj,
+                                    opt_arguments, charge, mult,printlevel=1, extraconstraints=extraconstraints,
+                                    extraoopt_run_kws=extraoopt_run_kws,
                                     force_constant=10000.0)
                     else:
-                        print("Modifying geometry to get constraint value via coordinate manipulation")
+                        print_if_level(f"Modifying geometry to get constraint value via coordinate manipulation",printlevel,2)
                         _set_geometry_direct(newfrag, RC_list, rc_values, conn=conn)
-                    _verify_geometry(newfrag, RC_list, rc_values)
+                    _verify_geometry(newfrag, RC_list, rc_values, printlevel=printlevel)
                 newfrag.label = key
                 newfrag.constraints = allconstraints
                 surfacepointfragments_list.append(newfrag)
@@ -262,57 +313,69 @@ def calc_surface(
             pointcount += 1
             key = _point_key(rc_values)
             label = _point_label(rc_values)
- 
+
+            # Resetting constraints is optimizer object to be safe
+            optimizerobj.constraints=None
+
             print("=" * 50)
             print(f"Surfacepoint: {pointcount} / {totalnumpoints}")
             print(f"  {label}")
             if scantype.upper() == 'UNRELAXED':
-                print("  Unrelaxed scan: using ZeroTheory + Optimizer to set geometry.")
+                print("  Unrelaxed scan: first setting geometry and then doing single-point calculation")
             else:
                 print("  Relaxed scan: relaxing geometry with theory + constraints.")
             print("=" * 50)
- 
+
             if key in surfacedictionary:
                 print(f"{label} already in dict. Skipping.")
                 continue
- 
-            allconstraints = set_constraints_nd(RC_list, rc_values, extraconstraints, fragment=fragment)
-            print("allconstraints:", allconstraints)
- 
+
+            allconstraints = set_constraints_nd(RC_list, rc_values, extraconstraints, fragment=fragment,
+                                                printlevel=printlevel)
+            print_if_level(f"All constraints: {allconstraints}", printlevel,1)
+
             if scantype.upper() == 'UNRELAXED':
-                Optimizer(
-                    fragment=fragment, theory=zerotheory,
-                    constraints=allconstraints,
-                    charge=charge, mult=mult,
-                    actatoms=actatoms, **opt_arguments,
-                )
+                # Here we modify geometry
+                print_if_level(f"For an unrelaxed scan we need to modify geometry first (done in serial fashion)",printlevel,2)
+                print_if_level(f"set_geometry_via_restraint: {set_geometry_via_restraint}",printlevel,2)
+                if set_geometry_via_restraint is True:
+                    print_if_level(f"Modifying geometry to set constraints via DL-FIND restraint optimization",printlevel,2)
+                    # NOTE: passing extraconstraints if any
+                    _preset_geometry_restraint(fragment, RC_list, rc_values, optimizerobj,
+                                opt_arguments, charge, mult,printlevel=1, extraconstraints=extraconstraints,
+                                extraoopt_run_kws=extraoopt_run_kws,
+                                force_constant=10000.0)
+                else:
+                    print_if_level(f"Modifying geometry to set constraints via coordinate manipulation",printlevel,2)
+                    _set_geometry_direct(fragment, RC_list, rc_values, conn=conn)
+                _verify_geometry(fragment, RC_list, rc_values, printlevel=printlevel)
+
+                print_if_level(f"Now running single-point calculation using Theory", printlevel,2)
                 result = ash.Singlepoint(
                     fragment=fragment, theory=theory, charge=charge, mult=mult,
                 )
- 
             else:  # RELAXED
-                if optimizer == "dlfind":
-                    print("For DL-FIND we need to modify geometry first to set constraints.")
+                if presetting_geometry_required:
+                    print_if_level(f"For DL-FIND we need to modify geometry first to set constraints.", printlevel,2)
                     if set_geometry_via_restraint is True:
-                        print("Modifying geometry to set constraints via DL-FIND restraint optimization")
+                        print_if_level(f"Modifying geometry to set constraints via DL-FIND restraint optimization", printlevel,2)
                         # NOTE: passing extraconstraints if any
-                        _preset_geometry_restraint(fragment, RC_list, rc_values, Optimizer,
+                        _preset_geometry_restraint(fragment, RC_list, rc_values, optimizerobj,
                                     opt_arguments, charge, mult,printlevel=1, extraconstraints=extraconstraints,
+                                    extraoopt_run_kws=extraoopt_run_kws,
                                     force_constant=10000.0)
                     else:
-                        print("Modifying geometry to set constraints via coordinate manipulation")
+                        print_if_level(f"Modifying geometry to set constraints via coordinate manipulation", printlevel,2)
                         _set_geometry_direct(fragment, RC_list, rc_values, conn=conn)
-                    _verify_geometry(fragment, RC_list, rc_values)
+                    _verify_geometry(fragment, RC_list, rc_values, printlevel=printlevel)
+                else:
+                    print_if_level(f"For geometric Optimizer we enforce constraints during optimization.", printlevel,2)
+                print_if_level(f"Now running Relaxed Optimization", printlevel,2)
+                # Running optimizer object
 
-                    #print(f"Time to set constraint-geometry: {time.time()-timeA} seconds")
-                print("Now running Relaxed Optimization")
-                result = Optimizer(
-                    fragment=fragment, theory=theory, 
-                    constraints=allconstraints,
-                    charge=charge, mult=mult,
-                    actatoms=actatoms,**opt_arguments,
-                )
- 
+                #Running optimizer object, passing theory, fragment, constraints and possible extra kws
+                result = optimizerobj.run(theory=theory,fragment=fragment, constraints=allconstraints, **extraoopt_run_kws)
+
             energy = float(result.energy)
             print(f"  {label}  Energy: {energy}")
 
@@ -321,7 +384,7 @@ def calc_surface(
             xyzname = f"{label}.xyz"
             fragment.write_xyzfile(xyzfilename=xyzname)
             shutil.move(xyzname, f"surface_xyzfiles/{xyzname}")
-            _handle_output_files(theory, label, keepoutputfiles, keepmofiles)
+            _handle_output_files(theory, label, keepoutputfiles, keepmofiles, printlevel=printlevel)
             _handle_pbc(theory, fragment, label, convert_to_pbcfile)
  
             surfacedictionary[key] = float(energy)
@@ -416,24 +479,33 @@ def calc_surface_fromXYZ(
     """
     module_init_time = time.time()
     print_line_with_mainheader("CALC_SURFACE_FROMXYZ FUNCTION")
-
-    if optimizer.lower() == "geometric":
-        print("Optimizer to use for surface scan: geomeTRIC")
-        Optimizer=geomeTRICOptimizer
-        Optimizerclass=GeomeTRICOptimizerClass
-        opt_arguments = {
-                'coordsystem': coordsystem,
-                'maxiter': maxiter,
-                'convergence_setting': convergence_setting,
-                'conv_criteria': conv_criteria,
-                'subfrctor': subfrctor,
-                'force_noPBC': force_noPBC,
-                'PBC_format_option': PBC_format_option}
-    elif optimizer.lower() in ['dlfind','dl-find']:
-        print("Optimizer to use for surface scan: DL-FIND")
-        Optimizer=DLFIND_optimizer
-        Optimizerclass=DLFIND_optimizerClass
+    if isinstance(optimizer,str):
+        if optimizer.lower() == "geometric":
+            print("Optimizer to use for surface scan: geomeTRIC")
+            Optimizer=geomeTRICOptimizer
+            Optimizerclass=GeomeTRICOptimizerClass
+            opt_arguments = {
+                    'coordsystem': coordsystem,
+                    'maxiter': maxiter,
+                    'convergence_setting': convergence_setting,
+                    'conv_criteria': conv_criteria,
+                    'subfrctor': subfrctor,
+                    'force_noPBC': force_noPBC,
+                    'PBC_format_option': PBC_format_option}
+        elif optimizer.lower() in ['dlfind','dl-find']:
+            print("Optimizer to use for surface scan: DL-FIND")
+            Optimizer=DLFIND_optimizer
+            Optimizerclass=DLFIND_optimizerClass
+            opt_arguments={}
+    elif isinstance(optimizer,GeomeTRICOptimizerClass):
+        print("A GeomeTRICOptimizerClass object was provided")
+    elif isinstance(optimizer,DLFIND_optimizerClass):
+        print("A GeomeTRICOptimizerClass object was provided")
         opt_arguments={}
+    else:
+        print("optimizer keyword should either be a string (geometric or dlfind) or an Optimizer object")
+        ashexit()
+
 
 
     # -- NumGrad wrapping ---------------------------------------------------
@@ -585,11 +657,14 @@ def calc_surface_fromXYZ(
             results = ash.functions.functions_parallel.Job_parallel(**kwargs)
 
         else:  # RELAXED
-            optimizer = Optimizerclass(
-                maxiter=maxiter, 
-                convergence_setting=convergence_setting, 
-                **opt_arguments,
-            )
+            if obt_object is True:
+                print("An optimizer object was provided.")
+            else:
+                optimizer = Optimizerclass(
+                    maxiter=maxiter, 
+                    convergence_setting=convergence_setting, 
+                    **opt_arguments,
+                )
             kwargs = dict(
                 fragments=surfacepointfragments_list,
                 theories=[theory],
@@ -655,7 +730,7 @@ def calc_surface_fromXYZ(
 
             energy = float(result.energy)
             print(f"Energy of {relfile}: {energy} Eh")
-            _handle_output_files(theory, label, keepoutputfiles, keepmofiles)
+            _handle_output_files(theory, label, keepoutputfiles, keepmofiles, printlevel=printlevel)
             surfacedictionary[key] = energy
             # Write after every point so partial results are never lost
             write_surfacedict_to_file(surfacedictionary, resultfile, dimension=dimension)
@@ -802,7 +877,7 @@ def _point_label(rc_values):
     """Human-readable label: 'RC1_1.5-RC2_120.0-RC3_2.0' etc."""
     return '-'.join(f'RC{i + 1}_{v}' for i, v in enumerate(rc_values))
 
-def set_constraints_nd(RC_list, rc_values, extraconstraints=None, fragment=None):
+def set_constraints_nd(RC_list, rc_values, extraconstraints=None, fragment=None, printlevel=2):
     """Build a geomeTRIC constraints dict for any number of reaction coordinates.
 
     Args:
@@ -848,25 +923,28 @@ def set_constraints_nd(RC_list, rc_values, extraconstraints=None, fragment=None)
                 elif expected_natoms is not None and len(entry) == expected_natoms:
                     # No value — measure from current geometry or error
                     if fragment is None:
-                        print(
-                            f"Error: extraconstraint of type '{constraint_type}' "
-                            f"with indices {entry} has no value, and no fragment "
-                            f"was provided to measure it from."
-                        )
+                        if printlevel > 1:
+                            print(
+                                f"Error: extraconstraint of type '{constraint_type}' "
+                                f"with indices {entry} has no value, and no fragment "
+                                f"was provided to measure it from."
+                            )
                         ashexit()
                     val = _measure_constraint(fragment, constraint_type, entry)
-                    print(
-                        f"extraconstraint '{constraint_type}' {entry}: "
-                        f"no value provided, using current geometry value {val:.6f}"
-                    )
+                    if printlevel > 1:
+                        print(
+                            f"extraconstraint '{constraint_type}' {entry}: "
+                            f"no value provided, using current geometry value {val:.6f}"
+                        )
                     allconstraints[constraint_type].append([*entry, val])
                 else:
                     # Unknown type or ambiguous length — append as-is with a warning
-                    print(
-                        f"Warning: cannot determine whether value is present for "
-                        f"extraconstraint type '{constraint_type}', entry {entry}. "
-                        f"Appending as-is."
-                    )
+                    if printlevel > 1:
+                        print(
+                            f"Warning: cannot determine whether value is present for "
+                            f"extraconstraint type '{constraint_type}', entry {entry}. "
+                            f"Appending as-is."
+                        )
                     if isinstance(entry,int):
                         allconstraints[constraint_type].append(entry)
                     else:
@@ -931,7 +1009,7 @@ def _handle_pbc(theory, fragment, pointlabel, convert_to_pbcfile):
     ext = pbcfile.split('.')[-1]
     shutil.move(pbcfile, f"surface_pbcfiles/{pointlabel}.{ext}")
 
-def _handle_output_files(theory, pointlabel, keepoutputfiles, keepmofiles):
+def _handle_output_files(theory, pointlabel, keepoutputfiles, keepmofiles, printlevel=2):
     """Copy QM output / MO files to their surface subdirectories."""
     if not hasattr(theory, 'theorytype') or theory.theorytype != "QM":
         if keepoutputfiles or keepmofiles:
@@ -944,7 +1022,7 @@ def _handle_output_files(theory, pointlabel, keepoutputfiles, keepmofiles):
                 f'surface_outfiles/{theory.filename}_{pointlabel}.out',
             )
         except TypeError:
-            print("Theory has no outputfile, probably. ignoring")
+            print_if_level("Theory has no outputfile, probably. ignoring", printlevel,2)
             pass
         except FileNotFoundError:
             pass
@@ -956,26 +1034,6 @@ def _handle_output_files(theory, pointlabel, keepoutputfiles, keepmofiles):
             )
         except FileNotFoundError:
             pass
-
-def _preset_geometry(fragment, RC_list, rc_values, extraconstraints,
-                     coordsystem, maxiter, ActiveRegion, actatoms,
-                     force_noPBC, PBC_format_option):
-    """Use ZeroTheory + geomeTRIC to move fragment to the target RC values.
-    
-    This is required before calling any optimizer that only freezes the
-    current geometry value (e.g. DL-FIND) rather than constraining to a
-    specified target value.
-    """
-    zerotheory = ash.ZeroTheory()
-    allconstraints = set_constraints_nd(RC_list, rc_values, extraconstraints, fragment=fragment)
-    geomeTRICOptimizer(
-        fragment=fragment, theory=zerotheory,
-        constraints=allconstraints, constrainvalue=True,
-        coordsystem=coordsystem, maxiter=maxiter,
-        ActiveRegion=ActiveRegion, actatoms=actatoms,
-        result_write_to_disk=False,
-        force_noPBC=force_noPBC, PBC_format_option=PBC_format_option,
-    )
 
 
 
@@ -1307,7 +1365,7 @@ def _set_geometry_direct(fragment, RC_list, rc_values, conn=None):
                 i, j, k = indices
                 _set_angle(coords, i, j, k, float(target), conn)
  
-            elif rc_type == 'dihedral':
+            elif rc_type in ('dihedral', 'torsion'):
                 i, j, k, l = indices
                 _set_dihedral(coords, i, j, k, l, float(target), conn)
  
@@ -1325,9 +1383,9 @@ def _set_geometry_direct(fragment, RC_list, rc_values, conn=None):
 # Verifying the set geometry constraint
 # ---------------------------------------------------------------------------
  
-def _verify_geometry(fragment, RC_list, rc_values, tol=1e-3):
+def _verify_geometry(fragment, RC_list, rc_values, tol=1e-3, printlevel=2):
     coords = np.array(fragment.coords)
-    print("  RC pre-set verification:")
+    print_if_level("  RC pre-set verification:", printlevel,2)
     for i, (rc, target) in enumerate(zip(RC_list, rc_values)):
         rc_type = rc['type'].lower()
         for indices in rc['indices']:
@@ -1344,19 +1402,21 @@ def _verify_geometry(fragment, RC_list, rc_values, tol=1e-3):
             else:
                 continue
             flag = " <-- WARNING" if deviation > tol else ""
-            print(
-                f"    RC{i+1} {rc_type} {indices}: "
-                f"target={target:.4f}  achieved={achieved:.4f}  "
-                f"dev={deviation:.4f}{flag}"
-            )
+            if printlevel > 1:
+                print(
+                    f"    RC{i+1} {rc_type} {indices}: "
+                    f"target={target:.4f}  achieved={achieved:.4f}  "
+                    f"dev={deviation:.4f}{flag}"
+                )
 
 
 # ---------------------------------------------------------------------------
 # Implementation of a RestraintTheory: alternative way of setting restraints
 # ---------------------------------------------------------------------------
 
-def _preset_geometry_restraint(fragment, RC_list, rc_values, optimizer, 
+def _preset_geometry_restraint(fragment, RC_list, rc_values, optimizerobj, 
                                 opt_arguments, charge, mult,printlevel=1, extraconstraints=None,
+                                extraoopt_run_kws=None,
                                 force_constant=10000.0):
     """Drive geometry to target RC values using RestraintTheory + any optimiser."""
     restraints = []
@@ -1377,11 +1437,13 @@ def _preset_geometry_restraint(fragment, RC_list, rc_values, optimizer,
     preset_args = {k: v for k, v in opt_arguments.items()
                    if k not in ('constraints', 'constrainvalue')}
     # Optimizing with restraint theory, passing extraconstraints as contraints if present
-    optimizer(
-        fragment=fragment, theory=restraint_theory, constraints=extraconstraints,
-        charge=charge, mult=mult, printlevel=printlevel,
-        **preset_args,
-    )
+    optimizerobj.run(theory=restraint_theory,fragment=fragment, constraints=extraconstraints, **extraoopt_run_kws)
+
+    #optimizer(
+    #    fragment=fragment, theory=restraint_theory, constraints=extraconstraints,
+    #    charge=charge, mult=mult, printlevel=printlevel,
+    #    **preset_args,
+    #)
 
 
 
@@ -1409,10 +1471,11 @@ class RestraintTheory:
                                  'target'  : target value (Å for bonds,
                                              degrees for angles/dihedrals)
                              Example:
-                                 [{'type': 'bond',     'indices': [0, 1], 'target': 1.2},
-                                  {'type': 'angle',    'indices': [1, 0, 2], 'target': 104.5},
-                                  {'type': 'dihedral', 'indices': [0,1,2,3], 'target': 180.0}]
-            force_constant : harmonic force constant k. Defaults to 10000.0.
+                                 [{'type': 'bond',     'indices': [0, 1], 'target': 1.2, 'forceconstant': 50},
+                                  {'type': 'angle',    'indices': [1, 0, 2], 'target': 104.5, 'forceconstant': 20},
+                                  {'type': 'dihedral', 'indices': [0,1,2,3], 'target': 180.0, 'forceconstant': 10}]
+            force_constant : Global harmonic force constant k. Only used if no forceconstant in individual restraintdict.
+                             Defaults to 10000.0.
                              Units: energy/Å² for bonds, energy/deg² for angles
                              and dihedrals. The default is chosen to be stiff
                              enough to reach the target closely in a few steps.
@@ -1568,6 +1631,7 @@ class RestraintTheory:
         for r in self.restraints:
             rtype  = r['type'].lower()
             idx    = r['indices']
+            # Check if forceconstant in r:
             k      = float(r.get('force_constant', self.force_constant))
 
             if rtype in ('bond', 'distance'):
@@ -1592,7 +1656,7 @@ class RestraintTheory:
                     dqdX *= np.pi / 180.0                      # → rad/Bohr
                     gradient += k * dq * dqdX                  # Eh/Bohr
 
-            elif rtype == 'dihedral':
+            elif rtype in ('dihedral', 'torsion'):
                 # same as angle
                 target   = float(r['target']) * np.pi / 180.0
                 q        = self._measure_dihedral(coords, *idx) * np.pi / 180.0
@@ -1610,3 +1674,292 @@ class RestraintTheory:
             return self.energy
         else:
             return self.energy, self.gradient
+
+
+# ---------------------------------------------------------------------------
+# Surface analysis
+# ---------------------------------------------------------------------------
+
+
+def analyze_surface(resultfile='surface_results.txt', dimension=None,
+                    energy_unit='kcal/mol', tol=1e-6):
+    """Analyze a surface scan result file for minima, maxima, and saddle points.
+
+    Works for any dimension but critical point classification beyond 1D relies
+    on finite-difference estimation of the Hessian on the grid, so results are
+    only as good as the grid resolution.
+
+    Args:
+        resultfile  : path to surface_results.txt
+        dimension   : number of RC coordinates (inferred if None)
+        energy_unit : 'kcal/mol', 'kJ/mol', or 'Eh' for relative energies
+        tol         : energy tolerance for detecting flat regions
+
+    Returns:
+        dict with keys 'global_min', 'local_minima', 'global_max',
+                        'local_maxima', 'saddle_points'
+        Each entry is a list of dicts with 'coords', 'energy', 'rel_energy'.
+    """
+
+    # -- Unit conversion ----------------------------------------------------
+    conv = {'kcal/mol': 627.509, 'kJ/mol': 2625.50, 'Eh': 1.0}
+    if energy_unit not in conv:
+        print(f"Warning: unknown energy_unit '{energy_unit}', using kcal/mol")
+        energy_unit = 'kcal/mol'
+    factor = conv[energy_unit]
+
+    # -- Read data ----------------------------------------------------------
+    surfacedictionary = read_surfacedict_from_file(resultfile, dimension)
+    if dimension is None:
+        dimension = len(list(surfacedictionary.keys())[0])
+
+    print(f"Read {len(surfacedictionary)} points, dimension={dimension}")
+
+    if dimension == 1:
+        return _analyze_1d(surfacedictionary, factor, energy_unit, tol)
+    else:
+        return _analyze_nd(surfacedictionary, dimension, factor, energy_unit, tol)
+
+
+# ---------------------------------------------------------------------------
+# 1D analysis
+# ---------------------------------------------------------------------------
+
+def _analyze_1d(surfacedictionary, factor, energy_unit, tol):
+    # 1. Sort and extract
+    keys = sorted(surfacedictionary.keys())
+    coords = np.array([k if isinstance(k, tuple) else (k,) for k in keys])
+    energies = np.array([surfacedictionary[k] for k in keys])
+    
+    # 2. Periodicity Detection & Trimming
+    # If the first and last points are the same physical location (e.g., -180 and 180),
+    # we remove the last point to avoid "neighboring itself" in the cycle.
+    is_periodic = (abs(abs(coords[-1][0] - coords[0][0]) - 360.0) < 1.0)
+    
+    if is_periodic:
+        print("Periodic scan detected. Wrapping boundaries for analysis.")
+        analysis_energies = energies[:-1]
+        analysis_coords = coords[:-1]
+    else:
+        analysis_energies = energies
+        analysis_coords = coords
+
+    n = len(analysis_energies)
+    local_minima = []
+    local_maxima = []
+
+    # 3. Find Critical Points
+    for idx in range(n):
+        e = analysis_energies[idx]
+        
+        if is_periodic:
+            left  = analysis_energies[(idx - 1) % n]
+            right = analysis_energies[(idx + 1) % n]
+        else:
+            if idx == 0 or idx == n - 1: continue
+            left  = analysis_energies[idx - 1]
+            right = analysis_energies[idx + 1]
+
+        # Use >= or <= with tol to be inclusive of "flat" minima/maxima if needed, 
+        # but strict inequality is usually safer for discrete scans.
+        is_min = (e < left - tol) and (e < right - tol)
+        is_max = (e > left + tol) and (e > right + tol)
+
+        entry = {'coords': tuple(analysis_coords[idx]), 'energy': e}
+
+        if is_min:
+            local_minima.append(entry)
+        elif is_max:
+            local_maxima.append(entry)
+
+    # 4. Global vs Local Assignment
+    if not local_minima:
+        # Fallback if no local minima found due to high tol
+        idx_min = np.argmin(analysis_energies)
+        local_minima = [{'coords': tuple(analysis_coords[idx_min]), 'energy': analysis_energies[idx_min]}]
+
+    local_minima.sort(key=lambda x: x['energy'])
+    local_maxima.sort(key=lambda x: x['energy'], reverse=True)
+
+    global_min = local_minima[0]
+    global_max = local_maxima[0] if local_maxima else None
+
+    # 5. Compute Relative Energies
+    for entry in local_minima + local_maxima:
+        entry['rel_energy'] = (entry['energy'] - global_min['energy']) * factor
+
+    result = {
+        'global_min':    global_min,
+        'local_minima':  local_minima[1:],
+        'global_max':    global_max,
+        'local_maxima':  local_maxima[1:],
+        'saddle_points': [],
+    }
+    
+    # Assuming _print_analysis is defined elsewhere
+    _print_analysis(result, factor, energy_unit, dimension=1)
+    return result
+
+# ---------------------------------------------------------------------------
+# ND analysis (2D, 3D, ...)
+# ---------------------------------------------------------------------------
+
+
+def _analyze_nd(surfacedictionary, dimension, factor, energy_unit, tol):
+    import itertools as it
+    # --- 1. Grid Setup ---
+    all_keys = sorted(surfacedictionary.keys())
+    axes = [np.array(sorted({k[d] for k in all_keys})) for d in range(dimension)]
+    shape = tuple(len(a) for a in axes)
+    index_maps = [{v: i for i, v in enumerate(a)} for a in axes]
+    grid = np.full(shape, np.nan)
+    for key, energy in surfacedictionary.items():
+        idx = tuple(index_maps[d][key[d]] for d in range(dimension))
+        grid[idx] = float(energy)
+
+    global_min_e = np.nanmin(grid)
+    local_minima, local_maxima, saddle_candidates = [], [], []
+
+    # --- 2. Iterate Interior Points ---
+    ranges = [range(1, s - 1) for s in shape]
+    for idx in it.product(*ranges):
+        e0 = grid[idx]
+        if np.isnan(e0): continue
+
+        # A. Calculate Gradient Norm (Stationary Check)
+        grads = []
+        for d in range(dimension):
+            i_p, i_m = list(idx), list(idx)
+            i_p[d] += 1; i_m[d] -= 1
+            h = axes[d][idx[d]+1] - axes[d][idx[d]-1]
+            grads.append((grid[tuple(i_p)] - grid[tuple(i_m)]) / h)
+        
+        gnorm = np.linalg.norm(grads)
+
+        # B. Strict Neighbor Comparison (topology test)
+        # Check neighbors along principal axes
+        nb_vals = []
+        for d in range(dimension):
+            i_p, i_m = list(idx), list(idx)
+            i_p[d] += 1; i_m[d] -= 1
+            nb_vals.append((grid[tuple(i_m)], grid[tuple(i_p)]))
+
+        # Determine if it's an extreme or a saddle
+        # is_min: lower than all immediate neighbors
+        is_min = all(e0 < v_m - tol and e0 < v_p - tol for v_m, v_p in nb_vals)
+        # is_max: higher than all immediate neighbors
+        is_max = all(e0 > v_m + tol and e0 > v_p + tol for v_m, v_p in nb_vals)
+        
+        # is_saddle: max in one dir, min in another (for 2D)
+        # We check: (Min in X and Max in Y) OR (Max in X and Min in Y)
+        is_saddle = False
+        if dimension == 2:
+            (x_m, x_p), (y_m, y_p) = nb_vals
+            saddle_1 = (e0 < x_m and e0 < x_p) and (e0 > y_m and e0 > y_p)
+            saddle_2 = (e0 > x_m and e0 > x_p) and (e0 < y_m and e0 < y_p)
+            is_saddle = saddle_1 or saddle_2
+
+        coords = tuple(axes[d][idx[d]] for d in range(dimension))
+        entry = {'coords': coords, 'energy': e0, 'rel_energy': (e0 - global_min_e)*factor, 'gnorm': gnorm}
+
+        if is_min:
+            local_minima.append(entry)
+        elif is_max:
+            local_maxima.append(entry)
+        elif is_saddle:
+            saddle_candidates.append(entry)
+
+    # --- 3. Non-Maximum Suppression (Clustering) ---
+    # This is the "Magic" step that deletes duplicates in flat regions
+    def cluster_points(points, is_saddle=False):
+        if not points: return []
+        # Sort by gradient norm (we want the point closest to a true stationary point)
+        points.sort(key=lambda x: x['gnorm'])
+        unique = []
+        for p in points:
+            is_redundant = False
+            for u in unique:
+                # If point is within 2 grid steps of a better one, discard it
+                dist = np.array([abs(p['coords'][d] - u['coords'][d]) for d in range(dimension)])
+                step = np.array([axes[d][1] - axes[d][0] for d in range(dimension)])
+                if all(dist <= step * 2.1): # 2-step radius
+                    is_redundant = True
+                    break
+            if not is_redundant:
+                unique.append(p)
+        return unique
+
+    refined_minima = cluster_points(local_minima)
+    refined_maxima = cluster_points(local_maxima)
+    refined_saddles = cluster_points(saddle_candidates, is_saddle=True)
+
+    # Final result construction
+    refined_minima.sort(key=lambda x: x['energy'])
+    refined_maxima.sort(key=lambda x: x['energy'], reverse=True)
+    refined_saddles.sort(key=lambda x: x['energy'])
+
+    result = {
+        'global_min': refined_minima[0] if refined_minima else None,
+        'local_minima': refined_minima[1:],
+        'global_max': refined_maxima[0] if refined_maxima else None,
+        'local_maxima': refined_maxima[1:],
+        'saddle_points': refined_saddles,
+    }
+    _print_analysis(result, factor, energy_unit, dimension=dimension)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Pretty printer
+# ---------------------------------------------------------------------------
+
+def _print_analysis(result, factor, energy_unit, dimension):
+    col_w = 12
+
+    def fmt_coords(coords):
+        return '  '.join(f'{v:>10.4f}' for v in coords)
+
+    def fmt_entry(entry, tag=''):
+        c = fmt_coords(entry['coords'])
+        e = f"{entry['energy']:>18.10f} Eh"
+        r = f"{entry['rel_energy']:>12.4f} {energy_unit}"
+        order_str = ''
+        if 'order' in entry:
+            order_str = f"  ({entry['order']}-order SP)"
+        return f"  {c}  {e}  {r}  {tag}{order_str}"
+
+    print()
+    print("=" * 80)
+    print("SURFACE ANALYSIS")
+    print("=" * 80)
+
+    print("\nMINIMA")
+    print("-" * 80)
+    if result['global_min']:
+        print(fmt_entry(result['global_min'], tag='(global min)'))
+    if result['local_minima']:
+        for entry in result['local_minima']:
+            print(fmt_entry(entry, tag='(local min)'))
+    if not result['global_min'] and not result['local_minima']:
+        print("  None found (may be on boundary or grid too coarse)")
+
+    print("\nMAXIMA")
+    print("-" * 80)
+    if result['global_max']:
+        print(fmt_entry(result['global_max'], tag='(global max)'))
+    if result['local_maxima']:
+        for entry in result['local_maxima']:
+            print(fmt_entry(entry, tag='(local max)'))
+    if not result['global_max'] and not result['local_maxima']:
+        print("  None found (may be on boundary or grid too coarse)")
+
+    print("\nSADDLE POINTS")
+    print("-" * 80)
+    if result['saddle_points']:
+        for entry in result['saddle_points']:
+            print(fmt_entry(entry))
+    else:
+        print("  None found")
+
+    print("=" * 80)
+    print()

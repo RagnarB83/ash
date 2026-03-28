@@ -85,7 +85,7 @@ from .modules.module_hybridtheory import DualTheory,WrapTheory
 from .modules.module_oniom import ONIOMTheory
 
 # Surface
-from .modules.module_surface_new import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, write_surfacedict_to_file, RestraintTheory
+from .modules.module_surface_new import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, write_surfacedict_to_file, RestraintTheory,analyze_surface
 
 # # QMcode interfaces
 from .interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, MolecularOrbitalGrab, \
@@ -212,7 +212,7 @@ import ash.modules.module_plotting
 from .modules.module_plotting import reactionprofile_plot, contourplot, volumeplot, plot_Spectrum, MOplot_vertical, ASH_plot
 
 # DL-FIND
-from ash.interfaces.interface_dlfind import DLFIND_optimizer
+from ash.interfaces.interface_dlfind import DLFIND_optimizer,DLFIND_optimizerClass
 
 # Other
 import ash.interfaces.interface_crest

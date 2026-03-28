@@ -1785,9 +1785,9 @@ class OpenMMTheory:
         return self.cell_gradient
 
     #NOTE: Adding charge/mult/PC here to  be consistent with QM_theories. Not used
-    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None, label=None, charge=None, mult=None, PC=False, current_MM_coords=None, MMcharges=None,
-            mm_elems=None,
-            numcores=1):
+    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None, label=None, 
+            charge=None, mult=None, PC=False, current_MM_coords=None, MMcharges=None,
+            mm_elems=None, qm_elems=None, numcores=1):
         module_init_time = time.time()
         timeA = time.time()
         import openmm

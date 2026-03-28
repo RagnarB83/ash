@@ -8,7 +8,7 @@ from numpy.typing import ArrayLike
 
 import os
 import time
-from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,listdiff,search_list_of_lists_for_index
+from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,listdiff,search_list_of_lists_for_index,print_if_level
 from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex,print_internal_coordinate_table,write_xyzfile,elemstonuccharges
 from ash.modules.module_theory import NumGradclass
 from ash.modules.module_results import ASH_Results
@@ -90,9 +90,9 @@ class DLFIND_optimizerClass:
             ashexit()
 
         # EARLY EXITS
-        if theory is None or fragment is None:
-            print("DLFIND_optimizer requires theory and fragment objects provided. Exiting.")
-            ashexit()
+        #if theory is None or fragment is None:
+        #    print("DLFIND_optimizer requires theory and fragment objects provided. Exiting.")
+        #    ashexit()
 
         if jobtype is None and icoord is None:
             print("Error: You must either select a jobtype keyword (e.g. opt, neb, dimer, instanton) or select DL-FIND icoord and iopt codes")
@@ -107,7 +107,7 @@ class DLFIND_optimizerClass:
             iopt=3
         elif jobtype == "tsopt" or jobtype == "ts":
             print("jobtype: tsopt chosen")
-            print("Choosing icoord=120 (HDLC internal coordinates) and iopt=10 (P-RFO)")
+            print("Choosing icoord=3 (HDLC internal coordinates) and iopt=10 (P-RFO)")
             print("Note: inithessian option is:", inithessian)
             icoord=3
             iopt=10
@@ -132,21 +132,8 @@ class DLFIND_optimizerClass:
 
 
         self.fragment=fragment
-        self.theory=theory
-
-        nuccharges  = elemstonuccharges(self.fragment.elems)
-
-        charge, mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "DLFIND-optimizer", theory=theory)
-
-        # Possible Fragment2 handling
         self.fragment2=fragment2
-        if self.fragment2 is not None:
-            print("Fragment2 provided. This only makes sense for NEB and dimer jobs")
-            positions2 = self.fragment2.coords * 1.88972612546
-            nframe=1
-        else:
-            positions2=None
-            nframe=0
+        self.theory=theory
 
         #############
         #HESSIAN
@@ -189,134 +176,13 @@ class DLFIND_optimizerClass:
 
         # Residues for HDLC
         self.residues=residues
-        
+
         #Constraints
         self.constraints=constraints
+        self.actatoms=actatoms
+        self.frozenatoms=frozenatoms
 
-        #Connectivity ?
-
-
-        ########################################
-        # ACTIVE/FROZEN AND RESIDUE HANDLING
-        ########################################
-        if self.residues is None:
-            print("No residues provided to optimizer. Creating a single residue for whole active system.")
-        else:
-            print("Residues provided to optimizer:", self.residues)
-
-        # What to optimize etc.
-        self.spec=[]
-
-        # First dentify possible frozen constraints defined in constraints dict
-        if self.constraints is not None:
-            if 'xyz' in self.constraints:
-                print("XYZ constraints found in constraints dict.", self.constraints['xyz'])
-                print("Adding to frozenatoms list")
-                if frozenatoms is None:
-                    frozenatoms=[]
-                frozenatoms = self.constraints['xyz']
-
-        if actatoms is not None:
-            print("Actatoms provided:", actatoms)
-            if frozenatoms is not None:
-                if len(frozenatoms) > 0:
-                    print("frozenatoms:", frozenatoms)
-                    print("Error: actatoms and frozenatoms can not both be defined")
-                    ashexit()
-            print("All atoms:", fragment.allatoms)
-
-            for i in fragment.allatoms:
-                if i in actatoms:
-                    if self.residues is not None:
-                        self.spec.append(search_list_of_lists_for_index(i,self.residues)+1)
-                    else:
-                        self.spec.append(1)
-                else:
-                    self.spec.append(-1)
-        elif frozenatoms is not None:
-            print("Frozenatoms provided:", frozenatoms)
-            print("All atoms:", fragment.allatoms)
-
-            for i in fragment.allatoms:
-                if i in frozenatoms:
-                    self.spec.append(-1)
-                else:
-                    if self.residues is not None:
-                        self.spec.append(search_list_of_lists_for_index(i,self.residues)+1)
-                    else:
-                        self.spec.append(1)
-        else:
-            print("Case: no actatoms or frozenatoms provided. All atoms will be active.")
-            print("All atoms:", fragment.allatoms)
-            if self.residues is None:
-                self.spec=[1 for i in list(range(fragment.numatoms))]
-            else:
-                print("Residues provided:", self.residues)
-                for i in fragment.allatoms:
-                    resid = search_list_of_lists_for_index(i,self.residues)
-                    self.spec.append(resid+1)
-
-        # Nuclear charges
-        self.spec=self.spec + nuccharges
-
-        # Constraints. should be dict: constraints={'bond':[[0,1]], 'angle':[[98,99,100]]}
-        if self.constraints is not None:
-            print("Constraints passed: ", constraints)
-            self.numcons=0
-            conlist=[]
-            for k,v in constraints.items():
-                if k == 'bond':
-                    print("Found bond constraint between atoms:", v)
-                    for x in v:
-                        b = [1,x[0]+1,x[1]+1,0,0]
-                        conlist += b
-                        self.numcons+=1
-                elif k == 'angle':
-                    print("Found angle constraint between atoms:", v)
-                    for x in v:
-                        b = [2,x[0]+1,x[1]+1,x[2]+1,0]
-                        conlist += b
-                        self.numcons+=1
-                elif k == 'dihedral' or k == 'torsion':
-                    print("Found dihedral constraint between atoms:", v)
-                    for x in v:
-                        b = [3,x[0]+1,x[1]+1,x[2]+1,x[3]+1]
-                        conlist += b
-                        self.numcons+=1
-            print("DL-FIND constraints-list:", conlist)
-            print("Number of constraints:", self.numcons)
-            self.spec = self.spec + conlist
-        else:
-            print("No constraints present")
-            self.numcons=0
-
-        # Spec
-        self.spec=self.spec+[1 for i in list(range(fragment.numatoms))] #?
-
-        self.nspec=len(self.spec)
-
-
-        # Print-atoms choice
-        # If not specified then active-region or all-atoms
-        if print_atoms_list is None:
-            #Print-atoms list not specified. What to do:
-            if actatoms is not None:
-                #If QM/MM object then QM-region:
-                if isinstance(theory,QMMMTheory):
-                    print("Theory class: QMMMTheory")
-                    print("Will by default print only QM-region in output (use print_atoms_list option to change)")
-                    self.print_atoms_list=theory.qmatoms
-                elif isinstance(theory,ONIOMTheory):
-                    print("Theory class: ONIOMTheory")
-                    print("Will by default print only Region1 in output (use print_atoms_list option to change)")
-                    self.print_atoms_list=theory.regions_N[0]
-                else:
-                    # Print actatoms since using Active Region (can be too much)
-                    self.print_atoms_list=self.actatoms
-            else:
-                #No act-region. Print all atoms
-                self.print_atoms_list=fragment.allatoms
-
+        self.print_atoms_list=print_atoms_list
         self.result_write_to_disk=result_write_to_disk
 
         #Tracking DL-FIND cycles
@@ -329,12 +195,15 @@ class DLFIND_optimizerClass:
         self.NEB_energies_dict={}
         self.NEB_geometries={}
 
+        self.runcounter=0
+
+
         # Create function to calculate energies and gradients
         @dlf_get_gradient_wrapper
         def ash_e_g_func(coordinates, iimage, kiter, theory):
             self.dlfind_eg_calls+=1
             coordinates_ang = coordinates*0.5291772109303
-            energy, gradient = theory.run(current_coords=coordinates_ang, elems=self.fragment.elems, charge=charge, mult=mult, Grad=True)
+            energy, gradient = self.theory.run(current_coords=coordinates_ang, elems=self.fragment.elems, charge=self.fragment.charge, mult=self.fragment.mult, Grad=True)
 
             # NEB: Storing current geometry for each image
             # Note: spawned climbing image will be number nimage
@@ -381,10 +250,10 @@ class DLFIND_optimizerClass:
                 print("NumFreq Npoint:", self.numfreq_npoint)
 
                 result_freq = NumFreq(theory=self.theory, fragment=self.fragment, printlevel=0, 
-                                      npoint=self.numfreq_npoint, displacement=self.numfreq_displacement,
-                                      hessatoms=self.numfreq_hessatoms,force_projection=self.numfreq_force_projection,
-                                      runmode='serial', 
-                                      numcores=self.theory.numcores)
+                                        npoint=self.numfreq_npoint, displacement=self.numfreq_displacement,
+                                        hessatoms=self.numfreq_hessatoms,force_projection=self.numfreq_force_projection,
+                                        runmode='serial', 
+                                        numcores=self.theory.numcores)
                 hessian = result_freq.hessian
             elif self.hessian_choice == "anfreq":
                 print("AnFreq option requested")
@@ -394,8 +263,8 @@ class DLFIND_optimizerClass:
                 print("xTB Hessian option requested")
                 #Calling xtb to get Hessian, written to disk. Returns name of Hessianfile
                 hessianfile = calc_hessian_xtb(fragment=fragment, actatoms=self.fragment.allatoms, 
-                                               numcores=self.theory.numcores, use_xtb_feature=True, 
-                                               charge=charge, mult=mult)
+                                                numcores=self.theory.numcores, use_xtb_feature=True, 
+                                                charge=charge, mult=mult)
                 hessian = np.loadtxt("Hessian_from_xtb")
             elif 'file:' in self.hessian_choice:
                 print("A file was detected as Hessian choice:", self.hessian_choice)
@@ -455,30 +324,175 @@ class DLFIND_optimizerClass:
                 #print("="*70)
                 #Storing current coordinates
                 #traj_coords.append(np.array(coordinates_ang))
-                print("Writing regular-opt traj")
-                write_xyzfile(fragment.elems, coordinates_ang, "DLFIND_opt_traj", printlevel=2, writemode='a', title=f"Energy: {energy}")
+                print_if_level(f"Writing regular-opt traj",self.printlevel,1)
+                write_xyzfile(self.fragment.elems, coordinates_ang, "DLFIND_opt_traj", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
                 self.current_geo=coordinates_ang
             # Traj-writing for dimer
             elif self.icoord >= 200:
                 print("Writing Dimer traj")
                 if switch == 1:
                     # 1: actual geometry
-                    write_xyzfile(fragment.elems, coordinates_ang, "DLFIND_dimertraj_1", printlevel=2, writemode='a', title=f"Energy: {energy}")
+                    write_xyzfile(fragment.elems, coordinates_ang, "DLFIND_dimertraj_1", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
                     self.current_geo=coordinates_ang
                 elif switch == 2:
                     # Approximate:
                     self.dlfind_dimer_cycles+=1
                     # transition mode
-                    write_xyzfile(fragment.elems, coordinates_ang, "DLFIND_dimertraj_2", printlevel=2, writemode='a', title=f"Energy: {energy}")
+                    write_xyzfile(fragment.elems, coordinates_ang, "DLFIND_dimertraj_2", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
                 elif switch == 3:
-                    write_xyzfile(fragment.elems, coordinates_ang, "DLFIND_dimertraj_3", printlevel=2, writemode='a', title=f"Energy: {energy}")
+                    write_xyzfile(fragment.elems, coordinates_ang, "DLFIND_dimertraj_3", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
             self.traj_energies.append(energy)
 
             return
 
+        self.dlf_get_gradient = functools.partial(ash_e_g_func, theory=self.theory)
+        self.dlf_get_hessian = functools.partial(hess_func)
+        self.dlf_put_coords = functools.partial( store_results, None)
+
+    def print_settings(self):
+        # Print-atoms choice
+        # If not specified then active-region or all-atoms
+        if self.print_atoms_list is None:
+            #Print-atoms list not specified. What to do:
+            if self.actatoms is not None:
+                #If QM/MM object then QM-region:
+                if isinstance(theory,QMMMTheory):
+                    print("Theory class: QMMMTheory")
+                    print("Will by default print only QM-region in output (use print_atoms_list option to change)")
+                    self.print_atoms_list=self.theory.qmatoms
+                elif isinstance(theory,ONIOMTheory):
+                    print("Theory class: ONIOMTheory")
+                    print("Will by default print only Region1 in output (use print_atoms_list option to change)")
+                    self.print_atoms_list=self.theory.regions_N[0]
+                else:
+                    # Print actatoms since using Active Region (can be too much)
+                    self.print_atoms_list=self.actatoms
+            else:
+                #No act-region. Print all atoms
+                self.print_atoms_list=self.fragment.allatoms
+
+    def setup_constraints_act_frozen(self):
+    
+        ########################################
+        # ACTIVE/FROZEN AND RESIDUE HANDLING
+        ########################################
+        if self.residues is None:
+            print_if_level("No residues provided to optimizer. Creating a single residue for whole active system.",self.printlevel,2)
+        else:
+            print("Residues provided to optimizer:", self.residues)
+
+        # What to optimize etc.
+        self.spec=[]
+
+        # First dentify possible frozen constraints defined in constraints dict
+        if self.constraints is not None:
+            if 'xyz' in self.constraints:
+                print_if_level(f"XYZ constraints found in constraints dict. {self.constraints['xyz']}", self.printlevel,2 )
+                print_if_level("Adding to frozenatoms list", self.printlevel,2)
+                if self.frozenatoms is None:
+                    frozenatoms=[]
+                frozenatoms = self.constraints['xyz']
+
+        if self.actatoms is not None:
+            print_if_level("Actatoms provided:", self.actatoms)
+            if self.frozenatoms is not None:
+                if len(self.frozenatoms) > 0:
+                    print("frozenatoms:", self.frozenatoms)
+                    print("Error: actatoms and frozenatoms can not both be defined")
+                    ashexit()
+            print_if_level(f"All atoms: {self.fragment.allatoms}", self.printlevel,2 )
+
+            for i in self.fragment.allatoms:
+                if i in self.actatoms:
+                    if self.residues is not None:
+                        self.spec.append(search_list_of_lists_for_index(i,self.residues)+1)
+                    else:
+                        self.spec.append(1)
+                else:
+                    self.spec.append(-1)
+        elif self.frozenatoms is not None:
+            print_if_level(f"Frozenatoms provided: {self.frozenatoms}", self.printlevel,2 )
+            print_if_level(f"All atoms: {self.fragment.allatoms}", self.printlevel,2 )
+
+            for i in self.fragment.allatoms:
+                if i in frozenatoms:
+                    self.spec.append(-1)
+                else:
+                    if self.residues is not None:
+                        self.spec.append(search_list_of_lists_for_index(i,self.residues)+1)
+                    else:
+                        self.spec.append(1)
+        else:
+            print_if_level("Case: no actatoms or frozenatoms provided. All atoms will be active.", self.printlevel,2)
+            print_if_level(f"All atoms: {self.fragment.allatoms}", self.printlevel,2)
+            if self.residues is None:
+                self.spec=[1 for i in list(range(self.fragment.numatoms))]
+            else:
+                print_if_level("Residues provided:", self.residues, self.printlevel,2)
+                for i in self.fragment.allatoms:
+                    resid = search_list_of_lists_for_index(i,self.residues)
+                    self.spec.append(resid+1)
+
+        # Nuclear charges
+        nuccharges  = elemstonuccharges(self.fragment.elems)
+        self.spec=self.spec + nuccharges
+
+        # Constraints. should be dict: constraints={'bond':[[0,1]], 'angle':[[98,99,100]]}
+        if self.constraints is not None:
+            print_if_level(f"Constraints passed: {self.constraints}", self.printlevel,2)
+            self.numcons=0
+            conlist=[]
+            for k,v in self.constraints.items():
+                if k == 'bond' or k == 'distance':
+                    print_if_level(f"Found bond constraint between atoms: {v}", self.printlevel,2)
+                    for x in v:
+                        b = [1,x[0]+1,x[1]+1,0,0]
+                        conlist += b
+                        self.numcons+=1
+                elif k == 'angle':
+                    print_if_level(f"Found angle constraint between atoms: {v}", self.printlevel,2)
+                    for x in v:
+                        b = [2,x[0]+1,x[1]+1,x[2]+1,0]
+                        conlist += b
+                        self.numcons+=1
+                elif k == 'dihedral' or k == 'torsion':
+                    print_if_level(f"Found dihedral constraint between atoms: {v}", self.printlevel,2)
+                    for x in v:
+                        b = [3,x[0]+1,x[1]+1,x[2]+1,x[3]+1]
+                        conlist += b
+                        self.numcons+=1
+            print_if_level(f"DL-FIND constraints-list: {conlist}", self.printlevel,2)
+            print_if_level(f"Number of constraints: {self.numcons}", self.printlevel,2)
+            self.spec = self.spec + conlist
+        else:
+            print_if_level("No constraints present", self.printlevel,2)
+            self.numcons=0
+
+        # Spec
+        self.spec=self.spec+[1 for i in list(range(self.fragment.numatoms))] #?
+
+        self.nspec=len(self.spec)
+
+
+    def prepare_run(self):
+
+        from libdlfind.callback import make_dlf_get_params
         self.traj_energies = []
         self.current_geo = []
         positions = self.fragment.coords * 1.88972612546
+
+        # Possible Fragment2 handling
+        if self.fragment2 is not None:
+            print("Fragment2 provided. This only makes sense for NEB and dimer jobs")
+            positions2 = self.fragment2.coords * 1.88972612546
+            nframe=1
+        else:
+            positions2=None
+            nframe=0
+
+        # Setup constraints and frozen/active stuff
+        self.setup_constraints_act_frozen()
+
         self.dlf_get_params = make_dlf_get_params(coords=positions, coords2=positions2, icoord=self.icoord, 
                                                   iopt=self.iopt, maxcycle=self.maxcycle,tolerance=self.tolerance,
                                                   tolerance_e=self.tolerance_e, inithessian=self.inithessian,
@@ -486,40 +500,58 @@ class DLFIND_optimizerClass:
                                                   ncons=self.numcons, delta=self.delta,
                                                   spec=self.spec, printl=self.printlevel, nimage=self.nimage)
 
-        self.dlf_get_gradient = functools.partial(ash_e_g_func, theory=theory)
-        self.dlf_get_hessian = functools.partial(hess_func)
-        self.dlf_put_coords = functools.partial( store_results, None)
-
         # Delete old traj file before beginning
         remove_files=['DLFIND_opt_traj.xyz','DLFIND_dimertraj_1.xyz', 'DLFIND_dimertraj_2.xyz','DLFIND_dimertraj_3.xyz','DLFIND_NEBpath_current.xyz', 'DLFIND_NEBpath_all.xyz', 'DLFIND_CIgeo_traj.xyz']
-        print("Removing possible old files:", remove_files)
+        print_if_level(f"Removing possible old files: {remove_files}", self.printlevel,2)
         for rfile in remove_files:
             try:
                 os.remove(rfile)
-                print("removed ", rfile)
+                print_if_level(f"removed {rfile} ", self.printlevel,2)
             except FileNotFoundError:
                 #print(f"file {rfile} not found")
                 pass
 
-        print("\nArguments passed to DL-FIND:")
-        print("icoord:", self.icoord)
-        print("iopt:", self.iopt)
-        print("maxcycle:", maxcycle)
-        print("spec:", self.spec)
-        if icoord == 120:
-            print("NEB nimage:", nimage)
+        print_if_level(f"\nArguments passed to DL-FIND:", self.printlevel,2)
+        print_if_level(f"icoord: {self.icoord}", self.printlevel,2)
+        print_if_level(f"iopt: {self.iopt}", self.printlevel,2)
+        print_if_level(f"maxcycle: {self.maxcycle}", self.printlevel,2)
+        print_if_level(f"spec: {self.spec}", self.printlevel,2)
+        if self.icoord == 120:
+            print_if_level(f"NEB nimage: {self.nimage}", self.printlevel,2)
 
-    def run(self, theory=None, fragment=None, charge=None, mult=None):
-
+    def run(self, theory=None, fragment=None, fragment2=None, constraints=None, charge=None, mult=None):
         from libdlfind import dl_find
 
-        if self.fragment2 is None:
+        # Update self fragment if a run fragment was provided
+        if fragment is not None:
+            self.fragment=fragment
+
+        if fragment2 is None and self.fragment2 is None:
             nvarin=self.fragment.numatoms * 3
             nvarin2=0
-        else:
-            # Fragment 1 and 2
+        elif fragment2 is not None:
             nvarin = self.fragment.numatoms * 3
             nvarin2 = self.fragment2.numatoms * 3
+        elif self.fragment2 is not None:
+            nvarin = self.fragment.numatoms * 3
+            nvarin2 = self.fragment2.numatoms * 3
+
+        # Update self theory if a run fragment was provided
+        if theory is not None:
+            self.theory=theory
+
+        # Update constraints if provided
+        if constraints is not None:
+            self.constraints=constraints
+
+        if self.runcounter == 0:
+            self.print_settings()
+
+        # Prepare run, including constraints etc.
+        self.prepare_run()
+
+        charge, mult = check_charge_mult(charge, mult, self.theory.theorytype, self.fragment, 
+                                         "DLFIND-optimizer", theory=self.theory, printlevel=self.printlevel)
 
         # Run DL-FIND
         print("Now starting DL-FIND")
@@ -555,7 +587,7 @@ class DLFIND_optimizerClass:
             # Now returning final Results object
             result = ASH_Results(label="DLFIND_optimizer", energy=finalenergy)
             if self.result_write_to_disk is True:
-                result.write_to_disk(filename="DLFIND_optimizer.result")
+                result.write_to_disk(filename="DLFIND_optimizer.result", printlevel=self.printlevel)
             return result
 
         elif self.icoord >= 100 and self.icoord < 150:

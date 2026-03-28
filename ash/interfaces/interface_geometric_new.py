@@ -243,7 +243,7 @@ class GeomeTRICOptimizerClass:
             ########################################
             # For QM/MM we need to convert full-system atoms into active region atoms
             #constraints={'bond':[[8854,37089]]}
-            if self.ActiveRegion == True:
+            if self.ActiveRegion:
                 if constraints != None:
                     print("Constraints set. Active region true")
                     print("User-defined constraints (fullsystem-indices):", constraints)
@@ -262,7 +262,12 @@ class GeomeTRICOptimizerClass:
                 except:
                     angleconstraints = None
                 try:
-                    dihedralconstraints = constraints['dihedral']
+                    if 'dihedral' in constraints:
+                        dihedralconstraints = constraints['dihedral']
+                    elif 'torsion' in constraints:
+                        dihedralconstraints = constraints['torsion']
+                    else:
+                        dihedralconstraints=None
                 except:
                     dihedralconstraints = None
                 try:
@@ -350,7 +355,6 @@ class GeomeTRICOptimizerClass:
                             confile.write(f'dihedral {dihedralentry[0]+1} {dihedralentry[1]+1} {dihedralentry[2]+1} {dihedralentry[3]+1} {dihedralentry[4]}\n')
                         else:
                             confile.write(f'dihedral {dihedralentry[0]+1} {dihedralentry[1]+1} {dihedralentry[2]+1} {dihedralentry[3]+1}\n')
-
         def cleanup(self):
             #Clean-up before we begin
             tmpfiles=['geometric_OPTtraj.log','geometric_OPTtraj.xyz','geometric_OPTtraj_Full.xyz','geometric_OPTtraj_QMregion.xyz', 'optimization_energies.log',
@@ -509,11 +513,14 @@ class GeomeTRICOptimizerClass:
             fragment.charge=charge
             fragment.mult=mult
 
+            #Printlevel of fragment
+            fragment.printlevel=self.printlevel
+
             #################
             # CONSTRAINTS
             #################
             #If constraints not directly provided to run method, then we look at self.constraints and then fragment.constraints
-            if constraints == None:
+            if constraints is None:
                 if self.printlevel >= 1:
                     print("No constraints provided to run method.")
                     print("Testing if constraints present in optimizer object")

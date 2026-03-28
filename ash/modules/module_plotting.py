@@ -308,9 +308,8 @@ def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axis
         e.append(surfacedictionary[key])
 
     if RelativeEnergy is True:
-        if finalunit == None:
-            print("RelativeEnergy is True but finalunit not provided. Exiting.")
-            ashexit()
+        print("RelativeEnergy option. Using finalunit:", finalunit)
+        print("Other options are:", conversionfactor)
         #List of energies and relenergies here
         refenergy=float(min(e))
         rele=[]
@@ -380,6 +379,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     #Creating relative-energy array here. Unmodified property is used if False
     if RelativeEnergy is True:
         print("RelativeEnergy option. Using finalunit:", finalunit)
+        print("Other options are:", conversionfactor)
         refenergy=float(min(e))
         relsurfacedictionary={}
         for i in surfacedictionary:
@@ -645,7 +645,7 @@ def MOplot_vertical(mos_dict, pointsize=4000, linewidth=2, label="Label", yrange
 
     print("Created plot:", label+"."+imageformat)
 
-def volumeplot(surfacedictionary, x_axislabel='X', y_axislabel='Y', z_axislabel='Z', 
+def volumeplot(surfacedictionary, x_axislabel='X', y_axislabel='Y', z_axislabel='Z', filename="surface",
                colorbar_label='ΔE (kcal/mol)', colorscale='RdBu_r', 
                opacity=0.1,surface_count=20,
                RelativeEnergy=True, finalunit='kcal/mol', title="3D Potential Energy Surface",
@@ -668,6 +668,7 @@ def volumeplot(surfacedictionary, x_axislabel='X', y_axislabel='Y', z_axislabel=
     #Creating relative-energy array here. Unmodified property is used if False
     if RelativeEnergy is True:
         print("RelativeEnergy option. Using finalunit:", finalunit)
+        print("Other options are:", conversionfactor)
         vals_rel = (vals - vals.min()) * conversionfactor[finalunit]
 
     # ── Reshape to a 3D grid (assumes a regular, complete grid scan) ──────────────
@@ -715,10 +716,10 @@ def volumeplot(surfacedictionary, x_axislabel='X', y_axislabel='Y', z_axislabel=
     )
 
     # Save PNG
-    fig.write_image(f"surface.{imageformat}")
+    fig.write_image(f"{filename}.{imageformat}")
 
     # Save HTML
-    fig.write_html("surface.html")
+    fig.write_html(f"{filename}.html")
 
     if plot_in_browser:
         fig.show()

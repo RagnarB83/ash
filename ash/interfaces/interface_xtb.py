@@ -1298,8 +1298,8 @@ class tbliteTheory(Theory):
             
         #Run
         if self.autostart is True and self.results is not None:
-            print("Auto-starting tblite calculation using previous results object")
-            print("Warning: if this leads to problems, set autostart=False in tbliteTheory")
+            print_if_level("Auto-starting tblite calculation using previous results object", self.printlevel,2)
+            print_if_level("Warning: if this leads to problems, set autostart=False in tbliteTheory", self.printlevel,2)
             self.results = xtb.singlepoint(self.results)
         else:
             print("Starting new tblite singlepoint calculation")
@@ -1330,8 +1330,8 @@ class tbliteTheory(Theory):
             self.gradient = self.results.get("gradient")
 
         if Grad:
-            print_time_rel(module_init_time, modulename='tblite run', moduleindex=2)
+            print_time_rel(module_init_time, modulename='tblite run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             return self.energy, self.gradient
         else:
-            print_time_rel(module_init_time, modulename='tblite run', moduleindex=2)
+            print_time_rel(module_init_time, modulename='tblite run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
             return self.energy
