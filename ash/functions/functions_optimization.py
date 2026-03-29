@@ -723,6 +723,7 @@ class Cart_optimizer_class:
             #print("i, j:", i, j)
             #print("r0:", r0)
             #k      = c.get('k', self.default_k)   # only used for soft
+            k = self.default_k # temp
             # Current bond vector and length
             rij = coords_au[i] - coords_au[j]          # (3,)
             d   = np.linalg.norm(rij)
@@ -779,6 +780,7 @@ class Cart_optimizer_class:
             i, j, k, theta0_deg = c         # centre atom is j
             print("theta0_deg:", theta0_deg)
             theta0 = np.deg2rad(theta0_deg)
+            kf=self.default_k #temp
             #kf       = c.get('k', self.default_k)
 
             # Bond vectors pointing away from centre j
@@ -852,6 +854,7 @@ class Cart_optimizer_class:
             i, j, k, l, phi0_deg  = c
             print("i, j, k, l:", i, j, k, l)
             print("phi0_deg:", phi0_deg)
+            kf=self.default_k #temp
             phi0 = np.deg2rad(phi0_deg)
 
             # Bond vectors along the chain

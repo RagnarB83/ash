@@ -802,7 +802,7 @@ class DLFIND_optimizerClass:
 
             # Printing internal coordinate table
             if self.printlevel >= 2:
-                print_internal_coordinate_table(self.fragment,actatoms=self.print_atoms_list)
+                print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
             print()
 
             # Results object
