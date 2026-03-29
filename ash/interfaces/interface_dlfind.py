@@ -8,8 +8,9 @@ from numpy.typing import ArrayLike
 
 import os
 import time
-from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,listdiff,search_list_of_lists_for_index,print_if_level
-from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex,print_internal_coordinate_table,write_xyzfile,elemstonuccharges
+from ash.functions.functions_general import ashexit, BC,print_time_rel,print_line_with_mainheader,search_list_of_lists_for_index,print_if_level
+from ash.modules.module_coords import check_charge_mult, print_internal_coordinate_table_new,write_xyzfile,elemstonuccharges, print_coords_for_atoms
+from ash.modules.module_coords_PBC import write_CIF_file, write_XSF_file, write_POSCAR_file, cell_vectors_to_params, cell_volume, align_to_standard_orientation
 from ash.modules.module_theory import NumGradclass
 from ash.modules.module_results import ASH_Results
 from ash.modules.module_freq import NumFreq,AnFreq,calc_hessian_xtb
@@ -135,6 +136,10 @@ class DLFIND_optimizerClass:
         self.fragment2=fragment2
         self.theory=theory
 
+        # Periodic
+        self.PBC_format_option=PBC_format_option
+        self.PBC=False # False by default unless detected in theory
+
         #############
         #HESSIAN
         #############
@@ -203,15 +208,99 @@ class DLFIND_optimizerClass:
         def ash_e_g_func(coordinates, iimage, kiter, theory):
             self.dlfind_eg_calls+=1
             coordinates_ang = coordinates*0.5291772109303
-            energy, gradient = self.theory.run(current_coords=coordinates_ang, elems=self.fragment.elems, charge=self.fragment.charge, mult=self.fragment.mult, Grad=True)
 
-            # NEB: Storing current geometry for each image
-            # Note: spawned climbing image will be number nimage
-            if self.icoord >= 100 and self.icoord < 150 :
-                self.NEB_geometries[iimage] = coordinates_ang
-                self.NEB_energies_dict[iimage] = energy
+            if self.PBC:
+                print("Inside PBC")
 
-            return energy, gradient
+                # Split  coords into atomic and lattic
+                R_geo = coordinates_ang[:-4]
+                origin = coordinates_ang[-4]
+                H_geo = coordinates_ang[-3:] - origin
+
+                # --- Enforce Standard Orientation in each step ---
+                print("Enforcing orientation")
+                # 1. Ensure the Origin dummy atom stays at exactly 0,0,0
+                origin[:] = 0.0
+                # 2. Force H_geo to be strictly upper-triangular
+                # Vector A: Only Ax is allowed (Ay and Az are zero)
+                H_geo[0, 1] = 0.0  # ay = 0
+                H_geo[0, 2] = 0.0  # az = 0
+                # Vector B: Only Bx and By are allowed (Bz is zero)
+                H_geo[1, 2] = 0.0  # bz = 0
+                # -----------------------------------------------------
+                s = np.dot(R_geo - origin, self.H_ref_inv)
+                R_phys = np.dot(s, H_geo) + origin
+                #Update cell parameters in theory
+                self.theory.update_cell(H_geo)
+
+                self.full_current_coords=R_phys
+                self.fragment.replace_coords(self.fragment.elems, self.full_current_coords, conn=False)
+
+                #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
+                self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
+                if self.printlevel >= 1:
+                    print(f"Current geometry (Å) in step {self.dlfind_eg_calls} (print_atoms_list region)")
+                    print("---------------------------------------------------")
+                    print_coords_for_atoms(R_phys, self.elems_phys, self.print_atoms_list)
+                    print("")
+                    print("Note: printed only print_atoms_list (this is not necessarily all atoms) ")
+                    print(f"Current cell vectors (Å):{H_geo}")
+                    print(f"Current cell volume (Å):{cell_volume(H_geo)}")
+
+                # E + G from theory
+                energy,grad_phys=self.theory.run(current_coords=R_phys, elems=self.elems_phys, 
+                                            charge=self.charge, mult=self.mult, Grad=True)
+                self.energy = energy
+
+                # Transformation
+                # M is the transformation matrix: R_phys = R_geo @ M
+                M = np.dot(self.H_ref_inv, H_geo)
+                grad_Rgeo = np.dot(grad_phys, M.T)
+
+                # Convection, implicit lattice gradient
+                #grad_convection = np.dot(s.T, grad_phys)
+
+                # Lattice gradient and masking
+                #Total lattice gradient: current theory cell-gradient + convection
+                #grad_latt_total = self.theory.cell_gradient
+                grad_latt_total = self.theory.get_cell_gradient()
+                # Standard orientation mask:
+                # This zeros out: a_y, a_z, and b_z
+                mask = np.array([
+                    [1, 0, 0], # dE/dax (ay, az frozen)
+                    [1, 1, 0], # dE/dbx, dE/dby (bz frozen)
+                    [1, 1, 1]  # dE/dcx, dE/dcy, dE/dcz (all free)
+                ])
+                grad_latt_masked = grad_latt_total * mask
+                # Making sure origin is zero
+                grad_origin = np.zeros((1, 3))
+                # Final modified gradient to pass to geomeTRIC
+                mod_gradient = np.concatenate([
+                        grad_Rgeo,         # (N, 3)
+                        grad_origin,       # (1, 3)
+                        grad_latt_masked   # (3, 3)
+                    ], axis=0)
+                return energy, mod_gradient
+
+            else:
+                self.fragment.coords=coordinates_ang
+                #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
+                self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
+                if self.printlevel >= 1:
+                    print(f"Current geometry (Å) in step {self.dlfind_eg_calls} (print_atoms_list region)")
+                    print("---------------------------------------------------")
+                    print_coords_for_atoms(coordinates_ang, self.fragment.elems, self.print_atoms_list)
+                    print("")
+                    print("Note: printed only print_atoms_list (this is not necessarily all atoms) ")
+                energy, gradient = self.theory.run(current_coords=coordinates_ang, elems=self.fragment.elems, charge=self.charge, mult=self.mult, Grad=True)
+
+                # NEB: Storing current geometry for each image
+                # Note: spawned climbing image will be number nimage
+                if self.icoord >= 100 and self.icoord < 150 :
+                    self.NEB_geometries[iimage] = coordinates_ang
+                    self.NEB_energies_dict[iimage] = energy
+
+                return energy, gradient
 
         # Modified wrapper function
         def dlf_get_hessian_wrapper(func: Callable) -> Callable:
@@ -279,7 +368,6 @@ class DLFIND_optimizerClass:
             print("ASH hessian:", hessian)
 
             return hessian
-
 
         # Create function to store results from DL-FIND
         #@dlf_put_coords_wrapper
@@ -349,6 +437,25 @@ class DLFIND_optimizerClass:
         self.dlf_get_hessian = functools.partial(hess_func)
         self.dlf_put_coords = functools.partial( store_results, None)
 
+    # Should be run only once
+    def setup_PBC(self):
+        
+        # Real elements
+        self.elems_phys=self.fragment.elems
+        # Align to standard orientation
+        aligned_atom_coords, aligned_vectors = align_to_standard_orientation(self.fragment.coords, 
+                                                                                  self.theory.periodic_cell_vectors)
+        self.fragment.coords=aligned_atom_coords
+        self.theory.update_cell(aligned_vectors)
+
+        # Reference
+        self.H_ref = aligned_vectors.copy()
+        self.H_ref_inv = np.linalg.inv(self.H_ref)
+
+        # Defining DLFIND_coords to have aligned coords and 4 dummyatoms
+        self.DLFIND_coords = np.concatenate((aligned_atom_coords,[[0.0,0.0,0.0]],aligned_vectors),axis=0)
+        self.DLFIND_elems = self.fragment.elems+ ['F','F','F','F']
+
     def print_settings(self):
         # Print-atoms choice
         # If not specified then active-region or all-atoms
@@ -372,7 +479,7 @@ class DLFIND_optimizerClass:
                 self.print_atoms_list=self.fragment.allatoms
 
     def setup_constraints_act_frozen(self):
-    
+
         ########################################
         # ACTIVE/FROZEN AND RESIDUE HANDLING
         ########################################
@@ -384,7 +491,17 @@ class DLFIND_optimizerClass:
         # What to optimize etc.
         self.spec=[]
 
-        # First dentify possible frozen constraints defined in constraints dict
+        if self.PBC:
+            allatoms = self.fragment.allatoms + [self.fragment.numatoms, self.fragment.numatoms+1, self.fragment.numatoms+2, self.fragment.numatoms+3]
+            numatoms=self.fragment.numatoms + 4
+            elems = self.fragment.elems + ['F','F','F','F']
+        else:
+            allatoms = self.fragment.allatoms
+            numatoms=self.fragment.numatoms
+            elems = self.fragment.elems
+
+
+        # First identify possible frozen constraints defined in constraints dict
         if self.constraints is not None:
             if 'xyz' in self.constraints:
                 print_if_level(f"XYZ constraints found in constraints dict. {self.constraints['xyz']}", self.printlevel,2 )
@@ -395,12 +512,19 @@ class DLFIND_optimizerClass:
 
         if self.actatoms is not None:
             print_if_level("Actatoms provided:", self.actatoms)
+
+            if self.PBC:
+                print("PBC detected. Adding 4 dummy atoms to actatoms if not already present")
+                for i in range(self.fragment.numatoms, self.fragment.numatoms+4):
+                    if i not in self.actatoms:
+                        self.actatoms.append(i)
+
             if self.frozenatoms is not None:
                 if len(self.frozenatoms) > 0:
                     print("frozenatoms:", self.frozenatoms)
                     print("Error: actatoms and frozenatoms can not both be defined")
                     ashexit()
-            print_if_level(f"All atoms: {self.fragment.allatoms}", self.printlevel,2 )
+            print_if_level(f"All atoms: {allatoms}", self.printlevel,2 )
 
             for i in self.fragment.allatoms:
                 if i in self.actatoms:
@@ -414,7 +538,7 @@ class DLFIND_optimizerClass:
             print_if_level(f"Frozenatoms provided: {self.frozenatoms}", self.printlevel,2 )
             print_if_level(f"All atoms: {self.fragment.allatoms}", self.printlevel,2 )
 
-            for i in self.fragment.allatoms:
+            for i in allatoms:
                 if i in frozenatoms:
                     self.spec.append(-1)
                 else:
@@ -424,17 +548,18 @@ class DLFIND_optimizerClass:
                         self.spec.append(1)
         else:
             print_if_level("Case: no actatoms or frozenatoms provided. All atoms will be active.", self.printlevel,2)
-            print_if_level(f"All atoms: {self.fragment.allatoms}", self.printlevel,2)
+            print_if_level(f"All atoms: {allatoms}", self.printlevel,2)
             if self.residues is None:
-                self.spec=[1 for i in list(range(self.fragment.numatoms))]
+                self.spec=[1 for i in list(range(numatoms))]
             else:
                 print_if_level("Residues provided:", self.residues, self.printlevel,2)
-                for i in self.fragment.allatoms:
+                for i in allatoms:
                     resid = search_list_of_lists_for_index(i,self.residues)
                     self.spec.append(resid+1)
 
         # Nuclear charges
-        nuccharges  = elemstonuccharges(self.fragment.elems)
+        nuccharges  = elemstonuccharges(elems)
+        print("nuccharges:", nuccharges)
         self.spec=self.spec + nuccharges
 
         # Constraints. should be dict: constraints={'bond':[[0,1]], 'angle':[[98,99,100]]}
@@ -469,9 +594,11 @@ class DLFIND_optimizerClass:
             self.numcons=0
 
         # Spec
-        self.spec=self.spec+[1 for i in list(range(self.fragment.numatoms))] #?
+        self.spec=self.spec+[1 for i in list(range(numatoms))] #?
 
         self.nspec=len(self.spec)
+
+        print("DL-FIND spec list:", self.spec)
 
 
     def prepare_run(self):
@@ -479,7 +606,14 @@ class DLFIND_optimizerClass:
         from libdlfind.callback import make_dlf_get_params
         self.traj_energies = []
         self.current_geo = []
+        # Converting coordinates from Angstrom to Bohr
         positions = self.fragment.coords * 1.88972612546
+        nz = self.fragment.numatoms
+        if self.PBC:
+            print("Preparing for PBC optimization. Using aligned coordinates with 4 dummy atoms")
+            print("self.DLFIND_coords:", self.DLFIND_coords)
+            positions = self.DLFIND_coords * 1.88972612546
+            nz = self.fragment.numatoms + 4
 
         # Possible Fragment2 handling
         if self.fragment2 is not None:
@@ -496,7 +630,7 @@ class DLFIND_optimizerClass:
         self.dlf_get_params = make_dlf_get_params(coords=positions, coords2=positions2, icoord=self.icoord, 
                                                   iopt=self.iopt, maxcycle=self.maxcycle,tolerance=self.tolerance,
                                                   tolerance_e=self.tolerance_e, inithessian=self.inithessian,
-                                                  nframe=nframe, nz = self.fragment.numatoms,
+                                                  nframe=nframe, nz=nz,
                                                   ncons=self.numcons, delta=self.delta,
                                                   spec=self.spec, printl=self.printlevel, nimage=self.nimage)
 
@@ -515,7 +649,7 @@ class DLFIND_optimizerClass:
         print_if_level(f"icoord: {self.icoord}", self.printlevel,2)
         print_if_level(f"iopt: {self.iopt}", self.printlevel,2)
         print_if_level(f"maxcycle: {self.maxcycle}", self.printlevel,2)
-        print_if_level(f"spec: {self.spec}", self.printlevel,2)
+        print_if_level(f"spec ({len(self.spec)}): {self.spec}", self.printlevel,2)
         if self.icoord == 120:
             print_if_level(f"NEB nimage: {self.nimage}", self.printlevel,2)
 
@@ -526,21 +660,40 @@ class DLFIND_optimizerClass:
         if fragment is not None:
             self.fragment=fragment
 
-        if fragment2 is None and self.fragment2 is None:
-            nvarin=self.fragment.numatoms * 3
-            nvarin2=0
-        elif fragment2 is not None:
-            nvarin = self.fragment.numatoms * 3
-            nvarin2 = self.fragment2.numatoms * 3
-        elif self.fragment2 is not None:
-            nvarin = self.fragment.numatoms * 3
-            nvarin2 = self.fragment2.numatoms * 3
-
         # Update self theory if a run fragment was provided
         if theory is not None:
             self.theory=theory
 
-        # Update constraints if provided
+        # Check if PBCs used by theory
+        if getattr(self.theory, "periodic", False):
+            print("Detected periodicity in Theory object")
+            print("Activating periodic routines ")
+            print("Setting up PBC for DL-FIND optimization")
+            self.setup_PBC()
+            self.PBC=True
+            print("PBC setup complete")
+            if fragment2 is None and self.fragment2 is None:
+                nvarin=self.fragment.numatoms * 3 + 4*3 # 4 dummy atoms with 3 coords each
+                nvarin2=0
+            # TODO: fragment2 
+            #elif fragment2 is not None:
+            #    nvarin = self.fragment.numatoms * 3 + 4*3 # 4 dummy atoms with 3 coords each
+            #    nvarin2 = self.fragment2.numatoms * 3 
+            #elif self.fragment2 is not None:
+            #    nvarin = self.fragment.numatoms * 3
+            #    nvarin2 = self.fragment2.numatoms * 3
+            # Update constraints if provided
+        else:
+            if fragment2 is None and self.fragment2 is None:
+                nvarin=self.fragment.numatoms * 3
+                nvarin2=0
+            elif fragment2 is not None:
+                nvarin = self.fragment.numatoms * 3
+                nvarin2 = self.fragment2.numatoms * 3
+            elif self.fragment2 is not None:
+                nvarin = self.fragment.numatoms * 3
+                nvarin2 = self.fragment2.numatoms * 3
+            # Update constraints if provided
         if constraints is not None:
             self.constraints=constraints
 
@@ -550,7 +703,7 @@ class DLFIND_optimizerClass:
         # Prepare run, including constraints etc.
         self.prepare_run()
 
-        charge, mult = check_charge_mult(charge, mult, self.theory.theorytype, self.fragment, 
+        self.charge, self.mult = check_charge_mult(charge, mult, self.theory.theorytype, self.fragment, 
                                          "DLFIND-optimizer", theory=self.theory, printlevel=self.printlevel)
 
         # Run DL-FIND
@@ -571,24 +724,48 @@ class DLFIND_optimizerClass:
             # Print results
             finalenergy=self.traj_energies[-1]
             print("Final optimized energy:",  finalenergy)
+
             # Final coordinate handling
-            final_coords=self.current_geo
-            fragment.replace_coords(fragment.elems,final_coords, conn=False)
-            # Writing out fragment file and XYZ file
-            fragment.print_system(filename='Fragment-optimized.ygg')
-            fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
-            fragment.set_energy(finalenergy)
+            if self.PBC:
+                self.fragment.print_system(filename='Fragment-optimized.ygg')
+                self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+                self.fragment.set_energy(finalenergy)
+                print("Final geometry")
+                self.fragment.print_coords()
+                print("PBC True. Writing final optimized geometry in PBC-format")
+                print("PBC_format_option:", self.PBC_format_option)
+                if self.PBC_format_option.upper() == "CIF":
+                    convert_to_pbcfile=write_CIF_file
+                    file_ext='cif'
+                elif self.PBC_format_option.upper() == "XSF":
+                    convert_to_pbcfile=write_XSF_file
+                    file_ext='xsf'
+                elif self.PBC_format_option.upper() == "POSCAR":
+                    convert_to_pbcfile=write_POSCAR_file
+                    file_ext='POSCAR'
+                pbcfile = convert_to_pbcfile(self.fragment.coords,self.fragment.elems,cellvectors=theory.periodic_cell_vectors,
+                                             filename=f"Fragment-optimized.{file_ext}")
+                print(f"Final cell vectors (Å):{theory.periodic_cell_vectors}")
+                print(f"Final cell parameters: {cell_vectors_to_params(theory.periodic_cell_vectors)}")
+                print(f"Final cell volume (Å): {cell_volume(theory.periodic_cell_vectors)}")
+            else:
+                # Writing out fragment file and XYZ file
+                self.fragment.print_system(filename='Fragment-optimized.ygg')
+                self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+                self.fragment.set_energy(finalenergy)
+                print("Final geometry")
+                self.fragment.print_coords()
 
             # Printing internal coordinate table
             if self.printlevel >= 2:
-                print_internal_coordinate_table(fragment,actatoms=self.print_atoms_list)
+                print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
             print()
 
-            # Now returning final Results object
+            # Results object
             result = ASH_Results(label="DLFIND_optimizer", energy=finalenergy)
+
             if self.result_write_to_disk is True:
                 result.write_to_disk(filename="DLFIND_optimizer.result", printlevel=self.printlevel)
-            return result
 
         elif self.icoord >= 100 and self.icoord < 150:
             # NEB job complete
@@ -601,7 +778,7 @@ class DLFIND_optimizerClass:
             # Now returning final Results object
             #result = ASH_Results(label="DLFIND_optimizer", energy=finalenergy)
             result = ASH_Results(label="DLFIND_NEB-CI calc", energy=CI_fragment_energy, geometry=CI_fragment_coords,
-                charge=charge, mult=mult, MEP_energies_dict=self.NEB_energies_dict,
+                charge=self.charge, mult=self.mult, MEP_energies_dict=self.NEB_energies_dict,
                 barrier_energy=None)
 
             if self.result_write_to_disk is True:
@@ -617,19 +794,22 @@ class DLFIND_optimizerClass:
 
             # Final coordinate handling
             final_coords=self.current_geo
-            fragment.replace_coords(fragment.elems,final_coords, conn=False)
+            self.fragment.replace_coords(self.fragment.elems,final_coords, conn=False)
             # Writing out fragment file and XYZ file
-            fragment.print_system(filename='Fragment-optimized.ygg')
-            fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
-            fragment.set_energy(finalenergy)
+            self.fragment.print_system(filename='Fragment-optimized.ygg')
+            self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+            self.fragment.set_energy(finalenergy)
 
             # Printing internal coordinate table
             if self.printlevel >= 2:
-                print_internal_coordinate_table(fragment,actatoms=self.print_atoms_list)
+                print_internal_coordinate_table(self.fragment,actatoms=self.print_atoms_list)
             print()
 
-            # Now returning final Results object
-            result = ASH_Results(label="DLFIND_optimizer", energy=finalenergy)
+            # Results object
+            result = ASH_Results(label="DLFIND_dimer", energy=finalenergy)
+
             if self.result_write_to_disk is True:
-                result.write_to_disk(filename="DLFIND_optimizer.result")
-            return result
+                result.write_to_disk(filename="DLFIND_dimer.result", printlevel=self.printlevel)
+
+
+        return result

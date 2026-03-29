@@ -4,13 +4,12 @@ import os
 
 import ash.constants
 from ash.functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC,listdiff,print_time_rel
-from ash.modules.module_coords import write_xyzfile
-from ash.modules.module_coords import check_charge_mult, cell_vectors_to_params, cell_params_to_vectors, cart_coords_to_fract, fract_coords_to_cart, cell_volume
-from ash.modules.module_coords import print_coords_for_atoms,write_CIF_file,write_XSF_file, write_POSCAR_file
+from ash.modules.module_coords import check_charge_mult , write_xyzfile, print_internal_coordinate_table_new
+from ash.modules.module_coords_PBC import cell_vectors_to_params, cart_coords_to_fract, fract_coords_to_cart, cell_volume, \
+                                          write_CIF_file,write_XSF_file, write_POSCAR_file
+from ash.modules.module_coords import print_coords_for_atoms
 from ash.interfaces.interface_geometric_new import geomeTRICOptimizer
-from ash.modules.module_theory import NumGradclass
-#import ash
-
+from ash.modules.module_results import ASH_Results
 
 #Root mean square of numpy array, e.g. gradient
 def RMS_G(grad):
@@ -563,39 +562,41 @@ def periodic_optimizer_alternating(fragment=None, theory=None, rate=0.5, maxiter
 # Cartesian-based periodic cell optimizer
 
 
-# Wrapper function around Periodic_optimizer_cart_class
-def Periodic_optimizer_cart(fragment=None, theory=None, rate=2.0, 
+# Wrapper function around Cart_optimizer_class
+def Cart_optimizer(fragment=None, theory=None, rate=2.0, 
                                 scaling_rate_cell=1.0, maxiter=50, 
                                 step_algo="bfgs",
                                 max_step=0.25, momentum=0.5, 
                                 printlevel=2, conv_criteria=None, PBC_format_option="CIF",
-                                constraints=None, frozen_atoms=None):
+                                constraints=None, frozen_atoms=None, result_write_to_disk=True):
     """
-    Wrapper function around Periodic_optimizer_cart_class
+    Wrapper function around Cart_optimizer_class
     """
     timeA=time.time()
 
     # EARLY EXIT
     if theory is None or fragment is None:
-        print("Periodic_optimizer_cart requires theory and fragment objects provided. Exiting.")
+        print("Cart_optimizer requires theory and fragment objects provided. Exiting.")
         ashexit()
-    optimizer=Periodic_optimizer_cart_class(fragment=fragment, theory=theory, rate=rate, scaling_rate_cell=scaling_rate_cell, 
+    optimizer=Cart_optimizer_class(fragment=fragment, theory=theory, rate=rate, scaling_rate_cell=scaling_rate_cell, 
                                             maxiter=maxiter, step_algo=step_algo,
                                             max_step=max_step, momentum=momentum, PBC_format_option=PBC_format_option,
-                                            printlevel=printlevel, conv_criteria=conv_criteria, constraints=constraints, frozen_atoms=frozen_atoms)
+                                            printlevel=printlevel, conv_criteria=conv_criteria, constraints=constraints, 
+                                            frozen_atoms=frozen_atoms, result_write_to_disk=result_write_to_disk)
 
     result = optimizer.run()
     if printlevel >= 1:
-        print_time_rel(timeA, modulename='Periodic_optimizer_cart', moduleindex=1)
+        print_time_rel(timeA, modulename='Cart_optimizer', moduleindex=1)
 
     return result
 
 
-class Periodic_optimizer_cart_class:
+class Cart_optimizer_class:
 
     def __init__(self,fragment=None, theory=None, rate=2.0, scaling_rate_cell=1.0, maxiter=50, step_algo="bfgs",
-                                max_step=0.25, momentum=0.5, printlevel=2, conv_criteria=None,
-                                PBC_format_option="CIF", constraints=None, frozen_atoms=None):
+                                max_step=0.25, momentum=0.5, printlevel=2, conv_criteria=None, print_atoms_list=None,
+                                PBC_format_option="CIF", constraints=None, constrain_method='hard',
+                                frozen_atoms=None, result_write_to_disk=True):
 
         self.fragment = fragment
         self.theory = theory
@@ -607,8 +608,11 @@ class Periodic_optimizer_cart_class:
         self.momentum=momentum
         self.printlevel=printlevel
         self.PBC_format_option=PBC_format_option
+        self.print_atoms_list=print_atoms_list
+        self.result_write_to_disk=result_write_to_disk
         # Constraints
         self.constraints = constraints if constraints is not None else []
+        self.constrain_method = constrain_method # 'hard' or 'soft'
         # Default force constant for soft restraints (eV/Å² or Eh/Å² — match your units)
         self.default_k = 10.0
         # Frozen atoms
@@ -636,27 +640,38 @@ class Periodic_optimizer_cart_class:
         print("Maxiter:", self.maxiter)
         print(f"Max step size {self.max_step} Å")
         print()
-        print(f"Initial cell vectors in Theory object: {theory.periodic_cell_vectors} Å")
 
-        self.cell_vectors_au = theory.periodic_cell_vectors*self.ang2bohr
-        self.cell_vectors = theory.periodic_cell_vectors
-        self.elems_phys=fragment.elems
+        self.PBC=False
 
-        ################
-        # INITIAL STUFF
-        ################
+        #######################
+        # INITITAL SETUP
+        #######################
+
+        #---- PERIODIC -----
+        if getattr(self.theory, "periodic", False):
+            print("Theory object is periodic")
+            print("Will run periodic cell optimization")
+            print(f"Initial cell vectors in Theory object: {theory.periodic_cell_vectors} Å")
+            self.PBC=True
+
+            self.cell_vectors_au = theory.periodic_cell_vectors*self.ang2bohr
+            self.cell_vectors = theory.periodic_cell_vectors
+
+        #---- NON-PERIODIC -----
+        else:
+            print("Theory object is not periodic.")
+
+    def setup_PBC(self):
         # Align to standard orientation
         aligned_atom_coords, aligned_vectors = self.align_to_standard_orientation(self.fragment.coords, 
-                                                                                  self.theory.periodic_cell_vectors)
+                                                                                self.theory.periodic_cell_vectors)
         print("Updating fragment coordinates and theory cell with aligned coords")
         self.fragment.coords=aligned_atom_coords
         self.theory.update_cell(aligned_vectors)
 
         # Reference
         self.H_ref = aligned_vectors.copy()
-        print("H_ref:",self. H_ref)
         self.H_ref_inv = np.linalg.inv(self.H_ref)
-        print("H_ref_inv:", self.H_ref_inv)
 
     def apply_frozen_atoms(self, gradient):
         """
@@ -700,18 +715,16 @@ class Periodic_optimizer_cart_class:
         # Work on a copy so we don't mutate in-place unexpectedly
         grad_out = gradient.copy()
         energy_out = energy
+        coords_au = coords * self.ang2bohr
 
-        for c in self.constraints:
-            if c.get('type') != 'bond':
-                continue
+        for c in self.constraints['bond']:
             print("Applying bond constraint")
-            i, j   = c['atoms']
-            r0     = c['target']           # target bond length in Å
-            method = c.get('method', 'hard')
-            k      = c.get('k', self.default_k)   # only used for soft
-
+            i, j, r0  = c
+            #print("i, j:", i, j)
+            #print("r0:", r0)
+            #k      = c.get('k', self.default_k)   # only used for soft
             # Current bond vector and length
-            rij = coords[i] - coords[j]          # (3,)
+            rij = coords_au[i] - coords_au[j]          # (3,)
             d   = np.linalg.norm(rij)
             if d < 1e-8:
                 print(f"Warning: atoms {i} and {j} are on top of each other. Skipping constraint.")
@@ -720,7 +733,7 @@ class Periodic_optimizer_cart_class:
 
             delta = d - r0                        # signed deviation in Å
 
-            if method == 'soft':
+            if self.constrain_method == 'soft':
                 # Harmonic restraint: V = 0.5 * k * delta^2
                 # dV/dr_i = k * delta * e_ij
                 # dV/dr_j = -k * delta * e_ij
@@ -731,7 +744,7 @@ class Periodic_optimizer_cart_class:
                     print(f"  Soft constraint ({i},{j}): d={d:.4f} Å  target={r0:.4f} Å  "
                         f"delta={delta:.4f} Å  penalty={0.5*k*delta**2:.6f}")
 
-            elif method == 'hard':
+            elif self.constrain_method == 'hard':
                 # SHAKE-style: project out the component of the gradient
                 # along the bond direction for both atoms.
                 # g_parallel_i =  (g_i · e_ij) * e_ij
@@ -745,7 +758,7 @@ class Periodic_optimizer_cart_class:
                     print(f"  Hard constraint ({i},{j}): d={d:.4f} Å  target={r0:.4f} Å  "
                         f"delta={delta:.4f} Å  |proj_i|={np.linalg.norm(g_i_par):.6f}")
             else:
-                print(f"Unknown constraint method '{method}'. Use 'hard' or 'soft'.")
+                print(f"Unknown constraint method '{self.constrain_method}'. Use 'hard' or 'soft'.")
 
         return energy_out, grad_out
 
@@ -759,19 +772,18 @@ class Periodic_optimizer_cart_class:
 
         grad_out = gradient.copy()
         energy_out = energy
+        coords_au = coords * self.ang2bohr
 
-        for c in self.constraints:
-            if c.get('type') != 'angle':
-                continue
+        for c in self.constraints['angle']:
             print("Applying angle constraint")
-            i, j, k = c['atoms']         # centre atom is j
-            theta0   = np.deg2rad(c['target'])
-            method   = c.get('method', 'hard')
-            kf       = c.get('k', self.default_k)
+            i, j, k, theta0_deg = c         # centre atom is j
+            print("theta0_deg:", theta0_deg)
+            theta0 = np.deg2rad(theta0_deg)
+            #kf       = c.get('k', self.default_k)
 
             # Bond vectors pointing away from centre j
-            u = coords[i] - coords[j]
-            v = coords[k] - coords[j]
+            u = coords_au[i] - coords_au[j]
+            v = coords_au[k] - coords_au[j]
             lu = np.linalg.norm(u)
             lv = np.linalg.norm(v)
 
@@ -799,7 +811,7 @@ class Periodic_optimizer_cart_class:
 
             delta = theta - theta0   # deviation in radians
 
-            if method == 'soft':
+            if self.constrain_method == 'soft':
                 energy_out    += 0.5 * kf * delta**2
                 grad_out[i]   += kf * delta * dt_dri
                 grad_out[j]   += kf * delta * dt_drj
@@ -809,7 +821,7 @@ class Periodic_optimizer_cart_class:
                         f"target={np.rad2deg(theta0):.3f}°  delta={np.rad2deg(delta):.3f}°  "
                         f"penalty={0.5*kf*delta**2:.6f}")
 
-            elif method == 'hard':
+            elif self.constrain_method == 'hard':
                 # Project out the gradient component along dθ/dr for each atom
                 for idx, dt_dr in [(i, dt_dri), (j, dt_drj), (k, dt_drk)]:
                     proj = np.dot(grad_out[idx], dt_dr)
@@ -833,20 +845,19 @@ class Periodic_optimizer_cart_class:
 
         grad_out = gradient.copy()
         energy_out = energy
-
-        for c in self.constraints:
-            if c.get('type') != 'torsion':
-                continue
+        coords_au = coords * self.ang2bohr
+        for c in self.constraints['dihedral']:
+            print("c:", c)
             print("Applying torsion constraint")
-            i, j, k, l  = c['atoms']
-            phi0         = np.deg2rad(c['target'])
-            method       = c.get('method', 'hard')
-            kf           = c.get('k', self.default_k)
+            i, j, k, l, phi0_deg  = c
+            print("i, j, k, l:", i, j, k, l)
+            print("phi0_deg:", phi0_deg)
+            phi0 = np.deg2rad(phi0_deg)
 
             # Bond vectors along the chain
-            b1 = coords[j] - coords[i]
-            b2 = coords[k] - coords[j]
-            b3 = coords[l] - coords[k]
+            b1 = coords_au[j] - coords_au[i]
+            b2 = coords_au[k] - coords_au[j]
+            b3 = coords_au[l] - coords_au[k]
 
             # Normal vectors to the two planes
             n1 = np.cross(b1, b2)
@@ -886,7 +897,7 @@ class Periodic_optimizer_cart_class:
             dphi_drk = (  (1.0 - np.dot(b3,b2)/lb2_sq) * (lb2/ln2**2) * n2
                         -(     np.dot(b1,b2)/lb2_sq)   * (lb2/ln1**2) * n1 )
 
-            if method == 'soft':
+            if self.constrain_method == 'soft':
                 energy_out  += 0.5 * kf * delta**2
                 grad_out[i] += kf * delta * dphi_dri
                 grad_out[j] += kf * delta * dphi_drj
@@ -897,16 +908,37 @@ class Periodic_optimizer_cart_class:
                         f"target={np.rad2deg(phi0):.3f}°  delta={np.rad2deg(delta):.3f}°  "
                         f"penalty={0.5*kf*delta**2:.6f}")
 
-            elif method == 'hard':
-                for idx, dphi_dr in [(i, dphi_dri), (j, dphi_drj),
-                                    (k, dphi_drk), (l, dphi_drl)]:
-                    norm = np.linalg.norm(dphi_dr)
-                    if norm > 1e-10:
-                        n_hat = dphi_dr / norm
-                        grad_out[idx] -= np.dot(grad_out[idx], n_hat) * n_hat
-                if self.printlevel >= 2:
-                    print(f"  Hard torsion ({i},{j},{k},{l}): φ={np.rad2deg(phi):.3f}°  "
-                        f"target={np.rad2deg(phi0):.3f}°  delta={np.rad2deg(delta):.3f}°")
+            elif self.constrain_method == 'hard':
+                # Tolerance within which we switch from soft-drive to hard-project
+                tol = np.deg2rad(2.0)  # default 2°
+
+                if abs(delta) > tol:
+                    print("not yet target")
+                    # Not yet at target: drive toward it with a stiff soft penalty
+                    #kf_drive = c.get('k_drive', 50.0)  # Eh/rad², stiff
+                    kf_drive = 0.05
+                    energy_out  += 0.5 * kf_drive * delta**2
+                    grad_out[i] += kf_drive * delta * dphi_dri
+                    grad_out[j] += kf_drive * delta * dphi_drj
+                    grad_out[k] += kf_drive * delta * dphi_drk
+                    grad_out[l] += kf_drive * delta * dphi_drl
+                    if self.printlevel >= 2:
+                        print(f"  Hard torsion ({i},{j},{k},{l}): φ={np.rad2deg(phi):.3f}°  "
+                            f"target={np.rad2deg(phi0):.3f}°  delta={np.rad2deg(delta):.3f}°  "
+                            f"[driving, |delta| > tol={np.rad2deg(tol):.1f}°]")
+                else:
+                    print("  Within tolerance for hard torsion constraint, switching to projection.")
+                    # Close enough: project out the torsion-changing gradient component
+                    for idx, dphi_dr in [(i, dphi_dri), (j, dphi_drj),
+                                        (k, dphi_drk), (l, dphi_drl)]:
+                        norm = np.linalg.norm(dphi_dr)
+                        if norm > 1e-10:
+                            n_hat = dphi_dr / norm
+                            grad_out[idx] -= np.dot(grad_out[idx], n_hat) * n_hat
+                    if self.printlevel >= 2:
+                        print(f"  Hard torsion ({i},{j},{k},{l}): φ={np.rad2deg(phi):.3f}°  "
+                            f"target={np.rad2deg(phi0):.3f}°  delta={np.rad2deg(delta):.3f}°  "
+                            f"[projecting, |delta| <= tol={np.rad2deg(tol):.1f}°]")
 
         return energy_out, grad_out
 
@@ -1002,7 +1034,12 @@ class Periodic_optimizer_cart_class:
         s = np.dot(R_geo - origin, self.H_ref_inv)
         R_phys = np.dot(s, H_geo) + origin
         return R_phys, H_geo
-
+    
+    def calculate_reg_gradient(self,coords):
+        # E + G from theory
+        energy,gradient=self.theory.run(current_coords=coords, elems=self.elems_phys, 
+                                    charge=self.fragment.charge, mult=self.fragment.mult, Grad=True)
+        return energy, gradient
     def calculate_supergradient(self,supercoords):
 
         R_phys, H_geo = self.split_coords(supercoords)
@@ -1096,119 +1133,205 @@ class Periodic_optimizer_cart_class:
 
         return delta_au
 
-    def run(self):
+    def run(self, theory=None, fragment=None, constraints=None, charge=None, mult=None):
 
-        # Defining initial super coords
-        currcoords = np.concatenate([
-                self.fragment.coords,         # (N, 3)
-                 np.zeros((1, 3)),       # (1, 3)
-                self.theory.periodic_cell_vectors,   # (3, 3)
-            ], axis=0)
-        print("currcoords:", currcoords)
+        # Update self fragment if a run fragment was provided
+        if fragment is not None:
+            self.fragment=fragment
+            self.elems_phys=fragment.elems
+        else:
+            self.elems_phys=self.fragment.elems
 
+        if self.print_atoms_list is None:
+            self.print_atoms_list = self.fragment.allatoms
+
+        # Update self theory if a run fragment was provided
+        if theory is not None:
+            self.theory=theory
+
+        # Update constraints if provided
+        if constraints is not None:
+            self.constraints=constraints
+
+        self.charge, self.mult = check_charge_mult(charge, mult, self.theory.theorytype, self.fragment, 
+                                         "CartOptimizer", theory=self.theory, printlevel=self.printlevel)
+        # Defining coordinates to use, PBC vs. non-PBC
+        if self.PBC:
+            print("Running periodic optimization in Cartesian coordinates with cell optimization")
+            self.setup_PBC()
+            currcoords = np.concatenate([
+                    self.fragment.coords,         # (N, 3)
+                    np.zeros((1, 3)),       # (1, 3)
+                    self.theory.periodic_cell_vectors,   # (3, 3)
+                ], axis=0)
+            opt_type_label="PBC"
+        else:
+            print("Running non-periodic optimization in Cartesian coordinates")
+            currcoords = self.fragment.coords
+            opt_type_label="NonPBC"
+
+        # Initialize velocity for momentum-based step algorithms
         self.velocity = np.zeros((len(currcoords),3))
 
-        try:
-            os.remove("PBC_opt_traj.xyz")
-        except:
-            pass
+        for file in ["Fragment-currentgeo.xyz", "PBC_opt_traj.xyz", "NonPBC_opt_traj.xyz"]:
+            try:
+                os.remove(file)
+            except:
+                pass
 
         # LOOP
         for iteration in range(0,self.maxiter):
             self.iteration=iteration
             print("="*40)
-            print("Periodic optimization step", iteration)
+            print(f"{opt_type_label} optimization step", iteration)
             print("="*40)
 
-            #########################################
-            # 0. Splitting currcoords into atoms and lattice
-            # Update and print
-            #########################################
-            currcoords_au = currcoords*self.ang2bohr
-            R_phys, H_geo = self.split_coords(currcoords)
+            if self.PBC:
+                currcoords_au = currcoords*self.ang2bohr
+                R_phys, H_geo = self.split_coords(currcoords)
+                #Update cell
+                self.theory.update_cell(H_geo)
+            else:
+                R_phys = currcoords
+                currcoords_au = R_phys*self.ang2bohr
 
             # Update coordinates of atoms and cell
-            self.theory.update_cell(H_geo)
             self.fragment.replace_coords(self.fragment.elems, R_phys, conn=False)
 
             # 0. PRINTING ACTIVE GEOMETRY IN EACH  ITERATION
             self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
-            self.fragment.write_xyzfile(xyzfilename="PBC_opt_traj.xyz",writemode="a")
+            self.fragment.write_xyzfile(xyzfilename=f"{opt_type_label}_opt_traj.xyz",writemode="a")
             if self.printlevel >= 1:
                 print(f"Current geometry (Å) in step {iteration} (print_atoms_list region)")
                 print("---------------------------------------------------")
                 print_coords_for_atoms(R_phys, self.elems_phys,self.fragment.allatoms)
                 print("")
-                print(f"Current cell vectors (Å):{self.theory.periodic_cell_vectors}")
-                print(f"Current cell volume (Å):{cell_volume(H_geo)}")
+                if self.PBC:
+                    print(f"Current cell vectors (Å):{self.theory.periodic_cell_vectors}")
+                    print(f"Current cell volume (Å):{cell_volume(H_geo)}")
 
             #########################################
             # 1. Compute energy and gradient
             #########################################
-            energy, supergradient = self.calculate_supergradient(currcoords)
-
+            if self.PBC:
+                energy, supergradient = self.calculate_supergradient(currcoords)
+            else:
+                energy, supergradient = self.calculate_reg_gradient(currcoords)
+                print("1 energy:", energy)
+                print("1 supergradient:", supergradient)
+                prev_supgrad = supergradient.copy()
             # 1b. Apply all constraints
             if self.constraints:
                 print("Applying constraints...")
-                energy, supergradient = self.apply_bond_constraints(R_phys, supergradient, energy)
-                energy, supergradient = self.apply_angle_constraints(R_phys, supergradient, energy)
-                energy, supergradient = self.apply_torsion_constraints(R_phys, supergradient, energy)
+                print("self.constraints:", self.constraints)
+                if 'bond' in self.constraints or 'distance' in self.constraints:
+                    energy, supergradient = self.apply_bond_constraints(R_phys, supergradient, energy)
+                if 'angle' in self.constraints:
+                    energy, supergradient = self.apply_angle_constraints(R_phys, supergradient, energy)
+                if 'torsion' in self.constraints or 'dihedral' in self.constraints:
+                    if 'torsion' in self.constraints:
+                        # Renaming for clarity
+                        self.constraints['dihedral'] = self.constraints.pop('torsion')
+                    energy, supergradient = self.apply_torsion_constraints(R_phys, supergradient, energy)
+                print("2 energy:", energy)
+                print("2 supergradient:", supergradient)
+
+                print("delta gradient after constraints:", supergradient-prev_supgrad)
+                
             # 1c. Apply frozen atoms
             if self.frozen_atoms:
                 supergradient = self.apply_frozen_atoms(supergradient)
 
             #########################################
-            # 2. Check convergence of cell gradient
+            # 2. Check convergence
             #########################################
-            #grad_norm = np.linalg.norm(supergradient)
-            #grad_norm_atoms = np.linalg.norm(supergradient[:-4])
-            #grad_norm_atoms_cell = np.linalg.norm(supergradient[-3:])
-            #grad_rms = np.sqrt(np.mean(supergradient**2))
             grad_rms_atoms = np.sqrt(np.mean(supergradient[:-4]**2))
-            grad_rms_cell = np.sqrt(np.mean(supergradient[-3:]**2))
-            #grad_max = abs(max(supergradient.min(), supergradient.max(), key=abs))
             grad_max_atoms = abs(max(supergradient[:-4].min(), supergradient[:-4].max(), key=abs))
-            grad_max_cell = abs(max(supergradient[-3:].min(), supergradient[-3:].max(), key=abs))
-            #print(f"Current total Gradient Norm: {grad_norm:.6f}")
 
-            print(f"Step {iteration:3d} Energy: {energy:.10f} Eh     RMSG(atoms): {grad_rms_atoms:.6f} MaxG(atoms): {grad_max_atoms:.6f}    RMSG(cell): {grad_rms_cell:.6f} MaxG(cell): {grad_max_cell:.6f}     Cell-volume {cell_volume(self.theory.periodic_cell_vectors):.2f} Å")
+            if self.PBC:
+                grad_rms_cell = np.sqrt(np.mean(supergradient[-3:]**2))
+                grad_max_cell = abs(max(supergradient[-3:].min(), supergradient[-3:].max(), key=abs))
+                print(f"Step {iteration:3d} Energy: {energy:.10f} Eh     RMSG(atoms): {grad_rms_atoms:.6f} MaxG(atoms): {grad_max_atoms:.6f}    RMSG(cell): {grad_rms_cell:.6f} MaxG(cell): {grad_max_cell:.6f}     Cell-volume {cell_volume(self.theory.periodic_cell_vectors):.2f} Å")
 
-            if grad_rms_atoms < self.conv_criteria['convergence_grms'] and grad_max_atoms < self.conv_criteria['convergence_gmax'] and \
-                grad_rms_cell < self.conv_criteria['convergence_grms'] and grad_max_cell < self.conv_criteria['convergence_gmax']:
-                print(f"Optimization converged in {iteration+1} iterations. Convergence criteria ({self.conv_criteria}) fulfilled")
-                print(f"Final cell vectors (Å):{self.theory.periodic_cell_vectors}")
-                print(f"Final cell volume (Å):{cell_volume(self.theory.periodic_cell_vectors)}")
-                print(f"Final cell parameters: ({cell_vectors_to_params(self.theory.periodic_cell_vectors)})")
-                print(f"Final energy: {energy} Eh")
+                if grad_rms_atoms < self.conv_criteria['convergence_grms'] and grad_max_atoms < self.conv_criteria['convergence_gmax'] and \
+                            grad_rms_cell < self.conv_criteria['convergence_grms'] and grad_max_cell < self.conv_criteria['convergence_gmax']:
+                    print()
+                    print(f"Optimization converged in {iteration+1} iterations. Convergence criteria ({self.conv_criteria}) fulfilled")
+                    print(f"Final cell vectors (Å):{self.theory.periodic_cell_vectors}")
+                    print(f"Final cell volume (Å):{cell_volume(self.theory.periodic_cell_vectors)}")
+                    print(f"Final cell parameters: ({cell_vectors_to_params(self.theory.periodic_cell_vectors)})")
+                    print()
+                    print(f"Final optimized energy: {energy} Eh")
 
-                print("PBC_format_option:", self.PBC_format_option)
-                if self.PBC_format_option.upper() =="CIF":
-                    convert_to_pbcfile=write_CIF_file
-                    file_ext='cif'
-                elif self.PBC_format_option.upper() =="XSF":
-                    convert_to_pbcfile=write_XSF_file
-                    file_ext='xsf'
-                elif self.PBC_format_option.upper() == "POSCAR":
-                    convert_to_pbcfile=write_POSCAR_file
-                    file_ext='POSCAR'
-                convert_to_pbcfile(self.fragment.coords,self.fragment.elems,cellvectors=self.theory.periodic_cell_vectors,
-                                             filename=f"Fragment-optimized.{file_ext}")
-                break
+                    #Writing out fragment file and XYZ file
+                    self.fragment.print_system(filename='Fragment-optimized.ygg')
+                    self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+                    self.fragment.set_energy(energy)
+                    print("\nFinal geometry")
+                    self.fragment.print_coords()
+                    print()
+                    if self.printlevel >= 2:
+                        print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
+                    print()
+
+                    print("PBC_format_option:", self.PBC_format_option)
+                    if self.PBC_format_option.upper() =="CIF":
+                        convert_to_pbcfile=write_CIF_file
+                        file_ext='cif'
+                    elif self.PBC_format_option.upper() =="XSF":
+                        convert_to_pbcfile=write_XSF_file
+                        file_ext='xsf'
+                    elif self.PBC_format_option.upper() == "POSCAR":
+                        convert_to_pbcfile=write_POSCAR_file
+                        file_ext='POSCAR'
+                    convert_to_pbcfile(self.fragment.coords,self.fragment.elems,cellvectors=self.theory.periodic_cell_vectors,
+                                                filename=f"Fragment-optimized.{file_ext}")
+                    #Now returning final Results object
+                    result = ASH_Results(label="Optimizer", energy=energy)
+                    if self.result_write_to_disk is True:
+                        result.write_to_disk(filename="ASH_Cart_optimizer.result")
+                    return result
+            else:
+                print(f"Step {iteration:3d} Energy: {energy:.10f} Eh     RMSG(atoms): {grad_rms_atoms:.6f} MaxG(atoms): {grad_max_atoms:.6f}")
+                if grad_rms_atoms < self.conv_criteria['convergence_grms'] and grad_max_atoms < self.conv_criteria['convergence_gmax'] :
+
+                    if self.printlevel >= 1:
+                        print()
+                        print(f"Optimization converged in {iteration+1} iterations. Convergence criteria ({self.conv_criteria}) fulfilled")
+                        print()
+                        print(f"Final optimized energy: {energy} Eh")
+
+                    # Writing out fragment file and XYZ file
+                    self.fragment.print_system(filename='Fragment-optimized.ygg')
+                    self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+                    self.fragment.set_energy(energy)
+                    print("\nFinal geometry")
+                    self.fragment.print_coords()
+                    print()
+                    if self.printlevel >= 2:
+                        print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
+                    print()
+
+                    #Now returning final Results object
+                    result = ASH_Results(label="Optimizer", energy=energy)
+                    if self.result_write_to_disk is True:
+                        result.write_to_disk(filename="ASH_Cart_optimizer.result")
+                    return result
 
             #########################################
             # 3. Take step
             #########################################
-
             # Compute step
             delta_au = self.compute_step(supergradient,currcoords)
             print("Computed step:", delta_au)
 
-            # Separate check for the lattice part (last 3 rows of delta_au)
-            lattice_step = delta_au[-3:]
-            if np.max(np.abs(lattice_step)) > (0.05 * self.ang2bohr): # Cap lattice at 0.05 Å
-                scale_latt = (0.05 * self.ang2bohr) / np.max(np.abs(lattice_step))
-                delta_au[-3:] *= scale_latt
-                print(f"Lattice-specific scaling applied: {scale_latt:.3f}")
+            if self.PBC:
+                # Separate check for the lattice part (last 3 rows of delta_au)
+                lattice_step = delta_au[-3:]
+                if np.max(np.abs(lattice_step)) > (0.05 * self.ang2bohr): # Cap lattice at 0.05 Å
+                    scale_latt = (0.05 * self.ang2bohr) / np.max(np.abs(lattice_step))
+                    delta_au[-3:] *= scale_latt
+                    print(f"Lattice-specific scaling applied: {scale_latt:.3f}")
 
             # Scale down step if required
             if np.max(np.abs(delta_au)) > self.max_step_au:

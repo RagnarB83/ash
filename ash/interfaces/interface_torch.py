@@ -1,7 +1,8 @@
 import time
 import numpy as np
 
-from ash.modules.module_coords import elemstonuccharges, cell_vectors_to_params, cell_params_to_vectors
+from ash.modules.module_coords import elemstonuccharges
+from ash.modules.module_coords_PBC import cell_vectors_to_params, cell_params_to_vectors
 from ash.functions.functions_general import ashexit, BC,print_time_rel
 from ash.functions.functions_general import print_line_with_mainheader
 from ash.interfaces.interface_mace import stress_to_grad

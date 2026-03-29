@@ -11,7 +11,7 @@ import ash.modules.module_coords
 from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, \
     pygrep, search_list_of_lists_for_index,print_if_level, writestringtofile, check_program_location, listdiff
 from ash.modules.module_singlepoint import Singlepoint
-from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_coords import check_charge_mult, print_internal_coordinate_table_new
 import ash.functions.functions_elstructure
 import ash.constants
 import ash.settings_ash
@@ -361,7 +361,7 @@ end
         fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
         #Printing internal coordinate table
-        ash.modules.module_coords.print_internal_coordinate_table(fragment)
+        print_internal_coordinate_table_new(fragment)
         print_time_rel(module_init_time, modulename='ORCA Opt-run', moduleindex=2)
         return
     # Method to grab dipole moment from an ORCA outputfile (assumes run has been executed)

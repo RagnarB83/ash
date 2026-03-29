@@ -489,7 +489,7 @@ class Fragment:
 
     def print_coords(self):
         if self.printlevel >= 2:
-            print("Defined coordinates (Å):")
+            print("Cartesian coordinates (Å):")
         #print_coords_all(self.coords, self.elems)
         for i,(el, c) in enumerate(zip(self.elems, self.coords)):
             line = " {:<4} {:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(i,el, c[0], c[1], c[2])
@@ -874,21 +874,12 @@ class Fragment:
 
         with open(xyzfilename, writemode) as ofile:
             ofile.write(str(len(self.elems)) + '\n')
-
             #Title line
             #Write charge,mult and energy by default. Will be None if not available
             if write_chargemult is True and write_energy is True:
                 ofile.write("{} {} {}\n".format(self.charge,self.mult,self.energy))
             else:
                 ofile.write("title\n")
-            #elif write_chargemult is True and write_energy is True:
-            #    ofile.write("{} {}\n".format(self.charge,self.mult))
-            # Energy written otherwise
-            #else:
-            #    if self.energy is None:
-            #        ofile.write("Energy: None" + '\n')
-            #    else:
-            #        ofile.write("Energy: {:14.8f}".format(self.energy) + '\n')
 
             #Coordinates
             for el, c in zip(self.elems, self.coords):
@@ -932,16 +923,6 @@ class Fragment:
     def print_system(self, filename='fragment.ygg'):
         if self.printlevel >= 2:
             print("Printing fragment to disk: ", filename)
-
-        # Checking that lists have same length (as zip will just ignore the mismatch)
-        # print("len(self.atomlist)", len(self.atomlist))
-        # rint("len(self.elems)",len(self.elems) )
-        # print("len(self.coords)",len(self.coords) )
-        # print("len(self.atomcharges)", len(self.atomcharges) )
-        # print("len(self.fragmenttype_labels)", len(self.fragmenttype_labels) )
-        # print("len(self.atomtypes)", len(self.atomtypes))
-
-        print("", )
         printdebug("len(self.atomlist): ", len(self.atomlist))
         printdebug("len(self.elems): ", len(self.elems))
         printdebug("len(self.coords): ", len(self.coords))
@@ -1161,7 +1142,98 @@ def remove_zero_charges(charges, coords):
             newcoords.append(coord)
     return newcharges, newcoords
 
+# NEW function to print internal coordinate table for active atoms based on connectivity. 
 
+def print_internal_coordinate_table_new(fragment, actatoms=None):
+    """
+    Prints a tabulated view of internal coordinates for active atoms 
+    based on the fragment's connectivity.
+    """
+    def _measure_bond(coords, i, j):
+        """Bond length in Angstrom between atoms i and j."""
+        return float(np.linalg.norm(coords[i] - coords[j]))
+    
+    def _measure_angle(coords, i, j, k):
+        """Angle i-j-k in degrees (j is the vertex)."""
+        v1 = coords[i] - coords[j]
+        v2 = coords[k] - coords[j]
+        cos_a = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+        return float(np.degrees(np.arccos(np.clip(cos_a, -1.0, 1.0))))
+
+    def _measure_dihedral(coords, i, j, k, l):
+        """Dihedral angle i-j-k-l in degrees (range -180 to 180)."""
+        b1 = coords[j] - coords[i]
+        b2 = coords[k] - coords[j]
+        b3 = coords[l] - coords[k]
+        n1 = np.cross(b1, b2)
+        n2 = np.cross(b2, b3)
+        m1 = np.cross(n1, b2 / np.linalg.norm(b2))
+        return float(np.degrees(np.arctan2(np.dot(m1, n2), np.dot(n1, n2))))
+    
+    if actatoms is None:
+        actatoms = fragment.allatoms
+
+    coords = fragment.coords
+    elems = fragment.elems
+    from ash.modules.module_surface_new import _build_connectivity
+    conn = _build_connectivity(coords, elems)
+    
+    # Header
+    print()
+    print("=" * 30)
+    print("Internal Coordinates")
+    print("=" * 30)
+    print(f"{'Type':<10} {'Atoms':<20} {'Elements':<15} {'Value':>10}")
+    print("-" * 60)
+
+    # We use sets to avoid printing the same geometric feature twice 
+    # (e.g., bond 0-1 and 1-0)
+    seen_bonds = set()
+    seen_angles = set()
+    seen_dihedrals = set()
+
+    for i in actatoms:
+        # --- Bonds (i-j) ---
+        for j in conn[i]:
+            bond_key = tuple(sorted((i, j)))
+            if bond_key not in seen_bonds:
+                val = _measure_bond(coords, i, j)
+                label = f"{elems[i]}-{elems[j]}"
+                print(f"{'Bond':<10} {str(bond_key):<20} {label:<15} {val:>10.4f} Å")
+                seen_bonds.add(bond_key)
+
+            # --- Angles (i-j-k) ---
+            # i is the vertex (j-i-k)
+            neighbors = list(conn[i])
+            for idx_a in range(len(neighbors)):
+                for idx_b in range(idx_a + 1, len(neighbors)):
+                    j, k = neighbors[idx_a], neighbors[idx_b]
+                    angle_key = tuple(sorted((j, k)) + [i]) # vertex last for keying
+                    if angle_key not in seen_angles:
+                        val = _measure_angle(coords, j, i, k)
+                        label = f"{elems[j]}-{elems[i]}-{elems[k]}"
+                        print(f"{'Angle':<10} {f'({j},{i},{k})':<20} {label:<15} {val:>10.2f}°")
+                        seen_angles.add(angle_key)
+
+        # --- Dihedrals (i-j-k-l) ---
+        # Logic: Find a bond (i-j), then find neighbors of i and j
+        for j in conn[i]:
+            for h in conn[i]:
+                if h == j: continue
+                for k in conn[j]:
+                    if k == i or k == h: continue
+                    # Path is h-i-j-k
+                    di_key = (h, i, j, k)
+                    rev_key = (k, j, i, h)
+                    if di_key not in seen_dihedrals and rev_key not in seen_dihedrals:
+                        val = _measure_dihedral(coords, h, i, j, k)
+                        label = f"{elems[h]}-{elems[i]}-{elems[j]}-{elems[k]}"
+                        print(f"{'Dihedral':<10} {str(di_key):<20} {label:<15} {val:>10.2f}°")
+                        seen_dihedrals.add(di_key)
+
+    print("-" * 60)
+
+# OLD FUNCTION.
 def print_internal_coordinate_table(fragment, actatoms=None):
     timeA = time.time()
     print("\nPrinting internal coordinate table")
@@ -1380,23 +1452,12 @@ def write_coords_all(coords, elems, indices=None, labels=None, labels2=None, fil
 
     f.close()
 
-
+##############################################################
 # Functions to get distance, angle, coordinates of fragment
+##############################################################
+
 def distance(A, B):
     return sqrt(pow(A[0] - B[0], 2) + pow(A[1] - B[1], 2) + pow(A[2] - B[2], 2))  # fastest
-    # return sum((v_i - u_i) ** 2 for v_i, u_i in zip(A, B)) ** 0.5 #slow
-    # return np.sqrt(np.sum((A - B) ** 2)) #very slow
-    # return np.linalg.norm(A - B) #VERY slow
-    # return sqrt(sum((px - qx) ** 2.0 for px, qx in zip(A, B))) #slow
-    # return sqrt(sum([pow((a - b),2) for a, b in zip(A, B)])) #OK
-    # return np.sqrt((A[0] - B[0]) ** 2 + (A[1] - B[1]) ** 2 + (A[2] - B[2]) ** 2) #Very slow
-    # return math.sqrt((A[0] - B[0]) ** 2 + (A[1] - B[1]) ** 2 + (A[2] - B[2]) ** 2) #faster
-    # return math.sqrt(math.pow(A[0] - B[0],2) + math.pow(A[1] - B[1],2) + math.pow(A[2] - B[2],2)) #faster
-    # return sqrt(sum((A-B)**2)) #slow
-    # return sqrt(sum(pow((A - B),2))) does not work
-    # return np.sqrt(np.power((A-B),2).sum()) #very slow
-    # return sqrt(np.power((A - B), 2).sum())
-    # return np.sum((A - B) ** 2)**0.5 #very slow
 
 def angle(A, B, C):
     AB = A - B
@@ -1432,6 +1493,9 @@ def dihedral(A, B, C, D):
     # Convert from radians to degrees
     dihedral_angle = dihedral_angle * 180 / np.pi
     return dihedral_angle
+
+
+
 
 #User-functions
 #atoms is a list of atom indices,
@@ -3026,6 +3090,103 @@ AXIS_REFLECTIONS = np.array([
 
 
 
+##########################################
+# MOLECULAR CRYSTAL PBC FUNCTIONS
+##########################################
+
+
+# Extend cell in general with original cell in center
+# NOTE: Taken from functions_molcrys.
+# TODO: Remove function from functions_molcrys
+def cell_extend_frag(cellvectors, coords, elems, cellextpars):
+    printdebug("cellextpars:", cellextpars)
+    permutations = []
+    for i in range(int(cellextpars[0])):
+        for j in range(int(cellextpars[1])):
+            for k in range(int(cellextpars[2])):
+                permutations.append([i, j, k])
+                permutations.append([-i, j, k])
+                permutations.append([i, -j, k])
+                permutations.append([i, j, -k])
+                permutations.append([-i, -j, k])
+                permutations.append([i, -j, -k])
+                permutations.append([-i, j, -k])
+                permutations.append([-i, -j, -k])
+    # Removing duplicates and sorting
+    permutations = sorted([list(x) for x in set(tuple(x) for x in permutations)],
+                          key=lambda x: (abs(x[0]), abs(x[1]), abs(x[2])))
+    # permutations = permutations.sort(key=lambda x: x[0])
+    printdebug("Num permutations:", len(permutations))
+    numcells = np.prod(cellextpars)
+    numcells = len(permutations)
+    extended = np.zeros((len(coords) * numcells, 3))
+    new_elems = []
+    index = 0
+    for perm in permutations:
+        shift = cellvectors[0:3, 0:3] * perm
+        shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
+        # print("Permutation:", perm, "shift:", shift)
+        for d, el in zip(coords, elems):
+            new_pos = d + shift
+            extended[index] = new_pos
+            new_elems.append(el)
+            # print("extended[index]", extended[index])
+            # print("extended[index+1]", extended[index+1])
+            index += 1
+    printdebug("extended coords num", len(extended))
+    printdebug("new_elems  num,", len(new_elems))
+    return extended, new_elems
+
+
+# From Pymol. Not sure if useful
+# NOTE: also in functions_molcrys
+def cellbasis(angles, edges):
+    from math import cos, sin, radians, sqrt
+    """
+    For the unit cell with given angles and edge lengths calculate the basis
+    transformation (vectors) as a 4x4 numpy.array
+    """
+    rad = [radians(i) for i in angles]
+    basis = np.identity(4)
+    basis[0][1] = cos(rad[2])
+    basis[1][1] = sin(rad[2])
+    basis[0][2] = cos(rad[1])
+    basis[1][2] = (cos(rad[0]) - basis[0][1] * basis[0][2]) / basis[1][1]
+    basis[2][2] = sqrt(1 - basis[0][2] ** 2 - basis[1][2] ** 2)
+    edges.append(1.0)
+    return basis * edges  # numpy.array multiplication!
+
+# Create a molecular cluster from a periodix box based on radius and chosen atom(s)
+
+def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cellparameters=None):
+    print_line_with_subheader2("Make cluster from box")
+    # Choosing how far to extend cell based on chosen cluster-radius
+    if radius < cellparameters[0]:
+        cellextension = [2, 2, 2]
+    else:
+        cellextension = [3, 3, 3]
+
+    print("Cell parameters:", cellparameters)
+    print("Radius: {} Å".format(radius))
+    print("Cell extension used: ", cellextension)
+    print("Cluster will be centered on atom indices: ", center_atomindices)
+
+    # Extend cell
+    cellvectors = cellbasis(cellparameters[3:6], cellparameters[0:3])
+    ext_coords, ext_elems = cell_extend_frag(cellvectors, fragment.coords, fragment.elems, cellextension)
+    print("Size of extended cell: ", len(ext_elems))
+    extcellfrag = Fragment(elems=ext_elems, coords=ext_coords, printlevel=2)
+    # Cut cluster with radius R from extended cell, centered on atomic index. Returns list of atoms
+    atomlist = QMregionfragexpand(fragment=extcellfrag, initial_atoms=center_atomindices, radius=radius)
+
+    # Grabbing coords and elems from atomlist and creating new fragment
+    clustercoords = np.take(ext_coords, atomlist, axis=0)
+    clusterelems = [ext_elems[i] for i in atomlist]
+    newfrag = Fragment(elems=clusterelems, coords=clustercoords, printlevel=0)
+
+    return newfrag
+
+
 # QM-region expand function. Finds whole fragments.
 # Used by molcrys. Similar to get_solvshell function in functions_solv.py
 def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
@@ -3314,120 +3475,6 @@ def get_molecules_from_trajectory(file, writexyz=False, skipindex=1, conncalc=Fa
         list_of_molecules.append(conf)
 
     return list_of_molecules
-
-
-# Extend cell in general with original cell in center
-# NOTE: Taken from functions_molcrys.
-# TODO: Remove function from functions_molcrys
-def cell_extend_frag(cellvectors, coords, elems, cellextpars):
-    printdebug("cellextpars:", cellextpars)
-    permutations = []
-    for i in range(int(cellextpars[0])):
-        for j in range(int(cellextpars[1])):
-            for k in range(int(cellextpars[2])):
-                permutations.append([i, j, k])
-                permutations.append([-i, j, k])
-                permutations.append([i, -j, k])
-                permutations.append([i, j, -k])
-                permutations.append([-i, -j, k])
-                permutations.append([i, -j, -k])
-                permutations.append([-i, j, -k])
-                permutations.append([-i, -j, -k])
-    # Removing duplicates and sorting
-    permutations = sorted([list(x) for x in set(tuple(x) for x in permutations)],
-                          key=lambda x: (abs(x[0]), abs(x[1]), abs(x[2])))
-    # permutations = permutations.sort(key=lambda x: x[0])
-    printdebug("Num permutations:", len(permutations))
-    numcells = np.prod(cellextpars)
-    numcells = len(permutations)
-    extended = np.zeros((len(coords) * numcells, 3))
-    new_elems = []
-    index = 0
-    for perm in permutations:
-        shift = cellvectors[0:3, 0:3] * perm
-        shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
-        # print("Permutation:", perm, "shift:", shift)
-        for d, el in zip(coords, elems):
-            new_pos = d + shift
-            extended[index] = new_pos
-            new_elems.append(el)
-            # print("extended[index]", extended[index])
-            # print("extended[index+1]", extended[index+1])
-            index += 1
-    printdebug("extended coords num", len(extended))
-    printdebug("new_elems  num,", len(new_elems))
-    return extended, new_elems
-
-
-# From Pymol. Not sure if useful
-# NOTE: also in functions_molcrys
-def cellbasis(angles, edges):
-    from math import cos, sin, radians, sqrt
-    """
-    For the unit cell with given angles and edge lengths calculate the basis
-    transformation (vectors) as a 4x4 numpy.array
-    """
-    rad = [radians(i) for i in angles]
-    basis = np.identity(4)
-    basis[0][1] = cos(rad[2])
-    basis[1][1] = sin(rad[2])
-    basis[0][2] = cos(rad[1])
-    basis[1][2] = (cos(rad[0]) - basis[0][1] * basis[0][2]) / basis[1][1]
-    basis[2][2] = sqrt(1 - basis[0][2] ** 2 - basis[1][2] ** 2)
-    edges.append(1.0)
-    return basis * edges  # numpy.array multiplication!
-
-# Create a molecular cluster from a periodix box based on radius and chosen atom(s)
-
-def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cellparameters=None):
-    print_line_with_subheader2("Make cluster from box")
-    # Choosing how far to extend cell based on chosen cluster-radius
-    if radius < cellparameters[0]:
-        cellextension = [2, 2, 2]
-    else:
-        cellextension = [3, 3, 3]
-
-    print("Cell parameters:", cellparameters)
-    print("Radius: {} Å".format(radius))
-    print("Cell extension used: ", cellextension)
-    print("Cluster will be centered on atom indices: ", center_atomindices)
-
-    # Extend cell
-    cellvectors = cellbasis(cellparameters[3:6], cellparameters[0:3])
-    ext_coords, ext_elems = cell_extend_frag(cellvectors, fragment.coords, fragment.elems, cellextension)
-    print("Size of extended cell: ", len(ext_elems))
-    extcellfrag = ash.Fragment(elems=ext_elems, coords=ext_coords, printlevel=2)
-    # Cut cluster with radius R from extended cell, centered on atomic index. Returns list of atoms
-    atomlist = QMregionfragexpand(fragment=extcellfrag, initial_atoms=center_atomindices, radius=radius)
-
-    # Grabbing coords and elems from atomlist and creating new fragment
-    clustercoords = np.take(ext_coords, atomlist, axis=0)
-    clusterelems = [ext_elems[i] for i in atomlist]
-    newfrag = ash.Fragment(elems=clusterelems, coords=clustercoords, printlevel=0)
-
-    return newfrag
-
-
-# Set up constraints
-# def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
-#     print("set_up_MMwater_bondconstraints")
-#     print("Assuming oxygen atom type is: ", oxygentype)
-#     print("Change with keyword arguement: oxygentype='XX")
-#     ashexit()
-#     # Go over actatoms and check if oxygen-water type
-
-#     # Shift nested list by number e.g. shift([[1,2],[100,101]], -1)  gives : [[0,1],[99,100]]
-#     # TODO: generalize
-#     def shift_nested(ll, par):
-#         new = []
-#         for l in ll:
-#             new.append([l[0] + par, l[1] + par])
-#         return new
-
-#     bondconslist = shift_nested(bondlist, -1)
-#     constraints = {'bond': bondconslist}
-
-#     return constraints
 
 
 # Function to update list of atomindices after deletion of a list of atom indices (used in remove_atoms functions below)
@@ -3977,33 +4024,6 @@ def swap_R_group(fragment=None, Rgroup=None, atomindex=None) -> Fragment:
     return newfragment
 
 
-#Function that calculates box size of a molecule in a cubic box
-#with optional shift
-def cubic_box_size(coords, shift=0.0):
-    # max and min for x,y,z coords
-    max_values = np.max(coords, axis=0)
-    min_values = np.min(coords, axis=0)
-    #Differences for x,y,z
-    span_x = max_values[0] - min_values[0]
-    span_y = max_values[1] - min_values[1]
-    span_z = max_values[2] - min_values[2]
-    # Max span for each x,y,z
-    max_span = max(span_x, span_y, span_z)
-    #Optional shift
-    final_span = max_span + shift
-    return final_span
-
-#More general
-def bounding_box_dimensions(coordinates,shift=0.0):
-    # Get max and min values for x, y, z coordinates
-    max_values = np.max(coordinates, axis=0)
-    min_values = np.min(coordinates, axis=0)
-
-    # Calculate the differences along each axis to determine dimensions
-    dimensions = max_values - min_values
-    final_dims = dimensions + shift
-    return dimensions  # Return the dimensions of the bounding box
-
 # Combien and place 2 fragments
 def combine_and_place_fragments(ref_frag, trans_frag):
     
@@ -4207,175 +4227,3 @@ def define_dummy_topology(elems,scale=1.0, tol=0.1, resname="MOL"):
         return pdb_topology
 
 
-def cell_params_to_vectors(parameters):
-    a, b, c, alpha, beta, gamma = parameters
-    # Convert angles to radians
-    rad_a = np.radians(alpha)
-    rad_b = np.radians(beta)
-    rad_g = np.radians(gamma)
-    
-    # Calculate components
-    ax = a
-    ay = 0.0
-    az = 0.0
-    
-    bx = b * np.cos(rad_g)
-    by = b * np.sin(rad_g)
-    bz = 0.0
-    
-    cx = c * np.cos(rad_b)
-    cy = c * (np.cos(rad_a) - np.cos(rad_b) * np.cos(rad_g)) / np.sin(rad_g)
-    cz = np.sqrt(c**2 - cx**2 - cy**2)
-    
-    vectors = np.array([[ax,ay,az],[bx,by,bz],[cx,cy,cz]])
-    return vectors
-
-def cell_vectors_to_params(vectors):
-    va, vb, vc = vectors[0], vectors[1], vectors[2]
-    
-    # Calculate lengths (norms)
-    a = np.linalg.norm(va)
-    b = np.linalg.norm(vb)
-    c = np.linalg.norm(vc)
-    
-    # Calculate angles using the dot product formula: 
-    # cos(theta) = (v1 . v2) / (|v1| * |v2|)
-    alpha_rad = np.arccos(np.dot(vb, vc) / (b * c))
-    beta_rad  = np.arccos(np.dot(va, vc) / (a * c))
-    gamma_rad = np.arccos(np.dot(va, vb) / (a * b))
-    
-    # Convert radians to degrees
-    alpha = np.degrees(alpha_rad)
-    beta  = np.degrees(beta_rad)
-    gamma = np.degrees(gamma_rad)
-    
-    return [float(a), float(b), float(c), float(alpha), float(beta), float(gamma)]
-
-# Basic conversion of Cartesian coordinates to fractional coordinates and reverse
-def cart_coords_to_fract(cart_coords, cellvectors):
-    M = np.array(cellvectors)
-    frac = np.dot(cart_coords, np.linalg.inv(M))
-    return frac
-
-def fract_coords_to_cart(fract_coords, cellvectors):
-    cart = np.dot(fract_coords, np.array(cellvectors))
-    return cart
-
-def cell_volume(vectors):
-    a = vectors[0,:]
-    b = vectors[1,:]
-    c = vectors[2,:]
-    V = abs(np.dot(a, np.cross(b, c)))
-    return V
-
-# Write Cartesian-based POSCAR files
-def write_POSCAR_file(coords,elems,cellvectors=None, celldimensions=None, filename="POSCAR"):
-
-    if cellvectors is None and celldimensions is None:
-        print("Error: Either cellvectors or celldimensions should be provided")
-        ashexit()
-    elif celldimensions is not None:
-        # converting 
-        cellvectors=cell_params_to_vectors(celldimensions)
-
-    # Unique elements in original order
-    unique_elements = []
-    for e in elems:
-        if e not in unique_elements:
-            unique_elements.append(e)
-    # Count atoms of each elemtype
-    counts = [elems.count(e) for e in unique_elements]
-
-    with open(filename, 'w') as f:
-        f.write("ASH created POSCAR file"+"\n")
-        f.write("1.0"+"\n")
-        f.write(f"{cellvectors[0,0]:.4f} {cellvectors[0,1]:.4f} {cellvectors[0,2]:.4f} "+"\n")
-        f.write(f"{cellvectors[1,0]:.4f} {cellvectors[1,1]:.4f} {cellvectors[1,2]:.4f}"+"\n")
-        f.write(f"{cellvectors[2,0]:.4f} {cellvectors[2,1]:.4f} {cellvectors[2,2]:.4f}"+"\n")
-        f.write(f"{'  '.join(unique_elements)}\n")
-        f.write(f"{'  '.join(map(str, counts))}\n")
-        f.write(f"Cartesian"+"\n")# coord system
-        for target_el in unique_elements:
-                    for el, c in zip(elems, coords):
-                        if el == target_el:
-                            f.write(f"{c[0]:.8f}  {c[1]:.8f}  {c[2]:.8f}\n")
-    print("Wrote POSCAR file")
-    return filename
-
-# Write XSF files
-def write_XSF_file(coords, elems, cellvectors=None, celldimensions=None, filename="structure.xsf"):
-
-    if cellvectors is None and celldimensions is None:
-        print("Error: Either cellvectors or celldimensions should be provided")
-        ashexit()
-    elif celldimensions is not None:
-        # Assuming your helper function handles the conversion
-        cellvectors = cell_params_to_vectors(celldimensions)
-
-    with open(filename, 'w') as f:
-        # Header for periodic structures
-        f.write("CRYSTAL\n")
-        
-        # Section 1: Lattice Vectors
-        f.write("PRIMVEC\n")
-        for i in range(3):
-            f.write(f"  {cellvectors[i,0]:.10f}  {cellvectors[i,1]:.10f}  {cellvectors[i,2]:.10f}\n")
-        
-        # Section 2: Atomic Coordinates
-        f.write("PRIMCOORD\n")
-        # Header for coordinates: [Number of atoms] [Number of units, usually 1]
-        f.write(f"{len(elems)} 1\n")
-        
-        # XSF supports either Atomic Number or Element Symbol. 
-        # Using Element Symbol is more human-readable and works perfectly in VMD.
-        for el, c in zip(elems, coords):
-            f.write(f"{el}  {c[0]:.10f}  {c[1]:.10f}  {c[2]:.10f}\n")
-            
-    print(f"Wrote XSF file: {filename}")
-    return filename
-
-
-def write_CIF_file(coords, elems, cellvectors=None, celldimensions=None, filename="structure.cif"):
-
-    if cellvectors is None and celldimensions is None:
-        print("Error: Either cellvectors or celldimensions should be provided")
-        ashexit()
-    elif celldimensions is not None:
-        # Assuming your helper function handles the conversion
-        cellvectors = cell_params_to_vectors(celldimensions)
-    elif cellvectors is not None:
-        celldimensions = cell_vectors_to_params(cellvectors)
-
-    # Cart to fract
-    frac_coords = cart_coords_to_fract(coords,cellvectors)
-
-    # celldimensions should be [a, b, c, alpha, beta, gamma]
-    a, b, c, alpha, beta, gamma = celldimensions
-
-    with open(filename, 'w') as f:
-        f.write("data_ASH_output\n")
-        f.write(f"_cell_length_a    {a:.6f}\n")
-        f.write(f"_cell_length_b    {b:.6f}\n")
-        f.write(f"_cell_length_c    {c:.6f}\n")
-        f.write(f"_cell_angle_alpha {alpha:.6f}\n")
-        f.write(f"_cell_angle_beta  {beta:.6f}\n")
-        f.write(f"_cell_angle_gamma {gamma:.6f}\n\n")
-        
-        # We use P1 symmetry (no symmetry) so every atom is listed explicitly
-        f.write("_symmetry_space_group_name_H-M 'P 1'\n")
-        f.write("_symmetry_Int_Tables_number 1\n\n")
-        
-        # The Atom Loop
-        f.write("loop_\n")
-        f.write("_atom_site_label\n")
-        f.write("_atom_site_type_symbol\n")
-        f.write("_atom_site_fract_x\n")
-        f.write("_atom_site_fract_y\n")
-        f.write("_atom_site_fract_z\n")
-        
-        for i, (el, c) in enumerate(zip(elems, frac_coords)):
-            # We add an index to the label (e.g., Na1, Na2) to keep them unique
-            f.write(f"{el}{i+1}  {el}  {c[0]:.8f}  {c[1]:.8f}  {c[2]:.8f}\n")
-
-    print(f"Wrote CIF file: {filename}")
-    return filename

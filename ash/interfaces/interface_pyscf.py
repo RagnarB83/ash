@@ -1,7 +1,8 @@
 import time
 
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
-from ash.modules.module_coords import nucchargelist, create_coords_string, cell_vectors_to_params, cell_params_to_vectors
+from ash.modules.module_coords import nucchargelist, create_coords_string
+from ash.modules.module_coords_PBC import cell_vectors_to_params, cell_params_to_vectors
 from ash.modules.module_results import ASH_Results
 from ash.functions.functions_elstructure import get_ec_entropy,get_entropy
 from ash.modules.module_singlepoint import Singlepoint

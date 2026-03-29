@@ -2,7 +2,7 @@ import numpy as np
 import copy
 import shutil
 import time
-from ash.modules.module_coords import print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile,write_coords_all
+from ash.modules.module_coords import print_coords_for_atoms,write_XYZ_for_atoms,write_xyzfile,write_coords_all
 from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,print_line_with_subheader1,print_if_level
 from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex
 from ash.modules.module_results import ASH_Results

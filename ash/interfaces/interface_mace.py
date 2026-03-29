@@ -3,7 +3,7 @@ import numpy as np
 import shutil
 import os 
 
-from ash.modules.module_coords import cell_params_to_vectors, cell_vectors_to_params
+from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 from ash.functions.functions_general import ashexit, BC,print_time_rel
 from ash.functions.functions_general import print_line_with_mainheader
 import ash.constants

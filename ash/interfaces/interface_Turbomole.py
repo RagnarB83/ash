@@ -5,7 +5,8 @@ import time
 import numpy as np
 import pathlib
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader, writestringtofile
-from ash.modules.module_coords import nucchargelist, cell_vectors_to_params, cell_params_to_vectors
+from ash.modules.module_coords import nucchargelist
+from ash.modules.module_coords_PBC import cell_vectors_to_params, cell_params_to_vectors
 import ash.settings_ash
 from ash.functions.functions_parallel import check_OpenMPI
 

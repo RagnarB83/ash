@@ -9,12 +9,14 @@ import numpy as np
 from ash.functions.functions_general import frange, BC, natural_sort, print_line_with_mainheader, \
     print_line_with_subheader1,print_time_rel, ashexit, print_if_level
 import ash.functions.functions_parallel
-from ash.modules.module_coords import check_charge_mult, write_CIF_file, write_POSCAR_file, write_XSF_file
+from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_coords_PBC import write_CIF_file, write_POSCAR_file, write_XSF_file
 from ash.modules.module_results import ASH_Results
 from ash.interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICOptimizerClass
 from ash.interfaces.interface_dlfind import DLFIND_optimizer, DLFIND_optimizerClass
 from ash.modules.module_theory import NumGradclass
 from ash.constants import ang2bohr
+from ash.functions.functions_optimization import Cart_optimizer_class
 
 # New rewritten calc_surface function
 def calc_surface(
@@ -100,8 +102,6 @@ def calc_surface(
 
         elif optimizer.lower() in ['dlfind','dl-find']:
             print("Optimizer to use for surface scan: DL-FIND")
-            #Optimizer=DLFIND_optimizer
-            #Optimizerclass=DLFIND_optimizerClass
             opt_arguments={'maxcycle':maxiter,'iopt':3, 'icoord':1, 'printlevel':printlevel}
 
             # Creating optimizer object
@@ -109,6 +109,15 @@ def calc_surface(
             extraoopt_run_kws={}
             # DL-FIND: need to be preset
             presetting_geometry_required=True
+        elif optimizer.lower() in ['cartopt', 'cart_opt', 'cart-opt', 'cartesian']:
+            print("Optimizer to use for surface scan: Cart_optimizer")
+            opt_arguments={'maxiter':maxiter,'printlevel':printlevel}
+
+            # Creating optimizer object
+            optimizerobj = Cart_optimizer_class(**opt_arguments)
+            extraoopt_run_kws={}
+            # Cart_optimizer: no presetting required
+            presetting_geometry_required=False
         else:
             print("Wrong optimizer option chosen. Valid options are: geometric and dlfind")
             ashexit()
@@ -126,6 +135,13 @@ def calc_surface(
         extraoopt_run_kws={}
         # DL-FIND: need to be preset
         presetting_geometry_required=True
+    elif isinstance(optimizer,Cart_optimizer_class):
+        print("A Cart_optimizer_class object was provided")
+        optimizerobj=optimizer
+        opt_arguments={}
+        extraoopt_run_kws={}
+        # Cart_optimizer: no presetting required
+        presetting_geometry_required=False
     else:
         print("optimizer keyword should either be a string (geometric or dlfind) or an Optimizer object (GeomeTRICOptimizerClass or DLFIND_optimizerClass)")
         ashexit()
@@ -376,6 +392,9 @@ def calc_surface(
                 #Running optimizer object, passing theory, fragment, constraints and possible extra kws
                 result = optimizerobj.run(theory=theory,fragment=fragment, constraints=allconstraints, **extraoopt_run_kws)
 
+                #if pointcount == 2:
+                #    print("2nd point optimization result:", result)
+                #    ashexit()
             energy = float(result.energy)
             print(f"  {label}  Energy: {energy}")
 
@@ -1111,8 +1130,7 @@ def _build_connectivity(coords, elems):
                 conn[i].add(j)
                 conn[j].add(i)
     return conn
- 
- 
+
 def _atoms_on_side(start, fixed, conn):
     """BFS: return set of atom indices reachable from *start* without
     crossing *fixed*.  Used to find which atoms move when a bond is stretched

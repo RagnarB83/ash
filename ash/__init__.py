@@ -176,7 +176,7 @@ import ash.modules.module_molcrys
 from .modules.module_molcrys import molcrys, Fragmenttype
 
 # Geometry optimization
-from .functions.functions_optimization import SimpleOpt, BernyOpt, periodic_optimizer_alternating, Periodic_optimizer_cart
+from .functions.functions_optimization import SimpleOpt, BernyOpt, periodic_optimizer_alternating, Cart_optimizer, Cart_optimizer_class
 
 # geomeTRIC interface
 from .interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICOptimizerClass

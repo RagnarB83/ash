@@ -8,17 +8,18 @@ import ash.constants
 import ash.settings_solvation
 import ash.settings_ash
 from ash.modules.module_theory import Theory
-from ash.modules.module_coords import write_xyzfile
 from ash.functions.functions_general import (
     ashexit, blankline, reverse_lines, print_time_rel, BC, 
     print_line_with_mainheader, print_if_level
 )
 import ash.modules.module_coords
 from ash.modules.module_coords import (
+    write_xyzfile,
     elemstonuccharges,
     check_multiplicity,
     check_charge_mult
 )
+from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 
 # Interface to the preliminary g-xTB implementation (warning: only numerical gradient)
 class gxTBTheory(Theory):
@@ -161,10 +162,8 @@ class xTBTheory:
             elif periodic_cell_dimensions is not None:
                 print("periodic_cell_dimensions:", periodic_cell_dimensions)
                 # Convert to cell vectors
-                from ash.modules.module_coords import cell_params_to_vectors
                 self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
             elif periodic_cell_vectors is not None:
-                from ash.modules.module_coords import cell_vectors_to_params
                 self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
 
         # Controlling output in xtb-library
@@ -427,7 +426,7 @@ class xTBTheory:
         fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
         # Printing internal coordinate table
-        ash.modules.module_coords.print_internal_coordinate_table(fragment)
+        ash.modules.module_coords.print_internal_coordinate_table_new(fragment)
         print_time_rel(module_init_time, modulename='xtB Opt-run', moduleindex=2)
         return
 
@@ -441,12 +440,10 @@ class xTBTheory:
         if periodic_cell_vectors is not None:
             self.periodic_cell_vectors = periodic_cell_vectors
 
-            from ash.modules.module_coords import cell_vectors_to_params
             self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
         elif periodic_cell_dimensions is not None:
             self.periodic_cell_dimensions=periodic_cell_dimensions
 
-            from ash.modules.module_coords import cell_params_to_vectors
             self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
 
     def get_cell_gradient(self):
@@ -1206,11 +1203,9 @@ class tbliteTheory(Theory):
             elif periodic_cell_dimensions is not None:
                 print("periodic_cell_dimensions:", periodic_cell_dimensions)
                 # Convert to cell vectors
-                from ash.modules.module_coords import cell_params_to_vectors
                 self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
             else:
                 self.periodic_cell_vectors = periodic_cell_vectors
-                from ash.modules.module_coords import cell_vectors_to_params
                 self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
             # Note: using cell vectors
             print("Cell vectors (Å)", self.periodic_cell_vectors)
@@ -1230,12 +1225,10 @@ class tbliteTheory(Theory):
         if periodic_cell_vectors is not None:
             self.periodic_cell_vectors = periodic_cell_vectors
 
-            from ash.modules.module_coords import cell_vectors_to_params
             self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
         elif periodic_cell_dimensions is not None:
             self.periodic_cell_dimensions=periodic_cell_dimensions
 
-            from ash.modules.module_coords import cell_params_to_vectors
             self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
 
     def get_cell_gradient(self):

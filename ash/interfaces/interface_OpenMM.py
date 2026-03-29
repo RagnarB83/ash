@@ -16,8 +16,9 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel, listdif
 
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
-    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2, \
-    cell_params_to_vectors, cell_vectors_to_params, define_dummy_topology
+    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2, define_dummy_topology
+
+from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
 from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select

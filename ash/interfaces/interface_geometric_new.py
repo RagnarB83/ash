@@ -8,9 +8,12 @@ from ash.modules.module_QMMM import QMMMTheory
 from ash.modules.module_theory import MicroIterativeclass
 #from ash.modules.module_oniom import ONIOMTheory
 from ash.interfaces.interface_OpenMM import OpenMMTheory
-from ash.modules.module_coords import print_coords_for_atoms,print_internal_coordinate_table,write_XYZ_for_atoms,write_xyzfile,write_coords_all, cell_volume
+from ash.modules.module_coords import print_coords_for_atoms,print_internal_coordinate_table_new,write_XYZ_for_atoms,write_xyzfile,write_coords_all
+from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex
+from ash.modules.module_coords_PBC import cell_volume, cell_vectors_to_params, write_CIF_file, write_XSF_file, write_POSCAR_file, \
+                                        align_to_standard_orientation
 from ash.functions.functions_general import ashexit, blankline,BC,print_time_rel,print_line_with_mainheader,print_line_with_subheader1,print_if_level, pygrep2
-from ash.modules.module_coords import check_charge_mult, fullindex_to_actindex, cell_vectors_to_params, write_CIF_file, write_XSF_file, write_POSCAR_file
+
 from ash.modules.module_freq import write_hessian,calc_hessian_xtb, approximate_full_Hessian_from_smaller, read_hessian
 from ash.modules.module_results import ASH_Results
 from ash.modules.module_theory import NumGradclass
@@ -670,6 +673,10 @@ class GeomeTRICOptimizerClass:
             fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
             fragment.set_energy(finalenergy)
 
+            print("Final geometry")
+            fragment.print_coords()
+            print()
+
             # PBC 
             if self.PBC:
                 print("PBC True. Writing final optimized geometry in PBC-format")
@@ -697,7 +704,7 @@ class GeomeTRICOptimizerClass:
 
             #Printing internal coordinate table
             if self.printlevel >= 2:
-                print_internal_coordinate_table(fragment,actatoms=self.print_atoms_list)
+                print_internal_coordinate_table_new(fragment,actatoms=self.print_atoms_list)
             blankline()
 
             #Now returning final Results object
@@ -788,7 +795,7 @@ class ASHengineclass:
             # Real elements
             self.elems_phys=self.fragment.elems
             # Align to standard orientation
-            aligned_atom_coords, aligned_vectors = self.align_to_standard_orientation(self.fragment.coords, theory.periodic_cell_vectors)
+            aligned_atom_coords, aligned_vectors = align_to_standard_orientation(self.fragment.coords, theory.periodic_cell_vectors)
             self.fragment.coords=aligned_atom_coords
             self.theory.update_cell(aligned_vectors)
             
@@ -1111,41 +1118,7 @@ class ASHengineclass:
 
         return {'energy': E, 'gradient': mod_gradient.flatten()}
 
-    def align_to_standard_orientation(self,fragment_coords, cell_vectors):
-        """
-        Rotates the entire system (atoms and cell) into the standard 
-        upper-triangular orientation.
-        
-        cell_vectors: 3x3 matrix where rows are [a, b, c]
-        fragment_coords: Nx3 array of atomic positions
-        """
-        # 1. Transpose cell_vectors because QR works on columns
-        H = cell_vectors.T 
-        
-        # 2. QR Decomposition
-        # H = Q * R  -> R is the upper triangular matrix we want
-        Q, R = np.linalg.qr(H)
-        
-        # 3. Handle 'Flip' cases
-        # QR can sometimes return negative diagonal elements. 
-        # We want lengths (a_x, b_y, c_z) to be positive.
-        d = np.sign(np.diag(R))
-        # If a diagonal is 0, we treat it as positive
-        d[d == 0] = 1
-        
-        # Correct Q and R so diagonals of R are positive
-        Q = Q * d
-        R = (R.T * d).T
-        
-        # 4. New Cell Vectors (R transposed back to rows)
-        new_cell_vectors = R.T
-        
-        # 5. New Atomic Coordinates
-        # We rotate the atoms using the same rotation matrix Q
-        # Since H_new = Q.T @ H_old, we use Q.T for the atoms
-        new_coords = np.dot(fragment_coords, Q)
-        
-        return new_coords, new_cell_vectors
+    
 
 
 

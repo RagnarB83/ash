@@ -6,7 +6,7 @@ import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,check_program_location
 from ash.modules.module_coords import elematomnumbers, write_xyzfile
-from ash.modules.module_coords import cell_params_to_vectors, cell_vectors_to_params
+from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 import ash.settings_ash
 
 # Basic interface to DFTB+

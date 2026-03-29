@@ -6,7 +6,9 @@ import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import ash.settings_ash
-from ash.modules.module_coords import write_xyzfile, write_pdbfile,cubic_box_size,bounding_box_dimensions
+from ash.modules.module_coords import write_xyzfile, write_pdbfile
+from ash.modules.module_coords_PBC import cubic_box_size,bounding_box_dimensions
+from ash.modules.module_coords_PBC import cell_vectors_to_params, cell_params_to_vectors, cubic_box_size
 from ash.functions.functions_parallel import check_OpenMPI
 
 # Dictionary of element radii in Angstrom for use with CP2K for GEEP embedding
@@ -106,11 +108,9 @@ class CP2KTheory:
                 print("periodic_cell_dimensions:", cell_dimensions)
                 self.periodic_cell_dimensions = cell_dimensions
                 # Convert to cell vectors
-                from ash.modules.module_coords import cell_params_to_vectors
                 self.periodic_cell_vectors = cell_params_to_vectors(cell_dimensions)
             elif cell_vectors is not None:
                 self.periodic_cell_vectors = cell_vectors
-                from ash.modules.module_coords import cell_vectors_to_params
                 self.periodic_cell_dimensions = cell_vectors_to_params(cell_vectors)
         else:
             print("Periodic is False")
@@ -298,12 +298,10 @@ class CP2KTheory:
         if periodic_cell_vectors is not None:
             self.periodic_cell_vectors = periodic_cell_vectors
 
-            from ash.modules.module_coords import cell_vectors_to_params
             self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
         elif periodic_cell_dimensions is not None:
             self.periodic_cell_dimensions=periodic_cell_dimensions
 
-            from ash.modules.module_coords import cell_params_to_vectors
             self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
 
     def get_cell_gradient(self):
