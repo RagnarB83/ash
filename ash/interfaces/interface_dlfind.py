@@ -559,7 +559,6 @@ class DLFIND_optimizerClass:
                 if self.PBC:
                     print("PBC detected. Adding 4 dummy atoms as a separate residue")
                     self.spec = self.spec + [2,2,2,2]
-                print("self.spec after adding dummy atoms:", self.spec)
             else:
                 print_if_level("Residues provided:", self.residues, self.printlevel,2)
                 for i in allatoms:
@@ -568,7 +567,6 @@ class DLFIND_optimizerClass:
 
         # Nuclear charges
         nuccharges  = elemstonuccharges(elems)
-        print("nuccharges:", nuccharges)
         self.spec=self.spec + nuccharges
 
         # Constraints. should be dict: constraints={'bond':[[0,1]], 'angle':[[98,99,100]]}
@@ -664,6 +662,7 @@ class DLFIND_optimizerClass:
 
     def run(self, theory=None, fragment=None, fragment2=None, constraints=None, charge=None, mult=None):
         from libdlfind import dl_find
+
 
         # Update self fragment if a run fragment was provided
         if fragment is not None:

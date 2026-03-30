@@ -1006,7 +1006,10 @@ def ORCAfinalenergygrab(file, errors='ignore'):
                 else:
                     #Changing: sometimes ORCA adds info to the right of energy
                     #Energy=float(line.split()[-1])
-                    Energy=float(line.split()[4])
+                    if "(MM)" in line:
+                        Energy=float(line.split()[5])
+                    else:
+                        Energy=float(line.split()[4])
     if Energy is None:
         print(BC.FAIL,"ASH found no energy in file:", file, BC.END)
         print(BC.FAIL,"Something went wrong with ORCA run. Check ORCA outputfile:", file, BC.END)

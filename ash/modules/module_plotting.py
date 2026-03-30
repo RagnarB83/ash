@@ -304,7 +304,11 @@ def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axis
 
     #Sorting keys dictionary before grabbing so that line-plot is correct
     for key in sorted(surfacedictionary.keys()):
-        coords.append(float(key[0])) #Making sure we add a float,not a tuple
+        if isinstance(key, tuple):
+            print("Warning: key {} is a tuple. Only the first value will be used for plotting.".format(key))
+            coords.append(float(key[0])) #Making sure we add a float,not a tuple
+        else:
+            coords.append(float(key))
         e.append(surfacedictionary[key])
 
     if RelativeEnergy is True:
