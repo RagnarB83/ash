@@ -139,7 +139,8 @@ class DLFIND_optimizerClass:
         # Periodic
         self.PBC_format_option=PBC_format_option
         self.PBC=False # False by default unless detected in theory
-
+        self.force_noPBC=force_noPBC
+        
         #############
         #HESSIAN
         #############
@@ -550,7 +551,15 @@ class DLFIND_optimizerClass:
             print_if_level("Case: no actatoms or frozenatoms provided. All atoms will be active.", self.printlevel,2)
             print_if_level(f"All atoms: {allatoms}", self.printlevel,2)
             if self.residues is None:
-                self.spec=[1 for i in list(range(numatoms))]
+                # If no residues provided then all atoms get spec 1 (active)
+                # Doing all real atoms
+                #for i in self.fragment.allatoms:
+                self.spec=[1 for i in self.fragment.allatoms]
+                print("self.spec:", self.spec)
+                if self.PBC:
+                    print("PBC detected. Adding 4 dummy atoms as a separate residue")
+                    self.spec = self.spec + [2,2,2,2]
+                print("self.spec after adding dummy atoms:", self.spec)
             else:
                 print_if_level("Residues provided:", self.residues, self.printlevel,2)
                 for i in allatoms:
@@ -667,22 +676,26 @@ class DLFIND_optimizerClass:
         # Check if PBCs used by theory
         if getattr(self.theory, "periodic", False):
             print("Detected periodicity in Theory object")
-            print("Activating periodic routines ")
-            print("Setting up PBC for DL-FIND optimization")
-            self.setup_PBC()
-            self.PBC=True
-            print("PBC setup complete")
-            if fragment2 is None and self.fragment2 is None:
-                nvarin=self.fragment.numatoms * 3 + 4*3 # 4 dummy atoms with 3 coords each
-                nvarin2=0
-            # TODO: fragment2 
-            #elif fragment2 is not None:
-            #    nvarin = self.fragment.numatoms * 3 + 4*3 # 4 dummy atoms with 3 coords each
-            #    nvarin2 = self.fragment2.numatoms * 3 
-            #elif self.fragment2 is not None:
-            #    nvarin = self.fragment.numatoms * 3
-            #    nvarin2 = self.fragment2.numatoms * 3
-            # Update constraints if provided
+            if self.force_noPBC is True:
+                print("force_noPBC flag is True. Will run optimization without PBC")
+                self.PBC=False
+            else:
+                print("Activating periodic routines ")
+                print("Setting up PBC for DL-FIND optimization")
+                self.setup_PBC()
+                self.PBC=True
+                print("PBC setup complete")
+                if fragment2 is None and self.fragment2 is None:
+                    nvarin=self.fragment.numatoms * 3 + 4*3 # 4 dummy atoms with 3 coords each
+                    nvarin2=0
+                # TODO: fragment2 
+                #elif fragment2 is not None:
+                #    nvarin = self.fragment.numatoms * 3 + 4*3 # 4 dummy atoms with 3 coords each
+                #    nvarin2 = self.fragment2.numatoms * 3 
+                #elif self.fragment2 is not None:
+                #    nvarin = self.fragment.numatoms * 3
+                #    nvarin2 = self.fragment2.numatoms * 3
+                # Update constraints if provided
         else:
             if fragment2 is None and self.fragment2 is None:
                 nvarin=self.fragment.numatoms * 3
