@@ -560,7 +560,7 @@ class DLFIND_optimizerClass:
                     print("PBC detected. Adding 4 dummy atoms as a separate residue")
                     self.spec = self.spec + [2,2,2,2]
             else:
-                print_if_level("Residues provided:", self.residues, self.printlevel,2)
+                print_if_level(f"Residues provided: {self.residues}", self.printlevel,2)
                 for i in allatoms:
                     resid = search_list_of_lists_for_index(i,self.residues)
                     self.spec.append(resid+1)
@@ -825,3 +825,67 @@ class DLFIND_optimizerClass:
 
 
         return result
+
+
+# Helper function to define residues
+def define_residues(fragment=None, min_size=5, max_size=15):
+    _COVALENT_RADII = {
+    'H': 0.31, 'He': 0.28,
+    'Li': 1.28, 'Be': 0.96, 'B': 0.84, 'C': 0.76, 'N': 0.71, 'O': 0.66,
+    'F': 0.57, 'Ne': 0.58,
+    'Na': 1.66, 'Mg': 1.41, 'Al': 1.21, 'Si': 1.11, 'P': 1.07, 'S': 1.05,
+    'Cl': 1.02, 'Ar': 1.06,
+    'K': 2.03, 'Ca': 1.76, 'Sc': 1.70, 'Ti': 1.60, 'V': 1.53, 'Cr': 1.39,
+    'Mn': 1.61, 'Fe': 1.52, 'Co': 1.50, 'Ni': 1.24, 'Cu': 1.32, 'Zn': 1.22,
+    'Ga': 1.22, 'Ge': 1.20, 'As': 1.19, 'Se': 1.20, 'Br': 1.20, 'Kr': 1.16,
+    'Rb': 2.20, 'Sr': 1.95, 'Y': 1.90, 'Zr': 1.75, 'Nb': 1.64, 'Mo': 1.54,
+    'Tc': 1.47, 'Ru': 1.46, 'Rh': 1.42, 'Pd': 1.39, 'Ag': 1.45, 'Cd': 1.44,
+    'In': 1.42, 'Sn': 1.39, 'Sb': 1.39, 'Te': 1.38, 'I': 1.39, 'Xe': 1.40,
+    'Cs': 2.44, 'Ba': 2.15, 'La': 2.07, 'Ce': 2.04, 'Pr': 2.03, 'Nd': 2.01,
+    'Hf': 1.75, 'Ta': 1.70, 'W': 1.62, 'Re': 1.51, 'Os': 1.44, 'Ir': 1.41,
+    'Pt': 1.36, 'Au': 1.36, 'Hg': 1.32, 'Tl': 1.45, 'Pb': 1.46, 'Bi': 1.48,
+    }
+    elems=fragment.elems
+    coords=fragment.coords
+    num_atoms = len(elems)
+    coords = np.array(coords)
+
+    # 1. Build Connectivity (Adjacency List)
+    adj = [[] for _ in range(num_atoms)]
+    for i in range(num_atoms):
+        for j in range(i + 1, num_atoms):
+            dist = np.linalg.norm(coords[i] - coords[j])
+            # Threshold: sum of radii + 0.45A tolerance
+            threshold = _COVALENT_RADII.get(elems[i], 0.7) + \
+                        _COVALENT_RADII.get(elems[j], 0.7) + 0.45
+            if dist < threshold:
+                adj[i].append(j)
+                adj[j].append(i)
+
+    # 2. Split into Residues using Greedy BFS
+    unvisited = set(range(num_atoms))
+    residues = []
+
+    while unvisited:
+        # Start a new residue from an arbitrary unvisited atom
+        root = min(unvisited)
+        current_res = []
+        queue = [root]
+
+        while queue and len(current_res) < max_size:
+            node = queue.pop(0)
+            if node in unvisited:
+                unvisited.remove(node)
+                current_res.append(node)
+                # Add neighbors to the queue to keep the residue contiguous
+                for neighbor in adj[node]:
+                    if neighbor in unvisited:
+                        queue.append(neighbor)
+
+        # Cleanup: If a residue is too small, merge it with the last one
+        if len(current_res) < min_size and residues:
+            residues[-1].extend(current_res)
+        else:
+            residues.append(current_res)
+
+    return residues
