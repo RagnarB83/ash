@@ -50,7 +50,8 @@ class PySCFTheory:
                   PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=None,
                   neo=False, nuc_basis=None,
                   periodic=False, periodic_cell_vectors=None, periodic_cell_dimensions=None,
-                  ke_cutoff=None, kpoints=None):
+                  ke_cutoff=None, kpoints=None,
+                  hubbard_U=None):
 
         self.theorynamelabel="PySCF"
         self.theorytype="QM"
@@ -251,6 +252,11 @@ class PySCFTheory:
         self.fcidumpfile=fcidumpfile
         self.fcidumpfile_molpro_orbsym=fcidumpfile_molpro_orbsym # Boolean. True/False
 
+
+        # Hubbard U for DFT+U calculations with RKSpU or UKSpU methods
+        # if scf_type is RKSpU or UKSpu. Example: hubbard_U=[[]"Mn 3d"], [2.8]]
+        self.hubbard_U=hubbard_U
+        
         #CAS
         self.CAS=CAS
         self.CASSCF=CASSCF
@@ -2084,6 +2090,20 @@ class PySCFTheory:
             self.mf = scf.GHF(self.molcellobject)
         elif self.scf_type == 'GKS':
             self.mf = scf.GKS(self.molcellobject)
+        elif self.scf_type == 'RKSpU':
+            print("Creating RKSpU mean-field object.")
+            if self.hubbard_U is None:
+                print("Error: Hubbard U value must be provided for RKSpU calculation")
+                ashexit()
+                print("self.hubbard_U:", self.hubbard_U)
+            self.mf = self.molcellobject.RKSpU(xc=self.functional, U_idx=self.hubbard_U[0], U_val=self.hubbard_U[1])
+        elif self.scf_type == 'UKSpU':
+            print("Creating UKSpU mean-field object.")
+            if self.hubbard_U is None:
+                print("Error: Hubbard U value must be provided for RKSpU calculation")
+                ashexit()
+            print("self.hubbard_U:", self.hubbard_U)
+            self.mf = self.molcellobject.UKSpU(xc=self.functional, U_idx=self.hubbard_U[0], U_val=self.hubbard_U[1])
         #K-point methods
         elif self.scf_type == 'KRHF':
             self.mf = scf.KRHF(self.molcellobject, kpts=self.cell.make_kpts(self.kpoints))
@@ -2101,7 +2121,9 @@ class PySCFTheory:
             self.mf = scf.KGHF(self.molcellobject, kpts=self.cell.make_kpts(self.kpoints))
         elif self.scf_type == 'KGKS':
             self.mf = scf.KGKS(self.molcellobject, kpts=self.cell.make_kpts(self.kpoints))
-
+        else:
+            print("Unknown scf-type:", self.scf_type)
+            ashexit()
         print("mf object:", self.mf)
 
     #Probably depreceated. Created mf for GPU.

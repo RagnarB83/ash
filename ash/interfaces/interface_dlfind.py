@@ -5,6 +5,8 @@ from typing import Callable, Optional
 import numpy as np
 from numpy.ctypeslib import as_array
 from numpy.typing import ArrayLike
+import signal
+import os
 
 import os
 import time
@@ -240,7 +242,7 @@ class DLFIND_optimizerClass:
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
                 if self.printlevel >= 1:
-                    print(f"Current geometry (Å) in step {self.dlfind_eg_calls} (print_atoms_list region)")
+                    print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
                     print("---------------------------------------------------")
                     print_coords_for_atoms(R_phys, self.elems_phys, self.print_atoms_list)
                     print("")
@@ -288,7 +290,7 @@ class DLFIND_optimizerClass:
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
                 if self.printlevel >= 1:
-                    print(f"Current geometry (Å) in step {self.dlfind_eg_calls} (print_atoms_list region)")
+                    print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
                     print("---------------------------------------------------")
                     print_coords_for_atoms(coordinates_ang, self.fragment.elems, self.print_atoms_list)
                     print("")
@@ -504,13 +506,23 @@ class DLFIND_optimizerClass:
 
         # First identify possible frozen constraints defined in constraints dict
         if self.constraints is not None:
-            if 'xyz' in self.constraints:
-                print_if_level(f"XYZ constraints found in constraints dict. {self.constraints['xyz']}", self.printlevel,2 )
-                print_if_level("Adding to frozenatoms list", self.printlevel,2)
+            print("RB here")
+            # Check if any Cartesian constraint is present 
+            if any(k in self.constraints for k in {'x','y','z','xy','xz','yz','xyz'}):
                 if self.frozenatoms is None:
-                    frozenatoms=[]
-                frozenatoms = self.constraints['xyz']
-
+                    self.frozenatoms=[]
+                print_if_level(f"Cartesian constraints found in constraints dict.", self.printlevel,2 )
+                # Grab possible xyz constraints frm constraints dict
+                frozenatoms_x = self.constraints.get('x',[])
+                frozenatoms_y = self.constraints.get('y',[])
+                frozenatoms_z = self.constraints.get('z',[])
+                frozenatoms_xy = self.constraints.get('xy',[])
+                frozenatoms_xz = self.constraints.get('xz',[])
+                frozenatoms_yz = self.constraints.get('yz',[])
+                frozenatoms_xyz = self.constraints.get('xyz',[])
+                # XYZ constraints are the same frozenatoms, adding
+                self.frozenatoms = self.frozenatoms+frozenatoms_xyz
+                print("frozenatoms_z:", frozenatoms_z)
         if self.actatoms is not None:
             print_if_level("Actatoms provided:", self.actatoms)
 
@@ -523,7 +535,7 @@ class DLFIND_optimizerClass:
             if self.frozenatoms is not None:
                 if len(self.frozenatoms) > 0:
                     print("frozenatoms:", self.frozenatoms)
-                    print("Error: actatoms and frozenatoms can not both be defined")
+                    print("Error: actatoms and frozenatoms cannot both be defined")
                     ashexit()
             print_if_level(f"All atoms: {allatoms}", self.printlevel,2 )
 
@@ -538,10 +550,24 @@ class DLFIND_optimizerClass:
         elif self.frozenatoms is not None:
             print_if_level(f"Frozenatoms provided: {self.frozenatoms}", self.printlevel,2 )
             print_if_level(f"All atoms: {self.fragment.allatoms}", self.printlevel,2 )
-
+            # Loopign over all atoms, 
+            # Adding -1 for frozen, +1 for active, and if residues provided then adding residue number for active atoms
+            # Also adding -2,-3,-4 for frozen atoms with Cartesian constraints in x,y,z and -23,-24,-34 for frozen atoms with xy,xz,yz constraints
             for i in allatoms:
-                if i in frozenatoms:
+                if i in self.frozenatoms:
                     self.spec.append(-1)
+                elif i in frozenatoms_x:
+                    self.spec.append(-2)
+                elif i in frozenatoms_y:
+                    self.spec.append(-3)
+                elif i in frozenatoms_z:
+                    self.spec.append(-4)
+                elif i in frozenatoms_xy:
+                    self.spec.append(-23)
+                elif i in frozenatoms_xz:
+                    self.spec.append(-24)
+                elif i in frozenatoms_yz:
+                    self.spec.append(-34)
                 else:
                     if self.residues is not None:
                         self.spec.append(search_list_of_lists_for_index(i,self.residues)+1)
@@ -714,12 +740,19 @@ class DLFIND_optimizerClass:
 
         # Prepare run, including constraints etc.
         self.prepare_run()
-
         self.charge, self.mult = check_charge_mult(charge, mult, self.theory.theorytype, self.fragment, 
                                          "DLFIND-optimizer", theory=self.theory, printlevel=self.printlevel)
 
         # Run DL-FIND
         print("Now starting DL-FIND")
+
+        def _sigint_handler(signum, frame):
+            print("\nCtrl-C caught! Aborting DL-FIND run...")
+            signal.signal(signal.SIGINT, signal.SIG_DFL)  # restore default handler
+            os.kill(os.getpid(), signal.SIGINT)            # re-send signal at OS level
+
+        signal.signal(signal.SIGINT, _sigint_handler)
+
         dl_find(
                 nvarin=nvarin, nvarin2=nvarin2, nspec=self.nspec,
                 dlf_get_gradient=self.dlf_get_gradient, 

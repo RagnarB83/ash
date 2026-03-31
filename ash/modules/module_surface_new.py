@@ -78,7 +78,8 @@ def calc_surface(
     print_line_with_mainheader("CALC_SURFACE FUNCTION")
 
     # NOW SETTING UP OPTIMIZER
-
+    # Defining extraconstraints
+    extraconstraints={} if extraconstraints is None else extraconstraints
     if isinstance(optimizer,str):
         if optimizer.lower() == "geometric":
             print("Optimizer to use for surface scan: geomeTRIC")
@@ -128,6 +129,8 @@ def calc_surface(
         extraoopt_run_kws={'constrainvalue':True}
         # For geometric we don't have to preset
         presetting_geometry_required=False
+        # Merge constraints if defined in both optimizer object and extraconstraints argument
+        extraconstraints = _merge_dicts(optimizerobj.constraints, extraconstraints)
     elif isinstance(optimizer,DLFIND_optimizerClass):
         print("A DLFIND_optimizerClass object was provided")
         optimizerobj=optimizer
@@ -135,6 +138,8 @@ def calc_surface(
         extraoopt_run_kws={}
         # DL-FIND: need to be preset
         presetting_geometry_required=True
+        # Merge constraints if defined in both optimizer object and extraconstraints argument
+        extraconstraints = _merge_dicts(optimizerobj.constraints, extraconstraints)
     elif isinstance(optimizer,Cart_optimizer_class):
         print("A Cart_optimizer_class object was provided")
         optimizerobj=optimizer
@@ -142,6 +147,8 @@ def calc_surface(
         extraoopt_run_kws={}
         # Cart_optimizer: no presetting required
         presetting_geometry_required=False
+        # Merge constraints if defined in both optimizer object and extraconstraints argument
+        extraconstraints = _merge_dicts(optimizerobj.constraints, extraconstraints)
     else:
         print("optimizer keyword should either be a string (geometric or dlfind) or an Optimizer object (GeomeTRICOptimizerClass or DLFIND_optimizerClass)")
         ashexit()
@@ -769,6 +776,20 @@ def calc_surface_fromXYZ(
 
 
 # HELPER FUNCTIONS
+
+def _merge_dicts(dict1, dict2):
+    """Merge two dictionaries, concatenating lists if keys overlap."""
+    if dict1 is None:
+        dict1 = {}
+    if dict2 is None:
+        dict2 = {}
+    merged = dict(dict1)  # start with dict1's keys and values
+    for key, value in dict2.items():
+        if key in merged:
+            merged[key] = merged[key] + value  # concatenate lists
+        else:
+            merged[key] = value
+    return merged
 
 def read_surfacedict_from_file(resultfile, dimension=None):
     """Read surface dictionary from resultfile.
