@@ -277,15 +277,50 @@ class GeomeTRICOptimizerClass:
                     xyzconstraints = constraints['xyz']
                 except:
                     xyzconstraints = None
+                try:
+                    xconstraints = constraints['x']
+                except:
+                    xconstraints = None
+                try:
+                    yconstraints = constraints['y']
+                except:
+                    yconstraints = None
+                try:
+                    zconstraints = constraints['z']
+                except:
+                    zconstraints = None
+                try:
+                    xyconstraints = constraints['xy']
+                except:
+                    xyconstraints = None
+                try:
+                    xzconstraints = constraints['xz']
+                except:
+                    xzconstraints = None
+                try:
+                    yzconstraints = constraints['yz']
+                except:
+                    yzconstraints = None
             else:
                 bondconstraints=None
                 angleconstraints=None
                 dihedralconstraints=None
                 xyzconstraints=None
+                xconstraints=None
+                yconstraints=None
+                zconstraints=None
+                xyconstraints=None
+                xzconstraints=None
+                yzconstraints=None
 
-            return bondconstraints, angleconstraints, dihedralconstraints,xyzconstraints
+            return bondconstraints, angleconstraints, dihedralconstraints,xyzconstraints, \
+                    xconstraints, yconstraints, zconstraints, xyconstraints, xzconstraints, yzconstraints
 
-        def write_constraintsfile(self,frozenatoms,bondconstraints,constrainvalue,angleconstraints,dihedralconstraints):
+
+
+        def write_constraintsfile(self,frozenatoms,bondconstraints,constrainvalue,angleconstraints,
+                                  dihedralconstraints,xconstraints,yconstraints,
+                                  zconstraints,xyconstraints,xzconstraints,yzconstraints):
             if self.printlevel >= 1:
                 print("Inside write_constraintsfile")
 
@@ -358,6 +393,49 @@ class GeomeTRICOptimizerClass:
                             confile.write(f'dihedral {dihedralentry[0]+1} {dihedralentry[1]+1} {dihedralentry[2]+1} {dihedralentry[3]+1} {dihedralentry[4]}\n')
                         else:
                             confile.write(f'dihedral {dihedralentry[0]+1} {dihedralentry[1]+1} {dihedralentry[2]+1} {dihedralentry[3]+1}\n')
+            if xconstraints is not None:
+                self.constraintsfile='constraints.txt'
+                with open("constraints.txt", 'a') as confile:
+                    confile.write('$freeze\n')
+                    for xentry in xconstraints:
+                        #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
+                        confile.write(f'x {xentry+1}\n')
+            if yconstraints is not None:
+                self.constraintsfile='constraints.txt'
+                with open("constraints.txt", 'a') as confile:
+                    confile.write('$freeze\n')
+                    for yentry in yconstraints:
+                        #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
+                        confile.write(f'y {yentry+1}\n')
+            if zconstraints is not None:
+                self.constraintsfile='constraints.txt'
+                with open("constraints.txt", 'a') as confile:
+                    confile.write('$freeze\n')
+                    for zentry in zconstraints:
+                        #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
+                        confile.write(f'z {zentry+1}\n')
+            if xyconstraints is not None:
+                self.constraintsfile='constraints.txt'
+                with open("constraints.txt", 'a') as confile:
+                    confile.write('$freeze\n')
+                    for xyentry in xyconstraints:
+                        #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
+                        confile.write(f'xy {xyentry+1}\n')
+            if xzconstraints is not None:
+                self.constraintsfile='constraints.txt'
+                with open("constraints.txt", 'a') as confile:
+                    confile.write('$freeze\n')
+                    for xzentry in xzconstraints:
+                        #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
+                        confile.write(f'xz {xzentry+1}\n')
+            if yzconstraints is not None:
+                self.constraintsfile='constraints.txt'
+                with open("constraints.txt", 'a') as confile:
+                    confile.write('$freeze\n')
+                    for yzentry in yzconstraints:
+                        #Changing from zero-indexing (ASH) to 1-indexing (geomeTRIC)
+                        confile.write(f'yz {yzentry+1}\n')
+
         def cleanup(self):
             #Clean-up before we begin
             tmpfiles=['geometric_OPTtraj.log','geometric_OPTtraj.xyz','geometric_OPTtraj_Full.xyz','geometric_OPTtraj_QMregion.xyz', 'optimization_energies.log',
@@ -548,13 +626,13 @@ class GeomeTRICOptimizerClass:
             if self.printlevel >= 1:
                 print("\nConstraints: ", constraints)
                 print("constrainvalue: ", constrainvalue)
-            #Getting specific constraints and writing to file
-            bondconstraints, angleconstraints, dihedralconstraints,xyzconstraints = self.define_constraints(constraints)
+            # Getting specific constraints and writing to file
+            bondconstraints, angleconstraints, dihedralconstraints,xyzconstraints, xconstraints, yconstraints, zconstraints, xyconstraints, xzconstraints, yzconstraints = self.define_constraints(constraints)
             if xyzconstraints is not None:
                 print("xyzconstraints found. Adding to frozenatoms")
                 self.frozenatoms = self.frozenatoms + xyzconstraints
             self.write_constraintsfile(self.frozenatoms,bondconstraints,constrainvalue,angleconstraints,
-                                       dihedralconstraints)
+                                       dihedralconstraints,xconstraints,yconstraints,zconstraints,xyconstraints,xzconstraints,yzconstraints)
             if self.constraintsinputfile is not None:
                 print("constraintsinputfile provided:", self.constraintsinputfile)
                 if os.path.isfile(self.constraintsinputfile) is False:
