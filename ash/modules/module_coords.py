@@ -804,7 +804,9 @@ class Fragment:
         connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, scale,tol)
         #Looping over molecules defined by connectivity
         for mol in self.connectivity:
+            print("mol:", mol)
             residue = self.pdb_topology.addResidue(resname, chain)
+            print("residue:", residue)
 
             # Defaultdictionary to keep track of unique element-atomnames
             atomnames_dict=defaultdict(int)
@@ -821,11 +823,16 @@ class Fragment:
                     #print("atomname is O1 and 3-atom residue. Probably water")
                     #print("using atomname as O instead of O1 aids OpenMM recognition")
                     atomname="O"
-
+                print("Adding atom:", atomname, "element:", element, "to residue:", residue)
+                print("at:", at, "el:", el)
                 self.pdb_topology.addAtom(atomname, element, residue)
+                print("here, residue:", residue)
+            print("----------------___")
 
         print("Adding connectivity to PDB topology")
         ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology, connectivity_dict)
+
+        return self.pdb_topology
 
     # Write PDB-file via OpenMM
     def write_pdbfile_openmm(self,filename="Fragment", calc_connectivity=False, pdb_topology=None,

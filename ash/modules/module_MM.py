@@ -269,7 +269,7 @@ class NonBondedTheory(Theory):
 
     # current_coords is now used for full_coords, charges for full coords
     def run(self, current_coords=None, elems=None, charges=None, connectivity=None, numcores=1, label=None,
-            Coulomb=True, Grad=True, qmatoms=None, actatoms=None, frozenatoms=None, charge=None, mult=None):
+            Coulomb=True, Grad=False, qmatoms=None, actatoms=None, frozenatoms=None, charge=None, mult=None):
         module_init_time=time.time()
         if current_coords is None:
             print("No current_coords argument. Exiting...")
@@ -424,7 +424,10 @@ class NonBondedTheory(Theory):
         if self.printlevel >= 2:
             print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
         print_time_rel(module_init_time, modulename='NonbondedTheory run', moduleindex=2)
-        return self.MMEnergy, self.MMGradient
+        if Grad:
+            return self.MMEnergy, self.MMGradient
+        else:
+            return self.MMEnergy
 
 
 # MMAtomobject used to store LJ parameter and possibly charge for MM atom with atomtype, e.g. OT

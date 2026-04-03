@@ -333,6 +333,7 @@ def calc_surface(
         pointcount = 0
 
         for rc_values in itertools.product(*RC_value_lists):
+            surfacepoint_time_init=time.time()
             pointcount += 1
             key = _point_key(rc_values)
             label = _point_label(rc_values)
@@ -379,7 +380,7 @@ def calc_surface(
                 )
             else:  # RELAXED
                 if presetting_geometry_required:
-                    print_if_level(f"For DL-FIND we need to modify geometry first to set constraints.", printlevel,2)
+                    print_if_level(f"For DL-FIND and Cart_optimizer we need to modify geometry first to set constraints.", printlevel,2)
                     if set_geometry_via_restraint is True:
                         print_if_level(f"Modifying geometry to set constraints via DL-FIND restraint optimization", printlevel,2)
                         # NOTE: passing extraconstraints if any
@@ -394,7 +395,15 @@ def calc_surface(
                 else:
                     print_if_level(f"For geometric Optimizer we enforce constraints during optimization.", printlevel,2)
                 print_if_level(f"Now running Relaxed Optimization", printlevel,2)
+                #if pointcount == 2:
+                #    fragment.print_coords()
+                #    ashexit()
                 # Running optimizer object
+
+                # Resetting Hessian inverse in optimizer
+                if isinstance(optimizerobj, Cart_optimizer_class):
+                    if hasattr(optimizerobj, 'Hess_inv'):
+                        optimizerobj.Hess_inv = None
 
                 #Running optimizer object, passing theory, fragment, constraints and possible extra kws
                 result = optimizerobj.run(theory=theory,fragment=fragment, constraints=allconstraints, **extraoopt_run_kws)
@@ -415,6 +424,8 @@ def calc_surface(
  
             surfacedictionary[key] = float(energy)
             write_surfacedict_to_file(surfacedictionary, resultfile, dimension=dimension)
+
+            print(f"Time for surface point {pointcount}: {time.time() - surfacepoint_time_init:.2f} seconds")
  
         print("surfacedictionary:", surfacedictionary)
  

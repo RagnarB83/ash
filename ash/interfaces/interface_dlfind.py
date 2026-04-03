@@ -597,7 +597,7 @@ class DLFIND_optimizerClass:
 
         # Constraints. should be dict: constraints={'bond':[[0,1]], 'angle':[[98,99,100]]}
         if self.constraints is not None:
-            print_if_level(f"Constraints passed: {self.constraints}", self.printlevel,2)
+            print_if_level(f"Constraints passed to DL-FIND: {self.constraints}", self.printlevel,2)
             self.numcons=0
             conlist=[]
             for k,v in self.constraints.items():
@@ -626,7 +626,7 @@ class DLFIND_optimizerClass:
             print_if_level("No constraints present", self.printlevel,2)
             self.numcons=0
 
-        # Spec
+        # Spec  (microterative) not used for now
         self.spec=self.spec+[1 for i in list(range(numatoms))] #?
 
         self.nspec=len(self.spec)
