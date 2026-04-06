@@ -1201,8 +1201,8 @@ class Cart_optimizer_class:
 
     def run(self, theory=None, fragment=None, constraints=None, charge=None, mult=None):
         self.run_init_time=time.time()
-        print("Cart_opt: --------------------------------------------")
-        print("Cart_opt: time init:", time.time()-self.run_init_time, "seconds")
+        #print("Cart_opt: --------------------------------------------")
+        #print("Cart_opt: time init:", time.time()-self.run_init_time, "seconds")
         # Update self fragment if a run fragment was provided
         if fragment is not None:
             self.fragment=fragment
@@ -1247,7 +1247,7 @@ class Cart_optimizer_class:
             except:
                 pass
 
-        print("Cart_opt: time until LOOP:", time.time()-self.run_init_time, "seconds")
+        #print("Cart_opt: time until LOOP:", time.time()-self.run_init_time, "seconds")
         # LOOP
         for iteration in range(0,self.maxiter):
             self.iteration=iteration
@@ -1279,7 +1279,7 @@ class Cart_optimizer_class:
                     print(f"Current cell vectors (Å):{self.theory.periodic_cell_vectors}")
                     print(f"Current cell volume (Å):{cell_volume(H_geo)}")
 
-            print("Cart_opt: time until e+g step:", time.time()-self.run_init_time, "seconds")
+            #print("Cart_opt: time until e+g step:", time.time()-self.run_init_time, "seconds")
             #########################################
             # 1. Compute energy and gradient
             #########################################
@@ -1287,10 +1287,8 @@ class Cart_optimizer_class:
                 energy, supergradient = self.calculate_supergradient(currcoords)
             else:
                 energy, supergradient = self.calculate_reg_gradient(currcoords)
-                print("1 energy:", energy)
-                print("1 supergradient:", supergradient)
                 prev_supgrad = supergradient.copy()
-            print("Cart_opt: time until after e+g step:", time.time()-self.run_init_time, "seconds")
+            #print("Cart_opt: time until after e+g step:", time.time()-self.run_init_time, "seconds")
             # 1b. Apply all constraints
             self.all_cartesian_constraints={}
             if self.constraints:
@@ -1298,13 +1296,13 @@ class Cart_optimizer_class:
                 print("self.constraints:", self.constraints)
                 if 'bond' in self.constraints or 'distance' in self.constraints:
                     energy, supergradient = self.apply_bond_constraints(R_phys, supergradient, energy)
-                    print("Cart_opt: time until after bondcon step:", time.time()-self.run_init_time, "seconds")
+                    #print("Cart_opt: time until after bondcon step:", time.time()-self.run_init_time, "seconds")
                 if 'angle' in self.constraints:
                     energy, supergradient = self.apply_angle_constraints(R_phys, supergradient, energy)
                 if 'torsion' in self.constraints or 'dihedral' in self.constraints:
                     energy, supergradient = self.apply_dihedral_constraints(R_phys, supergradient, energy)
-                    print("supergradient after dihedral constraints:", supergradient)
-                    print("Cart_opt: time until after dihedralcon step:", time.time()-self.run_init_time, "seconds")
+                    #print("supergradient after dihedral constraints:", supergradient)
+                    #print("Cart_opt: time until after dihedralcon step:", time.time()-self.run_init_time, "seconds")
                 # Cartesian constraints. prepare
                 if 'xyz' in self.constraints:
                     for i in self.constraints['xyz']:
@@ -1337,7 +1335,7 @@ class Cart_optimizer_class:
                 print("All Cartesian constraints", self.all_cartesian_constraints)
 
                 supergradient = self.apply_cartesian_constraints(supergradient)
-                print("Cart_opt: time until after cartesiancon step:", time.time()-self.run_init_time, "seconds")
+                #print("Cart_opt: time until after cartesiancon step:", time.time()-self.run_init_time, "seconds")
 
             #########################################
             # 2. Check convergence
@@ -1422,7 +1420,7 @@ class Cart_optimizer_class:
             # 3. Take step
             #########################################
             # Compute step
-            print("Cart_opt: time until before  compute step:", time.time()-self.run_init_time, "seconds")
+            #print("Cart_opt: time until before  compute step:", time.time()-self.run_init_time, "seconds")
             delta_au = self.compute_step(supergradient,currcoords)
             print("Computed step:", delta_au)
 

@@ -134,17 +134,16 @@ def new_call_crest(fragment=None, theory=None, crestdir=None, runtype="imtd-gc",
         pickle.dump(theory, open(theoryfilename, "wb" ))
 
         # Write ASH inputfile: ash_input.py
-        ashinput=f"""
-    from ash import *
-    from ash.interfaces.interface_ORCA import print_gradient_in_ORCAformat
-    import pickle
+        ashinput=f"""from ash import *
+from ash.interfaces.interface_ORCA import print_gradient_in_ORCAformat
+import pickle
 
-    frag = Fragment(xyzfile="genericinp.xyz", charge={charge},mult={mult})
-    #Unpickling theory object
-    theory = pickle.load(open(\"../{theoryfilename}\", \"rb\" ))
-    result = Singlepoint(theory=theory, fragment=frag, Grad=True)
-    print_gradient_in_ORCAformat(result.energy,result.gradient,"genericinp", extrabasename="")
-        """
+frag = Fragment(xyzfile="genericinp.xyz", charge={charge},mult={mult})
+#Unpickling theory object
+theory = pickle.load(open(\"../{theoryfilename}\", \"rb\" ))
+result = Singlepoint(theory=theory, fragment=frag, Grad=True)
+print_gradient_in_ORCAformat(result.energy,result.gradient,"genericinp", extrabasename="")
+"""
         with open("ash_input.py", "w") as f:
             f.write(ashinput)
 
@@ -193,10 +192,10 @@ chrg = {charge}"""
 
     # Get conformers
     try:
-        list_conformers, list_xtb_energies = get_crest_conformers(charge=charge, mult=mult)
-        module_init_time
+        list_conformers, list_energies = get_crest_conformers(charge=charge, mult=mult)
+        return list_conformers, list_energies
     except:
-        return
+        return None, None
 
 
 

@@ -95,8 +95,6 @@ class MACETheory():
             print("Cell vectors:", self.periodic_cell_vectors)
             print("Cell dimensions:", self.periodic_cell_dimensions)
 
-        print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
-
         self.training_done=False
 
     def cleanup(self):

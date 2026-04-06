@@ -158,6 +158,9 @@ from .modules.module_polembed import PolEmbedTheory
 # Knarric_optimizer_alte
 from .interfaces.interface_knarr import NEB, NEBTS, interpolation_geodesic
 
+# FSM
+from .interfaces.interface_fsm import FSM
+
 #VMD
 from .interfaces.interface_VMD import write_VMD_script_cube
 

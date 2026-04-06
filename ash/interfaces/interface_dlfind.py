@@ -193,18 +193,6 @@ class DLFIND_optimizerClass:
         self.print_atoms_list=print_atoms_list
         self.result_write_to_disk=result_write_to_disk
 
-        #Tracking DL-FIND cycles
-        self.dlfind_eg_calls=0
-        self.dlfind_opt_cycles=0
-        self.dlfind_neb_cycles=0
-        self.dlfind_dimer_cycles=0
-
-
-        self.NEB_energies_dict={}
-        self.NEB_geometries={}
-
-        self.runcounter=0
-
 
         # Create function to calculate energies and gradients
         @dlf_get_gradient_wrapper
@@ -688,6 +676,18 @@ class DLFIND_optimizerClass:
 
     def run(self, theory=None, fragment=None, fragment2=None, constraints=None, charge=None, mult=None):
         from libdlfind import dl_find
+
+
+        #Tracking DL-FIND cycles
+        self.dlfind_eg_calls = 0
+        self.dlfind_opt_cycles = 0
+        self.dlfind_neb_cycles = 0
+        self.dlfind_dimer_cycles = 0
+        self.NEB_energies_dict={}
+        self.NEB_geometries={}
+
+        # Runcounter 
+        self.runcounter=0
 
 
         # Update self fragment if a run fragment was provided

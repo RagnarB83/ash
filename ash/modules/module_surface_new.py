@@ -1073,6 +1073,10 @@ def _handle_output_files(theory, pointlabel, keepoutputfiles, keepmofiles, print
             print_if_level("Theory has no outputfile, probably. ignoring", printlevel,2)
             pass
         except FileNotFoundError:
+            print_if_level("Outputfile might have been deleted. ignoring", printlevel,2)
+            pass
+        except AttributeError:
+            print_if_level("Theory has no outputfile, probably. ignoring", printlevel,2)
             pass
     if keepmofiles:
         try:
