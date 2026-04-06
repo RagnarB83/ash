@@ -370,7 +370,10 @@ end
         print("Dipole moment:", dm)
         return dm
     def get_polarizability_tensor(self):
+        print("here")
+        print("self.filename+'.out':", self.filename+'.out')
         polarizability,diag_pz = grab_polarizability_tensor(self.filename+'.out')
+        print("polarizability:", polarizability)
         return polarizability
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -1120,26 +1123,30 @@ def grab_polarizability_tensor(outfile):
     pz_tensor = np.zeros((3,3))
     diag_pz_tensor=[]
     count=0
-    grab=False;grab2=False
+    grab=False;grab2=False;grab3=False
     with open(outfile) as f:
         for line in f:
-            if grab2 is True:
+            if grab3 is True:
                 if len(line.split()) == 0:
                     grab2=False
                 else:
                     diag_pz_tensor.append(float(line.split()[0]))
                     diag_pz_tensor.append(float(line.split()[1]))
                     diag_pz_tensor.append(float(line.split()[2]))
+                    grab=False;grab2=False;grab3=False
             if grab is True:
-                if 'diagonalized tensor:' in line:
-                    grab=False
+                if 'The raw cartesian tensor' in line:
                     grab2=True
-                if len(line.split()) == 3:
+                if 'diagonalized tensor:' in line:
+                    grab2=False
+                    grab3=True
+                if grab2 is True and len(line.split()) == 3:
                     pz_tensor[count,0]=float(line.split()[0])
                     pz_tensor[count,1]=float(line.split()[1])
                     pz_tensor[count,2]=float(line.split()[2])
                     count+=1
-            if 'THE POLARIZABILITY TENSOR' in line:
+            if 'STATIC POLARIZABILITY TENSOR' in line:
+                print("grab True")
                 grab=True
     return pz_tensor, diag_pz_tensor
 
