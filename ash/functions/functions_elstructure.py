@@ -677,7 +677,7 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
     print("Searching for molden2aim and chargemol in PATH")
 
 
-    chargemoldir = check_program_location(None,None, "chargemol")
+    chargemolbinarydir = check_program_location(None,None, "chargemol")
 
     #Checking if we can proceed
     if chargemolbinarydir is None:
