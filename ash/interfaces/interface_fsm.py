@@ -4,6 +4,7 @@ from ash.constants import hartoeV
 import numpy as np
 import copy
 
+# Simpler ASH-ASE calculator
 class ASH_ASE_calculator:
     def __init__(self, theory=None, fragment=None):
         self.theory = theory
@@ -34,7 +35,6 @@ def FSM(reactant=None, product=None, theory=None, method="L-BFGS-B", optcoords="
                                 interpolate=interpolate, maxiter=maxiter, maxls=maxls, dmax=dmax, outdir=outdir, verbose=verbose)
     fsm.run()
 
-    
 
 class FreezingString_class:
 
