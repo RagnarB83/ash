@@ -3,7 +3,7 @@ import time
 import os
 
 import ash.constants
-from ash.functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC,listdiff,print_time_rel
+from ash.functions.functions_general import ashexit, blankline, print_line_with_mainheader,print_time_rel_and_tot,BC,listdiff,print_time_rel, print_if_level
 from ash.modules.module_coords import check_charge_mult , write_xyzfile, print_internal_coordinate_table_new
 from ash.modules.module_coords_PBC import cell_vectors_to_params, cart_coords_to_fract, fract_coords_to_cart, cell_volume, \
                                           write_CIF_file,write_XSF_file, write_POSCAR_file
@@ -568,7 +568,8 @@ def Cart_optimizer(fragment=None, theory=None, rate=2.0,
                                 step_algo="bfgs",
                                 max_step=0.25, momentum=0.5, constrain_method='soft',
                                 printlevel=2, conv_criteria=None, PBC_format_option="CIF",
-                                constraints=None, frozen_atoms=None, result_write_to_disk=True):
+                                constraints=None, frozen_atoms=None, result_write_to_disk=True,
+                                kf_bonds=10.0, kf_angles=10.0, kf_dihedrals=10.0):
     """
     Wrapper function around Cart_optimizer_class
     """
@@ -583,7 +584,8 @@ def Cart_optimizer(fragment=None, theory=None, rate=2.0,
                                             max_step=max_step, momentum=momentum, PBC_format_option=PBC_format_option,
                                             constrain_method=constrain_method,
                                             printlevel=printlevel, conv_criteria=conv_criteria, constraints=constraints, 
-                                            frozen_atoms=frozen_atoms, result_write_to_disk=result_write_to_disk)
+                                            frozen_atoms=frozen_atoms, result_write_to_disk=result_write_to_disk,
+                                            kf_bonds=kf_bonds, kf_angles=kf_angles, kf_dihedrals=kf_dihedrals)
 
     result = optimizer.run()
     if printlevel >= 1:
@@ -597,8 +599,10 @@ class Cart_optimizer_class:
     def __init__(self,fragment=None, theory=None, rate=2.0, scaling_rate_cell=1.0, maxiter=50, step_algo="bfgs",
                                 max_step=0.25, momentum=0.5, printlevel=2, conv_criteria=None, print_atoms_list=None,
                                 PBC_format_option="CIF", constraints=None, constrain_method='soft',
-                                frozen_atoms=None, result_write_to_disk=True):
+                                frozen_atoms=None, result_write_to_disk=True,
+                                kf_bonds=10.0, kf_angles=10.0, kf_dihedrals=10.0):
 
+        print_line_with_mainheader("Cart_optimizer initialization") 
         self.fragment = fragment
         self.theory = theory
         self.rate = rate
@@ -614,8 +618,10 @@ class Cart_optimizer_class:
         # Constraints
         self.constraints = constraints if constraints is not None else []
         self.constrain_method = constrain_method # 'hard' or 'soft'
-        # Default force constant for soft restraints
-        self.default_k = 10.0
+        # Constraint force constants for soft constraints (in Eh/Bohr^2, Eh/rad^2). Only used if constrain_method='soft'.
+        self.kf_bonds = kf_bonds
+        self.kf_angles = kf_angles
+        self.kf_dihedrals = kf_dihedrals
         # Frozen atoms
         self.frozen_atoms = frozen_atoms if frozen_atoms is not None else []
         if self.frozen_atoms:
@@ -628,21 +634,27 @@ class Cart_optimizer_class:
             self.conv_criteria = {'convergence_grms':1e-4, 'convergence_gmax':3e-4}
         else:
             self.conv_criteria=conv_criteria
-        print("Convergence criteria:", self.conv_criteria)
-        print("Constraints:", self.constraints)
-        for con in self.constraints:
-            print("con:",con)
 
         # Max step in bohrs (default = 0.25 Å = 0.472 bohrs)
         self.max_step_au = max_step*self.ang2bohr
 
+        print("Convergence criteria:", self.conv_criteria)
         print("Rate (atoms):", self.rate)
         print("Scaling for Rate (cell):", self.scaling_rate_cell)
         print("Maxiter:", self.maxiter)
         print(f"Max step size {self.max_step} Å")
+        print("Step algorithm:", self.step_algo)
+        print("Constraints:", self.constraints)
+        for con in self.constraints:
+            print("con:",con)
+        print("Constrain method:", self.constrain_method)
+        print("Constraint force constants:")
+        print(f"  Bonds: {self.kf_bonds} Eh/Bohr^2")
+        print(f"  Angles: {self.kf_angles} Eh/rad^2")
+        print(f"  Dihedrals: {self.kf_dihedrals} Eh/rad^2")
         print()
 
-        self.PBC=False
+        self.PBC = False
 
         #######################
         # INITITAL SETUP
@@ -696,7 +708,7 @@ class Cart_optimizer_class:
 
         return grad_out
 
-    def apply_bond_constraints(self, coords, gradient, energy):
+    def apply_bond_constraints(self, coords, gradient, energy, kf=10.0):
         """
         Apply bond-length constraints to gradient (and energy for soft mode).
 
@@ -715,14 +727,12 @@ class Cart_optimizer_class:
         coords_au = coords * self.ang2bohr
 
         for c in self.constraints['bond']:
-            print("Applying bond constraint")
+            print_if_level(f"Applying bond constraint: {c}", self.printlevel, 1)
+            print_if_level(f"Bond constraint force constant,kf, = {kf} (change by kf_bonds keyword)", self.printlevel, 1)
             i, j, r0_ang  = c
 
             r0 = r0_ang * self.ang2bohr  # convert target bond length to Bohrs
-            #print("i, j:", i, j)
-            #print("r0:", r0)
-            #k      = c.get('k', self.default_k)   # only used for soft
-            k = self.default_k # temp
+
             # Current bond vector and length
             rij = coords_au[i] - coords_au[j]          # (3,)
             d   = np.linalg.norm(rij)
@@ -731,18 +741,18 @@ class Cart_optimizer_class:
                 continue
             e_ij = rij / d                        # unit vector i→j
 
-            delta = d - r0                        # signed deviation in Å
+            delta = d - r0                        # signed deviation in Bohr
 
             if self.constrain_method == 'soft':
                 # Harmonic restraint: V = 0.5 * k * delta^2
                 # dV/dr_i = k * delta * e_ij
                 # dV/dr_j = -k * delta * e_ij
-                energy_out += 0.5 * k * delta**2
-                grad_out[i] += k * delta * e_ij
-                grad_out[j] -= k * delta * e_ij
+                energy_out += 0.5 * kf * delta**2
+                grad_out[i] += kf * delta * e_ij
+                grad_out[j] -= kf * delta * e_ij
                 if self.printlevel >= 2:
-                    print(f"  Soft constraint ({i},{j}): d={d:.4f} Å  target={r0:.4f} Å  "
-                        f"delta={delta:.4f} Å  penalty={0.5*k*delta**2:.6f}")
+                    print(f"  Soft constraint ({i},{j}): d={d/self.ang2bohr:.4f} Å  target={r0/self.ang2bohr:.4f} Å  "
+                        f"delta={delta/self.ang2bohr:.4f} Å  penalty={0.5*kf*delta**2:.6f}")
 
             elif self.constrain_method == 'hard':
                 # SHAKE-style: project out the component of the gradient
@@ -762,7 +772,7 @@ class Cart_optimizer_class:
 
         return energy_out, grad_out
 
-    def apply_angle_constraints(self, coords, gradient, energy):
+    def apply_angle_constraints(self, coords, gradient, energy, kf=10.0):
         """
         Angle constraints for triplets (i, j, k).
         Target angle in degrees. Gradient via chain rule through arccos.
@@ -775,11 +785,11 @@ class Cart_optimizer_class:
         coords_au = coords * self.ang2bohr
 
         for c in self.constraints['angle']:
-            print("Applying angle constraint")
+            print_if_level(f"Applying angle constraint: {c}", self.printlevel, 1)
+            print_if_level(f"Angle constraint force constant,kf, = {kf} (change by kf_angles keyword)", self.printlevel, 1)
             i, j, k, theta0_deg = c         # centre atom is j
             theta0 = np.deg2rad(theta0_deg)
-            kf=self.default_k #temp
-            #kf       = c.get('k', self.default_k)
+            #kf = self.default_k #temp
 
             # Bond vectors pointing away from centre j
             u = coords_au[i] - coords_au[j]
@@ -860,11 +870,7 @@ class Cart_optimizer_class:
 
         def dihedral_phi(ca, i, j, k, l):
             """Signed dihedral angle in radians."""
-            r1 = ca[i]
-            r2 = ca[j]
-            r3 = ca[k]
-            r4 = ca[l]
-
+            r1, r2, r3, r4 = ca[i], ca[j], ca[k], ca[l]
             b1 = r2 - r1
             b2 = r3 - r2
             b3 = r4 - r3
@@ -884,7 +890,8 @@ class Cart_optimizer_class:
             b2_hat = b2 / b2_norm
 
             x = np.dot(n1_hat, n2_hat)
-            y = np.dot(np.cross(n1_hat, b2_hat), n2_hat)
+            #y = np.dot(np.cross(n1_hat, b2_hat), n2_hat)
+            y = np.dot(np.cross(n1_hat, n2_hat), b2_hat)
             return np.arctan2(y, x)
 
         def torsion_restraint_energy(ca, i, j, k, l, phi0_rad, kf_local):
@@ -897,7 +904,8 @@ class Cart_optimizer_class:
         h = 1.0e-4  # Bohr finite-difference step
 
         for c in condict:
-            print("Applying torsion constraint")
+            print_if_level(f"Applying torsion constraint: {c}", self.printlevel, 1)
+            print_if_level(f"Torsion constraint force constant,kf, = {kf} (change by kf_dihedrals keyword)", self.printlevel, 1)
             i, j, k, l, phi0_deg = c
             phi0 = np.deg2rad(phi0_deg)
 
@@ -1221,11 +1229,14 @@ class Cart_optimizer_class:
         if constraints is not None:
             self.constraints=constraints
 
+        # Printlevel in Fragment
+        self.fragment.printlevel=self.printlevel
+
         self.charge, self.mult = check_charge_mult(charge, mult, self.theory.theorytype, self.fragment, 
                                          "CartOptimizer", theory=self.theory, printlevel=self.printlevel)
         # Defining coordinates to use, PBC vs. non-PBC
         if self.PBC:
-            print("Running periodic optimization in Cartesian coordinates with cell optimization")
+            print("Cart_optimizer: Running periodic optimization in Cartesian coordinates with cell optimization")
             self.setup_PBC()
             currcoords = np.concatenate([
                     self.fragment.coords,         # (N, 3)
@@ -1234,7 +1245,7 @@ class Cart_optimizer_class:
                 ], axis=0)
             opt_type_label="PBC"
         else:
-            print("Running non-periodic optimization in Cartesian coordinates")
+            print("Cart_optimizer: Running non-periodic optimization in Cartesian coordinates")
             currcoords = self.fragment.coords
             opt_type_label="NonPBC"
 
@@ -1292,15 +1303,14 @@ class Cart_optimizer_class:
             # 1b. Apply all constraints
             self.all_cartesian_constraints={}
             if self.constraints:
-                print("Applying constraints...")
-                print("self.constraints:", self.constraints)
+                print_if_level(f"Applying constraints: {self.constraints}", self.printlevel,2)
                 if 'bond' in self.constraints or 'distance' in self.constraints:
-                    energy, supergradient = self.apply_bond_constraints(R_phys, supergradient, energy)
+                    energy, supergradient = self.apply_bond_constraints(R_phys, supergradient, energy, kf=self.kf_bonds)
                     #print("Cart_opt: time until after bondcon step:", time.time()-self.run_init_time, "seconds")
                 if 'angle' in self.constraints:
-                    energy, supergradient = self.apply_angle_constraints(R_phys, supergradient, energy)
+                    energy, supergradient = self.apply_angle_constraints(R_phys, supergradient, energy, kf=self.kf_angles)
                 if 'torsion' in self.constraints or 'dihedral' in self.constraints:
-                    energy, supergradient = self.apply_dihedral_constraints(R_phys, supergradient, energy)
+                    energy, supergradient = self.apply_dihedral_constraints(R_phys, supergradient, energy, kf=self.kf_dihedrals)
                     #print("supergradient after dihedral constraints:", supergradient)
                     #print("Cart_opt: time until after dihedralcon step:", time.time()-self.run_init_time, "seconds")
                 # Cartesian constraints. prepare
@@ -1327,12 +1337,12 @@ class Cart_optimizer_class:
                         self.all_cartesian_constraints[i] = 'xz'
             # 1c. Apply frozen atoms
             if self.frozen_atoms or len(self.all_cartesian_constraints)>0:
-                print("We have frozen atoms or cartesian constraints, applying them to the gradient...")
+                print_if_level("We have frozen atoms or cartesian constraints, applying them to the gradient...", self.printlevel,2)
                 # Combining frozen atoms list with all_cartesian_constraints dict
                 if isinstance(self.frozen_atoms, list):
                     for i in self.frozen_atoms:
                         self.all_cartesian_constraints[i] = 'xyz'
-                print("All Cartesian constraints", self.all_cartesian_constraints)
+                print_if_level(f"All Cartesian constraints: {self.all_cartesian_constraints}", self.printlevel,2)
 
                 supergradient = self.apply_cartesian_constraints(supergradient)
                 #print("Cart_opt: time until after cartesiancon step:", time.time()-self.run_init_time, "seconds")
@@ -1421,8 +1431,8 @@ class Cart_optimizer_class:
             #########################################
             # Compute step
             #print("Cart_opt: time until before  compute step:", time.time()-self.run_init_time, "seconds")
-            delta_au = self.compute_step(supergradient,currcoords)
-            print("Computed step:", delta_au)
+            delta_au = self.compute_step(supergradient, currcoords)
+            print_if_level(f"Computed step: {delta_au}", self.printlevel,2)
 
             if self.PBC:
                 # Separate check for the lattice part (last 3 rows of delta_au)
@@ -1430,18 +1440,17 @@ class Cart_optimizer_class:
                 if np.max(np.abs(lattice_step)) > (0.05 * self.ang2bohr): # Cap lattice at 0.05 Å
                     scale_latt = (0.05 * self.ang2bohr) / np.max(np.abs(lattice_step))
                     delta_au[-3:] *= scale_latt
-                    print(f"Lattice-specific scaling applied: {scale_latt:.3f}")
+                    print_if_level(f"Lattice-specific scaling applied: {scale_latt:.3f}", self.printlevel,2)
 
             # Scale down step if required
             if np.max(np.abs(delta_au)) > self.max_step_au:
-                print(f"Step scale down:  {np.max(np.abs(delta_au))}  > max_step_au: {self.max_step_au})")
+                print_if_level(f"Step scale down:  {np.max(np.abs(delta_au))}  > max_step_au: {self.max_step_au})", self.printlevel,2)
                 delta_au = delta_au * (self.max_step_au / np.max(np.abs(delta_au)))
-            print("Actual step:", delta_au)
-            
+            print_if_level(f"Actual step: {delta_au}", self.printlevel,2)
 
             # Take the step
             currcoords_au += delta_au
-            print("Cart_opt: time until after step:", time.time()-self.run_init_time, "seconds")
+            print_if_level(f"Cart_opt: time until after step: {time.time()-self.run_init_time} seconds", self.printlevel,2)
             # Converting coordinates from Bohr to Angstrom
             currcoords = currcoords_au / self.ang2bohr
 

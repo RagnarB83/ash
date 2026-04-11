@@ -1212,7 +1212,7 @@ class tbliteTheory(Theory):
         try:
             import tblite
         except Exception as e:
-            print("Problem importing xTtbliteB library. Have you installed tblite properly ?")
+            print("Problem importing tblite library. Have you installed tblite properly ?")
             print("See: https://github.com/tblite/tblite")
             print("Installation might be done like this:")
             print("  mamba install tblite")
