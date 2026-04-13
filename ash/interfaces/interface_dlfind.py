@@ -101,30 +101,30 @@ class DLFIND_optimizerClass:
             print("Error: You must either select a jobtype keyword (e.g. opt, neb, dimer, instanton) or select DL-FIND icoord and iopt codes")
             print("Example: DLFIND_optimizer(jobtype='opt') ")
             ashexit()
-        elif jobtype == "opt":
+        elif jobtype.lower() == "opt":
             print("jobtype: opt chosen")
             print("Choosing icoord=1 (HDLC internal coordinates) and iopt=3 (L-BFGS minimizer)")
             print("For other coordinate-systems: choose icoord=0 (cartesian), icoord=2 (hdlc-tc), icoord=3 (dlc-prim), icoord=3 (dlc-tc)")
             print("For other opt algorithms: choose iopt codes: 0: sd, 1: cg-autorestart, 2: cg-restart10, 3: lbfgs, 10: P-RFO")
             icoord=1
             iopt=3
-        elif jobtype == "tsopt" or jobtype == "ts":
+        elif jobtype.lower() == "tsopt" or jobtype.lower() == "ts":
             print("jobtype: tsopt chosen")
             print("Choosing icoord=3 (HDLC internal coordinates) and iopt=10 (P-RFO)")
             print("Note: inithessian option is:", inithessian)
             icoord=3
             iopt=10
-        elif jobtype == "neb":
+        elif jobtype.lower() == "neb":
             print("jobtype: neb chosen")
             print("Choosing icoord=120 (NEB with frozen endpoints) and iopt=3 (L-BFGS)")
             icoord=120
             iopt=3
-        elif jobtype == "dimer":
+        elif jobtype.lower() == "dimer":
             print("jobtype: dimer chosen")
             print("Choosing icoord=210 (Dimer) and iopt=3 (L-BFGS)")
             icoord=210
             iopt=3
-        elif jobtype == "qts" or jobtype == "instanton" :
+        elif jobtype.lower() == "qts" or jobtype.lower() == "instanton" :
             print("jobtype: qts chosen (a.k.a. instanton)")
             print("Choosing icoord=190 (qts) and iopt=3 (L-BFGS)")
             icoord=190
@@ -363,6 +363,7 @@ class DLFIND_optimizerClass:
         # Create function to store results from DL-FIND
         #@dlf_put_coords_wrapper
         def store_results(a,nvar,switch, energy, coordinates, iam):
+            print("Called store_results with switch:", switch)
             if switch > 0:
                 coords = as_array(coordinates, (nvar,)).reshape(-1, 3)
                 coordinates_ang = coords*0.5291772109303
@@ -397,15 +398,27 @@ class DLFIND_optimizerClass:
 
             # Traj-writing for regular opt
             if self.icoord < 100:
-                self.dlfind_opt_cycles+=1
-                #print("="*70)
-                #print(f"DLFIND OPTIMIZATION CYCLE {self.dlfind_opt_cycles}")
-                #print("="*70)
-                #Storing current coordinates
-                #traj_coords.append(np.array(coordinates_ang))
-                print_if_level(f"Writing regular-opt traj",self.printlevel,1)
-                write_xyzfile(self.fragment.elems, coordinates_ang, "DLFIND_opt_traj", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
-                self.current_geo=coordinates_ang
+                if switch == 1:
+                    print("Writing regular opt traj")
+                    self.dlfind_opt_cycles+=1
+                    #print("="*70)
+                    #print(f"DLFIND OPTIMIZATION CYCLE {self.dlfind_opt_cycles}")
+                    #print("="*70)
+                    #Storing current coordinates
+                    #traj_coords.append(np.array(coordinates_ang))
+                    print_if_level(f"Writing regular-opt traj",self.printlevel,1)
+                    write_xyzfile(self.fragment.elems, coordinates_ang, "DLFIND_opt_traj", printlevel=self.printlevel, writemode='a', title=f"Energy: {energy}")
+                    self.current_geo=coordinates_ang
+                # Unclear what switch 2 and 3 are...
+                elif switch == 2:
+                    # print("switch 2")
+                    pass
+                elif switch == 3:
+                    # print("switch 3")
+                    pass
+                else:
+                    # print("Unknown switch") 
+                    pass
             # Traj-writing for dimer
             elif self.icoord >= 200:
                 print("Writing Dimer traj")
@@ -763,7 +776,7 @@ class DLFIND_optimizerClass:
         # Regular optimization
         if self.icoord < 100:
 
-            print(f"\nDL-FIND optimization finished in {self.dlfind_opt_cycles} steps!")
+            print(f"\nDL-FIND optimization converged in {self.dlfind_opt_cycles} steps!")
             print("Number of DL-FIND energy-gradient evaluations:", self.dlfind_eg_calls)
 
             # Print results

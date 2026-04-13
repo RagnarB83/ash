@@ -2579,7 +2579,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 
     #Writing final PDB-file. If system is non-periodic (according to OpenMMTheory settings) then we set enforcePeriodicBox to False
     #to avoid some strange geometry translation
-    if openmmobject.Periodic is True:
+    if openmmobject.periodic is True:
         if printlevel >= 1:
             print(f"Writing final PDB file (enforcePeriodicBox={enforcePeriodicBox})")
         positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions()
@@ -3685,7 +3685,7 @@ class OpenMM_MDclass:
         self.user_cvforce2=None # Initializing possibility of user CV object
         self.user_biasvar2=None #Initializing possibility of user biasvariable
         #PERIODIC or not
-        if self.openmmobject.Periodic is True:
+        if self.openmmobject.periodic is True:
             #Generally we want True except sometimes we do our own wrapping
             self.enforcePeriodicBox=enforcePeriodicBox
         else:
@@ -4187,7 +4187,7 @@ class OpenMM_MDclass:
         print("OpenMM System forces present before run:", forceclassnames)
 
         #Printing PBCs
-        if self.openmmobject.Periodic is True:
+        if self.openmmobject.periodic is True:
             print("Checking Initial PBC vectors.")
             self.state = self.simulation.context.getState()
             a, b, c = self.state.getPeriodicBoxVectors()
@@ -4254,7 +4254,7 @@ class OpenMM_MDclass:
         # PBC and Wrapping
         ###########################################
         #Defining boxvectors in case we need
-        if self.openmmobject.Periodic is True:
+        if self.openmmobject.periodic is True:
             print("Periodic Boundary Conditions used.")
 
             if self.enforcePeriodicBox is True:
@@ -4358,7 +4358,7 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4454,7 +4454,7 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4555,7 +4555,7 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4668,7 +4668,7 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4778,7 +4778,7 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
                 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4863,7 +4863,7 @@ class OpenMM_MDclass:
         ##########################
         #PERIODIC BOX VECTORS
         ##########################
-        if self.openmmobject.Periodic is True:
+        if self.openmmobject.periodic is True:
             print("Checking PBC vectors:")
             a, b, c = self.state.getPeriodicBoxVectors()
             print(f"A: ", a)

@@ -4,7 +4,7 @@ import shutil
 import os 
 
 from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
-from ash.functions.functions_general import ashexit, BC,print_time_rel
+from ash.functions.functions_general import ashexit, BC, print_if_level,print_time_rel
 from ash.functions.functions_general import print_line_with_mainheader
 import ash.constants
 
@@ -392,8 +392,6 @@ class MACETheory():
             print(BC.FAIL, f"Error. charge and mult has not been defined for {self.theorynamelabel}Theory.run method", BC.END)
             ashexit()
 
-        print("Job label:", label)
-
         # Early exits
         # Coords provided to run
         if current_coords is None:
@@ -415,7 +413,7 @@ class MACETheory():
         if Hessian:
             Grad=True
 
-        print("Running on platform/device:", self.platform)
+        print_if_level("Running on platform/device:", self.printlevel, 2)
         # Checking if model is alreadyloaded
         if self.model is None:
             print("A model has not been loaded yet.")
@@ -531,8 +529,8 @@ class MACETheory():
                 print("hessian:", hessian)
                 print_time_rel(module_init_time, modulename=f'MACE run - after hessian', moduleindex=2)
                 self.hessian = hessian*0.010291772
-        
-        print(f"Single-point {self.theorynamelabel} energy:", self.energy)
+
+        print_if_level(f"Single-point {self.theorynamelabel} energy: {self.energy}", self.printlevel, 1)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
         # Special option

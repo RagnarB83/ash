@@ -217,6 +217,9 @@ from .modules.module_plotting import reactionprofile_plot, contourplot, volumepl
 # DL-FIND
 from ash.interfaces.interface_dlfind import DLFIND_optimizer,DLFIND_optimizerClass
 
+# Sella
+from ash.interfaces.interface_sella import SellaOptimizer, SellaoptimizerClass
+
 # Other
 import ash.interfaces.interface_crest
 from .interfaces.interface_crest import call_crest, call_crest_entropy, get_crest_conformers, new_call_crest
