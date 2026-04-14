@@ -58,6 +58,9 @@ class ORCATheory:
             print("String:", orcasimpleinput.upper())
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
             ashexit()
+        if '!' not in orcasimpleinput:
+            print(BC.FAIL,"Error. orcasimpleinput should contain at least a '!' with method and basis set information", BC.END)
+            ashexit()
 
         # Whether to check ORCA outputfile for errors and warnings or not
         # Generally recommended. Could be disabled to speed up I/O a tiny bit

@@ -1,5 +1,6 @@
 from ash.functions.functions_general import ashexit, print_line_with_mainheader
 from ash.modules.module_singlepoint import Singlepoint
+from ash.modules.module_coords import Fragment
 from ash.constants import hartoeV
 import numpy as np
 import copy
@@ -28,7 +29,7 @@ class ASH_ASE_calculator:
         return self.forces
 
 
-def FSM(reactant=None, product=None, theory=None, method="L-BFGS-B", optcoords="cart",
+def FSM(reactant=None, product=None, theory=None, method="L-BFGS-B", optcoords="ric",
         nnodes_min=10, interp="lst", ninterp=100, stepsize=0.0, interpolate=False, maxiter=1, maxls=3, dmax=0.3, outdir=".", verbose=True):
     fsm = FreezingString_class(reactant=reactant, product=product, theory=theory, method=method, optcoords=optcoords,
                                 nnodes_min=nnodes_min, interp=interp, ninterp=ninterp, stepsize=stepsize,
@@ -44,15 +45,22 @@ class FreezingString_class:
         print_line_with_mainheader("Freezing String calculation initialized")
         try:
             import ase
+            from mlfsm.geom import project_trans_rot
         except:
-            print("Error import ase. Check if installed")
+            print("Error import ase or mlfsm. Check if installed")
             ashexit()
 
         # ASH Fragments (or ASE atoms)
         #self.reactant=reactant
         #self.product
+        self.elems= reactant.elems
         self.reactant_ase = ase.atoms.Atoms(reactant.elems,positions=reactant.coords)
         self.product_ase = ase.atoms.Atoms(product.elems,positions=product.coords)
+
+        # Align product to reactant structure
+        _, aligned_product = project_trans_rot(self.reactant_ase.get_positions(), self.product_ase.get_positions())
+        self.product_ase.set_positions(aligned_product.reshape(-1, 3))
+
 
         self.reactant_ase.info.update({"charge": reactant.charge, "spin": reactant.mult})
         self.product_ase.info.update({"charge": product.charge, "spin": product.mult})
@@ -113,3 +121,43 @@ class FreezingString_class:
             string.write(self.outdir)
 
         print(f"Gradient calls: {string.ngrad}")
+
+        # Grab paths and energies
+        all_atoms = string.r_string + string.p_string[::-1]
+        all_tot_energies = np.array(string.r_energy + string.p_energy[::-1])
+        all_rel_energies = all_tot_energies - min(all_tot_energies)
+        ts_idx = all_rel_energies.argmax()
+        print("ts_idx:", ts_idx)
+        print("TS atom positions:", all_atoms[ts_idx].get_positions())
+        print(("TS energy (eV):", all_tot_energies[ts_idx]))
+        ts_atoms = all_atoms[ts_idx]
+
+        SP = Fragment(elems=self.elems, coords=ts_atoms.get_positions(), 
+                            charge=self.reactant_ase.info["charge"], 
+                            mult=self.reactant_ase.info["spin"])
+        SP.write_xyzfile(xyzfilename=f"TS_guess.xyz")
+        SP.print_coords()
+        SP.set_energy(all_tot_energies[ts_idx]/hartoeV)
+        print(f"TS guess energy : {SP.energy} Eh")
+        exit()
+
+
+        print("Attempting to plot FSM path")
+        path = [structure.get_positions() for structure in all_atoms]
+        from mlfsm.geom import calculate_arc_length
+        s = calculate_arc_length(np.array(path))
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        ax.plot(s, all_energies, label="FSM Path")
+        ax.scatter(s[ts_idx], all_energies[ts_idx], color="red", label="TS Guess")
+        ax.scatter(s[0], all_energies[0], color="black", label="Reactant/Product")
+        ax.scatter(s[-1], all_energies[-1], color="black")
+        ax.set_xlabel("Arclength (Å)")
+        ax.set_ylabel("Energy (eV)")
+        _ = ax.legend()
+
+        # Save figure
+        fig.savefig(f"{self.outdir}/FSM_path.png", dpi=300)
+
+        #except:
+        #   print("Error importing matplotlib. Check if installed")

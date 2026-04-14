@@ -217,9 +217,10 @@ outputname="\$job.out"
 multiwalker=$multiwalker
 
 
-#NUM_CORES
-NUM_CORES=\$((SLURM_JOB_NUM_NODES*SLURM_CPUS_ON_NODE))
-
+#NUM_CORES (note: SLURM_NTASKS is safer due to Slurm plugins)
+#NUM_CORES=\$((SLURM_JOB_NUM_NODES*SLURM_CPUS_ON_NODE))
+NUM_CORES=\$SLURM_NTASKS
+echo "NUM_CORES: \$NUM_CORES"
 
 #Setting MKL_NUM_THREADS, OMP_NUM_THREADS,OPENMM_CPU_THREADS to threads variable (should be 1 usually)
 #Note: Both OpenMM and pyscf threading behaved oddly unless we set this to 1 initially

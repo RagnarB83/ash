@@ -559,7 +559,7 @@ class MACETheory():
 # max_L: symmetry of messages. affects speed and accuracy. default 1 (compromise of speed/acc), 2 more accurate and slower, 0 is fast
 # r_max: cutoff radius of local env. Recommended: 4-7 Ang
 #NOTE: E0s="average" is easiest but not recommended.
-def write_mace_config(config_file="config.yml", name="model",model="MACE", platform='cpu',device=None, 
+def write_mace_config(config_file="config.yml", name="model",model="MACE", platform='cpu',
                       valid_fraction=0.1, train_file="train_data_mace.xyz",E0s=None,
                       energy_key='energy_REF', forces_key='forces_REF',        
                       energy_weight=1, forces_weight=100,
@@ -586,7 +586,7 @@ energy_key= energy_key,
 forces_key= forces_key,
 energy_weight=energy_weight,
 forces_weight=forces_weight,
-device= device,
+device= platform,
 seed= seed,
 batch_size= batch_size,
 max_num_epochs= max_num_epochs,
