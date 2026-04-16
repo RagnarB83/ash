@@ -189,6 +189,11 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     gradients=[]
     fragments=[]
     labels=[]
+
+    # Removing old files if present
+    theory_1.cleanup()
+    theory_2.cleanup()
+
     if runmode=="serial":
         print("Runmode is serial!")
         print("Will now loop over XYZ-files")
