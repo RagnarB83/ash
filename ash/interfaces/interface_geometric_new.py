@@ -555,19 +555,18 @@ class GeomeTRICOptimizerClass:
                 print("Unknown Hessian option")
                 ashexit()
 
-
         #If using Active region then we write only those coordinates to disk (initialxyzfiletric)
         def setup_active_region_geometry(self,fragment):
             if len(self.actatoms) == 0:
                 print("Error: List of active atoms (actatoms) provided is empty. This is not allowed.")
                 ashexit()
-            #Sorting list, otherwise trouble
+            # Sorting list, otherwise trouble
             self.actatoms.sort()
             print("Active Region option Active. Passing only active-region coordinates to geomeTRIC.")
             print("Active atoms list:", self.actatoms)
             print("Number of active atoms:", len(self.actatoms))
 
-            #Check that the actatoms list does not contain atom indices higher than the number of atoms
+            # Check that the actatoms list does not contain atom indices higher than the number of atoms
             largest_atom_index=max(self.actatoms)
             if largest_atom_index >= fragment.numatoms:
                 print(BC.FAIL,f"Found active-atom index ({largest_atom_index}) that is larger or equal (>=) than the number of atoms of system ({fragment.numatoms})!",BC.END)
@@ -579,7 +578,7 @@ class GeomeTRICOptimizerClass:
             #Writing act-region coords (only) of ASH fragment to disk as XYZ file and reading into geomeTRIC
             write_xyzfile(actelems, actcoords, 'initialxyzfiletric')
 
-        #Running geomeTRIC object
+        # Running geomeTRIC object
         def run(self, theory=None, fragment=None, charge=None, mult=None, constraints=None, constrainvalue=False):
             if self.printlevel > 1:
                 print()
@@ -751,8 +750,9 @@ class GeomeTRICOptimizerClass:
             fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
             fragment.set_energy(finalenergy)
 
-            print("Final geometry")
-            fragment.print_coords()
+            if self.ActiveRegion is not True:
+                print("Final geometry")
+                fragment.print_coords()
             print()
 
             # PBC 
@@ -782,7 +782,8 @@ class GeomeTRICOptimizerClass:
 
             #Printing internal coordinate table
             if self.printlevel >= 2:
-                print_internal_coordinate_table_new(fragment,actatoms=self.print_atoms_list)
+                if len(self.print_atoms_list) < 50:
+                    print_internal_coordinate_table_new(fragment,actatoms=self.print_atoms_list)
             blankline()
 
             #Now returning final Results object

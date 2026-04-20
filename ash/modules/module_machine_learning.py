@@ -18,7 +18,7 @@ from ash.modules.module_plotting import ASH_plot
 def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=None, xyz_files=None, num_snapshots=None, random_snapshots=True,
                                 dcd_pdb_topology=None, nth_frame_in_traj=1, printlevel=2,
                                theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1,
-                               energies_atoms_dict=None):
+                               energies_atoms_dict=None, random_seed_set=None):
     print("-"*50)
     print("create_ML_training_data function")
     print("-"*50)
@@ -64,6 +64,10 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
             print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
+            if random_seed_set is not None:
+                if isinstance(random_seed_set,int):
+                    print("Setting random seed:", random_seed_set)
+                    random.seed(random_seed_set)
             list_of_xyz_files = random.sample(full_list_of_xyz_files, num_snapshots)
         else:
             print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
@@ -104,6 +108,10 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
             print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
+            if random_seed_set is not None:
+                if isinstance(random_seed_set,int):
+                    print("Setting random seed:", random_seed_set)
+                    random.seed(random_seed_set)
             list_of_xyz_files = random.sample(full_list_of_xyz_files, num_snapshots)
         else:
             print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
@@ -128,6 +136,10 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
             print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
+            if random_seed_set is not None:
+                if isinstance(random_seed_set,int):
+                    print("Setting random seed:", random_seed_set)
+                    random.seed(random_seed_set)
             list_of_xyz_files = random.sample(full_list_of_xyz_files, num_snapshots)
         else:
             print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
@@ -166,6 +178,10 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
             print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
+            if random_seed_set is not None:
+                if isinstance(random_seed_set,int):
+                    print("Setting random seed:", random_seed_set)
+                    random.seed(random_seed_set)
             list_of_xyz_files = random.sample(full_list_of_xyz_files, num_snapshots)
         else:
             print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
@@ -190,7 +206,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     fragments=[]
     labels=[]
 
-    # Removing old files if present
+    # Removing 
     theory_1.cleanup()
     theory_2.cleanup()
 

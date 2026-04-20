@@ -362,6 +362,11 @@ then
       echo "Copying files to dir: walkersim\$i"  >> \$SLURM_SUBMIT_DIR/\$outputname
       cp * walkersim\$i/
       cd walkersim\$i
+      # Checking if multiple walker feature by plumed is also used in the script (Replace 'XYZ' by walker number in the input file)
+      if grep -q "WALKERS_N" "$file"; then
+        echo "Multiple walker feature of PLumed also used"
+        sed -i "s/XYZ/\$i/g" $file
+      fi
       echo "Entering dir: walkersim\$i"  >> \$SLURM_SUBMIT_DIR/\$outputname
       echo "Process launched : \$i"  >> \$SLURM_SUBMIT_DIR/\$outputname
       sleep 2

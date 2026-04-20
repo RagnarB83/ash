@@ -1378,7 +1378,8 @@ class Cart_optimizer_class:
                     self.fragment.print_coords()
                     print()
                     if self.printlevel >= 2:
-                        print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
+                        if len(self.print_atoms_list) < 50:
+                            print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
                     print()
 
                     print("PBC_format_option:", self.PBC_format_option)
@@ -1417,7 +1418,8 @@ class Cart_optimizer_class:
                     self.fragment.print_coords()
                     print()
                     if self.printlevel >= 2:
-                        print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
+                        if len(self.print_atoms_list) < 50:
+                            print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
                     print()
 
                     #Now returning final Results object
