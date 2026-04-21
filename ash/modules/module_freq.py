@@ -2218,7 +2218,8 @@ def project_rot_and_trans(coords,mass,Hessian):
     # Obtain the number of rotational degrees of freedom
     RotDOF = 0
     for i in range(3):
-        if abs(Ivals[i]) > 1.0e-10:
+        print("Ivals[i]:", Ivals[i])
+        if abs(Ivals[i]) > 1.0e-5:
             RotDOF += 1
     TR_DOF = 3 + RotDOF
     if TR_DOF not in (5, 6):
