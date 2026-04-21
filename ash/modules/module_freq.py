@@ -1996,7 +1996,6 @@ def detect_linear(fragment=None, coords=None, elems=None, threshold=1e-4):
     center = get_center(coords,elems=elems)
     #rinertia = list(inertia(elems,coords,center))
     rinertia = [float(i) for i in inertia(elems,coords,center)]
-    print("rinertia:", rinertia)
     #Checking if rinertia contains an almost zero-value
     if any([abs(i) < threshold for i in rinertia]) is True:
         #print("Small value detected: ", rinertia)

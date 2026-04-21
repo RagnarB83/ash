@@ -425,9 +425,9 @@ class NonBondedTheory(Theory):
             print(BC.OKBLUE, BC.BOLD, "------------ENDING NONBONDED MM CODE-------------", BC.END)
         print_time_rel(module_init_time, modulename='NonbondedTheory run', moduleindex=2)
         if Grad:
-            return self.MMEnergy, self.MMGradient
+            return float(self.MMEnergy), self.MMGradient
         else:
-            return self.MMEnergy
+            return float(self.MMEnergy)
 
 
 # MMAtomobject used to store LJ parameter and possibly charge for MM atom with atomtype, e.g. OT

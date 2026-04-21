@@ -1359,7 +1359,7 @@ class QMMMTheory:
 
             self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords,
                                                                charges=self.charges_qmregionzeroed, connectivity=self.connectivity,
-                                                               qmatoms=self.qmatoms, actatoms=self.actatoms)
+                                                               qmatoms=self.qmatoms, actatoms=self.actatoms, Grad=Grad)
 
         elif self.mm_theory_name == "OpenMMTheory":
             if self.printlevel >= 2:
