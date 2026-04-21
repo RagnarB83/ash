@@ -1555,6 +1555,13 @@ class RestraintTheory:
         return float(np.linalg.norm(coords[i] - coords[j]))
 
     @staticmethod
+    def _measure_bond_difference(coords, i, j, k, l):
+        """q = |r_i - r_j| - |r_k - r_l|"""
+        r1 = float(np.linalg.norm(coords[i] - coords[j]))
+        r2 = float(np.linalg.norm(coords[k] - coords[l]))
+        return r1 - r2
+
+    @staticmethod
     def _measure_angle(coords, i, j, k):
         v1 = coords[i] - coords[j]
         v2 = coords[k] - coords[j]
@@ -1588,6 +1595,31 @@ class RestraintTheory:
         unit = r / r_norm
         grad[i] += unit
         grad[j] -= unit
+        return grad
+
+    @staticmethod
+    def _bond_difference_gradient(coords, i, j, k, l):
+        """dq/dX for q = bond(i,j) - bond(k,l).
+        Returns (natoms, 3) sparse gradient array."""
+        natoms = len(coords)
+        grad = np.zeros((natoms, 3))
+
+        # +1 * gradient of first bond
+        r1 = coords[i] - coords[j]
+        r1_norm = np.linalg.norm(r1)
+        if r1_norm > 1e-10:
+            u1 = r1 / r1_norm
+            grad[i] += u1
+            grad[j] -= u1
+
+        # -1 * gradient of second bond
+        r2 = coords[k] - coords[l]
+        r2_norm = np.linalg.norm(r2)
+        if r2_norm > 1e-10:
+            u2 = r2 / r2_norm
+            grad[k] -= u2
+            grad[l] += u2
+
         return grad
 
     @staticmethod
@@ -1694,7 +1726,16 @@ class RestraintTheory:
                 if Grad:
                     dqdX = self._bond_gradient(coords, *idx)   # dimensionless (Bohr/Bohr)
                     gradient += k * dq * dqdX                  # Eh/Bohr
-
+            elif rtype in ('bond_difference', 'bond_diff'):
+                # indices: [i, j, k, l] — restrains bond(i,j) - bond(k,l)
+                # target given in Å — convert to Bohr
+                target = float(r['target']) * ang2bohr
+                q      = self._measure_bond_difference(coords, *idx)   # Bohr
+                dq     = q - target                                    # Bohr
+                energy += 0.5 * k * dq**2                             # Eh  (k in Eh/Bohr²)
+                if Grad:
+                    dqdX = self._bond_difference_gradient(coords, *idx)  # dimensionless
+                    gradient += k * dq * dqdX                            # Eh/Bohr
             elif rtype == 'angle':
                 # target given in degrees — convert to radians
                 target   = float(r['target']) * np.pi / 180.0

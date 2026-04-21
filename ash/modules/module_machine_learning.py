@@ -735,3 +735,9 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
         print("Active learning loop converged")
         print("Final set of configurations are found in directory: base")
         move_chosen_files(base_cfgs,"base")
+
+
+######################################
+# WORKFLOW FUNCTIONS FOR TRAINING
+#######################################
+
