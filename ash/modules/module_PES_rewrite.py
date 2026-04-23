@@ -1038,18 +1038,26 @@ end
         SCF_CFG_betahole=[]
         deltascfline_CFG_alphahole=[]
         deltascfline_CFG_betahole=[]
+
+
         #NOTE: we need ground-state ion configuration of each multiplicity too
         for fstate in self.Finalstates:
             if fstate.mult > self.stateI.mult:
                 print(f"\nMultiplicity: {fstate.mult}. Creating BETA-hole")
+                print("fstate.numionstates:", fstate.numionstates)
+                # Check if too many states for occupations
+                if fstate.numionstates > len(self.stateI.occupations_beta):
+                    print(f"Too many states {fstate.numionstates} requested for OO-DFT, based on occupied orbitals.")
+                    print(len(self.stateI.occupations_beta))
+                    fstate.numionstates=len(self.stateI.occupations_beta)
+                    print("Changing states to:", fstate.numionstates)
+
+
+
                 for i in range(fstate.numionstates):
                     occ_beta = copy.copy(self.stateI.occupations_beta)
-                    print("occ_beta:", occ_beta)
                     reverse_ind_counter=-1-i
-                    print("reverse_ind_counter:", reverse_ind_counter)
-                    print("occ_beta:", occ_beta)
                     occ_beta[reverse_ind_counter]=0
-                    print("New BETA Configuration:", occ_beta)
                     SCF_CFG_betahole.append([self.stateI.occupations_alpha,occ_beta])
                     if i == 0:
                         #Ground-state ion SCF, no deltaSCF line
