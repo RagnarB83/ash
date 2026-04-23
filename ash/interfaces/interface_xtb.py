@@ -804,6 +804,7 @@ def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False
     else:
         tblite_flag=""
 
+
     # Optional extraflag
     if extraflag is None:
         extraflag=""
@@ -823,6 +824,7 @@ def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False
         xtbembed_line1=""
         xtbembed_line2=""
 
+    gxtb=False
     if 'GFN2' in xtbmethod.upper():
         xtbflag = 2
     elif 'GFN1' in xtbmethod.upper():
@@ -831,7 +833,9 @@ def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False
         xtbflag = 0
     elif 'GFNFF' in xtbmethod.upper():
         print("GFN-FF has been chosen")
-        #exit()
+    elif 'GXTB' in xtbmethod.upper() or 'G-XTB' in xtbmethod.upper() :
+        print("g-xtb has been chosen")
+        gxtb = True
     else:
         print(f"Unknown xtbmethod chosen ({xtbmethod}). Exiting...")
         ashexit()
@@ -853,6 +857,10 @@ def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False
 
     if 'GFNFF' in xtbmethod.upper():
         command_list=[xtbdir + '/xtb', coordfile, '--gfnff', jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
+                    '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2, extraflag]
+    elif gxtb:
+
+        command_list=[xtbdir + '/xtb', coordfile, '--gxtb', jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
                     '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2, extraflag]
     else:
         command_list=[xtbdir + '/xtb', coordfile, '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
