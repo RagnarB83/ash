@@ -2194,11 +2194,11 @@ def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=
     if option=='density':
         plottype = 2
     elif option=='cisdensity':
-        plottype = 2
+        plottype = 23
     elif option=='spindensity':
         plottype = 3
     elif option=='cisspindensity':
-        plottype = 3
+        plottype = 23
     elif option=='mo':
         plottype = 1
     else:

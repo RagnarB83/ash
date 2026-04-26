@@ -415,12 +415,16 @@ class PhotoElectronClass:
                 print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                 #Doing spin-density Cubefile for each cisr file
+                densityfilename=f"{self.theory.filename}.cisrre.singlet.iroot{tddftstate}"
                 run_orca_plot(orcadir=self.theory.orcadir, filename=self.theory.filename + '.gbw', option='cisspindensity',gridvalue=self.densgridvalue,
-                            densityfilename=self.theory.filename+'.cisr' )
+                            densityfilename=densityfilename )
                 os.rename(self.theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
+                
                 #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
+                densityfilename=f"{self.theory.filename}.cispre.singlet.iroot{tddftstate}"
+                #self.theory.filename+'.cisp'
                 run_orca_plot(orcadir=self.theory.orcadir, filename=self.theory.filename + '.gbw', option='cisdensity',gridvalue=self.densgridvalue,
-                            densityfilename=self.theory.filename+'.cisp' )
+                            densityfilename=densityfilename )
                 os.rename(self.theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
 
                 final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
@@ -2087,39 +2091,45 @@ end
                         curr_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(curr_jsonfile)
                         totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(curr_state_data_dict)
 
-                        #Write CURRENT-state MOs to disk in wfoverlap format
-                        create_wfoverlap_MO_file(curr_state_data_dict, "mos_curr", mo_threshold=1e-12,frozencore=0)
+                        if self.noDyson:
+                            print("NoDyson True. Setting Dysonnorms to zero")
+                            dysonnorms=[0.0 for i in frag_IPs]
+                            self.finaldysonnorms=dysonnorms
 
-                        # Creating determinant-string for Current State from orbital information
-                        curr_determinant_string = get_dets_from_single(totnumorbitals,
-                                                                    numocc_alpha, numocc_beta, restricted, 0)
-                        writestringtofile(curr_determinant_string, "dets_curr")
+                        else:
+                            #Write CURRENT-state MOs to disk in wfoverlap format
+                            create_wfoverlap_MO_file(curr_state_data_dict, "mos_curr", mo_threshold=1e-12,frozencore=0)
 
-                        print("\nRunning WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
-                        # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
-                        wfoverlapinput = """
-                        mix_aoovl=AO_overl
-                        a_mo=mos_curr
-                        b_mo=mos_init
-                        a_det=dets_curr
-                        b_det=dets_init
-                        a_mo_read=0
-                        b_mo_read=0
-                        ao_read=0
-                        moprint=1
-                        """
-                        #Calling wfoverlap
-                        run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory,self.numcores)
-                        #Grabbing Dyson norms from wfovl.out
-                        dyson_norm=grabDysonnorms()
-                        os.rename("wfovl.out",f"Final_State_mult{fstate.mult}_state{i}.wfovl.out")
-                        dysonnorms.append(dyson_norm[0]) #Only one dyson norm
-                        print(BC.OKBLUE,f"\nDyson norm for state: ({dyson_norm})",BC.ENDC)
-                        if len(dyson_norm) == 0:
-                            print("Dyson norm is empty. Something went wrong with WfOverlap calculation.")
-                            print("Setting Dyson norm to zero and continuing.")
-                            dysonnorms.append(0.0)
-                        self.finaldysonnorms=self.finaldysonnorms+dyson_norm
+                            # Creating determinant-string for Current State from orbital information
+                            curr_determinant_string = get_dets_from_single(totnumorbitals,
+                                                                        numocc_alpha, numocc_beta, restricted, 0)
+                            writestringtofile(curr_determinant_string, "dets_curr")
+
+                            print("\nRunning WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
+                            # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
+                            wfoverlapinput = """
+                            mix_aoovl=AO_overl
+                            a_mo=mos_curr
+                            b_mo=mos_init
+                            a_det=dets_curr
+                            b_det=dets_init
+                            a_mo_read=0
+                            b_mo_read=0
+                            ao_read=0
+                            moprint=1
+                            """
+                            #Calling wfoverlap
+                            run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory,self.numcores)
+                            #Grabbing Dyson norms from wfovl.out
+                            dyson_norm=grabDysonnorms()
+                            os.rename("wfovl.out",f"Final_State_mult{fstate.mult}_state{i}.wfovl.out")
+                            dysonnorms.append(dyson_norm[0]) #Only one dyson norm
+                            print(BC.OKBLUE,f"\nDyson norm for state: ({dyson_norm})",BC.ENDC)
+                            if len(dyson_norm) == 0:
+                                print("Dyson norm is empty. Something went wrong with WfOverlap calculation.")
+                                print("Setting Dyson norm to zero and continuing.")
+                                dysonnorms.append(0.0)
+                            self.finaldysonnorms=self.finaldysonnorms+dyson_norm
                 #Dyson
                 frag_dysonnorms=dysonnorms
                 #frag_dysonnorms = self.run_dyson_calc(frag_IPs)

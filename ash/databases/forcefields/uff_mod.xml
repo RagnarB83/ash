@@ -1,0 +1,689 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ForceField>
+
+<!-- ======================================================================
+     ATOM TYPES
+     One entry per UFF type.  'class' mirrors 'name' for simple matching.
+     Masses from IUPAC 2021 standard atomic weights.
+     ====================================================================== -->
+<AtomTypes>
+  <!-- Period 1 -->
+  <Type name="H_"   class="H_"   element="H"   mass="1.008"/>
+  <Type name="H_b"  class="H_b"  element="H"   mass="1.008"/>  <!-- bridging H -->
+  <!-- Period 2 -->
+  <Type name="He4+4" class="He4+4" element="He" mass="4.0026"/>
+  <Type name="Li"   class="Li"   element="Li"  mass="6.941"/>
+  <Type name="Be3+2" class="Be3+2" element="Be" mass="9.0122"/>
+  <Type name="B_3"  class="B_3"  element="B"   mass="10.811"/>
+  <Type name="B_2"  class="B_2"  element="B"   mass="10.811"/>
+  <Type name="C_3"  class="C_3"  element="C"   mass="12.011"/>
+  <Type name="C_R"  class="C_R"  element="C"   mass="12.011"/>
+  <Type name="C_2"  class="C_2"  element="C"   mass="12.011"/>
+  <Type name="C_1"  class="C_1"  element="C"   mass="12.011"/>
+  <Type name="N_3"  class="N_3"  element="N"   mass="14.007"/>
+  <Type name="N_R"  class="N_R"  element="N"   mass="14.007"/>
+  <Type name="N_2"  class="N_2"  element="N"   mass="14.007"/>
+  <Type name="N_1"  class="N_1"  element="N"   mass="14.007"/>
+  <Type name="O_3"  class="O_3"  element="O"   mass="15.999"/>
+  <Type name="O_3_z" class="O_3_z" element="O" mass="15.999"/><!-- zeolite O -->
+  <Type name="O_R"  class="O_R"  element="O"   mass="15.999"/>
+  <Type name="O_2"  class="O_2"  element="O"   mass="15.999"/>
+  <Type name="O_1"  class="O_1"  element="O"   mass="15.999"/>
+  <Type name="F_"   class="F_"   element="F"   mass="18.998"/>
+  <Type name="Ne4+4" class="Ne4+4" element="Ne" mass="20.180"/>
+  <!-- Period 3 -->
+  <Type name="Na"   class="Na"   element="Na"  mass="22.990"/>
+  <Type name="Mg3+2" class="Mg3+2" element="Mg" mass="24.305"/>
+  <Type name="Al3"  class="Al3"  element="Al"  mass="26.982"/>
+  <Type name="Si3"  class="Si3"  element="Si"  mass="28.086"/>
+  <Type name="P_3+3" class="P_3+3" element="P" mass="30.974"/>
+  <Type name="P_3+5" class="P_3+5" element="P" mass="30.974"/>
+  <Type name="P_3+q" class="P_3+q" element="P" mass="30.974"/>
+  <Type name="S_3+2" class="S_3+2" element="S" mass="32.065"/>
+  <Type name="S_3+4" class="S_3+4" element="S" mass="32.065"/>
+  <Type name="S_3+6" class="S_3+6" element="S" mass="32.065"/>
+  <Type name="S_R"  class="S_R"  element="S"   mass="32.065"/>
+  <Type name="S_2"  class="S_2"  element="S"   mass="32.065"/>
+  <Type name="Cl"   class="Cl"   element="Cl"  mass="35.453"/>
+  <Type name="Ar4+4" class="Ar4+4" element="Ar" mass="39.948"/>
+  <!-- Period 4 -->
+  <Type name="K_"   class="K_"   element="K"   mass="39.098"/>
+  <Type name="Ca6+2" class="Ca6+2" element="Ca" mass="40.078"/>
+  <Type name="Sc3+3" class="Sc3+3" element="Sc" mass="44.956"/>
+  <Type name="Ti3+4" class="Ti3+4" element="Ti" mass="47.867"/>
+  <Type name="Ti6+4" class="Ti6+4" element="Ti" mass="47.867"/>
+  <Type name="V_3+5" class="V_3+5" element="V"  mass="50.942"/>
+  <Type name="Cr6+3" class="Cr6+3" element="Cr" mass="51.996"/>
+  <Type name="Mn6+2" class="Mn6+2" element="Mn" mass="54.938"/>
+  <Type name="Fe3+2" class="Fe3+2" element="Fe" mass="55.845"/>
+  <Type name="Fe6+2" class="Fe6+2" element="Fe" mass="55.845"/>
+  <Type name="Co6+3" class="Co6+3" element="Co" mass="58.933"/>
+  <Type name="Ni4+2" class="Ni4+2" element="Ni" mass="58.693"/>
+  <Type name="Cu3+1" class="Cu3+1" element="Cu" mass="63.546"/>
+  <Type name="Zn3+2" class="Zn3+2" element="Zn" mass="65.38"/>
+  <Type name="Ga3+3" class="Ga3+3" element="Ga" mass="69.723"/>
+  <Type name="Ge3"  class="Ge3"  element="Ge"  mass="72.630"/>
+  <Type name="As3+3" class="As3+3" element="As" mass="74.922"/>
+  <Type name="Se3+2" class="Se3+2" element="Se" mass="78.971"/>
+  <Type name="Br"   class="Br"   element="Br"  mass="79.904"/>
+  <Type name="Kr4+4" class="Kr4+4" element="Kr" mass="83.798"/>
+  <!-- Period 5 -->
+  <Type name="Rb"   class="Rb"   element="Rb"  mass="85.468"/>
+  <Type name="Sr6+2" class="Sr6+2" element="Sr" mass="87.62"/>
+  <Type name="Y_3+3" class="Y_3+3" element="Y"  mass="88.906"/>
+  <Type name="Zr3+4" class="Zr3+4" element="Zr" mass="91.224"/>
+  <Type name="Nb3+5" class="Nb3+5" element="Nb" mass="92.906"/>
+  <Type name="Mo6+6" class="Mo6+6" element="Mo" mass="95.96"/>
+  <Type name="Mo3+6" class="Mo3+6" element="Mo" mass="95.96"/>
+  <Type name="Tc6+5" class="Tc6+5" element="Tc" mass="98.0"/>
+  <Type name="Ru6+2" class="Ru6+2" element="Ru" mass="101.07"/>
+  <Type name="Rh6+3" class="Rh6+3" element="Rh" mass="102.91"/>
+  <Type name="Pd4+2" class="Pd4+2" element="Pd" mass="106.42"/>
+  <Type name="Ag1+1" class="Ag1+1" element="Ag" mass="107.87"/>
+  <Type name="Cd3+2" class="Cd3+2" element="Cd" mass="112.41"/>
+  <Type name="In3+3" class="In3+3" element="In" mass="114.82"/>
+  <Type name="Sn3"  class="Sn3"  element="Sn"  mass="118.71"/>
+  <Type name="Sb3+3" class="Sb3+3" element="Sb" mass="121.76"/>
+  <Type name="Te3+2" class="Te3+2" element="Te" mass="127.60"/>
+  <Type name="I_"   class="I_"   element="I"   mass="126.90"/>
+  <Type name="Xe4+4" class="Xe4+4" element="Xe" mass="131.29"/>
+  <!-- Period 6 -->
+  <Type name="Cs"   class="Cs"   element="Cs"  mass="132.91"/>
+  <Type name="Ba6+2" class="Ba6+2" element="Ba" mass="137.33"/>
+  <Type name="La3+3" class="La3+3" element="La" mass="138.91"/>
+  <Type name="Ce6+3" class="Ce6+3" element="Ce" mass="140.12"/>
+  <Type name="Pr6+3" class="Pr6+3" element="Pr" mass="140.91"/>
+  <Type name="Nd6+3" class="Nd6+3" element="Nd" mass="144.24"/>
+  <Type name="Pm6+3" class="Pm6+3" element="Pm" mass="145.0"/>
+  <Type name="Sm6+3" class="Sm6+3" element="Sm" mass="150.36"/>
+  <Type name="Eu6+3" class="Eu6+3" element="Eu" mass="151.96"/>
+  <Type name="Gd6+3" class="Gd6+3" element="Gd" mass="157.25"/>
+  <Type name="Tb6+3" class="Tb6+3" element="Tb" mass="158.93"/>
+  <Type name="Dy6+3" class="Dy6+3" element="Dy" mass="162.50"/>
+  <Type name="Ho6+3" class="Ho6+3" element="Ho" mass="164.93"/>
+  <Type name="Er6+3" class="Er6+3" element="Er" mass="167.26"/>
+  <Type name="Tm6+3" class="Tm6+3" element="Tm" mass="168.93"/>
+  <Type name="Yb6+3" class="Yb6+3" element="Yb" mass="173.04"/>
+  <Type name="Lu6+3" class="Lu6+3" element="Lu" mass="174.97"/>
+  <Type name="Hf3+4" class="Hf3+4" element="Hf" mass="178.49"/>
+  <Type name="Ta3+5" class="Ta3+5" element="Ta" mass="180.95"/>
+  <Type name="W_6+6" class="W_6+6" element="W"  mass="183.84"/>
+  <Type name="W_3+4" class="W_3+4" element="W"  mass="183.84"/>
+  <Type name="W_3+6" class="W_3+6" element="W"  mass="183.84"/>
+  <Type name="Re6+5" class="Re6+5" element="Re" mass="186.21"/>
+  <Type name="Re3+7" class="Re3+7" element="Re" mass="186.21"/>
+  <Type name="Os6+6" class="Os6+6" element="Os" mass="190.23"/>
+  <Type name="Ir6+3" class="Ir6+3" element="Ir" mass="192.22"/>
+  <Type name="Pt4+2" class="Pt4+2" element="Pt" mass="195.08"/>
+  <Type name="Au4+3" class="Au4+3" element="Au" mass="196.97"/>
+  <Type name="Hg1+2" class="Hg1+2" element="Hg" mass="200.59"/>
+  <Type name="Tl3+3" class="Tl3+3" element="Tl" mass="204.38"/>
+  <Type name="Pb3"  class="Pb3"  element="Pb"  mass="207.2"/>
+  <Type name="Bi3+3" class="Bi3+3" element="Bi" mass="208.98"/>
+  <Type name="Po3+2" class="Po3+2" element="Po" mass="209.0"/>
+  <Type name="At"   class="At"   element="At"  mass="210.0"/>
+  <Type name="Rn4+4" class="Rn4+4" element="Rn" mass="222.0"/>
+  <!-- Period 7 (actinides / transactinides) -->
+  <Type name="Fr"   class="Fr"   element="Fr"  mass="223.0"/>
+  <Type name="Ra6+2" class="Ra6+2" element="Ra" mass="226.0"/>
+  <Type name="Ac6+3" class="Ac6+3" element="Ac" mass="227.0"/>
+  <Type name="Th6+4" class="Th6+4" element="Th" mass="232.04"/>
+  <Type name="Pa6+4" class="Pa6+4" element="Pa" mass="231.04"/>
+  <Type name="U_6+4" class="U_6+4" element="U"  mass="238.03"/>
+  <Type name="Np6+4" class="Np6+4" element="Np" mass="237.0"/>
+  <Type name="Pu6+4" class="Pu6+4" element="Pu" mass="244.0"/>
+  <Type name="Am6+4" class="Am6+4" element="Am" mass="243.0"/>
+  <Type name="Cm6+3" class="Cm6+3" element="Cm" mass="247.0"/>
+  <Type name="Bk6+3" class="Bk6+3" element="Bk" mass="247.0"/>
+  <Type name="Cf6+3" class="Cf6+3" element="Cf" mass="251.0"/>
+  <Type name="Es6+3" class="Es6+3" element="Es" mass="252.0"/>
+  <Type name="Fm6+3" class="Fm6+3" element="Fm" mass="257.0"/>
+  <Type name="Md6+3" class="Md6+3" element="Md" mass="258.0"/>
+  <Type name="No6+3" class="No6+3" element="No" mass="259.0"/>
+  <Type name="Lw6+3" class="Lw6+3" element="Lr" mass="262.0"/>
+</AtomTypes>
+<Residues>
+  <Residue name="MOL">
+    <Atom name="O_3" type="O_3"/>
+    <Atom name="H_"  type="H_"/>
+    <Bond atomName1="O_3" atomName2="H_"/>
+  </Residue>
+</Residues>
+<!-- ======================================================================
+     HARMONIC BOND FORCE
+     k values from: k = 2·664.12·(Z*_i·Z*_j)/r_ij³   [kcal/mol/Å²]
+     → kJ/mol/nm² = kcal/mol/Å² × 418.4
+     r₀ values: r_i + r_j − r_EN correction (see header)
+     Only the most common pairwise bond types are enumerated.
+     Additional pairs can be added by the user following the same formula.
+     ====================================================================== -->
+<HarmonicBondForce>
+  <!-- H bonds -->
+  <Bond type1="H_"   type2="H_"   length="0.0741" k="286000"/><!-- H₂ reference -->
+  <Bond type1="H_"   type2="C_3"  length="0.1091" k="277900"/>
+  <Bond type1="H_"   type2="C_R"  length="0.1086" k="291100"/>
+  <Bond type1="H_"   type2="C_2"  length="0.1086" k="291100"/>
+  <Bond type1="H_"   type2="C_1"  length="0.1065" k="310000"/>
+  <Bond type1="H_"   type2="N_3"  length="0.1012" k="335600"/>
+  <Bond type1="H_"   type2="N_R"  length="0.1010" k="340000"/>
+  <Bond type1="H_"   type2="N_2"  length="0.1010" k="340000"/>
+  <Bond type1="H_"   type2="O_3"  length="0.0956" k="390000"/>
+  <Bond type1="H_"   type2="O_R"  length="0.0960" k="385000"/>
+  <Bond type1="H_"   type2="S_3+2" length="0.1338" k="192000"/>
+  <Bond type1="H_"   type2="P_3+3" length="0.1421" k="165000"/>
+  <Bond type1="H_"   type2="Si3"  length="0.1487" k="145000"/>
+  <Bond type1="H_b"  type2="B_3"  length="0.1196" k="220000"/>
+  <!-- C–C -->
+  <Bond type1="C_3"  type2="C_3"  length="0.1514" k="224393"/>
+  <Bond type1="C_3"  type2="C_R"  length="0.1503" k="235000"/>
+  <Bond type1="C_3"  type2="C_2"  length="0.1503" k="235000"/>
+  <Bond type1="C_3"  type2="C_1"  length="0.1472" k="262000"/>
+  <Bond type1="C_R"  type2="C_R"  length="0.1395" k="338000"/>
+  <Bond type1="C_2"  type2="C_2"  length="0.1336" k="389000"/>
+  <Bond type1="C_R"  type2="C_2"  length="0.1395" k="338000"/>
+  <Bond type1="C_1"  type2="C_1"  length="0.1212" k="606000"/>
+  <!-- C–N -->
+  <Bond type1="C_3"  type2="N_3"  length="0.1462" k="263000"/>
+  <Bond type1="C_3"  type2="N_R"  length="0.1451" k="274000"/>
+  <Bond type1="C_3"  type2="N_2"  length="0.1451" k="274000"/>
+  <Bond type1="C_3"  type2="N_1"  length="0.1418" k="305000"/>
+  <Bond type1="C_R"  type2="N_R"  length="0.1346" k="408000"/>
+  <Bond type1="C_R"  type2="N_3"  length="0.1357" k="397000"/>
+  <Bond type1="C_2"  type2="N_2"  length="0.1279" k="501000"/>
+  <Bond type1="C_1"  type2="N_1"  length="0.1158" k="717000"/>
+  <!-- C–O -->
+  <Bond type1="C_3"  type2="O_3"  length="0.1418" k="290000"/>
+  <Bond type1="C_3"  type2="O_R"  length="0.1365" k="355000"/>
+  <Bond type1="C_R"  type2="O_R"  length="0.1365" k="355000"/>
+  <Bond type1="C_2"  type2="O_2"  length="0.1219" k="562000"/>
+  <Bond type1="C_R"  type2="O_2"  length="0.1219" k="562000"/>
+  <Bond type1="C_1"  type2="O_1"  length="0.1128" k="793000"/>
+  <!-- C–S -->
+  <Bond type1="C_3"  type2="S_3+2" length="0.1820" k="141000"/>
+  <Bond type1="C_R"  type2="S_R"  length="0.1760" k="162000"/>
+  <Bond type1="C_3"  type2="S_3+4" length="0.1810" k="145000"/>
+  <!-- C–P -->
+  <Bond type1="C_3"  type2="P_3+3" length="0.1843" k="133000"/>
+  <!-- C–Si -->
+  <Bond type1="C_3"  type2="Si3"  length="0.1889" k="117000"/>
+  <!-- C–F, C–Cl, C–Br, C–I -->
+  <Bond type1="C_3"  type2="F_"   length="0.1381" k="312000"/>
+  <Bond type1="C_R"  type2="F_"   length="0.1340" k="362000"/>
+  <Bond type1="C_3"  type2="Cl"   length="0.1766" k="155000"/>
+  <Bond type1="C_R"  type2="Cl"   length="0.1720" k="175000"/>
+  <Bond type1="C_3"  type2="Br"   length="0.1939" k="122000"/>
+  <Bond type1="C_R"  type2="Br"   length="0.1900" k="134000"/>
+  <Bond type1="C_3"  type2="I_"   length="0.2140" k="86000"/>
+  <Bond type1="C_R"  type2="I_"   length="0.2095" k="96000"/>
+  <!-- C–B -->
+  <Bond type1="C_3"  type2="B_3"  length="0.1562" k="189000"/>
+  <Bond type1="C_R"  type2="B_2"  length="0.1497" k="232000"/>
+  <!-- N–N -->
+  <Bond type1="N_3"  type2="N_3"  length="0.1401" k="304000"/>
+  <Bond type1="N_R"  type2="N_R"  length="0.1357" k="380000"/>
+  <Bond type1="N_2"  type2="N_2"  length="0.1247" k="539000"/>
+  <Bond type1="N_1"  type2="N_1"  length="0.1098" k="803000"/>
+  <!-- N–O -->
+  <Bond type1="N_3"  type2="O_3"  length="0.1459" k="260000"/>
+  <Bond type1="N_2"  type2="O_2"  length="0.1208" k="548000"/>
+  <!-- O–O -->
+  <Bond type1="O_3"  type2="O_3"  length="0.1460" k="213000"/>
+  <Bond type1="O_2"  type2="O_2"  length="0.1210" k="440000"/>
+  <!-- Si–O, Si–N, Si–Si -->
+  <Bond type1="Si3"  type2="O_3"  length="0.1631" k="183000"/>
+  <Bond type1="Si3"  type2="O_3_z" length="0.1611" k="195000"/>
+  <Bond type1="Si3"  type2="N_3"  length="0.1743" k="135000"/>
+  <Bond type1="Si3"  type2="Si3"  length="0.2352" k="77000"/>
+  <!-- P bonds -->
+  <Bond type1="P_3+3" type2="P_3+3" length="0.2218" k="89000"/>
+  <Bond type1="P_3+5" type2="O_2"   length="0.1493" k="244000"/>
+  <Bond type1="P_3+3" type2="O_3"   length="0.1638" k="177000"/>
+  <Bond type1="P_3+3" type2="S_3+2" length="0.2101" k="97000"/>
+  <!-- S bonds -->
+  <Bond type1="S_3+2" type2="S_3+2" length="0.2048" k="110000"/>
+  <Bond type1="S_3+2" type2="O_2"   length="0.1483" k="242000"/>
+  <Bond type1="S_3+6" type2="O_2"   length="0.1440" k="303000"/>
+  <!-- Metal–O / Metal–N (representative) -->
+  <Bond type1="Fe3+2" type2="O_3"  length="0.2058" k="79000"/>
+  <Bond type1="Fe6+2" type2="O_3"  length="0.2010" k="90000"/>
+  <Bond type1="Fe3+2" type2="N_3"  length="0.2005" k="88000"/>
+  <Bond type1="Zn3+2" type2="O_3"  length="0.1954" k="97000"/>
+  <Bond type1="Zn3+2" type2="N_3"  length="0.2096" k="77000"/>
+  <Bond type1="Cu3+1" type2="O_3"  length="0.1873" k="113000"/>
+  <Bond type1="Cu3+1" type2="N_3"  length="0.2018" k="84000"/>
+  <Bond type1="Ni4+2" type2="O_3"  length="0.1934" k="101000"/>
+  <Bond type1="Ni4+2" type2="N_3"  length="0.2008" k="86000"/>
+  <Bond type1="Co6+3" type2="O_3"  length="0.2003" k="90000"/>
+  <Bond type1="Co6+3" type2="N_3"  length="0.2069" k="79000"/>
+  <Bond type1="Mg3+2" type2="O_3"  length="0.2073" k="74000"/>
+  <Bond type1="Ca6+2" type2="O_3"  length="0.2395" k="46000"/>
+  <Bond type1="Al3"   type2="O_3"  length="0.1912" k="108000"/>
+  <Bond type1="Al3"   type2="O_3_z" length="0.1912" k="108000"/>
+  <Bond type1="Ti3+4" type2="O_3"  length="0.1936" k="101000"/>
+  <Bond type1="Ti6+4" type2="O_3"  length="0.1956" k="97000"/>
+  <Bond type1="Pt4+2" type2="N_3"  length="0.2008" k="90000"/>
+  <Bond type1="Pt4+2" type2="Cl"   length="0.2300" k="62000"/>
+  <Bond type1="Au4+3" type2="Cl"   length="0.2270" k="68000"/>
+  <!-- Boron -->
+  <Bond type1="B_3"  type2="B_3"  length="0.1700" k="171000"/>
+  <Bond type1="B_3"  type2="N_3"  length="0.1578" k="210000"/>
+  <Bond type1="B_3"  type2="O_3"  length="0.1367" k="320000"/>
+  <Bond type1="B_2"  type2="N_2"  length="0.1376" k="390000"/>
+</HarmonicBondForce>
+
+<!-- ======================================================================
+     HARMONIC ANGLE FORCE
+     θ₀ in radians; k in kJ/mol/rad².
+     UFF equilibrium angles come from Table 1 (θ_0 column), hybridisation:
+       sp3  = 109.47°  (1.9106 rad)
+       sp2  = 120.00°  (2.0944 rad)
+       sp   = 180.00°  (π rad)
+       trig = 120.00°
+       tet  = 109.47°
+     k values are type-pair specific; listed values represent common cases.
+     ====================================================================== -->
+<HarmonicAngleForce>
+  <!-- H–C–H, H–C–X for sp3 carbon -->
+  <Angle type1="H_"  type2="C_3"  type3="H_"   angle="1.9106" k="292"/>
+  <Angle type1="H_"  type2="C_3"  type3="C_3"  angle="1.9106" k="317"/>
+  <Angle type1="H_"  type2="C_3"  type3="N_3"  angle="1.9106" k="325"/>
+  <Angle type1="H_"  type2="C_3"  type3="O_3"  angle="1.9106" k="334"/>
+  <Angle type1="H_"  type2="C_3"  type3="F_"   angle="1.9106" k="341"/>
+  <Angle type1="H_"  type2="C_3"  type3="Cl"   angle="1.9106" k="312"/>
+  <Angle type1="H_"  type2="C_3"  type3="Br"   angle="1.9106" k="298"/>
+  <Angle type1="H_"  type2="C_3"  type3="S_3+2" angle="1.9106" k="283"/>
+  <Angle type1="H_"  type2="C_3"  type3="Si3"  angle="1.9106" k="278"/>
+  <!-- C_3–C_3–X (sp3–sp3) -->
+  <Angle type1="C_3" type2="C_3"  type3="C_3"  angle="1.9106" k="451"/>
+  <Angle type1="C_3" type2="C_3"  type3="N_3"  angle="1.9106" k="467"/>
+  <Angle type1="C_3" type2="C_3"  type3="O_3"  angle="1.9106" k="480"/>
+  <Angle type1="C_3" type2="C_3"  type3="C_R"  angle="1.9106" k="451"/>
+  <Angle type1="C_3" type2="C_3"  type3="C_2"  angle="1.9106" k="451"/>
+  <Angle type1="C_3" type2="C_3"  type3="F_"   angle="1.9106" k="503"/>
+  <Angle type1="C_3" type2="C_3"  type3="Cl"   angle="1.9106" k="441"/>
+  <Angle type1="C_3" type2="C_3"  type3="Br"   angle="1.9106" k="422"/>
+  <Angle type1="C_3" type2="C_3"  type3="S_3+2" angle="1.9106" k="395"/>
+  <Angle type1="C_3" type2="C_3"  type3="Si3"  angle="1.9106" k="373"/>
+  <Angle type1="N_3" type2="C_3"  type3="N_3"  angle="1.9106" k="483"/>
+  <Angle type1="O_3" type2="C_3"  type3="O_3"  angle="1.9106" k="497"/>
+  <!-- sp2 carbon (C_R, C_2) — 120° -->
+  <Angle type1="H_"  type2="C_R"  type3="C_R"  angle="2.0944" k="376"/>
+  <Angle type1="H_"  type2="C_R"  type3="N_R"  angle="2.0944" k="390"/>
+  <Angle type1="H_"  type2="C_2"  type3="C_2"  angle="2.0944" k="376"/>
+  <Angle type1="C_R" type2="C_R"  type3="C_R"  angle="2.0944" k="563"/>
+  <Angle type1="C_R" type2="C_R"  type3="N_R"  angle="2.0944" k="584"/>
+  <Angle type1="C_R" type2="C_R"  type3="C_3"  angle="2.0944" k="551"/>
+  <Angle type1="C_R" type2="C_R"  type3="O_R"  angle="2.0944" k="592"/>
+  <Angle type1="N_R" type2="C_R"  type3="N_R"  angle="2.0944" k="606"/>
+  <Angle type1="C_R" type2="N_R"  type3="C_R"  angle="2.0944" k="606"/>
+  <Angle type1="C_R" type2="C_R"  type3="F_"   angle="2.0944" k="612"/>
+  <Angle type1="C_R" type2="C_R"  type3="Cl"   angle="2.0944" k="550"/>
+  <Angle type1="C_R" type2="C_R"  type3="Br"   angle="2.0944" k="523"/>
+  <Angle type1="C_R" type2="C_R"  type3="C_2"  angle="2.0944" k="563"/>
+  <Angle type1="C_2" type2="C_2"  type3="C_2"  angle="2.0944" k="563"/>
+  <Angle type1="C_2" type2="C_2"  type3="C_3"  angle="2.0944" k="551"/>
+  <Angle type1="C_2" type2="C_2"  type3="N_2"  angle="2.0944" k="584"/>
+  <Angle type1="C_2" type2="C_2"  type3="O_2"  angle="2.0944" k="592"/>
+  <!-- sp carbon — 180° -->
+  <Angle type1="H_"  type2="C_1"  type3="C_1"  angle="3.14159" k="415"/>
+  <Angle type1="C_3" type2="C_1"  type3="C_1"  angle="3.14159" k="530"/>
+  <Angle type1="C_R" type2="C_1"  type3="N_1"  angle="3.14159" k="580"/>
+  <Angle type1="C_1" type2="C_1"  type3="N_1"  angle="3.14159" k="600"/>
+  <!-- N angles (sp3 = 106.7°, sp2 = 120°, sp = 180°) -->
+  <Angle type1="H_"  type2="N_3"  type3="H_"   angle="1.8622" k="259"/>
+  <Angle type1="H_"  type2="N_3"  type3="C_3"  angle="1.8622" k="278"/>
+  <Angle type1="H_"  type2="N_3"  type3="C_R"  angle="1.8622" k="284"/>
+  <Angle type1="C_3" type2="N_3"  type3="C_3"  angle="1.8622" k="390"/>
+  <Angle type1="C_3" type2="N_3"  type3="C_R"  angle="1.8622" k="398"/>
+  <Angle type1="C_R" type2="N_R"  type3="C_3"  angle="2.0944" k="480"/>
+  <Angle type1="C_R" type2="N_R"  type3="C_R"  angle="2.0944" k="514"/>
+  <Angle type1="H_"  type2="N_R"  type3="C_R"  angle="2.0944" k="355"/>
+  <Angle type1="C_2" type2="N_2"  type3="C_2"  angle="2.0944" k="514"/>
+  <Angle type1="C_R" type2="N_2"  type3="C_R"  angle="2.0944" k="514"/>
+  <Angle type1="C_1" type2="N_1"  type3="C_3"  angle="3.14159" k="530"/>
+  <!-- O angles (sp3 = 104.51°, O_R/O_2 = 120°) -->
+  <Angle type1="H_"  type2="O_3"  type3="H_"   angle="1.8241" k="230"/>
+  <Angle type1="H_"  type2="O_3"  type3="C_3"  angle="1.8241" k="264"/>
+  <Angle type1="C_3" type2="O_3"  type3="C_3"  angle="1.8241" k="370"/>
+  <Angle type1="C_3" type2="O_3"  type3="H_"   angle="1.8241" k="264"/>
+  <Angle type1="C_3" type2="O_3"  type3="Si3"  angle="1.8241" k="298"/>
+  <Angle type1="Si3" type2="O_3"  type3="Si3"  angle="2.7227" k="109"/><!-- zeolite 156° -->
+  <Angle type1="Si3" type2="O_3_z" type3="Si3" angle="2.7227" k="109"/>
+  <Angle type1="C_R" type2="O_R"  type3="C_R"  angle="2.0944" k="461"/>
+  <Angle type1="C_R" type2="O_R"  type3="C_3"  angle="2.0944" k="430"/>
+  <!-- S angles (sp3 = 92–96°) -->
+  <Angle type1="H_"  type2="S_3+2" type3="H_"  angle="1.6581" k="166"/>
+  <Angle type1="H_"  type2="S_3+2" type3="C_3" angle="1.6581" k="189"/>
+  <Angle type1="C_3" type2="S_3+2" type3="C_3" angle="1.6581" k="258"/>
+  <Angle type1="C_3" type2="S_3+4" type3="O_2" angle="1.8326" k="290"/>
+  <Angle type1="O_2" type2="S_3+6" type3="O_2" angle="1.8326" k="350"/>
+  <Angle type1="C_R" type2="S_R"   type3="C_R" angle="1.6581" k="258"/>
+  <!-- P angles (sp3 = 93.8°, sp3+5 = 109.47°) -->
+  <Angle type1="H_"  type2="P_3+3" type3="H_"  angle="1.6377" k="148"/>
+  <Angle type1="H_"  type2="P_3+3" type3="C_3" angle="1.6377" k="168"/>
+  <Angle type1="C_3" type2="P_3+3" type3="C_3" angle="1.6377" k="230"/>
+  <Angle type1="O_3" type2="P_3+5" type3="O_3" angle="1.9106" k="315"/>
+  <Angle type1="O_2" type2="P_3+5" type3="O_2" angle="1.9106" k="315"/>
+  <!-- Si angles (sp3 = 109.47°) -->
+  <Angle type1="H_"  type2="Si3"   type3="H_"  angle="1.9106" k="155"/>
+  <Angle type1="H_"  type2="Si3"   type3="C_3" angle="1.9106" k="174"/>
+  <Angle type1="C_3" type2="Si3"   type3="C_3" angle="1.9106" k="230"/>
+  <Angle type1="O_3" type2="Si3"   type3="O_3" angle="1.9106" k="296"/>
+  <Angle type1="O_3" type2="Al3"   type3="O_3" angle="1.9106" k="272"/>
+  <!-- Metal centres — octahedral 90°/180°, tetrahedral 109.47° -->
+  <Angle type1="O_3" type2="Fe3+2" type3="O_3"  angle="1.5708" k="115"/>
+  <Angle type1="N_3" type2="Fe3+2" type3="N_3"  angle="1.5708" k="126"/>
+  <Angle type1="O_3" type2="Fe6+2" type3="O_3"  angle="1.5708" k="118"/>
+  <Angle type1="O_3" type2="Zn3+2" type3="O_3"  angle="1.9106" k="93"/>
+  <Angle type1="N_3" type2="Zn3+2" type3="N_3"  angle="1.9106" k="98"/>
+  <Angle type1="O_3" type2="Cu3+1" type3="O_3"  angle="1.5708" k="107"/>
+  <Angle type1="N_3" type2="Cu3+1" type3="N_3"  angle="1.5708" k="112"/>
+  <Angle type1="O_3" type2="Ni4+2" type3="O_3"  angle="1.5708" k="112"/>
+  <Angle type1="N_3" type2="Ni4+2" type3="N_3"  angle="1.5708" k="117"/>
+  <Angle type1="O_3" type2="Co6+3" type3="O_3"  angle="1.5708" k="108"/>
+  <Angle type1="N_3" type2="Co6+3" type3="N_3"  angle="1.5708" k="113"/>
+  <Angle type1="N_3" type2="Pt4+2" type3="N_3"  angle="1.5708" k="138"/>
+  <Angle type1="Cl"  type2="Pt4+2" type3="Cl"   angle="1.5708" k="120"/>
+  <Angle type1="N_3" type2="Pt4+2" type3="Cl"   angle="1.5708" k="129"/>
+  <Angle type1="O_3" type2="Ti6+4" type3="O_3"  angle="1.5708" k="105"/>
+  <Angle type1="O_3" type2="Mg3+2" type3="O_3"  angle="1.5708" k="80"/>
+  <Angle type1="O_3" type2="Ca6+2" type3="O_3"  angle="1.5708" k="51"/>
+  <!-- B angles -->
+  <Angle type1="H_"  type2="B_3"  type3="H_"   angle="2.0944" k="209"/>
+  <Angle type1="C_3" type2="B_3"  type3="C_3"  angle="2.0944" k="340"/>
+  <Angle type1="N_3" type2="B_3"  type3="N_3"  angle="2.0944" k="363"/>
+  <Angle type1="C_R" type2="B_2"  type3="C_R"  angle="2.0944" k="363"/>
+</HarmonicAngleForce>
+
+<!-- ======================================================================
+     PERIODIC TORSION FORCE
+     Parameters derived from UFF Table 3 (Rappé 1992).
+     Mapping: k = V/2 [kJ/mol],   periodicity n,   phase [rad] = n·φ₀
+
+     Central bond hybridisation rules:
+       sp3–sp3 : V from Table 3, n=3, φ₀=60°  → phase = 3.14159 (180°) ... see below
+       sp2–sp3 : V from Table 3, n=6, φ₀=0°   → phase = 0.0
+       sp2–sp2 : V=25 kJ/mol, n=2, φ₀=0°
+       sp–sp3  : n=3, k≈0 (free rotation)
+       sp–sp2/sp: n=1, k≈0
+
+     Note: V values for sp3–sp3 central bonds:
+       C_3–C_3: V = 2·2.119 = 4.238 kcal/mol → 17.73 kJ/mol, k = 8.87 kJ/mol
+       O_3–C_3: V involves lone-pair repulsion → V = sqrt(2·Vi·Vj) rule
+     ====================================================================== -->
+<PeriodicTorsionForce>
+  <!-- sp3–sp3 backbone: C_3–C_3 -->
+  <Proper type1="C_3" type2="C_3" type3="C_3" type4="C_3"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="C_3" type3="C_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="C_3" type3="C_3" type4="C_3"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="C_3" type3="C_3" type4="N_3"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="C_3" type3="C_3" type4="O_3"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="C_3" type3="C_3" type4="F_"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="C_3" type3="C_3" type4="Cl"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="C_3" type3="C_3" type4="S_3+2"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <!-- C_3–C_3 central, various end types -->
+  <Proper type1="C_3" type2="C_3" type3="C_3" type4="N_3"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="C_3" type2="C_3" type3="C_3" type4="O_3"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="C_3" type2="C_3" type3="C_3" type4="C_R"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="C_3" type2="C_3" type3="C_3" type4="C_2"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <!-- sp3 N central -->
+  <Proper type1="C_3" type2="C_3" type3="N_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="C_3" type2="C_3" type3="N_3" type4="C_3"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="C_3" type3="N_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="N_3" type3="C_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <Proper type1="H_"  type2="N_3" type3="C_3" type4="C_3"
+          periodicity1="3" phase1="0.0" k1="2.091"/>
+  <!-- sp3 O central -->
+  <Proper type1="H_"  type2="O_3" type3="C_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="1.046"/>
+  <Proper type1="H_"  type2="O_3" type3="C_3" type4="C_3"
+          periodicity1="3" phase1="0.0" k1="1.046"/>
+  <Proper type1="C_3" type2="O_3" type3="C_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="1.046"/>
+  <Proper type1="C_3" type2="O_3" type3="C_3" type4="C_3"
+          periodicity1="3" phase1="0.0" k1="1.046"/>
+  <Proper type1="C_3" type2="O_3" type3="C_3" type4="N_3"
+          periodicity1="3" phase1="0.0" k1="1.046"/>
+  <!-- sp3 S central -->
+  <Proper type1="C_3" type2="S_3+2" type3="C_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="1.046"/>
+  <Proper type1="C_3" type2="S_3+2" type3="C_3" type4="C_3"
+          periodicity1="3" phase1="0.0" k1="1.046"/>
+  <Proper type1="H_"  type2="S_3+2" type3="C_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="1.046"/>
+  <!-- sp2–sp3 central: very low barrier -->
+  <Proper type1="C_3" type2="C_3" type3="C_R" type4="C_R"
+          periodicity1="6" phase1="0.0" k1="0.131"/>
+  <Proper type1="H_"  type2="C_3" type3="C_R" type4="C_R"
+          periodicity1="6" phase1="0.0" k1="0.131"/>
+  <Proper type1="C_3" type2="C_3" type3="C_2" type4="C_2"
+          periodicity1="6" phase1="0.0" k1="0.131"/>
+  <Proper type1="H_"  type2="C_3" type3="C_2" type4="H_"
+          periodicity1="6" phase1="0.0" k1="0.131"/>
+  <Proper type1="C_R" type2="C_R" type3="C_3" type4="H_"
+          periodicity1="6" phase1="0.0" k1="0.131"/>
+  <Proper type1="C_R" type2="C_R" type3="C_3" type4="C_3"
+          periodicity1="6" phase1="0.0" k1="0.131"/>
+  <Proper type1="C_R" type2="N_R" type3="C_3" type4="H_"
+          periodicity1="6" phase1="0.0" k1="0.131"/>
+  <Proper type1="C_R" type2="N_R" type3="C_3" type4="C_3"
+          periodicity1="6" phase1="0.0" k1="0.131"/>
+  <!-- sp2–sp2 (aromatic/conjugated, high barrier n=2) -->
+  <Proper type1="C_R" type2="C_R" type3="C_R" type4="C_R"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="C_R" type2="C_R" type3="N_R" type4="C_R"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="C_R" type2="N_R" type3="C_R" type4="N_R"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="H_"  type2="C_R" type3="C_R" type4="H_"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="H_"  type2="C_R" type3="C_R" type4="C_R"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="H_"  type2="C_R" type3="C_R" type4="N_R"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="H_"  type2="C_R" type3="N_R" type4="C_R"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="C_R" type2="C_R" type3="C_R" type4="C_3"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="C_3" type2="C_R" type3="C_R" type4="C_R"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="C_R" type2="C_R" type3="O_R" type4="C_R"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="C_2" type2="C_2" type3="C_2" type4="C_2"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="H_"  type2="C_2" type3="C_2" type4="H_"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="H_"  type2="C_2" type3="C_2" type4="C_2"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="C_2" type2="C_2" type3="N_2" type4="H_"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <Proper type1="C_2" type2="C_2" type3="N_2" type4="C_2"
+          periodicity1="2" phase1="3.14159" k1="12.552"/>
+  <!-- sp–any (essentially free rotation) -->
+  <Proper type1="C_3" type2="C_3" type3="C_1" type4="C_1"
+          periodicity1="3" phase1="0.0" k1="0.0"/>
+  <Proper type1="C_R" type2="C_R" type3="C_1" type4="N_1"
+          periodicity1="3" phase1="0.0" k1="0.0"/>
+  <!-- C_3–N_3–C_R (amide-like: sp3–sp2 mixed) -->
+  <Proper type1="C_3" type2="C_3" type3="N_R" type4="C_R"
+          periodicity1="6" phase1="0.0" k1="0.131"/>
+  <!-- P–C, P–O torsions -->
+  <Proper type1="H_"  type2="P_3+3" type3="C_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="0.837"/>
+  <Proper type1="C_3" type2="P_3+3" type3="C_3" type4="H_"
+          periodicity1="3" phase1="0.0" k1="0.837"/>
+  <Proper type1="O_3" type2="P_3+5" type3="O_3" type4="C_3"
+          periodicity1="3" phase1="0.0" k1="0.837"/>
+  <!-- Si torsions -->
+  <Proper type1="H_"  type2="Si3"   type3="Si3"  type4="H_"
+          periodicity1="3" phase1="0.0" k1="0.837"/>
+  <Proper type1="O_3" type2="Si3"   type3="O_3"  type4="Si3"
+          periodicity1="3" phase1="0.0" k1="0.837"/>
+</PeriodicTorsionForce>
+
+<!-- ======================================================================
+     NONBONDED FORCE  (Lennard-Jones 12-6)
+     σ_i [nm] = x_i [Å] / 2^(1/6) × 0.1         (x_i from UFF Table 1)
+     ε_i [kJ/mol] = D_i [kcal/mol] × 4.184        (D_i from UFF Table 1)
+     charges = 0.0  (assign externally)
+
+     Combining rules applied by OpenMM:
+       σ_ij = (σ_i + σ_j) / 2   (Lorentz–Berthelot arithmetic)
+       ε_ij = sqrt(ε_i * ε_j)   (Lorentz–Berthelot geometric)
+     This matches UFF §2.6 exactly.
+     ====================================================================== -->
+<NonbondedForce coulomb14scale="1.0" lj14scale="0.5">
+  <!-- Period 1 -->
+  <Atom type="H_"     charge="0.0" sigma="0.25410" epsilon="0.18410"/><!-- x=2.886, D=0.044 -->
+  <Atom type="H_b"    charge="0.0" sigma="0.25410" epsilon="0.18410"/>
+  <!-- Period 2 -->
+  <Atom type="He4+4"  charge="0.0" sigma="0.25720" epsilon="0.08590"/>
+  <Atom type="Li"     charge="0.0" sigma="0.27000" epsilon="0.27000"/>
+  <Atom type="Be3+2"  charge="0.0" sigma="0.24000" epsilon="0.46200"/>
+  <Atom type="B_3"    charge="0.0" sigma="0.35510" epsilon="0.83700"/>
+  <Atom type="B_2"    charge="0.0" sigma="0.35510" epsilon="0.83700"/>
+  <Atom type="C_3"    charge="0.0" sigma="0.34310" epsilon="0.43932"/><!-- x=3.851, D=0.105 -->
+  <Atom type="C_R"    charge="0.0" sigma="0.34100" epsilon="0.35983"/>
+  <Atom type="C_2"    charge="0.0" sigma="0.34100" epsilon="0.35983"/>
+  <Atom type="C_1"    charge="0.0" sigma="0.33250" epsilon="0.29330"/>
+  <Atom type="N_3"    charge="0.0" sigma="0.32560" epsilon="0.29330"/><!-- x=3.660, D=0.069 -->
+  <Atom type="N_R"    charge="0.0" sigma="0.32560" epsilon="0.29330"/>
+  <Atom type="N_2"    charge="0.0" sigma="0.32560" epsilon="0.29330"/>
+  <Atom type="N_1"    charge="0.0" sigma="0.32350" epsilon="0.25104"/>
+  <Atom type="O_3"    charge="0.0" sigma="0.31190" epsilon="0.25940"/><!-- x=3.500, D=0.060 -->
+  <Atom type="O_3_z"  charge="0.0" sigma="0.31190" epsilon="0.25940"/>
+  <Atom type="O_R"    charge="0.0" sigma="0.30950" epsilon="0.22384"/>
+  <Atom type="O_2"    charge="0.0" sigma="0.29780" epsilon="0.18410"/>
+  <Atom type="O_1"    charge="0.0" sigma="0.29020" epsilon="0.17992"/>
+  <Atom type="F_"     charge="0.0" sigma="0.29640" epsilon="0.24267"/><!-- x=3.364, D=0.050 -->
+  <Atom type="Ne4+4"  charge="0.0" sigma="0.29240" epsilon="0.14393"/>
+  <!-- Period 3 -->
+  <Atom type="Na"     charge="0.0" sigma="0.27000" epsilon="0.72000"/>
+  <Atom type="Mg3+2"  charge="0.0" sigma="0.26910" epsilon="0.90100"/>
+  <Atom type="Al3"    charge="0.0" sigma="0.40500" epsilon="1.28700"/>
+  <Atom type="Si3"    charge="0.0" sigma="0.40200" epsilon="1.14700"/><!-- x=4.295, D=0.310 -->
+  <Atom type="P_3+3"  charge="0.0" sigma="0.41180" epsilon="1.13900"/>
+  <Atom type="P_3+5"  charge="0.0" sigma="0.41180" epsilon="1.13900"/>
+  <Atom type="P_3+q"  charge="0.0" sigma="0.41180" epsilon="1.13900"/>
+  <Atom type="S_3+2"  charge="0.0" sigma="0.40350" epsilon="1.33900"/><!-- x=4.035, D=0.274 -->
+  <Atom type="S_3+4"  charge="0.0" sigma="0.40350" epsilon="1.33900"/>
+  <Atom type="S_3+6"  charge="0.0" sigma="0.40350" epsilon="1.33900"/>
+  <Atom type="S_R"    charge="0.0" sigma="0.40350" epsilon="1.33900"/>
+  <Atom type="S_2"    charge="0.0" sigma="0.40350" epsilon="1.33900"/>
+  <Atom type="Cl"     charge="0.0" sigma="0.39470" epsilon="1.13900"/><!-- x=3.947, D=0.227 -->
+  <Atom type="Ar4+4"  charge="0.0" sigma="0.38560" epsilon="0.71700"/>
+  <!-- Period 4 -->
+  <Atom type="K_"     charge="0.0" sigma="0.36330" epsilon="1.67400"/>
+  <Atom type="Ca6+2"  charge="0.0" sigma="0.36910" epsilon="1.91600"/>
+  <Atom type="Sc3+3"  charge="0.0" sigma="0.38950" epsilon="0.01200"/>
+  <Atom type="Ti3+4"  charge="0.0" sigma="0.37200" epsilon="0.07100"/>
+  <Atom type="Ti6+4"  charge="0.0" sigma="0.37200" epsilon="0.07100"/>
+  <Atom type="V_3+5"  charge="0.0" sigma="0.36300" epsilon="0.08800"/>
+  <Atom type="Cr6+3"  charge="0.0" sigma="0.36100" epsilon="0.10400"/>
+  <Atom type="Mn6+2"  charge="0.0" sigma="0.35900" epsilon="0.12100"/>
+  <Atom type="Fe3+2"  charge="0.0" sigma="0.35050" epsilon="0.13800"/>
+  <Atom type="Fe6+2"  charge="0.0" sigma="0.35050" epsilon="0.13800"/>
+  <Atom type="Co6+3"  charge="0.0" sigma="0.35010" epsilon="0.15500"/>
+  <Atom type="Ni4+2"  charge="0.0" sigma="0.34090" epsilon="0.17200"/>
+  <Atom type="Cu3+1"  charge="0.0" sigma="0.32950" epsilon="0.18900"/>
+  <Atom type="Zn3+2"  charge="0.0" sigma="0.27560" epsilon="0.70900"/>
+  <Atom type="Ga3+3"  charge="0.0" sigma="0.38750" epsilon="0.41200"/>
+  <Atom type="Ge3"    charge="0.0" sigma="0.38520" epsilon="0.71400"/>
+  <Atom type="As3+3"  charge="0.0" sigma="0.41520" epsilon="1.04700"/>
+  <Atom type="Se3+2"  charge="0.0" sigma="0.43280" epsilon="1.36400"/>
+  <Atom type="Br"     charge="0.0" sigma="0.42260" epsilon="1.59100"/><!-- x=4.189, D=0.251 -->
+  <Atom type="Kr4+4"  charge="0.0" sigma="0.41630" epsilon="0.85800"/>
+  <!-- Period 5 -->
+  <Atom type="Rb"     charge="0.0" sigma="0.38090" epsilon="1.85300"/>
+  <Atom type="Sr6+2"  charge="0.0" sigma="0.38680" epsilon="2.09000"/>
+  <Atom type="Y_3+3"  charge="0.0" sigma="0.38370" epsilon="0.31600"/>
+  <Atom type="Zr3+4"  charge="0.0" sigma="0.37210" epsilon="0.30700"/>
+  <Atom type="Nb3+5"  charge="0.0" sigma="0.36290" epsilon="0.29400"/>
+  <Atom type="Mo6+6"  charge="0.0" sigma="0.35430" epsilon="0.27600"/>
+  <Atom type="Mo3+6"  charge="0.0" sigma="0.35430" epsilon="0.27600"/>
+  <Atom type="Tc6+5"  charge="0.0" sigma="0.34820" epsilon="0.26000"/>
+  <Atom type="Ru6+2"  charge="0.0" sigma="0.34080" epsilon="0.24800"/>
+  <Atom type="Rh6+3"  charge="0.0" sigma="0.33600" epsilon="0.23500"/>
+  <Atom type="Pd4+2"  charge="0.0" sigma="0.32800" epsilon="0.22300"/>
+  <Atom type="Ag1+1"  charge="0.0" sigma="0.36550" epsilon="1.65000"/>
+  <Atom type="Cd3+2"  charge="0.0" sigma="0.35700" epsilon="0.65000"/>
+  <Atom type="In3+3"  charge="0.0" sigma="0.40460" epsilon="0.59900"/>
+  <Atom type="Sn3"    charge="0.0" sigma="0.43090" epsilon="1.15700"/>
+  <Atom type="Sb3+3"  charge="0.0" sigma="0.44690" epsilon="1.44300"/>
+  <Atom type="Te3+2"  charge="0.0" sigma="0.46300" epsilon="1.67800"/>
+  <Atom type="I_"     charge="0.0" sigma="0.45500" epsilon="1.88000"/><!-- x=4.009, D=0.339 -->
+  <Atom type="Xe4+4"  charge="0.0" sigma="0.44390" epsilon="1.03000"/>
+  <!-- Period 6 -->
+  <Atom type="Cs"     charge="0.0" sigma="0.40720" epsilon="2.20400"/>
+  <Atom type="Ba6+2"  charge="0.0" sigma="0.43770" epsilon="2.44300"/>
+  <Atom type="La3+3"  charge="0.0" sigma="0.43700" epsilon="0.35000"/>
+  <Atom type="Ce6+3"  charge="0.0" sigma="0.43200" epsilon="0.31000"/>
+  <Atom type="Pr6+3"  charge="0.0" sigma="0.42800" epsilon="0.30000"/>
+  <Atom type="Nd6+3"  charge="0.0" sigma="0.42500" epsilon="0.29000"/>
+  <Atom type="Pm6+3"  charge="0.0" sigma="0.42100" epsilon="0.28000"/>
+  <Atom type="Sm6+3"  charge="0.0" sigma="0.41800" epsilon="0.27000"/>
+  <Atom type="Eu6+3"  charge="0.0" sigma="0.41600" epsilon="0.27000"/>
+  <Atom type="Gd6+3"  charge="0.0" sigma="0.41100" epsilon="0.27000"/>
+  <Atom type="Tb6+3"  charge="0.0" sigma="0.40700" epsilon="0.26000"/>
+  <Atom type="Dy6+3"  charge="0.0" sigma="0.40500" epsilon="0.25000"/>
+  <Atom type="Ho6+3"  charge="0.0" sigma="0.40200" epsilon="0.25000"/>
+  <Atom type="Er6+3"  charge="0.0" sigma="0.40000" epsilon="0.25000"/>
+  <Atom type="Tm6+3"  charge="0.0" sigma="0.39700" epsilon="0.24000"/>
+  <Atom type="Yb6+3"  charge="0.0" sigma="0.39400" epsilon="0.24000"/>
+  <Atom type="Lu6+3"  charge="0.0" sigma="0.39200" epsilon="0.24000"/>
+  <Atom type="Hf3+4"  charge="0.0" sigma="0.38160" epsilon="0.16300"/>
+  <Atom type="Ta3+5"  charge="0.0" sigma="0.37780" epsilon="0.10500"/>
+  <Atom type="W_6+6"  charge="0.0" sigma="0.37270" epsilon="0.06300"/>
+  <Atom type="W_3+4"  charge="0.0" sigma="0.37270" epsilon="0.06300"/>
+  <Atom type="W_3+6"  charge="0.0" sigma="0.37270" epsilon="0.06300"/>
+  <Atom type="Re6+5"  charge="0.0" sigma="0.36500" epsilon="0.08600"/>
+  <Atom type="Re3+7"  charge="0.0" sigma="0.36500" epsilon="0.08600"/>
+  <Atom type="Os6+6"  charge="0.0" sigma="0.36200" epsilon="0.10500"/>
+  <Atom type="Ir6+3"  charge="0.0" sigma="0.35670" epsilon="0.12400"/>
+  <Atom type="Pt4+2"  charge="0.0" sigma="0.34840" epsilon="0.14700"/>
+  <Atom type="Au4+3"  charge="0.0" sigma="0.35280" epsilon="0.19900"/>
+  <Atom type="Hg1+2"  charge="0.0" sigma="0.34000" epsilon="0.39700"/>
+  <Atom type="Tl3+3"  charge="0.0" sigma="0.41070" epsilon="0.67900"/>
+  <Atom type="Pb3"    charge="0.0" sigma="0.44010" epsilon="1.16500"/>
+  <Atom type="Bi3+3"  charge="0.0" sigma="0.45550" epsilon="1.44300"/>
+  <Atom type="Po3+2"  charge="0.0" sigma="0.46280" epsilon="1.67800"/>
+  <Atom type="At"     charge="0.0" sigma="0.47200" epsilon="2.09100"/>
+  <Atom type="Rn4+4"  charge="0.0" sigma="0.47050" epsilon="1.46400"/>
+  <!-- Period 7 -->
+  <Atom type="Fr"     charge="0.0" sigma="0.42420" epsilon="2.09000"/>
+  <Atom type="Ra6+2"  charge="0.0" sigma="0.44820" epsilon="2.44300"/>
+  <Atom type="Ac6+3"  charge="0.0" sigma="0.44350" epsilon="0.35000"/>
+  <Atom type="Th6+4"  charge="0.0" sigma="0.42660" epsilon="0.15300"/>
+  <Atom type="Pa6+4"  charge="0.0" sigma="0.42490" epsilon="0.15100"/>
+  <Atom type="U_6+4"  charge="0.0" sigma="0.42350" epsilon="0.14900"/>
+  <Atom type="Np6+4"  charge="0.0" sigma="0.42190" epsilon="0.14600"/>
+  <Atom type="Pu6+4"  charge="0.0" sigma="0.42070" epsilon="0.14400"/>
+  <Atom type="Am6+4"  charge="0.0" sigma="0.41910" epsilon="0.14200"/>
+  <Atom type="Cm6+3"  charge="0.0" sigma="0.41800" epsilon="0.14000"/>
+  <Atom type="Bk6+3"  charge="0.0" sigma="0.41690" epsilon="0.13900"/>
+  <Atom type="Cf6+3"  charge="0.0" sigma="0.41550" epsilon="0.13700"/>
+  <Atom type="Es6+3"  charge="0.0" sigma="0.41430" epsilon="0.13600"/>
+  <Atom type="Fm6+3"  charge="0.0" sigma="0.41290" epsilon="0.13500"/>
+  <Atom type="Md6+3"  charge="0.0" sigma="0.41200" epsilon="0.13400"/>
+  <Atom type="No6+3"  charge="0.0" sigma="0.41070" epsilon="0.13300"/>
+  <Atom type="Lw6+3"  charge="0.0" sigma="0.40960" epsilon="0.13200"/>
+</NonbondedForce>
+
+</ForceField>
