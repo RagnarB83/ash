@@ -3042,7 +3042,7 @@ def MRCI_SOC_grab(file):
     minE=None
     with open(file) as f:
         for line in f:
-            if 'Center of electronic charge' in line:
+            if '*************************************' in line:
                 grab2=False
             if grab2 is True:
                 if 'STATE' in line:
