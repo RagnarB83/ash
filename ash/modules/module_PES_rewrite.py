@@ -418,7 +418,8 @@ class PhotoElectronClass:
                 densityfilename=f"{self.theory.filename}.cisrre.singlet.iroot{tddftstate}"
                 run_orca_plot(orcadir=self.theory.orcadir, filename=self.theory.filename + '.gbw', option='cisspindensity',gridvalue=self.densgridvalue,
                             densityfilename=densityfilename )
-                os.rename(self.theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
+                # Note: file is named eldens despite being spindens
+                os.rename(self.theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
                 
                 #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
                 densityfilename=f"{self.theory.filename}.cispre.singlet.iroot{tddftstate}"
