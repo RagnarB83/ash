@@ -2392,10 +2392,10 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
 
             # Using last 4 letters of atomnmae
             atomnamestring = atomname[-4:]
-            #TODO: atomname should be unique so we should add a number here ideally
+            
+            if not any(char.isdigit() for char in atomnamestring):
+                atomnamestring=atomnamestring+str(count+1)
 
-            #print(atomnamestring)
-            #exit()
             # Using string format from: cupnet.net/pdb-format/
 
             #NOTE: Changed resid from integer to string so that we can support the hex notation for resids when resids go above 9999

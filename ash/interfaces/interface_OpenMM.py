@@ -16,11 +16,11 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel, listdif
 
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
-    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2, define_dummy_topology
+    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2, define_dummy_topology, get_connected_atoms_dict
 
 from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
-from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
+from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB, tbliteTheory
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
 from ash.modules.module_singlepoint import Singlepoint
 from ash.interfaces.interface_plumed import plumed_MTD_analyze
@@ -6493,3 +6493,179 @@ def write_xmlfile_parmed(topology,system,xmlfilename):
     print("Wrote XML-file:", xmlfilename)
 
 
+
+def lookup_UFF_atomname(el, atomindex, bom):
+    """
+    Guess a UFF atom type from element + bond order matrix.
+
+    Parameters
+    ----------
+    el : str
+        Element symbol (e.g. "C", "N", "O")
+    atomindex : int
+        Index of atom
+    bom : np.ndarray
+        Bond-order matrix
+
+    Returns
+    -------
+    uffatomtype : str
+        UFF atom type string
+    """
+
+    print("inside: lookup_UFF_atomname")
+    print("Element:", el)
+    print("Atomindex:", atomindex)
+    print("BOM:", bom)
+
+    # Get bond orders for this atom
+    bondorders = bom[atomindex]
+    print("bondorders:", bondorders)
+
+    # Only bonded atoms
+    bonded_bos = [bo for bo in bondorders if bo > 0.1]
+
+    print("bonded_bos:", bonded_bos)
+
+    coordination = len(bonded_bos)
+    max_bo = max(bonded_bos) if bonded_bos else 0.0
+
+    print("coordination:", coordination)
+    print("max bond order:", max_bo)
+
+    # --------------------------------------------------
+    # Basic UFF atom type assignment rules
+    # --------------------------------------------------
+
+    # HYDROGEN
+    if el == "H":
+        uffatomtype = "H_"
+
+    # CARBON
+    elif el == "C":
+        if max_bo >= 2.5:
+            # triple bond / sp
+            uffatomtype = "C_1"
+        elif max_bo >= 1.5:
+            # double bond / aromatic / sp2
+            uffatomtype = "C_2"
+        else:
+            # single bond / sp3
+            uffatomtype = "C_3"
+
+    # NITROGEN
+    elif el == "N":
+        if max_bo >= 2.5:
+            uffatomtype = "N_1"   # sp
+        elif max_bo >= 1.5:
+            uffatomtype = "N_2"   # sp2
+        else:
+            uffatomtype = "N_3"   # sp3
+
+    # OXYGEN
+    elif el == "O":
+        if max_bo >= 1.5:
+            uffatomtype = "O_2"   # sp2 oxygen (carbonyl etc.)
+        else:
+            uffatomtype = "O_3"   # sp3 oxygen (alcohol, water, ether)
+
+    # SULFUR
+    elif el == "S":
+        if max_bo >= 1.5:
+            uffatomtype = "S_2"
+        else:
+            uffatomtype = "S_3"
+
+    # PHOSPHORUS
+    elif el == "P":
+        uffatomtype = "P_3"
+
+    # HALOGENS
+    elif el == "F":
+        uffatomtype = "F_"
+    elif el == "Cl":
+        uffatomtype = "Cl"
+    elif el == "Br":
+        uffatomtype = "Br"
+    elif el == "I":
+        uffatomtype = "I_"
+
+    # SILICON
+    elif el == "Si":
+        uffatomtype = "Si3"
+
+    # BORON
+    elif el == "B":
+        uffatomtype = "B_3"
+
+    # fallback
+    else:
+        print(f"WARNING: No specific UFF rule for element {el}")
+        print("Using generic fallback")
+        uffatomtype = el
+
+    print("Assigned UFF atom type:", uffatomtype)
+
+    return uffatomtype
+
+
+def define_uff(fragment=None, scale=1.0, tol=0.1, bom=None):
+
+    print("Computing connectivity")
+    fragment.calc_connectivity()
+    # Get dictionary of connected atoms
+    connatomsdict = get_connected_atoms_dict(fragment.coords, fragment.elems, scale, tol)
+    print("Dict of connected atoms:", connatomsdict)
+    # Determining bond order matrix
+    if bom is None:
+        print("No input bondorder matrix provided (bom keyword)")
+        print("Will calculate Bond-order matrix via tblite (requires tblite to be installed)")
+        tb = tbliteTheory(method="GFN2-xTB", grab_BOs=True)
+        Singlepoint(theory=tb, fragment=fragment)
+        bom = tb.BOs
+    print("Bond order matrix:", bom)
+
+    # Create uff_residues.xml file
+    UFFatomtypeslist=[]
+    atomnames=[]
+    with open("uff_residues.xml", 'w') as f:
+        f.write("<?xml version='1.0' encoding='utf-8'?>\n")
+        f.write("<ForceField>\n")
+        f.write("<Residues>\n")
+
+        for i,mol in enumerate(fragment.connectivity):
+            print("mol:", mol)
+            molname=f"MOL{i}"
+            f.write(f"  <Residue name='{molname}'>\n")
+            for i,at in enumerate(mol):
+                # Determining atom type
+                el = fragment.elems[at]
+                uff_at = lookup_UFF_atomname(el,at,bom)
+                # Atom name
+                atomname=f'{el}_{i}'
+                atomnames.append(atomname)
+                # Write Atom line
+                f.write(f"    <Atom name='{atomname}' type='{uff_at}'/>"+'\n')
+            # Now writing bonding
+            seen_pairs = set()
+            for k,connats in connatomsdict.items():
+                for c in connats:
+                    # Skipping already seen pairs
+                    if tuple(sorted((k, c))) in seen_pairs:
+                        continue
+                    seen_pairs.add(tuple(sorted((k, c))))
+                    # Add Bond line
+                    f.write(f"    <Bond atomName1='{atomnames[k]}' atomName2='{atomnames[c]}'/>"+'\n')
+            f.write("\n")  
+        f.write("  </Residue>\n")
+        f.write("</Residues>\n")
+        f.write("</ForceField>\n")
+
+    # Full internal XML definition
+    uff_full = ashpath + "/databases/forcefields/"+"uff_mod.xml"
+    print("uff_full", uff_full)
+
+    # PDB-file
+    pdbfile = fragment.write_pdbfile_openmm()
+
+    return [uff_full, "uff_residues.xml"], pdbfile

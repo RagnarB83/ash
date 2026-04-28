@@ -45,12 +45,12 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
     Wrapper function around PhotoElectron Class
     """
     print_line_with_mainheader("PhotoElectron")
-    timeA=time.time()
-    #NOTE: Create different PhotoElectronClass for each theory: PhotoElectronClass_ORCA, PhotoElectronClass_PySCF, PhotoElectronClass_MRCC ??
-    #So much of the code is theory-specific anyway
-    #Method then selects class to use. Probably should switch to dictionaries for all the keywords then
+    timeA = time.time()
+    # NOTE: Create different PhotoElectronClass for each theory: PhotoElectronClass_ORCA, PhotoElectronClass_PySCF, PhotoElectronClass_MRCC ??
+    # So much of the code is theory-specific anyway
+    # Method then selects class to use. Probably should switch to dictionaries for all the keywords then
 
-    photo=PhotoElectronClass(theory=theory, fragment=fragment, method=method, vibrational_option=vibrational_option, trajectory=trajectory, numcores=numcores, memory=memory,label=label,
+    photo = PhotoElectronClass(theory=theory, fragment=fragment, method=method, vibrational_option=vibrational_option, trajectory=trajectory, numcores=numcores, memory=memory,label=label,
                         Initialstate_charge=Initialstate_charge, Initialstate_mult=Initialstate_mult,
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates,
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
