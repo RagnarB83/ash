@@ -82,7 +82,7 @@ class OpenBabelTheory():
         if self.chargemodel is not None:
             print("Charge model is active")
             print("Charge model is currently disabled")
-            ashexit()
+            #ashexit()
             if self.user_atomcharges is not None:
                 print("Setting charges to user-atomcharges")
                 set_charges(mol,self.user_atomcharges)
@@ -99,6 +99,7 @@ class OpenBabelTheory():
             self.ff.GetPartialCharges(mol)
             # NOTE: still not working
         else:
+            print("No chargemodel is active")
             self.ff = ob.OBForceField.FindForceField(self.forcefield)
             success = self.ff.Setup(mol)
 

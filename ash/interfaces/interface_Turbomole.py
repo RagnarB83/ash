@@ -59,7 +59,7 @@ class TurbomoleTheory:
 
         # UFF
         if self.uff:
-            print("Initializign Turbomole UFF option")
+            print("Initializing Turbomole UFF option")
             self.skip_control_gen=True
             self.turbo_scf_exe="uff"
             self.filename_scf="uff"
@@ -153,6 +153,9 @@ class TurbomoleTheory:
                 ashexit()
             else:
                 self.jbasis=jbasis
+        # UFF
+        elif self.uff:
+            print("UFF..")
         # else
         else:
             print("Error: No controlfile provided, not MP2, not DFT (no functional provided). Unclear what type of calculation this is. Exiting.")

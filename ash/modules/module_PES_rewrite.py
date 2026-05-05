@@ -34,7 +34,7 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         Initialstate_charge=None, Initialstate_mult=None,
                         Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5,
                         initialorbitalfiles=None, densities='None', densgridvalue=40,
-                        deltaSCF_ionize=False, deltaSCF_PMOM=False,
+                        deltaSCF_ionize=False, deltaSCF_PMOM=False, deltaSCFkeyword=None,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None,
                         CASCI_Final=False,
@@ -55,7 +55,7 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates,
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
                         tda=tda,brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, check_stability=check_stability,
-                        deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_ionize,
+                        deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_ionize, deltaSCFkeyword=deltaSCFkeyword,
                         CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
                         MRCI_CASCI_Final=MRCI_CASCI_Final, MRCI_SOC=MRCI_SOC, CASCI_Final=CASCI_Final,
                         btPNO=btPNO, DLPNO=DLPNO,
@@ -72,7 +72,7 @@ class PhotoElectronClass:
                         Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5,
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
-                        deltaSCF_ionize=False, deltaSCF_PMOM=False,
+                        deltaSCF_ionize=False, deltaSCF_PMOM=False, deltaSCFkeyword=None,
                         CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
                         MRCI_CASCI_Final=False, MRCI_SOC=False, CASCI_Final=False,
                         btPNO=False, DLPNO=False,
@@ -196,6 +196,7 @@ class PhotoElectronClass:
         self.trajectory=trajectory
         self.deltaSCF_ionize=deltaSCF_ionize #DeltaSCF whether to ionize from init-state instead of setting CFG
         self.deltaSCF_PMOM=deltaSCF_PMOM #Whether to use PMOM or not
+        self.deltaSCFkeyword=deltaSCFkeyword # Add extra ORCA simple keyword when doing deltaSCF calcs only 
         print("PES method:", self.method)
         if self.method == 'MRCI' or self.method=='MREOM':
             print("MREOM:", self.MREOM)
@@ -1117,6 +1118,11 @@ end
         print(BC.OKGREEN, "\nCalculating Excited State SCF via DELTASCF feature in ORCA",BC.ENDC)
         IPs_all=[]
         Ionstates_energies_all=[]
+
+        # DELTASCF extra keywords
+        if self.deltaSCFkeyword is not None:
+            print("Adding deltaSCFkeyword to ORCA input string:", self.deltaSCFkeyword)
+            theory.orcasimpleinput += f" {self.deltaSCFkeyword} "
 
         #LOOPING over Finalstate-multiplicities
         for fstate in self.Finalstates:

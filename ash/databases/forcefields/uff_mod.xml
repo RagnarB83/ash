@@ -1,4 +1,79 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  uff.xml  —  Universal Force Field (UFF) for OpenMM
+  ====================================================
+  Source: Rappé, A. K. et al. J. Am. Chem. Soc. 1992, 114, 10024-10035.
+
+  Coverage
+  All 126 UFF atom types (H through Lw/Lr).
+
+  Functional forms used
+  Bonds     : HarmonicBondForce
+              E = ½ k (r − r₀)²
+              k [kJ/mol/nm²], r₀ [nm]
+
+  Angles    : HarmonicAngleForce  (harmonic approximation to UFF cosine series)
+              E = ½ k (θ − θ₀)²
+              k [kJ/mol/rad²], θ₀ [rad]
+              NOTE: For high-fidelity simulations of sp/sp² centres use a
+              CustomAngleForce instead (see Strategy 3 in the companion notes).
+
+  Torsions  : PeriodicTorsionForce
+              E = k [1 + cos(n φ − φ₀)]
+              Mapping from UFF: k = V/2, φ₀ = n·φ₀_UFF
+
+  Nonbonded : NonbondedForce (Lennard-Jones 12-6)
+              Per-atom σ [nm], ε [kJ/mol], charge [e] = 0.0
+              σ = x_i / 2^(1/6)   where x_i is the UFF vdW distance [Å → nm]
+              ε = D_i × 4.184      where D_i is the UFF well depth [kcal/mol]
+              Combining rules: σ_ij = (σ_i + σ_j)/2,  ε_ij = sqrt(ε_i · ε_j)
+
+  Unit conversions applied
+  Length   : 1 Å = 0.1 nm
+  Energy   : 1 kcal/mol = 4.184 kJ/mol
+  Bond k   : 1 kcal/mol/Å² = 418.4 kJ/mol/nm²
+  Angle k  : 1 kcal/mol/rad² = 4.184 kJ/mol/rad²
+
+  Bond-order / electronegativity corrections
+  Equilibrium bond lengths r₀ are pre-computed for each pair using:
+    r_ij = r_i + r_j + r_BO − r_EN
+    r_BO = −0.1332 (r_i + r_j) ln(n)        n = formal bond order
+    r_EN = r_i·r_j·(√χ_i − √χ_j)² / (χ_i·r_i + χ_j·r_j)
+  Only single-bond (n=1) values are listed here; r_BO = 0, r_EN ≠ 0 in general.
+  For heteroatom pairs the EN correction shifts lengths by 0.001–0.010 Å.
+
+  Bond force constants
+
+    k = 2 · 664.12 · (Z*_i · Z*_j) / r_ij³    [kcal/mol/Å²]
+  where Z*_i are UFF effective charges from Table 1 of Rappé 1992.
+  Converted to kJ/mol/nm² = value × 418.4.
+
+  Angle force constants
+
+    k_θ = β · Z*_i · Z*_k / r_ik⁵ · geometry_factor
+  Using the small-displacement harmonic approximation listed per-type.
+
+  Torsion parameters
+
+  The central bond type determines V and n (Table 3, Rappé 1992).
+  Phase φ₀ follows hybridisation: sp³–sp³ φ₀=60°, sp²–sp³ φ₀=0°, etc.
+
+  Limitations
+
+  • Charges are zero; add Gasteiger / AM1-BCC externally.
+  • Improper torsions (planarity for sp² centres) are not included; add via
+    CustomTorsionForce in post-processing.
+  • Out-of-plane bending terms from UFF §2.4 are absent.
+  • This XML covers the most common organic + inorganic types; exotic f-block
+    types use approximated parameters.
+
+  Usage example (Python / OpenMM)
+    from openmm.app import ForceField, PDBFile, Modeller
+    ff  = ForceField('uff.xml')
+    pdb = PDBFile('molecule.pdb')
+    # Atom names in the PDB must match UFF type names (e.g. "C_3", "N_3" …)
+    system = ff.createSystem(pdb.topology)
+-->
 
 <ForceField>
 
@@ -143,133 +218,121 @@
   <Type name="No6+3" class="No6+3" element="No" mass="259.0"/>
   <Type name="Lw6+3" class="Lw6+3" element="Lr" mass="262.0"/>
 </AtomTypes>
-<Residues>
-  <Residue name="MOL">
-    <Atom name="O_3" type="O_3"/>
-    <Atom name="H_"  type="H_"/>
-    <Bond atomName1="O_3" atomName2="H_"/>
-  </Residue>
-</Residues>
+
 <!-- ======================================================================
      HARMONIC BOND FORCE
-     k values from: k = 2·664.12·(Z*_i·Z*_j)/r_ij³   [kcal/mol/Å²]
-     → kJ/mol/nm² = kcal/mol/Å² × 418.4
-     r₀ values: r_i + r_j − r_EN correction (see header)
-     Only the most common pairwise bond types are enumerated.
-     Additional pairs can be added by the user following the same formula.
+     All parameters computed directly from UFF (Rappé 1992) Table 1:
+
+       r₀  = r_i + r_j + r_BO − r_EN          (Rappé eq. 2)
+       r_BO = −0.1332·(r_i+r_j)·ln(n)         (bond order correction)
+       r_EN = r_i·r_j·(√χ_i−√χ_j)² /
+              (χ_i·r_i + χ_j·r_j)             (electronegativity correction)
+       k   = 664.12·Z*_i·Z*_j / r₀³           [kcal/mol/Å²]  (Rappé eq. 6)
+
+     Unit conversions:
+       r₀  [Å]         → nm  : × 0.1
+       k   [kcal/mol/Å²] → kJ/mol/nm²  : × 4.184 / 0.01 = × 418.4
+
+     No experimental values used — all lengths and force constants are
+     derived purely from the UFF atomic parameters (r_i, χ_i, Z*_i).
+     Bond orders n > 1 use the r_BO correction (n=1.5 for aromatic,
+     n=2 for double, n=3 for triple bonds).
      ====================================================================== -->
 <HarmonicBondForce>
-  <!-- H bonds -->
-  <Bond type1="H_"   type2="H_"   length="0.0741" k="286000"/><!-- H₂ reference -->
-  <Bond type1="H_"   type2="C_3"  length="0.1091" k="277900"/>
-  <Bond type1="H_"   type2="C_R"  length="0.1086" k="291100"/>
-  <Bond type1="H_"   type2="C_2"  length="0.1086" k="291100"/>
-  <Bond type1="H_"   type2="C_1"  length="0.1065" k="310000"/>
-  <Bond type1="H_"   type2="N_3"  length="0.1012" k="335600"/>
-  <Bond type1="H_"   type2="N_R"  length="0.1010" k="340000"/>
-  <Bond type1="H_"   type2="N_2"  length="0.1010" k="340000"/>
-  <Bond type1="H_"   type2="O_3"  length="0.0956" k="390000"/>
-  <Bond type1="H_"   type2="O_R"  length="0.0960" k="385000"/>
-  <Bond type1="H_"   type2="S_3+2" length="0.1338" k="192000"/>
-  <Bond type1="H_"   type2="P_3+3" length="0.1421" k="165000"/>
-  <Bond type1="H_"   type2="Si3"  length="0.1487" k="145000"/>
-  <Bond type1="H_b"  type2="B_3"  length="0.1196" k="220000"/>
-  <!-- C–C -->
-  <Bond type1="C_3"  type2="C_3"  length="0.1514" k="224393"/>
-  <Bond type1="C_3"  type2="C_R"  length="0.1503" k="235000"/>
-  <Bond type1="C_3"  type2="C_2"  length="0.1503" k="235000"/>
-  <Bond type1="C_3"  type2="C_1"  length="0.1472" k="262000"/>
-  <Bond type1="C_R"  type2="C_R"  length="0.1395" k="338000"/>
-  <Bond type1="C_2"  type2="C_2"  length="0.1336" k="389000"/>
-  <Bond type1="C_R"  type2="C_2"  length="0.1395" k="338000"/>
-  <Bond type1="C_1"  type2="C_1"  length="0.1212" k="606000"/>
-  <!-- C–N -->
-  <Bond type1="C_3"  type2="N_3"  length="0.1462" k="263000"/>
-  <Bond type1="C_3"  type2="N_R"  length="0.1451" k="274000"/>
-  <Bond type1="C_3"  type2="N_2"  length="0.1451" k="274000"/>
-  <Bond type1="C_3"  type2="N_1"  length="0.1418" k="305000"/>
-  <Bond type1="C_R"  type2="N_R"  length="0.1346" k="408000"/>
-  <Bond type1="C_R"  type2="N_3"  length="0.1357" k="397000"/>
-  <Bond type1="C_2"  type2="N_2"  length="0.1279" k="501000"/>
-  <Bond type1="C_1"  type2="N_1"  length="0.1158" k="717000"/>
-  <!-- C–O -->
-  <Bond type1="C_3"  type2="O_3"  length="0.1418" k="290000"/>
-  <Bond type1="C_3"  type2="O_R"  length="0.1365" k="355000"/>
-  <Bond type1="C_R"  type2="O_R"  length="0.1365" k="355000"/>
-  <Bond type1="C_2"  type2="O_2"  length="0.1219" k="562000"/>
-  <Bond type1="C_R"  type2="O_2"  length="0.1219" k="562000"/>
-  <Bond type1="C_1"  type2="O_1"  length="0.1128" k="793000"/>
-  <!-- C–S -->
-  <Bond type1="C_3"  type2="S_3+2" length="0.1820" k="141000"/>
-  <Bond type1="C_R"  type2="S_R"  length="0.1760" k="162000"/>
-  <Bond type1="C_3"  type2="S_3+4" length="0.1810" k="145000"/>
-  <!-- C–P -->
-  <Bond type1="C_3"  type2="P_3+3" length="0.1843" k="133000"/>
-  <!-- C–Si -->
-  <Bond type1="C_3"  type2="Si3"  length="0.1889" k="117000"/>
-  <!-- C–F, C–Cl, C–Br, C–I -->
-  <Bond type1="C_3"  type2="F_"   length="0.1381" k="312000"/>
-  <Bond type1="C_R"  type2="F_"   length="0.1340" k="362000"/>
-  <Bond type1="C_3"  type2="Cl"   length="0.1766" k="155000"/>
-  <Bond type1="C_R"  type2="Cl"   length="0.1720" k="175000"/>
-  <Bond type1="C_3"  type2="Br"   length="0.1939" k="122000"/>
-  <Bond type1="C_R"  type2="Br"   length="0.1900" k="134000"/>
-  <Bond type1="C_3"  type2="I_"   length="0.2140" k="86000"/>
-  <Bond type1="C_R"  type2="I_"   length="0.2095" k="96000"/>
-  <!-- C–B -->
-  <Bond type1="C_3"  type2="B_3"  length="0.1562" k="189000"/>
-  <Bond type1="C_R"  type2="B_2"  length="0.1497" k="232000"/>
-  <!-- N–N -->
-  <Bond type1="N_3"  type2="N_3"  length="0.1401" k="304000"/>
-  <Bond type1="N_R"  type2="N_R"  length="0.1357" k="380000"/>
-  <Bond type1="N_2"  type2="N_2"  length="0.1247" k="539000"/>
-  <Bond type1="N_1"  type2="N_1"  length="0.1098" k="803000"/>
-  <!-- N–O -->
-  <Bond type1="N_3"  type2="O_3"  length="0.1459" k="260000"/>
-  <Bond type1="N_2"  type2="O_2"  length="0.1208" k="548000"/>
-  <!-- O–O -->
-  <Bond type1="O_3"  type2="O_3"  length="0.1460" k="213000"/>
-  <Bond type1="O_2"  type2="O_2"  length="0.1210" k="440000"/>
-  <!-- Si–O, Si–N, Si–Si -->
-  <Bond type1="Si3"  type2="O_3"  length="0.1631" k="183000"/>
-  <Bond type1="Si3"  type2="O_3_z" length="0.1611" k="195000"/>
-  <Bond type1="Si3"  type2="N_3"  length="0.1743" k="135000"/>
-  <Bond type1="Si3"  type2="Si3"  length="0.2352" k="77000"/>
-  <!-- P bonds -->
-  <Bond type1="P_3+3" type2="P_3+3" length="0.2218" k="89000"/>
-  <Bond type1="P_3+5" type2="O_2"   length="0.1493" k="244000"/>
-  <Bond type1="P_3+3" type2="O_3"   length="0.1638" k="177000"/>
-  <Bond type1="P_3+3" type2="S_3+2" length="0.2101" k="97000"/>
-  <!-- S bonds -->
-  <Bond type1="S_3+2" type2="S_3+2" length="0.2048" k="110000"/>
-  <Bond type1="S_3+2" type2="O_2"   length="0.1483" k="242000"/>
-  <Bond type1="S_3+6" type2="O_2"   length="0.1440" k="303000"/>
-  <!-- Metal–O / Metal–N (representative) -->
-  <Bond type1="Fe3+2" type2="O_3"  length="0.2058" k="79000"/>
-  <Bond type1="Fe6+2" type2="O_3"  length="0.2010" k="90000"/>
-  <Bond type1="Fe3+2" type2="N_3"  length="0.2005" k="88000"/>
-  <Bond type1="Zn3+2" type2="O_3"  length="0.1954" k="97000"/>
-  <Bond type1="Zn3+2" type2="N_3"  length="0.2096" k="77000"/>
-  <Bond type1="Cu3+1" type2="O_3"  length="0.1873" k="113000"/>
-  <Bond type1="Cu3+1" type2="N_3"  length="0.2018" k="84000"/>
-  <Bond type1="Ni4+2" type2="O_3"  length="0.1934" k="101000"/>
-  <Bond type1="Ni4+2" type2="N_3"  length="0.2008" k="86000"/>
-  <Bond type1="Co6+3" type2="O_3"  length="0.2003" k="90000"/>
-  <Bond type1="Co6+3" type2="N_3"  length="0.2069" k="79000"/>
-  <Bond type1="Mg3+2" type2="O_3"  length="0.2073" k="74000"/>
-  <Bond type1="Ca6+2" type2="O_3"  length="0.2395" k="46000"/>
-  <Bond type1="Al3"   type2="O_3"  length="0.1912" k="108000"/>
-  <Bond type1="Al3"   type2="O_3_z" length="0.1912" k="108000"/>
-  <Bond type1="Ti3+4" type2="O_3"  length="0.1936" k="101000"/>
-  <Bond type1="Ti6+4" type2="O_3"  length="0.1956" k="97000"/>
-  <Bond type1="Pt4+2" type2="N_3"  length="0.2008" k="90000"/>
-  <Bond type1="Pt4+2" type2="Cl"   length="0.2300" k="62000"/>
-  <Bond type1="Au4+3" type2="Cl"   length="0.2270" k="68000"/>
-  <!-- Boron -->
-  <Bond type1="B_3"  type2="B_3"  length="0.1700" k="171000"/>
-  <Bond type1="B_3"  type2="N_3"  length="0.1578" k="210000"/>
-  <Bond type1="B_3"  type2="O_3"  length="0.1367" k="320000"/>
-  <Bond type1="B_2"  type2="N_2"  length="0.1376" k="390000"/>
+  <Bond type1="H_" type2="H_" length="0.070800" k="396916"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="C_3" length="0.110940" k="277039"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="C_R" length="0.108142" k="299106"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="C_2" length="0.108442" k="296632"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="C_1" length="0.105843" k="319019"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="N_3" length="0.104442" k="441785"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="N_R" length="0.104342" k="443052"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="N_2" length="0.102947" k="461310"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="O_3" length="0.099025" k="468604"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="O_R" length="0.101210" k="438911"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="S_3+2" length="0.141114" k="190307"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="P_3+3" length="0.143943" k="189920"/>  <!-- bond order 1 -->
+  <Bond type1="H_" type2="Si3" length="0.143666" k="154990"/>  <!-- bond order 1 -->
+  <Bond type1="H_b" type2="B_3" length="0.115977" k="222579"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="C_3" length="0.151400" k="292709"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="C_R" length="0.148600" k="309569"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="C_2" length="0.148900" k="307702"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="C_1" length="0.146300" k="324400"/>  <!-- bond order 1 -->
+  <Bond type1="C_R" type2="C_R" length="0.137926" k="387150"/>  <!-- bond order 1.5 -->
+  <Bond type1="C_2" type2="C_2" length="0.132883" k="432915"/>  <!-- bond order 2 -->
+  <Bond type1="C_R" type2="C_2" length="0.138209" k="384770"/>  <!-- bond order 1.5 -->
+  <Bond type1="C_1" type2="C_1" length="0.120537" k="580026"/>  <!-- bond order 3 -->
+  <Bond type1="C_3" type2="N_3" length="0.145107" k="442361"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="N_R" length="0.145007" k="443274"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="N_2" length="0.143613" k="456312"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="N_1" length="0.140725" k="484989"/>  <!-- bond order 1 -->
+  <Bond type1="C_R" type2="N_R" length="0.134507" k="555400"/>  <!-- bond order 1.5 -->
+  <Bond type1="C_R" type2="N_3" length="0.142319" k="468870"/>  <!-- bond order 1 -->
+  <Bond type1="C_2" type2="N_2" length="0.128041" k="643870"/>  <!-- bond order 2 -->
+  <Bond type1="C_1" type2="N_1" length="0.115715" k="872317"/>  <!-- bond order 3 -->
+  <Bond type1="C_3" type2="O_3" length="0.139384" k="451243"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="O_R" length="0.141556" k="430795"/>  <!-- bond order 1 -->
+  <Bond type1="C_R" type2="O_R" length="0.131194" k="541143"/>  <!-- bond order 1.5 -->
+  <Bond type1="C_2" type2="O_2" length="0.121945" k="673840"/>  <!-- bond order 2 -->
+  <Bond type1="C_R" type2="O_2" length="0.121678" k="678292"/>  <!-- bond order 2 -->
+  <Bond type1="C_1" type2="O_1" length="0.112812" k="851112"/>  <!-- bond order 3 -->
+  <Bond type1="C_3" type2="S_3+2" length="0.179554" k="248078"/>  <!-- bond order 1 -->
+  <Bond type1="C_R" type2="S_R" length="0.168329" k="301090"/>  <!-- bond order 1.5 -->
+  <Bond type1="C_3" type2="S_3+4" length="0.178073" k="254318"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="P_3+3" length="0.181356" k="255006"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="Si3" length="0.179505" k="213376"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="F_" length="0.138152" k="349586"/>  <!-- bond order 1 -->
+  <Bond type1="C_R" type2="F_" length="0.135457" k="370873"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="Cl" length="0.179167" k="216895"/>  <!-- bond order 1 -->
+  <Bond type1="C_R" type2="Cl" length="0.176385" k="227321"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="Br" length="0.188427" k="192816"/>  <!-- bond order 1 -->
+  <Bond type1="C_R" type2="Br" length="0.185654" k="201587"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="I_" length="0.209697" k="160866"/>  <!-- bond order 1 -->
+  <Bond type1="C_R" type2="I_" length="0.206938" k="167386"/>  <!-- bond order 1 -->
+  <Bond type1="C_3" type2="B_3" length="0.152051" k="265238"/>  <!-- bond order 1 -->
+  <Bond type1="C_R" type2="B_2" length="0.140826" k="333850"/>  <!-- bond order 1.5 -->
+  <Bond type1="N_3" type2="N_3" length="0.140000" k="655373"/>  <!-- bond order 1 -->
+  <Bond type1="N_R" type2="N_R" length="0.132250" k="777479"/>  <!-- bond order 1.5 -->
+  <Bond type1="N_2" type2="N_2" length="0.124351" k="935239"/>  <!-- bond order 2 -->
+  <Bond type1="N_1" type2="N_1" length="0.112001" k="1279996"/>  <!-- bond order 3 -->
+  <Bond type1="N_3" type2="O_3" length="0.135326" k="656051"/>  <!-- bond order 1 -->
+  <Bond type1="N_2" type2="O_2" length="0.119262" k="958475"/>  <!-- bond order 2 -->
+  <Bond type1="O_3" type2="O_3" length="0.131600" k="644950"/>  <!-- bond order 1 -->
+  <Bond type1="O_2" type2="O_2" length="0.115093" k="964158"/>  <!-- bond order 2 -->
+  <Bond type1="Si3" type2="O_3" length="0.159433" k="366340"/>  <!-- bond order 1 -->
+  <Bond type1="Si3" type2="O_3_z" length="0.147717" k="460598"/>  <!-- bond order 1 -->
+  <Bond type1="Si3" type2="N_3" length="0.168899" k="340816"/>  <!-- bond order 1 -->
+  <Bond type1="Si3" type2="Si3" length="0.223400" k="134489"/>  <!-- bond order 1 -->
+  <Bond type1="P_3+3" type2="P_3+3" length="0.220200" k="213319"/>  <!-- bond order 1 -->
+  <Bond type1="P_3+5" type2="O_2" length="0.140899" k="654134"/>  <!-- bond order 2 -->
+  <Bond type1="P_3+3" type2="O_3" length="0.162890" k="423351"/>  <!-- bond order 1 -->
+  <Bond type1="P_3+3" type2="S_3+2" length="0.216204" k="212773"/>  <!-- bond order 1 -->
+  <Bond type1="S_3+2" type2="S_3+2" length="0.212800" k="210676"/>  <!-- bond order 1 -->
+  <Bond type1="S_3+2" type2="O_2" length="0.144556" k="571880"/>  <!-- bond order 2 -->
+  <Bond type1="S_3+6" type2="O_2" length="0.141403" k="610988"/>  <!-- bond order 2 -->
+  <Bond type1="B_3" type2="B_3" length="0.169800" k="174815"/>  <!-- bond order 1 -->
+  <Bond type1="B_3" type2="N_3" length="0.142041" k="432901"/>  <!-- bond order 1 -->
+  <Bond type1="B_3" type2="O_3" length="0.133424" k="472213"/>  <!-- bond order 1 -->
+  <Bond type1="B_2" type2="N_2" length="0.126453" k="613548"/>  <!-- bond order 2 -->
+  <Bond type1="Fe3+2" type2="O_3" length="0.167310" k="277011"/>  <!-- bond order 1 -->
+  <Bond type1="Fe6+2" type2="O_3" length="0.172905" k="250982"/>  <!-- bond order 1 -->
+  <Bond type1="Fe3+2" type2="N_3" length="0.177876" k="254977"/>  <!-- bond order 1 -->
+  <Bond type1="Zn3+2" type2="O_3" length="0.160718" k="201362"/>  <!-- bond order 1 -->
+  <Bond type1="Zn3+2" type2="N_3" length="0.170965" k="185030"/>  <!-- bond order 1 -->
+  <Bond type1="Cu3+1" type2="O_3" length="0.170061" k="244293"/>  <!-- bond order 1 -->
+  <Bond type1="Cu3+1" type2="N_3" length="0.180757" k="225023"/>  <!-- bond order 1 -->
+  <Bond type1="Ni4+2" type2="O_3" length="0.158247" k="311258"/>  <!-- bond order 1 -->
+  <Bond type1="Ni4+2" type2="N_3" length="0.168370" k="285835"/>  <!-- bond order 1 -->
+  <Bond type1="Co6+3" type2="O_3" length="0.164823" k="282605"/>  <!-- bond order 1 -->
+  <Bond type1="Co6+3" type2="N_3" length="0.175269" k="259959"/>  <!-- bond order 1 -->
+  <Bond type1="Mg3+2" type2="O_3" length="0.169130" k="236064"/>  <!-- bond order 1 -->
+  <Bond type1="Ca6+2" type2="O_3" length="0.188550" k="157316"/>  <!-- bond order 1 -->
+  <Bond type1="Al3" type2="O_3" length="0.163354" k="262734"/>  <!-- bond order 1 -->
+  <Bond type1="Al3" type2="O_3_z" length="0.152081" k="325594"/>  <!-- bond order 1 -->
+  <Bond type1="Ti3+4" type2="O_3" length="0.171593" k="336347"/>  <!-- bond order 1 -->
+  <Bond type1="Ti6+4" type2="O_3" length="0.171593" k="336347"/>  <!-- bond order 1 -->
+  <Bond type1="Pt4+2" type2="N_3" length="0.186354" k="224355"/>  <!-- bond order 1 -->
+  <Bond type1="Pt4+2" type2="Cl" length="0.232670" k="106394"/>  <!-- bond order 1 -->
+  <Bond type1="Au4+3" type2="Cl" length="0.226884" k="146641"/>  <!-- bond order 1 -->
 </HarmonicBondForce>
 
 <!-- ======================================================================
