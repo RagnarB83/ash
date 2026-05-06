@@ -100,6 +100,14 @@ class PySCFTheory:
                         print("Error importing density_functional_approximation_dm21 library. Exiting")
                         print("Make sure DM21 is installed in the Python environment. See https://github.com/google-deepmind/deepmind-research/tree/master/density_functional_approximation_dm21")
                         ashexit()
+                if "skala" in self.functional.lower():
+                    print("Skala functional detected. Attemping to import skala")
+                    try:
+                        from skala.pyscf import SkalaKS
+                    except ModuleNotFoundError as e:
+                        print("Error importing skala library. Exiting")
+                        print("Make sure skala is installed in the Python environment. See https://github.com/microsoft/skala")
+                        ashexit()
             else:
                 if scf_type == 'RKS' or scf_type == 'UKS':
                     print("Error: RKS/UKS chosen but no functional. Exiting")
@@ -2074,7 +2082,12 @@ class PySCFTheory:
 
         #RKS v UKS v RHF v UHF v GHF v GKS
         #TODO: Dirac HF and KS also
-        if self.scf_type == 'RKS':
+        if "skala" in self.functional.lower():
+            print("here")
+            from skala.pyscf import SkalaKS
+            self.mf = SkalaKS(self.molcellobject, xc=self.functional)
+
+        elif self.scf_type == 'RKS':
             self.mf = scf.RKS(self.molcellobject)
         elif self.scf_type == 'ROKS':
             self.mf = scf.ROKS(self.molcellobject)
