@@ -40,7 +40,8 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         CASCI_Final=False,
                         MRCI_CASCI_Final=False, MRCI_SOC=False,
                         btPNO=False, DLPNO=False, no_shakeup=False, virt_offset=0,
-                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False):
+                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False,
+                        OODFT_CC=False):
     """
     Wrapper function around PhotoElectron Class
     """
@@ -59,7 +60,8 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
                         MRCI_CASCI_Final=MRCI_CASCI_Final, MRCI_SOC=MRCI_SOC, CASCI_Final=CASCI_Final,
                         btPNO=btPNO, DLPNO=DLPNO,
-                        path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson)
+                        path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson,
+                        OODFT_CC=OODFT_CC)
     result = photo.run()
     print_time_rel(timeA, modulename='PhotoElectron', moduleindex=1)
     return result
@@ -76,7 +78,8 @@ class PhotoElectronClass:
                         CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
                         MRCI_CASCI_Final=False, MRCI_SOC=False, CASCI_Final=False,
                         btPNO=False, DLPNO=False,
-                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False):
+                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False,
+                        OODFT_CC=False):
         """
         PhotoElectron module
         """
@@ -197,6 +200,7 @@ class PhotoElectronClass:
         self.deltaSCF_ionize=deltaSCF_ionize #DeltaSCF whether to ionize from init-state instead of setting CFG
         self.deltaSCF_PMOM=deltaSCF_PMOM #Whether to use PMOM or not
         self.deltaSCFkeyword=deltaSCFkeyword # Add extra ORCA simple keyword when doing deltaSCF calcs only 
+        self.OODFT_CC=OODFT_CC # CCSD(T) on top of deltaSCF
         print("PES method:", self.method)
         if self.method == 'MRCI' or self.method=='MREOM':
             print("MREOM:", self.MREOM)
@@ -1106,6 +1110,7 @@ end
         self.run_SCF_InitState(fragment,theory)
         print("now done with initial state SCF")
 
+
         #Create strings for the SCF configurations and deltaSCF lines
         if self.deltaSCF_ionize is True:
             print("deltaSCF_ionize option active!")
@@ -1154,6 +1159,12 @@ end
                 #Adding ALPHACONF/BETACONF line as separate SCF block (empty if ground ion state)
                 theory.orcablocks = self.orig_orcablocks + deltascfblock
                 state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
+                # CCSD(T) correction on top
+                print("self.OODFT_CC:", self.OODFT_CC)
+                if self.OODFT_CC:
+                    print("Now running noiter CCSD(T) on top of deltaSCF")
+                    theory.extraline = theory.extraline.replace("DELTASCF","CCSD(T) noiter ")
+                    state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                 finalsinglepointenergy = state_result.energy
 
                 ip = (finalsinglepointenergy-self.stateI.energy)*ash.constants.hartoeV
@@ -1189,6 +1200,10 @@ end
                         run_orca_plot(orcadir=theory.orcadir,filename=f"{theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
                         #Move into Calculated_densities dir
                         shutil.move(f"{theory.filename}.spindens.cube", 'Calculated_densities/' + f"{label}.spindens.cube")
+
+
+
+
         return IPs_all, Ionstates_energies_all
 
     # Calculate Ionized state via SCF+TDDFT approach
@@ -1642,17 +1657,24 @@ end
 
 
         self.InitSCF = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
-        finalsinglepointenergy = self.InitSCF.energy
         stability = check_stability_in_output(theory.filename+'.out')
         if stability is False and self.check_stability is True:
             print("PES: Unstable initial state. Exiting...")
             ashexit()
+
+        if self.OODFT_CC:
+            print("SCF InitState. Now running noiter CCSD(T) on top of deltaSCF")
+            theory.extraline = theory.extraline + "! CCSD(T) noiter "
+            state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
+
 
         #Grab energy of initial state
         if self.method == 'CASSCF' or self.method =='CASCI':
             self.stateI.energy=casscfenergygrab(theory.filename+'.out')
         elif self.method == 'NEVPT2' or self.method == 'NEVPT2-F12':
             self.stateI.energy=finalenergiesgrab(theory.filename+'.out')[0]
+        elif self.OODFT_CC:
+            self.stateI.energy=state_result.energy
         else:
             self.stateI.energy=scfenergygrab(theory.filename+'.out')
 
