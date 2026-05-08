@@ -44,8 +44,8 @@ def GenerateVibrTrajectory(fname, ndim, R, symb, w, npts=40, A=1.0):
             f.write('%i\n\n' % (ndim / 3))
             for j in range(0, ndim, 3):
                 f.write('%s %12.8f %12.8f %12.8f  \n' \
-                        % (symb[j], dx[k] * w[j] + R[j], dx[k] * w[j + 1] + R[j + 1],
-                           dx[k] * w[j + 2] + R[j + 2]))
+                        % (symb[j], dx[k] * w[j].item() + R[j].item(), dx[k] * w[j + 1].item() + R[j + 1].item(),
+                           dx[k] * w[j + 2].item() + R[j + 2].item()))
     return None
 
 
@@ -295,7 +295,7 @@ def ComputeLengthOfPath(ndim, nim, r, pbc=False, cell=None):
     for i in range(1, nim):
         r0 = r[(i - 1) * ndim:(i) * ndim]
         r1 = r[i * ndim:(i + 1) * ndim]
-        s[i] = s[i - 1] + Distance(ndim, r0, r1, pbc, cell)
+        s[i] = s[i - 1] + Distance(ndim, r0, r1, pbc, cell).item()
     return s
 
 
@@ -670,7 +670,7 @@ def PiecewiseCubicEnergyInterpolation(fname, nim, s, energy, forces, it):
         xi = np.linspace(0, dr, 20)
         for j in xi:
             p = a * j ** 3 + b * j ** 2 + c * j + d
-            eintp.append(float(p))
+            eintp.append(float(p.item()))
             xintp.append(float(j + s[i]))
 
     if fname:
@@ -678,7 +678,7 @@ def PiecewiseCubicEnergyInterpolation(fname, nim, s, energy, forces, it):
             g.write('Iteration: %i\n' % it)
             g.write('Images:\n')
             for i in range(nim):
-                g.write('%.4f %12.6f %12.8f \n' % (s[i] / s[-1], s[i], energy[i]))
+                g.write('%.4f %12.6f %12.8f \n' % (s[i].item() / s[-1].item(), s[i].item(), energy[i].item()))
 
             g.write('Interp.:\n')
             for i in range(len(eintp)):

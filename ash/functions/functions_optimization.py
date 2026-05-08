@@ -3,12 +3,13 @@ import time
 import os
 
 import ash.constants
-from ash.functions.functions_general import ashexit, blankline,print_time_rel_and_tot,BC,listdiff
-from ash.modules.module_coords import write_xyzfile
-from ash.modules.module_coords import check_charge_mult
+from ash.functions.functions_general import ashexit, blankline, print_line_with_mainheader,print_time_rel_and_tot,BC,listdiff,print_time_rel, print_if_level
+from ash.modules.module_coords import check_charge_mult , write_xyzfile, print_internal_coordinate_table_new
+from ash.modules.module_coords_PBC import cell_vectors_to_params, cart_coords_to_fract, fract_coords_to_cart, cell_volume, \
+                                          write_CIF_file,write_XSF_file, write_POSCAR_file
 from ash.modules.module_coords import print_coords_for_atoms
-#import ash
-
+from ash.interfaces.interface_geometric_new import geomeTRICOptimizer
+from ash.modules.module_results import ASH_Results
 
 #Root mean square of numpy array, e.g. gradient
 def RMS_G(grad):
@@ -256,8 +257,6 @@ def SimpleOpt(fragment=None, theory=None, charge=None, mult=None, optimizer='KNA
     print(BC.FAIL,"Optimization did not converge in {} iteration".format(maxiter),BC.END)
 
 
-
-
 #Very basic bad steepest descent algorithm.
 #Arbitrary scaling parameter instead of linesearch
 #0.8-0.9 seems to work well for H2O
@@ -442,3 +441,1026 @@ def BernyOpt(theory,fragment, charge=None, mult=None):
     print("Final optimized energy:",  fragment.energy)
     fragment.replace_coords(fragment.elems,geom.coords)
     blankline()
+
+#############################
+# PERIODIC OPTIMIZERS
+#############################
+# Alternating periodic cell optimizer: first atom-opt, then cell-step etc.
+# Not really that useful
+def periodic_optimizer_alternating(fragment=None, theory=None, rate=0.5, maxiter=50, tol=1e-3, step_algo="SD",
+                                force_orthorhombic=True, max_step=0.25, momentum=0.5,
+                                atoms_tolsetting=None, atom_opt_maxiter=100):
+    ang2bohr=1.88972612546
+    print("Learning rate:", rate)
+    print("maxiter:", maxiter)
+
+    # Max step in bohrs (default = 0.1 Å = 0.188 bohrs)
+    print("Rate:", rate)
+    max_step_au = max_step*ang2bohr
+    print("force_orthorhombic:", force_orthorhombic)
+    print(f"Tolerance: {tol} Eh/Bohr")
+    print("Maxiter:", maxiter)
+    print(f"Max step size {max_step} Å")
+    print()
+    print(f"Initial cell vectors in Theory object: {theory.periodic_cell_vectors} Å")
+
+    cell_vectors_au = theory.periodic_cell_vectors*ang2bohr
+    cell_vectors = theory.periodic_cell_vectors
+
+    # Looping
+    velocity = np.zeros((3, 3))
+    print("Initial cell_vectors:", cell_vectors)
+    for i in range(0,maxiter):
+        print("="*40)
+        print("Cell optimization step", i)
+        print("="*40)
+        # Optimize atom coordinates with frozen cell
+        print("a) Will now optimize atom coordinates")
+        # Note: forcing PBC to be off in geometric
+        res = geomeTRICOptimizer(theory=theory, fragment=fragment, force_noPBC=True, convergence_setting=atoms_tolsetting, maxiter=atom_opt_maxiter)
+
+        # Check convergence of cell gradient
+        cell_gradient = theory.get_cell_gradient()
+        grad_norm = np.linalg.norm(cell_gradient)
+        print(f"Current Cell Gradient Norm: {grad_norm:.6f}")
+        if grad_norm < tol:
+            print(f"Cell converged in {i} cell-iterations  (Gradient norm: {grad_norm:.6f} < tol={tol} Eh/Bohr)")
+            print(f"Final cell vectors: {cell_vectors} Å  and parameters: ({cell_vectors_to_params(cell_vectors)})")
+            print(f"Final energy: {res.energy} Eh")
+            break
+
+        # Convert previously optimized Cart coords to Fract coords
+        fract_coords = cart_coords_to_fract(fragment.coords,theory.periodic_cell_vectors)
+
+        print("b) Will now take cell vector step")
+
+        # Calculate cell vector step (in Bohrs)
+        if step_algo.lower() =="sd":
+            print("Doing steepest descent step")
+            delta_au = - (rate * cell_gradient)
+        elif step_algo.lower() == "damped-MD":
+            print("Doing momentum step")
+            print("velocity:", velocity)
+            velocity = (momentum * velocity) - (rate * cell_gradient)
+            print("velocity:", velocity)
+            delta_au = velocity
+        elif step_algo.lower() == "nesterov":
+            # Storing old
+            velocity_old = velocity.copy()
+            print("Doing Nesterov momentum step")
+            velocity = (momentum * velocity) - (rate * cell_gradient)
+            nesterov_update = -momentum * velocity_old + (1 + momentum) * velocity
+            delta_au = nesterov_update
+        elif step_algo.lower() == "cg":
+            print("Doing conjugate gradient step")
+            if i == 0:
+                search_dir = cell_gradient
+                prev_grad=None
+            else:
+                # Polak-Ribière formula for beta
+                diff = cell_gradient - prev_grad
+                beta = np.sum(cell_gradient * diff) / np.sum(prev_grad * prev_grad)
+                beta = max(0, beta) # Standard 'reset' for CG
+                search_dir = cell_gradient + (beta * search_dir)
+
+            delta_au = - (rate * search_dir)
+            prev_grad = cell_gradient.copy()
+        else:
+            print("Unknown step_algo")
+            ashexit()
+
+
+        print("delta_au:", delta_au)
+
+        # Force orthorhomic
+        if force_orthorhombic:
+            print("force_orthorhombic True")
+            diagonal_mask = np.eye(3)
+            delta_au = delta_au*diagonal_mask
+
+        # Scale down step if required
+        if np.max(np.abs(delta_au)) > max_step_au:
+            print(f"Step scale down:  {np.max(np.abs(delta_au))}  > max_step_au: {max_step_au})")
+            delta_au = delta_au * (max_step / np.max(np.abs(delta_au)))
+            print("Actual step:", delta_au)
+
+        # Take step
+        cell_vectors_au += delta_au
+        # Convert final cell vectors from Bohrs to Å
+        cell_vectors = cell_vectors_au / ang2bohr
+        print("Current cell vectors (Å):", cell_vectors)
+        print("Current cell volume (Å):", cell_volume(cell_vectors))
+        # Update Theory with new cell vectors in Å
+        theory.update_cell(periodic_cell_vectors=cell_vectors)
+        print("theory.periodic_cell_vectors:", theory.periodic_cell_vectors)
+
+        # Update fragment with new XYZ coords that match cell
+        new_cart_coords = fract_coords_to_cart(fract_coords,theory.periodic_cell_vectors)
+        print("new_cartesian_coords:", new_cart_coords)
+        fragment.coords=new_cart_coords
+
+# Cartesian-based periodic cell optimizer
+
+
+# Wrapper function around Cart_optimizer_class
+def Cart_optimizer(fragment=None, theory=None, rate=2.0, 
+                                scaling_rate_cell=1.0, maxiter=50, 
+                                step_algo="bfgs",
+                                max_step=0.25, momentum=0.5, constrain_method='soft',
+                                printlevel=2, conv_criteria=None, PBC_format_option="CIF",
+                                constraints=None, frozen_atoms=None, result_write_to_disk=True,
+                                kf_bonds=10.0, kf_angles=10.0, kf_dihedrals=10.0):
+    """
+    Wrapper function around Cart_optimizer_class
+    """
+    timeA=time.time()
+
+    # EARLY EXIT
+    if theory is None or fragment is None:
+        print("Cart_optimizer requires theory and fragment objects provided. Exiting.")
+        ashexit()
+    optimizer=Cart_optimizer_class(fragment=fragment, theory=theory, rate=rate, scaling_rate_cell=scaling_rate_cell, 
+                                            maxiter=maxiter, step_algo=step_algo,
+                                            max_step=max_step, momentum=momentum, PBC_format_option=PBC_format_option,
+                                            constrain_method=constrain_method,
+                                            printlevel=printlevel, conv_criteria=conv_criteria, constraints=constraints, 
+                                            frozen_atoms=frozen_atoms, result_write_to_disk=result_write_to_disk,
+                                            kf_bonds=kf_bonds, kf_angles=kf_angles, kf_dihedrals=kf_dihedrals)
+
+    result = optimizer.run()
+    if printlevel >= 1:
+        print_time_rel(timeA, modulename='Cart_optimizer', moduleindex=1)
+
+    return result
+
+
+class Cart_optimizer_class:
+
+    def __init__(self,fragment=None, theory=None, rate=2.0, scaling_rate_cell=1.0, maxiter=50, step_algo="bfgs",
+                                max_step=0.25, momentum=0.5, printlevel=2, conv_criteria=None, print_atoms_list=None,
+                                PBC_format_option="CIF", constraints=None, constrain_method='soft',
+                                frozen_atoms=None, result_write_to_disk=True,
+                                kf_bonds=10.0, kf_angles=10.0, kf_dihedrals=10.0):
+
+        print_line_with_mainheader("Cart_optimizer initialization") 
+        self.fragment = fragment
+        self.theory = theory
+        self.rate = rate
+        self.scaling_rate_cell = scaling_rate_cell
+        self.maxiter = maxiter
+        self.step_algo=step_algo
+        self.max_step=max_step
+        self.momentum=momentum
+        self.printlevel=printlevel
+        self.PBC_format_option=PBC_format_option
+        self.print_atoms_list=print_atoms_list
+        self.result_write_to_disk=result_write_to_disk
+        # Constraints
+        self.constraints = constraints if constraints is not None else []
+        self.constrain_method = constrain_method # 'hard' or 'soft'
+        # Constraint force constants for soft constraints (in Eh/Bohr^2, Eh/rad^2). Only used if constrain_method='soft'.
+        self.kf_bonds = kf_bonds
+        self.kf_angles = kf_angles
+        self.kf_dihedrals = kf_dihedrals
+        # Frozen atoms
+        self.frozen_atoms = frozen_atoms if frozen_atoms is not None else []
+        if self.frozen_atoms:
+                print(f"Frozen atoms: {self.frozen_atoms}")
+
+        self.ang2bohr=1.88972612546
+
+        if conv_criteria is None:
+            print("Convergence criteria not set by user. Using following")
+            self.conv_criteria = {'convergence_grms':1e-4, 'convergence_gmax':3e-4}
+        else:
+            self.conv_criteria=conv_criteria
+
+        # Max step in bohrs (default = 0.25 Å = 0.472 bohrs)
+        self.max_step_au = max_step*self.ang2bohr
+
+        print("Convergence criteria:", self.conv_criteria)
+        print("Rate (atoms):", self.rate)
+        print("Scaling for Rate (cell):", self.scaling_rate_cell)
+        print("Maxiter:", self.maxiter)
+        print(f"Max step size {self.max_step} Å")
+        print("Step algorithm:", self.step_algo)
+        print("Constraints:", self.constraints)
+        for con in self.constraints:
+            print("con:",con)
+        print("Constrain method:", self.constrain_method)
+        print("Constraint force constants:")
+        print(f"  Bonds: {self.kf_bonds} Eh/Bohr^2")
+        print(f"  Angles: {self.kf_angles} Eh/rad^2")
+        print(f"  Dihedrals: {self.kf_dihedrals} Eh/rad^2")
+        print()
+
+        self.PBC = False
+
+        #######################
+        # INITITAL SETUP
+        #######################
+
+        #---- PERIODIC -----
+        if getattr(self.theory, "periodic", False):
+            print("Theory object is periodic")
+            print("Will run periodic cell optimization")
+            print(f"Initial cell vectors in Theory object: {theory.periodic_cell_vectors} Å")
+            self.PBC=True
+
+            self.cell_vectors_au = theory.periodic_cell_vectors*self.ang2bohr
+            self.cell_vectors = theory.periodic_cell_vectors
+
+        #---- NON-PERIODIC -----
+        else:
+            print("Theory object is not periodic.")
+
+    def setup_PBC(self):
+        # Align to standard orientation
+        aligned_atom_coords, aligned_vectors = self.align_to_standard_orientation(self.fragment.coords, 
+                                                                                self.theory.periodic_cell_vectors)
+        print("Updating fragment coordinates and theory cell with aligned coords")
+        self.fragment.coords=aligned_atom_coords
+        self.theory.update_cell(aligned_vectors)
+
+        # Reference
+        self.H_ref = aligned_vectors.copy()
+        self.H_ref_inv = np.linalg.inv(self.H_ref)
+
+    def apply_cartesian_constraints(self, gradient):
+        """
+        Zero out gradient components for frozen atoms.
+        Accepts either a list of atom indices to freeze, or a dict with
+        per-atom frozen Cartesian components, e.g.:
+            frozen_atoms=[0, 1, 5]                        # freeze all xyz
+            frozen_atoms={0: 'xyz', 3: 'xz', 7: 'y'}     # freeze specific components
+        """
+        grad_out = gradient.copy()
+
+        #if isinstance(self.frozen_atoms, (list, tuple)):
+        #    for idx in self.frozen_atoms:
+        #        grad_out[idx] = 0.0
+
+        component_map = {'x': 0, 'y': 1, 'z': 2}
+        for idx, components in self.all_cartesian_constraints.items():
+            for c in components.lower():
+                if c in component_map:
+                    grad_out[idx, component_map[c]] = 0.0
+
+        return grad_out
+
+    def apply_bond_constraints(self, coords, gradient, energy, kf=10.0):
+        """
+        Apply bond-length constraints to gradient (and energy for soft mode).
+
+        coords:   (N, 3) physical atomic coordinates in Ångström
+        gradient: (N+4, 3) supergradient (atoms + origin + 3 lattice rows)
+        energy:   float, current energy
+
+        Returns modified (energy, gradient).
+        """
+        if not self.constraints:
+            return energy, gradient
+
+        # Work on a copy so we don't mutate in-place unexpectedly
+        grad_out = gradient.copy()
+        energy_out = energy
+        coords_au = coords * self.ang2bohr
+
+        for c in self.constraints['bond']:
+            print_if_level(f"Applying bond constraint: {c}", self.printlevel, 1)
+            print_if_level(f"Bond constraint force constant,kf, = {kf} (change by kf_bonds keyword)", self.printlevel, 1)
+            i, j, r0_ang  = c
+
+            r0 = r0_ang * self.ang2bohr  # convert target bond length to Bohrs
+
+            # Current bond vector and length
+            rij = coords_au[i] - coords_au[j]          # (3,)
+            d   = np.linalg.norm(rij)
+            if d < 1e-8:
+                print(f"Warning: atoms {i} and {j} are on top of each other. Skipping constraint.")
+                continue
+            e_ij = rij / d                        # unit vector i→j
+
+            delta = d - r0                        # signed deviation in Bohr
+
+            if self.constrain_method == 'soft':
+                # Harmonic restraint: V = 0.5 * k * delta^2
+                # dV/dr_i = k * delta * e_ij
+                # dV/dr_j = -k * delta * e_ij
+                energy_out += 0.5 * kf * delta**2
+                grad_out[i] += kf * delta * e_ij
+                grad_out[j] -= kf * delta * e_ij
+                if self.printlevel >= 2:
+                    print(f"  Soft constraint ({i},{j}): d={d/self.ang2bohr:.4f} Å  target={r0/self.ang2bohr:.4f} Å  "
+                        f"delta={delta/self.ang2bohr:.4f} Å  penalty={0.5*kf*delta**2:.6f}")
+
+            elif self.constrain_method == 'hard':
+                # SHAKE-style: project out the component of the gradient
+                # along the bond direction for both atoms.
+                # g_parallel_i =  (g_i · e_ij) * e_ij
+                # g_parallel_j = -(g_j · e_ij) * e_ij  (opposite sign convention)
+                # We zero those components to enforce the constraint.
+                g_i_par = np.dot(grad_out[i], e_ij) * e_ij
+                g_j_par = np.dot(grad_out[j], e_ij) * e_ij
+                grad_out[i] -= g_i_par
+                grad_out[j] -= g_j_par
+                if self.printlevel >= 2:
+                    print(f"  Hard constraint ({i},{j}): d={d:.4f} Å  target={r0:.4f} Å  "
+                        f"delta={delta:.4f} Å  |proj_i|={np.linalg.norm(g_i_par):.6f}")
+            else:
+                print(f"Unknown constraint method '{self.constrain_method}'. Use 'hard' or 'soft'.")
+
+        return energy_out, grad_out
+
+    def apply_angle_constraints(self, coords, gradient, energy, kf=10.0):
+        """
+        Angle constraints for triplets (i, j, k).
+        Target angle in degrees. Gradient via chain rule through arccos.
+        """
+        if not self.constraints:
+            return energy, gradient
+
+        grad_out = gradient.copy()
+        energy_out = energy
+        coords_au = coords * self.ang2bohr
+
+        for c in self.constraints['angle']:
+            print_if_level(f"Applying angle constraint: {c}", self.printlevel, 1)
+            print_if_level(f"Angle constraint force constant,kf, = {kf} (change by kf_angles keyword)", self.printlevel, 1)
+            i, j, k, theta0_deg = c         # centre atom is j
+            theta0 = np.deg2rad(theta0_deg)
+            #kf = self.default_k #temp
+
+            # Bond vectors pointing away from centre j
+            u = coords_au[i] - coords_au[j]
+            v = coords_au[k] - coords_au[j]
+            lu = np.linalg.norm(u)
+            lv = np.linalg.norm(v)
+
+            if lu < 1e-8 or lv < 1e-8:
+                print(f"Warning: degenerate angle {i}-{j}-{k}. Skipping.")
+                continue
+
+            u_hat = u / lu
+            v_hat = v / lv
+            cos_t = np.clip(np.dot(u_hat, v_hat), -1.0, 1.0)
+            theta  = np.arccos(cos_t)
+            sin_t  = np.sqrt(max(1.0 - cos_t**2, 1e-10))  # avoid /0 at 0° or 180°
+
+            # dθ/dr_i = (u_hat × (u_hat × v_hat)) / (lu * sin_t)
+            # but the simpler form via arccos derivative:
+            # dcos/dr_i = (v_hat - cos_t * u_hat) / lu
+            # dθ/dr_i  = -1/sin_t * dcos/dr_i
+            dc_dri =  (v_hat - cos_t * u_hat) / lu
+            dc_drk =  (u_hat - cos_t * v_hat) / lv
+            dc_drj = -(dc_dri + dc_drk)
+
+            dt_dri = -dc_dri / sin_t
+            dt_drk = -dc_drk / sin_t
+            dt_drj = -dc_drj / sin_t
+
+            delta = theta - theta0   # deviation in radians
+
+            if self.constrain_method == 'soft':
+                energy_out    += 0.5 * kf * delta**2
+                grad_out[i]   += kf * delta * dt_dri
+                grad_out[j]   += kf * delta * dt_drj
+                grad_out[k]   += kf * delta * dt_drk
+                if self.printlevel >= 2:
+                    print(f"  Soft angle ({i},{j},{k}): θ={np.rad2deg(theta):.3f}°  "
+                        f"target={np.rad2deg(theta0):.3f}°  delta={np.rad2deg(delta):.3f}°  "
+                        f"penalty={0.5*kf*delta**2:.6f}")
+
+            elif self.constrain_method == 'hard':
+                # Project out the gradient component along dθ/dr for each atom
+                for idx, dt_dr in [(i, dt_dri), (j, dt_drj), (k, dt_drk)]:
+                    proj = np.dot(grad_out[idx], dt_dr)
+                    if np.linalg.norm(dt_dr) > 1e-10:
+                        n_hat = dt_dr / np.linalg.norm(dt_dr)
+                        grad_out[idx] -= np.dot(grad_out[idx], n_hat) * n_hat
+                if self.printlevel >= 2:
+                    print(f"  Hard angle ({i},{j},{k}): θ={np.rad2deg(theta):.3f}°  "
+                        f"target={np.rad2deg(theta0):.3f}°  delta={np.rad2deg(delta):.3f}°")
+
+        return energy_out, grad_out
+
+    def apply_dihedral_constraints(self, coords, gradient, energy, kf=0.5):
+        """
+        Dihedral (torsion) restraints for quadruplets (i, j, k, l).
+
+        Soft mode:
+            E = 0.5 * kf * delta^2
+        with delta wrapped into [-pi, pi].
+
+        The gradient is computed by finite differences on the restraint energy.
+        This is slower than analytic formulas but much more robust.
+        """
+
+        #Making sure user did not use torsion
+        if 'dihedral' in self.constraints:
+            condict = self.constraints['dihedral']
+        elif 'torsion' in self.constraints:
+            condict = self.constraints['torsion']
+        else:
+            return energy, gradient
+
+        grad_out = gradient.copy()
+        energy_out = energy
+        coords_au = coords * self.ang2bohr
+
+        def dihedral_phi(ca, i, j, k, l):
+            """Signed dihedral angle in radians."""
+            r1, r2, r3, r4 = ca[i], ca[j], ca[k], ca[l]
+            b1 = r2 - r1
+            b2 = r3 - r2
+            b3 = r4 - r3
+
+            n1 = np.cross(b1, b2)
+            n2 = np.cross(b2, b3)
+
+            n1_norm = np.linalg.norm(n1)
+            n2_norm = np.linalg.norm(n2)
+            b2_norm = np.linalg.norm(b2)
+
+            if n1_norm < 1e-12 or n2_norm < 1e-12 or b2_norm < 1e-12:
+                return None
+
+            n1_hat = n1 / n1_norm
+            n2_hat = n2 / n2_norm
+            b2_hat = b2 / b2_norm
+
+            x = np.dot(n1_hat, n2_hat)
+            #y = np.dot(np.cross(n1_hat, b2_hat), n2_hat)
+            y = np.dot(np.cross(n1_hat, n2_hat), b2_hat)
+            return np.arctan2(y, x)
+
+        def torsion_restraint_energy(ca, i, j, k, l, phi0_rad, kf_local):
+            phi = dihedral_phi(ca, i, j, k, l)
+            if phi is None:
+                return None
+            delta = np.arctan2(np.sin(phi - phi0_rad), np.cos(phi - phi0_rad))
+            return 0.5 * kf_local * delta * delta
+
+        h = 1.0e-4  # Bohr finite-difference step
+
+        for c in condict:
+            print_if_level(f"Applying torsion constraint: {c}", self.printlevel, 1)
+            print_if_level(f"Torsion constraint force constant,kf, = {kf} (change by kf_dihedrals keyword)", self.printlevel, 1)
+            i, j, k, l, phi0_deg = c
+            phi0 = np.deg2rad(phi0_deg)
+
+            E0 = torsion_restraint_energy(coords_au, i, j, k, l, phi0, kf)
+            if E0 is None:
+                print(f"Warning: degenerate torsion {i}-{j}-{k}-{l}. Skipping.")
+                continue
+
+            energy_out += E0
+
+            if self.constrain_method == 'soft':
+                involved = [i, j, k, l]
+                for idx in involved:
+                    for a in range(3):
+                        cp = coords_au.copy()
+                        cm = coords_au.copy()
+                        cp[idx, a] += h
+                        cm[idx, a] -= h
+
+                        Ep = torsion_restraint_energy(cp, i, j, k, l, phi0, kf)
+                        Em = torsion_restraint_energy(cm, i, j, k, l, phi0, kf)
+
+                        if Ep is None or Em is None:
+                            continue
+
+                        grad_out[idx, a] += (Ep - Em) / (2.0 * h)
+
+                if self.printlevel >= 2:
+                    phi = dihedral_phi(coords_au, i, j, k, l)
+                    delta = np.arctan2(np.sin(phi - phi0), np.cos(phi - phi0))
+                    print(f"  Soft torsion ({i},{j},{k},{l}): "
+                        f"φ={np.rad2deg(phi):.3f}° target={phi0_deg:.3f}° "
+                        f"delta={np.rad2deg(delta):.3f}° "
+                        f"penalty={E0:.6f}")
+
+            elif self.constrain_method == 'hard':
+                # Hard torsion is not safely enforced by gradient projection.
+                # Use shake_torsion after the geometry step instead.
+                if self.printlevel >= 2:
+                    phi = dihedral_phi(coords_au, i, j, k, l)
+                    delta = np.arctan2(np.sin(phi - phi0), np.cos(phi - phi0))
+                    print(f"  Hard torsion requested for ({i},{j},{k},{l}), "
+                        f"but gradient projection is not reliable for dihedrals. "
+                        f"Current φ={np.rad2deg(phi):.3f}° target={phi0_deg:.3f}° "
+                        f"delta={np.rad2deg(delta):.3f}°")
+            else:
+                print(f"Unknown constraint method '{self.constrain_method}'. Use 'hard' or 'soft'.")
+
+        return energy_out, grad_out
+
+    def shake_torsion(self, coords, i, j, k, l, phi0_deg, max_iter=50, tol_deg=0.01):
+        """
+        Directly correct atomic positions to satisfy a torsion constraint.
+        Moves only atoms i and l (the terminal atoms) along the torsion direction.
+        Called after the geometry step, before the next gradient evaluation.
+        """
+        phi0 = np.deg2rad(phi0_deg)
+        tol  = np.deg2rad(tol_deg)
+
+        coords_new = coords.copy()
+
+        for _ in range(max_iter):
+            b1 = coords_new[j] - coords_new[i]
+            b2 = coords_new[k] - coords_new[j]
+            b3 = coords_new[l] - coords_new[k]
+
+            n1  = np.cross(b1, b2)
+            n2  = np.cross(b2, b3)
+            ln1 = np.linalg.norm(n1)
+            ln2 = np.linalg.norm(n2)
+            lb2 = np.linalg.norm(b2)
+
+            if ln1 < 1e-8 or ln2 < 1e-8:
+                break
+
+            m1    = np.cross(n1, b2 / lb2)
+            cos_p = np.dot(n1, n2) / (ln1 * ln2)
+            sin_p = np.dot(m1, n2) / (ln1 * ln2)
+            phi   = np.arctan2(sin_p, cos_p)
+
+            #phi_wrapped  = (phi  + np.pi) % (2*np.pi) - np.pi
+            #phi0_wrapped = (phi0 + np.pi) % (2*np.pi) - np.pi
+            #delta = phi_wrapped - phi0_wrapped
+            #delta = (delta + np.pi) % (2*np.pi) - np.pi
+            delta = np.arctan2(np.sin(phi - phi0), np.cos(phi - phi0))
+
+            if abs(delta) < tol:
+                break
+
+            # Rotate atom i around the b2 axis by -delta/2
+            # and atom l around the b2 axis by +delta/2
+            # This distributes the correction symmetrically
+            b2_hat = b2 / lb2
+
+            def rotate(point, center, axis, angle):
+                """Rotate point around axis through center by angle (radians)."""
+                p = point - center
+                c, s = np.cos(angle), np.sin(angle)
+                return center + (p * c
+                                + np.cross(axis, p) * s
+                                + axis * np.dot(axis, p) * (1 - c))
+
+            coords_new[i] = rotate(coords_new[i], coords_new[j],  b2_hat, -delta/2)
+            coords_new[l] = rotate(coords_new[l], coords_new[k], -b2_hat,  delta/2)
+
+        return coords_new
+
+    def align_to_standard_orientation(self, fragment_coords, cell_vectors):
+        """
+        Rotates the entire system (atoms and cell) into the standard 
+        upper-triangular orientation.
+
+        cell_vectors: 3x3 matrix where rows are [a, b, c]
+        fragment_coords: Nx3 array of atomic positions
+        """
+        # 1. Transpose cell_vectors because QR works on columns
+        H = cell_vectors.T 
+
+        # 2. QR Decomposition
+        # H = Q * R  -> R is the upper triangular matrix we want
+        Q, R = np.linalg.qr(H)
+
+        # 3. Handle 'Flip' cases
+        # QR can sometimes return negative diagonal elements. 
+        # We want lengths (a_x, b_y, c_z) to be positive.
+        d = np.sign(np.diag(R))
+        # If a diagonal is 0, we treat it as positive
+        d[d == 0] = 1
+
+        # Correct Q and R so diagonals of R are positive
+        Q = Q * d
+        R = (R.T * d).T
+
+        # 4. New Cell Vectors (R transposed back to rows)
+        new_cell_vectors = R.T
+
+        # 5. New Atomic Coordinates
+        # We rotate the atoms using the same rotation matrix Q
+        # Since H_new = Q.T @ H_old, we use Q.T for the atoms
+        new_coords = np.dot(fragment_coords, Q)
+
+        return new_coords, new_cell_vectors
+
+    def compute_bfgs_step(self, current_grad, current_coords):
+        # Flatten everything to 1D vectors for linear algebra
+        g = current_grad.flatten()
+        x = current_coords.flatten()
+        n = len(g)
+
+        # 1. INITIALIZATION
+        # On the first step, we don't have a Hessian yet. 
+        # We start with an Identity matrix (equivalent to Steepest Descent).
+        if not hasattr(self, 'Hess_inv') or self.Hess_inv is None:
+            print("BFGS: First step. SD step with rate:", self.rate)
+            self.Hess_inv = np.eye(n) * self.rate 
+            self.g_old = g
+            self.x_old = x
+            return -(self.rate * g).reshape(current_grad.shape)
+
+        # 2. COMPUTE DIFFERENCES
+        s = x - self.x_old  # Change in coordinates
+        y = g - self.g_old  # Change in gradient
+
+        # 3. UPDATE INVERSE HESSIAN (Sherman-Morrison-Woodbury formula)
+        # We only update if the curvature condition (y.s > 0) is met to maintain stability
+        rho_inv = np.dot(y, s)
+        if rho_inv > 1e-9:
+            rho = 1.0 / rho_inv
+            I = np.eye(n)
+
+            # BFGS Update Formula
+            A = I - np.outer(s, y) * rho
+            B = I - np.outer(y, s) * rho
+            self.Hess_inv = np.dot(A, np.dot(self.Hess_inv, B)) + (rho * np.outer(s, s))
+        else:
+            # If curvature is bad, reset the Hessian to Identity to avoid exploding
+            print("BFGS: Curvature condition not met, resetting Hessian.")
+            self.Hess_inv = np.eye(n) * self.rate
+
+        # 4. COMPUTE STEP
+        # p = -Hess_inv * g
+        step_vec = -np.dot(self.Hess_inv, g)
+
+        # Update histories
+        self.g_old = g
+        self.x_old = x
+
+        # Return reshaped to (N+4, 3)
+        return step_vec.reshape(current_grad.shape)
+
+    # Split  coords into atomic and lattice
+    def split_coords(self,supercoords):
+
+        R_geo = supercoords[:-4]
+        origin = supercoords[-4]
+        H_geo = supercoords[-3:] - origin
+        s = np.dot(R_geo - origin, self.H_ref_inv)
+        R_phys = np.dot(s, H_geo) + origin
+        return R_phys, H_geo
+    
+    def calculate_reg_gradient(self,coords):
+        # E + G from theory
+        energy,gradient=self.theory.run(current_coords=coords, elems=self.elems_phys, 
+                                    charge=self.fragment.charge, mult=self.fragment.mult, Grad=True)
+        return energy, gradient
+    def calculate_supergradient(self,supercoords):
+
+        R_phys, H_geo = self.split_coords(supercoords)
+
+        # E + G from theory
+        energy,grad_phys=self.theory.run(current_coords=R_phys, elems=self.elems_phys, 
+                                    charge=self.fragment.charge, mult=self.fragment.mult, Grad=True)
+
+        # Transformation
+        # M is the transformation matrix: R_phys = R_geo @ M
+        # TODO: check units
+        M = np.dot(self.H_ref_inv, H_geo)
+        grad_Rgeo = np.dot(grad_phys, M.T)
+
+        # Lattice gradient and masking
+        # Total lattice gradient: current theory cell-gradient + convection
+        #grad_latt_total = self.theory.cell_gradient
+        grad_latt_total = self.theory.get_cell_gradient()
+        # Standard orientation mask:
+        # This zeros out: a_y, a_z, and b_z
+        mask = np.array([
+            [1, 0, 0], # dE/dax (ay, az frozen)
+            [1, 1, 0], # dE/dbx, dE/dby (bz frozen)
+            [1, 1, 1]  # dE/dcx, dE/dcy, dE/dcz (all free)
+        ])
+        grad_latt_masked = grad_latt_total * mask
+        # scaling lattice gradient
+        n_atoms = len(grad_Rgeo)
+        scaling_factor = 1.0 / n_atoms
+        grad_latt_preconditioned = grad_latt_masked * scaling_factor
+        # 
+        grad_latt_final=grad_latt_preconditioned
+        # Making sure origin is zero
+        grad_origin = np.zeros((1, 3))
+        # Final modified gradient to pass to geomeTRIC
+        mod_gradient = np.concatenate([
+                grad_Rgeo,         # (N, 3)
+                grad_origin,       # (1, 3)
+                grad_latt_final   # (3, 3)
+            ], axis=0)
+
+        return energy, mod_gradient
+
+    def compute_step(self,gradient,currcoords):
+
+        if self.PBC:
+            # 1. Separate rates for Atoms vs Cell (Preconditioning)
+            # Often the cell needs a rate ~10x smaller than atoms in Cartesian space
+            rate_mask = np.ones_like(gradient)
+            rate_mask[-3:] *= self.scaling_rate_cell  # Dampen lattice steps
+            effective_gradient = gradient * rate_mask
+        else:
+            effective_gradient = gradient
+        # Calculate delta step (in Bohrs)
+        if self.step_algo.lower() =="sd":
+            print("Taking steepest descent step")
+            delta_au = - (self.rate * effective_gradient)
+        elif self.step_algo == "damped-MD":
+            print("Taking damped-MD step")
+            print("velocity:", self.velocity)
+            self.velocity = (self.momentum * self.velocity) - (self.rate * effective_gradient)
+            print("velocity:", self.velocity)
+            delta_au = self.velocity
+            # Simple "Power" check: If we go against the gradient, kill velocity
+            if np.sum(delta_au * gradient) > 0:
+                self.velocity *= 0.0
+        elif self.step_algo.lower() == "nesterov":
+            # Storing old
+            velocity_old = self.velocity.copy()
+            print("Taking Nesterov momentum step")
+            self.velocity = (self.momentum * self.velocity) - (self.rate * effective_gradient)
+            nesterov_update = -self.momentum * velocity_old + (1 + self.momentum) * self.velocity
+            delta_au = nesterov_update
+        elif self.step_algo.lower() == "bfgs":
+            print("Taking BFGS step")
+            delta_au = self.compute_bfgs_step(gradient, currcoords)
+        elif self.step_algo.lower() == "cg":
+            print("Taking conjugate gradient step")
+            if self.iteration == 0:
+                self.search_dir = effective_gradient
+                self.prev_grad = None
+            else:
+                # Polak-Ribière formula for beta
+                diff = effective_gradient - self.prev_grad
+                beta = np.sum(gradient * diff) / np.sum(self.prev_grad * self.prev_grad)
+                beta = max(0, beta) # Standard 'reset' for CG
+                self.search_dir = effective_gradient + (beta * self.search_dir)
+
+            delta_au = - (self.rate * self.search_dir)
+            self.prev_grad = gradient.copy()
+        else:
+            print("Unknown step_algo")
+            ashexit()
+
+        return delta_au
+
+    def run(self, theory=None, fragment=None, constraints=None, charge=None, mult=None):
+        self.run_init_time=time.time()
+        #print("Cart_opt: --------------------------------------------")
+        #print("Cart_opt: time init:", time.time()-self.run_init_time, "seconds")
+        # Update self fragment if a run fragment was provided
+        if fragment is not None:
+            self.fragment=fragment
+            self.elems_phys=fragment.elems
+        else:
+            self.elems_phys=self.fragment.elems
+
+        if self.print_atoms_list is None:
+            self.print_atoms_list = self.fragment.allatoms
+
+        # Update self theory if a run fragment was provided
+        if theory is not None:
+            self.theory=theory
+
+        # Update constraints if provided
+        if constraints is not None:
+            self.constraints=constraints
+
+        # Printlevel in Fragment
+        self.fragment.printlevel=self.printlevel
+
+        self.charge, self.mult = check_charge_mult(charge, mult, self.theory.theorytype, self.fragment, 
+                                         "CartOptimizer", theory=self.theory, printlevel=self.printlevel)
+        # Defining coordinates to use, PBC vs. non-PBC
+        if self.PBC:
+            print("Cart_optimizer: Running periodic optimization in Cartesian coordinates with cell optimization")
+            self.setup_PBC()
+            currcoords = np.concatenate([
+                    self.fragment.coords,         # (N, 3)
+                    np.zeros((1, 3)),       # (1, 3)
+                    self.theory.periodic_cell_vectors,   # (3, 3)
+                ], axis=0)
+            opt_type_label="PBC"
+        else:
+            print("Cart_optimizer: Running non-periodic optimization in Cartesian coordinates")
+            currcoords = self.fragment.coords
+            opt_type_label="NonPBC"
+
+        # Initialize velocity for momentum-based step algorithms
+        self.velocity = np.zeros((len(currcoords),3))
+
+        for file in ["Fragment-currentgeo.xyz", "PBC_opt_traj.xyz", "NonPBC_opt_traj.xyz"]:
+            try:
+                os.remove(file)
+            except:
+                pass
+
+        #print("Cart_opt: time until LOOP:", time.time()-self.run_init_time, "seconds")
+        # LOOP
+        for iteration in range(0,self.maxiter):
+            self.iteration=iteration
+            print("="*40)
+            print(f"{opt_type_label} optimization step", iteration)
+            print("="*40)
+
+            if self.PBC:
+                currcoords_au = currcoords*self.ang2bohr
+                R_phys, H_geo = self.split_coords(currcoords)
+                #Update cell
+                self.theory.update_cell(H_geo)
+            else:
+                R_phys = currcoords
+                currcoords_au = R_phys*self.ang2bohr
+
+            # Update coordinates of atoms and cell
+            self.fragment.replace_coords(self.fragment.elems, R_phys, conn=False)
+
+            # 0. PRINTING ACTIVE GEOMETRY IN EACH  ITERATION
+            self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
+            self.fragment.write_xyzfile(xyzfilename=f"{opt_type_label}_opt_traj.xyz",writemode="a")
+            if self.printlevel >= 1:
+                print(f"Current geometry (Å) in step {iteration} (print_atoms_list region)")
+                print("---------------------------------------------------")
+                print_coords_for_atoms(R_phys, self.elems_phys,self.fragment.allatoms)
+                print("")
+                if self.PBC:
+                    print(f"Current cell vectors (Å):{self.theory.periodic_cell_vectors}")
+                    print(f"Current cell volume (Å):{cell_volume(H_geo)}")
+
+            #print("Cart_opt: time until e+g step:", time.time()-self.run_init_time, "seconds")
+            #########################################
+            # 1. Compute energy and gradient
+            #########################################
+            if self.PBC:
+                energy, supergradient = self.calculate_supergradient(currcoords)
+            else:
+                energy, supergradient = self.calculate_reg_gradient(currcoords)
+                prev_supgrad = supergradient.copy()
+            #print("Cart_opt: time until after e+g step:", time.time()-self.run_init_time, "seconds")
+            # 1b. Apply all constraints
+            self.all_cartesian_constraints={}
+            if self.constraints:
+                print_if_level(f"Applying constraints: {self.constraints}", self.printlevel,2)
+                if 'bond' in self.constraints or 'distance' in self.constraints:
+                    energy, supergradient = self.apply_bond_constraints(R_phys, supergradient, energy, kf=self.kf_bonds)
+                    #print("Cart_opt: time until after bondcon step:", time.time()-self.run_init_time, "seconds")
+                if 'angle' in self.constraints:
+                    energy, supergradient = self.apply_angle_constraints(R_phys, supergradient, energy, kf=self.kf_angles)
+                if 'torsion' in self.constraints or 'dihedral' in self.constraints:
+                    energy, supergradient = self.apply_dihedral_constraints(R_phys, supergradient, energy, kf=self.kf_dihedrals)
+                    #print("supergradient after dihedral constraints:", supergradient)
+                    #print("Cart_opt: time until after dihedralcon step:", time.time()-self.run_init_time, "seconds")
+                # Cartesian constraints. prepare
+                if 'xyz' in self.constraints:
+                    for i in self.constraints['xyz']:
+                        self.all_cartesian_constraints[i] = 'xyz'
+                if 'x' in self.constraints:
+                    for i in self.constraints['x']:
+                        self.all_cartesian_constraints[i] = 'x'
+                if 'y' in self.constraints:
+                    for i in self.constraints['y']:
+                        self.all_cartesian_constraints[i] = 'y'
+                if 'z' in self.constraints:
+                    for i in self.constraints['z']:
+                        self.all_cartesian_constraints[i] = 'z'
+                if 'xy' in self.constraints:
+                    for i in self.constraints['xy']:
+                        self.all_cartesian_constraints[i] = 'xy'
+                if 'yz' in self.constraints:
+                    for i in self.constraints['yz']:
+                        self.all_cartesian_constraints[i] = 'yz'
+                if 'xz' in self.constraints:
+                    for i in self.constraints['xz']:
+                        self.all_cartesian_constraints[i] = 'xz'
+            # 1c. Apply frozen atoms
+            if self.frozen_atoms or len(self.all_cartesian_constraints)>0:
+                print_if_level("We have frozen atoms or cartesian constraints, applying them to the gradient...", self.printlevel,2)
+                # Combining frozen atoms list with all_cartesian_constraints dict
+                if isinstance(self.frozen_atoms, list):
+                    for i in self.frozen_atoms:
+                        self.all_cartesian_constraints[i] = 'xyz'
+                print_if_level(f"All Cartesian constraints: {self.all_cartesian_constraints}", self.printlevel,2)
+
+                supergradient = self.apply_cartesian_constraints(supergradient)
+                #print("Cart_opt: time until after cartesiancon step:", time.time()-self.run_init_time, "seconds")
+
+            #########################################
+            # 2. Check convergence
+            #########################################
+            grad_rms_atoms = np.sqrt(np.mean(supergradient**2))
+            grad_max_atoms = abs(max(supergradient.min(), supergradient.max(), key=abs))
+
+            if self.PBC:
+                grad_rms_atoms = np.sqrt(np.mean(supergradient[:-4]**2))
+                grad_max_atoms = abs(max(supergradient[:-4].min(), supergradient[:-4].max(), key=abs))
+                grad_rms_cell = np.sqrt(np.mean(supergradient[-3:]**2))
+                grad_max_cell = abs(max(supergradient[-3:].min(), supergradient[-3:].max(), key=abs))
+                print(f"Step {iteration:3d} Energy: {energy:.10f} Eh     RMSG(atoms): {grad_rms_atoms:.6f} MaxG(atoms): {grad_max_atoms:.6f}    RMSG(cell): {grad_rms_cell:.6f} MaxG(cell): {grad_max_cell:.6f}     Cell-volume {cell_volume(self.theory.periodic_cell_vectors):.2f} Å")
+
+                if grad_rms_atoms < self.conv_criteria['convergence_grms'] and grad_max_atoms < self.conv_criteria['convergence_gmax'] and \
+                            grad_rms_cell < self.conv_criteria['convergence_grms'] and grad_max_cell < self.conv_criteria['convergence_gmax']:
+                    print()
+                    print(f"Optimization converged in {iteration+1} iterations. Convergence criteria ({self.conv_criteria}) fulfilled")
+                    print(f"Final cell vectors (Å):{self.theory.periodic_cell_vectors}")
+                    print(f"Final cell volume (Å):{cell_volume(self.theory.periodic_cell_vectors)}")
+                    print(f"Final cell parameters: ({cell_vectors_to_params(self.theory.periodic_cell_vectors)})")
+                    print()
+                    print(f"Final optimized energy: {energy} Eh")
+
+                    #Writing out fragment file and XYZ file
+                    self.fragment.print_system(filename='Fragment-optimized.ygg')
+                    self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+                    self.fragment.set_energy(energy)
+                    print("\nFinal geometry")
+                    self.fragment.print_coords()
+                    print()
+                    if self.printlevel >= 2:
+                        if len(self.print_atoms_list) < 50:
+                            print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
+                    print()
+
+                    print("PBC_format_option:", self.PBC_format_option)
+                    if self.PBC_format_option.upper() =="CIF":
+                        convert_to_pbcfile=write_CIF_file
+                        file_ext='cif'
+                    elif self.PBC_format_option.upper() =="XSF":
+                        convert_to_pbcfile=write_XSF_file
+                        file_ext='xsf'
+                    elif self.PBC_format_option.upper() == "POSCAR":
+                        convert_to_pbcfile=write_POSCAR_file
+                        file_ext='POSCAR'
+                    convert_to_pbcfile(self.fragment.coords,self.fragment.elems,cellvectors=self.theory.periodic_cell_vectors,
+                                                filename=f"Fragment-optimized.{file_ext}")
+                    #Now returning final Results object
+                    result = ASH_Results(label="Optimizer", energy=energy)
+                    if self.result_write_to_disk is True:
+                        result.write_to_disk(filename="ASH_Cart_optimizer.result")
+                    return result
+            else:
+                print(f"Step {iteration:3d} Energy: {energy:.10f} Eh     RMSG(atoms): {grad_rms_atoms:.6f} MaxG(atoms): {grad_max_atoms:.6f}")
+                if grad_rms_atoms < self.conv_criteria['convergence_grms'] and grad_max_atoms < self.conv_criteria['convergence_gmax'] :
+
+                    if self.printlevel >= 1:
+                        print()
+                        print(f"Optimization converged in {iteration+1} iterations. Convergence criteria ({self.conv_criteria}) fulfilled")
+                        print()
+                        print(f"Final optimized energy: {energy} Eh")
+                        print("Cart_opt: time CONVERGENCE:", time.time()-self.run_init_time, "seconds")
+
+                    # Writing out fragment file and XYZ file
+                    self.fragment.print_system(filename='Fragment-optimized.ygg')
+                    self.fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
+                    self.fragment.set_energy(energy)
+                    print("\nFinal geometry")
+                    self.fragment.print_coords()
+                    print()
+                    if self.printlevel >= 2:
+                        if len(self.print_atoms_list) < 50:
+                            print_internal_coordinate_table_new(self.fragment,actatoms=self.print_atoms_list)
+                    print()
+
+                    #Now returning final Results object
+                    result = ASH_Results(label="Optimizer", energy=energy)
+                    if self.result_write_to_disk is True:
+                        result.write_to_disk(filename="ASH_Cart_optimizer.result")
+                    return result
+
+            #########################################
+            # 3. Take step
+            #########################################
+            # Compute step
+            #print("Cart_opt: time until before  compute step:", time.time()-self.run_init_time, "seconds")
+            delta_au = self.compute_step(supergradient, currcoords)
+            print_if_level(f"Computed step: {delta_au}", self.printlevel,2)
+
+            if self.PBC:
+                # Separate check for the lattice part (last 3 rows of delta_au)
+                lattice_step = delta_au[-3:]
+                if np.max(np.abs(lattice_step)) > (0.05 * self.ang2bohr): # Cap lattice at 0.05 Å
+                    scale_latt = (0.05 * self.ang2bohr) / np.max(np.abs(lattice_step))
+                    delta_au[-3:] *= scale_latt
+                    print_if_level(f"Lattice-specific scaling applied: {scale_latt:.3f}", self.printlevel,2)
+
+            # Scale down step if required
+            if np.max(np.abs(delta_au)) > self.max_step_au:
+                print_if_level(f"Step scale down:  {np.max(np.abs(delta_au))}  > max_step_au: {self.max_step_au})", self.printlevel,2)
+                delta_au = delta_au * (self.max_step_au / np.max(np.abs(delta_au)))
+            print_if_level(f"Actual step: {delta_au}", self.printlevel,2)
+
+            # Take the step
+            currcoords_au += delta_au
+            print_if_level(f"Cart_opt: time until after step: {time.time()-self.run_init_time} seconds", self.printlevel,2)
+            # Converting coordinates from Bohr to Angstrom
+            currcoords = currcoords_au / self.ang2bohr
+
+            #for c in self.constraints['dihedral']:
+            #    i, j, k, l, phi0_deg = c
+            #    currcoords_new_ang = self.shake_torsion(currcoords, i, j, k, l, phi0_deg)
+            #currcoords_au = currcoords_new_ang * self.ang2bohr
+            #currcoords = currcoords_new_ang
+
+        if iteration == self.maxiter-1:
+            print("Number of max iterations reached without reaching convergence. Sad...")

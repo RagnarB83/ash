@@ -6,6 +6,7 @@ import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,check_program_location
 from ash.modules.module_coords import elematomnumbers, write_xyzfile
+from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 import ash.settings_ash
 
 # Basic interface to DFTB+
@@ -14,7 +15,8 @@ class DFTBTheory():
     def __init__(self, dftbdir=None, hamiltonian="XTB", xtb_method="GFN2-xTB", printlevel=2, label="DFTB",
                  numcores=1, slaterkoster_dict=None, maxmom_dict=None, hubbard_derivs_dict=None, Gauss_blur_width=0.0,
                  SCC=True, ThirdOrderFull=False, ThirdOrder=False, hcorrection_zeta=None,
-                 MaxSCCIterations=300):
+                 MaxSCCIterations=300, periodic=False, periodic_cell_vectors=None,
+                 periodic_cell_dimensions=None, kpoint_values=[1,1,1]):
 
         self.theorynamelabel="DFTB"
         self.label=label
@@ -51,6 +53,26 @@ class DFTBTheory():
         self.ThirdOrderFull=ThirdOrderFull
         self.ThirdOrder=ThirdOrder
 
+        # PBC
+        self.periodic=periodic
+        self.periodic_cell_vectors=None # initially
+        self.kpoint_values=kpoint_values # k-point values: [1,1,1] for gamma point in all directions
+        if self.periodic:
+            print("PBC enabled")
+            if periodic_cell_vectors is None and periodic_cell_dimensions is None:
+                print("Error: for periodic calculations, you must specify either periodic_cell_vectors or  periodic_cell_dimensions")
+                ashexit()
+                # Convert to cell vectors
+                self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+            elif periodic_cell_vectors is not None:
+                self.periodic_cell_vectors = periodic_cell_vectors
+                self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+            elif periodic_cell_dimensions is not None:
+                self.periodic_cell_dimensions = periodic_cell_dimensions
+                self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+
+            print("Cell vectors:", self.periodic_cell_vectors)
+            print("Cell dimensions:", self.periodic_cell_dimensions)
 
         if maxmom_dict is None:
             print("Warning: No maxmom_dict keyword (dictionary of Maximum Angular Momenta for each element) provided")
@@ -90,6 +112,19 @@ class DFTBTheory():
         self.numcores=numcores
     def cleanup(self):
         print(f"{self.theorynamelabel} cleanup not yet implemented.")
+
+    # Update cell using either periodic_cell_vectors or periodic_cell_dimensions
+    def update_cell(self,periodic_cell_vectors=None, periodic_cell_dimensions=None):
+        print("Updating cell vectors")
+        if periodic_cell_vectors is not None:
+            self.periodic_cell_vectors = periodic_cell_vectors
+            self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+        elif periodic_cell_dimensions is not None:
+            self.periodic_cell_dimensions=periodic_cell_dimensions
+            self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+
+    def get_cell_gradient(self):
+        return self.cell_gradient
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -143,7 +178,8 @@ class DFTBTheory():
                          slaterkoster_dict=self.slaterkoster_dict, maxmom_dict=self.maxmom_dict, MMcharges=MMcharges, MMcoords=current_MM_coords,
                          Gauss_blur_width=self.Gauss_blur_width, SCC=self.SCC, ThirdOrderFull=self.ThirdOrderFull, ThirdOrder=self.ThirdOrder,
                          hubbard_derivs_dict=self.hubbard_derivs_dict, hcorrection_zeta=self.hcorrection_zeta,
-                         MaxSCCIterations=self.MaxSCCIterations)
+                         MaxSCCIterations=self.MaxSCCIterations, periodic=self.periodic,
+                         periodic_cell_vectors=self.periodic_cell_vectors, kpoint_values=self.kpoint_values)
 
         print_time_rel(module_init_time, modulename=f'DFTB prep-run', moduleindex=3)
         # Run DFTB
@@ -166,6 +202,10 @@ class DFTBTheory():
 
         # Grab gradient if calculated
         if Grad is True:
+
+            if self.periodic:
+                self.cell_gradient = get_cell_gradient("detailed.out")
+
             # Grab PCgradient from separate file
             if PC is True:
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
@@ -180,7 +220,8 @@ class DFTBTheory():
 #
 def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult, PC=False, MMcharges=None, MMcoords=None, Grad=False, SCC=True,
                      slaterkoster_dict=None, maxmom_dict=None, Gauss_blur_width=0.0, ThirdOrderFull=False, ThirdOrder=False,
-                     hubbard_derivs_dict=None, hcorrection_zeta=None, MaxSCCIterations=300):
+                     hubbard_derivs_dict=None, hcorrection_zeta=None, MaxSCCIterations=300,
+                     periodic=False, periodic_cell_vectors=None, kpoint_values=[1,1,1]):
 
     # Open file
     f = open("dftb_in.hsd", "w")
@@ -188,19 +229,57 @@ def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult
     # List to keep inputlines
     inputlines=[]
 
+    #############
     # Geometry
-    geo1="Geometry = xyzFormat {\n"
-    geo2=f"<<< '{xyzfilename}' \n}}\n"
+    #############
 
-    inputlines.append(geo1)
-    inputlines.append(geo2)
+    # PBC
+    if periodic:
+        inputlines.append("Geometry = {"+"\n")
+        elemtypes=list(set(elems))
+        inputlines.append('TypeNames = { ' + ' '.join(f'"{x}"' for x in elemtypes) + ' }'+"\n")
+        inputlines.append('TypesAndCoordinates [Angstrom] = {'+'\n')
+        for e,c in zip(elems,coords):
+            inputlines.append(f"{elemtypes.index(e)+1} {c[0]} {c[1]} {c[2]}"+"\n")
+        inputlines.append("}"+"\n")
 
-    # Method
-    method1=f"Hamiltonian = {hamiltonian} {{"+"\n"
+        inputlines.append("Periodic = Yes"+"\n")
+        inputlines.append("LatticeVectors [Angstrom] = {"+"\n")
+        for line in periodic_cell_vectors:
+            inputlines.append(f"{line[0]:.6f} {line[1]:.6f} {line[2]:.6f}"+"\n")
+        inputlines.append("}"+"\n")
+        # Closing geometry block
+        inputlines.append('}\n')
+    # or not
+    else:
+        geo1="Geometry = { xyzFormat {\n"
+        geo2=f"  <<< '{xyzfilename}' \n"+"}"+"\n"
+
+        inputlines.append(geo1)
+        inputlines.append(geo2)
+
+        #Closing geometry block
+        inputlines.append('}\n')
+    
+    #############
+    # HAMILTONIAN
+    #############
+    method1=f"Hamiltonian = {hamiltonian}" +"{"+"\n"
     inputlines.append(method1)
     if 'XTB' in hamiltonian.upper():
-        method2=f"Method = '{xtbmethod}'"+'\n}\n'
+        method2=f"Method = '{xtbmethod}'"+'\n\n'
         inputlines.append(method2)
+
+        #PBC: k-points
+        if periodic:
+            inputlines.append("KPointsAndWeights = SupercellFolding {"+"\n")
+            inputlines.append(f"{kpoint_values[0]} 0 0"+"\n")
+            inputlines.append(f"0 {kpoint_values[1]} 0"+"\n")
+            inputlines.append(f"0 0 {kpoint_values[2]}"+"\n")
+            inputlines.append("0 0 0"+"\n")
+
+            inputlines.append("}"+"\n")
+
     else:
     # PC
         if PC:
@@ -216,6 +295,7 @@ def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult
             inputlines.append('    }\n')
             inputlines.append('  }\n')
             inputlines.append('}\n')
+
         # SCC
         if SCC is True:
             SCCkeyword="Yes"
@@ -253,7 +333,20 @@ def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult
             inputlines.append(f'    {el} = "{maxmom_dict[el]}"\n')
         inputlines.append('  }\n')
 
-        inputlines.append('}\n')
+        #PBC: k-points
+        if periodic:
+            inputlines.append("  KPointsAndWeights = SupercellFolding {"+"\n")
+            inputlines.append("KPointsAndWeights = SupercellFolding {"+"\n")
+            inputlines.append(f"{kpoint_values[0]} 0 0"+"\n")
+            inputlines.append(f"0 {kpoint_values[1]} 0"+"\n")
+            inputlines.append(f"0 0 {kpoint_values[2]}"+"\n")
+            inputlines.append("0 0 0"+"\n")
+
+            inputlines.append("}"+"\n")
+
+
+    # Close Hamiltonian
+    inputlines.append('}\n')
 
     #Options
     optionline="Options { WriteDetailedOut = Yes }\n"
@@ -338,3 +431,21 @@ def create_pcfile(filename,coords,pchargelist):
         for p,c in zip(pchargelist,coords):
             line = "{} {} {} {}".format(c[0], c[1], c[2], p)
             pcfile.write(line+'\n')
+
+def get_cell_gradient(file):
+    gradient=np.zeros((3,3))
+    counter=0
+    grab=False
+    with open(file) as f:
+        for line in f:
+            if grab:
+                if len(line.split()) == 3:
+                    gradient[counter,0] = line.split()[0]
+                    gradient[counter,1] = line.split()[1]
+                    gradient[counter,2] = line.split()[2]
+                    counter+=1
+            if 'Total lattice derivs' in line:
+                grab=True
+            if 'Maximal' in line:
+                grab=False
+    return gradient

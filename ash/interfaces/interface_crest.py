@@ -10,7 +10,12 @@ from ash.modules.module_coords import check_charge_mult, Fragment
 import ash.settings_ash
 
 # New crest interface that supports ASH levels of theory (Limitation: must be picklable)
-def new_call_crest(fragment=None, theory=None, crestdir=None, runtype="ancopt", numcores=1, charge=None, mult=None):
+def new_call_crest(fragment=None, theory=None, crestdir=None, runtype="imtd-gc", 
+                   ewin=6.0, rthr=None, ethr=None, bthr=None,
+                   shake=None, tstep=None, dump=None,length_ps=None,temp=None, hmass=None,
+                   kpush=None, alpha=None, cvtype=None, dump_ps=None,
+                   numcores=1, charge=None, mult=None, 
+                   topocheck=True, constraints=None):
     module_init_time=time.time()
 
     if fragment is None or theory is None:
@@ -31,15 +36,105 @@ def new_call_crest(fragment=None, theory=None, crestdir=None, runtype="ancopt", 
     # Write initial XYZ-file
     fragment.write_xyzfile(xyzfilename="struc.xyz")
 
-    # Pickle for serializing theory object
-    import pickle
-    # Serialize theory object for later use
-    theoryfilename="theory.saved"
-    pickle.dump(theory, open(theoryfilename, "wb" ))
+    #####################
+    # Parsing options
+    #####################
 
-    # Write ASH inputfile: ash_input.py
-    ashinput=f"""
-from ash import *
+    #Constraints file
+    constraints_line=""
+    if constraints is not None:
+        print("constraints were found:", constraints)
+        print("Writing constraints file: constraints.inp")
+        # constraints ={'atoms':'1-26', 'metadyn_atoms':}
+        constraintsfile="constraints.inp"
+        with open(constraintsfile, 'w') as f:
+            f.write(f"$constrain\n")
+            if 'atoms' in constraints:
+                f.write(f'  atoms: {constraints["atoms"]}\n')
+            if 'elements' in constraints:
+                f.write(f'  elements: {constraints["elements"]}\n')
+            if 'bond' in constraints:
+                f.write(f'  bond:{constraints["bond"]}\n')
+            if 'distance' in constraints:
+                f.write(f'  distance:{constraints["distance"]}\n')
+            if 'angle' in constraints:
+                f.write(f'  angle:{constraints["angle"]}\n')
+            if 'dihedral' in constraints:
+                f.write(f'  dihedral:{constraints["dihedral"]}\n')
+            if 'force' in constraints:
+                f.write(f'  force constant={constraints["force"]}\n')
+            if 'reference' in constraints:
+                f.write(f'  reference={constraints["reference"]}\n')
+            if 'metadyn_atoms' in constraints:
+                f.write(f"$metadyn\n")
+                f.write(f'  atoms: {constraints["metadyn_atoms"]}\n')
+            f.write(f"$end\n")
+        constraints_line=f'constraints="{constraintsfile}"'
+
+    #Dynamics options
+    dynamics_options=[]
+    if shake is not None:
+        dynamics_options.append(f"shake={shake}")
+    if tstep is not None:
+        dynamics_options.append(f"tstep={tstep}")
+    if dump is not None:
+        dynamics_options.append(f"dump={dump}")
+    if length_ps is not None:
+        dynamics_options.append(f"length_ps={length_ps}")
+    if temp is not None:
+        dynamics_options.append(f"temp={temp}")
+    if hmass is not None:
+        dynamics_options.append(f"hmass={hmass}")
+    dynamics_lines = "\n".join(dynamics_options)
+
+    #MTD options
+    mtd_options=[]
+    if kpush is not None:
+        mtd_options.append(f"kpush={kpush}")
+    if alpha is not None:
+        mtd_options.append(f"alpha={alpha}")
+    if cvtype is not None:
+        mtd_options.append(f"cvtype={cvtype}")
+    if dump_ps is not None:
+        mtd_options.append(f"dump_ps={dump_ps}")
+    mtd_lines = "\n".join(mtd_options)
+
+
+    #CREGEN options
+    cregen_options=[]
+    if ewin is not None:
+        cregen_options.append(f"ewin={ewin}")
+    if rthr is not None:
+        cregen_options.append(f"rthr={rthr}")
+    if ethr is not None:
+        cregen_options.append(f"ethr={ethr}")
+    if bthr is not None:
+        cregen_options.append(f"bthr={bthr}")
+    cregen_lines = "\n".join(cregen_options)
+
+    # What type of theory.
+    # Can be valid crest-theory string (gfn1, gfn2, gfnff) or ASH Theory
+
+    if isinstance(theory, str):
+        print(f"Theory input is a string:{theory} Checking if valid")
+        if 'gfn' in theory.lower():
+            print("Theory is a GFN method:", theory)
+        else:
+            print("Error: Invalid theory-keyword. Valid options are: gfn1, gfn2, gfnff")
+            ashexit()
+        theorylines=f"""method = "{theory.lower()}"
+        """
+    else:
+        print("A Theory object was passed.")
+        print("Now serializing.")
+        # Pickle for serializing theory object
+        import pickle
+        # Serialize theory object for later use
+        theoryfilename="theory.saved"
+        pickle.dump(theory, open(theoryfilename, "wb" ))
+
+        # Write ASH inputfile: ash_input.py
+        ashinput=f"""from ash import *
 from ash.interfaces.interface_ORCA import print_gradient_in_ORCAformat
 import pickle
 
@@ -48,28 +143,47 @@ frag = Fragment(xyzfile="genericinp.xyz", charge={charge},mult={mult})
 theory = pickle.load(open(\"../{theoryfilename}\", \"rb\" ))
 result = Singlepoint(theory=theory, fragment=frag, Grad=True)
 print_gradient_in_ORCAformat(result.energy,result.gradient,"genericinp", extrabasename="")
-    """
-    with open("ash_input.py", "w") as f:
-        f.write(ashinput)
-    # Write toml file
+"""
+        with open("ash_input.py", "w") as f:
+            f.write(ashinput)
+
+        theorylines=f"""method = "generic"
+binary = "python3 ../ash_input.py"
+gradfile = "genericinp.engrad"
+gradtype = "engrad"
+"""
+
+    # Write CREST toml file
     # Note: crest created dirs caleld calculation.level.X etc. and enters them
     tomlinput=f"""# CREST 3 input file
 input = "struc.xyz"
 runtype="{runtype}"
 threads = {numcores}
+{constraints_line}
+topo = {str(topocheck).lower()}
+[cregen]
+{cregen_lines}
 
 [calculation]
 elog="energies.log"
 
+[dynamics]
+{dynamics_lines}
+
+[[dynamics.meta]]
+{mtd_lines}
+
 [[calculation.level]]
-method = "generic"
-binary = "python3 ../ash_input.py"
-gradfile = "genericinp.engrad"
-gradtype = "engrad"
+{theorylines}
 uhf = {mult-1}
 chrg = {charge}"""
     with open("input.toml", "w") as f:
         f.write(tomlinput)
+
+    print("CREST run-type:", runtype)
+
+    if runtype == "imtd-gc":
+        print(f"Note:Energy window is {ewin} kcal/mol")
 
     print("Now calling CREST like this: crest --input input.toml")
     process = sp.run([crestdir + '/crest', '--input', 'input.toml'])
@@ -78,10 +192,10 @@ chrg = {charge}"""
 
     # Get conformers
     try:
-        list_conformers, list_xtb_energies = get_crest_conformers(charge=charge, mult=mult)
-        module_init_time
+        list_conformers, list_energies = get_crest_conformers(charge=charge, mult=mult)
+        return list_conformers, list_energies
     except:
-        return
+        return None, None
 
 
 
@@ -259,7 +373,7 @@ def get_crest_conformers(crest_calcdir='crest-calc',conf_file="crest_conformers.
 
     #Getting energies from title lines
     for i in all_titles:
-        en=float(i)
+        en=float(i[0])
         list_xtb_energies.append(en)
 
     for (els,cs,eny) in zip(all_elems,all_coords,list_xtb_energies):

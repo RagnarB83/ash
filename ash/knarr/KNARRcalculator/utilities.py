@@ -152,10 +152,10 @@ def GetAllConfigDistances(ndim, rxyz,
             dr = DMIC(3, dr, pbc, cell)
 
             dist = np.sqrt(dr[0] * dr[0] + dr[1] * dr[1] + dr[2] * dr[2])
-            rcurr_dist[atom0, atom1] = dist
-            rcurr_dx[atom0, atom1] = dr[0]
-            rcurr_dy[atom0, atom1] = dr[1]
-            rcurr_dz[atom0, atom1] = dr[2]
+            rcurr_dist[atom0, atom1] = dist.item()
+            rcurr_dx[atom0, atom1] = dr[0].item()
+            rcurr_dy[atom0, atom1] = dr[1].item()
+            rcurr_dz[atom0, atom1] = dr[2].item()
 
     return rcurr_dist, rcurr_dx, rcurr_dy, rcurr_dz
 

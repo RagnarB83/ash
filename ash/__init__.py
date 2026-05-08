@@ -34,6 +34,9 @@ for pyfile in pyfiles_in_dir:
         print("Forbidden names:", forbidden_inputfilenames)
         ashexit()
 
+# New API test
+#from . import job
+
 #Results dataclass
 from .modules.module_results import ASH_Results,read_results_from_file
 
@@ -41,7 +44,7 @@ from .modules.module_results import ASH_Results,read_results_from_file
 import ash.modules.module_coords
 from .modules.module_coords import get_molecules_from_trajectory, eldict_covrad, write_pdbfile, Fragment, read_xyzfile, \
     write_xyzfile, make_cluster_from_box, read_ambercoordinates, read_gromacsfile, split_multimolxyzfile,distance_between_atoms, \
-    angle_between_atoms, dihedral_between_atoms, pdb_to_smiles, xyz_to_pdb_with_connectivity, writepdb_with_connectivity, mol_to_pdb, sdf_to_pdb
+    angle_between_atoms, dihedral_between_atoms
 from .modules.module_coords import remove_atoms_from_system_CHARMM, add_atoms_to_system_CHARMM, getwaterconstraintslist,\
     QMregionfragexpand, cut_sphere, cut_cubic_box, QMPC_fragexpand, read_xyzfiles, Reaction, define_XH_constraints, simple_get_water_constraints, print_internal_coordinate_table,\
     flexible_align_pdb, flexible_align_xyz, flexible_align, insert_solute_into_solvent, nuc_nuc_repulsion, calculate_RMSD
@@ -82,7 +85,7 @@ from .modules.module_hybridtheory import DualTheory,WrapTheory
 from .modules.module_oniom import ONIOMTheory
 
 # Surface
-from .modules.module_surface import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, write_surfacedict_to_file
+from .modules.module_surface_new import calc_surface, calc_surface_fromXYZ, read_surfacedict_from_file, write_surfacedict_to_file, RestraintTheory,analyze_surface
 
 # # QMcode interfaces
 from .interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA, ORCA_External_Optimizer, run_orca_plot, MolecularOrbitalGrab, \
@@ -113,7 +116,7 @@ from .interfaces.interface_ccpy import ccpyTheory
 from .interfaces.interface_MNDO import MNDOTheory
 
 from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
-from .interfaces.interface_xtb import xTBTheory, gxTBTheory
+from .interfaces.interface_xtb import xTBTheory, gxTBTheory,tbliteTheory
 from .interfaces.interface_DFTB import DFTBTheory
 from .interfaces.interface_PyMBE import PyMBETheory
 from .interfaces.interface_MLatom import MLatomTheory
@@ -123,12 +126,15 @@ from .interfaces.interface_torch import TorchTheory
 from .interfaces.interface_mace import MACETheory
 from .interfaces.interface_fairchem import FairchemTheory
 from .interfaces.interface_packmol import packmol_solvate
+from .interfaces.interface_openbabel import OpenBabelTheory, pdb_to_smiles, mol_to_pdb, sdf_to_pdb, writepdb_with_connectivity, \
+                                            xyz_to_pdb_with_connectivity
 
 # MM: external and internal
 from .interfaces.interface_OpenMM import OpenMMTheory, OpenMM_MD, OpenMM_MDclass, OpenMM_Opt, OpenMM_Modeller, \
      OpenMM_box_equilibration, write_nonbonded_FF_for_ligand, solvate_small_molecule, small_molecule_parameterizer, \
         OpenMM_metadynamics, OpenMM_MD_plumed, Gentle_warm_up_MD, check_gradient_for_bad_atoms, get_free_energy_from_biasfiles, \
         free_energy_from_bias_array,metadynamics_plot_data, merge_pdb_files
+#define_uff
 
 # General aliases
 MolecularDynamics = OpenMM_MD
@@ -150,8 +156,11 @@ from .modules.module_theory import Theory, QMTheory, NumGradclass, MECPGradclass
 from .modules.module_QMMM import QMMMTheory, actregiondefine, read_charges_from_psf, compute_decomposed_QM_MM_energy
 from .modules.module_polembed import PolEmbedTheory
 
-# Knarr
+# Knarric_optimizer_alte
 from .interfaces.interface_knarr import NEB, NEBTS, interpolation_geodesic
+
+# FSM
+from .interfaces.interface_fsm import FSM
 
 #VMD
 from .interfaces.interface_VMD import write_VMD_script_cube
@@ -171,8 +180,7 @@ import ash.modules.module_molcrys
 from .modules.module_molcrys import molcrys, Fragmenttype
 
 # Geometry optimization
-from .functions.functions_optimization import SimpleOpt, BernyOpt
-from .interfaces.interface_dlfind import DLFIND_optimizer
+from .functions.functions_optimization import SimpleOpt, BernyOpt, periodic_optimizer_alternating, Cart_optimizer, Cart_optimizer_class
 
 # geomeTRIC interface
 from .interfaces.interface_geometric_new import geomeTRICOptimizer,GeomeTRICOptimizerClass
@@ -205,7 +213,13 @@ Mlatom_print_model_stats=Ml_print_model_stats
 
 # Plotting
 import ash.modules.module_plotting
-from .modules.module_plotting import reactionprofile_plot, contourplot, plot_Spectrum, MOplot_vertical, ASH_plot
+from .modules.module_plotting import reactionprofile_plot, contourplot, volumeplot, plot_Spectrum, MOplot_vertical, ASH_plot
+
+# DL-FIND
+from ash.interfaces.interface_dlfind import DLFIND_optimizer,DLFIND_optimizerClass
+
+# Sella
+from ash.interfaces.interface_sella import SellaOptimizer, SellaoptimizerClass
 
 # Other
 import ash.interfaces.interface_crest
@@ -240,3 +254,5 @@ if ash.settings_ash.settings_dict["load_julia"] is True:
         ash.settings_ash.settings_dict["connectivity_code"] = "py"
         # LJ+Coulomb and pairpot arrays in nonbonded MM
         ash.settings_ash.settings_dict["nonbondedMM_code"] = "py"
+
+

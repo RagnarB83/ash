@@ -134,8 +134,8 @@ class CFourTheory:
         #Copying ASH basis file from ASH-dir to current dir if requested
         if ash_basisfile != None:
             #ash_basisfile
-            print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,ash.settings_ash.ashpath+'/databases/basis-sets/cfour/'))
-            shutil.copyfile(ash.settings_ash.ashpath+'/databases/basis-sets/cfour/'+ash_basisfile, 'GENBAS')
+            print("Copying ASH basis-file {} from {} to current directory".format(ash_basisfile,ash.settings_ash.ashpath+'/databases/basis_sets/cfour/'))
+            shutil.copyfile(ash.settings_ash.ashpath+'/databases/basis_sets/cfour/'+ash_basisfile, 'GENBAS')
         #Copying basis-file from any dir to current dir
         elif basisfile != None:
             print(f"Copying basis-file {basisfile} to current directory as GENBAS")

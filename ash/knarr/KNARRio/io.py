@@ -125,12 +125,12 @@ def WriteXYZ(fname, ndim, rxyz, symb, energy=None):
     with open(fname, "w") as f:
         f.write(str(ndim / 3) + '\n')
         if energy is not None:
-            f.write('E=%12.8lf\n' % energy)
+            f.write('E=%12.8lf\n' % energy.item())
         else:
             f.write('\n')
 
         for j in range(0, ndim, 3):
-            f.write('%s %12.8f %12.8f %12.8f\n' % (symb[j], rxyz[j + 0], rxyz[j + 1], rxyz[j + 2]))
+            f.write('%s %12.8f %12.8f %12.8f\n' % (symb[j], rxyz[j + 0].item(), rxyz[j + 1].item(), rxyz[j + 2].item()))
     return None
 
 
@@ -143,16 +143,16 @@ def WriteXYZF(fname, ndim, rxyz, symb, energy=None, fxyz=None):
     with open(fname, "w") as f:
         f.write(str(ndim / 3) + '\n')
         if energy is not None:
-            f.write('E=%12.8lf\n' % energy)
+            f.write('E=%12.8lf\n' % energy.item())
         else:
             f.write('\n')
         if fxyz is None:
             for j in range(0, ndim, 3):
-                f.write('%s %12.8f %12.8f %12.8f\n' % (symb[j], rxyz[j + 0], rxyz[j + 1], rxyz[j + 2]))
+                f.write('%s %12.8f %12.8f %12.8f\n' % (symb[j], rxyz[j + 0].item(), rxyz[j + 1].item(), rxyz[j + 2].item()))
         else:
             for j in range(0, ndim, 3):
-                f.write('%s %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n' % (symb[j], rxyz[j + 0], rxyz[j + 1], rxyz[j + 2],
-                                                       fxyz[j + 0], fxyz[j + 1], fxyz[j + 2]))
+                f.write('%s %12.8f %12.8f %12.8f %12.8f %12.8f %12.8f\n' % (symb[j], rxyz[j + 0].item(), rxyz[j + 1].item(), rxyz[j + 2].item(),
+                                                       fxyz[j + 0].item(), fxyz[j + 1].item(), fxyz[j + 2].item()))
 
     return None
 
@@ -308,11 +308,11 @@ def WritePath(fname, ndimIm, nim, rxyz, symb, energy=None):
             if energy is None:
                 f.write('\n')
             else:
-                f.write('% 8.6f \n' % energy[i])
+                f.write('% 8.6f \n' % energy[i].item())
 
             for j in range(0, ndimIm, 3):
                 z = i * ndimIm + j
-                f.write('%2s % 12.8f % 12.8f % 12.8f\n' % (symb[z], rxyz[z], rxyz[z + 1], rxyz[z + 2]))
+                f.write('%2s % 12.8f % 12.8f % 12.8f\n' % (symb[z], rxyz[z].item(), rxyz[z + 1].item(), rxyz[z + 2].item()))
     return None
 
 
@@ -323,11 +323,11 @@ def WriteTraj(fname, ndimIm, nim, rxyz, symb, energy=None):
             if energy is None:
                 f.write('\n')
             else:
-                f.write('%8.6lf \n' % energy[i])
+                f.write('%8.6lf \n' % energy[i].item())
 
             for j in range(0, ndimIm, 3):
                 z = i * ndimIm + j
-                f.write('%2s % 12.8f % 12.8f % 12.8f\n' % (symb[z], rxyz[z], rxyz[z + 1], rxyz[z + 2]))
+                f.write('%2s % 12.8f % 12.8f % 12.8f\n' % (symb[z], rxyz[z].item(), rxyz[z + 1].item(), rxyz[z + 2].item()))
     return None
 
 
@@ -336,7 +336,7 @@ def WriteSingleImageTraj(fname, ndim, rxyz, symb, E):
         f.write(str(ndim / 3) + '\n')
         f.write('%8.6lf \n' % E)
         for j in range(0, ndim, 3):
-            f.write('%2s % 12.8lf % 12.8lf % 12.8lf\n' % (symb[j], rxyz[j + 0], rxyz[j + 1], rxyz[j + 2]))
+            f.write('%2s % 12.8lf % 12.8lf % 12.8lf\n' % (symb[j], rxyz[j + 0].item(), rxyz[j + 1].item(), rxyz[j + 2].item()))
     return None
 
 
@@ -417,7 +417,7 @@ def WriteEnergyFile(fname, energy, nim=None):
         else:
             assert len(energy) == nim
             for i in range(nim):
-                f.write('%12.8lf \n' % energy[i])
+                f.write('%12.8lf \n' % energy[i].item())
 
     return None
 

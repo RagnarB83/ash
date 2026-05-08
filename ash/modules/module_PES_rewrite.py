@@ -34,32 +34,34 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         Initialstate_charge=None, Initialstate_mult=None,
                         Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5,
                         initialorbitalfiles=None, densities='None', densgridvalue=40,
-                        deltaSCF_ionize=False, deltaSCF_PMOM=False,
+                        deltaSCF_ionize=False, deltaSCF_PMOM=False, deltaSCFkeyword=None,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
                         CAS_Initial=None, CAS_Final = None,
                         CASCI_Final=False,
                         MRCI_CASCI_Final=False, MRCI_SOC=False,
                         btPNO=False, DLPNO=False, no_shakeup=False, virt_offset=0,
-                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False):
+                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False,
+                        OODFT_CC=False):
     """
     Wrapper function around PhotoElectron Class
     """
     print_line_with_mainheader("PhotoElectron")
-    timeA=time.time()
-    #NOTE: Create different PhotoElectronClass for each theory: PhotoElectronClass_ORCA, PhotoElectronClass_PySCF, PhotoElectronClass_MRCC ??
-    #So much of the code is theory-specific anyway
-    #Method then selects class to use. Probably should switch to dictionaries for all the keywords then
+    timeA = time.time()
+    # NOTE: Create different PhotoElectronClass for each theory: PhotoElectronClass_ORCA, PhotoElectronClass_PySCF, PhotoElectronClass_MRCC ??
+    # So much of the code is theory-specific anyway
+    # Method then selects class to use. Probably should switch to dictionaries for all the keywords then
 
-    photo=PhotoElectronClass(theory=theory, fragment=fragment, method=method, vibrational_option=vibrational_option, trajectory=trajectory, numcores=numcores, memory=memory,label=label,
+    photo = PhotoElectronClass(theory=theory, fragment=fragment, method=method, vibrational_option=vibrational_option, trajectory=trajectory, numcores=numcores, memory=memory,label=label,
                         Initialstate_charge=Initialstate_charge, Initialstate_mult=Initialstate_mult,
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates,
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
                         tda=tda,brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, check_stability=check_stability,
-                        deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_ionize,
+                        deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_ionize, deltaSCFkeyword=deltaSCFkeyword,
                         CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
                         MRCI_CASCI_Final=MRCI_CASCI_Final, MRCI_SOC=MRCI_SOC, CASCI_Final=CASCI_Final,
                         btPNO=btPNO, DLPNO=DLPNO,
-                        path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson)
+                        path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson,
+                        OODFT_CC=OODFT_CC)
     result = photo.run()
     print_time_rel(timeA, modulename='PhotoElectron', moduleindex=1)
     return result
@@ -72,11 +74,12 @@ class PhotoElectronClass:
                         Ionizedstate_charge=None, Ionizedstate_mult=None, numionstates=5,
                         initialorbitalfiles=None, densities='None', densgridvalue=100,
                         tda=True,brokensym=False, HSmult=None, atomstoflip=None, check_stability=True,
-                        deltaSCF_ionize=False, deltaSCF_PMOM=False,
+                        deltaSCF_ionize=False, deltaSCF_PMOM=False, deltaSCFkeyword=None,
                         CAS_Initial=None, CAS_Final = None, no_shakeup=False, virt_offset=0,
                         MRCI_CASCI_Final=False, MRCI_SOC=False, CASCI_Final=False,
                         btPNO=False, DLPNO=False,
-                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False):
+                        path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False,
+                        OODFT_CC=False):
         """
         PhotoElectron module
         """
@@ -196,6 +199,8 @@ class PhotoElectronClass:
         self.trajectory=trajectory
         self.deltaSCF_ionize=deltaSCF_ionize #DeltaSCF whether to ionize from init-state instead of setting CFG
         self.deltaSCF_PMOM=deltaSCF_PMOM #Whether to use PMOM or not
+        self.deltaSCFkeyword=deltaSCFkeyword # Add extra ORCA simple keyword when doing deltaSCF calcs only 
+        self.OODFT_CC=OODFT_CC # CCSD(T) on top of deltaSCF
         print("PES method:", self.method)
         if self.method == 'MRCI' or self.method=='MREOM':
             print("MREOM:", self.MREOM)
@@ -415,12 +420,17 @@ class PhotoElectronClass:
                 print("Calling orca_plot to create Cube-file for Final state TDDFT-state.")
 
                 #Doing spin-density Cubefile for each cisr file
+                densityfilename=f"{self.theory.filename}.cisrre.singlet.iroot{tddftstate}"
                 run_orca_plot(orcadir=self.theory.orcadir, filename=self.theory.filename + '.gbw', option='cisspindensity',gridvalue=self.densgridvalue,
-                            densityfilename=self.theory.filename+'.cisr' )
-                os.rename(self.theory.filename + '.spindens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
+                            densityfilename=densityfilename )
+                # Note: file is named eldens despite being spindens
+                os.rename(self.theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.spindens.cube')
+                
                 #Doing eldensity Cubefile for each cisp file and then take difference with Initstate-SCF cubefile
+                densityfilename=f"{self.theory.filename}.cispre.singlet.iroot{tddftstate}"
+                #self.theory.filename+'.cisp'
                 run_orca_plot(orcadir=self.theory.orcadir, filename=self.theory.filename + '.gbw', option='cisdensity',gridvalue=self.densgridvalue,
-                            densityfilename=self.theory.filename+'.cisp' )
+                            densityfilename=densityfilename )
                 os.rename(self.theory.filename + '.eldens.cube', 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube')
 
                 final_dens = 'Final_State_mult' + str(fstate.mult)+'TDDFTstate_'+str(tddftstate)+'.eldens.cube'
@@ -1038,15 +1048,26 @@ end
         SCF_CFG_betahole=[]
         deltascfline_CFG_alphahole=[]
         deltascfline_CFG_betahole=[]
+
+
         #NOTE: we need ground-state ion configuration of each multiplicity too
         for fstate in self.Finalstates:
             if fstate.mult > self.stateI.mult:
                 print(f"\nMultiplicity: {fstate.mult}. Creating BETA-hole")
+                print("fstate.numionstates:", fstate.numionstates)
+                # Check if too many states for occupations
+                if fstate.numionstates > len(self.stateI.occupations_beta):
+                    print(f"Too many states {fstate.numionstates} requested for OO-DFT, based on occupied orbitals.")
+                    print(len(self.stateI.occupations_beta))
+                    fstate.numionstates=len(self.stateI.occupations_beta)
+                    print("Changing states to:", fstate.numionstates)
+
+
+
                 for i in range(fstate.numionstates):
                     occ_beta = copy.copy(self.stateI.occupations_beta)
                     reverse_ind_counter=-1-i
                     occ_beta[reverse_ind_counter]=0
-                    print("New BETA Configuration:", occ_beta)
                     SCF_CFG_betahole.append([self.stateI.occupations_alpha,occ_beta])
                     if i == 0:
                         #Ground-state ion SCF, no deltaSCF line
@@ -1089,6 +1110,7 @@ end
         self.run_SCF_InitState(fragment,theory)
         print("now done with initial state SCF")
 
+
         #Create strings for the SCF configurations and deltaSCF lines
         if self.deltaSCF_ionize is True:
             print("deltaSCF_ionize option active!")
@@ -1101,6 +1123,11 @@ end
         print(BC.OKGREEN, "\nCalculating Excited State SCF via DELTASCF feature in ORCA",BC.ENDC)
         IPs_all=[]
         Ionstates_energies_all=[]
+
+        # DELTASCF extra keywords
+        if self.deltaSCFkeyword is not None:
+            print("Adding deltaSCFkeyword to ORCA input string:", self.deltaSCFkeyword)
+            theory.orcasimpleinput += f" {self.deltaSCFkeyword} "
 
         #LOOPING over Finalstate-multiplicities
         for fstate in self.Finalstates:
@@ -1132,6 +1159,12 @@ end
                 #Adding ALPHACONF/BETACONF line as separate SCF block (empty if ground ion state)
                 theory.orcablocks = self.orig_orcablocks + deltascfblock
                 state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
+                # CCSD(T) correction on top
+                print("self.OODFT_CC:", self.OODFT_CC)
+                if self.OODFT_CC:
+                    print("Now running noiter CCSD(T) on top of deltaSCF")
+                    theory.extraline = theory.extraline.replace("DELTASCF","CCSD(T) noiter ")
+                    state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                 finalsinglepointenergy = state_result.energy
 
                 ip = (finalsinglepointenergy-self.stateI.energy)*ash.constants.hartoeV
@@ -1167,6 +1200,10 @@ end
                         run_orca_plot(orcadir=theory.orcadir,filename=f"{theory.filename}.gbw", option='spindensity', gridvalue=self.densgridvalue)
                         #Move into Calculated_densities dir
                         shutil.move(f"{theory.filename}.spindens.cube", 'Calculated_densities/' + f"{label}.spindens.cube")
+
+
+
+
         return IPs_all, Ionstates_energies_all
 
     # Calculate Ionized state via SCF+TDDFT approach
@@ -1620,17 +1657,24 @@ end
 
 
         self.InitSCF = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
-        finalsinglepointenergy = self.InitSCF.energy
         stability = check_stability_in_output(theory.filename+'.out')
         if stability is False and self.check_stability is True:
             print("PES: Unstable initial state. Exiting...")
             ashexit()
+
+        if self.OODFT_CC:
+            print("SCF InitState. Now running noiter CCSD(T) on top of deltaSCF")
+            theory.extraline = theory.extraline + "! CCSD(T) noiter "
+            state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
+
 
         #Grab energy of initial state
         if self.method == 'CASSCF' or self.method =='CASCI':
             self.stateI.energy=casscfenergygrab(theory.filename+'.out')
         elif self.method == 'NEVPT2' or self.method == 'NEVPT2-F12':
             self.stateI.energy=finalenergiesgrab(theory.filename+'.out')[0]
+        elif self.OODFT_CC:
+            self.stateI.energy=state_result.energy
         else:
             self.stateI.energy=scfenergygrab(theory.filename+'.out')
 
@@ -2076,39 +2120,45 @@ end
                         curr_state_data_dict = ash.interfaces.interface_ORCA.read_ORCA_json_file(curr_jsonfile)
                         totnumorbitals, numocc_alpha, numocc_beta, restricted = get_orb_info_from_dict(curr_state_data_dict)
 
-                        #Write CURRENT-state MOs to disk in wfoverlap format
-                        create_wfoverlap_MO_file(curr_state_data_dict, "mos_curr", mo_threshold=1e-12,frozencore=0)
+                        if self.noDyson:
+                            print("NoDyson True. Setting Dysonnorms to zero")
+                            dysonnorms=[0.0 for i in frag_IPs]
+                            self.finaldysonnorms=dysonnorms
 
-                        # Creating determinant-string for Current State from orbital information
-                        curr_determinant_string = get_dets_from_single(totnumorbitals,
-                                                                    numocc_alpha, numocc_beta, restricted, 0)
-                        writestringtofile(curr_determinant_string, "dets_curr")
+                        else:
+                            #Write CURRENT-state MOs to disk in wfoverlap format
+                            create_wfoverlap_MO_file(curr_state_data_dict, "mos_curr", mo_threshold=1e-12,frozencore=0)
 
-                        print("\nRunning WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
-                        # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
-                        wfoverlapinput = """
-                        mix_aoovl=AO_overl
-                        a_mo=mos_curr
-                        b_mo=mos_init
-                        a_det=dets_curr
-                        b_det=dets_init
-                        a_mo_read=0
-                        b_mo_read=0
-                        ao_read=0
-                        moprint=1
-                        """
-                        #Calling wfoverlap
-                        run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory,self.numcores)
-                        #Grabbing Dyson norms from wfovl.out
-                        dyson_norm=grabDysonnorms()
-                        os.rename("wfovl.out",f"Final_State_mult{fstate.mult}_state{i}.wfovl.out")
-                        dysonnorms.append(dyson_norm[0]) #Only one dyson norm
-                        print(BC.OKBLUE,f"\nDyson norm for state: ({dyson_norm})",BC.ENDC)
-                        if len(dyson_norm) == 0:
-                            print("Dyson norm is empty. Something went wrong with WfOverlap calculation.")
-                            print("Setting Dyson norm to zero and continuing.")
-                            dysonnorms.append(0.0)
-                        self.finaldysonnorms=self.finaldysonnorms+dyson_norm
+                            # Creating determinant-string for Current State from orbital information
+                            curr_determinant_string = get_dets_from_single(totnumorbitals,
+                                                                        numocc_alpha, numocc_beta, restricted, 0)
+                            writestringtofile(curr_determinant_string, "dets_curr")
+
+                            print("\nRunning WFOverlap to calculate Dyson norms for Finalstate with mult: ", fstate.mult)
+                            # WFOverlap calculation needs files: AO_overl, mos_init, mos_final, dets_final, dets_init
+                            wfoverlapinput = """
+                            mix_aoovl=AO_overl
+                            a_mo=mos_curr
+                            b_mo=mos_init
+                            a_det=dets_curr
+                            b_det=dets_init
+                            a_mo_read=0
+                            b_mo_read=0
+                            ao_read=0
+                            moprint=1
+                            """
+                            #Calling wfoverlap
+                            run_wfoverlap(wfoverlapinput,self.path_wfoverlap,self.memory,self.numcores)
+                            #Grabbing Dyson norms from wfovl.out
+                            dyson_norm=grabDysonnorms()
+                            os.rename("wfovl.out",f"Final_State_mult{fstate.mult}_state{i}.wfovl.out")
+                            dysonnorms.append(dyson_norm[0]) #Only one dyson norm
+                            print(BC.OKBLUE,f"\nDyson norm for state: ({dyson_norm})",BC.ENDC)
+                            if len(dyson_norm) == 0:
+                                print("Dyson norm is empty. Something went wrong with WfOverlap calculation.")
+                                print("Setting Dyson norm to zero and continuing.")
+                                dysonnorms.append(0.0)
+                            self.finaldysonnorms=self.finaldysonnorms+dyson_norm
                 #Dyson
                 frag_dysonnorms=dysonnorms
                 #frag_dysonnorms = self.run_dyson_calc(frag_IPs)
@@ -3020,7 +3070,7 @@ def MRCI_SOC_grab(file):
     minE=None
     with open(file) as f:
         for line in f:
-            if 'Center of electronic charge' in line:
+            if '*************************************' in line:
                 grab2=False
             if grab2 is True:
                 if 'STATE' in line:
@@ -3081,11 +3131,17 @@ def mrci_state_energies_grab(file,SORCI=False, SOC=False):
     prev_grabbed_blockinfo=False
     current_roots=None
     currentmult=None
+    numCIblocks=None
     with open(file) as f:
         for line in f:
             #print("line:", line)
             #print("prev_grabbed_blockinfo:", prev_grabbed_blockinfo)
             #print("grab_blockinfo:", grab_blockinfo)
+
+            # RBapr 2026: getting number of CI blocks
+            if 'Number of CI-blocks                ...' in line:
+                numCIblocks = int(line.split()[-1])
+
             #Note. Grabbing block info from CASSCF output
             if '<<<<<<<<<<<<<<<<<<INITIAL CI STATE CHECK>>>>>>>>>>>>>>>>>>' in line:
                 if prev_grabbed_blockinfo is False:
@@ -3095,31 +3151,45 @@ def mrci_state_energies_grab(file,SORCI=False, SOC=False):
                 else:
                     grab_blockinfo=False
             if grab_blockinfo is True:
+
                 if 'BLOCK' in line:
                     blocknum = int(line.split()[1])
                     mult = int(line.split()[3])
                     roots = int(line.split("=")[-1])
                     block_dict[blocknum] = (mult,roots)
                     #print("block_dict:", block_dict)
+                    if numCIblocks == 1:
+                        grab_blockinfo = False
+                    #exit()
                 #Only reading 2 blocks (two multiplicities)
                 #Unncessary?
                 if len(block_dict) == 2:
                     grab_blockinfo = False
             #Grabbing actual MRCI state energies
             if grab is True and string in line:
+                #print("here")
                 Energy=float(line.split()[3])
                 state_energies.append(Energy)
                 if len(state_energies) == current_roots:
+                    #print("xx")
                     mult_dict[currentmult] = state_energies
                     #print("mult_dict:", mult_dict)
                     state_energies=[]
             #Getting info about what block we are currently reading in the output
             if final_part is True:
                 if '*              CI-BLOCK' in line:
+                    #print("here")
+                    #print(line)
                     blockgrab=True
                     currentblock=int(line.split()[-2])
-                    currentmult=block_dict[currentblock][0]
-                    current_roots = block_dict[currentblock][1]
+                    #print("currentblock:", currentblock)
+                    #print("block_dict:", block_dict)
+                    if numCIblocks == 1:
+                        currentmult=block_dict[0][0]
+                        current_roots = block_dict[0][1]
+                    else:
+                        currentmult=block_dict[currentblock][0]
+                        current_roots = block_dict[currentblock][1]
             if 'TRANSITION ENERGIES' in line:
                 grab = False
             if blockgrab is True:
@@ -3127,6 +3197,7 @@ def mrci_state_energies_grab(file,SORCI=False, SOC=False):
                     grab=True
             if 'S O R C I (DDCI3-STEP)' in line:
                 final_part=True
+    print("mult_dict:", mult_dict)
     return mult_dict
 
 
@@ -4188,17 +4259,17 @@ def plot_PES_Spectrum(IPs=None, dysonnorms=None, mos_alpha=None, mos_beta=None, 
         if MOPlot is True:
             # MO-DOSPLOT for initial state. Here assuming MO energies of initial state to be good approximations for IPs
             ax.plot(x, occDOS_alpha, 'C2', label='alphaMO')
-            ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+            ax.stem(stk_alpha2, stk_alpha2height, label='alphaMO', basefmt=" ", markerfmt=' ', linefmt='C2-')
             if hftyp_I == "UHF":
                 ax.plot(x, occDOS_beta, 'C2', label='betaMO')
-                ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-', use_line_collection=True)
+                ax.stem(stk_beta2, stk_beta2height, label='betaMO', basefmt=" ", markerfmt=' ', linefmt='C2-')
 
 
         ##############
         # TDDFT-STATES
         ###############
         ax.plot(x, tddftDOS, 'C3', label='TDDFT')
-        ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-', use_line_collection=True)
+        ax.stem(IPs, dysonnorms, label='TDDFT', markerfmt=' ', basefmt=' ', linefmt='C3-')
         plt.xlabel('eV')
         plt.ylabel('Intensity')
         #################################

@@ -392,6 +392,7 @@ class Fragment:
         #    self.calc_connectivity(scale=scale, tol=tol)
     def create_coords_from_smiles(self, smiles):
         print("Creating coordinates from SMILES string:", smiles)
+        from ash.interfaces.interface_openbabel import smiles_to_coords
         elems, coords = smiles_to_coords(smiles)
         self.elems = elems
         self.coords = reformat_list_to_array(coords)
@@ -488,7 +489,7 @@ class Fragment:
 
     def print_coords(self):
         if self.printlevel >= 2:
-            print("Defined coordinates (Å):")
+            print("Cartesian coordinates (Å):")
         #print_coords_all(self.coords, self.elems)
         for i,(el, c) in enumerate(zip(self.elems, self.coords)):
             line = " {:<4} {:4} {:>12.6f} {:>12.6f} {:>12.6f}".format(i,el, c[0], c[1], c[2])
@@ -577,7 +578,7 @@ class Fragment:
         try:
             import openmm.app
         except ImportError:
-            print("Error: OpenMM not found. Cannot read PDB file.")
+            print("Error: OpenMM library not found. ASH requires OpenMM library to read PDB files.")
             ashexit()
         pdb = openmm.app.PDBFile(filename)
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
@@ -781,6 +782,7 @@ class Fragment:
                       resnames=self.pdb_resnames,residlabels=self.pdb_residlabels, segmentlabels=None, conect_lines=self.pdb_conect_lines)
         return f"{filename}.pdb"
 
+
     # Create new topology from scratch if none is defined (defined automatically when reading PDB-files by OpenMM)
     def define_topology(self, scale=1.0, tol=0.1, resname="MOL"):
         try:
@@ -802,7 +804,9 @@ class Fragment:
         connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, scale,tol)
         #Looping over molecules defined by connectivity
         for mol in self.connectivity:
+            print("mol:", mol)
             residue = self.pdb_topology.addResidue(resname, chain)
+            print("residue:", residue)
 
             # Defaultdictionary to keep track of unique element-atomnames
             atomnames_dict=defaultdict(int)
@@ -819,11 +823,16 @@ class Fragment:
                     #print("atomname is O1 and 3-atom residue. Probably water")
                     #print("using atomname as O instead of O1 aids OpenMM recognition")
                     atomname="O"
-
+                print("Adding atom:", atomname, "element:", element, "to residue:", residue)
+                print("at:", at, "el:", el)
                 self.pdb_topology.addAtom(atomname, element, residue)
+                print("here, residue:", residue)
+            print("----------------___")
 
         print("Adding connectivity to PDB topology")
         ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology, connectivity_dict)
+
+        return self.pdb_topology
 
     # Write PDB-file via OpenMM
     def write_pdbfile_openmm(self,filename="Fragment", calc_connectivity=False, pdb_topology=None,
@@ -832,7 +841,7 @@ class Fragment:
         try:
             import openmm.app
         except ImportError:
-            print("Error: OpenMM not found. Cannot read PDB file.")
+            print("Error: OpenMM library not found. ASH requires OpenMM library to write PDB files.")
             ashexit()
 
         #Adding extension
@@ -866,26 +875,18 @@ class Fragment:
             self.pdb_topology._bonds=[]
         openmm.app.PDBFile.writeFile(self.pdb_topology, self.coords, file=open(f"{filename}", 'w'))
         print(f"Wrote PDB-file: {filename}")
+        return filename
 
     def write_xyzfile(self, xyzfilename="Fragment-xyzfile.xyz", writemode='w', write_chargemult=True, write_energy=True):
 
         with open(xyzfilename, writemode) as ofile:
             ofile.write(str(len(self.elems)) + '\n')
-
             #Title line
             #Write charge,mult and energy by default. Will be None if not available
             if write_chargemult is True and write_energy is True:
                 ofile.write("{} {} {}\n".format(self.charge,self.mult,self.energy))
             else:
                 ofile.write("title\n")
-            #elif write_chargemult is True and write_energy is True:
-            #    ofile.write("{} {}\n".format(self.charge,self.mult))
-            # Energy written otherwise
-            #else:
-            #    if self.energy is None:
-            #        ofile.write("Energy: None" + '\n')
-            #    else:
-            #        ofile.write("Energy: {:14.8f}".format(self.energy) + '\n')
 
             #Coordinates
             for el, c in zip(self.elems, self.coords):
@@ -929,16 +930,6 @@ class Fragment:
     def print_system(self, filename='fragment.ygg'):
         if self.printlevel >= 2:
             print("Printing fragment to disk: ", filename)
-
-        # Checking that lists have same length (as zip will just ignore the mismatch)
-        # print("len(self.atomlist)", len(self.atomlist))
-        # rint("len(self.elems)",len(self.elems) )
-        # print("len(self.coords)",len(self.coords) )
-        # print("len(self.atomcharges)", len(self.atomcharges) )
-        # print("len(self.fragmenttype_labels)", len(self.fragmenttype_labels) )
-        # print("len(self.atomtypes)", len(self.atomtypes))
-
-        print("", )
         printdebug("len(self.atomlist): ", len(self.atomlist))
         printdebug("len(self.elems): ", len(self.elems))
         printdebug("len(self.coords): ", len(self.coords))
@@ -1158,7 +1149,98 @@ def remove_zero_charges(charges, coords):
             newcoords.append(coord)
     return newcharges, newcoords
 
+# NEW function to print internal coordinate table for active atoms based on connectivity. 
 
+def print_internal_coordinate_table_new(fragment, actatoms=None):
+    """
+    Prints a tabulated view of internal coordinates for active atoms 
+    based on the fragment's connectivity.
+    """
+    def _measure_bond(coords, i, j):
+        """Bond length in Angstrom between atoms i and j."""
+        return float(np.linalg.norm(coords[i] - coords[j]))
+    
+    def _measure_angle(coords, i, j, k):
+        """Angle i-j-k in degrees (j is the vertex)."""
+        v1 = coords[i] - coords[j]
+        v2 = coords[k] - coords[j]
+        cos_a = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+        return float(np.degrees(np.arccos(np.clip(cos_a, -1.0, 1.0))))
+
+    def _measure_dihedral(coords, i, j, k, l):
+        """Dihedral angle i-j-k-l in degrees (range -180 to 180)."""
+        b1 = coords[j] - coords[i]
+        b2 = coords[k] - coords[j]
+        b3 = coords[l] - coords[k]
+        n1 = np.cross(b1, b2)
+        n2 = np.cross(b2, b3)
+        m1 = np.cross(n1, b2 / np.linalg.norm(b2))
+        return float(np.degrees(np.arctan2(np.dot(m1, n2), np.dot(n1, n2))))
+    
+    if actatoms is None:
+        actatoms = fragment.allatoms
+
+    coords = fragment.coords
+    elems = fragment.elems
+    from ash.modules.module_surface_new import _build_connectivity
+    conn = _build_connectivity(coords, elems)
+    
+    # Header
+    print()
+    print("=" * 30)
+    print("Internal Coordinates")
+    print("=" * 30)
+    print(f"{'Type':<10} {'Atoms':<20} {'Elements':<15} {'Value':>10}")
+    print("-" * 60)
+
+    # We use sets to avoid printing the same geometric feature twice 
+    # (e.g., bond 0-1 and 1-0)
+    seen_bonds = set()
+    seen_angles = set()
+    seen_dihedrals = set()
+
+    for i in actatoms:
+        # --- Bonds (i-j) ---
+        for j in conn[i]:
+            bond_key = tuple(sorted((i, j)))
+            if bond_key not in seen_bonds:
+                val = _measure_bond(coords, i, j)
+                label = f"{elems[i]}-{elems[j]}"
+                print(f"{'Bond':<10} {str(bond_key):<20} {label:<15} {val:>10.4f} Å")
+                seen_bonds.add(bond_key)
+
+            # --- Angles (i-j-k) ---
+            # i is the vertex (j-i-k)
+            neighbors = list(conn[i])
+            for idx_a in range(len(neighbors)):
+                for idx_b in range(idx_a + 1, len(neighbors)):
+                    j, k = neighbors[idx_a], neighbors[idx_b]
+                    angle_key = tuple(sorted((j, k)) + [i]) # vertex last for keying
+                    if angle_key not in seen_angles:
+                        val = _measure_angle(coords, j, i, k)
+                        label = f"{elems[j]}-{elems[i]}-{elems[k]}"
+                        print(f"{'Angle':<10} {f'({j},{i},{k})':<20} {label:<15} {val:>10.2f}°")
+                        seen_angles.add(angle_key)
+
+        # --- Dihedrals (i-j-k-l) ---
+        # Logic: Find a bond (i-j), then find neighbors of i and j
+        for j in conn[i]:
+            for h in conn[i]:
+                if h == j: continue
+                for k in conn[j]:
+                    if k == i or k == h: continue
+                    # Path is h-i-j-k
+                    di_key = (h, i, j, k)
+                    rev_key = (k, j, i, h)
+                    if di_key not in seen_dihedrals and rev_key not in seen_dihedrals:
+                        val = _measure_dihedral(coords, h, i, j, k)
+                        label = f"{elems[h]}-{elems[i]}-{elems[j]}-{elems[k]}"
+                        print(f"{'Dihedral':<10} {str(di_key):<20} {label:<15} {val:>10.2f}°")
+                        seen_dihedrals.add(di_key)
+
+    print("-" * 60)
+
+# OLD FUNCTION.
 def print_internal_coordinate_table(fragment, actatoms=None):
     timeA = time.time()
     print("\nPrinting internal coordinate table")
@@ -1377,23 +1459,12 @@ def write_coords_all(coords, elems, indices=None, labels=None, labels2=None, fil
 
     f.close()
 
-
+##############################################################
 # Functions to get distance, angle, coordinates of fragment
+##############################################################
+
 def distance(A, B):
     return sqrt(pow(A[0] - B[0], 2) + pow(A[1] - B[1], 2) + pow(A[2] - B[2], 2))  # fastest
-    # return sum((v_i - u_i) ** 2 for v_i, u_i in zip(A, B)) ** 0.5 #slow
-    # return np.sqrt(np.sum((A - B) ** 2)) #very slow
-    # return np.linalg.norm(A - B) #VERY slow
-    # return sqrt(sum((px - qx) ** 2.0 for px, qx in zip(A, B))) #slow
-    # return sqrt(sum([pow((a - b),2) for a, b in zip(A, B)])) #OK
-    # return np.sqrt((A[0] - B[0]) ** 2 + (A[1] - B[1]) ** 2 + (A[2] - B[2]) ** 2) #Very slow
-    # return math.sqrt((A[0] - B[0]) ** 2 + (A[1] - B[1]) ** 2 + (A[2] - B[2]) ** 2) #faster
-    # return math.sqrt(math.pow(A[0] - B[0],2) + math.pow(A[1] - B[1],2) + math.pow(A[2] - B[2],2)) #faster
-    # return sqrt(sum((A-B)**2)) #slow
-    # return sqrt(sum(pow((A - B),2))) does not work
-    # return np.sqrt(np.power((A-B),2).sum()) #very slow
-    # return sqrt(np.power((A - B), 2).sum())
-    # return np.sum((A - B) ** 2)**0.5 #very slow
 
 def angle(A, B, C):
     AB = A - B
@@ -1429,6 +1500,9 @@ def dihedral(A, B, C, D):
     # Convert from radians to degrees
     dihedral_angle = dihedral_angle * 180 / np.pi
     return dihedral_angle
+
+
+
 
 #User-functions
 #atoms is a list of atom indices,
@@ -1720,9 +1794,9 @@ def create_coords_string(elems, coords):
 # Takes list of elements and gives formula
 def elemlisttoformula(list):
     # This dict comprehension was slow for large systems. Using set to reduce iterations
-    dict = {i: list.count(i) for i in set(list)}
+    elemdict = {i: list.count(i) for i in set(list)}
     formula = ""
-    for item in dict.items():
+    for item in elemdict.items():
         el = item[0]
         count = item[1]
         # string=el+str(count)
@@ -1936,7 +2010,7 @@ def split_multimolxyzfile(file, writexyz=False, skipindex=1,return_fragments=Fal
             # Grab title
             if titlegrab is True:
                 if len(line.split()) > 0:
-                    all_titles.append(line.split()[-1])
+                    all_titles.append(line.split())
                 else:
                     all_titles.append("NA")
                 titlegrab = False
@@ -2318,10 +2392,10 @@ def write_pdbfile(fragment, outputname="ASHfragment", openmmobject=None, atomnam
 
             # Using last 4 letters of atomnmae
             atomnamestring = atomname[-4:]
-            #TODO: atomname should be unique so we should add a number here ideally
+            
+            if not any(char.isdigit() for char in atomnamestring):
+                atomnamestring=atomnamestring+str(count+1)
 
-            #print(atomnamestring)
-            #exit()
             # Using string format from: cupnet.net/pdb-format/
 
             #NOTE: Changed resid from integer to string so that we can support the hex notation for resids when resids go above 9999
@@ -3023,6 +3097,103 @@ AXIS_REFLECTIONS = np.array([
 
 
 
+##########################################
+# MOLECULAR CRYSTAL PBC FUNCTIONS
+##########################################
+
+
+# Extend cell in general with original cell in center
+# NOTE: Taken from functions_molcrys.
+# TODO: Remove function from functions_molcrys
+def cell_extend_frag(cellvectors, coords, elems, cellextpars):
+    printdebug("cellextpars:", cellextpars)
+    permutations = []
+    for i in range(int(cellextpars[0])):
+        for j in range(int(cellextpars[1])):
+            for k in range(int(cellextpars[2])):
+                permutations.append([i, j, k])
+                permutations.append([-i, j, k])
+                permutations.append([i, -j, k])
+                permutations.append([i, j, -k])
+                permutations.append([-i, -j, k])
+                permutations.append([i, -j, -k])
+                permutations.append([-i, j, -k])
+                permutations.append([-i, -j, -k])
+    # Removing duplicates and sorting
+    permutations = sorted([list(x) for x in set(tuple(x) for x in permutations)],
+                          key=lambda x: (abs(x[0]), abs(x[1]), abs(x[2])))
+    # permutations = permutations.sort(key=lambda x: x[0])
+    printdebug("Num permutations:", len(permutations))
+    numcells = np.prod(cellextpars)
+    numcells = len(permutations)
+    extended = np.zeros((len(coords) * numcells, 3))
+    new_elems = []
+    index = 0
+    for perm in permutations:
+        shift = cellvectors[0:3, 0:3] * perm
+        shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
+        # print("Permutation:", perm, "shift:", shift)
+        for d, el in zip(coords, elems):
+            new_pos = d + shift
+            extended[index] = new_pos
+            new_elems.append(el)
+            # print("extended[index]", extended[index])
+            # print("extended[index+1]", extended[index+1])
+            index += 1
+    printdebug("extended coords num", len(extended))
+    printdebug("new_elems  num,", len(new_elems))
+    return extended, new_elems
+
+
+# From Pymol. Not sure if useful
+# NOTE: also in functions_molcrys
+def cellbasis(angles, edges):
+    from math import cos, sin, radians, sqrt
+    """
+    For the unit cell with given angles and edge lengths calculate the basis
+    transformation (vectors) as a 4x4 numpy.array
+    """
+    rad = [radians(i) for i in angles]
+    basis = np.identity(4)
+    basis[0][1] = cos(rad[2])
+    basis[1][1] = sin(rad[2])
+    basis[0][2] = cos(rad[1])
+    basis[1][2] = (cos(rad[0]) - basis[0][1] * basis[0][2]) / basis[1][1]
+    basis[2][2] = sqrt(1 - basis[0][2] ** 2 - basis[1][2] ** 2)
+    edges.append(1.0)
+    return basis * edges  # numpy.array multiplication!
+
+# Create a molecular cluster from a periodix box based on radius and chosen atom(s)
+
+def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cellparameters=None):
+    print_line_with_subheader2("Make cluster from box")
+    # Choosing how far to extend cell based on chosen cluster-radius
+    if radius < cellparameters[0]:
+        cellextension = [2, 2, 2]
+    else:
+        cellextension = [3, 3, 3]
+
+    print("Cell parameters:", cellparameters)
+    print("Radius: {} Å".format(radius))
+    print("Cell extension used: ", cellextension)
+    print("Cluster will be centered on atom indices: ", center_atomindices)
+
+    # Extend cell
+    cellvectors = cellbasis(cellparameters[3:6], cellparameters[0:3])
+    ext_coords, ext_elems = cell_extend_frag(cellvectors, fragment.coords, fragment.elems, cellextension)
+    print("Size of extended cell: ", len(ext_elems))
+    extcellfrag = Fragment(elems=ext_elems, coords=ext_coords, printlevel=2)
+    # Cut cluster with radius R from extended cell, centered on atomic index. Returns list of atoms
+    atomlist = QMregionfragexpand(fragment=extcellfrag, initial_atoms=center_atomindices, radius=radius)
+
+    # Grabbing coords and elems from atomlist and creating new fragment
+    clustercoords = np.take(ext_coords, atomlist, axis=0)
+    clusterelems = [ext_elems[i] for i in atomlist]
+    newfrag = Fragment(elems=clusterelems, coords=clustercoords, printlevel=0)
+
+    return newfrag
+
+
 # QM-region expand function. Finds whole fragments.
 # Used by molcrys. Similar to get_solvshell function in functions_solv.py
 def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
@@ -3185,16 +3356,18 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
 
         if len(boundaryatom) > 1:
             print(BC.FAIL,
-                  "Problem. Found more than 1 boundaryatom for QM-atom {} . This is not allowed".format(qmatom),
+                  "Warning. Found more than 1 boundaryatom for QM-atom {} . This is considered unusual".format(qmatom),
                   BC.END)
             print("This typically either happens when your QM-region is badly defined or a QM-atom is clashing with an MM atom")
             print("QM atom : ", qmatom)
             print("MM Boundaryatoms (connected to QM-atom based on distance) : ", boundaryatom)
-            print("Please define the QM-region so that only 1 linkatom would be required.")
+            #print("Please define the QM-region so that only 1 linkatom would be required.")
             print("MM Boundary atom coordinates (for debugging):")
             for b in boundaryatom:
                 print(f"{b} {elems[b]} {coords[b][0]} {coords[b][1]} {coords[b][2]}")
-            ashexit()
+            # Adding to dict
+            qm_mm_boundary_dict[qmatom] = boundaryatom
+            #ashexit()
         elif len(boundaryatom) == 1:
 
             # Warn if QM-MM boundary is not a plain-vanilla C-C bond
@@ -3210,7 +3383,7 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
                     print(BC.WARNING, "To override exit, add: unusualboundary=True  to QMMMTheory object ", BC.END)
                     ashexit()
             # Adding to dict
-            qm_mm_boundary_dict[qmatom] = boundaryatom[0]
+            qm_mm_boundary_dict[qmatom] = [boundaryatom[0]]
     print("QM-MM boundary dictionary:", qm_mm_boundary_dict)
     print_time_rel(timeA, modulename="get_boundary_atoms")
     return qm_mm_boundary_dict
@@ -3234,7 +3407,7 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
         print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
     #Dict of linkatom distances for different elements
     linkdistances_dict = {('C', 'H'): 1.09, ('O', 'H'): 0.98, ('N', 'H'): 0.99}
-    print("Linkdatom distance dictionary:", linkdistances_dict)
+    print("Linkatom distance dictionary:", linkdistances_dict)
     # If dictionary of linkatom-distances provided then use that instead
     if linkatom_method == 'ratio':
         if linkatom_ratio == 'Auto' and bondpairs_eq_dict is None:
@@ -3246,50 +3419,52 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
     print("qm_mm_boundary_dict:", qm_mm_boundary_dict)
     # Get coordinates for QMX and MMX pair. Create new L coordinate that has a modified distance to QMX
     linkatoms_dict = {}
+    # Looping over QM-MM boundaries
     for dict_item in qm_mm_boundary_dict.items():
-        qmatom_coords = np.array(coords[dict_item[0]])
-        mmatom_coords = np.array(coords[dict_item[1]])
-
-        #Determine linkatom distance
-        if linkatom_method == 'ratio':
-            #print("Linkatom method: ratio")
-            if linkatom_ratio == 'Auto':
-                print("Automatic ratio. Determining ratio based on dict of equilibrium distances")
-                #TODO
-                R_eq_QM_H = bondpairs_eq_dict[(elems[dict_item[0]], linkatom_type)]
-                R_eq_QM_MM = bondpairs_eq_dict[(elems[dict_item[0]], elems[dict_item[1]])]
-                print("R_eq_QM_H:", R_eq_QM_H)
-                print("R_eq_QM_MM:", R_eq_QM_MM)
-                linkatom_ratio = R_eq_QM_H / R_eq_QM_MM
-                print("Determined ratio:", linkatom_ratio)
-                print("not yet ready")
-                ashexit()
-            r_QM1_MM1 = distance(qmatom_coords, mmatom_coords)
-            # See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
-            linkatom_coords = linkatom_ratio *(mmatom_coords - qmatom_coords) + qmatom_coords
-            #linkatom_distance =  r_QM1_MM1 * (bondpairs_eq_dict[(elems[dict_item[0]], 'H')] / bondpairs_eq_dict[(elems[dict_item[0]], elems[dict_item[1]])])
-            linkatom_distance = distance(qmatom_coords, linkatom_coords)
-            print(f"Linkatom distance (QM1-L) determined to be: {linkatom_distance} (using ratio {linkatom_ratio})")
-        elif linkatom_method == 'simple':
-            #print("Linkatom method: simple")
-            if linkatom_simple_distance is None:
-                #print("linkatom_simple_distance not set. Getting standard distance from dictionary for element:", elems[dict_item[0]])
-                #Getting from dict
-                linkatom_distance = linkdistances_dict[(elems[dict_item[0]], linkatom_type)]
+        qmatom=dict_item[0]
+        # Looping over MM-atoms in boundary (i.e. we can have a MM1-QM1-MM1 situation e.g. requiring multiple linkatoms)
+        for mmatom in dict_item[1]:
+            qmatom_coords = np.array(coords[qmatom])
+            mmatom_coords = np.array(coords[mmatom])
+            #Determine linkatom distance
+            if linkatom_method == 'ratio':
+                #print("Linkatom method: ratio")
+                if linkatom_ratio == 'Auto':
+                    print("Automatic ratio. Determining ratio based on dict of equilibrium distances")
+                    #TODO
+                    R_eq_QM_H = bondpairs_eq_dict[(elems[qmatom], linkatom_type)]
+                    R_eq_QM_MM = bondpairs_eq_dict[(elems[qmatom], elems[mmatom])]
+                    print("R_eq_QM_H:", R_eq_QM_H)
+                    print("R_eq_QM_MM:", R_eq_QM_MM)
+                    linkatom_ratio = R_eq_QM_H / R_eq_QM_MM
+                    print("Determined ratio:", linkatom_ratio)
+                    print("not yet ready")
+                    ashexit()
+                r_QM1_MM1 = distance(qmatom_coords, mmatom_coords)
+                # See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
+                linkatom_coords = linkatom_ratio *(mmatom_coords - qmatom_coords) + qmatom_coords
+                #linkatom_distance =  r_QM1_MM1 * (bondpairs_eq_dict[(elems[dict_item[0]], 'H')] / bondpairs_eq_dict[(elems[dict_item[0]], elems[dict_item[1]])])
+                linkatom_distance = distance(qmatom_coords, linkatom_coords)
+                print(f"Linkatom distance (QM1-L) determined to be: {linkatom_distance} (using ratio {linkatom_ratio})")
+            elif linkatom_method == 'simple':
+                #print("Linkatom method: simple")
+                if linkatom_simple_distance is None:
+                    #print("linkatom_simple_distance not set. Getting standard distance from dictionary for element:", elems[dict_item[0]])
+                    #Getting from dict
+                    linkatom_distance = linkdistances_dict[(elems[qmatom], linkatom_type)]
+                else:
+                    #print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
+                    #Getting from user
+                    linkatom_distance = linkatom_simple_distance
+                print("Linkatom distance (QM1-L) is:", linkatom_distance)
+                #Determining coords
+                linkatom_coords = list(qmatom_coords + (mmatom_coords - qmatom_coords) * (
+                            linkatom_distance / distance(qmatom_coords, mmatom_coords)))
             else:
-                #print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
-                #Getting from user
-                linkatom_distance = linkatom_simple_distance
-            print("Linkatom distance (QM1-L) is:", linkatom_distance)
-            #Determining coords
-            linkatom_coords = list(qmatom_coords + (mmatom_coords - qmatom_coords) * (
-                        linkatom_distance / distance(qmatom_coords, mmatom_coords)))
-        else:
-            print("Invalid linkatom_method. Exiting.")
-            ashexit()
-        
-        linkatoms_dict[(dict_item[0], dict_item[1])] = linkatom_coords
-    #print_time_rel(timeA, modulename="get_linkatom_positions")
+                print("Invalid linkatom_method. Exiting.")
+                ashexit()
+            
+            linkatoms_dict[(qmatom, mmatom)] = linkatom_coords
     return linkatoms_dict
 
 
@@ -3307,120 +3482,6 @@ def get_molecules_from_trajectory(file, writexyz=False, skipindex=1, conncalc=Fa
         list_of_molecules.append(conf)
 
     return list_of_molecules
-
-
-# Extend cell in general with original cell in center
-# NOTE: Taken from functions_molcrys.
-# TODO: Remove function from functions_molcrys
-def cell_extend_frag(cellvectors, coords, elems, cellextpars):
-    printdebug("cellextpars:", cellextpars)
-    permutations = []
-    for i in range(int(cellextpars[0])):
-        for j in range(int(cellextpars[1])):
-            for k in range(int(cellextpars[2])):
-                permutations.append([i, j, k])
-                permutations.append([-i, j, k])
-                permutations.append([i, -j, k])
-                permutations.append([i, j, -k])
-                permutations.append([-i, -j, k])
-                permutations.append([i, -j, -k])
-                permutations.append([-i, j, -k])
-                permutations.append([-i, -j, -k])
-    # Removing duplicates and sorting
-    permutations = sorted([list(x) for x in set(tuple(x) for x in permutations)],
-                          key=lambda x: (abs(x[0]), abs(x[1]), abs(x[2])))
-    # permutations = permutations.sort(key=lambda x: x[0])
-    printdebug("Num permutations:", len(permutations))
-    numcells = np.prod(cellextpars)
-    numcells = len(permutations)
-    extended = np.zeros((len(coords) * numcells, 3))
-    new_elems = []
-    index = 0
-    for perm in permutations:
-        shift = cellvectors[0:3, 0:3] * perm
-        shift = shift[:, 0] + shift[:, 1] + shift[:, 2]
-        # print("Permutation:", perm, "shift:", shift)
-        for d, el in zip(coords, elems):
-            new_pos = d + shift
-            extended[index] = new_pos
-            new_elems.append(el)
-            # print("extended[index]", extended[index])
-            # print("extended[index+1]", extended[index+1])
-            index += 1
-    printdebug("extended coords num", len(extended))
-    printdebug("new_elems  num,", len(new_elems))
-    return extended, new_elems
-
-
-# From Pymol. Not sure if useful
-# NOTE: also in functions_molcrys
-def cellbasis(angles, edges):
-    from math import cos, sin, radians, sqrt
-    """
-    For the unit cell with given angles and edge lengths calculate the basis
-    transformation (vectors) as a 4x4 numpy.array
-    """
-    rad = [radians(i) for i in angles]
-    basis = np.identity(4)
-    basis[0][1] = cos(rad[2])
-    basis[1][1] = sin(rad[2])
-    basis[0][2] = cos(rad[1])
-    basis[1][2] = (cos(rad[0]) - basis[0][1] * basis[0][2]) / basis[1][1]
-    basis[2][2] = sqrt(1 - basis[0][2] ** 2 - basis[1][2] ** 2)
-    edges.append(1.0)
-    return basis * edges  # numpy.array multiplication!
-
-# Create a molecular cluster from a periodix box based on radius and chosen atom(s)
-
-def make_cluster_from_box(fragment=None, radius=10, center_atomindices=[0], cellparameters=None):
-    print_line_with_subheader2("Make cluster from box")
-    # Choosing how far to extend cell based on chosen cluster-radius
-    if radius < cellparameters[0]:
-        cellextension = [2, 2, 2]
-    else:
-        cellextension = [3, 3, 3]
-
-    print("Cell parameters:", cellparameters)
-    print("Radius: {} Å".format(radius))
-    print("Cell extension used: ", cellextension)
-    print("Cluster will be centered on atom indices: ", center_atomindices)
-
-    # Extend cell
-    cellvectors = cellbasis(cellparameters[3:6], cellparameters[0:3])
-    ext_coords, ext_elems = cell_extend_frag(cellvectors, fragment.coords, fragment.elems, cellextension)
-    print("Size of extended cell: ", len(ext_elems))
-    extcellfrag = ash.Fragment(elems=ext_elems, coords=ext_coords, printlevel=2)
-    # Cut cluster with radius R from extended cell, centered on atomic index. Returns list of atoms
-    atomlist = QMregionfragexpand(fragment=extcellfrag, initial_atoms=center_atomindices, radius=radius)
-
-    # Grabbing coords and elems from atomlist and creating new fragment
-    clustercoords = np.take(ext_coords, atomlist, axis=0)
-    clusterelems = [ext_elems[i] for i in atomlist]
-    newfrag = ash.Fragment(elems=clusterelems, coords=clustercoords, printlevel=0)
-
-    return newfrag
-
-
-# Set up constraints
-# def set_up_MMwater_bondconstraints(actatoms, oxygentype='OT'):
-#     print("set_up_MMwater_bondconstraints")
-#     print("Assuming oxygen atom type is: ", oxygentype)
-#     print("Change with keyword arguement: oxygentype='XX")
-#     ashexit()
-#     # Go over actatoms and check if oxygen-water type
-
-#     # Shift nested list by number e.g. shift([[1,2],[100,101]], -1)  gives : [[0,1],[99,100]]
-#     # TODO: generalize
-#     def shift_nested(ll, par):
-#         new = []
-#         for l in ll:
-#             new.append([l[0] + par, l[1] + par])
-#         return new
-
-#     bondconslist = shift_nested(bondlist, -1)
-#     constraints = {'bond': bondconslist}
-
-#     return constraints
 
 
 # Function to update list of atomindices after deletion of a list of atom indices (used in remove_atoms functions below)
@@ -3777,10 +3838,9 @@ def check_multiplicity(elems,charge,mult, exit=True):
 #Check if charge/mult variables are not None. If None check fragment
 #Only done for QM theories not MM. Passing theorytype string (e.g. from theory.theorytype if available)
 def check_charge_mult(charge, mult, theorytype, fragment, jobtype, theory=None, printlevel=2):
-
     #Check if QM or QM/MM theory
     if theorytype == "QM":
-        if charge == None or mult == None:
+        if charge is None or mult is None:
             if printlevel >= 2:
                 print(BC.WARNING,f"Charge/mult was not provided to {jobtype}",BC.END)
             if fragment.charge != None and fragment.mult != None:
@@ -3940,149 +4000,6 @@ def simple_get_water_constraints(fragment,starting_index=None, onlyHH=False):
     return constraints
 
 
-#Function to convert Mol file to PDB-file via OpenBabel
-def mol_to_pdb(file):
-    #OpenBabel
-    try:
-        from openbabel import pybel
-    except ModuleNotFoundError:
-        print("Error: mol_to_pdb requires OpenBabel library but it could not be imported")
-        print("You can install like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
-    mol = next(pybel.readfile("mol", file))
-    mol.write(format='pdb', filename=os.path.splitext(file)[0]+'.pdb', overwrite=True)
-    print("Wrote PDB-file:", os.path.splitext(file)[0]+'.pdb')
-    return os.path.splitext(file)[0]+'.pdb'
-
-#Function to convert SDF file to PDB-file via OpenBabel
-def sdf_to_pdb(file):
-    #OpenBabel
-    try:
-        from openbabel import openbabel
-        from openbabel import pybel
-    except ModuleNotFoundError:
-        print("Error: sdf_to_pdb requires OpenBabel library but it could not be imported")
-        print("You can install like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
-    mol = next(pybel.readfile("sdf", file))
-
-    #Write do disk as PDB-file
-    mol.write(format='pdb', filename=os.path.splitext(file)[0]+'temp.pdb', overwrite=True)
-    #Read-in again (this will create a Residue)
-    newmol = next(pybel.readfile("pdb", os.path.splitext(file)[0]+'temp.pdb'))
-    os.remove(os.path.splitext(file)[0]+'temp.pdb')
-
-    #Atomlabel = {0:'C1',1:'X',2:'C',3:'C',4:'C',5:'C',6:'C',7:'C',8:'C',9:'C',10:'C',11:'C',12:'C'}
-    #Change atomnames (AtomIDs) to something sensible (OpenBabel does not do this by default)
-    print("Creating new atomnames for PDBfile")
-    #Note: currently just combining element and atomindex to get a unique atomname (otherwise Modeller will not work)
-    #TODO: make something better (element-specific numbering?)
-    for res in pybel.ob.OBResidueIter(newmol.OBMol):
-        for i,atom in enumerate(openbabel.OBResidueAtomIter(res)):
-            atomname = res.GetAtomID(atom)
-            #print("atomname:", atomname)
-            res.SetAtomID(atom,atomname.strip()+str(i+1))
-            atomname = res.GetAtomID(atom)
-            #print("atomname:", atomname)
-            #res.SetAtomID(atom,Atomlabel[i])
-
-    #Write final PDB-file
-    newmol.write(format='pdb', filename=os.path.splitext(file)[0]+'.pdb', overwrite=True)
-    print("Wrote PDB-file:", os.path.splitext(file)[0]+'.pdb')
-    return os.path.splitext(file)[0]+'.pdb'
-
-#Function to read in PDB-file and write new one with CONECT lines (geometry needs to be sensible)
-#NOTE: Requires OpenBabel which seems unnecessary, probably better to use OpenMM functionality instead
-def writepdb_with_connectivity(file):
-    #OpenBabel
-    try:
-        from openbabel import pybel
-    except ModuleNotFoundError:
-        print("Error: writepdb_with_connectivity requires OpenBabel library but it could not be imported")
-        print("You can install like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
-    mol = next(pybel.readfile("pdb", file))
-    mol.write(format='pdb', filename=os.path.splitext(file)[0]+'_withcon.pdb', overwrite=True)
-    print("Wrote PDB-file:", os.path.splitext(file)[0]+'_withcon.pdb')
-    return os.path.splitext(file)[0]+'_withcon.pdb'
-
-#Function to read in XYZ-file (small molecule) and create PDB-file with CONECT lines (geometry needs to be sensible)
-def xyz_to_pdb_with_connectivity(file, resname="UNL"):
-    print("xyz_to_pdb_with_connectivity function:")
-    #OpenBabel
-    try:
-        from openbabel import openbabel
-        from openbabel import pybel
-    except ModuleNotFoundError:
-        print("Error: xyz_to_pdb_with_connectivity requires OpenBabel library but it could not be imported")
-        print("You can install OpenBabel like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
-    #Read in XYZ-file
-    mol = next(pybel.readfile("xyz", file))
-    #Write do disk as PDB-file
-    mol.write(format='pdb', filename=os.path.splitext(file)[0]+'temp.pdb', overwrite=True)
-    #Read-in again (this will create a Residue)
-    newmol = next(pybel.readfile("pdb", os.path.splitext(file)[0]+'temp.pdb'))
-
-    os.remove(os.path.splitext(file)[0]+'temp.pdb')
-
-    #Atomlabel = {0:'C1',1:'X',2:'C',3:'C',4:'C',5:'C',6:'C',7:'C',8:'C',9:'C',10:'C',11:'C',12:'C'}
-    #Change atomnames (AtomIDs) to something sensible (OpenBabel does not do this by default)
-    print("Creating new atomnames for PDBfile")
-    #Note: currently just combining element and atomindex to get a unique atomname (otherwise Modeller will not work)
-    #TODO: make something better (element-specific numbering?)
-    for res in pybel.ob.OBResidueIter(newmol.OBMol):
-        #Setting residue name
-        res.SetName(resname)
-        for i,atom in enumerate(openbabel.OBResidueAtomIter(res)):
-            atomname = res.GetAtomID(atom)
-            #print("atomname:", atomname)
-            res.SetAtomID(atom,atomname.strip()+str(i+1))
-            atomname = res.GetAtomID(atom)
-            #print("atomname:", atomname)
-            #res.SetAtomID(atom,Atomlabel[i])
-
-    #Write final PDB-file
-    newmol.write(format='pdb', filename=os.path.splitext(file)[0]+'.pdb', overwrite=True)
-    print("Wrote PDB-file:", os.path.splitext(file)[0]+'.pdb')
-    return os.path.splitext(file)[0]+'.pdb'
-
-#Function to convert PDB-file to SMILES string
-def pdb_to_smiles(fname: str) -> str:
-    #OpenBabel
-    try:
-        from openbabel import pybel
-    except ModuleNotFoundError:
-        print("Error: pdb_to_smiles requires OpenBabel library but it could not be imported")
-        print("You can install like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
-    mol = next(pybel.readfile("pdb", fname))
-    smi = mol.write(format="smi")
-    return smi.split()[0].strip()
-
-#Function to convert PDB-file to SMILES string
-def smiles_to_coords(smiles_string):
-    #OpenBabel
-    try:
-        from openbabel import pybel
-        from openbabel import openbabel
-    except ModuleNotFoundError:
-        print("Error: smiles_to_coords requires OpenBabel library but it could not be imported")
-        print("You can install like this:    conda install --yes -c conda-forge openbabel")
-        ashexit()
-    print("Reading SMILES by OpenBabel")
-    mol = pybel.readstring("smi", smiles_string)
-    print("Guessing 3D coordinates (uses MMFF94 forcefield)")
-    mol.make3D()
-    b_mol = mol.OBMol
-    atomnums = []
-    coords = []
-    for atom in openbabel.OBMolAtomIter(b_mol):
-        atomnums.append(atom.GetAtomicNum())
-        coords.append([atom.GetX(), atom.GetY(), atom.GetZ()])
-    elems = [reformat_element(atn, isatomnum=True) for atn in atomnums]
-    #frag = Fragment(elems=elems, coords=coords, charge=charge, mult=mult)
-    return elems, coords
 
 #Function that adds R-group to an ASH fragment
 def swap_R_group(fragment=None, Rgroup=None, atomindex=None) -> Fragment:
@@ -4115,33 +4032,6 @@ def swap_R_group(fragment=None, Rgroup=None, atomindex=None) -> Fragment:
 
     return newfragment
 
-
-#Function that calculates box size of a molecule in a cubic box
-#with optional shift
-def cubic_box_size(coords, shift=0.0):
-    # max and min for x,y,z coords
-    max_values = np.max(coords, axis=0)
-    min_values = np.min(coords, axis=0)
-    #Differences for x,y,z
-    span_x = max_values[0] - min_values[0]
-    span_y = max_values[1] - min_values[1]
-    span_z = max_values[2] - min_values[2]
-    # Max span for each x,y,z
-    max_span = max(span_x, span_y, span_z)
-    #Optional shift
-    final_span = max_span + shift
-    return final_span
-
-#More general
-def bounding_box_dimensions(coordinates,shift=0.0):
-    # Get max and min values for x, y, z coordinates
-    max_values = np.max(coordinates, axis=0)
-    min_values = np.min(coordinates, axis=0)
-
-    # Calculate the differences along each axis to determine dimensions
-    dimensions = max_values - min_values
-    final_dims = dimensions + shift
-    return dimensions  # Return the dimensions of the bounding box
 
 # Combien and place 2 fragments
 def combine_and_place_fragments(ref_frag, trans_frag):
@@ -4319,4 +4209,30 @@ def find_nearest_atom(a,b):
 	print("Nearest atom index in coordinates:", idx_min)
 	print("Atom coordinates:", a[idx_min])
 	return int(idx_min[0]), a[idx_min]
+
+# Very simple dummy topology (no connectivity or bonds)
+def define_dummy_topology(elems,scale=1.0, tol=0.1, resname="MOL"):
+        try:
+            import openmm.app
+        except ImportError:
+            print("Error: OpenMM not found. Cannot define a topology")
+            ashexit()
+        print("Defining new basic single-chain, multi-residue topology")
+        pdb_topology = openmm.app.Topology()
+        chain = pdb_topology.addChain()
+        #Looping over molecules defined by connectivity
+        residue = pdb_topology.addResidue(resname, chain)
+
+        # Defaultdictionary to keep track of unique element-atomnames
+        atomnames_dict=defaultdict(int)
+        for el in elems:
+            #el = elems[at]
+            atomnumber = openmm.app.Element.getBySymbol(el).atomic_number
+            element = openmm.app.Element.getByAtomicNumber(atomnumber)
+            # Define unique atomname
+            atomnames_dict[el] += 1
+            atomname = f"{el}{atomnames_dict[el]}"
+            pdb_topology.addAtom(atomname, element, residue)
+        return pdb_topology
+
 

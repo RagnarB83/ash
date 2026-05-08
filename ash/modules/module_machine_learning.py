@@ -15,14 +15,15 @@ from ash.modules.module_plotting import ASH_plot
 # Also helper tools for Torch and MLatom interfaces
 
 # Function to create ML training data given XYZ-files and 2 ASH theories
-def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=None, num_snapshots=None, random_snapshots=True,
+def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=None, xyz_files=None, num_snapshots=None, random_snapshots=True,
                                 dcd_pdb_topology=None, nth_frame_in_traj=1, printlevel=2,
-                               theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1):
+                               theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1,
+                               energies_atoms_dict=None, random_seed_set=None):
     print("-"*50)
     print("create_ML_training_data function")
     print("-"*50)
-    if xyz_dir is None and xyz_trajectory is None and dcd_trajectory is None:
-        print("Error: create_ML_training_data requires xyz_dir, xyz_trajectory or dcd_trajectory option to be set!")
+    if xyz_dir is None and xyz_trajectory is None and xyz_files is None and dcd_trajectory is None:
+        print("Error: create_ML_training_data requires xyz_dir, xyz_trajectory,xyz_files or dcd_trajectory option to be set!")
         ashexit()
 
     if theory_1 is None:
@@ -37,6 +38,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
 
     print("xyz_dir:", xyz_dir)
     print("xyz_trajectory:", xyz_trajectory)
+    print("xyz_files:",xyz_files)
     print("dcd_trajectory:", dcd_trajectory)
     print("Charge:", charge)
     print("Mult:", mult)
@@ -62,6 +64,10 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
             print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
+            if random_seed_set is not None:
+                if isinstance(random_seed_set,int):
+                    print("Setting random seed:", random_seed_set)
+                    random.seed(random_seed_set)
             list_of_xyz_files = random.sample(full_list_of_xyz_files, num_snapshots)
         else:
             print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
@@ -102,6 +108,10 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
             print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
+            if random_seed_set is not None:
+                if isinstance(random_seed_set,int):
+                    print("Setting random seed:", random_seed_set)
+                    random.seed(random_seed_set)
             list_of_xyz_files = random.sample(full_list_of_xyz_files, num_snapshots)
         else:
             print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
@@ -112,6 +122,29 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         list_of_xyz_files=[f"./xyz_traj_split/{f}" for f in list_of_xyz_files]
         print(list_of_xyz_files)
         os.chdir('..')
+
+    # XYZ-files
+    elif xyz_files is not None:
+        print("XYZ-files specified.")
+        full_list_of_xyz_files=xyz_files
+        print("Number of XYZ-files specified:", len(full_list_of_xyz_files))
+        if num_snapshots is None:
+            print("num_snapshots has not been set by user")
+            print("This means that we will take all snapshots")
+            print("Setting num_snapshots to:", len(full_list_of_xyz_files))
+            num_snapshots=len(full_list_of_xyz_files)
+        print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
+        if random_snapshots is True:
+            print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
+            if random_seed_set is not None:
+                if isinstance(random_seed_set,int):
+                    print("Setting random seed:", random_seed_set)
+                    random.seed(random_seed_set)
+            list_of_xyz_files = random.sample(full_list_of_xyz_files, num_snapshots)
+        else:
+            print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
+            list_of_xyz_files=full_list_of_xyz_files[:num_snapshots]
+        print(f"List of XYZ-files to use (num {len(list_of_xyz_files)}):", list_of_xyz_files)
 
     # XYZ TRAJECTORY
     elif xyz_trajectory is not None:
@@ -125,7 +158,6 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             print("Deleted old xyz_traj_split")
         except:
             pass
-        print("here")
         os.mkdir("xyz_traj_split")
         os.chdir("xyz_traj_split")
 
@@ -146,6 +178,10 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print(f"Number of snapshots (num_snapshots keyword) set to {num_snapshots}")
         if random_snapshots is True:
             print(f"random_snapshots is True. Taking {num_snapshots} random XYZ snapshots.")
+            if random_seed_set is not None:
+                if isinstance(random_seed_set,int):
+                    print("Setting random seed:", random_seed_set)
+                    random.seed(random_seed_set)
             list_of_xyz_files = random.sample(full_list_of_xyz_files, num_snapshots)
         else:
             print("random_snapshots is False. Taking the first", num_snapshots, "snapshots.")
@@ -169,12 +205,17 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     gradients=[]
     fragments=[]
     labels=[]
+
+    # Removing 
+    theory_1.cleanup()
+    theory_2.cleanup()
+
     if runmode=="serial":
         print("Runmode is serial!")
         print("Will now loop over XYZ-files")
         print("For a large dataset consider using parallel runmode")
-        for file in list_of_xyz_files:
-            print("\nNow running file:", file)
+        for n,file in enumerate(list_of_xyz_files):
+            print(f"\nNow running file ({n+1}/{len(list_of_xyz_files)}): {file}")
             basefile=os.path.basename(file)
             label=basefile.split(".")[0]
             frag = Fragment(xyzfile=file, charge=charge, mult=mult,printlevel=printlevel)
@@ -216,6 +257,8 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     elif runmode=="parallel":
         print("Runmode is parallel!")
         print("Will now run parallel calculations")
+        print(f"Total number of calculations: {len(list_of_xyz_files)}")
+        print(f"Number of CPU cores available: {numcores}")
         # Fragments
         print("Looping over fragments first")
         for file in list_of_xyz_files:
@@ -229,7 +272,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             fragments.append(frag)
 
         # Parallel run
-        print("Making sure numcores is set to 1 for both theories")
+        print("Warning: Making sure numcores is set to 1 for both theories")
         theory_1.set_numcores(1)
 
         from ash.functions.functions_parallel import Job_parallel
@@ -264,31 +307,35 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
                 gradients.append(gradient)
 
     # Calculate energies for atoms
-    energies_atoms_dict={}
-    unique_elems_per_frag = [list(set(frag.elems)) for frag in fragments]
-    unique_elems = list(set([j for i in unique_elems_per_frag for j in i]))
+    if energies_atoms_dict is None:
+        print("\nNow calculating isolated atom reference energies for each element in the training set")
+        energies_atoms_dict={}
+        unique_elems_per_frag = [list(set(frag.elems)) for frag in fragments]
+        unique_elems = list(set([j for i in unique_elems_per_frag for j in i]))
 
-    from dictionaries_lists import atom_spinmults
-    for uniq_el in unique_elems:
-        mult = atom_spinmults[uniq_el]
-        atomfrag = Fragment(atom=uniq_el, charge=0, mult=mult, printlevel=0)
-        print("Now running Theory 1 for atom:", uniq_el)
-        theory_1.printlevel=0
-        theory_1.cleanup()
-        result_1 = Singlepoint(theory=theory_1, fragment=atomfrag, printlevel=0,
-                               result_write_to_disk=False)
-        if delta is True:
-            theory_2.printlevel=0
-            # Running theory 2
-            print("Now running Theory 2 for atom:", uniq_el)
-            theory_2.cleanup()
-            result_2 = Singlepoint(theory=theory_2, fragment=atomfrag, printlevel=0,
-                                   result_write_to_disk=False)
-            # Delta energy
-            atomenergy = result_2.energy - result_1.energy
-        else:
-            atomenergy = result_1.energy
-        energies_atoms_dict[uniq_el] = atomenergy
+        from dictionaries_lists import atom_spinmults
+        for uniq_el in unique_elems:
+            mult = atom_spinmults[uniq_el]
+            atomfrag = Fragment(atom=uniq_el, charge=0, mult=mult, printlevel=0)
+            print("Now running Theory 1 for atom:", uniq_el)
+            theory_1.printlevel=0
+            theory_1.cleanup()
+            result_1 = Singlepoint(theory=theory_1, fragment=atomfrag, printlevel=0,
+                                result_write_to_disk=False)
+            if delta is True:
+                theory_2.printlevel=0
+                # Running theory 2
+                print("Now running Theory 2 for atom:", uniq_el)
+                theory_2.cleanup()
+                result_2 = Singlepoint(theory=theory_2, fragment=atomfrag, printlevel=0,
+                                    result_write_to_disk=False)
+                # Delta energy
+                atomenergy = result_2.energy - result_1.energy
+            else:
+                atomenergy = result_1.energy
+            energies_atoms_dict[uniq_el] = atomenergy
+    else:
+        print("\nUsing user-provided isolated atom reference energies for each element in the training set")
     print("\nAtomic energies:", energies_atoms_dict)
 
     ###########################################
@@ -519,10 +566,8 @@ def query_by_committee(mltheories=None, configs=None, Grad=True, charge=0, mult=
     print(f"Selected {len(chosen_configs)} configs with high stdevs")
     return chosen_configs
 
-
- # TODO: COMBINE TRAINING FILES
 def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxiter=10, theory_1=None, theory_2=None, Grad=True,
-                        init_base_cfgs=25, threshold=0.0001, max_add_snaps=5, maxepochs=100, selection="energy-range",
+                        init_base_cfgs=15, threshold=0.0001, max_add_snaps=5, maxepochs=100, selection="energy-range",
                         noupdate=False, random_selection=False, random_seed_set=False, seed=42,
                         charge=None, mult=None, runmode="serial", numcores=1):
 
@@ -588,34 +633,67 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
     # Choose base set:
     # This can be replaced by a list of chosen XYZ-files instead
     if random_seed_set:
-        random.seed(42)
+        print("Using random seed:", seed)
+        random.seed(seed)
     base_cfgs = random.sample(xyzfiles, init_base_cfgs)
 
     # Move chosen base configs to base
-    move_chosen_files(base_cfgs,"base")
+    #move_chosen_files(base_cfgs,"base")
+    move_chosen_files(base_cfgs,"current_set")
+
+    # Determine number of elements
+    num_elems = len(list(set(Fragment(xyzfile=base_cfgs[0]).elems)))
 
     # ACTIVE LEARNING LOOP
     chosen_cfgs=[]
+    current_xyzfiles=[]
     for iter in range(maxiter):
         print("="*50)
         print(f"ACTIVE LEARNING ITERATION {iter}")
         print("="*50)
         # Base CFGS and rest configs
-        base_cfgs += chosen_cfgs
         other_cfgs = listdiff(xyzfiles,base_cfgs)
         print(f"NUM CURRENT BASE CONFIGS : {len(base_cfgs)}")
+        print(f"NUM NEW BASE CONFIGS : {len(chosen_cfgs)}")
         print([os.path.basename(i) for i in base_cfgs])
         print(f"NUM CURRENT OTHER CONFIGS : {len(other_cfgs)}")
+        print("other_cfgs:", other_cfgs)
+        if len(other_cfgs) == 0:
+            print("Warning: No remaining CONFIGS left. Exiting loop")
+            print("Final number of cfgs in base:", len(base_cfgs))
+            break
         print()
-        # Create training data for base
-        # Note: should be rewritten for only other_cfgs and then combine train_data_mace.xyz files
-        create_ML_training_data(xyz_dir=f"{xyzdir}/../base", random_snapshots=True, printlevel=0,
+        # Create training data for new cfgs
+        if iter == 0:
+            current_xyzfiles = base_cfgs
+        else:
+            current_xyzfiles = chosen_cfgs
+        print("current_xyzfiles:", current_xyzfiles)
+        create_ML_training_data(xyz_files=current_xyzfiles, random_snapshots=True, printlevel=0,
                                    theory_1=theory_1, theory_2=theory_2, charge=charge, mult=mult, Grad=Grad, 
                                    runmode=runmode, numcores=numcores)
-
-        # TODO: COMBINE TRAINING FILES
-
-        #ML Theories
+        # Keep track of each iteration's training data
+        os.rename("train_data_mace.xyz", f"train_data_mace{iter}.xyz")
+        # First iter, we only have train_data_mace0.xyz
+        if iter == 0:
+            shutil.copyfile(f"train_data_mace{iter}.xyz", "train_data_mace.xyz")
+        else:
+            # Append new data to train_data_mace.xyz
+            with open("train_data_mace.xyz", "w") as outfile:
+                for i in range(iter+1):
+                    # write atomic references only once
+                    if i == 0:
+                        with open(f"train_data_mace{i}.xyz", "r") as infile:
+                            for line in infile:
+                                outfile.write(line)
+                    else:
+                        with open(f"train_data_mace{i}.xyz", "r") as infile:
+                            lines = infile.readlines()
+                            # Skip atomic references
+                            data_lines = lines[3*num_elems:]
+                            for line in data_lines:
+                                outfile.write(line)
+        # ML Theories
         for i,(ml,efw) in enumerate(zip(ml_theories, e_f_weights)):
             # Unique model filename
             ml.model_file=f"ML_ep{maxepochs}_ew_{e_f_weights[i][0]}_fw_{e_f_weights[i][1]}_iter{iter}.model"
@@ -625,8 +703,10 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
         # Check consistency of models and choose outliers
         chosen_cfgs = query_by_committee(mltheories=ml_theories, configs=other_cfgs, Grad=Grad, threshold=threshold,
                         num_snaps=max_add_snaps, label=str(iter), selection=selection)
+        #
         if random_selection is True:
             if random_seed_set:
+                print("Using random seed:", seed)
                 random.seed(seed)
             chosen_cfgs = random.sample(other_cfgs, max_add_snaps)
 
@@ -635,15 +715,29 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
             print("Final number of cfgs in base:", len(base_cfgs))
             print("ACTIVE LEARNING COMPLETE!")
             break
+        # What to do with chosen configs
         if noupdate is True:
             chosen_cfgs=[]
-        else:
+        #else:
             #Move chosen configs to base
-            move_chosen_files(chosen_cfgs,"base")
+            #print("RB")
+            #print("Now moving chosen configs to base dir:", chosen_cfgs)
+            #move_chosen_files(chosen_cfgs,"base")
+        #Add to base
+        base_cfgs += chosen_cfgs
 
     print("Active learning is complete.")
-    if iter == maxiter:
+    print("iter:", iter)
+    print("maxiter:", maxiter)
+    if iter == maxiter-1:
         print("Warning: Active learning loop did not converge. Check the results carefully")
     else:
         print("Active learning loop converged")
         print("Final set of configurations are found in directory: base")
+        move_chosen_files(base_cfgs,"base")
+
+
+######################################
+# WORKFLOW FUNCTIONS FOR TRAINING
+#######################################
+

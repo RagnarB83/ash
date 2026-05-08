@@ -10,7 +10,7 @@ import subprocess as sp
 import ash.constants
 import ash.modules.module_coords
 import ash.dictionaries_lists
-from ash.functions.functions_general import ashexit, isodd, print_line_with_mainheader,pygrep,print_pretty_table
+from ash.functions.functions_general import ashexit, check_program_location, isodd, print_line_with_mainheader,pygrep,print_pretty_table
 from ash.interfaces.interface_ORCA import ORCATheory, run_orca_plot, make_molden_file_ORCA
 from ash.modules.module_coords import nucchargelist,elematomnumbers
 from ash.dictionaries_lists import eldict
@@ -669,16 +669,15 @@ def DDEC_calc(elems=None, theory=None, gbwfile=None, numcores=1, DDECmodel='DDEC
     else:
         print("Found molden2aim.exe: ", molden2aim)
 
-    print("Warning: DDEC_calc requires chargemol-binary dir to be present in environment PATH variable.")
+    print("Warning: DDEC_calc requires chargemol binary in PATH")
 
     #Finding chargemoldir from PATH in os.path
     PATH=os.environ.get('PATH').split(':')
     print("PATH: ", PATH)
     print("Searching for molden2aim and chargemol in PATH")
-    for p in PATH:
-        if 'chargemol' in p:
-            print("Found chargemol in path line (this dir should contain the executables):", p)
-            chargemolbinarydir=p
+
+
+    chargemolbinarydir = check_program_location(None,None, "chargemol")
 
     #Checking if we can proceed
     if chargemolbinarydir is None:
@@ -1820,6 +1819,12 @@ def create_cubefile_from_orbfile(orbfile, option='density', grid=3, delete_temp_
         mfile = make_molden_file_ORCA(orbfile, printlevel=printlevel)
     print("Now using Multiwfn to create cube file from Moldenfile")
     cubefile = multiwfn_run(mfile, option=option, grid=grid, printlevel=printlevel)
+    if cubefile is None and option == 'spin-density' or option == 'spindensity':
+        if os.path.exists('spindensity.cub'):
+            cubefile = 'spindensity.cub'
+        else:
+            print("Spin density cube file not found. Something went wrong.")
+            ashexit()
     # Rename cubefile (shortens it)
     new_cubename=str(os.path.splitext(orbfile)[0])+".cube"
     os.rename(cubefile, new_cubename)
@@ -2595,3 +2600,14 @@ end"""
     #TODO: Option to plot difference density also
 
     return metrics_dict
+
+def boltzmann_populations(energies, temperature=298.15):
+    print("Inside boltzmann_populations function")
+    beta = 1/(ash.constants.R_gasconst_kcalK*temperature)
+
+    rel_energies=np.array([en-min(energies) for en in energies])*ash.constants.hartokcal
+    print("Relative energies (kcal/mol):", rel_energies)
+    boltzmann_factors = np.exp(-1*rel_energies * beta)
+    populations = boltzmann_factors / np.sum(boltzmann_factors)
+    print("Boltzmann populations at", temperature, "K:", populations)
+    return populations

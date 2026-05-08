@@ -8,36 +8,66 @@ import ash.constants
 import ash.settings_solvation
 import ash.settings_ash
 from ash.modules.module_theory import Theory
-from ash.modules.module_coords import write_xyzfile
 from ash.functions.functions_general import (
     ashexit, blankline, reverse_lines, print_time_rel, BC, 
     print_line_with_mainheader, print_if_level
 )
 import ash.modules.module_coords
 from ash.modules.module_coords import (
+    write_xyzfile,
     elemstonuccharges,
     check_multiplicity,
     check_charge_mult
 )
+from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 
 # Interface to the preliminary g-xTB implementation (warning: only numerical gradient)
 class gxTBTheory(Theory):
-    def __init__(self, method=None, printlevel=2, numcores=1):
+    def __init__(self, gxtbdir=None, method=None, printlevel=2, numcores=1):
         super().__init__()
         self.theorynamelabel = "gxtb"
+        self.theorytype="QM"
         self.printlevel = printlevel
+        self.analytic_hessian=False
+        print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         # Check if gxtb in PATH
+        if gxtbdir is None:
+            print(BC.WARNING, "No gxtbdir argument passed to gxTBTheory. Attempting to find gxtbdir variable inside settings_ash", BC.END)
+            try:
+                print("settings_ash.settings_dict:", ash.settings_ash.settings_dict)
+                self.gxtbdir=ash.settings_ash.settings_dict["gxtbdir"]
+            except:
+                print(BC.WARNING,"Found no gxtbdir variable in ash.settings_ash module either.",BC.END)
+                try:
+                    self.gxtbdir = os.path.dirname(shutil.which('gxtb'))
+                    print(
+                        BC.OKGREEN,
+                        "Found gxtb in path. Setting gxtbdir to:",
+                        self.gxtbdir,
+                        BC.END
+                    )
+                except:
+                    print("Found no gxtb executable in path. Exiting... ")
+                    ashexit()
+        else:
+            self.gxtbdir = gxtbdir
+
+        # Setting GXTBHOME
+        os.environ['GXTBHOME'] = self.gxtbdir
+
+        print("Warning: Interface is hardcoded to assume that gxtb executable and .gxtb, .eeq and .basisq files are all present in gxtbdir. Make sure these are present. Interface will exit if not.")
+        print("gxtbdir has been set to:", self.gxtbdir)
+        # Checking if required gxtb files are present in gxtbdir
         from pathlib import Path
-        home = Path.home()
-        if os.path.isfile(f"{home}/.gxtb") is False:
-            print("~/.gxtb file does not exist")
+        if os.path.isfile(f"{self.gxtbdir}/.gxtb") is False:
+            print(f"{self.gxtbdir}/.gxtb file does not exist")
             ashexit()
-        if os.path.isfile(f"{home}/.eeq") is False:
-            print("~/.eeq file does not exist")
+        if os.path.isfile(f"{self.gxtbdir}/.eeq") is False:
+            print(f"{self.gxtbdir}/.eeq file does not exist")
             ashexit()
-        if os.path.isfile(f"{home}/.basisq") is False:
-            print("~/.basisq file does not exist")
+        if os.path.isfile(f"{self.gxtbdir}/.basisq") is False:
+            print(f"{self.gxtbdir}/.basisq file does not exist")
             ashexit()
 
 
@@ -48,6 +78,12 @@ class gxTBTheory(Theory):
         module_init_time=time.time()
         numatoms=len(current_coords)
         write_xyzfile(elems, current_coords, "gxtb", printlevel=2, writemode='w', title="title")
+
+        # Writing Charge and Multiplicity to files
+        with open(".CHRG", "w") as f:
+            f.write(f"{charge}\n")
+        with open(".UHF", "w") as f:
+            f.write(f"{mult-1}\n")
         command_list=["gxtb", "-c", "gxtb.xyz"]
 
         if Grad:
@@ -75,11 +111,15 @@ class gxTBTheory(Theory):
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None,
-                 use_tblite=False, periodic=False, periodic_cell_dimensions=None, extraflag=None, grab_charges=False):
+                 use_tblite=False, periodic=False, periodic_cell_dimensions=None, periodic_cell_vectors=None,
+                 extraflag=None, grab_charges=False,
+                 grab_BOs=False):
 
-        self.theorynamelabel="xTB"
         self.theorytype="QM"
+        self.theorynamelabel="xTB"
+        self.label=label
         self.analytic_hessian=False
+        print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
         # Hardness of pointcharge. GAM factor. Big number means PC behaviour. 
         # If hardness is set to 'elements', xtb's element-specific hardness is used (see https://xtb-docs.readthedocs.io/en/latest/pcem.html).
@@ -97,17 +137,35 @@ class xTBTheory:
         # Passing special extra flag to xtb binary
         self.extraflag=extraflag
 
-        # Grab xTB charges in every run if chosen
+        # Grab xTB charges in every run if enabled
         self.grab_charges=grab_charges
+        
+        # Grab Bond orders (Wiberg BOs) in every run if enabled
+        self.grab_BOs=grab_BOs
+        self.BOs=None
 
         self.periodic=periodic
         self.periodic_cell_dimensions=periodic_cell_dimensions
         if self.periodic is True:
             print("Periodic boundary conditions enabled. Will pass periodicity information to xtb")
-            if self.periodic_cell_dimensions is None:
-                print("Error: No periodic_cell_dimensions was passed yet periodic is True")
-                print("Please pass a list of box dimensions and angles as a list, e.g. periodic_cell_dimensions=[20.0,20.0,20.0, 90.0, 90.0,90.0]") 
+            if self.use_tblite is False:
+                self.use_tblite=True
+                print("Warning: PBC requires use of tblite library, enabling use_tblite and continuing.")
+            # What information to use
+            if periodic_cell_dimensions is None and periodic_cell_vectors is None:
+                print("Error: If periodic is True, either periodic_cell_dimensions or periodic_cell_vectors need to be set")
+                print("periodic_cell_dimensions: (a,b,c,alpha,beta,gamma) in units of Å and °")
+                print("periodic_cell_vectors: 3x3 array in units of Å")
                 ashexit()
+            elif periodic_cell_dimensions is not None and periodic_cell_vectors is not None:
+                print("Error: periodic_cell_dimensions and periodic_cell_vectors can not both be set")
+                ashexit()
+            elif periodic_cell_dimensions is not None:
+                print("periodic_cell_dimensions:", periodic_cell_dimensions)
+                # Convert to cell vectors
+                self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+            elif periodic_cell_vectors is not None:
+                self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
 
         # Controlling output in xtb-library
         if self.printlevel >= 3:
@@ -260,8 +318,7 @@ class xTBTheory:
                 # Write turbomole style coord file but in Angstrom and with PBC info
                 coordfile="xtb_coord"
                 ash.interfaces.interface_Turbomole.create_coord_file(elems,current_coords, write_unit='ANGS', 
-                                                                     periodic_info=self.periodic_cell_dimensions, filename=coordfile)
-                
+                                                                     periodic_info=self.periodic_cell_dimensions, filename=coordfile)      
             else:
                 # Write xyz_file if molecule
                 ash.modules.module_coords.write_xyzfile(elems, current_coords, self.filename, printlevel=self.printlevel)
@@ -370,13 +427,29 @@ class xTBTheory:
         fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
         # Printing internal coordinate table
-        ash.modules.module_coords.print_internal_coordinate_table(fragment)
+        ash.modules.module_coords.print_internal_coordinate_table_new(fragment)
         print_time_rel(module_init_time, modulename='xtB Opt-run', moduleindex=2)
         return
-    
+
     #Method to grab dipole moment from an xtb outputfile (assumes run has been executed)
     def get_dipole_moment(self):
         return grab_dipole_moment(self.filename+'.out')
+
+    # Update cell using either periodic_cell_vectors or periodic_cell_dimensions
+    def update_cell(self,periodic_cell_vectors=None, periodic_cell_dimensions=None):
+        print("Updating cell vectors")
+        if periodic_cell_vectors is not None:
+            self.periodic_cell_vectors = periodic_cell_vectors
+
+            self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+        elif periodic_cell_dimensions is not None:
+            self.periodic_cell_dimensions=periodic_cell_dimensions
+
+            self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+
+    def get_cell_gradient(self):
+        return self.cell_gradient
+
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None, printlevel=None,
                 elems=None, Grad=False, PC=False, numcores=None, label=None, charge=None, mult=None):
         module_init_time=time.time()
@@ -402,7 +475,7 @@ class xTBTheory:
             ashexit()
 
         # Checking if charge and mult has been provided
-        if charge == None or mult == None:
+        if charge is None or mult is None:
             print(BC.FAIL, "Error. charge and mult has not been defined for xTBTheory.run method", BC.END)
             ashexit()
 
@@ -466,10 +539,17 @@ class xTBTheory:
             if self.grab_charges:
                 # Reading default xTB charges from file charges
                 self.charges = grabatomcharges_xTB()
+            if self.grab_BOs:
+                # Reading default xTB charges from file charges
+                self.BOs = grab_bondorder_matrix(len(qm_elems))
 
-            # Check if finished. Grab energy
+
+            # Check if finished. Grab energy, gradient, pcgradient, cellgradient
             if Grad is True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)
+                if self.periodic:
+                    self.cell_gradient = grab_latticegrad()
+                    print("cell_gradient:", self.cell_gradient)
                 if PC is True:
                     # Grab pointcharge gradient. i.e. gradient on MM atoms from QM-MM elstat interaction.
                     self.pcgrad = xtbpcgradientgrab(num_mmatoms)
@@ -540,7 +620,7 @@ class xTBTheory:
             if self.calcobject == None:
                 print("Creating new xTB calc object")
                 # Storing number of elements
-                self.stored_numatoms=len(qm_elems_numbers)
+                self.stored_atoms_sum=sum(qm_elems_numbers)
                 self.calcobject = Calculator(param_method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
                 self.calcobject.set_verbosity(self.verbosity)
                 self.calcobject.set_electronic_temperature(self.electronic_temp)
@@ -554,11 +634,11 @@ class xTBTheory:
             else:
                 if self.printlevel >= 2:
                     print("Updating coordinates in xTB calcobject")
-                if len(coords_au) != self.stored_numatoms:
-                    print("Warning: Number of coordinates not consistent with previous elements.")
+                if sum(qm_elems_numbers) != self.stored_atoms_sum:
+                    print("Warning: Coordinates not consistent with previous elements.")
                     print("Creating new xTB calc object")
                     # Storing number of elements
-                    self.stored_numatoms=len(qm_elems_numbers)
+                    self.stored_atoms_sum=sum(qm_elems_numbers)
                     self.calcobject = Calculator(param_method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
                     self.calcobject.set_verbosity(self.verbosity)
                     self.calcobject.set_electronic_temperature(self.electronic_temp)
@@ -729,6 +809,7 @@ def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False
     else:
         tblite_flag=""
 
+
     # Optional extraflag
     if extraflag is None:
         extraflag=""
@@ -748,12 +829,18 @@ def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False
         xtbembed_line1=""
         xtbembed_line2=""
 
+    gxtb=False
     if 'GFN2' in xtbmethod.upper():
         xtbflag = 2
     elif 'GFN1' in xtbmethod.upper():
         xtbflag = 1
     elif 'GFN0' in xtbmethod.upper():
         xtbflag = 0
+    elif 'GFNFF' in xtbmethod.upper():
+        print("GFN-FF has been chosen")
+    elif 'GXTB' in xtbmethod.upper() or 'G-XTB' in xtbmethod.upper() :
+        print("g-xtb has been chosen")
+        gxtb = True
     else:
         print(f"Unknown xtbmethod chosen ({xtbmethod}). Exiting...")
         ashexit()
@@ -773,8 +860,17 @@ def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False
     else:
         jobflag="" #NOTE.
 
-    command_list=[xtbdir + '/xtb', coordfile, '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
-                '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2, extraflag]
+    if 'GFNFF' in xtbmethod.upper():
+        command_list=[xtbdir + '/xtb', coordfile, '--gfnff', jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
+                    '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2, extraflag]
+    elif gxtb:
+
+        command_list=[xtbdir + '/xtb', coordfile, '--gxtb', jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
+                    '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2, extraflag]
+    else:
+        command_list=[xtbdir + '/xtb', coordfile, '--gfn', str(xtbflag), jobflag, '--chrg', str(charge), '--uhf', str(uhf), '--iterations', str(maxiter), tblite_flag, spinpol_flag,
+                    '--etemp', str(electronic_temp), '--acc', str(accuracy), '--parallel', str(numcores), solvent_line1, solvent_line2, xtbembed_line1, xtbembed_line2, extraflag]
+
     # Remove empty arguments
     command_list=list(filter(None, command_list))
 
@@ -993,6 +1089,21 @@ def grabatomcharges_xTB():
             charges.append(float(line.split()[0]))
     return charges
 
+def grab_latticegrad(file="gradlatt"):
+    gradient = np.zeros((3, 3))
+    counter=0
+    with open(file) as f:
+        for i,line in enumerate(f):
+            if '$end' in line:
+                break
+            if i >= 5:
+                gradient[counter,0] = line.split()[0]
+                gradient[counter,1] = line.split()[1]
+                gradient[counter,2] = line.split()[2]
+                counter+=1
+    return gradient
+            
+
 
 #Grab xTB charges from outputfile. Choice between Mulliken and CM5
 def grabatomcharges_xTB_output(filename, chargemodel="CM5"):
@@ -1028,3 +1139,205 @@ def grab_dipole_moment(outfile):
             if ' dipole moment from electron density' in line:
                 grab=True
     return dipole_moment
+
+def grab_bondorder_matrix(numatoms):
+    BO = np.zeros((numatoms, numatoms))
+    with open("wbo") as f:
+        lines=f.readlines()
+    for l in lines:
+        i,j,b=l.split()
+        BO[int(i)-1,int(j)-1] = float(b)
+        BO[int(j)-1,int(i)-1] = float(b)
+    return BO
+
+
+
+#TODO:
+# periodic
+# PCs
+
+# TODO : file-restart capability via npz
+
+# Interface to tbliteTheory
+class tbliteTheory(Theory):
+    def __init__(self, method=None, printlevel=2, numcores=1, spinpol=False, solvation_method=None, solvent_name=None, solvent_eps=None,
+                 maxiter=500, electronic_temp=9.5e-4, accuracy=1.0, grab_BOs=False, grab_charges=False, grab_DM=False, autostart=True,
+                 periodic=False, periodic_cell_dimensions=None, periodic_cell_vectors=None):
+        super().__init__()
+        print_line_with_mainheader("tblite INTERFACE")
+        print("method:", method)
+        self.theorytype="QM"
+        self.analytic_hessian=False
+        self.theorynamelabel = "tblite"
+        self.printlevel = printlevel
+        self.method=method
+
+        #
+        self.accuracy=accuracy
+        self.maxiter=maxiter
+        self.electronic_temp=electronic_temp
+        self.spinpol=spinpol
+        # Solvation
+        self.solvation_method=solvation_method
+        self.solvent_name=solvent_name
+        self.solvent_eps=solvent_eps
+
+        #
+        self.grab_BOs=grab_BOs
+        self.grab_charges=grab_charges
+        self.grab_DM=grab_DM
+
+
+        # Autostart
+        self.autostart=autostart
+        # Results. Used to store results after run, can be used to restart
+        # Initially None, will be set after run
+        self.results=None
+
+        # Parallelization
+        print("Setting number of cores for tblite to: OMP_NUM_THREADS=", numcores)
+        os.environ['OMP_NUM_THREADS'] = str(numcores)
+
+        # Periodic boundary conditions
+        self.periodic=periodic
+        if self.periodic:
+            print("Periodic boundary conditions enabled")
+            self.periodic_dims=np.array([True,True,True])
+            if periodic_cell_dimensions is None and periodic_cell_vectors is None:
+                print("Error: If periodic is True, either periodic_cell_dimensions or periodic_cell_vectors need to be set")
+                print("periodic_cell_dimensions: (a,b,c,alpha,beta,gamma) in units of Å and °")
+                print("periodic_cell_vectors: 3x3 array in units of Å")
+                ashexit()
+            elif periodic_cell_dimensions is not None and periodic_cell_vectors is not None:
+                print("Error: periodic_cell_dimensions and periodic_cell_vectors can not both be set")
+                print("periodic_cell_dimensions: (a,b,c,alpha,beta,gamma) in units of Å and °")
+                print("periodic_cell_vectors: 3x3 array in units of Å")
+                ashexit()
+            elif periodic_cell_dimensions is not None:
+                print("periodic_cell_dimensions:", periodic_cell_dimensions)
+                # Convert to cell vectors
+                self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+            else:
+                self.periodic_cell_vectors = periodic_cell_vectors
+                self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+            # Note: using cell vectors
+            print("Cell vectors (Å)", self.periodic_cell_vectors)
+        try:
+            import tblite
+        except Exception as e:
+            print("Problem importing tblite library. Have you installed tblite properly ?")
+            print("See: https://github.com/tblite/tblite")
+            print("Installation might be done like this:")
+            print("  mamba install tblite")
+            print("  mamba install tblite-python")
+            print("Full error message:", e)
+            ashexit(code=9)
+    # Update cell using either periodic_cell_vectors or periodic_cell_dimensions
+    def update_cell(self,periodic_cell_vectors=None, periodic_cell_dimensions=None):
+        print("Updating cell vectors")
+        if periodic_cell_vectors is not None:
+            self.periodic_cell_vectors = periodic_cell_vectors
+
+            self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+        elif periodic_cell_dimensions is not None:
+            self.periodic_cell_dimensions=periodic_cell_dimensions
+
+            self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+
+    def get_cell_gradient(self):
+        return self.cell_gradient
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
+            charge=None, mult=None):
+
+        module_init_time=time.time()
+        import tblite.interface as tb
+
+        # Checking if charge and mult has been provided
+        if charge is None or mult is None:
+            print(BC.FAIL, "Error. charge and mult has not been defined for tbliteTheory.run method", BC.END)
+            ashexit()
+
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
+
+        #Preparing coords
+        coords_au=np.array(current_coords)*ash.constants.ang2bohr
+        qm_elems_numbers=np.array(elemstonuccharges(qm_elems))
+
+        # Creating xtb calculator object
+        # TODO: Update object instead of creating new every time
+        if self.periodic is True:
+            # Changing units from Ang to Bohr
+            xtb = tb.Calculator(self.method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1,
+                                lattice=self.periodic_cell_vectors * ash.constants.ang2bohr, periodic=self.periodic_dims)
+        else:
+            xtb = tb.Calculator(self.method, qm_elems_numbers, coords_au, charge=charge, uhf=mult-1)
+
+        # set attributes
+        xtb.set("max-iter", self.maxiter)
+        xtb.set("temperature", self.electronic_temp)
+        xtb.set("accuracy", self.accuracy)
+        xtb.set("verbosity",self.printlevel)
+        # Spinpolarization
+        if self.spinpol:
+            print("activating spin polarization")
+            xtb.add("spin-polarization")
+        # Solvation
+        if self.solvation_method is not None:
+            print("activating solvation method:", self.solvation_method)
+            if 'alpb' in self.solvation_method.lower():
+                print("ALPB solvation model with solvent:", self.solvent_name)
+                xtb.add("alpb-solvation", self.solvent_name)
+            elif 'gbsa' in self.solvation_method.lower():
+                print("GBSA solvation model with solvent:", self.solvent_name)
+                xtb.add("gbsa-solvation", self.solvent_name)
+            elif 'cpcm' in self.solvation_method.lower():
+                print("CPCM solvation model with eps:", self.solvent_eps)
+                xtb.add("cpcm-solvation", self.solvent_eps)
+            
+        #Run
+        if self.autostart is True and self.results is not None:
+            print_if_level("Auto-starting tblite calculation using previous results object", self.printlevel,2)
+            print_if_level("Warning: if this leads to problems, set autostart=False in tbliteTheory", self.printlevel,2)
+            self.results = xtb.singlepoint(self.results)
+        else:
+            print("Starting new tblite singlepoint calculation")
+            self.results = xtb.singlepoint()
+
+
+        self.energy = self.results.get("energy")
+        print("Tblite energy:", self.energy)
+        # Periodic
+        if self.periodic:
+            # Grab the virial
+            virial = self.results.get("virial")
+            # Convert virial to cell gradient
+            self.cell_gradient = np.dot(virial,np.linalg.inv(self.periodic_cell_vectors * ash.constants.ang2bohr).T)
+            print("cell_gradient", self.cell_gradient)
+        #Charges
+        if self.grab_charges:
+            self.charges = self.results.get("charges")
+        #Bond orders
+        if self.grab_BOs:
+            self.BOs = self.results.get("bond-orders")
+        #DM
+        if self.grab_DM:
+            self.DM = self.results.get("density-matrix")
+
+        #Gradient
+        if Grad:
+            self.gradient = self.results.get("gradient")
+
+        if Grad:
+            print_time_rel(module_init_time, modulename='tblite run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+            return self.energy, self.gradient
+        else:
+            print_time_rel(module_init_time, modulename='tblite run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
+            return self.energy

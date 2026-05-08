@@ -121,7 +121,7 @@ def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None,
         print("Problem importing matplotlib (make sure it is installed in your environment). Plotting is not possible but continuing.")
 
     path_to_plumed=check_program_location(path_to_plumed,'path_to_plumed','plumed')
-
+    print("Path to plumed:", path_to_plumed)
     ###############################
     # USER SETTINGS
     ###############################
@@ -240,7 +240,7 @@ def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None,
 
     # The plumed sum_hills command that is run.
     print("")
-    if MultipleWalker==True:
+    if MultipleWalker is True:
         #Removing old HILLS.ALL if present
         try:
             os.remove('HILLS.ALL')
@@ -266,28 +266,28 @@ def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None,
         print("")
         #RUN PLUMED_ASH OBJECT function
         if CV1_grid_limits is None:
-            call_plumed_sum_hills(path_to_plumed,"HILLS.ALL",CVnum)
+            call_plumed_sum_hills(path_to_plumed=path_to_plumed,hillsfile="HILLS.ALL",ndim=CVnum)
         else:
             #Changing input unit from Angstrom to nm or degree to radian
             if CVnum == 1:
-                call_plumed_sum_hills(path_to_plumed,'HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling])
+                call_plumed_sum_hills(path_to_plumed=path_to_plumed,hillsfile='HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling])
             elif CVnum == 2:
                 #Changing input unit from Angstrom to nm or degree to radian
-                call_plumed_sum_hills(path_to_plumed,'HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling,CV2_grid_limits[0]/ CV2_scaling],
+                call_plumed_sum_hills(path_to_plumed=path_to_plumed,hillsfile='HILLS.ALL',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling,CV2_grid_limits[0]/ CV2_scaling],
                      maxg=[CV1_grid_limits[1]/ CV1_scaling,CV2_grid_limits[1]/ CV2_scaling])
 
     else:
         print("Calling call_plumed_sum_hills")
         # call_plumed_sum_hills(path_to_plumed,"HILLS")
         if CV1_grid_limits == None:
-            call_plumed_sum_hills(path_to_plumed,"HILLS",CVnum)
+            call_plumed_sum_hills(path_to_plumed=path_to_plumed,hillsfile="HILLS",ndim=CVnum)
         else:
             #Changing input unit from Angstrom to nm or degree to radian
             if CVnum == 1:
-                call_plumed_sum_hills(path_to_plumed,'HILLS',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling])
+                call_plumed_sum_hills(path_to_plumed=path_to_plumed,hillsfile='HILLS',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling])
             elif CVnum == 2:
                 #Changing input unit from Angstrom to nm or degree to radian
-                call_plumed_sum_hills(path_to_plumed,'HILLS',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling,CV2_grid_limits[0]/ CV2_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling,CV2_grid_limits[1]/ CV2_scaling])
+                call_plumed_sum_hills(path_to_plumed=path_to_plumed,hillsfile='HILLS',ndim=CVnum, ming=[CV1_grid_limits[0]/ CV1_scaling,CV2_grid_limits[0]/ CV2_scaling], maxg=[CV1_grid_limits[1]/ CV1_scaling,CV2_grid_limits[1]/ CV2_scaling])
         HILLSFILELIST=['HILLS']
         # Single COLVAR file
         COLVARFILELIST=['COLVAR']
@@ -399,6 +399,7 @@ def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None,
                                 colvar_value.append(float(line.split()[1]))
                                 biaspot_value.append(float(line.split()[2]))
                     elif CVnum == 2:
+                        #print("line:", line)
                         if number_of_fields >= 4:
                             if len(line) > 10:
                                 time.append(float(line.split()[0]))
@@ -456,6 +457,7 @@ def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None,
         #Possible energy conversion
         biaspot_value_kcal=np.array(biaspot_value)/energy_scaling
 
+        print("final_rc2:", final_rc2)
 
         biaspot_value_kcal_list.append(biaspot_value_kcal)
         time_list.append(time)
@@ -525,7 +527,7 @@ def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None,
             plt.scatter(cv, biaspot, marker='o', linestyle='-', s=3, linewidth=1, label='Walker'+str(num))
         #lg2 = plt.legend(shadow=True, fontsize='xx-small', bbox_to_anchor=(0.0, 0.0), loc='lower left')
 
-        if WellTemp==True:
+        if WellTemp is True:
             #Subplot 4: Gaussian height from HILLS
             plt.subplot(2, 2, 4)
             plt.gca().set_title('G-height vs. time', fontsize='small', style='italic', fontweight='bold')
@@ -562,22 +564,26 @@ def plumed_MTD_analyze(path_to_plumed=None, Plot_To_Screen=False, CV1_type=None,
         plt.gca().set_title('Free energy vs. CV', fontsize='small', style='italic', fontweight='bold')
         plt.xlabel('{} ({})'.format(CV1_type,CV1_indices), fontsize='small')
         plt.ylabel('{} ({})'.format(CV2_type,CV2_indices), fontsize='small')
-        if CV1_type=='Torsion':
-            plt.xlim([-180,180])
-            plt.ylim([-180,180])
-        else:
-            print("Subplot 1 free energy surface")
-            print("Choosing sensible x and y values based on min and max")
-            #print("final_rc:", final_rc)
-            #print("final_rc2:", final_rc2)
-            #min_x=min(final_rc)
-            #max_x=max(final_rc)
-            #min_y=min(final_rc2)
-            #max_y=max(final_rc2)
-            #plt.xlim([min_x,max_x])
-            #plt.ylim([min_y,max_y])
-            #plt.xlim(CV1_plot_limits)
-            #plt.ylim(CV2_plot_limits)
+        #if CV1_type.lower()=='torsion':
+        #    plt.xlim([-180,180])
+        #    #plt.ylim([-180,180])
+        #else:
+        print("Subplot 1 free energy surface")
+        print("Choosing sensible x and y values based on min and max")
+        #print("final_rc:", final_rc)
+        #print("final_rc2:", final_rc2)
+        min_x=min(final_rc)
+        max_x=max(final_rc)
+        min_y=min(final_rc2)
+        max_y=max(final_rc2)
+        print("min_x:", min_x)
+        print("max_x:", max_x)
+        print("min_y:", min_y)
+        print("max_y:", max_y)
+        plt.xlim([min_x,max_x])
+        plt.ylim([min_y,max_y])
+        #plt.xlim(CV1_plot_limits)
+        #plt.ylim(CV2_plot_limits)
         cm = plt.cm.get_cmap(colormap)
         colorscatter=plt.scatter(final_rc, final_rc2, c=Relfreeenergy_kcal, marker='o', linestyle='-', linewidth=1, cmap=cm)
         cbar = plt.colorbar(colorscatter)

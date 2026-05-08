@@ -217,9 +217,10 @@ outputname="\$job.out"
 multiwalker=$multiwalker
 
 
-#NUM_CORES
-NUM_CORES=\$((SLURM_JOB_NUM_NODES*SLURM_CPUS_ON_NODE))
-
+#NUM_CORES (note: SLURM_NTASKS is safer due to Slurm plugins)
+#NUM_CORES=\$((SLURM_JOB_NUM_NODES*SLURM_CPUS_ON_NODE))
+NUM_CORES=\$SLURM_NTASKS
+echo "NUM_CORES: \$NUM_CORES"
 
 #Setting MKL_NUM_THREADS, OMP_NUM_THREADS,OPENMM_CPU_THREADS to threads variable (should be 1 usually)
 #Note: Both OpenMM and pyscf threading behaved oddly unless we set this to 1 initially
@@ -291,6 +292,8 @@ cp \$SLURM_SUBMIT_DIR/*.gbw \$tdir/ 2>/dev/null
 cp \$SLURM_SUBMIT_DIR/*.molden \$tdir/ 2>/dev/null
 cp \$SLURM_SUBMIT_DIR/*nat \$tdir/ 2>/dev/null
 cp \$SLURM_SUBMIT_DIR/*.chk \$tdir/ 2>/dev/null
+cp \$SLURM_SUBMIT_DIR/*.dcd \$tdir/ 2>/dev/null
+cp \$SLURM_SUBMIT_DIR/*.model \$tdir/ 2>/dev/null
 cp \$SLURM_SUBMIT_DIR/*.xtl \$tdir/ 2>/dev/null
 cp \$SLURM_SUBMIT_DIR/*.ff \$tdir/ 2>/dev/null
 cp \$SLURM_SUBMIT_DIR/*.ygg \$tdir/ 2>/dev/null
@@ -359,6 +362,11 @@ then
       echo "Copying files to dir: walkersim\$i"  >> \$SLURM_SUBMIT_DIR/\$outputname
       cp * walkersim\$i/
       cd walkersim\$i
+      # Checking if multiple walker feature by plumed is also used in the script (Replace 'XYZ' by walker number in the input file)
+      if grep -q "WALKERS_N" "$file"; then
+        echo "Multiple walker feature of PLumed also used"
+        sed -i "s/XYZ/\$i/g" $file
+      fi
       echo "Entering dir: walkersim\$i"  >> \$SLURM_SUBMIT_DIR/\$outputname
       echo "Process launched : \$i"  >> \$SLURM_SUBMIT_DIR/\$outputname
       sleep 2

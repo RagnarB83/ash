@@ -8,7 +8,6 @@ import itertools
 
 #import ash
 import ash.constants
-import ash.modules.module_coords
 
 ashpath = os.path.dirname(ash.__file__)
 from ash.functions.functions_general import ashexit, BC, print_time_rel, listdiff, printdebug, print_line_with_mainheader, find_replace_string_in_file, \
@@ -17,16 +16,18 @@ from ash.functions.functions_general import ashexit, BC, print_time_rel, listdif
 
 from ash.functions.functions_elstructure import DDEC_calc, DDEC_to_LJparameters
 from ash.modules.module_coords import Fragment, write_pdbfile, distance_between_atoms, list_of_masses, write_xyzfile, \
-    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2, \
-    pdb_to_smiles,xyz_to_pdb_with_connectivity,writepdb_with_connectivity,mol_to_pdb
+    change_origin_to_centroid, get_centroid, check_charge_mult, check_gradient_for_bad_atoms, get_molecule_members_loop_np2, define_dummy_topology, get_connected_atoms_dict
+
+from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 from ash.modules.module_MM import UFF_modH_dict, MMforcefield_read
-from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB
+from ash.interfaces.interface_xtb import xTBTheory, grabatomcharges_xTB, tbliteTheory
 from ash.interfaces.interface_ORCA import ORCATheory, grabatomcharges_ORCA, chargemodel_select
 from ash.modules.module_singlepoint import Singlepoint
 from ash.interfaces.interface_plumed import plumed_MTD_analyze
 from ash.interfaces.interface_mdtraj import MDtraj_import, MDtraj_imagetraj, MDtraj_RMSF
 import ash.functions.functions_parallel
 import ash.modules.module_plotting
+from ash.interfaces.interface_openbabel import pdb_to_smiles,xyz_to_pdb_with_connectivity,writepdb_with_connectivity,mol_to_pdb
 
 
 class OpenMMTheory:
@@ -38,7 +39,7 @@ class OpenMMTheory:
                  nonbondedMethod_noPBC='NoCutoff', nonbonded_cutoff_noPBC=20,
                  xmlfiles=None, pdbfile=None, use_parmed=False, xmlsystemfile=None,
                  do_energy_decomposition=False,
-                 periodic=False, periodic_cell_dimensions=None, PBCvectors=None,
+                 periodic=False, periodic_cell_dimensions=None, PBCvectors=None, periodic_cell_vectors=None,
                  charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
                  periodic_nonbonded_cutoff=12,  dispersion_correction=True,
                  nonbondedMethod_PBC='PME',
@@ -60,6 +61,7 @@ class OpenMMTheory:
         # $OPENMM_CPU_THREADS in shell
         # before running.
         os.environ['OMP_NUM_THREADS'] = str(numcores)
+        os.environ['OPENMM_CPU_THREADS'] = str(numcores)
         print("OpenMM CPU threads set to:", os.environ['OMP_NUM_THREADS'])
         self.numcores=numcores #Setting for general ASH compatibility
 
@@ -194,7 +196,7 @@ class OpenMMTheory:
         # Initializing
         self.coords = []
         self.charges = []
-        self.Periodic = periodic
+        self.periodic = periodic
         self.periodic_nonbonded_cutoff=periodic_nonbonded_cutoff
         self.nonbonded_cutoff_noPBC=nonbonded_cutoff_noPBC
         #Methods for nonbonded interactions, PBC and no-PBC
@@ -232,6 +234,13 @@ class OpenMMTheory:
 
         # Initializing
         pdb_pbc_vectors=None
+
+        # Phasing out PBCvectors
+        if PBCvectors is not None:
+            print("Warning: PBCvectors keyword is on its way out. Use periodic_cell_vectors instead")
+            if periodic_cell_vectors is None:
+                periodic_cell_vectors=PBCvectors
+
 
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
@@ -340,10 +349,10 @@ class OpenMMTheory:
                 #if float(openmm.__version__) >= 8.1:
                 if version.parse(openmm.__version__) >= version.parse("8.1"):
 
-                    if PBCvectors is None:
+                    if periodic_cell_vectors is None:
                         temp_pbc_vecs=None
                     else:
-                        temp_pbc_vecs=PBCvectors*openmm.unit.angstrom #Adding units
+                        temp_pbc_vecs=periodic_cell_vectors*openmm.unit.angstrom #Adding units
                     #If cell dims provided instead
                     if periodic_cell_dimensions is None:
                         temp_pbc_cell_value=None
@@ -483,16 +492,21 @@ class OpenMMTheory:
             # Create list of atomnames, used in PDB topology and XML file
             atomnames_full=[j+str(i) for i,j in enumerate(fragment.elems)]
             # Write PDB-file frag.pdb with dummy atomnames
-            write_pdbfile(fragment, outputname="frag", atomnames=atomnames_full)
+            #write_pdbfile(fragment, outputname="frag", atomnames=atomnames_full)
             # Load PDB-file and create topology
-            pdb = openmm.app.PDBFile("frag.pdb")
-            self.topology = pdb.topology
+            #pdb = openmm.app.PDBFile("frag.pdb")
+            #self.topology = pdb.topology
+
+            #Creating new 
+            #fragment.define_topology()
+            #self.topology = fragment.pdb_topology
+            self.topology = define_dummy_topology(fragment.elems)
 
             # Create dummy XML file
             xmlfile = write_xmlfile_nonbonded(filename="dummy.xml", resnames=["DUM"], atomnames_per_res=[atomnames_full], atomtypes_per_res=[fragment.elems],
                                             elements_per_res=[fragment.elems], masses_per_res=[fragment.masses],
                                             charges_per_res=[[0.0]*fragment.numatoms],
-                                            sigmas_per_res=[[0.0]*fragment.numatoms], epsilons_per_res=[[0.0]*fragment.numatoms], skip_nb=True)
+                                            sigmas_per_res=[[0.0]*fragment.numatoms], epsilons_per_res=[[0.0]*fragment.numatoms], skip_nb=False)
             # Create dummy forcefield
             self.forcefield = openmm.app.ForceField(xmlfile)
 
@@ -536,13 +550,13 @@ class OpenMMTheory:
         # NOW CREATE SYSTEM UNLESS already created (xmlsystemfile)
         if self.system is None:
             # Periodic or non-periodic ystem
-            if self.Periodic is True:
+            if self.periodic is True:
                 if self.printlevel > 0:
                     print("System is periodic.")
                     print_line_with_subheader1("Setting up periodicity.")
                     #Inspect and set PBC in self.topology and self.forcefield
                     #Necessary for system creation with periodics (otherwise failure)
-                    self.set_periodics_before_system_creation(PBCvectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed,)
+                    self.set_periodics_before_system_creation(periodic_cell_vectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed,)
 
                 #Nonbonded method to use for PBC
                 if self.nonbondedMethod_PBC == 'PME':
@@ -611,13 +625,9 @@ class OpenMMTheory:
                                                                rigidWater=self.rigidwater, ewaldErrorTolerance=self.ewalderrortolerance,
                                                                nonbondedCutoff=self.periodic_nonbonded_cutoff * openmm.unit.angstroms, residueTemplates=residueTemplates)
 
-                #FINAL PRINTING OF SYSTEM PBC VECTORS
-                a, b, c = self.system.getDefaultPeriodicBoxVectors()
-                if self.printlevel > 0:
-                    print_line_with_subheader2("Periodic vectors:")
-                    print(a)
-                    print(b)
-                    print(c)
+                # Setting as periodic_cell_vectors
+                self.periodic_cell_vectors = np.array([[v._value*10 for v in vec] for vec in self.system.getDefaultPeriodicBoxVectors()])
+                print("Periodic_cell_vectors (Å)", periodic_cell_vectors)
 
                 # Force modification here
                 # print("OpenMM Forces defined:", self.system.getForces())
@@ -929,29 +939,29 @@ class OpenMMTheory:
             ashexit()
 
     #Function that handles periodicity in forcefield objects (for Amber, CHARMM). TODO: Test GROMACS and XML
-    def set_periodics_before_system_creation(self,PBCvectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
+    def set_periodics_before_system_creation(self,periodic_cell_vectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed):
         import openmm
         from packaging import version
         if use_parmed is True:
             import parmed
         print("Inspecting periodicity input before system creation")
-        print("PBCVectors:", PBCvectors)
+        print("periodic_cell_vectors:", periodic_cell_vectors)
         print("periodic_cell_dimensions:", periodic_cell_dimensions)
         print("pdb_pbc_vectors:", pdb_pbc_vectors)
         #IF PBC vectors provided then we need to set them in the topology (otherwise system creation does not work)
-        if PBCvectors is not None:
-            print("\nPBC vectors provided by user (in Angstrom):", PBCvectors)
+        if periodic_cell_vectors is not None:
+            print("\nPBC vectors provided by user (in Angstrom):", periodic_cell_vectors)
             print("Setting PBC vectors in topology object")
-            self.topology.setPeriodicBoxVectors(PBCvectors*openmm.unit.angstroms)
+            self.topology.setPeriodicBoxVectors(periodic_cell_vectors*openmm.unit.angstroms)
             print("Topology PBC vectors set:", self.topology.getPeriodicBoxVectors())
             #Setting PBC forcefield object
             print("Setting PBC box vectors in forcefield object")
             if CHARMMfiles is True:
-                self.forcefield.box_vectors = PBCvectors*openmm.unit.angstrom
+                self.forcefield.box_vectors = periodic_cell_vectors*openmm.unit.angstrom
                 print("PBC box vectors set:", self.forcefield.box_vectors)
             elif Amberfiles is True and use_parmed is True:
                 #Necessary for parmed object to define box_vectors in forcefield object
-                self.forcefield.box_vectors = PBCvectors*openmm.unit.angstrom
+                self.forcefield.box_vectors = periodic_cell_vectors*openmm.unit.angstrom
                 print("PBC box vectors set:", self.forcefield.box_vectors)
             elif Amberfiles is True and use_parmed is False:
                 #Not necessary to define box_vectors (grabbed from topology above) but we have to make sure PBC is on
@@ -966,10 +976,9 @@ class OpenMMTheory:
                     print("Warning: Will assume cubic box and set PBC vectors in a hacky way")
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"] =np.array([0.0,0.0,0.0,0.0])
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][0] = 90.0
-                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][1] = PBCvectors[0][0]
-                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = PBCvectors[1][1]
-                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = PBCvectors[2][2]
-
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][1] = periodic_cell_vectors[0][0]
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = periodic_cell_vectors[1][1]
+                    self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = periodic_cell_vectors[2][2]
         elif periodic_cell_dimensions is not None:
             print("\nPBC cell dimensions provided by user:", periodic_cell_dimensions)
             #print("Setting PBC vectors in topology")
@@ -1030,7 +1039,7 @@ class OpenMMTheory:
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][2] = periodic_cell_dimensions[1]
                     self.forcefield._prmtop._raw_data["BOX_DIMENSIONS"][3] = periodic_cell_dimensions[2]
         elif pdb_pbc_vectors is not None:
-            print("Warning: neither user keyword PBCvectors or periodic_cell_dimensions was set (None)")
+            print("Warning: neither user keyword periodic_cell_vectors or periodic_cell_dimensions was set (None)")
             print("However, we found PBC information inside PDB-topology of the PDB-file that was read in. Using this and continuing")
             #Should work automatically
         elif self.topology.getPeriodicBoxVectors() is not None:
@@ -1069,6 +1078,55 @@ class OpenMMTheory:
                range(len(coords_nm))] * openmm.unit.nanometer
         simulation.context.setPositions(pos)
         print_if_level("Coordinates set", self.printlevel,1)
+
+    # Update cell using either periodic_cell_vectors or periodic_cell_dimensions
+    # This method is called by Periodic optimizers
+    def update_cell(self,periodic_cell_vectors=None, periodic_cell_dimensions=None):
+        import openmm
+        print("Updating cell vectors")
+        print("New periodic_cell_vectors are:", periodic_cell_vectors)
+        if periodic_cell_vectors is not None:
+            self.periodic_cell_vectors = periodic_cell_vectors
+            self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+        elif periodic_cell_dimensions is not None:
+            self.periodic_cell_dimensions=periodic_cell_dimensions
+            self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+        
+        # Now updating actual OpenMM objects
+        #Converting to nm
+        cellvecs_nm = self.periodic_cell_vectors/10
+        a = cellvecs_nm[0]
+        b = cellvecs_nm[1]
+        c = cellvecs_nm[2]
+
+        # We may have to adjust the nonbonded cutoff.
+        # Shortest box dimension (diagonal elements, safe estimate for triclinic)
+        min_box_dim = min(cellvecs_nm[0,0], cellvecs_nm[1,1], cellvecs_nm[2,2])
+        hard_limit_cutoff = 0.499 * min_box_dim  # just under OpenMM's hard limit of 0.5
+
+        # Find NonbondedForce and update cutoff only if the box has become too small
+        for i in range(self.system.getNumForces()):
+            force = self.system.getForce(i)
+            if isinstance(force, openmm.NonbondedForce):
+                current_cutoff = force.getCutoffDistance().value_in_unit(openmm.unit.nanometer)
+
+                # Store the original intended cutoff the first time we see it
+                if not hasattr(self, '_original_cutoff_nm'):
+                    self._original_cutoff_nm = current_cutoff
+                    print(f"Storing original cutoff: {self._original_cutoff_nm:.3f} nm")
+
+                # Desired cutoff: restore original if box allows, otherwise use hard limit
+                desired_cutoff = min(self._original_cutoff_nm, hard_limit_cutoff)
+
+                if abs(desired_cutoff - current_cutoff) > 1e-6:  # only update if actually changed
+                    print(f"Adjusting cutoff from {current_cutoff:.3f} to {desired_cutoff:.3f} nm "
+                        f"(box limit: {hard_limit_cutoff:.3f} nm, original: {self._original_cutoff_nm:.3f} nm)")
+                    force.setCutoffDistance(desired_cutoff * openmm.unit.nanometer)
+                break
+        # Note we are modifying the system and topology itself because we are doing OpenMMTheory.run that creates new sim and context each time
+        self.system.setDefaultPeriodicBoxVectors(a,b,c)
+        #Topology
+        self.topology.setPeriodicBoxVectors(cellvecs_nm)
 
     #Add dummy
     #https://simtk.org/plugins/phpBB/viewtopicPhpbb.php?f=161&t=10049&p=0&start=0&view=&sid=b844250e55b14682fb21b5f66a4d810f
@@ -1188,7 +1246,7 @@ class OpenMMTheory:
         print(f"Forceconstant: {forceconstant} kcal/mol/Ang^2")
         print(f"Force acting at values larger than {distance} Ang:")
         #Distinguish periodic and nonperiodic scenarios:
-        if self.Periodic is True:
+        if self.periodic is True:
             centerforce = openmm.CustomExternalForce("0.5*k * max(0,periodicdistance(x, y, z, x0, y0, z0) - r0)^2")
         else:
             centerforce = openmm.CustomExternalForce("0.5*k * max(0,((x-x0)^2+(y-y0)^2+(z-z0)^2)-r0)^2")
@@ -1237,7 +1295,7 @@ class OpenMMTheory:
         #centerforce = openmm.CustomCentroidBondForce(2, "0.5*k*(distance(g1,g2)-r0)^2")
         centerforce = openmm.CustomCentroidBondForce(2, "0.5*k*max(0, distance(g1,g2)-r0)^2")
         #Periodic case (note: periodicdistance not available for CustomCentroidBondForce)
-        if self.Periodic is True:
+        if self.periodic is True:
             print("Warning: add_flatbottom_centerforce with PBC is not well tested")
             centerforce.setUsesPeriodicBoundaryConditions=True
             #centerforce = openmm.CustomExternalForce("k *periodicdistance(x, y, z, x0, y0, z0)")
@@ -1439,6 +1497,10 @@ class OpenMMTheory:
         for i in frozen_atoms:
             self.system.setParticleMass(i, 0 * openmm.unit.daltons)
 
+        # Also adding exceptions to nonbonded force to avoid interactions between frozen atoms (causes problems otherwise in NPT)
+        print("Also adding exceptions to nonbonded force for frozen atoms to avoid interactions between them (avoids problems in NPT).")
+        self.addexceptions(frozen_atoms)
+
         #Update list of current masses
         self.system_masses = [self.system.getParticleMass(i)._value for i in self.allatoms]
 
@@ -1485,33 +1547,21 @@ class OpenMMTheory:
 
     # This removes interactions between particles in a region (e.g. QM-QM or frozen-frozen pairs)
     # Give list of atom indices for which we will remove all pairs
-    # Todo: Way too slow to do for big list of e.g. frozen atoms but works well for qmatoms list size
-    # Alternative: Remove force interaction and then add in the interaction of active atoms to frozen atoms
-    # should be reasonably fast
-    # https://github.com/openmm/openmm/issues/2124
-    # https://github.com/openmm/openmm/issues/1696
     def addexceptions(self, atomlist):
-        print("atomlist:",atomlist)
         import openmm
         timeA = time.time()
-        import itertools
         print("Add exceptions/exclusions. Removing i-j interactions for list:", len(atomlist), "atoms")
 
-        # Has duplicates
-        # [self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i in atomlist for j in atomlist]
-        # https://stackoverflow.com/questions/942543/operation-on-every-pair-of-element-in-a-list
-        # [self.nonbonded_force.addException(i,j,0, 0, 0, replace=True) for i,j in itertools.combinations(atomlist, r=2)]
         numexceptions = 0
         numexclusions = 0
         printdebug("self.system.getForces() ", self.system.getForces())
-        # print("self.nonbonded_force:", self.nonbonded_force)
 
         for force in self.system.getForces():
             printdebug("force:", force)
             if isinstance(force, openmm.NonbondedForce):
                 print("Case Nonbondedforce. Adding Exception for ij pair.")
-                for i in atomlist:
-                    for j in atomlist:
+                for idx_i, i in enumerate(atomlist):
+                    for j in atomlist[idx_i + 1:]:
                         printdebug("i,j : {} and {} ".format(i, j))
                         force.addException(i, j, 0, 0, 0, replace=True)
 
@@ -1533,8 +1583,10 @@ class OpenMMTheory:
                 #Using set of frozensets to get unique pairs
                 all_exclusions = [force.getExclusionParticles(exclindex) for exclindex in range(0,force.getNumExclusions()) ]
                 existing_exclusions = {frozenset(excl) for excl in all_exclusions}
-                for k in atomlist:
-                    for l in atomlist:
+                #for k in atomlist:
+                #    for l in atomlist:
+                for idx_k, k in enumerate(atomlist):
+                    for l in atomlist[idx_k + 1:]:
                         if not frozenset((k,l)) in existing_exclusions:
                             existing_exclusions.add(frozenset([k,l]))
                             force.addExclusion(k, l)
@@ -1621,12 +1673,12 @@ class OpenMMTheory:
             #NOTE: Not sure if needed anymore
             self.simulation = openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,
                                                             openmm.Platform.getPlatformByName(self.platform_choice),
-                                                                self.properties)
+                                                            self.properties)
             return
         else:
             simulation = openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,
                                                             openmm.Platform.getPlatformByName(self.platform_choice),
-                                                                self.properties)
+                                                            self.properties)
             print_time_rel(timeA, modulename="creating/updating simulation", currprintlevel=self.printlevel)
             return simulation
 
@@ -1698,10 +1750,45 @@ class OpenMMTheory:
             dof -= 3
         self.dof=dof
 
+    # Compute cell gradient numerically
+    def compute_cell_gradient_fd(self,context, eps=1e-4):
+        import openmm
+        # Conversion factors
+        NM_TO_BOHR = 18.89726124  # 1 nm = 18.897... Bohr
+        KJMOL_TO_EH = 1.0 / 2625.4996  # 1 kJ/mol = 1/2625.5 Hartree
+        eps_nm = eps / NM_TO_BOHR  # convert eps to nm for OpenMM
+
+        state = context.getState(getEnergy=True, getPositions=True)
+        E0 = state.getPotentialEnergy().value_in_unit(openmm.unit.kilojoule_per_mole) * KJMOL_TO_EH
+        box = state.getPeriodicBoxVectors(asNumpy=True).value_in_unit(openmm.unit.nanometer)  # (3,3) in nm
+        print("box:", box)
+
+        # Only lower-triangular indices are valid for OpenMM triclinic box
+        valid_indices = [(0,0), (1,0), (1,1), (2,0), (2,1), (2,2)]
+
+        grad = np.zeros((3, 3))
+        for (i, j) in valid_indices:
+            box_pert = box.copy()
+            box_pert[i, j] += eps_nm
+            context.setPeriodicBoxVectors(*box_pert)
+            E_plus = context.getState(getEnergy=True).getPotentialEnergy().value_in_unit(openmm.unit.kilojoule_per_mole) * KJMOL_TO_EH
+            grad[i, j] = (E_plus - E0) / eps  # dE[Eh] / dh[Bohr]
+            context.setPeriodicBoxVectors(*box)  # restore
+        return grad  # Eh/Bohr
+
+    # Get cell gradient (called by an Optimizer e.g.)
+    def get_cell_gradient(self):
+        print("Inside get_cell_gradient")
+        # First compute the cell gradient numerically
+        # Using self.stored_context (should have been defined by .run call)
+        self.cell_gradient = self.compute_cell_gradient_fd(self.stored_context, eps=1e-4)
+        print("OpenMM cell gradient:",self.cell_gradient)
+        return self.cell_gradient
+
     #NOTE: Adding charge/mult/PC here to  be consistent with QM_theories. Not used
-    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None, label=None, charge=None, mult=None, PC=False, current_MM_coords=None, MMcharges=None,
-            mm_elems=None,
-            numcores=1):
+    def run(self, current_coords=None, elems=None, Grad=False, fragment=None, qmatoms=None, label=None, 
+            charge=None, mult=None, PC=False, current_MM_coords=None, MMcharges=None,
+            mm_elems=None, qm_elems=None, numcores=1):
         module_init_time = time.time()
         timeA = time.time()
         import openmm
@@ -1847,69 +1934,18 @@ class OpenMMTheory:
         for force in self.system.getForces():
             if isinstance(force, openmm.NonbondedForce):
                 for exc in range(force.getNumExceptions()):
-                    # print(force.getExceptionParameters(exc))
+                    #print(force.getExceptionParameters(exc))
                     # force.getExceptionParameters(exc)
                     p1, p2, chargeprod, sigmaij, epsilonij = force.getExceptionParameters(exc)
                     if p1 in atomlist or p2 in atomlist:
-                        # print("p1: {} and p2: {}".format(p1,p2))
-                        # print("chargeprod:", chargeprod)
-                        # print("sigmaij:", sigmaij)
-                        # print("epsilonij:", epsilonij)
+                        #print("p1: {} and p2: {}".format(p1,p2))
+                        #print("chargeprod:", chargeprod)
+                        #print("sigmaij:", sigmaij)
+                        #print("epsilonij:", epsilonij)
                         chargeprod._value = 0.0
                         force.setExceptionParameters(exc, p1, p2, chargeprod, sigmaij, epsilonij)
-                        # print("New:", force.getExceptionParameters(exc))
+                        #print("New:", force.getExceptionParameters(exc))
         print_time_rel(timeA, modulename="delete_exceptions")
-
-    # # Function to
-    # def zero_nonbondedforce(self, atomlist, zeroCoulomb=True, zeroLJ=True):
-    #     timeA = time.time()
-    #     print("Zero-ing nonbondedforce")
-
-    #     def charge_sigma_epsilon(charge, sigma, epsilon):
-    #         if zeroCoulomb is True:
-    #             newcharge = charge
-    #             newcharge._value = 0.0
-
-    #         else:
-    #             newcharge = charge
-    #         if zeroLJ is True:
-    #             newsigma = sigma
-    #             newsigma._value = 0.0
-    #             newepsilon = epsilon
-    #             newepsilon._value = 0.0
-    #         else:
-    #             newsigma = sigma
-    #             newepsilon = epsilon
-    #         return [newcharge, newsigma, newepsilon]
-
-    #     # Zero all nonbonding interactions for atomlist
-    #     for force in self.system.getForces():
-    #         if isinstance(force, openmm.NonbondedForce):
-    #             # Setting single particle parameters
-    #             for atomindex in atomlist:
-    #                 oldcharge, oldsigma, oldepsilon = force.getParticleParameters(atomindex)
-    #                 newpars = charge_sigma_epsilon(oldcharge, oldsigma, oldepsilon)
-    #                 print(newpars)
-    #                 force.setParticleParameters(atomindex, newpars[0], newpars[1], newpars[2])
-    #             print("force.getNumExceptions() ", force.getNumExceptions())
-    #             print("force.getNumExceptionParameterOffsets() ", force.getNumExceptionParameterOffsets())
-    #             print("force.getNonbondedMethod():", force.getNonbondedMethod())
-    #             print("force.getNumGlobalParameters() ", force.getNumGlobalParameters())
-    #             # Now doing exceptions
-    #             for exc in range(force.getNumExceptions()):
-    #                 print(force.getExceptionParameters(exc))
-    #                 force.getExceptionParameters(exc)
-    #                 p1, p2, chargeprod, sigmaij, epsilonij = force.getExceptionParameters(exc)
-    #                 # chargeprod._value=0.0
-    #                 # sigmaij._value=0.0
-    #                 # epsilonij._value=0.0
-    #                 newpars2 = charge_sigma_epsilon(chargeprod, sigmaij, epsilonij)
-    #                 force.setExceptionParameters(exc, p1, p2, newpars2[0], newpars2[1], newpars2[2])
-    #                 # print("New:", force.getExceptionParameters(exc))
-    #             # force.updateParametersInContext(self.simulation.context)
-    #         elif isinstance(force, openmm.CustomNonbondedForce):
-    #             print("customnonbondedforce not implemented")
-    #             ashexit()
 
     # Updating LJ interactions in OpenMM object. Used to set LJ sites to zero e.g. so that they do not contribute
     # Can be used to get QM-MM LJ interaction energy
@@ -2543,7 +2579,7 @@ def OpenMM_Opt(fragment=None, theory=None, maxiter=1000, tolerance=1, enforcePer
 
     #Writing final PDB-file. If system is non-periodic (according to OpenMMTheory settings) then we set enforcePeriodicBox to False
     #to avoid some strange geometry translation
-    if openmmobject.Periodic is True:
+    if openmmobject.periodic is True:
         if printlevel >= 1:
             print(f"Writing final PDB file (enforcePeriodicBox={enforcePeriodicBox})")
         positions=simulation.context.getState(getPositions=True, enforcePeriodicBox=enforcePeriodicBox).getPositions()
@@ -3263,9 +3299,9 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
     LJforcelines = []
     for resname, atomtypelist, chargelist, sigmalist, epsilonlist in zip(resnames, atomtypes_per_res, charges_per_res,
                                                                          sigmas_per_res, epsilons_per_res):
-        print("atomtypelist:", atomtypelist)
-        print("chargelist.", chargelist)
-        print("sigmalist", sigmalist)
+        #print("atomtypelist:", atomtypelist)
+        #print("chargelist.", chargelist)
+        #print("sigmalist", sigmalist)
         for atype, charge, sigma, epsilon in zip(atomtypelist, chargelist, sigmalist, epsilonlist):
             if charmm == True:
                 #LJ parameters zero here
@@ -3296,11 +3332,13 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
             # All other atoms
             xmlfile.write("</Residue>\n")
         xmlfile.write("</Residues>\n")
+        # Write nonbonded block (even if skip_nb is True)
+        xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
         if skip_nb is False:
 
             if charmm == True:
                 #Writing both Nonbnded force block and also LennardJonesForce block
-                xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
+                #xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
                 for nonbondedline in nonbondedlines:
                     xmlfile.write(nonbondedline)
                 xmlfile.write("</NonbondedForce>\n")
@@ -3310,10 +3348,11 @@ def write_xmlfile_nonbonded(resnames=None, atomnames_per_res=None, atomtypes_per
                 xmlfile.write("</LennardJonesForce>\n")
             else:
                 #Only NonbondedForce block
-                xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
+                #xmlfile.write("<NonbondedForce coulomb14scale=\"{}\" lj14scale=\"{}\">\n".format(coulomb14scale, lj14scale))
                 for nonbondedline in nonbondedlines:
                     xmlfile.write(nonbondedline)
-                xmlfile.write("</NonbondedForce>\n")
+        #Close nonbondedforce block
+        xmlfile.write("</NonbondedForce>\n")
         xmlfile.write("</ForceField>\n")
     print("Wrote XML-file:", filename)
     return filename
@@ -3400,6 +3439,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
               barostat=None, pressure=1, trajectory_file_option='DCD', trajfilename='trajectory', specialtraj_frequency=1000, specialatoms=None,
               energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
               coupling_frequency=1, charge=None, mult=None, printlevel=2, hydrogenmass=1.5,
+              force_periodic=None, periodic_cell_dimensions=None,
               anderson_thermostat=False, platform='CPU', constraints=None, restraints=None,
               enforcePeriodicBox=True, special_wrapping=False, special_wrapping_updatepos=False, wrapping_atoms=None, 
               dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
@@ -3412,6 +3452,7 @@ def OpenMM_MD(fragment=None, theory=None, timestep=0.001, simulation_steps=None,
                         barostat=barostat, pressure=pressure, trajectory_file_option=trajectory_file_option, specialtraj_frequency=specialtraj_frequency, specialatoms=specialatoms,
                         energy_file_option=energy_file_option, force_file_option=force_file_option, atomic_units_force_reporter=atomic_units_force_reporter,
                         constraints=constraints, restraints=restraints,
+                        force_periodic=force_periodic, periodic_cell_dimensions=periodic_cell_dimensions,
                         coupling_frequency=coupling_frequency, anderson_thermostat=anderson_thermostat, platform=platform,
                         enforcePeriodicBox=enforcePeriodicBox, special_wrapping=special_wrapping, special_wrapping_updatepos=special_wrapping_updatepos, 
                         wrapping_atoms=wrapping_atoms, dummyatomrestraint=dummyatomrestraint, center_on_atoms=center_on_atoms, solute_indices=solute_indices,
@@ -3442,6 +3483,7 @@ class OpenMM_MDclass:
                  energy_file_option=None, force_file_option=None, atomic_units_force_reporter=False,
                  coupling_frequency=1, printlevel=2, platform='CPU',
                  anderson_thermostat=False, hydrogenmass=1.5, constraints=None, restraints=None,
+                 force_periodic=False, periodic_cell_dimensions=None,
                  enforcePeriodicBox=True, special_wrapping=False, special_wrapping_updatepos=False, wrapping_atoms=None,
                  dummyatomrestraint=False, center_on_atoms=None, solute_indices=None,
                  datafilename=None, dummy_MM=False, plumed_object=None, add_centerforce=False,
@@ -3521,22 +3563,30 @@ class OpenMM_MDclass:
         #CASE: ONIOMTHeory that might containOpenMMTheory
         elif isinstance(theory, ash.ONIOMTheory):
             print("This is an ONIOMTheory object")
-            print("ONIOMTheory objects are not currently supported")
+            #print("ONIOMTheory objects are not currently supported")
+            self.theory_runtype ="ONIOM"
             #self.QM_MM_object = theory
             self.ONIOM_object = theory
-            self.theory_runtype ="ONIOM"
+            #MMtheory_index = [t.theorytype for t in theory.theories_N].index("MM")
+            #print("MM theory found at index:", MMtheory_index)
+            #self.openmmobject = theory.theories_N[MMtheory_index]
+            #print("self.openmmobject:", self.openmmobject)
 
-            for t in theory.theories_N:
-                if isinstance(t,OpenMMTheory):
-                    print("Found OpenMMTheory object inside ONIOMTheory")
-                    self.openmmobject=t
-                    print("Problem: ONIOMTheory containing an OpenMMTheory is currently not supported yet. Complain to developer")
-                    ashexit()
-            #If nothing found then we create:
+            #for t in theory.theories_N:
+            #    if isinstance(t,OpenMMTheory):
+            #        print("Found OpenMMTheory object inside ONIOMTheory")
+            #        self.openmmobject=t
+            #        print("Warnign: ONIOMTheory containing an OpenMMTheory object is currently not officially supported yet. Complain to developer")
+            #        #ashexit()
+            
+            #RB NOTE: Creating a new OpenMMTheory object regardless of whether one exists in the ONIOMTheory
             if self.openmmobject is None:
+                print("Creating new OpenMMTheory object to drive simulation")
                 #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
                 self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
-                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+                                hydrogenmass=hydrogenmass, constraints=constraints,
+                                periodic=force_periodic,
+                                periodic_cell_dimensions=periodic_cell_dimensions) #NOTE: might add more options here
             print("Turning on externalforce option.")
             self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
 
@@ -3566,7 +3616,9 @@ class OpenMM_MDclass:
             if self.openmmobject is None:
                 #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
                 self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
-                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+                                hydrogenmass=hydrogenmass, constraints=constraints,
+                                periodic=force_periodic,
+                                periodic_cell_dimensions=periodic_cell_dimensions) #NOTE: might add more options here
             self.wraptheory_object = theory
 
             print("Turning on externalforce option.")
@@ -3583,7 +3635,8 @@ class OpenMM_MDclass:
             print("OpenMM platform:", platform)
             #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
             self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
-                                hydrogenmass=hydrogenmass, constraints=constraints) #NOTE: might add more options here
+                                hydrogenmass=hydrogenmass, constraints=constraints, periodic=force_periodic,
+                                periodic_cell_dimensions=periodic_cell_dimensions) #NOTE: might add more options here
             print("Creating new OpenMM custom external force for external QM theory.")
             self.openmm_externalforceobject = self.openmmobject.add_custom_external_force()
             self.QM_MM_object = None
@@ -3632,7 +3685,7 @@ class OpenMM_MDclass:
         self.user_cvforce2=None # Initializing possibility of user CV object
         self.user_biasvar2=None #Initializing possibility of user biasvariable
         #PERIODIC or not
-        if self.openmmobject.Periodic is True:
+        if self.openmmobject.periodic is True:
             #Generally we want True except sometimes we do our own wrapping
             self.enforcePeriodicBox=enforcePeriodicBox
         else:
@@ -3741,7 +3794,7 @@ class OpenMM_MDclass:
             # print("after barostat added")
 
             self.integrator = "LangevinMiddleIntegrator"
-            print("Barostat requires using integrator:", integrator)
+            print("Barostat requires using integrator:", self.integrator)
             self.openmmobject.set_simulation_parameters(timestep=self.timestep, temperature=self.temperature,
                                                         integrator=self.integrator, coupling_frequency=self.coupling_frequency)
         elif anderson_thermostat is True:
@@ -3851,6 +3904,7 @@ class OpenMM_MDclass:
         # Let's list all OpenMM object system forces for sanity
         print("enforcePeriodicBox:", self.enforcePeriodicBox)
         print("OpenMM Forces defined:", self.openmmobject.system.getForces())
+
         print_time_rel(module_init_time, modulename="OpenMM_MD setup", moduleindex=1)
 
     #Set sim reporters. Needs to be done after simulation is created and not modified anymore
@@ -4133,7 +4187,7 @@ class OpenMM_MDclass:
         print("OpenMM System forces present before run:", forceclassnames)
 
         #Printing PBCs
-        if self.openmmobject.Periodic is True:
+        if self.openmmobject.periodic is True:
             print("Checking Initial PBC vectors.")
             self.state = self.simulation.context.getState()
             a, b, c = self.state.getPeriodicBoxVectors()
@@ -4200,7 +4254,7 @@ class OpenMM_MDclass:
         # PBC and Wrapping
         ###########################################
         #Defining boxvectors in case we need
-        if self.openmmobject.Periodic is True:
+        if self.openmmobject.periodic is True:
             print("Periodic Boundary Conditions used.")
 
             if self.enforcePeriodicBox is True:
@@ -4255,6 +4309,20 @@ class OpenMM_MDclass:
                     wrapping_atoms=self.wrapping_atoms
                     print(f"Will use atoms {wrapping_atoms} for wrapping")
 
+        ########################################
+        # Writing intial frame to disk as PDB.
+        ########################################
+        pdb_filename=self.trajfilename+"_firstframe.pdb"
+        print("Writing intial frame to disk as PDB-file:", pdb_filename)
+        blastate = self.simulation.context.getState(getEnergy=True, getPositions=True, 
+                                        getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
+        with open(pdb_filename, 'w') as f:
+            openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
+            openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology,
+                                                  blastate.getPositions(asNumpy=True).value_in_unit(
+                                                                        openmm.unit.angstrom), f)
+            openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
+
 
         ###############################################################################
         # MD LOOP for each Theory-Runtype: WRAP, QMMM, QM, ONIOM, dummy_MM, MM
@@ -4290,7 +4358,7 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4386,7 +4454,7 @@ class OpenMM_MDclass:
                 print_time_rel(checkpoint, modulename="get current_coords", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4487,7 +4555,7 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4600,7 +4668,7 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4620,6 +4688,8 @@ class OpenMM_MDclass:
 
                 # Run  step to get full system ONIOM gradient.
                 # Updates OpenMM object with ONIOM forces
+                #Note: Unlike QM/MM we don't do any exit_after_customexternalforce_update here because ONIOM object does not update OpenMM object itself
+                # Easier. Drawback that we may have 2 OpenMMTheory objects defined.
                 energy,gradient=self.ONIOM_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True, charge=self.charge, mult=self.mult)
                 if self.printlevel >= 2:
                     print("Energy:", energy)
@@ -4708,7 +4778,7 @@ class OpenMM_MDclass:
                 checkpoint = time.time()
                 
                 #Periodic wrapping handling
-                if self.openmmobject.Periodic is True:
+                if self.openmmobject.periodic is True:
                     if self.special_wrapping is True:
                         if self.printlevel >= 2:
                             print("special_wrapping is True. Wrapping handled by mdtraj")
@@ -4793,7 +4863,7 @@ class OpenMM_MDclass:
         ##########################
         #PERIODIC BOX VECTORS
         ##########################
-        if self.openmmobject.Periodic is True:
+        if self.openmmobject.periodic is True:
             print("Checking PBC vectors:")
             a, b, c = self.state.getPeriodicBoxVectors()
             print(f"A: ", a)
@@ -6403,7 +6473,7 @@ def calc_total_nonbonding_energy(system):
     return coulomb_energy, lj_energy
 
 
-#Function that uses parmed to write and XML-file topology and OpenMM system
+#Function that uses parmed to write an XML-file topology and OpenMM system
 #Warning: Nonbonded 14 scaling requires modification after writing
 def write_xmlfile_parmed(topology,system,xmlfilename):
     # Load Parmed

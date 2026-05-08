@@ -2,8 +2,10 @@ import time
 import numpy as np
 
 from ash.modules.module_coords import elemstonuccharges
+from ash.modules.module_coords_PBC import cell_vectors_to_params, cell_params_to_vectors
 from ash.functions.functions_general import ashexit, BC,print_time_rel
 from ash.functions.functions_general import print_line_with_mainheader
+from ash.interfaces.interface_mace import stress_to_grad
 import ash.constants
 
 # TODO: Make sure energy is a general thing in PyTorch model
@@ -14,7 +16,8 @@ import ash.constants
 class TorchTheory():
     def __init__(self, filename="torch.pt", model_name=None, model_object=None,
                  model_file=None, printlevel=2, label="TorchTheory", numcores=1,
-                 platform=None, train=False, aimnet_mode="new"):
+                 platform="cpu", train=False, aimnet_mode="new",
+                 periodic=False, periodic_cell_vectors=None, periodic_cell_dimensions=None):
         # Early exits
         try:
             import torch
@@ -40,9 +43,10 @@ class TorchTheory():
         self.printlevel = printlevel
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-        # Device choice
+        # Device choice 
+        self.platform=platform
         if platform == 'cuda':
-            print("Platfrom CUDA selected. Will attempt to use.")
+            print("Platform CUDA selected. Will attempt to use.")
             self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         elif platform == 'mps':
             print("Platfrom MPS selected. Will use.")
@@ -51,6 +55,28 @@ class TorchTheory():
             print("Unrecognized platform. Choosing CPU")
             self.device = torch.device('cpu')
         print("Torch device selected:", self.device)
+
+        # PBC
+        self.periodic=periodic
+        self.periodic_cell_vectors=None # initially
+        self.stress=False
+        if self.periodic:
+            print("PBC enabled in Torchtheory")
+            self.stress=True
+            if periodic_cell_vectors is None and periodic_cell_dimensions is None:
+                print("Error: for periodic calculations, you must specify either periodic_cell_vectors or  periodic_cell_dimensions")
+                ashexit()
+                # Convert to cell vectors
+                self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+            elif periodic_cell_vectors is not None:
+                self.periodic_cell_vectors = periodic_cell_vectors
+                self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+            elif periodic_cell_dimensions is not None:
+                self.periodic_cell_dimensions = periodic_cell_dimensions
+                self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+
+            print("Cell vectors:", self.periodic_cell_vectors)
+            print("Cell dimensions:", self.periodic_cell_dimensions)
 
         ################################
         # Model selection
@@ -72,7 +98,7 @@ class TorchTheory():
                 self.load_aimnet_model(model_file=model_file, aimnet_mode=self.aimnet_mode)
             else:
                 # 
-                self.model = torch.load(model_file, map_location=torch.device('cpu'))
+                self.model = torch.load(model_file, map_location=torch.device(self.device))
                 #torch.load_state_dict(model_file)
 
                 #If TorchScript saved
@@ -105,6 +131,18 @@ class TorchTheory():
         if train is True:
             print("Training will be done")
 
+    # Update cell using either periodic_cell_vectors or periodic_cell_dimensions
+    def update_cell(self,periodic_cell_vectors=None, periodic_cell_dimensions=None):
+        print("Updating cell vectors")
+        if periodic_cell_vectors is not None:
+            self.periodic_cell_vectors = periodic_cell_vectors
+            self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+        elif periodic_cell_dimensions is not None:
+            self.periodic_cell_dimensions=periodic_cell_dimensions
+            self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+
+    def get_cell_gradient(self):
+        return self.cell_gradient
     def cleanup(self):
         print("No cleanup implemented")
 
@@ -123,7 +161,7 @@ class TorchTheory():
         import torch
         # sTODO: weights only option ?
         #self.model = torch.jit.load(model_file)
-        self.model = torch.load(model_file, map_location=torch.device('cpu'))
+        self.model = torch.load(model_file, map_location=torch.device(self.device))
 
     def save_model(self,filename=None, index=None):
         import torch
@@ -155,10 +193,10 @@ class TorchTheory():
             print("Model:", model_name)
             print("File:", model_file)
             if model_name is not None:
-                self.model = AIMNet2Calculator(str(model_name).lower())
+                self.model = AIMNet2Calculator(str(model_name).lower(), device=self.platform)
             elif model_file is not None:
                 print("Loading file:", model_file)
-                self.model = AIMNet2Calculator(model_file)
+                self.model = AIMNet2Calculator(model_file, device=self.platform)
             else:
                 print("Error: Unknown model and no model_file selected")
                 ashexit()
@@ -178,6 +216,10 @@ class TorchTheory():
             print("Model:", model_name)
             print("File:", model_file)
             self.model = AIMNet2ASE(model_name)
+
+            # Changing device
+            self.model.base_calc.device=self.platform
+            print("device used:", self.model.base_calc.device)
 
     def load_ani_model(self,model):
         print("ANI-type model requested")
@@ -261,7 +303,11 @@ class TorchTheory():
         # new aimnet2
         if 'aimnet2' in str(self.model).lower() and self.aimnet_mode =="new": 
             import ase
-            atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
+            if self.periodic:
+                atoms = ase.atoms.Atoms(qm_elems,positions=current_coords, cell=self.periodic_cell_vectors,
+                                        pbc=True)
+            else:
+                atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
             # Assigning calculator
             #Setting charge and mult in model
             self.model.charge=charge
@@ -280,6 +326,10 @@ class TorchTheory():
                 forces = atoms.get_forces()
                 self.gradient = forces/-51.422067090480645
 
+                if self.stress:
+                    stress_ev_ang3 = atoms.get_stress(voigt=False)
+                    self.cell_gradient = stress_to_grad(stress_ev_ang3,atoms.get_volume(), atoms.get_cell())
+                    print("Cell gradient:", self.cell_gradient)
         # TorchANI
         else:
             # Converting coordinates and element information to Torch tensors

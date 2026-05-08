@@ -6,8 +6,8 @@ authors = [
   {name = "R. Bjornsson", email = "ragnar.bjornsson@gmail.com" }
 ]
 readme = "README.md"
-#Some problem with 3.12 (jan 2024)
-requires-python = ">= 3.7, < 3.12"
+#Some problem with 3.12 (jan 2024) q
+requires-python = ">= 3.7"
 #geometric and numpy main dependencies
 dependencies = [
     'geometric >=1.0.1',
@@ -20,7 +20,7 @@ requires = ["setuptools >=61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ['ash*', 'ash.external', 'ash.functions','ash.interfaces','ash.knarr','ash.modules','ash.tests']
-
+where = ["."]
+include = ["ash*"]
 [tool.setuptools.package-data]
-"*" = ["*.*"] #
+"ash" = ["**/*"]

@@ -3,7 +3,7 @@ import os
 import shutil
 import math
 from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
-from ash.modules.module_coords import writepdb_with_connectivity
+from ash.interfaces.interface_openbabel import writepdb_with_connectivity
 import ash.settings_ash
 
 

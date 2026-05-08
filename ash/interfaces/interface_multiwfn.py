@@ -373,6 +373,15 @@ y
 0
 q
         """
+    elif option =="spindensity" or option =="spin-density":
+        inputformula=f"""5
+5
+{grid}
+2
+0
+q
+        """
+
     else:
         print("write_multiwfn_input_option: unknown option")
         ashexit()

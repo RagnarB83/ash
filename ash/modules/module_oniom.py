@@ -54,9 +54,9 @@ class ONIOMTheory(Theory):
         if len(theories_N) != len(regions_N):
             print("Error: Number of theories and regions must match")
             ashexit()
-        if len(theories_N) != len(regions_chargemult):
-            print("Error: Number of theories and regions_chargemult must match")
-            ashexit()
+        #if len(theories_N) != len(regions_chargemult):
+        #    print("Error: Number of theories and regions_chargemult must match")
+        #    ashexit()
         # Full system
         self.fragment=fragment
         self.allatoms = self.fragment.allatoms
@@ -97,6 +97,9 @@ class ONIOMTheory(Theory):
         self.charge = self.fullregion_charge
         self.mult = self.fullregion_mult
 
+        # OpenMM special handling.
+        # We need to create a special OpenMMTheory object to handle region1
+        self.openmmobject_R1 = None
         #
         print("Embedding:", self.embedding)
         print("Theories:")
@@ -120,8 +123,13 @@ class ONIOMTheory(Theory):
         print("\nRegions provided:")
         #
         for i,r in enumerate(self.regions_N):
-            print(f"Region {i+1} ({len(r)} atoms):", r)
-        print("Allatoms:", self.allatoms)
+            if r is not None:
+                print(f"Region {i+1} ({len(r)} atoms):", r)
+        print("Total system size:", len(self.allatoms), "atoms")
+        if len(self.allatoms) < 200:
+            print("Allatoms list:", self.allatoms)
+        else:
+            print("Skipping printing of allatoms list (too long)")
         print("\nRegion-chargemult info provided:")
         #
         for i,r in enumerate(self.regions_chargemult):
@@ -171,6 +179,7 @@ class ONIOMTheory(Theory):
             print("Boundaryatoms (HL:LL pairs):", self.boundaryatoms)
             print("Note: used connectivity settings, scale={} and tol={} to determine boundary.".format(conn_scale,conn_tolerance))
             self.linkatoms = True
+            print("Linkatom_forceprojection_method:", self.linkatom_forceproj_method)
             # Get MM boundary information. Stored as self.MMboundarydict
             self.get_MMboundary(self.boundaryatoms,conn_scale,conn_tolerance)
         elif len(self.theories_N) == 3 and len(self.boundaryatoms_HL_ML) > 0:
@@ -178,6 +187,7 @@ class ONIOMTheory(Theory):
             print("Boundaryatoms (HL:LL pairs):", self.boundaryatoms_HL_ML)
             print("Note: used connectivity settings, scale={} and tol={} to determine boundary.".format(conn_scale,conn_tolerance))
             self.linkatoms = True
+            print("Linkatom_forceprojection_method:", self.linkatom_forceproj_method)
             # Get MM boundary information. Stored as self.MMboundarydict
             self.get_MMboundary(self.boundaryatoms_HL_ML,conn_scale,conn_tolerance)
         elif len(self.theories_N) == 3 and len(self.boundaryatoms_ML_LL) > 0:
@@ -185,6 +195,7 @@ class ONIOMTheory(Theory):
             print("Boundaryatoms (HL:LL pairs):", self.boundaryatoms_ML_LL)
             print("Note: used connectivity settings, scale={} and tol={} to determine boundary.".format(conn_scale,conn_tolerance))
             self.linkatoms = True
+            print("Linkatom_forceprojection_method:", self.linkatom_forceproj_method)
             # Get MM boundary information. Stored as self.MMboundarydict
             self.get_MMboundary(self.boundaryatoms_ML_LL,conn_scale,conn_tolerance)
         else:
@@ -367,11 +378,20 @@ class ONIOMTheory(Theory):
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
         #Creating dictionary for each MM1 atom and its connected atoms: MM2-4
         self.MMboundarydict={}
-        for (QM1atom,MM1atom) in boundaryatoms.items():
-            connatoms = get_connected_atoms(self.fragment.coords, self.fragment.elems, scale,tol, MM1atom)
-            #Deleting QM-atom from connatoms list
-            connatoms.remove(QM1atom)
-            self.MMboundarydict[MM1atom] = connatoms
+        for (QM1atom,MM1atom) in self.boundaryatoms.items():
+            if isinstance(MM1atom,list):
+                for mat in MM1atom:
+                    connatoms = get_connected_atoms(self.fragment.coords, self.fragment.elems, scale,tol, mat)
+                    #Deleting QM-atom from connatoms list
+                    connatoms.remove(QM1atom)
+                    self.MMboundarydict[mat] = connatoms
+            # OLD: should never apply anymore, we always have a list
+            # TODO: delete
+            else:
+                connatoms = get_connected_atoms(self.fragment.coords, self.fragment.elems, scale,tol, MM1atom)
+                # Deleting QM-atom from connatoms list
+                connatoms.remove(QM1atom)
+                self.MMboundarydict[MM1atom] = connatoms
 
         # Used by ShiftMMCharges
         self.MMboundary_indices = list(self.MMboundarydict.keys())
@@ -470,7 +490,7 @@ class ONIOMTheory(Theory):
         ###############################################
         # RUN OTHER REGIONS
         ###############################################
-        
+
         # LOOPING OVER OTHER THEORY-REGION COMBOS
         for j,region in enumerate(self.regions_N):
             print("\nj:",j)
@@ -613,12 +633,66 @@ class ONIOMTheory(Theory):
                 # For an MM-theory like OpenMM we have to do some special handling
                 if theory.theorytype == "MM":
                     print("Case: Theory is MM")
-                    # Other region (i.e. not region1)
-                    theory.update_charges(other_region,[0.0 for x in other_region])
-                    theory.update_LJ_epsilons(other_region,[0.0 for x in other_region])
-                    theory.modify_bonded_forces(other_region)
-                    # NOTE: Fullsystem coordinates still passed here
-                    res = theory.run(current_coords=full_coords, elems=full_elems, Grad=Grad, numcores=theory.numcores, label=label)
+                    # NEW: Now creating separate OpenMMTheory object for region1
+                    newmode=True
+                    if newmode is True:
+                        print("theory.topology:", theory.topology)
+                        print("theory.topology dict:", theory.topology.__dict__)
+                        if self.openmmobject_R1 is None:
+                            print("Creating new OpenMMTheory object for region1")
+                            # Create if not existing
+                            # Create new OpenMMTheory object using partial topology only
+                            from ash import OpenMMTheory
+                            import openmm
+                            # New topology for region
+                            mod_topology = openmm.app.Topology()
+                            print("region:", region)
+                            print("theory.topology.chains():", theory.topology.chains())
+                            print("Num chains:", theory.topology.getNumChains())
+                            for chain in theory.topology.chains():
+                                print("Adding chain:", chain)
+                                atomsinchain = [at.index for at in chain.atoms()]
+                                # Check if chain has any atoms in region
+                                if any(i in atomsinchain for i in region):
+                                    # Then adding chain
+                                    newchain = mod_topology.addChain()
+                                    # Looping over residues
+                                    for res in chain.residues():
+                                        resatoms = [i.index for i in res.atoms()]
+                                        # Only add residue if it has atoms in region
+                                        if any(i in resatoms for i in region):
+                                            newres = mod_topology.addResidue(res.name, newchain)
+                                        for at in res.atoms():
+                                            if at.index in region:
+                                                mod_topology.addAtom(at.name, at.element, newres)
+
+                                    # Get all bonds of chain
+                                    allbonds_in_chain = [b for r in chain.residues() for b in r.bonds()]
+                                    for b in allbonds_in_chain:
+                                        if b[0].index in region and b[1].index in region:
+                                            b0new=list(mod_topology.atoms())[region.index(b[0].index)]
+                                            b1new=list(mod_topology.atoms())[region.index(b[1].index)]
+                                            #print("Adding bond between:", b0new, b1new)
+                                            mod_topology.addBond(b0new, b1new)
+                            mod_topology._periodicBoxVectors=theory.topology._periodicBoxVectors
+                            print("\nmod_topology:", mod_topology)
+                            print("atoms:", list(mod_topology.atoms()))
+                            print("mod_topology dict:", mod_topology.__dict__)
+                            self.openmmobject_R1 = OpenMMTheory(topoforce=True, 
+                                                                topology=mod_topology, forcefield=theory.forcefield, 
+                                                                autoconstraints=None, rigidwater=False)
+
+                        # Run region
+                        # NOTE: No linkatoms 
+                        res = self.openmmobject_R1.run(current_coords=region_coords_final, elems=region_elems_final, 
+                                        Grad=Grad, numcores=theory.numcores, label=label)
+                    #else:
+                    #    # Other region (i.e. not region1)
+                    #    theory.update_charges(other_region,[0.0 for x in other_region])
+                    #    theory.update_LJ_epsilons(other_region,[0.0 for x in other_region])
+                    #    theory.modify_bonded_forces(other_region)
+                    #    # NOTE: Fullsystem coordinates still passed here
+                    #    res = theory.run(current_coords=full_coords, elems=full_elems, Grad=Grad, numcores=theory.numcores, label=label)
                 # if the theory is QM/MM then this
                 elif theory.theorytype == "QM/MM":
                     print("Case: Theory is QM/MM object")
@@ -652,10 +726,17 @@ class ONIOMTheory(Theory):
             print(f"Energy (Region1-HL): {E_dict[(0,0)]} Eh")
             print(f"Energy (Region1-LL): {E_dict[(1,0)]} Eh")
             if Grad:
+                #####################
                 # Gradient assembled
+                #####################
+                # Adding LL theory on Full region
                 self.gradient = G_dict[(1,-1)]
+                print("Full G_dict[(1,-1):", G_dict[(1,-1)])
+                # Adding HL theory contribution on region1
+                print("HL G_dict[(0,0)]:", G_dict[(0,0)])
                 for at, g in zip(self.regions_N[0], G_dict[(0,0)]):
                     self.gradient[at] += g
+                # Subtracting LL theory on region1
                 for at, g in zip(self.regions_N[0], G_dict[(1,0)]):
                     self.gradient[at] -= g
 
@@ -664,44 +745,46 @@ class ONIOMTheory(Theory):
                     print("Linkatom force projection now")
                     print("Looping over linkatoms")
                     for i,linkatomindex in enumerate(self.linkatom_indices):
+                        print("i:", i)
+                        print("linkatomindex:", linkatomindex)
                         pair = sorted(self.linkatoms_dict.keys())[i]
+                        print("pair:", pair)
                         Lcoord=self.linkatoms_dict[pair]
                         print("Lcoord:", Lcoord)
-                        # Looping over theory-levels calculated
-                        diffgrad=G_dict[(0,0)]-G_dict[(1,0)]
-                        for theory_grad in [diffgrad]:
-                            # for theory_grad in [G_dict[(0,0)], G_dict[(1,0)]]:
-                            # Region gradient
-                            Lgrad=theory_grad[linkatomindex]
-                            print("Lgrad:", Lgrad)
-                            # Getting QM1 info
-                            fullatomindex_qm=pair[0]
-                            regionatomindex=self.regions_N[0].index(fullatomindex_qm)
-                            r_coords = np.take(current_coords,self.regions_N[0],axis=0)
-                            Qcoord=r_coords[regionatomindex]
-                            print("Qcoord:", Qcoord)
-                            # Grabbing MMatom info
-                            fullatomindex_mm=pair[1]
-                            Mcoord=full_coords[fullatomindex_mm]
-                            print("Mcoord:", Mcoord)
-                            print("self.linkatom_forceproj_method:", self.linkatom_forceproj_method)
-                            # Getting gradient contribution to QM1 and MM1 atoms from linkatom
-                            if self.linkatom_forceproj_method == "adv":
-                                QM1grad_contrib, MM1grad_contrib = linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad)
-                            elif self.linkatom_forceproj_method == "lever": 
-                                QM1grad_contrib, MM1grad_contrib = linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad)
-                            elif self.linkatom_forceproj_method == "chain":
-                                QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
-                            elif self.linkatom_forceproj_method.lower() == "none" or self.linkatom_forceproj_method == None:
-                                QM1grad_contrib = np.zeros(3)
-                                MM1grad_contrib = np.zeros(3)
-                            else:
-                                print("Unknown linkatom_forceproj_method. Exiting")
-                                ashexit()
-                            print("QM1grad_contr:", QM1grad_contrib)
-                            print("MM1grad_contr:", MM1grad_contrib)
-                            self.gradient[fullatomindex_qm] += QM1grad_contrib
-                            self.gradient[fullatomindex_mm] += MM1grad_contrib
+                        print("G_dict[(0,0)]:",G_dict[(0,0)])
+                        print("G_dict[(1,0)]:",G_dict[(1,0)])
+                        # Get linkatom gradient contribution from diff-theory
+                        #print("G_dict[(0,0)][linkatomindex]:", G_dict[(0,0)][linkatomindex])
+                        #print("G_dict[(1,0)][linkatomindex]:", G_dict[(1,0)][linkatomindex])
+                        Lgrad=G_dict[(0,0)][linkatomindex]-G_dict[(1,0)][linkatomindex]
+                        print("Lgrad:", Lgrad)
+                        # Getting QM1 info
+                        fullatomindex_qm=pair[0]
+                        regionatomindex=self.regions_N[0].index(fullatomindex_qm)
+                        r_coords = np.take(current_coords,self.regions_N[0],axis=0)
+                        Qcoord=r_coords[regionatomindex]
+                        print("Qcoord:", Qcoord)
+                        # Grabbing MMatom info
+                        fullatomindex_mm=pair[1]
+                        Mcoord=full_coords[fullatomindex_mm]
+                        print("Mcoord:", Mcoord)
+                        # Getting gradient contribution to QM1 and MM1 atoms from linkatom
+                        if self.linkatom_forceproj_method == "adv":
+                            QM1grad_contrib, MM1grad_contrib = linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad)
+                        elif self.linkatom_forceproj_method == "lever": 
+                            QM1grad_contrib, MM1grad_contrib = linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad)
+                        elif self.linkatom_forceproj_method == "chain":
+                            QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
+                        elif self.linkatom_forceproj_method.lower() == "none" or self.linkatom_forceproj_method == None:
+                            QM1grad_contrib = np.zeros(3)
+                            MM1grad_contrib = np.zeros(3)
+                        else:
+                            print("Unknown linkatom_forceproj_method. Exiting")
+                            ashexit()
+                        print("QM1grad_contr:", QM1grad_contrib)
+                        print("MM1grad_contr:", MM1grad_contrib)
+                        self.gradient[fullatomindex_qm] += QM1grad_contrib
+                        self.gradient[fullatomindex_mm] += MM1grad_contrib
 
         # 3-layer ONIOM Energy and Gradient expression
         elif len(self.theories_N) == 3:
@@ -715,7 +798,7 @@ class ONIOMTheory(Theory):
             print(f"Energy (Region2-LL): {E_dict[(2,1)]} Eh")
 
             if Grad:
-                print("Gradient for 3-layer ONIOM is not yet ready")
+                print("Sorry: Gradient for 3-layer ONIOM is not yet ready")
                 ashexit()
 
                 if self.linkatoms is True:

@@ -6,7 +6,9 @@ import numpy as np
 
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
 import ash.settings_ash
-from ash.modules.module_coords import write_xyzfile, write_pdbfile,cubic_box_size,bounding_box_dimensions
+from ash.modules.module_coords import write_xyzfile, write_pdbfile
+from ash.modules.module_coords_PBC import cubic_box_size,bounding_box_dimensions
+from ash.modules.module_coords_PBC import cell_vectors_to_params, cell_params_to_vectors, cubic_box_size
 from ash.functions.functions_parallel import check_OpenMPI
 
 # Dictionary of element radii in Angstrom for use with CP2K for GEEP embedding
@@ -38,12 +40,17 @@ element_radii_for_cp2k = {'H': 0.44, 'He': 0.44, 'Li': 0.6, 'Be': 0.6,
 # 'XTB'
 class CP2KTheory:
     def __init__(self, cp2kdir=None, cp2k_bin_name=None, filename='cp2k', printlevel=2, basis_dict=None, potential_dict=None, label="CP2K",
-                periodic=False, periodic_type='XYZ', qm_periodic_type=None, xtb_periodic=False, cell_dimensions=None, cell_vectors=None,
+                periodic=False, periodic_type='XYZ', qm_periodic_type=None, stress_tensor=True, stress_tensor_algo="DIAGONAL_ANALYTICAL",
+                xtb_type='GFN2', xtb_tblite=False,
+                user_input_dft=None, vdwpotential=None,
+                cell_dimensions=None, cell_vectors=None,
                 qm_cell_dims=None, qm_cell_shift_par=6.0, wavelet_scf_type=40,
                 functional=None, psolver='wavelet', potential_file='POTENTIAL', basis_file='BASIS',
-                basis_method='GAPW', ngrids=4, cutoff=250, rel_cutoff=60,
+                basis_method='GAPW', ngrids=4, xc_finer_grid=False,
+                cutoff=250, rel_cutoff=60,
+                kpoint_settings=None, 
                 method='QUICKSTEP', numcores=1, parallelization='OMP', mixed_mpi_procs=None, mixed_omp_threads=None,
-                center_coords=True, scf_maxiter=50, outer_scf_maxiter=10, scf_convergence=1e-6, eps_default=1e-10,
+                center_coords=False, scf_maxiter=50, outer_scf_maxiter=10, scf_convergence=1e-6, eps_default=1e-10,
                 coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
                 OT=True, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL',
                 OT_linesearch='3PNT', outer_SCF=True, outer_SCF_optimizer='SD', OT_energy_gap=0.08):
@@ -53,44 +60,66 @@ class CP2KTheory:
         self.label=label
         self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
-
-        #EARLY EXITS
-        if basis_dict is None:
-            print("basis_dict keyword is required")
-            ashexit()
-        if potential_dict is None:
-            print("potential_dict keyword is required")
-            ashexit()
-        if functional is None:
-            if basis_method.upper() != "XTB":
+        # EARLY EXITS
+        if basis_method.upper() != "XTB":
+            print("This is a regular CP2K DFT theory")
+            if basis_dict is None:
+                print("basis_dict keyword is required")
+                ashexit()
+            if potential_dict is None:
+                print("potential_dict keyword is required")
+                ashexit()
+            if functional is None:
                 print("functional keyword is required for PW andd GPW ")
-            ashexit()
+                ashexit()
+        else:
+            print("This is a CP2K xTB theory")
+            if xtb_tblite:
+                print("xtb_tblite True. Using tblite version of xTB.")
+                print("Warning: disabling OT for xtb-tblite")
+                OT=False
+            else:
+                print("xtb_tblite False. Using built-in version of xTB.")
+            print("xtb_type:", xtb_type)
 
-        #NOTE: We still define a cell even though we may not be periodic
-        #If no cell provided: CONTINUE and guess cell size later
+        # NOTE: We still define a cell even though we may not be doing periodic calc
+        # If no cell provided: CONTINUE and guess cell size later
         if cell_dimensions is None and cell_vectors is None:
             print("Warning: Neither cell_dimensions or cell_vectors have been provided.")
-            print("This is not good but ASH will continue and try to guess the cell size from the QM-coordinates")
+            print("This is non-ideal but ASH will continue and try to guess the cell size from the QM-coordinates")
 
         if cell_dimensions is not None and cell_vectors is not None:
             print("Error: cell_dimensions and cell_vectors can not both be provided")
             ashexit()
-        #PERIODIC logic
+        # PERIODIC logic
+        self.xtb_periodic=False
         if periodic is True:
             print("Periodic is True")
+            if basis_method.upper() == "XTB":
+                print("Setting xtb_periodic to be True")
+                self.xtb_periodic=True
             self.periodic_type=periodic_type
             print("Periodic type:", self.periodic_type)
             if psolver.upper() == 'MT':
                 print("Error: For periodic simulations the Poisson solver (psolver) can not be MT.")
                 ashexit()
+
+            if cell_dimensions is not None:
+                print("periodic_cell_dimensions:", cell_dimensions)
+                self.periodic_cell_dimensions = cell_dimensions
+                # Convert to cell vectors
+                self.periodic_cell_vectors = cell_params_to_vectors(cell_dimensions)
+            elif cell_vectors is not None:
+                self.periodic_cell_vectors = cell_vectors
+                self.periodic_cell_dimensions = cell_vectors_to_params(cell_vectors)
         else:
             print("Periodic is False")
             self.periodic_type='NONE'
             print("PERIODIC_TYPE:", self.periodic_type)
 
-        #Parallelization
+        # Parallelization
         self.numcores=numcores
-        #Type of parallelization strategy. 'OMP','MPI','Mixed'
+        # Type of parallelization strategy. 'OMP','MPI','Mixed'
         self.parallelization=parallelization
         self.mixed_mpi_procs=mixed_mpi_procs #Mixed only:
         self.mixed_omp_threads=mixed_omp_threads #Mixed only:
@@ -131,6 +160,30 @@ class CP2KTheory:
             print("Numcores=1. No parallelization of CP2K requested")
             self.parallelization=None
 
+        # User input DFT section
+        # For more flexibility the user can also provide a file that contains the DFT section of a CP2K input. 
+        # This will then be used instead of the DFT section generated by ASH. 
+        # This allows the user to use features that are not currently implemented in the ASH input generator.
+        self.user_input_dft = None
+        if user_input_dft is not None:
+            print("User has provided custom DFT-section input. This will be used instead of input generated by ASH.")
+            if isinstance(user_input_dft, str):
+                print("User DFT input (string provided):")
+                # Check if the string is a path to a file
+                if os.path.isfile(user_input_dft):
+                    print(f"User input is a file path. Reading DFT input from file: {user_input_dft}")
+                    with open(user_input_dft, 'r') as f:
+                        self.user_input_dft = f.read()
+                else:
+                    print("User input is a string but not a valid file path. Checking if it looks like a DFT section (basic check for &DFT keyword)")
+                    if "&DFT" in user_input_dft:
+                        print("User input string looks like a DFT section. Using it as is.")
+                        self.user_input_dft = user_input_dft
+                print(self.user_input_dft)
+            else:
+                print("Unknown format for user_input_dft. It should be either a string containing the DFT section or a file path to a file containing the DFT section.")
+                ashexit("Exiting")
+
         # Printlevel
         self.printlevel=printlevel
         self.filename=filename
@@ -149,7 +202,8 @@ class CP2KTheory:
         self.psolver=psolver
         self.wavelet_scf_type=wavelet_scf_type
         self.qm_periodic_type=qm_periodic_type
-        self.xtb_periodic=xtb_periodic # Boolean, xtB Ewald True or False
+        self.xtb_type=xtb_type # xTB method to use. Options: 'GFN2', 'GFN1', 'GFN0'
+        self.xtb_tblite=xtb_tblite # Boolean, whether to use the tblite-library version of xTB
         # self.cell_length=cell_length #Total cell length (full system including MM if QM/MM)
         self.cell_dimensions=cell_dimensions #Cell dimensions. For full system
         self.cell_vectors=cell_vectors #Cell vectors. For full system
@@ -158,7 +212,7 @@ class CP2KTheory:
         self.functional=functional
         self.center_coords=center_coords
 
-        #SCF onvergence stuff
+        # SCF onvergence stuff
         self.OT=OT
         self.OT_minimizer=OT_minimizer
         self.OT_preconditioner=OT_preconditioner
@@ -167,14 +221,25 @@ class CP2KTheory:
         self.outer_SCF_optimizer=outer_SCF_optimizer
         self.OT_energy_gap=OT_energy_gap
 
+        # Dispersion corrections
+        self.vdwpotential=vdwpotential
+
+        # Stress tensor
+        self.stress_tensor=stress_tensor
+        self.stress_tensor_algo = stress_tensor_algo
+
         #Grid stuff
         self.ngrids=ngrids
+        self.xc_finer_grid=xc_finer_grid
         self.cutoff=cutoff
         self.rel_cutoff=rel_cutoff
         self.scf_convergence=scf_convergence
         self.scf_maxiter=scf_maxiter
         self.outer_scf_maxiter=outer_scf_maxiter
         self.eps_default=eps_default
+
+        # K-points
+        self.kpoint_settings=kpoint_settings
 
         #QM/MM
         self.coupling=coupling
@@ -197,12 +262,12 @@ class CP2KTheory:
         print("Periodic:", self.periodic)
         print("Periodic type:", self.periodic_type)
         print("QM periodic type:", self.qm_periodic_type)
-        print("XTB periodic:", self.xtb_periodic)
         print("Cell dimensions:", self.cell_dimensions)
         print("Cell vectors:", self.cell_vectors)
         print("QM cell dimensions:", self.qm_cell_dims)
         print("QM cell shift par:", self.qm_cell_shift_par)
         print("Wavelet SCF type:", self.wavelet_scf_type)
+        print("vdwpotential:", self.vdwpotential)
         print("")
         print("Printlevel:", self.printlevel)
         print("Parallelization:", self.parallelization)
@@ -220,12 +285,27 @@ class CP2KTheory:
         print("Outer SCF optimizer:", self.outer_SCF_optimizer)
         print("OT energy gap:", self.OT_energy_gap)
 
-
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
+
     def cleanup():
         print(f"self.theorynamelabel cleanup not yet implemented.")
+
+    # Update cell using either periodic_cell_vectors or periodic_cell_dimensions
+    def update_cell(self,periodic_cell_vectors=None, periodic_cell_dimensions=None):
+        print("Updating cell vectors")
+        if periodic_cell_vectors is not None:
+            self.periodic_cell_vectors = periodic_cell_vectors
+
+            self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+        elif periodic_cell_dimensions is not None:
+            self.periodic_cell_dimensions=periodic_cell_dimensions
+
+            self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+
+    def get_cell_gradient(self):
+        return self.cell_gradient
 
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -275,7 +355,7 @@ class CP2KTheory:
         print("QM periodic type:", self.qm_periodic_type)
         print("Poisson solver", self.psolver)
 
-        print_time_rel(module_init_time, modulename=f'CP2K run-prep1', moduleindex=2)
+        #print_time_rel(module_init_time, modulename=f'CP2K run-prep1', moduleindex=2)
         #Case: QM/MM CP2K job
         if PC is True:
             print("PC true")
@@ -302,7 +382,7 @@ class CP2KTheory:
             if self.cell_vectors is not None:
                 print("cell_vectors:", self.cell_vectors)
 
-            print_time_rel(module_init_time, modulename=f'CP2K run-prep2', moduleindex=2)
+            #print_time_rel(module_init_time, modulename=f'CP2K run-prep2', moduleindex=2)
             #QM-CELL
             if self.qm_cell_dims is None:
                 print("Warning: QM-cell box dimensions have not been set by user (qm_cell_dims keyword)")
@@ -329,9 +409,9 @@ class CP2KTheory:
             dummy_coords = np.concatenate((current_coords,current_MM_coords),axis=0)
             dummy_charges = [0.0]*len(qm_elems) + MMcharges
             system_xyzfile="system_cp2k"
-            print_time_rel(module_init_time, modulename=f'CP2K run-prep3a', moduleindex=2)
+            #print_time_rel(module_init_time, modulename=f'CP2K run-prep3a', moduleindex=2)
             write_xyzfile(dummy_elem_list, dummy_coords, f"{system_xyzfile}", printlevel=1)
-            print_time_rel(module_init_time, modulename=f'CP2K run-prep3b', moduleindex=2)
+            #print_time_rel(module_init_time, modulename=f'CP2K run-prep3b', moduleindex=2)
             #Telling CP2K which atoms are QM
             #Dictionary with QM-atom indices (for full system), grouped by element
             qm_kind_dict={}
@@ -355,7 +435,7 @@ class CP2KTheory:
             with open("charges.inc", 'w') as incfile:
                 incfile.writelines(all_charges_lines)
 
-            print_time_rel(module_init_time, modulename=f'CP2K run-prep4c', moduleindex=2)
+            #print_time_rel(module_init_time, modulename=f'CP2K run-prep4c', moduleindex=2)
             #3. Write CP2K QM/MM inputfile
             write_CP2K_input(method='QMMM', jobname='ash', center_coords=self.center_coords, qm_elems=qm_elems,
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
@@ -363,10 +443,12 @@ class CP2KTheory:
                              functional=self.functional, restartfile=None, mgrid_commensurate=True,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
                              coordfile=system_xyzfile,
-                             cell_dimensions=self.cell_dimensions,
-                             cell_vectors=self.cell_vectors,
+                             stress_tensor=self.stress_tensor, stress_tensor_algo=self.stress_tensor_algo,
+                             user_input_dft=self.user_input_dft, vdwpotential=self.vdwpotential,
+                             kpoint_settings=self.kpoint_settings,
+                             cell_vectors=self.periodic_cell_vectors,
                              qm_cell_dims=self.qm_cell_dims, qm_periodic_type=self.qm_periodic_type,
-                             xtb_periodic=self.xtb_periodic,
+                             xtb_periodic=self.xtb_periodic, xtb_type=self.xtb_type, xtb_tblite=self.xtb_tblite,
                              basis_file=self.basis_file,
                              potential_file=self.potential_file, periodic_type=self.periodic_type,
                              psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
@@ -374,13 +456,13 @@ class CP2KTheory:
                              qm_kind_dict=qm_kind_dict, mm_kind_list=mm_kind_list,
                              scf_convergence=self.scf_convergence, eps_default=self.eps_default,
                              scf_maxiter=self.scf_maxiter, outer_scf_maxiter=self.outer_scf_maxiter,
-                             ngrids=self.ngrids, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel,
+                             ngrids=self.ngrids, xc_finer_grid=self.xc_finer_grid, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel,
                              OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
                              outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer, OT_energy_gap=self.OT_energy_gap)
         else:
             #No QM/MM
             #QM-CELL
-            if self.cell_dimensions is None:
+            if self.cell_dimensions is None and self.cell_vectors is None:
                 print("Warning: cell dimensions have not been set by user")
                 print("Now estimating cell box dimensions from the system oordinates.")
                 if self.psolver == 'wavelet':
@@ -406,14 +488,17 @@ class CP2KTheory:
                              basis_method=self.basis_method, wavelet_scf_type=self.wavelet_scf_type,
                              functional=self.functional, restartfile=None,
                              Grad=Grad, filename='cp2k', charge=charge, mult=mult,
+                             stress_tensor=self.stress_tensor, stress_tensor_algo=self.stress_tensor_algo,
+                             user_input_dft=self.user_input_dft, vdwpotential=self.vdwpotential,
+                             kpoint_settings=self.kpoint_settings,
                              coordfile=system_xyzfile, scf_convergence=self.scf_convergence, eps_default=self.eps_default,
                              scf_maxiter=self.scf_maxiter, outer_scf_maxiter=self.outer_scf_maxiter,
+                             ngrids=self.ngrids, xc_finer_grid=self.xc_finer_grid, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel,
                              periodic_type=self.periodic_type,
-                             xtb_periodic=self.xtb_periodic,
-                             cell_dimensions=self.cell_dimensions,
-                             cell_vectors=self.cell_vectors,
+                             xtb_periodic=self.xtb_periodic, xtb_type=self.xtb_type,xtb_tblite=self.xtb_tblite,
+                             cell_vectors=self.periodic_cell_vectors,
                              basis_file=self.basis_file, potential_file=self.potential_file,
-                             psolver=self.psolver, printlevel=self.printlevel,
+                             psolver=self.psolver,
                              OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
                              outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer, OT_energy_gap=self.OT_energy_gap)
 
@@ -422,8 +507,13 @@ class CP2KTheory:
             os.remove(f'ash-{self.filename}-1_0.xyz')
         except:
             pass
-        print_time_rel(module_init_time, modulename=f'CP2K run-prep5', moduleindex=2)
-        #Check for BASIS and POTENTIAL FILES before calling
+        #Delete old forces file if present
+        try:
+            os.remove(f'ash-{self.filename}-1_0.stress_tensor')
+        except:
+            pass
+        #print_time_rel(module_init_time, modulename=f'CP2K run-prep5', moduleindex=2)
+        # Check for BASIS and POTENTIAL FILES before calling
         print("Checking if POTENTIAL file exists in current dir")
         if os.path.isfile("POTENTIAL") is True:
             print(f"File exists in current directory: {os.getcwd()}")
@@ -434,7 +524,7 @@ class CP2KTheory:
                 shutil.copy(f"../POTENTIAL", f"./POTENTIAL")
             else:
                 print("No file found in parent dir. Using GTHpotential file from ASH. Copying to dir as POTENTIAL")
-                shutil.copyfile(ash.settings_ash.ashpath+'/databases/basis-sets/cp2k/GTH_POTENTIALS', './POTENTIAL')
+                shutil.copyfile(ash.settings_ash.ashpath+'/databases/basis_sets/cp2k/GTH_POTENTIALS', './POTENTIAL')
         print("Checking if BASIS file exists in current dir")
         if os.path.isfile("BASIS") is True:
             print(f"File exists in current directory: {os.getcwd()}")
@@ -445,29 +535,35 @@ class CP2KTheory:
                 shutil.copy(f"../BASIS", f"./BASIS")
             else:
                 print("No file found in parent dir. Using basis set file from ASH. Copying to dir as BASIS")
-                shutil.copyfile(ash.settings_ash.ashpath+'/databases/basis-sets/cp2k/BASIS_MOLOPT', './BASIS')
-        print_time_rel(module_init_time, modulename=f'CP2K run-prep6', moduleindex=2)
-        #Timing for Run-prep
+                shutil.copyfile(ash.settings_ash.ashpath+'/databases/basis_sets/cp2k/BASIS_MOLOPT', './BASIS')
+        #print_time_rel(module_init_time, modulename=f'CP2K run-prep6', moduleindex=2)
+        # Timing for Run-prep
         print_time_rel(module_init_time, modulename=f'CP2K run-prep', moduleindex=2)
 
-        #Run CP2K
+        # Run CP2K
         if self.parallelization == 'Mixed':
             run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores,paramethod=self.parallelization,
                      mixed_mpi_procs=self.mixed_mpi_procs, mixed_omp_threads=self.mixed_omp_threads)
         else:
             run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores,paramethod=self.parallelization)
 
-
-        #Grab energy
+        # Grab energy
         self.energy=grab_energy_cp2k(self.filename+'.out',method=self.method)
         print(f"Single-point {self.theorynamelabel} energy:", self.energy)
         print(BC.OKBLUE, BC.BOLD, f"------------ENDING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
-        #Grab gradient if calculated
+        # Grab gradient if calculated
         if Grad is True:
-            #Grab gradient
+            # Grab gradient
             self.gradient = grab_gradient_CP2K(f'ash-{self.filename}-1_0.xyz',len(current_coords))
-            #Grab PCgradient from file
+            # Grab stress tensor
+            if self.stress_tensor is True:
+                self.stress = get_stress_tensor(f"ash-{self.filename}-1_0.stress_tensor")
+                print("self.stress:", self.stress)
+                #exit()
+                self.cell_gradient = stress_to_cell_gradient(self.periodic_cell_vectors,self.stress)
+                print("self.cell_gradient:", self.cell_gradient)
+            # Grab PCgradient from file
             if PC is True:
                 self.pcgradient = grab_pcgradient_CP2K(f'ash-{self.filename}-1_0.xyz',len(MMcharges),len(current_coords))
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
@@ -475,7 +571,8 @@ class CP2KTheory:
             else:
                 print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
                 return self.energy, self.gradient
-        #Returning energy without gradient
+
+        # Returning energy without gradient
         else:
             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
             return self.energy
@@ -520,15 +617,20 @@ def run_CP2K(cp2kdir,bin_name,filename,numcores=1, paramethod='MPI', mixed_omp_t
 #Regular CP2K input
 def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True, qm_elems=None,
                     basis_dict=None, potential_dict=None, functional=None, restartfile=None,
+                    vdwpotential=None,
                     Grad=True, filename='cp2k', system_coord_file_format="XYZ",
-                    coordfile=None,
+                    coordfile=None, user_input_dft=None,
                     charge=None, mult=None, basis_method='GAPW',
                     mgrid_commensurate=False, scf_maxiter=50, outer_scf_maxiter=10,
                     scf_guess='RESTART', scf_convergence=1e-6, eps_default=1e-10,
-                    periodic_type="XYZ", cell_dimensions=None, cell_vectors=None,
-                    qm_cell_dims=None, qm_periodic_type=None, xtb_periodic=False, basis_file='BASIS', potential_file='POTENTIAL',
+                    periodic_type="XYZ", cell_vectors=None,
+                    stress_tensor=False, stress_tensor_algo='DIAGONAL_ANALYTICAL',
+                    kpoint_settings=None,
+                    qm_cell_dims=None, qm_periodic_type=None, 
+                    xtb_periodic=False, xtb_type='GFN2', xtb_tblite=False,
+                    basis_file='BASIS', potential_file='POTENTIAL',
                     psolver='wavelet', wavelet_scf_type=40,
-                    ngrids=4, cutoff=250, rel_cutoff=60,
+                    ngrids=4, xc_finer_grid=False, cutoff=250, rel_cutoff=60,
                     coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
                     qm_kind_dict=None, mm_kind_list=None,
                     mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21", printlevel=2,
@@ -575,87 +677,129 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         #FORCE_EVAL
         ####################
         inpfile.write(f'&FORCE_EVAL\n')
+        if stress_tensor is True:
+            inpfile.write(f'  STRESS_TENSOR {stress_tensor_algo}\n')
         inpfile.write(f'  METHOD {method}\n')
         inpfile.write(f'  &PRINT\n')
         inpfile.write(f'    &FORCES\n')
         inpfile.write(f'      FILENAME {filename}\n')
         inpfile.write(f'    &END FORCES\n')
+        if stress_tensor is True:
+            inpfile.write(f'    &STRESS_TENSOR\n')
+            inpfile.write(f'      FILENAME {filename}\n')
+            inpfile.write(f'    &END STRESS_TENSOR\n')
         inpfile.write(f'  &END PRINT\n\n')
 
         ##########
         #DFT
         ##########
-        inpfile.write(f'  &DFT\n')
-        #SCF: Control GUESS etc
-        inpfile.write(f'    &SCF\n')
-        inpfile.write(f'      SCF_GUESS {scf_guess}\n')
-        inpfile.write(f'      MAX_SCF {scf_maxiter}\n')
-        inpfile.write(f'      EPS_SCF {scf_convergence}\n')
-        if outer_SCF is True:
-            inpfile.write(f'      &OUTER_SCF\n')
-            inpfile.write(f'            OPTIMIZER {outer_SCF_optimizer}\n')
-            inpfile.write(f'            MAX_SCF {outer_scf_maxiter}\n')
-            inpfile.write(f'      &END OUTER_SCF\n')
-        if OT is True:
-            #Warning default OT settings here are supposedly expensive
-            inpfile.write(f'      &OT \n')
-            inpfile.write(f'            MINIMIZER {OT_minimizer}\n') #DIIS or CG
-            inpfile.write(f'            PRECONDITIONER {OT_preconditioner}\n') # FULL_SINGLE_INVERSE or FULL_KINETIC
-            inpfile.write(f'            LINESEARCH {OT_linesearch}\n') #NONE, 2PNT, 3PNT, GOLD
-            inpfile.write(f'            ENERGY_GAP {OT_energy_gap}\n') #0.08 (default), 0.001, 0.002
-            inpfile.write(f'      &END OT\n')
-        inpfile.write(f'    &END SCF\n')
-        inpfile.write(f'    CHARGE {charge}\n')
-        if mult > 1:
-            inpfile.write(f'    UKS\n')
-        inpfile.write(f'    MULTIPLICITY {mult}\n')
-        inpfile.write(f'    BASIS_SET_FILE_NAME {basis_file}\n')
-        inpfile.write(f'    POTENTIAL_FILE_NAME {potential_file}\n')
-        if restartfile != None:
-            inpfile.write(f'    WFN_RESTART_FILE_NAME {restartfile}\n')
-        #POISSON
-        inpfile.write(f'    &POISSON\n')
-        inpfile.write(f'      PERIODIC {periodic_type}\n') #NOTE
-        inpfile.write(f'      PSOLVER {psolver}\n')
-        if psolver == 'wavelet':
-            inpfile.write(f'      &WAVELET {psolver}\n')
-            inpfile.write(f'         SCF_TYPE {wavelet_scf_type}\n')
-            inpfile.write(f'      &END WAVELET {psolver}\n')
-        inpfile.write(f'    &END POISSON\n')
-        #QS
-        inpfile.write(f'    &QS\n')
-        inpfile.write(f'      METHOD {basis_method}\n') #NOTE
-        if basis_method == 'XTB':
-            inpfile.write(f'      &XTB\n') #NOTE
-            inpfile.write(f'          CHECK_ATOMIC_CHARGES F\n')
-            inpfile.write(f'          DO_EWALD  {xtb_periodic}\n') #NOTE
-            inpfile.write(f'          USE_HALOGEN_CORRECTION T\n') #NOTE
-            inpfile.write(f'      &END XTB\n') #NOTE
-        inpfile.write(f'      EPS_DEFAULT {eps_default}\n') #NOTE
-        inpfile.write(f'    &END QS\n')
+        if user_input_dft is not None:
+            print("User has provided custom DFT-section input. This will be used instead of the input generated by ASH.")
+            inpfile.write(user_input_dft)
+        else:
+            print("Writing DFT section")
+            inpfile.write(f'  &DFT\n')
+            #SCF: Control GUESS etc
+            inpfile.write(f'    &SCF\n')
+            inpfile.write(f'      SCF_GUESS {scf_guess}\n')
+            inpfile.write(f'      MAX_SCF {scf_maxiter}\n')
+            inpfile.write(f'      EPS_SCF {scf_convergence}\n')
+            if outer_SCF is True:
+                inpfile.write(f'      &OUTER_SCF\n')
+                inpfile.write(f'            OPTIMIZER {outer_SCF_optimizer}\n')
+                inpfile.write(f'            MAX_SCF {outer_scf_maxiter}\n')
+                inpfile.write(f'      &END OUTER_SCF\n')
+            if OT is True:
+                #Warning default OT settings here are supposedly expensive
+                inpfile.write(f'      &OT \n')
+                inpfile.write(f'            MINIMIZER {OT_minimizer}\n') #DIIS or CG
+                inpfile.write(f'            PRECONDITIONER {OT_preconditioner}\n') # FULL_SINGLE_INVERSE or FULL_KINETIC
+                inpfile.write(f'            LINESEARCH {OT_linesearch}\n') #NONE, 2PNT, 3PNT, GOLD
+                inpfile.write(f'            ENERGY_GAP {OT_energy_gap}\n') #0.08 (default), 0.001, 0.002
+                inpfile.write(f'      &END OT\n')
+            inpfile.write(f'    &END SCF\n')
+            inpfile.write(f'    CHARGE {charge}\n')
+            if mult > 1:
+                inpfile.write(f'    UKS\n')
+            inpfile.write(f'    MULTIPLICITY {mult}\n')
+            inpfile.write(f'    BASIS_SET_FILE_NAME {basis_file}\n')
+            inpfile.write(f'    POTENTIAL_FILE_NAME {potential_file}\n')
+            if restartfile != None:
+                inpfile.write(f'    WFN_RESTART_FILE_NAME {restartfile}\n')
+            #POISSON
+            inpfile.write(f'    &POISSON\n')
+            inpfile.write(f'      PERIODIC {periodic_type}\n') #NOTE
+            inpfile.write(f'      PSOLVER {psolver}\n')
+            if psolver == 'wavelet':
+                inpfile.write(f'      &WAVELET {psolver}\n')
+                inpfile.write(f'         SCF_TYPE {wavelet_scf_type}\n')
+                inpfile.write(f'      &END WAVELET {psolver}\n')
+            inpfile.write(f'    &END POISSON\n')
+            #QS
+            inpfile.write(f'    &QS\n')
+            inpfile.write(f'      METHOD {basis_method}\n') #NOTE
+            if basis_method == 'XTB':
+                # Extracting xTB code number from string, e.g. GFN2 -> 2, GFN1 -> 1, GFN0 -> 0
+                xtbcode = int(''.join(filter(str.isdigit, xtb_type)))
+                inpfile.write(f'      &XTB\n')
+                if xtb_tblite is True:
+                    inpfile.write(f'          &TBLITE\n')
+                    inpfile.write(f'            METHOD {xtb_type}\n')
+                    inpfile.write(f'          &END\n')
+                else:
+                    inpfile.write(f'          GFN_TYPE  {xtbcode}\n') #NOTE
+                inpfile.write(f'          CHECK_ATOMIC_CHARGES F\n')
+                inpfile.write(f'          DO_EWALD  {xtb_periodic}\n') #NOTE
+                inpfile.write(f'          USE_HALOGEN_CORRECTION T\n') #NOTE
+                inpfile.write(f'      &END XTB\n') #NOTE
+            inpfile.write(f'      EPS_DEFAULT {eps_default}\n') #NOTE
+            inpfile.write(f'    &END QS\n')
 
-        #MGRID
-        inpfile.write(f'    &MGRID\n')
-        inpfile.write(f'      NGRIDS {ngrids}\n')
-        inpfile.write(f'      CUTOFF {cutoff}\n')
-        inpfile.write(f'      REL_CUTOFF {rel_cutoff}\n')
-        inpfile.write(f'      COMMENSURATE {mgrid_commensurate}\n')
-        inpfile.write(f'    &END MGRID\n')
+            #MGRID
+            inpfile.write(f'    &MGRID\n')
+            inpfile.write(f'      NGRIDS {ngrids}\n')
+            inpfile.write(f'      CUTOFF {cutoff}\n')
+            inpfile.write(f'      REL_CUTOFF {rel_cutoff}\n')
+            inpfile.write(f'      COMMENSURATE {mgrid_commensurate}\n')
+            inpfile.write(f'    &END MGRID\n')
 
-        #PRINT stuff
-        inpfile.write(f'    &PRINT\n')
-        inpfile.write(f'      &MO\n')
-        inpfile.write(f'        EIGENVALUES .TRUE.\n')
-        inpfile.write(f'      &END MO\n')
-        inpfile.write(f'    &END PRINT\n')
+            #K-points
+            if kpoint_settings is not None:
+                inpfile.write(f'    &KPOINTS\n')
+                inpfile.write(f'      SCHEME MONKHORST-PACK {kpoint_settings[0]} {kpoint_settings[1]} {kpoint_settings[2]}\n')
+                inpfile.write(f'    &END KPOINTS\n')
+            #PRINT stuff
+            inpfile.write(f'    &PRINT\n')
+            #inpfile.write(f'      &MO\n')
+            #inpfile.write(f'        EIGENVALUES .TRUE.\n')
+            #inpfile.write(f'      &END MO\n')
+            inpfile.write(f'    &END PRINT\n')
 
-        #XC
-        inpfile.write(f'    &XC\n')
-        inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
-        inpfile.write(f'      &END XC_FUNCTIONAL\n')
-        inpfile.write(f'    &END XC\n')
+            #XC
+            inpfile.write(f'    &XC\n')
+            # Finer grid or not
+            if xc_finer_grid is True:
+                inpfile.write(f'      &XC_GRID\n')
+                inpfile.write(f'       USE_FINER_GRID .TRUE.\n')
+                inpfile.write(f'      &END XC_GRID\n')
+            if vdwpotential is not None:
+                inpfile.write(f'      &VDW_POTENTIAL\n')
+                inpfile.write(f'        DISPERSION_FUNCTIONAL PAIR_POTENTIAL\n')
+                inpfile.write(f'        &PAIR_POTENTIAL\n')
+                if 'D3' in vdwpotential:
+                    inpfile.write(f'          PARAMETER_FILE_NAME dftd3.dat\n')
+                inpfile.write(f'          REFERENCE_FUNCTIONAL {functional}\n')
+                inpfile.write(f'          TYPE {vdwpotential}\n')
+                if 'DFTD' in vdwpotential:
+                    inpfile.write(f'          &PRINT_DFTD\n')
+                    inpfile.write(f'          &END PRINT_DFTD\n')
+                inpfile.write(f'        &END PAIR_POTENTIAL\n')
+                inpfile.write(f'      &END VDW_POTENTIAL\n')
+            inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
+            inpfile.write(f'      &END XC_FUNCTIONAL\n')
+            inpfile.write(f'    &END XC\n')
 
-        inpfile.write(f'  &END DFT\n\n')
+            inpfile.write(f'  &END DFT\n\n')
 
         #QM/MM
         if method == 'QMMM':
@@ -714,10 +858,10 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         #CELL BLOCK
         inpfile.write(f'    &CELL\n')
         #This should be the total system cell size
-        if cell_dimensions != None:
-            inpfile.write(f'      ABC {cell_dimensions[0]} {cell_dimensions[1]} {cell_dimensions[2]}\n')
-            inpfile.write(f'      ALPHA_BETA_GAMMA {cell_dimensions[3]} {cell_dimensions[4]} {cell_dimensions[5]}\n')
-        elif cell_vectors != None:
+        #if cell_dimensions is not None:
+        #    inpfile.write(f'      ABC {cell_dimensions[0]} {cell_dimensions[1]} {cell_dimensions[2]}\n')
+        #    inpfile.write(f'      ALPHA_BETA_GAMMA {cell_dimensions[3]} {cell_dimensions[4]} {cell_dimensions[5]}\n')
+        if cell_vectors is not None:
             inpfile.write(f'      A {cell_vectors[0][0]} {cell_vectors[0][1]} {cell_vectors[0][2]}\n')
             inpfile.write(f'      B {cell_vectors[1][0]} {cell_vectors[1][1]} {cell_vectors[1][2]}\n')
             inpfile.write(f'      C {cell_vectors[2][0]} {cell_vectors[2][1]} {cell_vectors[2][2]}\n')
@@ -725,12 +869,13 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
         inpfile.write(f'    &END CELL\n')
 
         #KIND: basis and potentail for each element
-        for el in basis_dict.keys():
-            inpfile.write(f'    &KIND {el}\n')
-            inpfile.write(f'      ELEMENT {el}\n')
-            inpfile.write(f'      BASIS_SET {basis_dict[el]}\n')
-            inpfile.write(f'      POTENTIAL {potential_dict[el]}\n')
-            inpfile.write(f'    &END KIND\n')
+        if basis_method != 'XTB':
+            for el in basis_dict.keys():
+                inpfile.write(f'    &KIND {el}\n')
+                inpfile.write(f'      ELEMENT {el}\n')
+                inpfile.write(f'      BASIS_SET {basis_dict[el]}\n')
+                inpfile.write(f'      POTENTIAL {potential_dict[el]}\n')
+                inpfile.write(f'    &END KIND\n')
         inpfile.write(f'\n')
         #TOPOLOGY BLOCK
         inpfile.write(f'    &TOPOLOGY\n')
@@ -860,3 +1005,45 @@ def find_cp2k(cp2kdir, cp2k_bin_name):
     print("Note: Make sure the cp2k binaries are in your PATH and named correctly")
     ashexit()
     return
+
+def get_stress_tensor(file):
+    grab=False
+    stress=np.zeros((3,3))
+    with open(file) as f:
+        for line in f:
+            if ' STRESS| 1/3 Trace' in line:
+                grab=False
+            if grab:
+                if ' STRESS|      x' in line:
+                    stress[0,0] = line.split()[2]
+                    stress[0,1] = line.split()[3]
+                    stress[0,2] = line.split()[4]
+                if ' STRESS|      y' in line:
+                    stress[1,0] = line.split()[2]
+                    stress[1,1] = line.split()[3]
+                    stress[1,2] = line.split()[4]
+                if ' STRESS|      z' in line:
+                    stress[2,0] = line.split()[2]
+                    stress[2,1] = line.split()[3]
+                    stress[2,2] = line.split()[4]
+            if 'Analytical stress tensor' in line:
+                grab=True
+    return stress
+
+
+# Convert stress tensor to cell gradient
+def stress_to_cell_gradient(lattice_matrix, stress_tensor):
+    # convert lattice to Bohr
+    h = np.asarray(lattice_matrix) * ash.constants.ang2bohr
+
+    # convert stress to Eh/Bohr^3
+    BAR_TO_EH_PER_BOHR3 = 3.398931e-9
+    sigma = np.asarray(stress_tensor) * BAR_TO_EH_PER_BOHR3
+
+    # cell volume
+    V = np.linalg.det(h)
+
+    # compute gradient
+    grad = -1*V * sigma @ np.linalg.inv(h).T
+
+    return grad

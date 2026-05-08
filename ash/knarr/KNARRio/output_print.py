@@ -39,7 +39,7 @@ def PrintConfigurationPath(header, ndim, ndimIm, nim, ndof, rxyz, constr, symb,
             for i in range(0, ndimIm, 3):
                 z = k * ndimIm + i
                 print('% 2ls % 12.8lf % 12.8lf % 12.8lf % 2li % 2li % 2li' % (
-                    symb[z], rxyz[z], rxyz[z + 1], rxyz[z + 2], constr[z], constr[z + 1], constr[z + 2]))
+                    symb[z], rxyz[z].item(), rxyz[z + 1].item(), rxyz[z + 2].item(), constr[z].item(), constr[z + 1].item(), constr[z + 2].item()))
     else:
         raise RuntimeError("Are you sure you know what you are printing?")
 

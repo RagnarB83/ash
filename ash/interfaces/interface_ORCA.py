@@ -11,7 +11,7 @@ import ash.modules.module_coords
 from ash.functions.functions_general import ashexit,insert_line_into_file,BC,print_time_rel, print_line_with_mainheader, pygrep2, \
     pygrep, search_list_of_lists_for_index,print_if_level, writestringtofile, check_program_location, listdiff
 from ash.modules.module_singlepoint import Singlepoint
-from ash.modules.module_coords import check_charge_mult
+from ash.modules.module_coords import check_charge_mult, print_internal_coordinate_table_new
 import ash.functions.functions_elstructure
 import ash.constants
 import ash.settings_ash
@@ -57,6 +57,9 @@ class ORCATheory:
             print(BC.FAIL,"Error. orcasimpleinput variable can not contain ORCA job-directives like: Opt, Freq, Numfreq", BC.END)
             print("String:", orcasimpleinput.upper())
             print("orcasimpleinput should only contain information on electronic-structure method (e.g. functional), basis set, grid, SCF convergence etc.")
+            ashexit()
+        if '!' not in orcasimpleinput:
+            print(BC.FAIL,"Error. orcasimpleinput should contain at least a '!' with method and basis set information", BC.END)
             ashexit()
 
         # Whether to check ORCA outputfile for errors and warnings or not
@@ -361,7 +364,7 @@ end
         fragment.write_xyzfile(xyzfilename='Fragment-optimized.xyz')
 
         #Printing internal coordinate table
-        ash.modules.module_coords.print_internal_coordinate_table(fragment)
+        print_internal_coordinate_table_new(fragment)
         print_time_rel(module_init_time, modulename='ORCA Opt-run', moduleindex=2)
         return
     # Method to grab dipole moment from an ORCA outputfile (assumes run has been executed)
@@ -370,7 +373,10 @@ end
         print("Dipole moment:", dm)
         return dm
     def get_polarizability_tensor(self):
+        print("here")
+        print("self.filename+'.out':", self.filename+'.out')
         polarizability,diag_pz = grab_polarizability_tensor(self.filename+'.out')
+        print("polarizability:", polarizability)
         return polarizability
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -1006,7 +1012,10 @@ def ORCAfinalenergygrab(file, errors='ignore'):
                 else:
                     #Changing: sometimes ORCA adds info to the right of energy
                     #Energy=float(line.split()[-1])
-                    Energy=float(line.split()[4])
+                    if "(MM)" in line:
+                        Energy=float(line.split()[5])
+                    else:
+                        Energy=float(line.split()[4])
     if Energy is None:
         print(BC.FAIL,"ASH found no energy in file:", file, BC.END)
         print(BC.FAIL,"Something went wrong with ORCA run. Check ORCA outputfile:", file, BC.END)
@@ -1117,26 +1126,30 @@ def grab_polarizability_tensor(outfile):
     pz_tensor = np.zeros((3,3))
     diag_pz_tensor=[]
     count=0
-    grab=False;grab2=False
+    grab=False;grab2=False;grab3=False
     with open(outfile) as f:
         for line in f:
-            if grab2 is True:
+            if grab3 is True:
                 if len(line.split()) == 0:
                     grab2=False
                 else:
                     diag_pz_tensor.append(float(line.split()[0]))
                     diag_pz_tensor.append(float(line.split()[1]))
                     diag_pz_tensor.append(float(line.split()[2]))
+                    grab=False;grab2=False;grab3=False
             if grab is True:
-                if 'diagonalized tensor:' in line:
-                    grab=False
+                if 'The raw cartesian tensor' in line:
                     grab2=True
-                if len(line.split()) == 3:
+                if 'diagonalized tensor:' in line:
+                    grab2=False
+                    grab3=True
+                if grab2 is True and len(line.split()) == 3:
                     pz_tensor[count,0]=float(line.split()[0])
                     pz_tensor[count,1]=float(line.split()[1])
                     pz_tensor[count,2]=float(line.split()[2])
                     count+=1
-            if 'THE POLARIZABILITY TENSOR' in line:
+            if 'STATIC POLARIZABILITY TENSOR' in line:
+                print("grab True")
                 grab=True
     return pz_tensor, diag_pz_tensor
 
@@ -2181,11 +2194,11 @@ def run_orca_plot(filename, option, orcadir=None, gridvalue=40, specify_density=
     if option=='density':
         plottype = 2
     elif option=='cisdensity':
-        plottype = 2
+        plottype = 23
     elif option=='spindensity':
         plottype = 3
     elif option=='cisspindensity':
-        plottype = 3
+        plottype = 23
     elif option=='mo':
         plottype = 1
     else:

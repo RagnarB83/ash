@@ -1,6 +1,10 @@
 import numpy as np
 from ash.functions.functions_general import print_line_with_mainheader,print_line_with_subheader1,ashexit
+from ash.constants import hartokcal
 
+#Relative energy conversion (if RelativeEnergy is True)
+conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
+                    'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
 #repeated here so that plotting can be stand-alone
 class BC:
     HEADER = '\033[95m'
@@ -282,16 +286,17 @@ class ASH_plot():
 #Input: dictionary of (X,Y): energy   entries
 #NOTE: Partially deprecated thanks to ASHplot. Relative energy option is useful though.
 #TODO: Keep but call ASHplot here instead of doing separate plotting
-def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, mode='pyplot',
+def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axislabel='Coord', y_axislabel='Energy', dpi=200, mode='pyplot',
                          imageformat='png', RelativeEnergy=True, pointsize=40, scatter_linewidth=2, line_linewidth=1, color='blue',
                         filename='Plot'):
 
     print_line_with_mainheader("reactionprofile_plot")
 
     plt = load_matplotlib()
+    if plt is None:
+        print("Error: Matplotlib needs to be installed. Exiting")
+        ashexit()
 
-    conversionfactor = { 'a.u.': 1.0, 'Eh': 1.0, 'au': 1.0, 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
-                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
     e=[]
     coords=[]
 
@@ -299,10 +304,16 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
 
     #Sorting keys dictionary before grabbing so that line-plot is correct
     for key in sorted(surfacedictionary.keys()):
-        coords.append(key)
+        if isinstance(key, tuple):
+            print("Warning: key {} is a tuple. Only the first value will be used for plotting.".format(key))
+            coords.append(float(key[0])) #Making sure we add a float,not a tuple
+        else:
+            coords.append(float(key))
         e.append(surfacedictionary[key])
 
     if RelativeEnergy is True:
+        print("RelativeEnergy option. Using finalunit:", finalunit)
+        print("Other options are:", conversionfactor)
         #List of energies and relenergies here
         refenergy=float(min(e))
         rele=[]
@@ -314,6 +325,12 @@ def reactionprofile_plot(surfacedictionary, finalunit='',label='Label', x_axisla
     print(f"Coords ({len(coords)}): {coords}")
     print(f"finalvalues ({len(finalvalues)}): {finalvalues}")
     print(f"Relative energies({finalunit}): {finalvalues}")
+
+    # Write relative energies to file:
+    print(f"Writing relative energies to file: surface_results_relE.txt")
+    with open(f'surface_results_relE.txt', 'w') as relfile:
+        for i,j in zip(coords, finalvalues):
+            relfile.write("{:13.10f} {:13.10f} \n".format(i,j))
 
     if mode == 'pyplot':
         plt.close() #Clear memory of previous plots
@@ -344,9 +361,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
                 interpolparameter=10, colormap='inferno_r', dpi=200, imageformat='png', RelativeEnergy=True, numcontourlines=500,
                 contour_alpha=0.75, contourline_color='black', clinelabels=False, contour_values=None, title=""):
     print_line_with_mainheader("contourplot")
-    #Relative energy conversion (if RelativeEnergy is True)
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
-                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702 }
+
     e=[]
     coords=[]
     x_c=[]
@@ -368,6 +383,7 @@ def contourplot(surfacedictionary, label='Label',x_axislabel='Coord', y_axislabe
     #Creating relative-energy array here. Unmodified property is used if False
     if RelativeEnergy is True:
         print("RelativeEnergy option. Using finalunit:", finalunit)
+        print("Other options are:", conversionfactor)
         refenergy=float(min(e))
         relsurfacedictionary={}
         for i in surfacedictionary:
@@ -578,7 +594,7 @@ def plot_Spectrum(xvalues=None, yvalues=None, plotname='Spectrum', range=None, u
 
         ax.plot(x, spectrum, label=plotname, color=color)
         if plot_sticks is True:
-            ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt=color, use_line_collection=True)
+            ax.stem(xvalues, yvalues, label=plotname, markerfmt=' ', basefmt=' ', linefmt=color)
         plt.xlabel(unit)
         plt.ylabel('Intensity')
         #################################
@@ -632,3 +648,82 @@ def MOplot_vertical(mos_dict, pointsize=4000, linewidth=2, label="Label", yrange
     plt.savefig(label+"."+imageformat, format=imageformat, dpi=200)
 
     print("Created plot:", label+"."+imageformat)
+
+def volumeplot(surfacedictionary, x_axislabel='X', y_axislabel='Y', z_axislabel='Z', filename="surface",
+               colorbar_label='ΔE (kcal/mol)', colorscale='RdBu_r', 
+               opacity=0.1,surface_count=20,
+               RelativeEnergy=True, finalunit='kcal/mol', title="3D Potential Energy Surface",
+               imageformat='png', plot_in_browser=True):
+    try:
+        import plotly.graph_objects as go
+    except:
+        print("Use of volumeplot requires the plotly library. Loading plotly failed. Probably not installed")
+        print("Please install using e.g. pip:   pip install plotly")
+        ashexit()
+
+    # ── Unpack into coordinate and value arrays ───────────────────────────────────
+    keys = np.array(list(surfacedictionary.keys()))   # shape (N, 3)
+    vals = np.array(list(surfacedictionary.values())) # shape (N,)
+
+    x_vals = keys[:, 0]  # e.g. bondlength
+    y_vals = keys[:, 1]  # e.g. angle
+    z_vals = keys[:, 2]  # e.g. dihedral
+
+    #Creating relative-energy array here. Unmodified property is used if False
+    if RelativeEnergy is True:
+        print("RelativeEnergy option. Using finalunit:", finalunit)
+        print("Other options are:", conversionfactor)
+        vals_rel = (vals - vals.min()) * conversionfactor[finalunit]
+
+    # ── Reshape to a 3D grid (assumes a regular, complete grid scan) ──────────────
+    x_unique = np.unique(x_vals)
+    y_unique = np.unique(y_vals)
+    z_unique = np.unique(z_vals)
+
+    nx, ny, nz = len(x_unique), len(y_unique), len(z_unique)
+
+    # Build index maps for fast lookup
+    x_idx = {v: i for i, v in enumerate(x_unique)}
+    y_idx = {v: i for i, v in enumerate(y_unique)}
+    z_idx = {v: i for i, v in enumerate(z_unique)}
+
+    # Meshgrid so Plotly gets proper 3D coordinate arrays
+    X, Y, Z = np.meshgrid(x_unique, y_unique, z_unique, indexing='ij')
+    values = np.full((nx, ny, nz), np.nan)
+
+    for (x, y, z), e in zip(keys, vals_rel):
+        values[x_idx[x], y_idx[y], z_idx[z]] = e
+
+    # ── Plot ──────────────────────────────────────────────────────────────────────
+    fig = go.Figure(data=go.Volume(
+        x=X.flatten(),
+        y=Y.flatten(),
+        z=Z.flatten(),
+        value=values.flatten(),
+        isomin=0.0,
+        isomax=float(np.nanpercentile(vals_rel, 80)),  # focus on lower-energy region
+        opacity=opacity,
+        surface_count=surface_count,
+        colorscale=colorscale,   # blue=low energy, red=high — intuitive for PES
+        colorbar=dict(title=colorbar_label),
+        caps=dict(x_show=False, y_show=False, z_show=False),
+    ))
+
+    fig.update_layout(
+        title=title,
+        scene=dict(
+            xaxis_title=x_axislabel,
+            yaxis_title=y_axislabel,
+            zaxis_title=z_axislabel,
+        ),
+        margin=dict(l=0, r=0, b=0, t=40),
+    )
+
+    # Save PNG
+    fig.write_image(f"{filename}.{imageformat}")
+
+    # Save HTML
+    fig.write_html(f"{filename}.html")
+
+    if plot_in_browser:
+        fig.show()

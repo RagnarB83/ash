@@ -262,8 +262,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
         print('Energy of end points: ')
         #print('  Reactant: % 6.6f %s' % (path.GetEnergy()[0], KNARRsettings.energystring))
         #print('  Product : % 6.6f %s' % (path.GetEnergy()[path.GetNim() - 1], KNARRsettings.energystring))
-        print('  Reactant: % 6.6f %s' % (0.03674930495120813*path.GetEnergy()[0], 'Eh'))
-        print('  Product : % 6.6f %s' % (0.03674930495120813*path.GetEnergy()[path.GetNim() - 1], 'Eh'))
+        print('  Reactant: % 6.6f %s' % (0.03674930495120813*path.GetEnergy()[0].item(), 'Eh'))
+        print('  Product : % 6.6f %s' % (0.03674930495120813*path.GetEnergy()[path.GetNim() - 1].item(), 'Eh'))
 
         path.UpdateF()
         maxf_reactant = np.max(abs(path.GetF()[0:path.GetNDofIm()]))
@@ -406,8 +406,8 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                     ('it', 'dS', 'dE', 'CI', 'RMSF', 'MaxF', 'RMSF_CI', 'MaxF_CI', 'step'))
             print(f"Thresholds:                {tol_rms_f:8.4f} {tol_max_f:8.4f} {tol_rms_fci:8.4f} {tol_max_fci:8.4f}")
             print("%4i %6.2lf %8.3lf %5li %8.4lf %8.4lf %8.4lf %8.4lf %8.4lf @"
-                   % (it, s[-1], 23.060541945329334*(path.GetEnergy()[ci] - Ereactant), ci, rmsf_noci,
-                      maxf_noci, rmsf_ci, maxf_ci, np.max(abs(step))))
+                   % (it, s[-1], 23.060541945329334*(path.GetEnergy()[ci].item() - Ereactant.item()), ci, rmsf_noci.item(),
+                      maxf_noci, rmsf_ci.item(), maxf_ci, np.max(abs(step))))
             print("-"*80)
 
             #RB addition. Get tangent in every iteration and provide to calculator
@@ -427,7 +427,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 ('it', 'dS', 'dE', 'HEI', 'RMSF', 'MaxF', 'step'))
             print(f"Switch-on CI:{tol_turn_on_ci:>36.4f}")
             print("%4i %6.2lf %10.6lf %5li %9.4lf  %9.4lf %9.4lf @"
-                   % (it, s[-1], 23.060541945329334*(path.GetEnergy()[hei] - Ereactant), hei, rmsf, maxf, np.max(abs(step))))
+                   % (it, s[-1], 23.060541945329334*(path.GetEnergy()[hei] - Ereactant).item(), hei, rmsf.item(), maxf, np.max(abs(step))))
             print("-"*70)
         PiecewiseCubicEnergyInterpolation(basename + ".interp", path.GetNim(), s, path.GetEnergy(), freal_paral, it)
 
@@ -628,7 +628,7 @@ def DoNEB(path, calculator, neb, optimizer, second_run=False):
                 extra="CI"
             else: extra=""
             print('%4i %6.2f %12.6f %12.4f %12.6f %6s' % (
-                i, s[i], 1/(27.211386245988)*path.GetEnergy()[i], 23.060541945329334*(path.GetEnergy()[i] - path.GetEnergy()[0][0]),
+                i, s[i], 1/(27.211386245988)*path.GetEnergy()[i].item(), 23.060541945329334*(path.GetEnergy()[i].item() - path.GetEnergy()[0][0]),
                 np.max(abs(freal_perp[i * path.GetNDofIm():(i + 1) * path.GetNDofIm()])),extra))
 
         WritePath(basename + "_MEP.xyz", path.GetNDimIm(), path.GetNim(), path.GetCoords(),

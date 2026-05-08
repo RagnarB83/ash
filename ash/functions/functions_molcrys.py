@@ -243,7 +243,7 @@ def frag_define(orthogcoords,elems,cell_vectors,fragments,cell_angles=None, cell
         printdebug("el_list:", el_list)
         printdebug("current_mass:", current_mass)
         formula = ash.modules.module_coords.elemlisttoformula(el_list)
-        print("formula:", formula)
+        #print("formula:", formula)
         for fragment in fragments:
             printdebug("el_list:", el_list)
             ncharge = ash.modules.module_coords.nucchargelist(el_list)

@@ -20,6 +20,7 @@
 mamba install -c conda-forge openmm # 745MB
 #xTB: semiempirical program
 mamba install -c conda-forge xtb # 8MB
+mamba install -c conda-forge xtb-python # xtb Python API
 # pdbfixer: Needed for MM of biomolecules
 mamba install -c conda-forge pdbfixer # 0.5 MB
 #pySCF: Good QM program

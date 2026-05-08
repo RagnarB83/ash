@@ -275,6 +275,7 @@ def MakeEulerRotation(r, phi, theta, psi):
 
 def Convert1To3(ndim, rxyz):
     #Rb. py3 conversion. int instead of float
+    rxyz = np.asarray(rxyz).ravel()   #
     rnew = np.zeros(shape=(int(ndim / 3), 3))
     ind = 0
     for i in range(0, ndim, 3):
