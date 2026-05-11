@@ -56,7 +56,7 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates,
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
                         tda=tda,brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, check_stability=check_stability,
-                        deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_ionize, deltaSCFkeyword=deltaSCFkeyword,
+                        deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_PMOM, deltaSCFkeyword=deltaSCFkeyword,
                         CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
                         MRCI_CASCI_Final=MRCI_CASCI_Final, MRCI_SOC=MRCI_SOC, CASCI_Final=CASCI_Final,
                         btPNO=btPNO, DLPNO=DLPNO,
@@ -349,7 +349,9 @@ class PhotoElectronClass:
 
         if self.method == "OODFT":
             if 'UKS' not in self.theory.orcasimpleinput.upper():
-                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
+                # Avoid adding UKS if UHF present
+                if 'UHF' not in self.theory.orcasimpleinput.upper():
+                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
         if self.brokensym is True:
             self.theory.brokensym=True
             self.theory.HSmult=self.HSmult
@@ -1124,10 +1126,7 @@ end
         IPs_all=[]
         Ionstates_energies_all=[]
 
-        # DELTASCF extra keywords
-        if self.deltaSCFkeyword is not None:
-            print("Adding deltaSCFkeyword to ORCA input string:", self.deltaSCFkeyword)
-            theory.orcasimpleinput += f" {self.deltaSCFkeyword} "
+
 
         #LOOPING over Finalstate-multiplicities
         for fstate in self.Finalstates:
@@ -1143,6 +1142,13 @@ end
                 print(f"\nNow running Finalstate MULT {fstate.mult} state-number {i}")
                 label=f"{fstate.label}_state{i}"
                 print("Label:", label)
+
+                # DELTASCF extra keywords
+                if self.deltaSCFkeyword is not None:
+                    if self.deltaSCFkeyword not in theory.orcasimpleinput:
+                        print("Adding deltaSCFkeyword to ORCA input string:", self.deltaSCFkeyword)
+                        theory.orcasimpleinput += f" {self.deltaSCFkeyword} "
+
                 #Creating DELTASCF block
                 if fstate.mult > self.stateI.mult:
                     deltascfblock=f"%SCF \n PMOM {self.deltaSCF_PMOM} \n{deltascfline_CFG_betahole[i]}\nEND"
@@ -1164,6 +1170,8 @@ end
                 if self.OODFT_CC:
                     print("Now running noiter CCSD(T) on top of deltaSCF")
                     theory.extraline = theory.extraline.replace("DELTASCF","CCSD(T) noiter ")
+                    theory.orcasimpleinput = theory.orcasimpleinput.replace("FRSOSCF","")
+                    theory.orcasimpleinput = theory.orcasimpleinput.replace("FreezeAndRelease","")
                     state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                 finalsinglepointenergy = state_result.energy
 
