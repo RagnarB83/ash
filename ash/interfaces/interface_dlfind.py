@@ -101,34 +101,35 @@ class DLFIND_optimizerClass:
             print("Error: You must either select a jobtype keyword (e.g. opt, neb, dimer, instanton) or select DL-FIND icoord and iopt codes")
             print("Example: DLFIND_optimizer(jobtype='opt') ")
             ashexit()
-        elif jobtype.lower() == "opt":
-            print("jobtype: opt chosen")
-            print("Choosing icoord=1 (HDLC internal coordinates) and iopt=3 (L-BFGS minimizer)")
-            print("For other coordinate-systems: choose icoord=0 (cartesian), icoord=2 (hdlc-tc), icoord=3 (dlc-prim), icoord=3 (dlc-tc)")
-            print("For other opt algorithms: choose iopt codes: 0: sd, 1: cg-autorestart, 2: cg-restart10, 3: lbfgs, 10: P-RFO")
-            icoord=1
-            iopt=3
-        elif jobtype.lower() == "tsopt" or jobtype.lower() == "ts":
-            print("jobtype: tsopt chosen")
-            print("Choosing icoord=3 (HDLC internal coordinates) and iopt=10 (P-RFO)")
-            print("Note: inithessian option is:", inithessian)
-            icoord=3
-            iopt=10
-        elif jobtype.lower() == "neb":
-            print("jobtype: neb chosen")
-            print("Choosing icoord=120 (NEB with frozen endpoints) and iopt=3 (L-BFGS)")
-            icoord=120
-            iopt=3
-        elif jobtype.lower() == "dimer":
-            print("jobtype: dimer chosen")
-            print("Choosing icoord=210 (Dimer) and iopt=3 (L-BFGS)")
-            icoord=210
-            iopt=3
-        elif jobtype.lower() == "qts" or jobtype.lower() == "instanton" :
-            print("jobtype: qts chosen (a.k.a. instanton)")
-            print("Choosing icoord=190 (qts) and iopt=3 (L-BFGS)")
-            icoord=190
-            iopt=3
+        elif jobtype is not None:
+            if jobtype.lower() == "opt":
+                print("jobtype: opt chosen")
+                print("Choosing icoord=1 (HDLC internal coordinates) and iopt=3 (L-BFGS minimizer)")
+                print("For other coordinate-systems: choose icoord=0 (cartesian), icoord=2 (hdlc-tc), icoord=3 (dlc-prim), icoord=3 (dlc-tc)")
+                print("For other opt algorithms: choose iopt codes: 0: sd, 1: cg-autorestart, 2: cg-restart10, 3: lbfgs, 10: P-RFO")
+                icoord=1
+                iopt=3
+            elif jobtype.lower() == "tsopt" or jobtype.lower() == "ts":
+                print("jobtype: tsopt chosen")
+                print("Choosing icoord=1 (HDLC internal coordinates) and iopt=10 (P-RFO)")
+                print("Note: inithessian option is:", inithessian)
+                icoord=1
+                iopt=10
+            elif jobtype.lower() == "neb":
+                print("jobtype: neb chosen")
+                print("Choosing icoord=120 (NEB with frozen endpoints) and iopt=3 (L-BFGS)")
+                icoord=120
+                iopt=3
+            elif jobtype.lower() == "dimer":
+                print("jobtype: dimer chosen")
+                print("Choosing icoord=210 (Dimer) and iopt=3 (L-BFGS)")
+                icoord=210
+                iopt=3
+            elif jobtype.lower() == "qts" or jobtype.lower() == "instanton" :
+                print("jobtype: qts chosen (a.k.a. instanton)")
+                print("Choosing icoord=190 (qts) and iopt=3 (L-BFGS)")
+                icoord=190
+                iopt=3
         else:
             print("No jobype selected.")
             print(f"Will start job based on chosen icoord={icoord} and iopt={iopt}")
@@ -525,7 +526,7 @@ class DLFIND_optimizerClass:
                 self.frozenatoms = self.frozenatoms+frozenatoms_xyz
                 print("frozenatoms_z:", frozenatoms_z)
         if self.actatoms is not None:
-            print_if_level("Actatoms provided:", self.actatoms)
+            print_if_level("Actatoms provided: {self.actatoms}", self.printlevel,2)
 
             if self.PBC:
                 print("PBC detected. Adding 4 dummy atoms to actatoms if not already present")
