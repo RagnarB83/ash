@@ -41,7 +41,7 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         MRCI_CASCI_Final=False, MRCI_SOC=False,
                         btPNO=False, DLPNO=False, no_shakeup=False, virt_offset=0,
                         path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False,
-                        OODFT_CC=False):
+                        OODFT_CC=False, deltascf_moread_init=True):
     """
     Wrapper function around PhotoElectron Class
     """
@@ -59,7 +59,7 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_PMOM, deltaSCFkeyword=deltaSCFkeyword,
                         CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
                         MRCI_CASCI_Final=MRCI_CASCI_Final, MRCI_SOC=MRCI_SOC, CASCI_Final=CASCI_Final,
-                        btPNO=btPNO, DLPNO=DLPNO,
+                        btPNO=btPNO, DLPNO=DLPNO, deltascf_moread_init=deltascf_moread_init,
                         path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson,
                         OODFT_CC=OODFT_CC)
     result = photo.run()
@@ -79,7 +79,7 @@ class PhotoElectronClass:
                         MRCI_CASCI_Final=False, MRCI_SOC=False, CASCI_Final=False,
                         btPNO=False, DLPNO=False,
                         path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False,
-                        OODFT_CC=False):
+                        OODFT_CC=False, deltascf_moread_init=True):
         """
         PhotoElectron module
         """
@@ -201,6 +201,8 @@ class PhotoElectronClass:
         self.deltaSCF_PMOM=deltaSCF_PMOM #Whether to use PMOM or not
         self.deltaSCFkeyword=deltaSCFkeyword # Add extra ORCA simple keyword when doing deltaSCF calcs only 
         self.OODFT_CC=OODFT_CC # CCSD(T) on top of deltaSCF
+        self.deltascf_moread_init = deltascf_moread_init # Whether to add MOREAD line to read initial state GBW file for each ionized state in deltaSCF calcs
+        
         print("PES method:", self.method)
         if self.method == 'MRCI' or self.method=='MREOM':
             print("MREOM:", self.MREOM)
@@ -1164,6 +1166,12 @@ end
                     theory.extraline="! DELTASCF"
                 #Adding ALPHACONF/BETACONF line as separate SCF block (empty if ground ion state)
                 theory.orcablocks = self.orig_orcablocks + deltascfblock
+
+                # MOREAD INIT state
+                if self.deltascf_moread_init is True:
+                    print("deltascf_moread_init is True. Adding MOREAD line to read initial state GBW file for each ionized state.")
+                    theory.moreadfile="Init_State.gbw"
+
                 state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                 # CCSD(T) correction on top
                 print("self.OODFT_CC:", self.OODFT_CC)
