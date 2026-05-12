@@ -1147,9 +1147,16 @@ end
 
                 # DELTASCF extra keywords
                 if self.deltaSCFkeyword is not None:
-                    if self.deltaSCFkeyword not in theory.orcasimpleinput:
-                        print("Adding deltaSCFkeyword to ORCA input string:", self.deltaSCFkeyword)
-                        theory.orcasimpleinput += f" {self.deltaSCFkeyword} "
+                    for kw in self.deltaSCFkeyword.split():
+                        if kw not in theory.orcasimpleinput:
+                            print(f"Adding {kw} to ORCA input string for DELTASCF calculation.")
+                            # Skipping GMF if first ionized state (ORCA bug)
+                            if kw.upper() == "GMF" and i == 0:
+                                print("deltaSCFkeyword included GMF and this is the first ionized state. Skipping GMF for this state due to ORCA bug.")
+                            else:
+                                theory.orcasimpleinput += f" {kw} "
+                        else:
+                            print(f"{kw} already in ORCA input string. Not adding again.")
 
                 #Creating DELTASCF block
                 if fstate.mult > self.stateI.mult:
