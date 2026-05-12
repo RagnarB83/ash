@@ -741,3 +741,62 @@ def active_learning(ml_theories=None, e_f_weights=None, training_dir=None, maxit
 # WORKFLOW FUNCTIONS FOR TRAINING
 #######################################
 
+# Distance matrix
+def distance_matrix(fragment):
+    from scipy.spatial.distance import cdist
+    return cdist(fragment.coords, fragment.coords)
+
+# Geometric bond-order matrix
+def geomBO(fragment, alpha=6.0, cutoff_factor=1.5):
+
+    from scipy.spatial.distance import cdist
+    # Distance matrix
+    D = cdist(fragment.coords, fragment.coords)
+
+    # ============================================================
+    # Geometry-based bond-order matrix
+    # B_ij = exp[-alpha * (D_ij / Rij - 1)]
+    # Rij = covalent radius sum
+    # ============================================================
+
+    N = fragment.numatoms
+    B = np.zeros((N, N))
+    from ash.modules.module_coords import eldict_covrad
+    for i in range(N):
+        for j in range(i + 1, N):
+            Ri = eldict_covrad[fragment.elems[i]]
+            Rj = eldict_covrad[fragment.elems[j]]
+            Rij = Ri + Rj
+            dij = D[i, j]
+            # optional cutoff
+            if dij > cutoff_factor * Rij:
+                value = 0.0
+            else:
+                value = np.exp(
+                    -alpha * (dij / Rij - 1.0)
+                )
+            B[i, j] = value
+            B[j, i] = value
+    return B
+
+# Coulomb matrix
+def coulomb_matrix(fragment):
+
+    from scipy.spatial.distance import cdist
+
+    # Distance matrix
+    D = cdist(fragment.coords, fragment.coords)
+    N = fragment.numatoms
+    C = np.zeros((N, N))
+    Z = fragment.nuc_charges
+    print("Z:", Z)
+    for i in range(N):
+        for j in range(N):
+            if i == j:
+                # diagonal term
+                C[i, i] = 0.5 * Z[i] ** 2.4
+
+            else:
+                # avoid divide-by-zero
+                C[i, j] = Z[i] * Z[j] / D[i, j]
+    return C
