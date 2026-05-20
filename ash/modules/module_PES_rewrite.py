@@ -1180,6 +1180,12 @@ end
                     theory.moreadfile="Init_State.gbw"
 
                 state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
+
+                #Keeping copy of input/outputfile and GBW file
+                shutil.copyfile(theory.filename + '.out', './' + label + '.out')
+                shutil.copyfile(theory.filename + '.inp', './' + label + '.inp')
+                shutil.copyfile(theory.filename + '.gbw', './' + label + '.gbw')
+
                 # CCSD(T) correction on top
                 print("self.OODFT_CC:", self.OODFT_CC)
                 if self.OODFT_CC:
@@ -1188,6 +1194,7 @@ end
                     theory.orcasimpleinput = theory.orcasimpleinput.replace("FRSOSCF","")
                     theory.orcasimpleinput = theory.orcasimpleinput.replace("FreezeAndRelease","")
                     state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
+                    shutil.copyfile(theory.filename + '.out', './' + label + 'cc_noiter.out')
                 finalsinglepointenergy = state_result.energy
 
                 ip = (finalsinglepointenergy-self.stateI.energy)*ash.constants.hartoeV
@@ -1207,10 +1214,7 @@ end
                 #print("Initial state occupied MO energies (alpha):", self.stateI.occorbs_alpha)
                 #print("Initial state SCF-type:", self.stateI.hftyp)
 
-                #Keeping copy of input/outputfile and GBW file
-                shutil.copyfile(theory.filename + '.out', './' + label + '.out')
-                shutil.copyfile(theory.filename + '.inp', './' + label + '.inp')
-                shutil.copyfile(theory.filename + '.gbw', './' + label + '.gbw')
+
 
                 #Calculate SCF eldensity and spindensity if requested
                 if self.densities == 'SCF' or self.densities == 'All':

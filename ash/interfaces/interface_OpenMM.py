@@ -2638,8 +2638,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         print("conda install -c conda-forge pdbfixer")
         ashexit()
 
-    if pdbfile == None:
-        print("You must provide a pdbfile= keyword argument")
+    if pdbfile is None:
+        print("You must provide a pdbfile keyword argument")
         ashexit()
 
 
@@ -2985,6 +2985,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         fragment = Fragment(pdbfile="system_aftersolvent_ions.pdb")
 
     write_pdbfile_openMM(modeller.topology, modeller.positions, "finalsystem.pdb")
+    write_pdbxfile_openMM(modeller.topology, modeller.positions, "finalsystem.cif")
     fragment.print_system(filename="finalsystem.ygg")
     fragment.write_xyzfile(xyzfilename="finalsystem.xyz")
 
@@ -3015,6 +3016,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     print("system_afterions.pdb and finalsystem.pdb (same)")
     print("\nFinal files:")
     print("finalsystem.pdb  (PDB file)")
+    print("finalsystem.cif  (PDBx/mmCIF file)")
     print("finalsystem.ygg  (ASH fragment file)")
     print("finalsystem.xyz   (XYZ coordinate file)")
     print("{}   (System XML file)".format(systemxmlfile))
@@ -3022,15 +3024,20 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     print(BC.WARNING,"Strongly recommended: Check finalsystem.pdb carefully for correctness!", BC.END)
     print("\nTo use this system setup to define a future OpenMMTheory object you can either do:\n")
 
-    print(BC.OKMAGENTA,"1. Define using separate forcefield XML files:",BC.END)
+    print(BC.OKMAGENTA,"1. Define using separate forcefield XML files and PDB-file (for topology):",BC.END)
     if extraxmlfile is None:
         print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\"], pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
     else:
         print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\", \"{extraxmlfile}\"], pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
-    print(BC.OKMAGENTA,"2. Use forcefield object file :\n",BC.END, \
+    print(BC.OKMAGENTA,"2. Define using separate forcefield XML files and PDBx/mmCIF file (instead of PDB):",BC.END)
+    if extraxmlfile is None:
+        print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\"], pdbxfile=\"finalsystem.cif\", periodic={periodic})",BC.END)
+    else:
+        print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\", \"{extraxmlfile}\"], pdbxfile=\"finalsystem.cif\", periodic={periodic})",BC.END)
+    print(BC.OKMAGENTA,"3. Use forcefield object file :\n",BC.END, \
         f"omm = OpenMMTheory(topoforce=True, forcefield=forcefield_object, pdbfile=\"finalsystem.pdb\", topology=modeller.topology, periodic={periodic})",BC.END)
-    print(BC.OKMAGENTA,"3. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
-        f"omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
+    #print(BC.OKMAGENTA,"3. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
+    #    f"omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
     print()
     print()
     if residuetemplate_choice is not None:
@@ -3063,6 +3070,16 @@ def write_pdbfile_openMM(topology, positions, filename, connectivity_dict=None):
 
     openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
     print("Wrote PDB-file:", filename)
+
+def write_pdbxfile_openMM(topology, positions, filename, connectivity_dict=None):
+    import openmm.app
+
+    if connectivity_dict is not None:
+        print("Connectivity passed to write_pdbxfile_openMM")
+        openmm_add_bonds_to_topology(topology,connectivity_dict)
+
+    openmm.app.PDBxFile.writeFile(topology, positions, file=open(filename, 'w'))
+    print("Wrote PDBx-file:", filename)
 
 #Take OpenMM topology and connectivity dictionary and add bonds to topology
 #in order for OpenMM PDBFile.writeFile to write CONECT lines
@@ -4326,7 +4343,14 @@ class OpenMM_MDclass:
                                                   blastate.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
-
+        # PDBx/mmCIF
+        pdbx_filename=self.trajfilename+"_firstframe.cif"
+        print("Writing intial frame to disk as PDBx/mmCIF-file:", pdbx_filename)
+        with open(pdbx_filename, 'w') as f:
+            openmm.app.pdbxfile.PDBxFile.writeHeader(self.openmmobject.topology, f)
+            openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
+                                                  blastate.getPositions(asNumpy=True).value_in_unit(
+                                                                        openmm.unit.angstrom), f)
 
         ###############################################################################
         # MD LOOP for each Theory-Runtype: WRAP, QMMM, QM, ONIOM, dummy_MM, MM
@@ -4883,9 +4907,9 @@ class OpenMM_MDclass:
             #Topology (for header in PDB-files). Necessary
             self.openmmobject.topology.setPeriodicBoxVectors(self.state.getPeriodicBoxVectors())
 
-        ########################################
-        # Writing final frame to disk as PDB.
-        ########################################
+        ################################################
+        # Writing final frame to disk as PDB and PDBx
+        ################################################
         pdb_filename=self.trajfilename+"_lastframe.pdb"
         print("Writing final frame to disk as PDB-file:", pdb_filename)
         with open(pdb_filename, 'w') as f:
@@ -4895,7 +4919,17 @@ class OpenMM_MDclass:
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
         print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
-        
+        # PDBx/mmCIF
+        pdbx_filename=self.trajfilename+"_lastframe.cif"
+        print("Writing final frame to disk as PDBx/mmCIF-file:", pdbx_filename)
+        with open(pdbx_filename, 'w') as f:
+            openmm.app.pdbxfile.PDBxFile.writeHeader(self.openmmobject.topology, f)
+            openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
+                                                  self.state.getPositions(asNumpy=True).value_in_unit(
+                                                                        openmm.unit.angstrom), f)
+        print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
+
+
         # Saving state to disk
         #Can be used to restart using statefile option
         print("Saving a statefile and checkpointfile of the final frame of the simulation: OpenMM_MD_final_state.xml and OpenMM_MD_final_checkpoint.chk")
