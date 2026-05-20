@@ -1193,6 +1193,12 @@ end
                     theory.extraline = theory.extraline.replace("DELTASCF","CCSD(T) noiter ")
                     theory.orcasimpleinput = theory.orcasimpleinput.replace("FRSOSCF","")
                     theory.orcasimpleinput = theory.orcasimpleinput.replace("FreezeAndRelease","")
+                    # mdci block
+                    theory.orcablocks = self.orig_orcablocks + f"""%mdci
+maxiter 100
+end
+"""
+
                     state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
                     shutil.copyfile(theory.filename + '.out', './' + label + 'cc_noiter.out')
                 finalsinglepointenergy = state_result.energy
