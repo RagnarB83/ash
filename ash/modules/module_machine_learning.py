@@ -789,13 +789,11 @@ def coulomb_matrix(fragment):
     N = fragment.numatoms
     C = np.zeros((N, N))
     Z = fragment.nuc_charges
-    print("Z:", Z)
     for i in range(N):
         for j in range(N):
             if i == j:
                 # diagonal term
                 C[i, i] = 0.5 * Z[i] ** 2.4
-
             else:
                 # avoid divide-by-zero
                 C[i, j] = Z[i] * Z[j] / D[i, j]

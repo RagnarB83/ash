@@ -82,7 +82,7 @@ class Reaction:
 
 # ASH Fragment class
 class Fragment:
-    def __init__(self, fragments=None, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, grofile=None,
+    def __init__(self, fragments=None, coordsstring=None, fragfile=None, databasefile=None, xyzfile=None, pdbfile=None, pdbxfile=None, grofile=None,
                  amber_inpcrdfile=None, amber_prmtopfile=None, trexiofile=None, smiles=None,
                  chemshellfile=None, coords=None, elems=None, connectivity=None, atom=None, diatomic=None, diatomic_bondlength=None,
                  bondlength=None,
@@ -221,6 +221,10 @@ class Fragment:
             self.label = pdbfile.split('/')[-1].split('.')[0]
             self.read_pdbfile_openmm(pdbfile)
             #self.read_pdbfile_old(pdbfile, conncalc=False, use_atomnames_as_elements=use_atomnames_as_elements)
+        # PDBX-file
+        elif pdbxfile is not None:
+            self.label = pdbxfile.split('/')[-1].split('.')[0]
+            self.read_pdbxfile(pdbxfile)
         # GROMACS GRO-file
         elif grofile is not None:
             self.label = grofile.split('/')[-1].split('.')[0]
@@ -587,6 +591,22 @@ class Fragment:
         # Topology
         self.pdb_topology = pdb.topology
 
+    # Reading PDBx/mmCIF file using OpenMM 
+    def read_pdbxfile(self, filename):
+        if self.printlevel >= 2:
+            print("read_pdbxfile: Reading coordinates from PDBX file '{}' into fragment.".format(filename))
+        try:
+            import openmm.app
+        except ImportError:
+            print("Error: OpenMM library not found. ASH requires OpenMM library to read PDB files.")
+            ashexit()
+        pdb = openmm.app.PDBxFile(filename)
+        self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
+        self.elems = [atom.element.symbol for atom in pdb.topology.atoms()]
+
+        # Topology
+        self.pdb_topology = pdb.topology
+
     def read_xyzfile(self, filename, scale=None, tol=None, readchargemult=False, conncalc=True):
         if self.printlevel >= 2:
             print("Reading coordinates from XYZ file '{}' into fragment.".format(filename))
@@ -875,6 +895,49 @@ class Fragment:
             self.pdb_topology._bonds=[]
         openmm.app.PDBFile.writeFile(self.pdb_topology, self.coords, file=open(f"{filename}", 'w'))
         print(f"Wrote PDB-file: {filename}")
+        return filename
+
+    # Write PDBX-file via OpenMM
+    def write_pdbxfile(self,filename="Fragment", calc_connectivity=False, pdb_topology=None,
+                              skip_connectivity=False, resname="MOL"):
+        print("write_pdbxfile_openmm\n")
+        try:
+            import openmm.app
+        except ImportError:
+            print("Error: OpenMM library not found. ASH requires OpenMM library to write PDB files.")
+            ashexit()
+
+        #Adding extension
+        if '.cif' not in filename:
+            filename += ".cif"
+
+        if pdb_topology is not None:
+            print("Using input pdb_topology")
+            self.pdb_topology = pdb_topology
+        elif self.pdb_topology is None:
+            print("Warning: ASH Fragment has no PDB-file topology defined (required for PDB-file writing)")
+            print("Now defining new topology from scratch")
+            if pdb_topology is None:
+                self.define_topology(resname=resname) #Creates self.pdb_topology
+        else:
+            print("Using pdbtopology found in ASH fragment")
+
+        # Before writing PDB-file, request connectivity calculation so that we get correct CONECT lines for non-biomolecules
+        if calc_connectivity is True:
+            print("Connectivity calculation requested for Fragment")
+            connectivity_dict = get_connected_atoms_dict(self.coords,self.elems, 1.0,0.1)
+            print("Adding connectivity to PDB topology")
+            ash.interfaces.interface_OpenMM.openmm_add_bonds_to_topology(self.pdb_topology,connectivity_dict)
+
+        # If no_connectivity is True, we skip adding connectivity to PDB-file
+        if skip_connectivity is True:
+            print("skip_connectivity True: this will not write connectivity lines to PDB-file")
+            # solute_resname= list(self.pdb_topology.residues())[0].name
+            print("Deleting molecule bond information")
+            # Setting list of bonds to empty list
+            self.pdb_topology._bonds=[]
+        openmm.app.PDBxFile.writeFile(self.pdb_topology, self.coords, file=open(f"{filename}", 'w'))
+        print(f"Wrote PDBx-file: {filename}")
         return filename
 
     def write_xyzfile(self, xyzfilename="Fragment-xyzfile.xyz", writemode='w', write_chargemult=True, write_energy=True):

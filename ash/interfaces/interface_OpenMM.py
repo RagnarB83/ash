@@ -37,7 +37,7 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None, properties=None,
                  cluster_fragment=None, ASH_FF_file=None,
                  nonbondedMethod_noPBC='NoCutoff', nonbonded_cutoff_noPBC=20,
-                 xmlfiles=None, pdbfile=None, use_parmed=False, xmlsystemfile=None,
+                 xmlfiles=None, pdbfile=None, pdbxfile=None, use_parmed=False, xmlsystemfile=None,
                  do_energy_decomposition=False,
                  periodic=False, periodic_cell_dimensions=None, PBCvectors=None, periodic_cell_vectors=None,
                  charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
@@ -512,18 +512,22 @@ class OpenMMTheory:
 
             self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
-        # Read topology from PDB-file and XML-forcefield files to define forcefield
+        # Read topology from PDB-file or PDBx-file and XML-forcefield files to define forcefield
         else:
             if self.printlevel > 0:
-                print("Reading OpenMM XML forcefield files and PDB file")
+                print("Reading OpenMM XML forcefield files and PDB (or PDBx) file")
                 print("xmlfiles:", str(xmlfiles).strip("[]"))
                 print("pdbfile:", pdbfile)
-                if pdbfile is None:
-                    print("Error:No pdbfile input provided")
-                    ashexit()
+                print("pdbxfile:", pdbxfile)
             # This would be regular OpenMM Forcefield definition requiring XML file
             # Topology from PDBfile annoyingly enough
-            pdb = openmm.app.PDBFile(pdbfile)
+            if pdbfile is not None:
+                pdb = openmm.app.PDBFile(pdbfile)
+            elif pdbxfile is not None:
+                pdb = openmm.app.PDBxFile(pdbxfile)
+            else:
+                print("Error: No pdbfile or pdbxfile input provided")
+                ashexit()
 
             # Check if PBC vectors in PDB-file
             pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
