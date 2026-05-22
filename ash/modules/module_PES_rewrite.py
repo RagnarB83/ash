@@ -1193,8 +1193,16 @@ end
                     theory.extraline = theory.extraline.replace("DELTASCF","CCSD(T) noiter ")
                     theory.orcasimpleinput = theory.orcasimpleinput.replace("FRSOSCF","")
                     theory.orcasimpleinput = theory.orcasimpleinput.replace("FreezeAndRelease","")
+
+
+                    # Removing SCF maxiter line if present in theory.orcablocks to avoid conflict with CCSD(T) maxiter line
+                    orig_orcablocks = self.orig_orcablocks
+                    if "maxiter" in theory.orcablocks:
+                        print("Removing maxiter line from ORCA blocks to avoid conflict with CCSD(T) maxiter")
+                        orig_orcablocks = '\n'.join([line for line in theory.orcablocks.splitlines() if "maxiter" not in line])
+
                     # mdci block
-                    theory.orcablocks = self.orig_orcablocks + f"""%mdci
+                    theory.orcablocks = orig_orcablocks + f"""\n%mdci
 maxiter 100
 end
 """
@@ -1697,9 +1705,12 @@ end
 
         if self.OODFT_CC:
             print("SCF InitState. Now running noiter CCSD(T) on top of deltaSCF")
+            # Removing SCF maxiter line if present in theory.orcablocks to avoid conflict with CCSD(T) maxiter line
+            if "maxiter" in theory.orcablocks:
+                print("Removing maxiter line from ORCA blocks to avoid conflict with CCSD(T) maxiter")
+                theory.orcablocks = '\n'.join([line for line in theory.orcablocks.splitlines() if "maxiter" not in line])
             theory.extraline = theory.extraline + "! CCSD(T) noiter "
             state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
-
 
         #Grab energy of initial state
         if self.method == 'CASSCF' or self.method =='CASCI':
