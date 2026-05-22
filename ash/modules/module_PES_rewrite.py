@@ -1204,6 +1204,7 @@ end
                     # mdci block
                     theory.orcablocks = orig_orcablocks + f"""\n%mdci
 maxiter 100
+maxdiis 20
 end
 """
 
