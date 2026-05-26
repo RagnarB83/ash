@@ -2603,7 +2603,7 @@ def flexible_align_pdb(pdbfileA, pdbfileB, rotate_only=False, translate_only=Fal
 
     #Write PDBfile. PDB-info will have been read and stored
     fragmentA.coords=newfragA.coords #Replacing coords in original fragmentA
-    fragmentA.write_pdbfile(filename=f"{pdbfileA.replace('.pdb','')}_aligned") #Now write out
+    fragmentA.write_pdbfile_openmm(filename=f"{pdbfileA.replace('.pdb','')}_aligned") #Now write out
 
 #For ASH fragments
 def flexible_align(fragmentA, fragmentB, rotate_only=False, translate_only=False, reordering=False, reorder_method='brute', subset=None):
