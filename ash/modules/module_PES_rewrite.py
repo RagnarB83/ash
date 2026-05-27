@@ -350,17 +350,18 @@ class PhotoElectronClass:
             self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' Normalprint'
 
         if self.method == "OODFT":
-            if 'UKS' not in self.theory.orcasimpleinput.upper():
-                # Avoid adding UKS if UHF present
-                if 'UHF' not in self.theory.orcasimpleinput.upper():
-                    self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
+            if 'UHF' not in self.theory.orcasimpleinput.upper():
+                # Avoid adding UHF if UHF or HF present
+                #if 'UHF' not in self.theory.orcasimpleinput.upper() and 'HF' not in self.theory.orcasimpleinput.upper():
+                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UHF'
+
         if self.brokensym is True:
             self.theory.brokensym=True
             self.theory.HSmult=self.HSmult
             self.theory.atomstoflip=self.atomstoflip
-            #Making sure UKS always present if brokensym feature active. Important for open-shell singlets
-            if 'UKS' not in self.theory.orcasimpleinput.upper():
-                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
+            #Making sure UHF always present if brokensym feature active. Important for open-shell singlets
+            if 'UHF' not in self.theory.orcasimpleinput.upper():
+                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UHF'
 
         #Preserve original
         self.orig_orcasimpleinput=copy.copy(self.theory.orcasimpleinput)
@@ -1115,6 +1116,7 @@ end
         print("now done with initial state SCF")
 
 
+
         #Create strings for the SCF configurations and deltaSCF lines
         if self.deltaSCF_ionize is True:
             print("deltaSCF_ionize option active!")
@@ -1129,9 +1131,11 @@ end
         Ionstates_energies_all=[]
 
 
-
+        print("self.Finalstates:", self.Finalstates)
         #LOOPING over Finalstate-multiplicities
         for fstate in self.Finalstates:
+            print("fstate.mult:", fstate.mult)
+
             if self.deltaSCF_ionize:
                 print("deltaSCF_ionize option active. Note: this uses initial-state charge/multiplicity in ORCA input")
                 charge = self.Initialstate_charge
@@ -1164,9 +1168,9 @@ end
                 else:
                     deltascfblock=f"%SCF \n PMOM {self.deltaSCF_PMOM} \n{deltascfline_CFG_alphahole[i]}\nEND"
 
-                # Adding UKS if not
-                if 'UKS' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput += " UKS "
+                # Adding UHF if not
+                if 'UHF' not in theory.orcasimpleinput and 'HF' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput += " UHF "
 
                 #Adding DELTASCF keyword to simpleinput (fine even for ground-state)
                 if 'DELTASCF' not in theory.extraline:
@@ -1725,6 +1729,7 @@ end
 
         self.stateI.occorbs_alpha, self.stateI.occorbs_beta, self.stateI.hftyp = orbitalgrab(theory.filename+'.out')
         print("Initial state occupied MO energies (alpha):", self.stateI.occorbs_alpha)
+        print("Initial state occupied MO energies (beta):", self.stateI.occorbs_beta)
         print("Initial state SCF-type:", self.stateI.hftyp)
         # Specify whether Initial state is restricted or not.
         if self.stateI.hftyp == "UHF":
