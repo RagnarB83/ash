@@ -91,6 +91,7 @@ def calc_surface(
                     'subfrctor': subfrctor,
                     'force_noPBC': force_noPBC, 'PBC_format_option': PBC_format_option,
                     'ActiveRegion': ActiveRegion, 
+                    'actatoms': actatoms, 
                     'result_write_to_disk':False,
                     'printlevel':printlevel,
                     }
@@ -154,7 +155,14 @@ def calc_surface(
         ashexit()
 
     # Build connectivity once
-    conn = _build_connectivity(fragment.coords, fragment.elems)
+    # Build connectivity once
+    if ActiveRegion is True and actatoms is not None and len(actatoms) > 0:
+        print(f"Building connectivity only inside active region: {len(actatoms)} atoms")
+        conn = _build_connectivity(fragment.coords, fragment.elems,
+                               atom_indices=actatoms)
+    else:
+        print(f"Building connectivity for full fragment: {len(fragment.coords)} atoms")
+        conn = _build_connectivity(fragment.coords, fragment.elems)
 
     # Changing printlevel of fragment
     fragment.printlevel=printlevel
@@ -1150,21 +1158,41 @@ def _measure_dihedral(coords, i, j, k, l):
 # Connectivity
 # ---------------------------------------------------------------------------
  
-def _build_connectivity(coords, elems):
+def _build_connectivity(coords, elems, atom_indices=None):
     coords = np.asarray(coords)
     n = len(elems)
+
     radii = np.array([
-        _COVALENT_RADII.get(e.capitalize(), _DEFAULT_RADIUS) for e in elems
+        _COVALENT_RADII.get(e.capitalize(), _DEFAULT_RADIUS)
+        for e in elems
     ])
+
+    # Keep full-length connectivity list so downstream code
+    # can continue using global atom indices
     conn = [set() for _ in range(n)]
-    for i in range(n):
-        for j in range(i + 1, n):
+
+    # Default behaviour: full-system connectivity
+    if atom_indices is None:
+        atom_indices = range(n)
+    else:
+        atom_indices = list(atom_indices)
+
+    nsel = len(atom_indices)
+
+    for a in range(nsel):
+        i = atom_indices[a]
+
+        for b in range(a + 1, nsel):
+            j = atom_indices[b]
+
             dist = np.linalg.norm(coords[i] - coords[j])
             threshold = radii[i] + radii[j] + _CONNECTIVITY_TOLERANCE
-            # Ignore very short distances (e.g. same atom or ghost atoms)
+
+            # Ignore very short distances
             if 0.4 < dist < threshold:
                 conn[i].add(j)
                 conn[j].add(i)
+
     return conn
 
 def _atoms_on_side(start, fixed, conn):
