@@ -406,7 +406,7 @@ def calc_surface(
                         optimizerobj.Hess_inv = None
 
                 #Running optimizer object, passing theory, fragment, constraints and possible extra kws
-                result = optimizerobj.run(theory=theory,fragment=fragment, constraints=allconstraints, **extraoopt_run_kws)
+                result = optimizerobj.run(theory=theory,fragment=fragment, constraints=allconstraints, charge=charge, mult=mult, **extraoopt_run_kws)
 
                 #if pointcount == 2:
                 #    print("2nd point optimization result:", result)
@@ -1488,7 +1488,7 @@ def _preset_geometry_restraint(fragment, RC_list, rc_values, optimizerobj,
     preset_args = {k: v for k, v in opt_arguments.items()
                    if k not in ('constraints', 'constrainvalue')}
     # Optimizing with restraint theory, passing extraconstraints as contraints if present
-    optimizerobj.run(theory=restraint_theory,fragment=fragment, constraints=extraconstraints, **extraoopt_run_kws)
+    optimizerobj.run(theory=restraint_theory,fragment=fragment, constraints=extraconstraints, charge=charge, mult=mult, **extraoopt_run_kws)
 
     #optimizer(
     #    fragment=fragment, theory=restraint_theory, constraints=extraconstraints,
