@@ -266,6 +266,7 @@ def write_DFTB_input(hamiltonian,xtbmethod,xyzfilename, elems,coords,charge,mult
     #############
     method1=f"Hamiltonian = {hamiltonian}" +"{"+"\n"
     inputlines.append(method1)
+    inputlines.append(f"Charge = {charge}\n")
     if 'XTB' in hamiltonian.upper():
         method2=f"Method = '{xtbmethod}'"+'\n\n'
         inputlines.append(method2)
@@ -417,9 +418,12 @@ def grab_energy_gradient_DFTB(file, numatoms, Grad=False, PC=False, numpc=None):
                 if 'Dipole moment:' in line:
                     pcgrab=False
 
-    if Grad is True and PC is True:
-        if np.any(pcgradient) is False:
-            print("Error: PCgradient array from DFTB output is zero. Something went wrong.")
+    if Grad is True:
+        if not np.any(gradient):
+            print("Error: gradient array from DFTB output is zero. Something went wrong (e.g. SCC not converged or DFTB+ crashed before writing forces). Check DFTB outputfile.")
+            ashexit()
+        if PC is True and not np.any(pcgradient):
+            print("Error: PCgradient array from DFTB output is zero. Something went wrong (e.g. SCC not converged or DFTB+ crashed before writing forces). Check DFTB outputfile.")
             ashexit()
 
     return energy,gradient,pcgradient
