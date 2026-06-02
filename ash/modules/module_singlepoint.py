@@ -224,7 +224,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
     #Printing reaction energy if stoichiometry was provided
     if stoichiometry != None:
         print("Stoichiometry provided:", stoichiometry)
-        r = ReactionEnergy(list_of_energies=energies, stoichiometry=stoichiometry, list_of_fragments=fragments, unit='kcal/mol', label='ΔE')
+        r = ReactionEnergy(list_of_energies=energies, stoichiometry=stoichiometry, list_of_fragments=fragments, unit=unit, label='ΔE')
         result.reaction_energy = r[0]
     result.write_to_disk(filename="ASH_SP_fragments.result")
     print_time_rel(module_init_time, modulename='Singlepoint_fragments', moduleindex=1)

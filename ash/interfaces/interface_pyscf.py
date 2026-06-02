@@ -2082,10 +2082,11 @@ class PySCFTheory:
 
         #RKS v UKS v RHF v UHF v GHF v GKS
         #TODO: Dirac HF and KS also
-        if "skala" in self.functional.lower():
-            print("here")
-            from skala.pyscf import SkalaKS
-            self.mf = SkalaKS(self.molcellobject, xc=self.functional)
+        if self.functional is not None:
+            if "skala" in self.functional.lower():
+                print("here")
+                from skala.pyscf import SkalaKS
+                self.mf = SkalaKS(self.molcellobject, xc=self.functional)
 
         elif self.scf_type == 'RKS':
             self.mf = scf.RKS(self.molcellobject)
