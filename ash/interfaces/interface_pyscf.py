@@ -2082,13 +2082,7 @@ class PySCFTheory:
 
         #RKS v UKS v RHF v UHF v GHF v GKS
         #TODO: Dirac HF and KS also
-        if self.functional is not None:
-            if "skala" in self.functional.lower():
-                print("here")
-                from skala.pyscf import SkalaKS
-                self.mf = SkalaKS(self.molcellobject, xc=self.functional)
-
-        elif self.scf_type == 'RKS':
+        if self.scf_type == 'RKS':
             self.mf = scf.RKS(self.molcellobject)
         elif self.scf_type == 'ROKS':
             self.mf = scf.ROKS(self.molcellobject)
@@ -2138,6 +2132,13 @@ class PySCFTheory:
         else:
             print("Unknown scf-type:", self.scf_type)
             ashexit()
+
+        # If Skala then override
+        if self.functional is not None and "skala" in self.functional.lower():
+            from skala.pyscf import SkalaKS
+            self.mf = SkalaKS(self.molcellobject, xc=self.functional)
+
+
         print("mf object:", self.mf)
 
     #Probably depreceated. Created mf for GPU.
