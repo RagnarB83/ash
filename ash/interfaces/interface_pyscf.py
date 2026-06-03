@@ -3477,8 +3477,8 @@ def KS_inversion_n2v(pyscftheoryobj, dm, method='PDECO', numcores=1, opt_max_ite
         import n2v
         import gbasis
         import pylibxc2
-    except ModuleNotFoundError:
-        print("ModuleNotFoundError:")
+    except ModuleNotFoundError as e:
+        print("ModuleNotFoundError:", e)
         print("KS_inversion_n2v requires installation of n2v module and additional packages")
         print("See https://github.com/wasserman-group/n2v for details")
         print("""\n#Install pylibxc2
