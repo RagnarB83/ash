@@ -3535,7 +3535,7 @@ pip install .
 #Takes pyscfheoryobject and DM as input, solves the inversion problem and returns MO coefficients, occupations,energies and new DM
 def KS_inversion_kspies(pyscftheoryobj, dm, numcores=1,
                         method='WY', WY_method='trust-exact', pbas=None,
-                        ZMP_lambda=128, ZMP_levelshift=True, ZMP_LS_scaling=8,
+                        ZMP_lambda=128, ZMP_levelshift=True, ZMP_LS_scaling=0.1,
                         ZMP_cycles=400, guide='faxc',
                         DF=True, vxc_method = 'eval_vh',
                         plot_vxc=False, vxc_coords=None, chosen_axes=None,
@@ -3672,8 +3672,8 @@ def KS_inversion_kspies(pyscftheoryobj, dm, numcores=1,
             for l in [ ZMP_lambda/8, ZMP_lambda/4, ZMP_lambda/2, ZMP_lambda]:
             #for l in [ZMP_lambda/(ZMP_LS_scaling*ZMP_LS_scaling), ZMP_lambda/ZMP_LS_scaling,ZMP_lambda]:
                 print("Lambda:", l)
-                print("Levelshift (lambda*0.1):", l*0.1)
-                zmp_a.level_shift = l*0.1
+                print("Levelshift (lambda*levelshiftscaling):", l*ZMP_LS_scaling)
+                zmp_a.level_shift = l*ZMP_LS_scaling
                 zmp_a.zscf(l)
 
                 if plot_vxc is True and plot_all_lambdas is True:
