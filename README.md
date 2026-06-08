@@ -11,9 +11,8 @@ Interfaces to popular QM codes: ORCA, xTB, PySCF, MRCC, ccpy, Psi4, Dalton, CFou
 Excellent environment for writing simple or complex computational chemistry workflows.
 
 **Citation**
-If ASH is useful in your research please cite us:
-`ASH: a Multi-scale, Multi-theory Modeling program <https://onlinelibrary.wiley.com/doi/10.1002/jcc.70359>`_
-R. Bjornsson*,  J. Comput. Chem 2026, 47, e70359.
+If ASH is useful in your research please cite us: `ASH: a Multi-scale, Multi-theory Modeling program <https://onlinelibrary.wiley.com/doi/10.1002/jcc.70359>`_
+R. Bjornsson, J. Comput. Chem 2026, 47, e70359.
 
 **In case of problems:**
 Please open an issue on Github and we will try to fix any problems as soon as possible.

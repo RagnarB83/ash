@@ -429,13 +429,17 @@ class MACETheory():
                 # Checking first f file exists
                 self.check_file_exists(self.model_file)
                 #Load model
+                print_time_rel(module_init_time, modulename=f'MACE run - before modelfile_load', moduleindex=2)
                 self.modelfile_load()
             elif self.model_name is not None:
                 print("Loading via model_name:", self.model_name)
+                print_time_rel(module_init_time, modulename=f'MACE run - before modelname_load', moduleindex=2)
                 self.modelname_load()
             else:
                 print("Error: Neither modelfile or modelname was defined.")
                 ashexit()
+
+        print_time_rel(module_init_time, modulename=f'MACE run - after model-load', moduleindex=2)
 
         # Creating ASE atoms object (MACE has ASE has dependency anyway)
         import ase
@@ -449,14 +453,17 @@ class MACETheory():
     
         # New simpler MACE interface via ASE
         # Works for foundational models
+        print_time_rel(module_init_time, modulename=f'MACE run - after atoms', moduleindex=2)
         if self.new_interface is True:
             # Add loaded model to ASE calculator
             atoms.calc = self.model
 
             # Run energy
             self.energy = atoms.get_potential_energy() * ash.constants.evtohar
+            print_time_rel(module_init_time, modulename=f'MACE run - after energy', moduleindex=2)
             print("Energy:", self.energy)
             forces = atoms.get_forces()
+            print_time_rel(module_init_time, modulename=f'MACE run - after forces', moduleindex=2)
             self.gradient = forces/-51.422067090480645
             if self.stress:
                 stress_ev_ang3 = atoms.get_stress(voigt=False)
