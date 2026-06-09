@@ -326,7 +326,8 @@ chrg = {charge}"""
 
     # Launching ASH server in background via subprocess
     print("Launching ASH server in background...")
-    serverproc = sp.Popen(["python3", "ash_server.py"], stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+    filex = open("ash_server.log", "w")
+    serverproc = sp.Popen(["python3", "ash_server.py"], stdout=filex, stderr=filex)
 
     print("Now calling CREST like this: crest --input input.toml")
     try:
@@ -335,6 +336,7 @@ chrg = {charge}"""
         print("Terminating ASH server...")
         serverproc.terminate()
         serverproc.wait(timeout=10)
+        filex.close()
     
     print_time_rel(module_init_time, modulename='crest run', moduleindex=0)
 
