@@ -134,27 +134,166 @@ def new_call_crest(fragment=None, theory=None, crestdir=None, runtype="imtd-gc",
         pickle.dump(theory, open(theoryfilename, "wb" ))
 
         # Write ASH inputfile: ash_input.py
-        ashinput=f"""from ash import *
-from ash.interfaces.interface_ORCA import print_gradient_in_ORCAformat
-import pickle
-
-frag = Fragment(xyzfile="genericinp.xyz", charge={charge},mult={mult})
+        #ashinput=f"""from ash import *
+#from ash.interfaces.interface_ORCA import print_gradient_in_ORCAformat
+#import pickle
+#
+#frag = Fragment(xyzfile="genericinp.xyz", charge={charge},mult={mult})
 #Unpickling theory object
-theory = pickle.load(open(\"../{theoryfilename}\", \"rb\" ))
-result = Singlepoint(theory=theory, fragment=frag, Grad=True)
-print_gradient_in_ORCAformat(result.energy,result.gradient,"genericinp", extrabasename="")
-"""
-        with open("ash_input.py", "w") as f:
-            f.write(ashinput)
+#theory = pickle.load(open(\"../{theoryfilename}\", \"rb\" ))
+#result = Singlepoint(theory=theory, fragment=frag, Grad=True)
+#print_gradient_in_ORCAformat(result.energy,result.gradient,"genericinp", extrabasename="")
+#"""
+    ash_server_code = """# energy_server.py
 
-        theorylines=f"""method = "generic"
-binary = "python3 ../ash_input.py"
-gradfile = "genericinp.engrad"
-gradtype = "engrad"
+from ash import *
+import pickle
+import socket
+import json
+import numpy as np
+
+print("Loading theory object...")
+
+theory = pickle.load(open("./theory.saved", "rb"))
+
+print("Theory loaded.")
+
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+socket_path = "/tmp/ash_energy.sock"
+
+import os
+if os.path.exists(socket_path):
+    os.remove(socket_path)
+
+sock.bind(socket_path)
+sock.listen()
+
+print("Server ready")
+
+while True:
+
+    conn, _ = sock.accept()
+
+    try:
+        data = b""
+
+        while True:
+            chunk = conn.recv(4096)
+
+            if not chunk:
+                break
+
+            data += chunk
+
+        request = json.loads(data.decode())
+
+        coords = np.array(request["coords"])
+
+        elements = request["elements"]
+
+        frag = Fragment(
+            elems=elements,
+            coords=coords,
+            charge=0,
+            mult=1
+        )
+
+        result = Singlepoint(
+            theory=theory,
+            fragment=frag,
+            Grad=True
+        )
+
+        response = {
+            "energy": float(result.energy),
+            "gradient": result.gradient.tolist()
+        }
+
+        conn.sendall(json.dumps(response).encode())
+
+    except Exception as e:
+
+        response = {
+            "error": str(e)
+        }
+
+        conn.sendall(json.dumps(response).encode())
+
+    finally:
+        conn.close()
+    """
+
+    ash_client_code = """# energy_client.py
+from ash import *
+from ash.interfaces.interface_ORCA import print_gradient_in_ORCAformat
+
+import socket
+import json
+
+frag = Fragment(
+    xyzfile="genericinp.xyz",
+    charge=0,
+    mult=1
+)
+
+request = {
+    "elements": frag.elems,
+    "coords": frag.coords.tolist()
+}
+
+sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+
+sock.connect("/tmp/ash_energy.sock")
+
+sock.sendall(json.dumps(request).encode())
+
+sock.shutdown(socket.SHUT_WR)
+
+data = b""
+
+while True:
+
+    chunk = sock.recv(4096)
+
+    if not chunk:
+        break
+
+    data += chunk
+
+sock.close()
+
+response = json.loads(data.decode())
+
+if "error" in response:
+    raise RuntimeError(response["error"])
+
+energy = response["energy"]
+gradient = response["gradient"]
+
+print_gradient_in_ORCAformat(
+    energy,
+    gradient,
+    "genericinp",
+    extrabasename=""
+)
 """
+
+    # Write server code
+    with open("ash_server.py", "w") as f:
+        f.write(ash_server_code)
+
+    # Write client code
+    with open("ash_client.py", "w") as f:
+        f.write(ash_client_code)
 
     # Write CREST toml file
     # Note: crest created dirs caleld calculation.level.X etc. and enters them
+    theorylines=f"""method = "generic"
+binary = "python3 ../ash_client.py"
+gradfile = "genericinp.engrad"
+gradtype = "engrad"
+"""
     tomlinput=f"""# CREST 3 input file
 input = "struc.xyz"
 runtype="{runtype}"
@@ -185,6 +324,11 @@ chrg = {charge}"""
     if runtype == "imtd-gc":
         print(f"Note:Energy window is {ewin} kcal/mol")
 
+    # Launching ASH server in background via subprocess
+    print("Launching ASH server in background...")
+    process1 = sp.Popen(["python3", "ash_server.py"], stdout=sp.DEVNULL, stderr=sp.DEVNULL)
+    print(process1)
+    #exit()
     print("Now calling CREST like this: crest --input input.toml")
     process = sp.run([crestdir + '/crest', '--input', 'input.toml'])
 
@@ -192,8 +336,11 @@ chrg = {charge}"""
 
     # Get conformers
     try:
-        list_conformers, list_energies = get_crest_conformers(charge=charge, mult=mult)
-        return list_conformers, list_energies
+        if runtype == "imtd-gc":
+            list_conformers, list_energies = get_crest_conformers(charge=charge, mult=mult)
+            return list_conformers, list_energies
+        else:
+            return None, None
     except:
         return None, None
 
