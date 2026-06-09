@@ -326,12 +326,16 @@ chrg = {charge}"""
 
     # Launching ASH server in background via subprocess
     print("Launching ASH server in background...")
-    process1 = sp.Popen(["python3", "ash_server.py"], stdout=sp.DEVNULL, stderr=sp.DEVNULL)
-    print(process1)
-    #exit()
-    print("Now calling CREST like this: crest --input input.toml")
-    process = sp.run([crestdir + '/crest', '--input', 'input.toml'])
+    serverproc = sp.Popen(["python3", "ash_server.py"], stdout=sp.DEVNULL, stderr=sp.DEVNULL)
 
+    print("Now calling CREST like this: crest --input input.toml")
+    try:
+        process = sp.run([crestdir + '/crest', '--input', 'input.toml'], check=True)
+    finally:
+        print("Terminating ASH server...")
+        serverproc.terminate()
+        serverproc.wait(timeout=10)
+    
     print_time_rel(module_init_time, modulename='crest run', moduleindex=0)
 
     # Get conformers
