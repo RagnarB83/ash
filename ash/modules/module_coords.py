@@ -586,7 +586,16 @@ class Fragment:
             ashexit()
         pdb = openmm.app.PDBFile(filename)
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
-        self.elems = [atom.element.symbol for atom in pdb.topology.atoms()]
+        self.elems=[]
+        print(pdb.topology)
+        for atom in pdb.topology.atoms():
+
+            try:
+                self.elems.append(atom.element.symbol)
+            except AttributeError:
+                print("Warning: could not fully parse element information from PDB-topology for atom:", atom)
+                print("This may be a virtual site. Adding 'M' as dummy element for this atom.")
+                self.elems.append('M')
 
         # Topology
         self.pdb_topology = pdb.topology
@@ -2545,7 +2554,11 @@ def totmasslist(ellist):
     for e in ellist:
         try:
             atcharge = int(elematomnumbers[e.lower()])
-            atmass = atommasses[atcharge - 1]
+            if atcharge == 0:
+                print("Warning: element '{}' has atomic number 0. This is likely a dummy atom. Using mass of 0.0".format(e))
+                atmass=0.0
+            else:
+                atmass = atommasses[atcharge - 1]
         except KeyError:
             atmass = 0.0
             if warning_issued is False:
@@ -2564,7 +2577,11 @@ def list_of_masses(ellist):
     for e in ellist:
         try:
             atcharge = int(elematomnumbers[e.lower()])
-            atmass = atommasses[atcharge - 1]
+            if atcharge == 0:
+                print("Warning: element '{}' has atomic number 0. This is likely a dummy atom. Using mass of 0.0".format(e))
+                atmass=0.0
+            else:   
+                atmass = atommasses[atcharge - 1]
         except KeyError:
             atmass = 0.0
             if warning_issued is False:
