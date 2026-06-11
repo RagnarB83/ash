@@ -917,7 +917,7 @@ class OpenMMTheory:
         try:
             self.mm_elements = [i.element.symbol for i in topology.atoms()]
         except:
-            print("Error occurred while defining mm_elements.")
+            print("Problem occurred while defining mm_elements.")
             print("This may be due to virtual sites present")
             print("mm_elements will be set to empty list")
             self.mm_elements = []

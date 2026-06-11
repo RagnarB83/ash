@@ -141,7 +141,6 @@ class Fragment:
         ##############################
         # NOW PROCESSING INPUT DATA
         ##############################
-
         # Lists of elements and coordinates provided
         if coords is not None:
             # Adding coords as list of lists (or np.array). Conversion to numpy array
@@ -1195,8 +1194,15 @@ eldict_covrad['M'] = 0.0
 # Function to reformat element string to be correct('cu' or 'CU' become 'Cu')
 # Can also convert atomic-number (isatomnum flag)
 def reformat_element(elem, isatomnum=False):
+    print("inside reformat_element")
     if isatomnum is True:
-        el_correct = ash.dictionaries_lists.element_dict_atnum[elem].symbol
+        try:
+            el_correct = ash.dictionaries_lists.element_dict_atnum[elem].symbol
+        except KeyError:
+            print("Element-string: {} not found in element-dictionary!".format(elem))
+            print("This is not a valid element as defined in ASH source-file: dictionaries_lists.py")
+            print("Fix element-information in coordinate-file.")
+            ashexit()
     else:
         try:
             el_correct = ash.dictionaries_lists.element_dict_atname[elem.lower()].symbol

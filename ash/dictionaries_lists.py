@@ -117,7 +117,7 @@ element_dict_atname = {'h': Element('hydrogen', 'H', 1), 'he': Element('helium',
                        'fl': Element('flerovium', 'Fl', 114), 'mc': Element('moscovium', 'Mc', 115), 'lv': Element('livermorium', 'Lv', 116),
                        'ts': Element('tennessine', 'Ts', 117), 'og': Element('oganesson', 'Og', 118)}
 
-element_dict_atnum = {1: Element('hydrogen', 'H', 1), 2: Element('helium', 'He', 2), 3: Element('lithium', 'Li', 3),
+element_dict_atnum = {0: Element('dummy', 'M', 0), 1: Element('hydrogen', 'H', 1), 2: Element('helium', 'He', 2), 3: Element('lithium', 'Li', 3),
                       4: Element('beryllium', 'Be', 4), 5: Element('boron', 'B', 5), 6: Element('carbon', 'C', 6),
                       7: Element('nitrogen', 'N', 7),
                       8: Element('oxygen', 'O', 8), 9: Element('fluorine', 'F', 9), 10: Element('neon', 'Ne', 10),
