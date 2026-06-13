@@ -2670,8 +2670,6 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             xmlfile = "amber10.xml"
         elif forcefield == 'Amber14':
             xmlfile = "amber14-all.xml"
-        elif forcefield == 'Amber96':
-            xmlfile = "amber96.xml"
         elif forcefield == 'CHARMM36':
             xmlfile = "charmm36.xml"
         elif forcefield == 'CHARMM2013':
@@ -2683,53 +2681,45 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         else:
             print("Unknown forcefield")
             exit()
-    elif xmlfile is not None:
-        print("Using xmlfile:", xmlfile)
-    elif forcefield_object is not None:
-        pass
-    else:
-        print("You must provide a forcefield name, forcefieldobject or xmlfile keywords!")
-        ashexit()
 
-    #Water model selection for CHARMM forcefields
-    if 'CHARMM' in forcefield:
-        # Using specific CHARMM36 version of TIP3P
-        if watermodel is None:
-            print("No watermodel selected.")
-            if waterxmlfile is None:
-                print("No waterxmlfile selected either")
-                print("Selecting automatically recommended CHARMM-style TIP3P")
-                watermodel='tip3p'
+        #Water model selection for CHARMM forcefields
+        if 'CHARMM' in forcefield:
+            # Using specific CHARMM36 version of TIP3P
+            if watermodel is None:
+                print("No watermodel selected.")
+                if waterxmlfile is None:
+                    print("No waterxmlfile selected either")
+                    print("Selecting automatically recommended CHARMM-style TIP3P")
+                    watermodel='tip3p'
 
-        print("watermodel:", watermodel)
-        if watermodel.lower() == "tip3p":
-            modeller_solvent_name="tip3p" #Used when adding solvent
-            waterxmlfile = "charmm36/water.xml"
-        print("Waterxmlfile selected:", waterxmlfile)
+            print("watermodel:", watermodel)
+            if watermodel.lower() == "tip3p":
+                modeller_solvent_name="tip3p" #Used when adding solvent
+                waterxmlfile = "charmm36/water.xml"
+            print("Waterxmlfile selected:", waterxmlfile)
 
 
-    #Water model selection for AMber forcefields
-    if 'Amber' in forcefield:
-        if watermodel is None:
-            print("No watermodel selected.")
-            if waterxmlfile is None:
-                print("No waterxmlfile selected either")
-                print("Selecting automatically recommended TIP3P-4B (watermodel='tip3pfb')")
-                print("This is a reparameterized version of TIP3P")
-                watermodel='tip3pfb'
-        print("watermodel:", watermodel)
-        # Using specific Amber FB version of TIP3P
-        if watermodel.lower() == "tip3pfb" or watermodel.lower() == "tip3p-fb":
-            modeller_solvent_name="tip3p" #Used when adding solvent
-            waterxmlfile = "amber14/tip3pfb.xml" #NOTE: this is not actually TIP3P but a reparaterized version
-        elif watermodel.lower () == 'tip3p':
-                modeller_solvent_name="tip3p"
-                if forcefield == 'Amber14':
-                    waterxmlfile = "amber14/tip3p.xml"
-                else:
-                    waterxmlfile = "tip3p.xml"
-        print("Waterxmlfile selected:", waterxmlfile)
-
+        #Water model selection for AMber forcefields
+        if 'Amber' in forcefield:
+            if watermodel is None:
+                print("No watermodel selected.")
+                if waterxmlfile is None:
+                    print("No waterxmlfile selected either")
+                    print("Selecting automatically recommended TIP3P-4B (watermodel='tip3pfb')")
+                    print("This is a reparameterized version of TIP3P")
+                    watermodel='tip3pfb'
+            print("watermodel:", watermodel)
+            # Using specific Amber FB version of TIP3P
+            if watermodel.lower() == "tip3pfb" or watermodel.lower() == "tip3p-fb":
+                modeller_solvent_name="tip3p" #Used when adding solvent
+                waterxmlfile = "amber14/tip3pfb.xml" #NOTE: this is not actually TIP3P but a reparaterized version
+            elif watermodel.lower () == 'tip3p':
+                    modeller_solvent_name="tip3p"
+                    if forcefield == 'Amber14':
+                        waterxmlfile = "amber14/tip3p.xml"
+                    else:
+                        waterxmlfile = "tip3p.xml"
+            print("Waterxmlfile selected:", waterxmlfile)
 
     ############
     # Define a forcefield if using XML-files
@@ -2753,9 +2743,18 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,waterxmlfile)
         elif extraxmlfile is not None and waterxmlfile is not None:
             forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile,waterxmlfile)
-    else:
+
+    elif forcefield_object is not None:
         print("Using forcefield object provided")
         forcefield_obj= forcefield_object
+        
+        if watermodel is not None or waterxmlfile is not None:
+            print("Warning: watermodel/waterxmlfile ignored when forcefield_object is supplied")
+
+
+    else:
+        print("You must provide a forcefield name, forcefieldobject or xmlfile keywords!")
+        ashexit()
 
     print("PDBfile:", pdbfile)
     print("pH:", pH)
