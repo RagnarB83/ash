@@ -71,7 +71,6 @@ class OpenMMTheory:
         self.analytic_hessian=False
         self.label=label
         self.fragment=fragment
-
         # OPEN MM load
         try:
             import openmm
@@ -241,7 +240,7 @@ class OpenMMTheory:
             if periodic_cell_vectors is None:
                 periodic_cell_vectors=PBCvectors
 
-
+        print("d")
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
             if self.printlevel > 0:

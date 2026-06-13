@@ -2530,6 +2530,7 @@ class PySCFTheory:
     #Independent method to run SCF using previously defined mf object and possible input dm
     def run_SCF(self,mf=None, dm=None, max_cycle=None):
         import pyscf
+        import pyscf.dft
         if self.printlevel >= 1:
             print("\nInside run_SCF")
         module_init_time=time.time()
@@ -2584,6 +2585,7 @@ class PySCFTheory:
             #else:
             #    self.num_orbs = len(self.mf.mo_energy[0])
         else:
+
             if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS):
                 self.num_orbs = len(self.mf.mo_occ) # Restricted
             elif self.periodic:
@@ -3052,9 +3054,22 @@ class PySCFTheory:
                     if self.printlevel >1:
                         print("MOM-SCF Gradient calculation done")
                 else:
-                    print("Gradient for postSCF methods  is not implemented in ASH interface")
-                    #TODO: Enable TDDFT, CASSCF, MP2, CC gradient etc
-                    ashexit()
+                    print("Warning: Gradient for postSCF methods in the pySCF interface are currently experimental.")
+                    if self.CC:
+                        if self.CCmethod == "CCSD(T)":
+                            from pyscf.grad import ccsd_t as ccsd_t_grad
+                            g = ccsd_t_grad.Gradients(self.ccobject).kernel()
+                            print('CCSD(T) nuclear gradient:', g)
+                        elif self.CCmethod == "CCSD":
+                            from pyscf.grad import ccsd as ccsd_grad
+                            g = ccsd_grad.Gradients(self.ccobject).kernel()
+                            print('CCSD nuclear gradient:', g)
+                        else:
+                            print("CC method not recognized for gradient calculation. No gradient calculated.")
+                    else:
+                            print("No post-SCF method recognized for gradient calculation. No gradient calculated.")
+                            self.gradient=None
+                        
             #Calculate regular SCF gradient
             else:
                 if self.printlevel >1:

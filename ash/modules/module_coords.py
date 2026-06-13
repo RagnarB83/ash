@@ -1194,7 +1194,6 @@ eldict_covrad['M'] = 0.0
 # Function to reformat element string to be correct('cu' or 'CU' become 'Cu')
 # Can also convert atomic-number (isatomnum flag)
 def reformat_element(elem, isatomnum=False):
-    print("inside reformat_element")
     if isatomnum is True:
         try:
             el_correct = ash.dictionaries_lists.element_dict_atnum[elem].symbol
