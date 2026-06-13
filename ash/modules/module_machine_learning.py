@@ -410,6 +410,8 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     print("Number of user-chosen snapshots:", num_snapshots)
     print("Number of successfully generated datapoints:", len(energies))
 
+    return len(energies)
+
 
 # Print statistics for dict with statistics for many models
 # Assumes a dictionary with modelfilenames as keys and statistics_dict_forDB as values
