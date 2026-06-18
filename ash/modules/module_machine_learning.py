@@ -194,7 +194,9 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         os.chdir('..')
 
     # Remove old files if present
-    for f in ["train_data.xyz", "train_data.energies", "train_data.gradients", "train_data_mace.xyz"]:
+    for f in ["train_data.xyz", "train_data.energies", "train_data.gradients", "train_data_mace.xyz",
+              "train_data_theory1.energies", "train_data_theory2.energies",
+              "train_data_theory1.gradients", "train_data_theory2.gradients"]:
         try:
             os.remove(f)
         except:
@@ -205,6 +207,11 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     gradients=[]
     fragments=[]
     labels=[]
+    # When delta-learning (two theories), also keep the individual theory contributions
+    energies_theory1=[]
+    energies_theory2=[]
+    gradients_theory1=[]
+    gradients_theory2=[]
 
     # Removing 
     theory_1.cleanup()
@@ -243,6 +250,12 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
                 energy = result_2.energy - result_1.energy
                 if Grad is True:
                     gradient = result_2.gradient - result_1.gradient
+                # Keep individual theory contributions for separate output files
+                energies_theory1.append(result_1.energy)
+                energies_theory2.append(result_2.energy)
+                if Grad is True:
+                    gradients_theory1.append(result_1.gradient)
+                    gradients_theory2.append(result_2.gradient)
             else:
                 energy = result_1.energy
                 if Grad is True:
@@ -291,6 +304,9 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             if delta is True:
                 energy = results_theory2.energies_dict[l] - results_theory1.energies_dict[l]
                 print("energy:", energy)
+                # Keep individual theory contributions for separate output files
+                energies_theory1.append(results_theory1.energies_dict[l])
+                energies_theory2.append(results_theory2.energies_dict[l])
 
             else:
                 energy = results_theory1.energies_dict[l]
@@ -302,6 +318,8 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             if Grad:
                 if delta is True:
                     gradient = results_theory2.gradients_dict[l] - results_theory1.gradients_dict[l]
+                    gradients_theory1.append(results_theory1.gradients_dict[l])
+                    gradients_theory2.append(results_theory2.gradients_dict[l])
                 else:
                     gradient = results_theory1.gradients_dict[l]
                 gradients.append(gradient)
@@ -364,6 +382,27 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
                 gradients_file.write(f"{g[0]:10.7f} {g[1]:10.7f} {g[2]:10.7f}\n")
         gradients_file.close()
 
+    # When delta-learning (two theories), also write the individual theory
+    # energies and gradients to separate files alongside the delta data above.
+    if delta is True:
+        # Per-theory energy files
+        for theoryname, theory_energies in [("theory1", energies_theory1),
+                                            ("theory2", energies_theory2)]:
+            with open(f"train_data_{theoryname}.energies", "w") as f_energies:
+                for energy in theory_energies:
+                    f_energies.write(f"{energy}\n")
+
+        # Per-theory gradient files
+        if Grad:
+            for theoryname, theory_gradients in [("theory1", gradients_theory1),
+                                                ("theory2", gradients_theory2)]:
+                with open(f"train_data_{theoryname}.gradients", "w") as f_gradients:
+                    for frag, grad in zip(fragments, theory_gradients):
+                        f_gradients.write(f"{frag.numatoms}\n")
+                        f_gradients.write(f"gradient {frag.label} \n")
+                        for g in grad:
+                            f_gradients.write(f"{g[0]:10.7f} {g[1]:10.7f} {g[2]:10.7f}\n")
+
     print("\nNow writing data in MACE-format with energies in units of eV and forces in eV/Å")
     print("Fragments labels:",[frag.label for frag in fragments])
     print("energies:", energies)
@@ -407,6 +446,10 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     print("All done! Files created:\ntrain_data.xyz\ntrain_data.energies\ntrain_data_mace.xyz")
     if Grad:
         print("train_data.gradients")
+    if delta is True:
+        print("train_data_theory1.energies\ntrain_data_theory2.energies")
+        if Grad:
+            print("train_data_theory1.gradients\ntrain_data_theory2.gradients")
     print("Number of user-chosen snapshots:", num_snapshots)
     print("Number of successfully generated datapoints:", len(energies))
 
