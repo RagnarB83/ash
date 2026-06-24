@@ -967,6 +967,12 @@ class PySCFTheory:
                 chkfile_scftype="UHF"
             elif 2.0 in self.chkfileobject["mo_occ"]:
                 chkfile_scftype="RHF"
+            else:
+                print("Occupations seems to fit neither RHF nor UHF")
+                print("Occupations:", self.chkfileobject["mo_occ"])
+                print("Guessing GHF for now")
+                chkfile_scftype="GHF"
+                
             #Checking if mismatch between chkfile info and chosen scf-type
             #TODO: In principle we could convert RKS-info from chkfile to UKS-info and vice versa
             if chkfile_scftype == "UHF":
@@ -977,7 +983,11 @@ class PySCFTheory:
                 if self.scf_type == "UHF" or self.scf_type == "UKS":
                     print("Warning: Mismatch between SCF-type in chkfile and PySCFTheory object. Ignoring chkfile")
                     return False 
-            
+            if chkfile_scftype == "GHF":
+                if self.scf_type not in ["GHF","GKS"]:
+                    print("Warning: Mismatch between SCF-type in chkfile and PySCFTheory object. Ignoring chkfile")
+                    return False 
+
             if chkfile_scftype == "UHF":
                 #UNRESTRICTED
                 if self.printlevel >= 1:
@@ -2587,16 +2597,16 @@ class PySCFTheory:
             #else:
             #    self.num_orbs = len(self.mf.mo_energy[0])
         else:
-
             if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS):
                 self.num_orbs = len(self.mf.mo_occ) # Restricted
             elif self.periodic:
                 import pyscf.pbc
                 if isinstance(self.mf, pyscf.pbc.dft.rks.RKS):
                     self.num_orbs = len(self.mf.mo_occ) # Restricted
+            elif self.scf_type in ['UKS','UHF']:
+                self.num_orbs = len(self.mf.mo_occ[0]) # Unrestricted
             else:
-                #UHF/UKS
-                self.num_orbs = len(self.mf.mo_occ[0]) 
+                self.num_orbs = len(self.mf.mo_occ) # GHF/GKS
             
         if self.printlevel >= 1:
             print("Number of orbitals:", self.num_orbs)
