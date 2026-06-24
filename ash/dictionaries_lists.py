@@ -64,7 +64,7 @@ class Element:
         self.atomnumber = atomnumber
 
 
-element_dict_atname = {'h': Element('hydrogen', 'H', 1), 'he': Element('helium', 'He', 2),
+element_dict_atname = {'m': Element('dummy', 'M', 0), 'h': Element('hydrogen', 'H', 1), 'he': Element('helium', 'He', 2),
                        'li': Element('lithium', 'Li', 3),
                        'be': Element('beryllium', 'Be', 4), 'b': Element('boron', 'B', 5),
                        'c': Element('carbon', 'C', 6), 'n': Element('nitrogen', 'N', 7),

@@ -1,6 +1,6 @@
 [project]
 name = "ash"
-version = "0.95"
+version = "0.99"
 description = "ASH is a multiscale, multitheory modelling program"
 authors = [
   {name = "R. Bjornsson", email = "ragnar.bjornsson@gmail.com" }

@@ -1731,6 +1731,8 @@ class PySCFTheory:
         print("Now starting CCSD calculation")
         if self.scf_type == "RHF":
             cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "GHF":
+            cc = pyscf_cc.GCCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
         elif self.scf_type == "ROHF":
             cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
         elif self.scf_type == "UHF":
@@ -2691,7 +2693,6 @@ class PySCFTheory:
         if self.printlevel >= 1:
             print("Number of electrons:", self.num_electrons)
             print()
-
         ###############################
         #CREATE MOL OBJECT or CELL
         ###############################
@@ -2771,7 +2772,13 @@ class PySCFTheory:
         #Convert non-relativistic mf object to spin-free x2c if self.x2c is True
         if self.x2c is True:
             print("x2c is True. Changing SCF object to relativistic x2c Hamiltonian")
-            self.mf = self.mf.sfx2c1e()
+            if self.scf_type in ['RHF','UHF','RKS','UKS']:
+                print("Warning:Scalar relativistic x2c (spin-free) will be used")
+                self.mf = self.mf.sfx2c1e()
+            elif self.scf_type in ['GHF','GKS']:
+                print("Warning: x2c with spin orbit coupling enabled")
+                self.mf = self.mf.x2c()
+
 
         ###########
         # PRINTING
@@ -2922,7 +2929,8 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Total num. orbitals:", self.num_scf_orbitals_alpha)
                 if self.printlevel >1:
-                    self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
+                    if self.do_pop_analysis:
+                        self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             else:
                 #UHF/UKS
                 self.num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
