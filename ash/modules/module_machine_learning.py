@@ -14,6 +14,45 @@ from ash.modules.module_plotting import ASH_plot
 # Collection of functions related to machine learning and data analysis
 # Also helper tools for Torch and MLatom interfaces
 
+# Helper that writes a training-data file in the MACE extended-XYZ format.
+# atom_energies/energies are expected in Hartree and gradients in Hartree/Bohr;
+# all are converted to MACE units (eV and eV/Å) on the fly.
+def write_mace_xyz_file(filename, atom_energies, energies, gradients, fragments, Grad=True):
+    #TODO: Nmols, comp, molindex ?
+    Nmols="1"
+    comp="xxx"
+    molindex=0
+    with open(filename, "w") as mace_file:
+        print(f"Writing isolated atom reference energies to {filename} ....")
+        for el, an_at in atom_energies.items():
+            en_ev = an_at * 27.211386245988
+            mace_file.write("1\n")
+            if Grad:
+                mace_file.write(f"Properties=species:S:1:pos:R:3:forces_REF:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
+                mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}"
+                                f"{-0.0:17.8f}{-0.0:17.8f}{-0.0:17.8f}\n")
+            else:
+                mace_file.write(f"Properties=species:S:1:pos:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
+                mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}\n")
+
+        for i in range(len(energies)):
+            # Converting energy to eV
+            frag = fragments[i]
+            energy_ev = energies[i]*27.211386245988
+            mace_file.write(f"{frag.numatoms}\n")
+            if Grad:
+                force = -1 * np.array(gradients[i]) * 51.42206747
+                mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1:forces_REF:R:3 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
+                for j in range(frag.numatoms): # Bug fix: inner loop variable was i, now j
+                    mace_file.write(f"{frag.elems[j]:2s}{frag.coords[j][0]:17.8f}{frag.coords[j][1]:17.8f}{frag.coords[j][2]:17.8f}"
+                                    f"{molindex:9d}{force[j][0]:17.8f}{force[j][1]:17.8f}{force[j][2]:17.8f}\n")
+            else:
+                # Write without forces
+                mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
+                for j in range(frag.numatoms): # Bug fix: inner loop variable was i, now j
+                    mace_file.write(f"{frag.elems[j]:2s}{frag.coords[j][0]:17.8f}{frag.coords[j][1]:17.8f}{frag.coords[j][2]:17.8f}"
+                                    f"{molindex:9d}\n")
+
 # Function to create ML training data given XYZ-files and 2 ASH theories
 def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=None, xyz_files=None, num_snapshots=None, random_snapshots=True,
                                 dcd_pdb_topology=None, nth_frame_in_traj=1, printlevel=2,
@@ -196,7 +235,8 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     # Remove old files if present
     for f in ["train_data.xyz", "train_data.energies", "train_data.gradients", "train_data_mace.xyz",
               "train_data_theory1.energies", "train_data_theory2.energies",
-              "train_data_theory1.gradients", "train_data_theory2.gradients"]:
+              "train_data_theory1.gradients", "train_data_theory2.gradients",
+              "train_data_mace_theory1.xyz", "train_data_mace_theory2.xyz"]:
         try:
             os.remove(f)
         except:
@@ -213,9 +253,10 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     gradients_theory1=[]
     gradients_theory2=[]
 
-    # Removing 
+    # Removing
     theory_1.cleanup()
-    theory_2.cleanup()
+    if theory_2 is not None:
+        theory_2.cleanup()
 
     if runmode=="serial":
         print("Runmode is serial!")
@@ -325,6 +366,9 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
                 gradients.append(gradient)
 
     # Calculate energies for atoms
+    # Per-theory isolated-atom reference energies, needed to write per-theory MACE files
+    energies_atoms_dict_theory1={}
+    energies_atoms_dict_theory2={}
     if energies_atoms_dict is None:
         print("\nNow calculating isolated atom reference energies for each element in the training set")
         energies_atoms_dict={}
@@ -340,6 +384,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             theory_1.cleanup()
             result_1 = Singlepoint(theory=theory_1, fragment=atomfrag, printlevel=0,
                                 result_write_to_disk=False)
+            energies_atoms_dict_theory1[uniq_el] = result_1.energy
             if delta is True:
                 theory_2.printlevel=0
                 # Running theory 2
@@ -347,6 +392,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
                 theory_2.cleanup()
                 result_2 = Singlepoint(theory=theory_2, fragment=atomfrag, printlevel=0,
                                     result_write_to_disk=False)
+                energies_atoms_dict_theory2[uniq_el] = result_2.energy
                 # Delta energy
                 atomenergy = result_2.energy - result_1.energy
             else:
@@ -406,42 +452,23 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
     print("\nNow writing data in MACE-format with energies in units of eV and forces in eV/Å")
     print("Fragments labels:",[frag.label for frag in fragments])
     print("energies:", energies)
-    # Write data file that MACE uses
+    # Write combined data file that MACE uses (delta data when two theories are used,
+    # otherwise the single-theory data)
+    write_mace_xyz_file("train_data_mace.xyz", energies_atoms_dict, energies, gradients,
+                        fragments, Grad=Grad)
 
-    with open("train_data_mace.xyz", "w") as mace_file:
-        print("Writing isolated atom reference energies....")
-        for el, an_at in energies_atoms_dict.items():
-            en_ev = an_at * 27.211386245988
-            mace_file.write("1\n")
-            if Grad:
-                mace_file.write(f"Properties=species:S:1:pos:R:3:forces_REF:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
-                mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}"
-                                f"{-0.0:17.8f}{-0.0:17.8f}{-0.0:17.8f}\n")
-            else:
-                mace_file.write(f"Properties=species:S:1:pos:R:3 config_type=IsolatedAtom energy_REF={en_ev} pbc='F F F'\n")
-                mace_file.write(f"{el:2s}{0.0:17.8f}{0.0:17.8f}{0.0:17.8f}\n")
-        #TODO: Nmols, comp, molindex ?
-        Nmols="1"
-        comp="xxx"
-        molindex=0
-
-        for i in range(len(energies)):
-            # Converting energy to eV
-            frag = fragments[i]
-            energy_ev = energies[i]*27.211386245988
-            mace_file.write(f"{frag.numatoms}\n")
-            if Grad:
-                force = -1 * np.array(gradients[i]) * 51.42206747
-                mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1:forces_REF:R:3 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
-                for j in range(frag.numatoms): # Bug fix: inner loop variable was i, now j
-                    mace_file.write(f"{frag.elems[j]:2s}{frag.coords[j][0]:17.8f}{frag.coords[j][1]:17.8f}{frag.coords[j][2]:17.8f}"
-                                    f"{molindex:9d}{force[j][0]:17.8f}{force[j][1]:17.8f}{force[j][2]:17.8f}\n")
-            else:
-                # Write without forces
-                mace_file.write(f"Properties=species:S:1:pos:R:3:molID:I:1 Nmols={Nmols} Comp={comp} energy_REF={energy_ev} pbc='F F F'\n")
-                for j in range(frag.numatoms): # Bug fix: inner loop variable was i, now j
-                    mace_file.write(f"{frag.elems[j]:2s}{frag.coords[j][0]:17.8f}{frag.coords[j][1]:17.8f}{frag.coords[j][2]:17.8f}"
-                                    f"{molindex:9d}\n")
+    # When delta-learning (two theories), also write a MACE-format file for each
+    # individual theory level, using that theory's own atomic reference energies.
+    if delta is True:
+        if energies_atoms_dict_theory1 and energies_atoms_dict_theory2:
+            write_mace_xyz_file("train_data_mace_theory1.xyz", energies_atoms_dict_theory1,
+                                energies_theory1, gradients_theory1, fragments, Grad=Grad)
+            write_mace_xyz_file("train_data_mace_theory2.xyz", energies_atoms_dict_theory2,
+                                energies_theory2, gradients_theory2, fragments, Grad=Grad)
+        else:
+            print("Warning: per-theory isolated-atom reference energies are not available "
+                  "(user-provided energies_atoms_dict only holds the combined values).")
+            print("Skipping per-theory MACE files train_data_mace_theory1.xyz / train_data_mace_theory2.xyz")
 
     print("All done! Files created:\ntrain_data.xyz\ntrain_data.energies\ntrain_data_mace.xyz")
     if Grad:
@@ -450,6 +477,8 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print("train_data_theory1.energies\ntrain_data_theory2.energies")
         if Grad:
             print("train_data_theory1.gradients\ntrain_data_theory2.gradients")
+        if energies_atoms_dict_theory1 and energies_atoms_dict_theory2:
+            print("train_data_mace_theory1.xyz\ntrain_data_mace_theory2.xyz")
     print("Number of user-chosen snapshots:", num_snapshots)
     print("Number of successfully generated datapoints:", len(energies))
 
