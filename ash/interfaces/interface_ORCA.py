@@ -2000,6 +2000,7 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     coordgrab=False
     spinpops=[]
     BS=False #if broken-symmetry job
+    numatoms = int(pygrep('Number of atoms                             ...', outputfile)[-1])
     #if
     if len(pygrep2("WARNING: Broken symmetry calculations", outputfile)):
         BS=True
@@ -2032,7 +2033,9 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     #If BS then we have grabbed charges for both high-spin and BS solution
     if BS is True:
         print("Broken-symmetry job detected. Only taking BS-state populations")
-        spinpops=spinpops[int(len(spinpops)/2):]
+        #spinpops=spinpops[int(len(spinpops)/2):]
+        if len(spinpops) != numatoms:
+            spinpops=spinpops[-numatoms:]
     #if len(spinpops) == 0:
     #    print("Warning: No spinpopulations were found in ORCA outputfile")
     return spinpops

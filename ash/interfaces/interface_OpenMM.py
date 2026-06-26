@@ -5097,8 +5097,8 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
             MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}_lastframe.pdb")
         except ImportError:
             print("mdtraj library could not be imported. Skipping")
-        except ValueError:
-            print("mdtraj reimaging failed. Skipping")
+        except ValueError as e:
+            print(f"mdtraj reimaging failed. Skipping. Error: {e}")
 
     print_time_rel(module_init_time, modulename="OpenMM_box_equilibration", moduleindex=1)
     return md.state.getPeriodicBoxVectors()
@@ -5562,8 +5562,8 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
                     threshold=0.005, largest_values=10)
             except ImportError:
                 print("mdtraj library could not be imported. Skipping")
-            except ValueError:
-                print("mdtraj reimaging failed. Skipping")
+            except ValueError as e:
+                print(f"mdtraj reimaging failed. Skipping. Error: {e}")
 
     print("Gentle_warm_up_MD finished successfully!")
     print_time_rel(module_init_time, modulename="Gentle_warm_up_MD", moduleindex=1)
