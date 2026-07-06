@@ -151,7 +151,16 @@ class CFourTheory:
             except shutil.SameFileError:
                 pass
 
-
+        #Storing absolute path of staged GENBAS file and caching ECPDATA contents in memory.
+        #Necessary because some job-types (e.g. NEB via Knarr, Singlepoint_parallel) change into
+        #subdirectories (image_N, worker dirs) before calling run(). The run-method will
+        #restore these files in the current working directory if they are missing there.
+        #Note: ECPDATA must be cached in memory since cleanup() (called below) deletes the file.
+        self.genbas_path = os.path.abspath('GENBAS') if os.path.isfile('GENBAS') else None
+        self.ecpdata_content = None
+        if os.path.isfile('ECPDATA'):
+            with open('ECPDATA') as ecpfile:
+                self.ecpdata_content = ecpfile.read()
 
         #Clean-up of possible old Cfour files before beginning
         #TODO: Skip cleanup of chosen files?
@@ -320,6 +329,25 @@ class CFourTheory:
         else:
             print("no current_coords")
             ashexit()
+
+        #Making sure GENBAS (and ECPDATA if available) is present in current working directory.
+        #Jobs like NEB (Knarr) and Singlepoint_parallel change into subdirectories (image_N, worker dirs)
+        #where the basis files staged by __init__ are not present, causing xcfour to crash.
+        if self.genbas_path is not None and not os.path.isfile("GENBAS"):
+            if os.path.isfile(self.genbas_path):
+                print(f"No GENBAS file found in current directory. Copying GENBAS from: {self.genbas_path}")
+                shutil.copyfile(self.genbas_path, "GENBAS")
+        if self.ecpdata_content is not None and not os.path.isfile("ECPDATA"):
+            with open("ECPDATA", "w") as ecpfile:
+                ecpfile.write(self.ecpdata_content)
+
+        #Resetting EXTERN_POT for this run unless pointcharges are used (QM/MM job).
+        #Energy-only runs with PROP active set self.EXTERN_POT='ON' (dummy-pcharges trick to prevent
+        #reorientation), which is sticky on the object. A subsequent gradient run in a fresh directory
+        #(e.g. NEB image dirs) would then require a pcharges file that does not exist there,
+        #crashing CFour (mkvmol.f: End of file reading pcharges).
+        if PC is not True:
+            self.EXTERN_POT='OFF'
 
         if self.DBOC is True:
             DBOC=True
