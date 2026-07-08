@@ -240,7 +240,6 @@ class OpenMMTheory:
             if periodic_cell_vectors is None:
                 periodic_cell_vectors=PBCvectors
 
-        print("d")
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
             if self.printlevel > 0:
@@ -1653,6 +1652,14 @@ class OpenMMTheory:
             self.integrator = openmm.VariableLangevinIntegrator(self.temperature * openmm.unit.kelvin,
                                                                      self.coupling_frequency / openmm.unit.picosecond,
                                                                      self.timestep * openmm.unit.picoseconds)
+        elif self.integrator_name == 'DrudeLangevinIntegrator':
+            print("here1")
+            # TODO: options
+            self.integrator = openmm.DrudeLangevinIntegrator(self.temperature * openmm.unit.kelvin,
+                                                                    self.coupling_frequency / openmm.unit.picosecond,
+                                                                    self.temperature * openmm.unit.kelvin,
+                                                                    self.timestep * openmm.unit.picoseconds,4)
+            print("here2")
         elif self.integrator_name == 'RPMDIntegrator':
             print("RPMDIntegrator will be used")
             print("Warning: Autoconstraints, rigidwater and other contraints must have been disabled.")

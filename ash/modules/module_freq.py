@@ -21,7 +21,7 @@ import ash.constants
 #TODO: IR/Raman intensities
 def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, masses=None,
            pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, printlevel=2,
-           scaling_factor=1.0, symmetry_number=None):
+           scaling_factor=1.0, symmetry_number=None, rotmode_threshold=1e-4):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------ANALYTICAL FREQUENCIES-------------", BC.END)
 
@@ -30,7 +30,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
         ashexit()
 
     # Checking for linearity. Determines how many Trans+Rot modes
-    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+    if detect_linear(coords=fragment.coords,elems=fragment.elems, threshold=rotmode_threshold) is True:
         TRmodenum=5
     else:
         TRmodenum=6
@@ -64,7 +64,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
         # Would ensure completely correct masses at least
         # For now grabbing directly from theory object
         # Tested with pyscf, ORCA
-
+        IR_intens_values=None
         try:
             IR_intens_values=theory.ir_intensities
             if len(IR_intens_values) == 0:
@@ -86,7 +86,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
         print("Normal mode composition factors by element")
         printfreqs_and_nm_elem_comps(frequencies,fragment,evectors,hessatoms=hessatoms,TRmodenum=TRmodenum)
         thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure, QRRHO=QRRHO, QRRHO_omega_0=QRRHO_omega_0,
-                                    symmetry_number=symmetry_number)
+                                    symmetry_number=symmetry_number, rotmode_threshold=rotmode_threshold)
 
         # Add Hessian to fragment and write to file
         fragment.hessian=hessian
@@ -113,7 +113,8 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
 # Numerical frequencies function
 # ORCA uses 0.005 Bohr = 0.0026458861 Ang, CHemshell uses 0.01 Bohr = 0.00529 Ang
 def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displacement=0.005, hessatoms=None, numcores=1, runmode='serial',
-        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, Raman=False,
+        temp=298.15, pressure=1.0, hessatoms_masses=None, printlevel=1, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100, 
+        IR=True, Raman=False, rotmode_threshold=1e-4,
         scaling_factor=1.0, symmetry_number=None, force_projection=None):
     module_init_time=time.time()
     print(BC.WARNING, BC.BOLD, "------------NUMERICAL FREQUENCIES-------------", BC.END)
@@ -181,7 +182,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             print("Check input masses!",BC.END)
             ashexit()
     # Checking for linearity. Determines how many Trans+Rot modes
-    if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
+    if detect_linear(coords=fragment.coords,elems=fragment.elems, threshold=rotmode_threshold) is True:
         TRmodenum=5
     else:
         TRmodenum=6
@@ -335,11 +336,13 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
             displacement_grad_dictionary[stringlabel] = gradient
 
             #Grabbing dipole moment if available
-            try:
-                displacement_dm = theory.get_dipole_moment()
-                displacement_dipole_dictionary[stringlabel] = displacement_dm
-            except:
-                pass
+            if IR is True:
+                try:
+                    displacement_dm = theory.get_dipole_moment()
+                    displacement_dipole_dictionary[stringlabel] = displacement_dm
+                except:
+                    pass
+                
             #Grabbing polarizability tensor if requested
             if Raman is True:
                 try:
@@ -411,9 +414,10 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #original_grad=get_partial_matrix(allatoms, hessatoms, displacement_grad_dictionary['Originalgeo'])
         original_grad_1d = np.ravel(original_grad)
         #IR intensities if dipoles available
-        if len(displacement_dipole_dictionary) > 0:
-            original_dipole = np.array(displacement_dipole_dictionary['Originalgeo'])
-            #print("original_dipole:",original_dipole)
+        if IR is True:
+            if len(displacement_dipole_dictionary) > 0:
+                original_dipole = np.array(displacement_dipole_dictionary['Originalgeo'])
+                #print("original_dipole:",original_dipole)
         #Raman if requested
         if Raman is True:
             if len(displacement_polarizability_dictionary) > 0:
@@ -438,15 +442,16 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 hessian[hessindex,:]=Hessrow
                 grad_pos_1d=0
                 #IR intensities if dipoles available
-                if len(displacement_dipole_dictionary) > 0:
-                    # Make sure it's not a dict of None's
-                    if any(value is None for value in displacement_dipole_dictionary.values()):
-                        #print("None values in displacement_dipole_dictionary. Skipping IR")
-                        pass
-                    elif len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
-                        disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
-                        dd_deriv = (disp_dipole - original_dipole)/displacement_bohr
-                        dipole_derivs[hessindex,:] = dd_deriv
+                if IR is True:
+                    if len(displacement_dipole_dictionary) > 0:
+                        # Make sure it's not a dict of None's
+                        if any(value is None for value in displacement_dipole_dictionary.values()):
+                            #print("None values in displacement_dipole_dictionary. Skipping IR")
+                            pass
+                        elif len(displacement_dipole_dictionary[lookup_string_pos]) > 0:
+                            disp_dipole = np.array(displacement_dipole_dictionary[lookup_string_pos])
+                            dd_deriv = (disp_dipole - original_dipole)/displacement_bohr
+                            dipole_derivs[hessindex,:] = dd_deriv
                 #Raman if requested
                 if Raman is True:
                     if len(displacement_polarizability_dictionary) > 0:
@@ -486,7 +491,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
                 grad_neg_1d=0
 
                 #IR intensities if dipoles available
-                if len(displacement_dipole_dictionary) > 0:
+                if IR is True and len(displacement_dipole_dictionary) > 0:
                     # Make sure it's not a dict of None's
                     if any(value is None for value in displacement_dipole_dictionary.values()):
                         #print("None values in displacement_dipole_dictionary. Skipping IR")
@@ -537,17 +542,18 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     #Evectors: eigenvectors of the mass-weighed Hessian
     #Normal modes: unweighted
-    frequencies, nmodes, evectors, mode_order = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,TRmodenum=TRmodenum,projection=projection)
+    frequencies, nmodes, evectors, mode_order = diagonalizeHessian(hesscoords,hessian,hessmasses,hesselems,
+                                                                   TRmodenum=TRmodenum,projection=projection, rotmode_threshold=rotmode_threshold)
     print("Diagonalization of frequencies complete")
     print("Now scaling frequencies by scaling factor:", scaling_factor)
     frequencies = scaling_factor * np.array(frequencies)
 
     # IR intensities if dipoles available
-    if np.any(dipole_derivs):
-        dipole_derivs = dipole_derivs[mode_order]
-        IR_intens_values = calc_IR_Intensities(hessmasses,evectors,dipole_derivs)
-    else:
-        IR_intens_values = None
+    IR_intens_values = None
+    if IR is True:
+        if np.any(dipole_derivs):
+            dipole_derivs = dipole_derivs[mode_order]
+            IR_intens_values = calc_IR_Intensities(hessmasses,evectors,dipole_derivs)
 
     # Raman activities if polarizabilities available
     if Raman is True:
@@ -577,7 +583,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     # Get and print out thermochemistry
     thermodict = thermochemcalc(frequencies,hessatoms, fragment, mult, temp=temp,pressure=pressure,
                                     QRRHO=QRRHO, QRRHO_method=QRRHO_method, QRRHO_omega_0=QRRHO_omega_0,
-                                    symmetry_number=symmetry_number)
+                                    symmetry_number=symmetry_number, rotmode_threshold=rotmode_threshold)
 
     # Write Hessian to file
     write_hessian(hessian,hessfile="Hessian")
@@ -624,9 +630,9 @@ def get_partial_matrix(matrix,hessatoms):
 
 
 # Diagonalize Hessian from input Hessian, masses and element-strings
-def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum=None, LargeImagFreqThreshold=-100):
+def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum=None, 
+                       LargeImagFreqThreshold=-100, rotmode_threshold=1e-4):
     print("\nDiagonalizing Hessian")
-    numatoms=len(elems)
     atomlist = []
     for i, j in enumerate(elems):
         atomlist.append(str(j) + '-' + str(i))
@@ -634,8 +640,7 @@ def diagonalizeHessian(coords,hessian, masses, elems, projection=True, TRmodenum
     # Projecting out translations and rotations
     if projection is True:
         print("Projection of out rotational and translational modes active!")
-        vfreqs,evectors,nmodes = project_rot_and_trans(coords,masses,hessian)
-
+        vfreqs,evectors,nmodes = project_rot_and_trans(coords,masses,hessian,rotmode_threshold=rotmode_threshold)
         # Adding TRmodes zeros to vfreqs list
         for i in range(0,TRmodenum):
             vfreqs = np.insert(vfreqs,0,0.0)
@@ -736,7 +741,7 @@ def printfreqs(vfreq,numatoms,TRmodenum=6, intensities=None, Raman_activities=No
     print("VIBRATIONAL FREQUENCY SUMMARY")
     print("-"*40)
     if intensities is None:
-        print("No IR intensities were calculated (dipoles not available in QM-program interface). Setting values to 0.0.")
+        print("No IR intensities were calculated. Setting values to 0.0.")
     if Raman_activities is None:
         print("No Raman activities were calculated (polarizabilities not available in QM-program interface). Setting values to 0.0.")
     print("Note: imaginary modes shown as negative")
@@ -806,7 +811,7 @@ def old_printfreqs(vfreq,numatoms,TRmodenum=6):
 
 #
 def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0, QRRHO=True, QRRHO_method='Grimme', QRRHO_omega_0=100,
-                   use_full_geo_in_rotational_analysis=True, symmetry_number=None):
+                   use_full_geo_in_rotational_analysis=True, symmetry_number=None, rotmode_threshold=1e-4):
     module_init_time=time.time()
     """[summary]
 
@@ -833,7 +838,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
         TRmodenum=5
     else:
         print("System size > 2, checking if linear")
-        linearcheck = detect_linear(fragment)
+        linearcheck = detect_linear(fragment, threshold=rotmode_threshold)
         if linearcheck is True:
             print("Structure is linear. 5 translational+rotational modes present")
             moltype="linear"
@@ -1070,7 +1075,7 @@ def thermochemcalc(vfreq,atoms,fragment, multiplicity, temp=298.15,pressure=1.0,
 
 #From Hess-tool.py: Copied 13 May 2020
 #Print dummy ORCA outputfile using coordinates and normal modes. Used for visualization of modes in Chemcraft
-def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile):
+def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile, rotmode_threshold=1e-4):
     orca_header = """                                 *****************
                                  * O   R   C   A *
                                  *****************
@@ -1088,7 +1093,7 @@ def printdummyORCAfile(elems,coords,vfreq,evectors,nmodes,hessfile):
 CARTESIAN COORDINATES (ANGSTROEM)
 ---------------------------------"""
     #Checking for linearity here.
-    if detect_linear(coords=coords,elems=elems) == True:
+    if detect_linear(coords=coords,elems=elems, threshold=rotmode_threshold) is True:
         TRmodenum=5
     else:
         TRmodenum=6
@@ -2188,7 +2193,7 @@ def clean_frequencies(freqs):
 
 
 
-def project_rot_and_trans(coords,mass,Hessian):
+def project_rot_and_trans(coords,mass,Hessian, rotmode_threshold=1e-4):
     mass = np.array(mass)
     coords = np.array(coords)*ash.constants.ang2bohr
     coords = coords.copy().reshape(-1, 3)
@@ -2218,9 +2223,11 @@ def project_rot_and_trans(coords,mass,Hessian):
     RotDOF = 0
     for i in range(3):
         print("Ivals[i]:", Ivals[i])
-        if abs(Ivals[i]) > 1.0e-5:
+        if abs(Ivals[i]) > rotmode_threshold:
             RotDOF += 1
     TR_DOF = 3 + RotDOF
+    print("TR_DOF:", TR_DOF)
+    #exit()
     if TR_DOF not in (5, 6):
         print("Unexpected number of trans+rot DOF: {TR_DOF} not in (5, 6)")
 
