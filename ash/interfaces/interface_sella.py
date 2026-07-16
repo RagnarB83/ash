@@ -12,8 +12,33 @@ from ash.constants import hartoeV, bohr2ang
 from ash.modules.module_QMMM import QMMMTheory
 
 # Sella TS optimizer
-# TODO active region
-# TODO PBC
+
+def SellaIRC(theory=None, fragment=None, charge=None, mult=None, printlevel=2, NumGrad=False,
+                   convergence_gmax=1e-4, maxiter=150, result_write_to_disk=False,
+                   constraints=None, actatoms=None, frozenatoms=None,
+                   gamma=0.03, eta=1e-4, IRC_dx=0.1):
+    """
+    Wrapper function around SellaoptimizerClass
+    """
+    timeA=time.time()
+
+    optimizer = SellaoptimizerClass(convergence_gmax=convergence_gmax, 
+                                   printlevel=printlevel, maxiter=maxiter, result_write_to_disk=result_write_to_disk, 
+                                   constraints=constraints, actatoms=actatoms, frozenatoms=frozenatoms,
+                                   gamma=gamma, eta=eta, IRC_dx=IRC_dx)
+
+    # If NumGrad then we wrap theory object into NumGrad class object
+    if NumGrad:
+        print("NumGrad flag detected. Wrapping theory object into NumGrad class")
+        print("This enables numerical-gradient calculation for theory")
+        theory = NumGradclass(theory=theory)
+
+    # Providing theory and fragment to run method.
+    result = optimizer.IRCrun(theory=theory, fragment=fragment, charge=charge, mult=mult)
+    if printlevel >= 1:
+        print_time_rel(timeA, modulename='Sella', moduleindex=1)
+
+    return result
 
 
 def SellaOptimizer(theory=None, fragment=None, charge=None, mult=None, printlevel=2, NumGrad=False,
@@ -53,7 +78,7 @@ class SellaoptimizerClass:
         def __init__(self,printlevel=2, 
                      convergence_gmax=3e-4, maxiter=150, result_write_to_disk=False,
                      constraints=None, actatoms=None, frozenatoms=None,
-                     gamma=0.03, eta=1e-4):
+                     gamma=0.03, eta=1e-4, IRC_dx=0.1):
 
             self.printlevel=printlevel
             print_line_with_mainheader("SellaOptimizer initialization")
@@ -77,7 +102,7 @@ class SellaoptimizerClass:
             self.actatoms = actatoms
             self.gamma = gamma
             self.eta = eta
-
+            self.IRC_dx = IRC_dx
 
             print_if_level(f"GradMax convergence tolerance: {self.convergence_gmax} Eh/Bohr", self.printlevel, 2)
             print_if_level(f"Converted tolerance for Sella: {self.tolerance_ev_ang} eV/Angstrom", self.printlevel, 2)
@@ -159,6 +184,7 @@ class SellaoptimizerClass:
             print("All Sella constraints:", sellacons)
             return sellacons
 
+
         def run(self, theory=None, fragment=None, charge=None, mult=None,constraints=None):
 
             print_line_with_subheader1("Running Sella optimization")
@@ -201,6 +227,7 @@ class SellaoptimizerClass:
                 atoms, constraints=sella_constraints,
                 gamma=self.gamma, eta=self.eta)
 
+
             def write_traj(a=atoms, trajname="sella_optim"):
                 print(f"Writing (active) trajectory to file: {trajname}.xyz")
                 self.active_fragment.coords = copy.copy(a.get_positions())
@@ -216,7 +243,6 @@ class SellaoptimizerClass:
                 qm_coords = np.array([atoms.calc.full_fragment.coords[i] for i in theory.qmatoms])
                 frag = Fragment(coords=qm_coords, elems=qm_elems, printlevel=0)
                 frag.write_xyzfile(xyzfilename=trajname+'.xyz', writemode='a')
-
 
             # Attaching traj function
             #dyn.attach(print_step, interval=1)
@@ -286,7 +312,89 @@ class SellaoptimizerClass:
             if self.result_write_to_disk is True:
                 result.write_to_disk(filename="SellaOptimizer.result")
             return result
+        
+        def IRCrun(self, theory=None, fragment=None, charge=None, mult=None,constraints=None):
 
+            print_line_with_subheader1("Running Sella IRC")
+            from sella import IRC
+            import ase
+
+            # Active region setup. For a big system, we have to pass only the active region geometry to Sella
+            if self.actatoms is not None:
+                self.original_fragment = copy.deepcopy(fragment)
+                self.active_fragment = self.setup_active_region_geometry(fragment)
+                print(f"Active region fragment contains {self.active_fragment.numatoms} atoms")
+            else:
+                self.original_fragment=None # 
+                self.active_fragment = fragment
+
+
+            # Creating ASE object
+            fragment.printlevel=0
+            atoms = ase.atoms.Atoms(self.active_fragment.elems,positions=self.active_fragment.coords)
+
+            # Setup constraints for Sella
+            #sella_constraints = None
+            #if self.constraints is not None or self.frozenatoms is not None:
+            #    sella_constraints = self.setup_constraints(atoms, constraints,fragment)
+            #print("sella_constraints:", sella_constraints)
+
+            # Attaching calculator
+            print("Creating ASH-ASE calculator")
+            atoms.calc = ASH_ASE_calculator(theory=theory, fragment=self.active_fragment, 
+                                            full_fragment=self.original_fragment, actatoms=self.actatoms)
+
+            # Attaching traj functions
+            def write_traj(a=atoms, trajname="sella_IRC"):
+                print(f"Writing (active) trajectory to file: {trajname}.xyz")
+                self.active_fragment.coords = copy.copy(a.get_positions())
+                self.active_fragment.write_xyzfile(xyzfilename=trajname+'.xyz', writemode='a')
+            def write_full_traj(a=atoms, trajname="sella_optim_full"):
+                print(f"Writing full trajectory to file: {trajname}.xyz")
+                #self.original_fragment = copy.copy(a.get_positions())
+                atoms.calc.full_fragment.write_xyzfile(xyzfilename=trajname+'.xyz', writemode='a')
+            def write_qmregion_traj(a=atoms, trajname="sella_optim_qmregion"):
+                print(f"Writing QM-region trajectory to file: {trajname}.xyz")
+                qm_elems = [atoms.calc.full_fragment.elems[i] for i in theory.qmatoms]
+                qm_coords = np.array([atoms.calc.full_fragment.coords[i] for i in theory.qmatoms])
+                frag = Fragment(coords=qm_coords, elems=qm_elems, printlevel=0)
+                frag.write_xyzfile(xyzfilename=trajname+'.xyz', writemode='a')
+
+            print("Creating Sella IRC object.")
+            print("dx:", self.IRC_dx, "eta:", self.eta, "gamma:", self.gamma)
+            opt = IRC(atoms, trajectory='irc.traj', dx=self.IRC_dx, ninner_iter=10,
+                      eta=self.eta, gamma=self.gamma)
+            # Attaching traj function
+            opt.attach(write_traj, interval=1)
+            # Attaching full traj write also if using active region
+            if self.actatoms is not None:
+                opt.attach(write_full_traj, interval=1)
+            if isinstance(theory, QMMMTheory):
+                opt.attach(write_qmregion_traj, interval=1)
+
+            print("Now running Sella IRC in forward direction.")
+            print(f"Convergence fmax: {self.tolerance_ev_ang} eV/Å, steps: {self.maxiter}")
+            # Running forward IRC step by step
+            try:
+                opt.run(fmax=self.tolerance_ev_ang, steps=self.maxiter, direction='forward')
+            except Exception as e:
+                print("Error occurred while running forward IRC:",e)
+                print("Continuing...")
+            print("Forward IRC run completed")
+
+            print("Now running Sella IRC in reverse direction.")
+            print(f"Convergence fmax: {self.tolerance_ev_ang} eV/Å, steps: {self.maxiter}")
+            try:
+                opt.run(fmax=self.tolerance_ev_ang, steps=self.maxiter, direction='reverse')
+            except Exception as e:
+                print("Error occurred while running reverse IRC:",e)
+                print("Continuing...")
+            print("Reverse IRC run completed.")
+
+            result = ASH_Results(label="SellaIRC")
+            if self.result_write_to_disk is True:
+                result.write_to_disk(filename="SellaIRC.result")
+            return result
 
 # Simpler ASH-ASE calculator
 class ASH_ASE_calculator:
@@ -305,9 +413,9 @@ class ASH_ASE_calculator:
         # Initializing coordinates used by Sella
         self.coords=fragment.coords
 
-    def get_potential_energy(self, atomsobj):
-        #print("Called ASHcalc get_potential_energy")
-        #print("Energy call number:", self.energycalls)
+    def get_potential_energy(self, atomsobj, force_consistent=None):
+        print("Called ASHcalc get_potential_energy")
+        print("Energy call number:", self.energycalls)
         self.energycalls += 1
         # Have coordinates changed?
         if np.array_equal(atomsobj.get_positions(), self.coords):
@@ -316,8 +424,7 @@ class ASH_ASE_calculator:
                 return self.energy_eV
             else:
                 print("No energy available (1st step?). Will do calculation")
-                # ?
-                exit()
+                self.get_forces(atomsobj)
         return self.energy_eV
 
     def get_forces(self, atomsobj):
@@ -361,5 +468,7 @@ class ASH_ASE_calculator:
         # Energy
         self.energy_eH = energy
         self.energy_eV = energy*hartoeV
-
+        #print("Energy:", self.energy_eH)
+        #print("Forces:", self.forces)
         return self.forces
+
