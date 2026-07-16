@@ -375,21 +375,32 @@ class SellaoptimizerClass:
             print("Now running Sella IRC in forward direction.")
             print(f"Convergence fmax: {self.tolerance_ev_ang} eV/Å, steps: {self.maxiter}")
             # Running forward IRC step by step
+            conv = False
             try:
-                opt.run(fmax=self.tolerance_ev_ang, steps=self.maxiter, direction='forward')
+                conv = opt.run(fmax=self.tolerance_ev_ang, steps=self.maxiter, direction='forward')
             except Exception as e:
                 print("Error occurred while running forward IRC:",e)
                 print("Continuing...")
             print("Forward IRC run completed")
+            if conv:
+                print("Forward IRC converged successfully")
+            else:
+                print("Warning: Forward IRC did not converge. Continuing nonetheless.")
 
             print("Now running Sella IRC in reverse direction.")
             print(f"Convergence fmax: {self.tolerance_ev_ang} eV/Å, steps: {self.maxiter}")
+            conv=False
             try:
-                opt.run(fmax=self.tolerance_ev_ang, steps=self.maxiter, direction='reverse')
+                conv = opt.run(fmax=self.tolerance_ev_ang, steps=self.maxiter, direction='reverse')
             except Exception as e:
                 print("Error occurred while running reverse IRC:",e)
                 print("Continuing...")
             print("Reverse IRC run completed.")
+            if conv:
+                print("Reverse IRC converged successfully")
+            else:
+                print("Warning: Reverse IRC did not converge.")
+
 
             result = ASH_Results(label="SellaIRC")
             if self.result_write_to_disk is True:
