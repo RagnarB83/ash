@@ -525,7 +525,7 @@ class DLFIND_optimizerClass:
                 self.frozenatoms = self.frozenatoms+frozenatoms_xyz
                 print("frozenatoms_z:", frozenatoms_z)
         if self.actatoms is not None:
-            print_if_level("Actatoms provided:", self.actatoms)
+            print_if_level(f"Actatoms provided: {self.actatoms}", self.printlevel, 2)
 
             if self.PBC:
                 print("PBC detected. Adding 4 dummy atoms to actatoms if not already present")
