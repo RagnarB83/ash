@@ -121,7 +121,8 @@ class xTBTheory:
         self.analytic_hessian=False
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
-        # Hardness of pointcharge. GAM factor. Big number means PC behaviour
+        # Hardness of pointcharge. GAM factor. Big number means PC behaviour. 
+        # If hardness is set to 'elements', xtb's element-specific hardness is used (see https://xtb-docs.readthedocs.io/en/latest/pcem.html).
         self.hardness=hardness_PC
 
         # Accuracy (0.1 it quite tight)
@@ -521,7 +522,11 @@ class xTBTheory:
                 print("...")
             # Create pcharge file if PC
             if PC:
-                create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=self.hardness)
+                if self.hardness == 'elements':
+                    hardness = mm_elems
+                else:
+                    hardness = [self.hardness] * len(MMcharges)
+                create_xtb_pcfile_general(current_MM_coords, MMcharges, hardness=hardness)
 
             # Run xTB (note: passing PC and Grad Booleans)
             run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
@@ -1059,8 +1064,8 @@ def create_xtb_pcfile_general(coords,pchargelist,hardness=1000):
     #https://xtb-docs.readthedocs.io/en/latest/pcem.html
     with open('pcharge', 'w') as pcfile:
         pcfile.write(str(len(pchargelist))+'\n')
-        for p,c in zip(pchargelist,coords):
-            line = "{} {} {} {} {}".format(p, c[0], c[1], c[2], hardness)
+        for p,c,h in zip(pchargelist,coords,hardness):
+            line = "{} {} {} {} {}".format(p, c[0], c[1], c[2], h)
             pcfile.write(line+'\n')
 
 

@@ -129,6 +129,10 @@ def calc_gcp(fragment=None, xyzfile=None, current_coords=None, elems=None, funct
     command_list=['mctc-gcp', xyzfile, '-l', functional]
     if Grad:
         command_list.append('--grad')
+        # mctc-gcp appends into an existing 'gradient' file (Turbomole format) instead of
+        # writing 'gcp_gradient'; remove it so the standalone file is always created.
+        if os.path.exists('gradient'):
+            os.remove('gradient')
 
     print("command_list:", command_list)
     with open('gcp.out', 'w') as ofile:
@@ -171,7 +175,9 @@ class gcpTheory(Theory):
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
 
-        frag = ash.Fragment(elems=elems, coords=current_coords,printlevel=0)
+        if qm_elems is None:
+            qm_elems = elems
+        frag = ash.Fragment(elems=qm_elems, coords=current_coords,printlevel=0)
         eg = calc_gcp(fragment=frag, functional=self.functional, Grad=Grad, printlevel=self.printlevel)
         if Grad:
             self.energy = eg[0]

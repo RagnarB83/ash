@@ -433,6 +433,7 @@ class WrapTheory(Theory):
         full_dimension=current_coords.shape[0]
         energies=[]
         gradients=[]
+        pc_gradient=None
         chosen_coords=current_coords
         chosen_elems=qm_elems
         for i,theory in enumerate(self.theories):
@@ -468,6 +469,8 @@ class WrapTheory(Theory):
                 #print(f"Theory: {theory.theorynamelabel}  gradient shape", eg_tuple[1].shape)
                 energy = eg_tuple[0]
                 tempgrad = eg_tuple[1]
+                if PC and len(eg_tuple) == 3:
+                    pc_gradient = eg_tuple[2]
                 # Assemble gradient of correct dimension
                 if i+1 == 1 and self.theory1_atoms is not None:
                     fullgrad=np.zeros((full_dimension,3))
@@ -539,6 +542,8 @@ class WrapTheory(Theory):
                     print("Gradient (Combined):", self.gradient)
 
         if Grad:
+            if PC and pc_gradient is not None:
+                return self.energy, self.gradient, pc_gradient
             return self.energy, self.gradient
         else:
             return self.energy

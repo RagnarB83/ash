@@ -985,7 +985,8 @@ class QMMMTheory:
 
                 self.MMenergy, self.MMgradient = self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms, Grad=True)
             else:
-                print("QM/MM Grad is false")
+                if self.printlevel >= 2:
+                    print("QM/MM Grad is false")
                 self.MMenergy = self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
         else:
             self.MMenergy=0
@@ -1404,7 +1405,8 @@ class QMMMTheory:
 
                 self.MMenergy, self.MMgradient= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms, Grad=True)
             else:
-                print("QM/MM Grad is false")
+                if self.printlevel >= 2:
+                    print("QM/MM Grad is false")
                 self.MMenergy= self.mm_theory.run(current_coords=current_coords, qmatoms=self.qmatoms)
         else:
             self.MMenergy=0
