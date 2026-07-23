@@ -967,6 +967,12 @@ class PySCFTheory:
                 chkfile_scftype="UHF"
             elif 2.0 in self.chkfileobject["mo_occ"]:
                 chkfile_scftype="RHF"
+            else:
+                print("Occupations seems to fit neither RHF nor UHF")
+                print("Occupations:", self.chkfileobject["mo_occ"])
+                print("Guessing GHF for now")
+                chkfile_scftype="GHF"
+                
             #Checking if mismatch between chkfile info and chosen scf-type
             #TODO: In principle we could convert RKS-info from chkfile to UKS-info and vice versa
             if chkfile_scftype == "UHF":
@@ -977,7 +983,11 @@ class PySCFTheory:
                 if self.scf_type == "UHF" or self.scf_type == "UKS":
                     print("Warning: Mismatch between SCF-type in chkfile and PySCFTheory object. Ignoring chkfile")
                     return False 
-            
+            if chkfile_scftype == "GHF":
+                if self.scf_type not in ["GHF","GKS"]:
+                    print("Warning: Mismatch between SCF-type in chkfile and PySCFTheory object. Ignoring chkfile")
+                    return False 
+
             if chkfile_scftype == "UHF":
                 #UNRESTRICTED
                 if self.printlevel >= 1:
@@ -1731,6 +1741,8 @@ class PySCFTheory:
         print("Now starting CCSD calculation")
         if self.scf_type == "RHF":
             cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
+        elif self.scf_type == "GHF":
+            cc = pyscf_cc.GCCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
         elif self.scf_type == "ROHF":
             cc = pyscf_cc.CCSD(mf, frozen_orbital_indices,mo_coeff=mo_coefficients)
         elif self.scf_type == "UHF":
@@ -2082,12 +2094,7 @@ class PySCFTheory:
 
         #RKS v UKS v RHF v UHF v GHF v GKS
         #TODO: Dirac HF and KS also
-        if "skala" in self.functional.lower():
-            print("here")
-            from skala.pyscf import SkalaKS
-            self.mf = SkalaKS(self.molcellobject, xc=self.functional)
-
-        elif self.scf_type == 'RKS':
+        if self.scf_type == 'RKS':
             self.mf = scf.RKS(self.molcellobject)
         elif self.scf_type == 'ROKS':
             self.mf = scf.ROKS(self.molcellobject)
@@ -2137,6 +2144,13 @@ class PySCFTheory:
         else:
             print("Unknown scf-type:", self.scf_type)
             ashexit()
+
+        # If Skala then override
+        if self.functional is not None and "skala" in self.functional.lower():
+            from skala.pyscf import SkalaKS
+            self.mf = SkalaKS(self.molcellobject, xc=self.functional)
+
+
         print("mf object:", self.mf)
 
     #Probably depreceated. Created mf for GPU.
@@ -2528,6 +2542,7 @@ class PySCFTheory:
     #Independent method to run SCF using previously defined mf object and possible input dm
     def run_SCF(self,mf=None, dm=None, max_cycle=None):
         import pyscf
+        import pyscf.dft
         if self.printlevel >= 1:
             print("\nInside run_SCF")
         module_init_time=time.time()
@@ -2588,9 +2603,10 @@ class PySCFTheory:
                 import pyscf.pbc
                 if isinstance(self.mf, pyscf.pbc.dft.rks.RKS):
                     self.num_orbs = len(self.mf.mo_occ) # Restricted
+            elif self.scf_type in ['UKS','UHF']:
+                self.num_orbs = len(self.mf.mo_occ[0]) # Unrestricted
             else:
-                #UHF/UKS
-                self.num_orbs = len(self.mf.mo_occ[0]) 
+                self.num_orbs = len(self.mf.mo_occ) # GHF/GKS
             
         if self.printlevel >= 1:
             print("Number of orbitals:", self.num_orbs)
@@ -2687,7 +2703,6 @@ class PySCFTheory:
         if self.printlevel >= 1:
             print("Number of electrons:", self.num_electrons)
             print()
-
         ###############################
         #CREATE MOL OBJECT or CELL
         ###############################
@@ -2767,7 +2782,13 @@ class PySCFTheory:
         #Convert non-relativistic mf object to spin-free x2c if self.x2c is True
         if self.x2c is True:
             print("x2c is True. Changing SCF object to relativistic x2c Hamiltonian")
-            self.mf = self.mf.sfx2c1e()
+            if self.scf_type in ['RHF','UHF','RKS','UKS']:
+                print("Warning:Scalar relativistic x2c (spin-free) will be used")
+                self.mf = self.mf.sfx2c1e()
+            elif self.scf_type in ['GHF','GKS']:
+                print("Warning: x2c with spin orbit coupling enabled")
+                self.mf = self.mf.x2c()
+
 
         ###########
         # PRINTING
@@ -2918,7 +2939,8 @@ class PySCFTheory:
                 if self.printlevel >1:
                     print("Total num. orbitals:", self.num_scf_orbitals_alpha)
                 if self.printlevel >1:
-                    self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
+                    if self.do_pop_analysis:
+                        self.run_population_analysis(self.mf, dm=None, unrestricted=False, type='Mulliken', label='SCF')
             else:
                 #UHF/UKS
                 self.num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
@@ -3050,9 +3072,22 @@ class PySCFTheory:
                     if self.printlevel >1:
                         print("MOM-SCF Gradient calculation done")
                 else:
-                    print("Gradient for postSCF methods  is not implemented in ASH interface")
-                    #TODO: Enable TDDFT, CASSCF, MP2, CC gradient etc
-                    ashexit()
+                    print("Warning: Gradient for postSCF methods in the pySCF interface are currently experimental.")
+                    if self.CC:
+                        if self.CCmethod == "CCSD(T)":
+                            from pyscf.grad import ccsd_t as ccsd_t_grad
+                            g = ccsd_t_grad.Gradients(self.ccobject).kernel()
+                            print('CCSD(T) nuclear gradient:', g)
+                        elif self.CCmethod == "CCSD":
+                            from pyscf.grad import ccsd as ccsd_grad
+                            g = ccsd_grad.Gradients(self.ccobject).kernel()
+                            print('CCSD nuclear gradient:', g)
+                        else:
+                            print("CC method not recognized for gradient calculation. No gradient calculated.")
+                    else:
+                            print("No post-SCF method recognized for gradient calculation. No gradient calculated.")
+                            self.gradient=None
+                        
             #Calculate regular SCF gradient
             else:
                 if self.printlevel >1:
@@ -3475,8 +3510,8 @@ def KS_inversion_n2v(pyscftheoryobj, dm, method='PDECO', numcores=1, opt_max_ite
         import n2v
         import gbasis
         import pylibxc2
-    except ModuleNotFoundError:
-        print("ModuleNotFoundError:")
+    except ModuleNotFoundError as e:
+        print("ModuleNotFoundError:", e)
         print("KS_inversion_n2v requires installation of n2v module and additional packages")
         print("See https://github.com/wasserman-group/n2v for details")
         print("""\n#Install pylibxc2
@@ -3533,7 +3568,7 @@ pip install .
 #Takes pyscfheoryobject and DM as input, solves the inversion problem and returns MO coefficients, occupations,energies and new DM
 def KS_inversion_kspies(pyscftheoryobj, dm, numcores=1,
                         method='WY', WY_method='trust-exact', pbas=None,
-                        ZMP_lambda=128, ZMP_levelshift=True, ZMP_LS_scaling=8,
+                        ZMP_lambda=128, ZMP_levelshift=True, ZMP_LS_scaling=0.1,
                         ZMP_cycles=400, guide='faxc',
                         DF=True, vxc_method = 'eval_vh',
                         plot_vxc=False, vxc_coords=None, chosen_axes=None,
@@ -3670,8 +3705,8 @@ def KS_inversion_kspies(pyscftheoryobj, dm, numcores=1,
             for l in [ ZMP_lambda/8, ZMP_lambda/4, ZMP_lambda/2, ZMP_lambda]:
             #for l in [ZMP_lambda/(ZMP_LS_scaling*ZMP_LS_scaling), ZMP_lambda/ZMP_LS_scaling,ZMP_lambda]:
                 print("Lambda:", l)
-                print("Levelshift (lambda*0.1):", l*0.1)
-                zmp_a.level_shift = l*0.1
+                print("Levelshift (lambda*levelshiftscaling):", l*ZMP_LS_scaling)
+                zmp_a.level_shift = l*ZMP_LS_scaling
                 zmp_a.zscf(l)
 
                 if plot_vxc is True and plot_all_lambdas is True:

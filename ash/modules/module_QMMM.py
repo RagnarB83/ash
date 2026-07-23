@@ -176,6 +176,9 @@ class QMMMTheory:
         elif self.embedding.lower() == "mechanical" or self.embedding.lower() == "mech":
             self.embedding="mech"
             self.PC = False
+        elif self.embedding.lower() == "polembed_drude" or self.embedding.lower() == "drude":
+            self.embedding="polembed_drude"
+            self.PC = True
         else:
             print("Unknown embedding. Valid options are: elstat (synonyms: electrostatic, electronic), mech (synonym: mechanical)")
             ashexit()
@@ -312,16 +315,19 @@ class QMMMTheory:
             if self.embedding.lower() == "elstat":
                 print("Charges of QM atoms set to 0 (since Electrostatic Embedding):")
                 self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
-                # print("length of self.charges_qmregionzeroed :", len(self.charges_qmregionzeroed))
-                # TODO: make sure this works for OpenMM and for NonBondedTheory
                 # Updating charges in MM object.
                 self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
-
+            elif self.embedding.lower() == "polembed_drude":
+                print("Polembed Drude embedding enabled.")
+                print("This means that QM-atoms will be zeroed for QM-MM interactions calculated by QM program")
+                print("But MM program will have charged defined for QM-region")
+                print("Not implemented yet. Exiting")
+                ashexit()
+                self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
                 # Also removing QM-MM Coulomb interaction exceptions in OpenMM
                 if self.mm_theory_name == "OpenMMTheory":
                     # Deleting Coulomb exception interactions involving QM and MM atoms
                     self.mm_theory.delete_exceptions(self.qmatoms)
-
             elif self.embedding.lower() == "pbcmm-elstat":
                 print("PBC Electrostatic embedding enabled.")
                 print("This means that QM-atoms will be zeroed for QM-MM interactions calculated by QM program")
@@ -775,6 +781,9 @@ class QMMMTheory:
             # MM-program thus double-counts (SR QM-QM and SR QM-MM) and we need subtractive corrections
             return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
                 label=label, charge=charge, mult=mult)
+        elif self.embedding.lower() == "polembed_drude":
+            return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
+                label=label, charge=charge, mult=mult)
         else:
             print("Unknown embedding. Exiting")
             ashexit()
@@ -1109,7 +1118,7 @@ class QMMMTheory:
             # If no linkatoms then use original self.qmelems
             self.current_qmelems = self.qmelems
             # If no linkatoms then self.pointcharges are just original charges with QM-region zeroed
-            if self.embedding.lower() == "elstat":
+            if self.embedding.lower() == "elstat" or self.embedding.lower() == "polembed_drude":
                 self.pointcharges = [self.charges_qmregionzeroed[i] for i in self.mmatoms]
 
         # NOTE: Now we have updated MM-coordinates (if doing linkatoms, with dipolecharges etc) and updated mm-charges (more, due to dipolecharges if linkatoms)
@@ -1125,7 +1134,7 @@ class QMMMTheory:
         self.pointcharges_original=copy.copy(self.pointcharges)
 
         # Initialize QM_PC_gradient for efficiency
-        if self.embedding.lower() == "elstat":
+        if self.embedding.lower() == "elstat" or self.embedding.lower() == "polembed_drude":
             self.QM_PC_gradient = np.zeros((len(self.allatoms), 3))
 
         print_time_rel(init_time_runprep, modulename='runprep', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
@@ -1292,7 +1301,7 @@ class QMMMTheory:
                 self.QMenergy = QMenergy
                 #No TruncPC approximation active. No change to original QM and PCgradient from QMcode
                 self.QMgradient_wo_linkatoms = QMgradient_wo_linkatoms
-                if self.embedding.lower() == "elstat":
+                if self.embedding.lower() == "elstat" or self.embedding.lower() == "polembed_drude":
                     self.PCgradient = PCgradient
 
             # Populatee QM_PC gradient (has full system size)

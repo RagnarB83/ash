@@ -219,7 +219,7 @@ from .modules.module_plotting import reactionprofile_plot, contourplot, volumepl
 from ash.interfaces.interface_dlfind import DLFIND_optimizer,DLFIND_optimizerClass
 
 # Sella
-from ash.interfaces.interface_sella import SellaOptimizer, SellaoptimizerClass
+from ash.interfaces.interface_sella import SellaOptimizer, SellaoptimizerClass, SellaIRC
 
 # Other
 import ash.interfaces.interface_crest

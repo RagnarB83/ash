@@ -37,7 +37,7 @@ class OpenMMTheory:
                  Amberfiles=False, amberprmtopfile=None, properties=None,
                  cluster_fragment=None, ASH_FF_file=None,
                  nonbondedMethod_noPBC='NoCutoff', nonbonded_cutoff_noPBC=20,
-                 xmlfiles=None, pdbfile=None, use_parmed=False, xmlsystemfile=None,
+                 xmlfiles=None, pdbfile=None, pdbxfile=None, use_parmed=False, xmlsystemfile=None,
                  do_energy_decomposition=False,
                  periodic=False, periodic_cell_dimensions=None, PBCvectors=None, periodic_cell_vectors=None,
                  charmm_periodic_cell_dimensions=None, customnonbondedforce=False,
@@ -71,7 +71,6 @@ class OpenMMTheory:
         self.analytic_hessian=False
         self.label=label
         self.fragment=fragment
-
         # OPEN MM load
         try:
             import openmm
@@ -241,7 +240,6 @@ class OpenMMTheory:
             if periodic_cell_vectors is None:
                 periodic_cell_vectors=PBCvectors
 
-
         # #Always creates object we call self.forcefield that contains topology attribute
         if CHARMMfiles is True:
             if self.printlevel > 0:
@@ -279,7 +277,8 @@ class OpenMMTheory:
                 self.atomtypes = [self.psf.atom_list[i].attype for i in range(0, len(self.psf.atom_list))]
                 # TODO: Note: For atomnames it seems OpenMM converts atomnames to its own. Perhaps not useful
                 self.atomnames = [self.psf.atom_list[i].name for i in range(0, len(self.psf.atom_list))]
-                self.mm_elements = [i.element.symbol for i in self.psf.topology.atoms()]
+                self.define_mm_elements(self.psf.topology)
+                #self.mm_elements = [i.element.symbol for i in self.psf.topology.atoms()]
 
             self.topology = self.psf.topology
             self.forcefield = self.psf
@@ -322,8 +321,8 @@ class OpenMMTheory:
                 self.forcefield = self.grotop
 
             # TODO: Define resnames, resids, segmentnames, atomtypes, atomnames??
-            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
-
+            self.define_mm_elements(self.topology)
+            #self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
         elif Amberfiles is True:
             if self.printlevel > 0:
                 print("Reading Amber files.")
@@ -373,7 +372,8 @@ class OpenMMTheory:
             #List of resids, resnames and mm_elements. Used by actregiondefine
             self.resids = [i.residue.index for i in self.prmtop.topology.atoms()]
             self.resnames = [i.residue.name for i in self.prmtop.topology.atoms()]
-            self.mm_elements = [i.element.symbol for i in self.prmtop.topology.atoms()]
+            self.define_mm_elements(self.prmtop.topology)
+            #self.mm_elements = [i.element.symbol for i in self.prmtop.topology.atoms()]
             self.atomnames = [i.name for i in self.prmtop.topology.atoms()]
             #NOTE: OpenMM does not grab Amber atomtypes for some reason. Feature request
             #TODO: Grab more topology information
@@ -394,7 +394,8 @@ class OpenMMTheory:
                 # Check if PBC vectors in PDB-file
                 pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
             self.forcefield = forcefield
-            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
+            self.define_mm_elements(self.topology)
+            #self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
         elif ASH_FF_file is not None:
             if self.printlevel > 0:
@@ -455,7 +456,8 @@ class OpenMMTheory:
                           residlabels=residlabels)
             pdb = openmm.app.PDBFile("cluster.pdb")
             self.topology = pdb.topology
-            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
+            self.define_mm_elements(self.topology)
+            #self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
             self.forcefield = openmm.app.ForceField(xmlfile)
 
         # Load XMLfile for whole system
@@ -483,7 +485,8 @@ class OpenMMTheory:
                 print("Reading topology from PDBfile:", pdbfile)
             pdb = openmm.app.PDBFile(pdbfile)
             self.topology = pdb.topology
-            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
+            self.define_mm_elements(self.topology)
+            #self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
             # Check if PBC vectors in PDB-file
             pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
         # Simple OpenMM system without any forcefield defined. Requires ASH fragment
@@ -509,21 +512,25 @@ class OpenMMTheory:
                                             sigmas_per_res=[[0.0]*fragment.numatoms], epsilons_per_res=[[0.0]*fragment.numatoms], skip_nb=False)
             # Create dummy forcefield
             self.forcefield = openmm.app.ForceField(xmlfile)
+            self.define_mm_elements(self.topology)
+            #self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
-            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
-
-        # Read topology from PDB-file and XML-forcefield files to define forcefield
+        # Read topology from PDB-file or PDBx-file and XML-forcefield files to define forcefield
         else:
             if self.printlevel > 0:
-                print("Reading OpenMM XML forcefield files and PDB file")
+                print("Reading OpenMM XML forcefield files and PDB (or PDBx) file")
                 print("xmlfiles:", str(xmlfiles).strip("[]"))
                 print("pdbfile:", pdbfile)
-                if pdbfile is None:
-                    print("Error:No pdbfile input provided")
-                    ashexit()
+                print("pdbxfile:", pdbxfile)
             # This would be regular OpenMM Forcefield definition requiring XML file
             # Topology from PDBfile annoyingly enough
-            pdb = openmm.app.PDBFile(pdbfile)
+            if pdbfile is not None:
+                pdb = openmm.app.PDBFile(pdbfile)
+            elif pdbxfile is not None:
+                pdb = openmm.app.PDBxFile(pdbxfile)
+            else:
+                print("Error: No pdbfile or pdbxfile input provided")
+                ashexit()
 
             # Check if PBC vectors in PDB-file
             pdb_pbc_vectors = pdb.topology.getPeriodicBoxVectors()
@@ -534,7 +541,8 @@ class OpenMMTheory:
             self.resids = [i.residue.index for i in self.topology.atoms()]
             self.resnames = [i.residue.name for i in self.topology.atoms()]
             self.atomnames = [i.name for i in self.topology.atoms()]
-            self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
+            self.define_mm_elements(self.topology)
+            #self.mm_elements = [i.element.symbol for i in self.topology.atoms()]
 
 
         # Dealing with possible user-defined residuetemplate_choice
@@ -902,6 +910,15 @@ class OpenMMTheory:
 
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
+
+    def define_mm_elements(self,topology):
+        try:
+            self.mm_elements = [i.element.symbol for i in topology.atoms()]
+        except:
+            print("Problem occurred while defining mm_elements.")
+            print("This may be due to virtual sites present")
+            print("mm_elements will be set to empty list")
+            self.mm_elements = []
 
     # Create a mixed MM/ML potential system from a ML potential (requires OpenMM-ML)
     # from openmmml import MLPotential
@@ -1635,6 +1652,14 @@ class OpenMMTheory:
             self.integrator = openmm.VariableLangevinIntegrator(self.temperature * openmm.unit.kelvin,
                                                                      self.coupling_frequency / openmm.unit.picosecond,
                                                                      self.timestep * openmm.unit.picoseconds)
+        elif self.integrator_name == 'DrudeLangevinIntegrator':
+            print("here1")
+            # TODO: options
+            self.integrator = openmm.DrudeLangevinIntegrator(self.temperature * openmm.unit.kelvin,
+                                                                    self.coupling_frequency / openmm.unit.picosecond,
+                                                                    self.temperature * openmm.unit.kelvin,
+                                                                    self.timestep * openmm.unit.picoseconds,4)
+            print("here2")
         elif self.integrator_name == 'RPMDIntegrator':
             print("RPMDIntegrator will be used")
             print("Warning: Autoconstraints, rigidwater and other contraints must have been disabled.")
@@ -2634,8 +2659,8 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         print("conda install -c conda-forge pdbfixer")
         ashexit()
 
-    if pdbfile == None:
-        print("You must provide a pdbfile= keyword argument")
+    if pdbfile is None:
+        print("You must provide a pdbfile keyword argument")
         ashexit()
 
 
@@ -2980,6 +3005,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
         fragment = Fragment(pdbfile="system_aftersolvent_ions.pdb")
 
     write_pdbfile_openMM(modeller.topology, modeller.positions, "finalsystem.pdb")
+    write_pdbxfile_openMM(modeller.topology, modeller.positions, "finalsystem.cif")
     fragment.print_system(filename="finalsystem.ygg")
     fragment.write_xyzfile(xyzfilename="finalsystem.xyz")
 
@@ -3010,6 +3036,7 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     print("system_afterions.pdb and finalsystem.pdb (same)")
     print("\nFinal files:")
     print("finalsystem.pdb  (PDB file)")
+    print("finalsystem.cif  (PDBx/mmCIF file)")
     print("finalsystem.ygg  (ASH fragment file)")
     print("finalsystem.xyz   (XYZ coordinate file)")
     print("{}   (System XML file)".format(systemxmlfile))
@@ -3017,15 +3044,20 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     print(BC.WARNING,"Strongly recommended: Check finalsystem.pdb carefully for correctness!", BC.END)
     print("\nTo use this system setup to define a future OpenMMTheory object you can either do:\n")
 
-    print(BC.OKMAGENTA,"1. Define using separate forcefield XML files:",BC.END)
+    print(BC.OKMAGENTA,"1. Define using separate forcefield XML files and PDB-file (for topology):",BC.END)
     if extraxmlfile is None:
         print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\"], pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
     else:
         print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\", \"{extraxmlfile}\"], pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
-    print(BC.OKMAGENTA,"2. Use forcefield object file :\n",BC.END, \
+    print(BC.OKMAGENTA,"2. Define using separate forcefield XML files and PDBx/mmCIF file (instead of PDB):",BC.END)
+    if extraxmlfile is None:
+        print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\"], pdbxfile=\"finalsystem.cif\", periodic={periodic})",BC.END)
+    else:
+        print(f"omm = OpenMMTheory(xmlfiles=[\"{xmlfile}\", \"{waterxmlfile}\", \"{extraxmlfile}\"], pdbxfile=\"finalsystem.cif\", periodic={periodic})",BC.END)
+    print(BC.OKMAGENTA,"3. Use forcefield object file :\n",BC.END, \
         f"omm = OpenMMTheory(topoforce=True, forcefield=forcefield_object, pdbfile=\"finalsystem.pdb\", topology=modeller.topology, periodic={periodic})",BC.END)
-    print(BC.OKMAGENTA,"3. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
-        f"omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
+    #print(BC.OKMAGENTA,"3. Use full system XML-file (USUALLY NOT RECOMMENDED ):\n",BC.END, \
+    #    f"omm = OpenMMTheory(xmlsystemfile=\"system_full.xml\", pdbfile=\"finalsystem.pdb\", periodic={periodic})",BC.END)
     print()
     print()
     if residuetemplate_choice is not None:
@@ -3058,6 +3090,16 @@ def write_pdbfile_openMM(topology, positions, filename, connectivity_dict=None):
 
     openmm.app.PDBFile.writeFile(topology, positions, file=open(filename, 'w'))
     print("Wrote PDB-file:", filename)
+
+def write_pdbxfile_openMM(topology, positions, filename, connectivity_dict=None):
+    import openmm.app
+
+    if connectivity_dict is not None:
+        print("Connectivity passed to write_pdbxfile_openMM")
+        openmm_add_bonds_to_topology(topology,connectivity_dict)
+
+    openmm.app.PDBxFile.writeFile(topology, positions, file=open(filename, 'w'))
+    print("Wrote PDBx-file:", filename)
 
 #Take OpenMM topology and connectivity dictionary and add bonds to topology
 #in order for OpenMM PDBFile.writeFile to write CONECT lines
@@ -4321,7 +4363,14 @@ class OpenMM_MDclass:
                                                   blastate.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
-
+        # PDBx/mmCIF
+        pdbx_filename=self.trajfilename+"_firstframe.cif"
+        print("Writing intial frame to disk as PDBx/mmCIF-file:", pdbx_filename)
+        with open(pdbx_filename, 'w') as f:
+            openmm.app.pdbxfile.PDBxFile.writeHeader(self.openmmobject.topology, f)
+            openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
+                                                  blastate.getPositions(asNumpy=True).value_in_unit(
+                                                                        openmm.unit.angstrom), f)
 
         ###############################################################################
         # MD LOOP for each Theory-Runtype: WRAP, QMMM, QM, ONIOM, dummy_MM, MM
@@ -4878,9 +4927,9 @@ class OpenMM_MDclass:
             #Topology (for header in PDB-files). Necessary
             self.openmmobject.topology.setPeriodicBoxVectors(self.state.getPeriodicBoxVectors())
 
-        ########################################
-        # Writing final frame to disk as PDB.
-        ########################################
+        ################################################
+        # Writing final frame to disk as PDB and PDBx
+        ################################################
         pdb_filename=self.trajfilename+"_lastframe.pdb"
         print("Writing final frame to disk as PDB-file:", pdb_filename)
         with open(pdb_filename, 'w') as f:
@@ -4890,7 +4939,17 @@ class OpenMM_MDclass:
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
         print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
-        
+        # PDBx/mmCIF
+        pdbx_filename=self.trajfilename+"_lastframe.cif"
+        print("Writing final frame to disk as PDBx/mmCIF-file:", pdbx_filename)
+        with open(pdbx_filename, 'w') as f:
+            openmm.app.pdbxfile.PDBxFile.writeHeader(self.openmmobject.topology, f)
+            openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
+                                                  self.state.getPositions(asNumpy=True).value_in_unit(
+                                                                        openmm.unit.angstrom), f)
+        print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
+
+
         # Saving state to disk
         #Can be used to restart using statefile option
         print("Saving a statefile and checkpointfile of the final frame of the simulation: OpenMM_MD_final_state.xml and OpenMM_MD_final_checkpoint.chk")
@@ -5044,8 +5103,8 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
             MDtraj_imagetraj(f"{trajfilename}.dcd", f"{trajfilename}_lastframe.pdb")
         except ImportError:
             print("mdtraj library could not be imported. Skipping")
-        except ValueError:
-            print("mdtraj reimaging failed. Skipping")
+        except ValueError as e:
+            print(f"mdtraj reimaging failed. Skipping. Error: {e}")
 
     print_time_rel(module_init_time, modulename="OpenMM_box_equilibration", moduleindex=1)
     return md.state.getPeriodicBoxVectors()
@@ -5509,8 +5568,8 @@ def Gentle_warm_up_MD(theory=None, fragment=None, time_steps=[0.0005,0.001,0.004
                     threshold=0.005, largest_values=10)
             except ImportError:
                 print("mdtraj library could not be imported. Skipping")
-            except ValueError:
-                print("mdtraj reimaging failed. Skipping")
+            except ValueError as e:
+                print(f"mdtraj reimaging failed. Skipping. Error: {e}")
 
     print("Gentle_warm_up_MD finished successfully!")
     print_time_rel(module_init_time, modulename="Gentle_warm_up_MD", moduleindex=1)

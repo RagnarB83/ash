@@ -41,7 +41,7 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         MRCI_CASCI_Final=False, MRCI_SOC=False,
                         btPNO=False, DLPNO=False, no_shakeup=False, virt_offset=0,
                         path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False,
-                        OODFT_CC=False):
+                        OODFT_CC=False, deltascf_moread_init=True):
     """
     Wrapper function around PhotoElectron Class
     """
@@ -56,10 +56,10 @@ def PhotoElectron(theory=None, fragment=None, method=None, vibrational_option=No
                         Ionizedstate_charge=Ionizedstate_charge, Ionizedstate_mult=Ionizedstate_mult, numionstates=numionstates,
                         initialorbitalfiles=initialorbitalfiles, densities=densities, densgridvalue=densgridvalue,
                         tda=tda,brokensym=brokensym, HSmult=HSmult, atomstoflip=atomstoflip, check_stability=check_stability,
-                        deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_ionize, deltaSCFkeyword=deltaSCFkeyword,
+                        deltaSCF_ionize=deltaSCF_ionize, deltaSCF_PMOM=deltaSCF_PMOM, deltaSCFkeyword=deltaSCFkeyword,
                         CAS_Initial=CAS_Initial, CAS_Final=CAS_Final, no_shakeup=no_shakeup,virt_offset=virt_offset,
                         MRCI_CASCI_Final=MRCI_CASCI_Final, MRCI_SOC=MRCI_SOC, CASCI_Final=CASCI_Final,
-                        btPNO=btPNO, DLPNO=DLPNO,
+                        btPNO=btPNO, DLPNO=DLPNO, deltascf_moread_init=deltascf_moread_init,
                         path_wfoverlap=path_wfoverlap, tprintwfvalue=tprintwfvalue, noDyson=noDyson,
                         OODFT_CC=OODFT_CC)
     result = photo.run()
@@ -79,7 +79,7 @@ class PhotoElectronClass:
                         MRCI_CASCI_Final=False, MRCI_SOC=False, CASCI_Final=False,
                         btPNO=False, DLPNO=False,
                         path_wfoverlap=None, tprintwfvalue=1e-5, noDyson=False,
-                        OODFT_CC=False):
+                        OODFT_CC=False, deltascf_moread_init=True):
         """
         PhotoElectron module
         """
@@ -201,6 +201,8 @@ class PhotoElectronClass:
         self.deltaSCF_PMOM=deltaSCF_PMOM #Whether to use PMOM or not
         self.deltaSCFkeyword=deltaSCFkeyword # Add extra ORCA simple keyword when doing deltaSCF calcs only 
         self.OODFT_CC=OODFT_CC # CCSD(T) on top of deltaSCF
+        self.deltascf_moread_init = deltascf_moread_init # Whether to add MOREAD line to read initial state GBW file for each ionized state in deltaSCF calcs
+        
         print("PES method:", self.method)
         if self.method == 'MRCI' or self.method=='MREOM':
             print("MREOM:", self.MREOM)
@@ -348,15 +350,18 @@ class PhotoElectronClass:
             self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' Normalprint'
 
         if self.method == "OODFT":
-            if 'UKS' not in self.theory.orcasimpleinput.upper():
-                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
+            if 'UHF' not in self.theory.orcasimpleinput.upper():
+                # Avoid adding UHF if UHF or HF present
+                #if 'UHF' not in self.theory.orcasimpleinput.upper() and 'HF' not in self.theory.orcasimpleinput.upper():
+                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UHF'
+
         if self.brokensym is True:
             self.theory.brokensym=True
             self.theory.HSmult=self.HSmult
             self.theory.atomstoflip=self.atomstoflip
-            #Making sure UKS always present if brokensym feature active. Important for open-shell singlets
-            if 'UKS' not in self.theory.orcasimpleinput.upper():
-                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UKS'
+            #Making sure UHF always present if brokensym feature active. Important for open-shell singlets
+            if 'UHF' not in self.theory.orcasimpleinput.upper():
+                self.theory.orcasimpleinput = self.theory.orcasimpleinput + ' UHF'
 
         #Preserve original
         self.orig_orcasimpleinput=copy.copy(self.theory.orcasimpleinput)
@@ -1111,6 +1116,7 @@ end
         print("now done with initial state SCF")
 
 
+
         #Create strings for the SCF configurations and deltaSCF lines
         if self.deltaSCF_ionize is True:
             print("deltaSCF_ionize option active!")
@@ -1124,13 +1130,12 @@ end
         IPs_all=[]
         Ionstates_energies_all=[]
 
-        # DELTASCF extra keywords
-        if self.deltaSCFkeyword is not None:
-            print("Adding deltaSCFkeyword to ORCA input string:", self.deltaSCFkeyword)
-            theory.orcasimpleinput += f" {self.deltaSCFkeyword} "
 
+        print("self.Finalstates:", self.Finalstates)
         #LOOPING over Finalstate-multiplicities
         for fstate in self.Finalstates:
+            print("fstate.mult:", fstate.mult)
+
             if self.deltaSCF_ionize:
                 print("deltaSCF_ionize option active. Note: this uses initial-state charge/multiplicity in ORCA input")
                 charge = self.Initialstate_charge
@@ -1143,28 +1148,72 @@ end
                 print(f"\nNow running Finalstate MULT {fstate.mult} state-number {i}")
                 label=f"{fstate.label}_state{i}"
                 print("Label:", label)
+
+                # DELTASCF extra keywords
+                if self.deltaSCFkeyword is not None:
+                    for kw in self.deltaSCFkeyword.split():
+                        if kw not in theory.orcasimpleinput:
+                            print(f"Adding {kw} to ORCA input string for DELTASCF calculation.")
+                            # Skipping GMF if first ionized state (ORCA bug)
+                            if kw.upper() == "GMF" and i == 0:
+                                print("deltaSCFkeyword included GMF and this is the first ionized state. Skipping GMF for this state due to ORCA bug.")
+                            else:
+                                theory.orcasimpleinput += f" {kw} "
+                        else:
+                            print(f"{kw} already in ORCA input string. Not adding again.")
+
                 #Creating DELTASCF block
                 if fstate.mult > self.stateI.mult:
                     deltascfblock=f"%SCF \n PMOM {self.deltaSCF_PMOM} \n{deltascfline_CFG_betahole[i]}\nEND"
                 else:
                     deltascfblock=f"%SCF \n PMOM {self.deltaSCF_PMOM} \n{deltascfline_CFG_alphahole[i]}\nEND"
 
-                # Adding UKS if not
-                if 'UKS' not in theory.orcasimpleinput:
-                    theory.orcasimpleinput += " UKS "
+                # Adding UHF if not
+                if 'UHF' not in theory.orcasimpleinput and 'HF' not in theory.orcasimpleinput:
+                    theory.orcasimpleinput += " UHF "
 
                 #Adding DELTASCF keyword to simpleinput (fine even for ground-state)
                 if 'DELTASCF' not in theory.extraline:
                     theory.extraline="! DELTASCF"
                 #Adding ALPHACONF/BETACONF line as separate SCF block (empty if ground ion state)
                 theory.orcablocks = self.orig_orcablocks + deltascfblock
+
+                # MOREAD INIT state
+                if self.deltascf_moread_init is True:
+                    print("deltascf_moread_init is True. Adding MOREAD line to read initial state GBW file for each ionized state.")
+                    theory.moreadfile="Init_State.gbw"
+
                 state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
+
+                #Keeping copy of input/outputfile and GBW file
+                shutil.copyfile(theory.filename + '.out', './' + label + '.out')
+                shutil.copyfile(theory.filename + '.inp', './' + label + '.inp')
+                shutil.copyfile(theory.filename + '.gbw', './' + label + '.gbw')
+
                 # CCSD(T) correction on top
                 print("self.OODFT_CC:", self.OODFT_CC)
                 if self.OODFT_CC:
                     print("Now running noiter CCSD(T) on top of deltaSCF")
                     theory.extraline = theory.extraline.replace("DELTASCF","CCSD(T) noiter ")
+                    theory.orcasimpleinput = theory.orcasimpleinput.replace("FRSOSCF","")
+                    theory.orcasimpleinput = theory.orcasimpleinput.replace("FreezeAndRelease","")
+
+
+                    # Removing SCF maxiter line if present in theory.orcablocks to avoid conflict with CCSD(T) maxiter line
+                    orig_orcablocks = self.orig_orcablocks
+                    if "maxiter" in theory.orcablocks:
+                        print("Removing maxiter line from ORCA blocks to avoid conflict with CCSD(T) maxiter")
+                        orig_orcablocks = '\n'.join([line for line in theory.orcablocks.splitlines() if "maxiter" not in line])
+
+                    # mdci block
+                    theory.orcablocks = orig_orcablocks + f"""\n%mdci
+maxiter 100
+maxdiis 20
+end
+"""
+
                     state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=charge, mult=mult)
+                    shutil.copyfile(theory.filename + '.out', './' + label + 'cc_noiter.out')
                 finalsinglepointenergy = state_result.energy
 
                 ip = (finalsinglepointenergy-self.stateI.energy)*ash.constants.hartoeV
@@ -1184,10 +1233,7 @@ end
                 #print("Initial state occupied MO energies (alpha):", self.stateI.occorbs_alpha)
                 #print("Initial state SCF-type:", self.stateI.hftyp)
 
-                #Keeping copy of input/outputfile and GBW file
-                shutil.copyfile(theory.filename + '.out', './' + label + '.out')
-                shutil.copyfile(theory.filename + '.inp', './' + label + '.inp')
-                shutil.copyfile(theory.filename + '.gbw', './' + label + '.gbw')
+
 
                 #Calculate SCF eldensity and spindensity if requested
                 if self.densities == 'SCF' or self.densities == 'All':
@@ -1664,9 +1710,12 @@ end
 
         if self.OODFT_CC:
             print("SCF InitState. Now running noiter CCSD(T) on top of deltaSCF")
+            # Removing SCF maxiter line if present in theory.orcablocks to avoid conflict with CCSD(T) maxiter line
+            if "maxiter" in theory.orcablocks:
+                print("Removing maxiter line from ORCA blocks to avoid conflict with CCSD(T) maxiter")
+                theory.orcablocks = '\n'.join([line for line in theory.orcablocks.splitlines() if "maxiter" not in line])
             theory.extraline = theory.extraline + "! CCSD(T) noiter "
             state_result = ash.Singlepoint(fragment=fragment, theory=theory, charge=self.Initialstate_charge, mult=self.Initialstate_mult)
-
 
         #Grab energy of initial state
         if self.method == 'CASSCF' or self.method =='CASCI':
@@ -1680,6 +1729,7 @@ end
 
         self.stateI.occorbs_alpha, self.stateI.occorbs_beta, self.stateI.hftyp = orbitalgrab(theory.filename+'.out')
         print("Initial state occupied MO energies (alpha):", self.stateI.occorbs_alpha)
+        print("Initial state occupied MO energies (beta):", self.stateI.occorbs_beta)
         print("Initial state SCF-type:", self.stateI.hftyp)
         # Specify whether Initial state is restricted or not.
         if self.stateI.hftyp == "UHF":

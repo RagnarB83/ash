@@ -1828,7 +1828,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             orcafile.write('! Freq' + '\n')
         if moreadfile is not None:
             print("MOREAD option active. Will read orbitals from file:", moreadfile)
-            orcafile.write('! MOREAD' + '\n')
+            orcafile.write('\n! MOREAD' + '\n')
             orcafile.write('%moinp \"{}\"'.format(moreadfile) + '\n')
         orcafile.write('%pointcharges "{}"\n'.format(pcfile))
         orcafile.write(orcablockinput + '\n')
@@ -1904,7 +1904,7 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             orcafile.write('! Freq' + '\n')
         if moreadfile is not None:
             print("MOREAD option active. Will read orbitals from file:", moreadfile)
-            orcafile.write('! MOREAD' + '\n')
+            orcafile.write('\n! MOREAD' + '\n')
             orcafile.write('%moinp \"{}\"'.format(moreadfile) + '\n')
         orcafile.write(orcablockinput)
         if atomstoflip is not None:
@@ -2000,6 +2000,7 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     coordgrab=False
     spinpops=[]
     BS=False #if broken-symmetry job
+    numatoms = int(pygrep('Number of atoms                             ...', outputfile)[-1])
     #if
     if len(pygrep2("WARNING: Broken symmetry calculations", outputfile)):
         BS=True
@@ -2032,7 +2033,9 @@ def grabspinpop_ORCA(chargemodel,outputfile):
     #If BS then we have grabbed charges for both high-spin and BS solution
     if BS is True:
         print("Broken-symmetry job detected. Only taking BS-state populations")
-        spinpops=spinpops[int(len(spinpops)/2):]
+        #spinpops=spinpops[int(len(spinpops)/2):]
+        if len(spinpops) != numatoms:
+            spinpops=spinpops[-numatoms:]
     #if len(spinpops) == 0:
     #    print("Warning: No spinpopulations were found in ORCA outputfile")
     return spinpops
