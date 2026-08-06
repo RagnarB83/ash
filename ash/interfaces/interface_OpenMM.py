@@ -6337,7 +6337,7 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
         import openff
 
         from openmmforcefields.generators import SMIRNOFFTemplateGenerator
-        smirnoff = SMIRNOFFTemplateGenerator(molecules=molecule)
+        smirnoff = SMIRNOFFTemplateGenerator(molecules=molecule, forcefield=openff_file)
 
         forcefield = ForceField('amber/protein.ff14SB.xml', 'amber/tip3p_standard.xml', 'amber/tip3p_HFE_multivalent.xml')
         # Register the SMIRNOFF template generator
