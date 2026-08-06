@@ -201,7 +201,7 @@ def writepdb_with_connectivity(file):
     return os.path.splitext(file)[0]+'_withcon.pdb'
 
 #Function to read in XYZ-file (small molecule) and create PDB-file with CONECT lines (geometry needs to be sensible)
-def xyz_to_pdb_with_connectivity(file, resname="UNL"):
+def xyz_to_pdb_with_connectivity(file, resname="LIG"):
     print("xyz_to_pdb_with_connectivity function:")
     #OpenBabel
     try:
