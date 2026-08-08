@@ -754,7 +754,7 @@ def xtbgradientgrab(numatoms):
     with open('gradient') as f:
         for line in reverse_lines(f):
             if '  cycle =' in line:
-                energy=float(line.split()[6])
+                energy = float(line.split("SCF energy =")[1].split()[0])
                 return energy, gradient
             if count==numatoms:
                 grab=False
