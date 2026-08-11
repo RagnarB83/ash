@@ -2569,6 +2569,14 @@ class PySCFTheory:
 
         #Grid printing
         scf_result = mf.run(dm)
+        # max_cycle<=0 is an intentional non-SCF evaluation used by scf_noiter.
+        if not scf_result.converged and mf.max_cycle > 0:
+            ashexit(
+                errormessage=(
+                    f"PySCF SCF did not converge (max_cycle={mf.max_cycle}). "
+                    "Refusing to continue with an unconverged electronic state."
+                )
+            )
         #Grid
         if 'KS' in self.scf_type:
             try:
