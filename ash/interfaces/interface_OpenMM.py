@@ -5040,6 +5040,19 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
                         datafilename=datafilename, trajectory_file_option=trajectory_file_option,
                         dummyatomrestraint=dummyatomrestraint, solute_indices=solute_indices,
                         barostat_frequency=barostat_frequency)
+    # Sanity-check coordinates before the first NPT cycle by minimizing a temporary simulation.
+    # This avoids carrying potentially unstable positions/velocities from a preceding warm-up into NPT.
+    import openmm
+    try:
+        tmp_simulation = md.openmmobject.create_simulation()
+        md.openmmobject.set_positions(fragment.coords, tmp_simulation)
+        tmp_simulation.minimizeEnergy(maxIterations=200, tolerance=1.0)
+        state = tmp_simulation.context.getState(getPositions=True)
+        minimized_coords = state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
+        fragment.coords = minimized_coords
+        md.positions = minimized_coords
+    except Exception as e:
+        print("OpenMM_box_equilibration pre-minimization failed:", type(e).__name__, e)
     restart=False
     #while volume_std >= volume_threshold and density_std >= density_threshold:
     for i in range(max_NPT_cycles):
