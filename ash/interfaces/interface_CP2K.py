@@ -743,6 +743,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                 xtbcode = int(''.join(filter(str.isdigit, xtb_type)))
                 inpfile.write(f'      &XTB\n')
                 if xtb_tblite is True:
+                    inpfile.write(f'          GFN_TYPE  TBLITE\n') #NOTE
                     inpfile.write(f'          &TBLITE\n')
                     inpfile.write(f'            METHOD {xtb_type}\n')
                     inpfile.write(f'          &END\n')
