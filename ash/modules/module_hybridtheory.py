@@ -394,10 +394,16 @@ class WrapTheory(Theory):
         self.theory5_atoms=theory5_atoms
 
         # PBC
-        self.periodic_cell_dimensions=periodic_cell_dimensions
-        self.periodic_cell_vectors=periodic_cell_vectors
         self.periodic=periodic
-
+        if self.periodic:
+            if periodic_cell_dimensions is not None:
+                print("periodic_cell_dimensions:", periodic_cell_dimensions)
+                self.periodic_cell_dimensions = periodic_cell_dimensions
+                # Convert to cell vectors
+                self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+            elif periodic_cell_vectors is not None:
+                self.periodic_cell_vectors = periodic_cell_vectors
+                self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
 
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
         print("Creating WrapTheory object")
