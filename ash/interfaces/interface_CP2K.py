@@ -810,9 +810,9 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             # GauXC
             if functional.upper() in ['SKALA']:
                 inpfile.write(f'      &XC_FUNCTIONAL \n')
-                inpfile.write(f'      &GauXC\n')
+                inpfile.write(f'        &GAUXC\n')
                 inpfile.write(f'          MODEL {path_to_gauxc_model}\n')
-                inpfile.write(f'      &END GauXC\n')
+                inpfile.write(f'        &END GAUXC\n')
             else:
                 inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
 
