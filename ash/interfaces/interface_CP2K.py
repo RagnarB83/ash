@@ -116,6 +116,8 @@ class CP2KTheory:
         else:
             print("Periodic is False")
             self.periodic_type='NONE'
+            self.periodic_cell_dimensions=None
+            self.periodic_cell_vectors=None
             print("PERIODIC_TYPE:", self.periodic_type)
 
         # Parallelization
