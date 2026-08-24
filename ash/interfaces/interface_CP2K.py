@@ -806,12 +806,16 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     inpfile.write(f'          &END PRINT_DFTD\n')
                 inpfile.write(f'        &END PAIR_POTENTIAL\n')
                 inpfile.write(f'      &END VDW_POTENTIAL\n')
-            inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
+            
             # GauXC
             if functional.upper() in ['SKALA']:
+                inpfile.write(f'      &XC_FUNCTIONAL \n')
                 inpfile.write(f'      &GauXC\n')
                 inpfile.write(f'          MODEL {path_to_gauxc_model}\n')
                 inpfile.write(f'      &END GauXC\n')
+            else:
+                inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
+
             inpfile.write(f'      &END XC_FUNCTIONAL\n')
             inpfile.write(f'    &END XC\n')
 
