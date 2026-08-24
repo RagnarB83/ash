@@ -485,6 +485,8 @@ class CP2KTheory:
                 qm_box_dims=np.around(qm_box_dims + self.qm_cell_shift_par,1)
                 print(f"Setting Cell box dimensions to {qm_box_dims} Angstrom")
                 self.cell_dimensions=list(qm_box_dims)+[90.0,90.0,90.0]
+                self.cell_vectors=cell_params_to_vectors(self.cell_dimensions)
+                self.periodic_cell_vectors=self.cell_vectors
 
             #Write xyz-file with coordinates
             system_xyzfile="system_cp2k"
