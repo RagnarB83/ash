@@ -469,8 +469,22 @@ class WrapTheory(Theory):
                 #print(f"Theory: {theory.theorynamelabel}  gradient shape", eg_tuple[1].shape)
                 energy = eg_tuple[0]
                 tempgrad = eg_tuple[1]
-                if PC and len(eg_tuple) == 3:
-                    pc_gradient = eg_tuple[2]
+                if PC and len(eg_tuple) >= 3 and eg_tuple[2] is not None:
+                    component_pc_gradient = np.asarray(eg_tuple[2], dtype=np.float64)
+
+                    if pc_gradient is None:
+                        pc_gradient = np.zeros_like(component_pc_gradient)
+                    elif pc_gradient.shape != component_pc_gradient.shape:
+                        raise ValueError(
+                            f"Incompatible PC-gradient shapes: "
+                            f"{pc_gradient.shape} and {component_pc_gradient.shape}"
+                        )
+
+                    sign = 1.0
+                    if self.theory_operators is not None:
+                        sign = 1.0 if self.theory_operators[i] == "+" else -1.0
+
+                    pc_gradient += sign * component_pc_gradient
                 # Assemble gradient of correct dimension
                 if i+1 == 1 and self.theory1_atoms is not None:
                     fullgrad=np.zeros((full_dimension,3))
