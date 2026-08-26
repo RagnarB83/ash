@@ -130,7 +130,6 @@ class CP2KTheory:
 
         #Finding CP2K dir and binaries
         self.cp2kdir, self.cp2k_bin_name = find_cp2k(cp2kdir,cp2k_bin_name)
-
         #Checking OpenMPI
         if self.numcores != 1:
             print(f"Parallel job requested with numcores: {self.numcores}")
@@ -810,17 +809,18 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                 inpfile.write(f'        &END PAIR_POTENTIAL\n')
                 inpfile.write(f'      &END VDW_POTENTIAL\n')
             
-            # GauXC
-            if functional.upper() in ['SKALA']:
-                inpfile.write(f'      &XC_FUNCTIONAL \n')
-                inpfile.write(f'        &GAUXC\n')
-                inpfile.write(f'          MODEL {path_to_gauxc_model}\n')
-                inpfile.write(f'        &END GAUXC\n')
-            else:
-                inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
+            # XC and GauXC
+            if basis_method.upper() != "XTB":
+                if functional.upper() in ['SKALA']:
+                    inpfile.write(f'      &XC_FUNCTIONAL \n')
+                    inpfile.write(f'        &GAUXC\n')
+                    inpfile.write(f'          MODEL {path_to_gauxc_model}\n')
+                    inpfile.write(f'        &END GAUXC\n')
+                else:
+                    inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
 
-            inpfile.write(f'      &END XC_FUNCTIONAL\n')
-            inpfile.write(f'    &END XC\n')
+                inpfile.write(f'      &END XC_FUNCTIONAL\n')
+                inpfile.write(f'    &END XC\n')
 
             inpfile.write(f'  &END DFT\n\n')
 
