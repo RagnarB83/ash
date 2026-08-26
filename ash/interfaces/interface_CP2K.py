@@ -820,8 +820,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
 
                 inpfile.write(f'      &END XC_FUNCTIONAL\n')
-                inpfile.write(f'    &END XC\n')
-
+            inpfile.write(f'    &END XC\n')
             inpfile.write(f'  &END DFT\n\n')
 
         #QM/MM
