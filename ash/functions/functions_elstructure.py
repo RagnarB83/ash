@@ -2784,6 +2784,7 @@ def convert_loewdin_text_to_dataframe(block, nmax=None, only_occ=False):
     parse_finished = False
 
     block_iterator = iter(block)
+    row_idx=None
     for line in block_iterator:
         l = line.split()
 
