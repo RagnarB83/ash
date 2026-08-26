@@ -2816,7 +2816,7 @@ def convert_loewdin_text_to_dataframe(block, nmax=None, only_occ=False):
 
             # check if still occ orbitals
             elif only_occ and 0.0 in occs:
-                final_idx = occs.index(0.0)
+                final_idx = occs.index(0.0)-1
                 parse_finished = True
 
             if parse_finished:
@@ -2966,10 +2966,9 @@ def localized_orbital_analysis(theory=None, fragment=None,
     #Loewdin analysis
     blocks = get_loewdin_table(dummytheory.filename+'.out')
     nmax=None #highest mo index to consider
-    only_occ=True
     dfarr = []
     for b in blocks:
-        df, _, atom2index = convert_loewdin_text_to_dataframe(b, nmax=nmax, only_occ=only_occ)
+        df, _, atom2index = convert_loewdin_text_to_dataframe(b, nmax=nmax, only_occ=True)
         dfarr.append(df)
 
     # reduce dataframes
@@ -3003,6 +3002,26 @@ def localized_orbital_analysis(theory=None, fragment=None,
     for i in indices_b:
         perc = dfarr_b.loc[i, col_b]
         print(f"MO{i}    {perc:7.1f}% {angmom}-character")
+
+    tmlist=['Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg']
+    elements=['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
+    if len(atomlist) == 1 and atomlist[0] in tmlist:
+        print("\n\nFound a single transition metal atom in atomlist, trying to determine oxidation state")
+        metal = atomlist[0]
+        
+        oxnumbers={-1:'-I',0:'0',-2:'-II',-3:'-III',-4:'-IV',-5:'-V',-6:'-VI',-7:'-VII',-8:'-VIII',-9:'-IX',-10:'-X',1:'I',2:'II',3:'III',4:'IV',5:'V',6:'VI',7:'VII',8:'VIII',9:'IX',10:'X'}
+        #D-valence electrons for some elements (counting atomic s-electrons as d)
+        delectrondict={26:['Fe',8],42:['Mo',6],23:['V',5]}
+
+        alphanum=len(indices_a)
+        betanum=len(indices_b)
+        delectrons=alphanum+betanum
+        print("Whole d-electrons:",delectrons)
+        print(metal, str(alphanum)+'α', str(betanum)+'β')
+        oxstate=delectrondict[elements.index(metal)+1][1] - delectrons
+        print("Oxidation state: ", metal, oxnumbers[oxstate])
+
+
 
     if plot_table:
         print("\n\nNow plotting tables for alpha and beta orbitals")
