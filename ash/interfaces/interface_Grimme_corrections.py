@@ -145,8 +145,21 @@ def calc_gcp(fragment=None, xyzfile=None, current_coords=None, elems=None, funct
 
     energy = float(result[1])
     print("gcp energy:", energy)
+    # get gcp version number via mctc-gcp --version
+    version_result = pygrep("mctc-gcp", "gcp.out")
+    print("version_result:", version_result)
+    gcp_version = version_result[-1] if version_result else "unknown"
+    print("gcp_version:", gcp_version)
+
     if Grad:
-        gradient = gcpgradientgrab(numatoms,"gcp_gradient")
+        # if gcp version >= 2.4.0 the file is called gradient
+        if gcp_version >= "2.4.0":
+            # gcp gradient is written to a file called 'gradient'
+            from ash.interfaces.interface_Turbomole import grab_gradient
+            gradient = grab_gradient(numatoms,file="gradient")
+        elif gcp_version < "2.4.0":
+        # if gcp version < 2.4.0 the gcp gradient is written to a file called 'gcp_gradient'
+            gradient = gcpgradientgrab(numatoms,"gcp_gradient")
         if printlevel > 2:
             print("gcp gradient:", gradient)
         return energy, gradient
