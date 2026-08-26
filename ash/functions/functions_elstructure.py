@@ -3010,8 +3010,55 @@ def localized_orbital_analysis(theory=None, fragment=None,
         metal = atomlist[0]
         
         oxnumbers={-1:'-I',0:'0',-2:'-II',-3:'-III',-4:'-IV',-5:'-V',-6:'-VI',-7:'-VII',-8:'-VIII',-9:'-IX',-10:'-X',1:'I',2:'II',3:'III',4:'IV',5:'V',6:'VI',7:'VII',8:'VIII',9:'IX',10:'X'}
-        #D-valence electrons for some elements (counting atomic s-electrons as d)
-        delectrondict={26:['Fe',8],42:['Mo',6],23:['V',5]}
+        # D-valence electrons for transition metal ions (NOTE: counting atomic s-electrons as d)
+        delectrondict = {
+        # 3d series
+        21: ['Sc', 3],
+        22: ['Ti', 4],
+        23: ['V', 5],
+        24: ['Cr', 6],
+        25: ['Mn', 7],
+        26: ['Fe', 8],
+        27: ['Co', 9],
+        28: ['Ni', 10],
+        29: ['Cu', 11],
+        30: ['Zn', 12],
+
+        # 4d series
+        39: ['Y', 3],
+        40: ['Zr', 4],
+        41: ['Nb', 5],
+        42: ['Mo', 6],
+        43: ['Tc', 7],
+        44: ['Ru', 8],
+        45: ['Rh', 9],
+        46: ['Pd', 10],
+        47: ['Ag', 11],
+        48: ['Cd', 12],
+
+        # 5d series
+        57: ['La', 3],
+        72: ['Hf', 4],
+        73: ['Ta', 5],
+        74: ['W', 6],
+        75: ['Re', 7],
+        76: ['Os', 8],
+        77: ['Ir', 9],
+        78: ['Pt', 10],
+        79: ['Au', 11],
+        80: ['Hg', 12],
+
+        # 6d series
+        89: ['Ac', 3],
+        104: ['Rf', 4],
+        105: ['Db', 5],
+        106: ['Sg', 6],
+        107: ['Bh', 7],
+        108: ['Hs', 8],
+        109: ['Mt', 9],
+        110: ['Ds', 10],
+        111: ['Rg', 11],
+        112: ['Cn', 12]}
 
         alphanum=len(indices_a)
         betanum=len(indices_b)
