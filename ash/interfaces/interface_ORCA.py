@@ -2941,11 +2941,15 @@ def orblocfind(outputfile, atomindex_strings=None, popthreshold=0.1):
                 stronggrab=True
             if stronggrab == True:
                 for atindex in atomindex_strings:
+                    #print("atindex:", atindex)
                     if str(atindex) in line:
-                        #print(line)
+                        #print("if. line:", line)
                         if operator == 'alpha':
+                            #print("alpha")
                             atom=line.split()[2]
+                            #print("atom is", atom)
                             monumber=line.split()[1][:-1]
+                            #print("monumber is", monumber)
                             dict_alpha.setdefault(atom, []).append(int(monumber))
                         elif operator == 'beta':
                             atom=line.split()[2]
