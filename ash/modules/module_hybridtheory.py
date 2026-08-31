@@ -11,6 +11,7 @@ from collections import defaultdict
 
 from ash.functions.functions_general import BC, ashexit, print_time_rel,print_line_with_mainheader,listdiff
 from ash.modules.module_theory import Theory
+from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
 from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB_output
 import ash.constants
@@ -373,7 +374,8 @@ class WrapTheory(Theory):
     def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None,
                  theory1_atoms=None, theory2_atoms=None, theory3_atoms=None, theory4_atoms=None,
                  theory5_atoms=None,
-                 theory_operators=None):
+                 theory_operators=None,
+                 periodic=False, periodic_cell_vectors=None, periodic_cell_dimensions=None):
         super().__init__()
 
         self.theorytype="QM"
@@ -391,6 +393,17 @@ class WrapTheory(Theory):
         self.theory4_atoms=theory4_atoms
         self.theory5_atoms=theory5_atoms
 
+        # PBC
+        self.periodic=periodic
+        if self.periodic:
+            if periodic_cell_dimensions is not None:
+                print("periodic_cell_dimensions:", periodic_cell_dimensions)
+                self.periodic_cell_dimensions = periodic_cell_dimensions
+                # Convert to cell vectors
+                self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
+            elif periodic_cell_vectors is not None:
+                self.periodic_cell_vectors = periodic_cell_vectors
+                self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
 
         print_line_with_mainheader(f"{self.theorynamelabel} initialization")
         print("Creating WrapTheory object")
@@ -416,6 +429,27 @@ class WrapTheory(Theory):
                 print(f"Error: Number of theory-operators {len(self.theory_operators)} is not equal to number of theories {len(self.theories)}")
                 ashexit()
 
+    # Return cell gradient if periodic is True
+    # Find first theory that has a cell gradient and return it
+    def get_cell_gradient(self):
+        self.cell_gradient = None
+        # Loop over theories and find the first theory that has a cell gradient
+        for theory in self.theories:
+            if hasattr(theory, 'cell_gradient') and theory.cell_gradient is not None:
+                self.cell_gradient = theory.cell_gradient
+        return self.cell_gradient
+
+    # Update cell using either periodic_cell_vectors or periodic_cell_dimensions
+    def update_cell(self,periodic_cell_vectors=None, periodic_cell_dimensions=None):
+        print("Updating cell vectors")
+        if periodic_cell_vectors is not None:
+            self.periodic_cell_vectors = periodic_cell_vectors
+
+            self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
+        elif periodic_cell_dimensions is not None:
+            self.periodic_cell_dimensions=periodic_cell_dimensions
+
+            self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,

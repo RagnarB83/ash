@@ -634,7 +634,7 @@ def grab_gradient_old(numatoms,file="gradient"):
 
 def grab_gradient(numatoms,file="gradient"):
     gradient = np.zeros((numatoms,3))
-    with open(file, 'r') as gradfile:
+    with open(file, 'r', encoding="utf-8", errors="replace") as gradfile:
         gradlines = gradfile.readlines()
     #Reverse lines
     gradlines.reverse()

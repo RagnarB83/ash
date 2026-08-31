@@ -53,7 +53,8 @@ class CP2KTheory:
                 center_coords=False, scf_maxiter=50, outer_scf_maxiter=10, scf_convergence=1e-6, eps_default=1e-10,
                 coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
                 OT=True, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL',
-                OT_linesearch='3PNT', outer_SCF=True, outer_SCF_optimizer='SD', OT_energy_gap=0.08):
+                OT_linesearch='3PNT', outer_SCF=True, outer_SCF_optimizer='SD', OT_energy_gap=0.08,
+                path_to_gauxc_model=None):
 
         self.theorytype="QM"
         self.theorynamelabel="CP2K"
@@ -115,6 +116,9 @@ class CP2KTheory:
         else:
             print("Periodic is False")
             self.periodic_type='NONE'
+            # Note: still using these keywords for simpler logic
+            self.periodic_cell_dimensions=cell_dimensions
+            self.periodic_cell_vectors=cell_vectors
             print("PERIODIC_TYPE:", self.periodic_type)
 
         # Parallelization
@@ -126,7 +130,6 @@ class CP2KTheory:
 
         #Finding CP2K dir and binaries
         self.cp2kdir, self.cp2k_bin_name = find_cp2k(cp2kdir,cp2k_bin_name)
-
         #Checking OpenMPI
         if self.numcores != 1:
             print(f"Parallel job requested with numcores: {self.numcores}")
@@ -237,6 +240,10 @@ class CP2KTheory:
         self.scf_maxiter=scf_maxiter
         self.outer_scf_maxiter=outer_scf_maxiter
         self.eps_default=eps_default
+
+        # Skala GauXC stuff
+        # NOte: functional needs to be Skala and then path_to_gauxc_model should be path to the .fun model file
+        self.path_to_gauxc_model=path_to_gauxc_model
 
         # K-points
         self.kpoint_settings=kpoint_settings
@@ -458,7 +465,8 @@ class CP2KTheory:
                              scf_maxiter=self.scf_maxiter, outer_scf_maxiter=self.outer_scf_maxiter,
                              ngrids=self.ngrids, xc_finer_grid=self.xc_finer_grid, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel,
                              OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
-                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer, OT_energy_gap=self.OT_energy_gap)
+                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer, OT_energy_gap=self.OT_energy_gap,
+                             path_to_gauxc_model=self.path_to_gauxc_model)
         else:
             #No QM/MM
             #QM-CELL
@@ -477,6 +485,8 @@ class CP2KTheory:
                 qm_box_dims=np.around(qm_box_dims + self.qm_cell_shift_par,1)
                 print(f"Setting Cell box dimensions to {qm_box_dims} Angstrom")
                 self.cell_dimensions=list(qm_box_dims)+[90.0,90.0,90.0]
+                self.cell_vectors=cell_params_to_vectors(self.cell_dimensions)
+                self.periodic_cell_vectors=self.cell_vectors
 
             #Write xyz-file with coordinates
             system_xyzfile="system_cp2k"
@@ -500,7 +510,8 @@ class CP2KTheory:
                              basis_file=self.basis_file, potential_file=self.potential_file,
                              psolver=self.psolver,
                              OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
-                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer, OT_energy_gap=self.OT_energy_gap)
+                             outer_SCF=self.outer_SCF, outer_SCF_optimizer=self.outer_SCF_optimizer, OT_energy_gap=self.OT_energy_gap,
+                             path_to_gauxc_model=self.path_to_gauxc_model)
 
         #Delete old forces file if present
         try:
@@ -635,7 +646,8 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     qm_kind_dict=None, mm_kind_list=None,
                     mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21", printlevel=2,
                     OT=False, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL', OT_linesearch='3PNT',
-                    outer_SCF=False, outer_SCF_optimizer='DIIS', OT_energy_gap=0.08):
+                    outer_SCF=False, outer_SCF_optimizer='DIIS', OT_energy_gap=0.08,
+                    path_to_gauxc_model=None):
     if method == 'QMMM':
         if mm_radii == None:
             print("No user MM radii provided. Will use default radii from internal dict (element_radii_for_cp2k).")
@@ -743,6 +755,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                 xtbcode = int(''.join(filter(str.isdigit, xtb_type)))
                 inpfile.write(f'      &XTB\n')
                 if xtb_tblite is True:
+                    inpfile.write(f'          GFN_TYPE  TBLITE\n') #NOTE
                     inpfile.write(f'          &TBLITE\n')
                     inpfile.write(f'            METHOD {xtb_type}\n')
                     inpfile.write(f'          &END\n')
@@ -795,10 +808,19 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     inpfile.write(f'          &END PRINT_DFTD\n')
                 inpfile.write(f'        &END PAIR_POTENTIAL\n')
                 inpfile.write(f'      &END VDW_POTENTIAL\n')
-            inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
-            inpfile.write(f'      &END XC_FUNCTIONAL\n')
-            inpfile.write(f'    &END XC\n')
+            
+            # XC and GauXC
+            if basis_method.upper() != "XTB":
+                if functional.upper() in ['SKALA']:
+                    inpfile.write(f'      &XC_FUNCTIONAL \n')
+                    inpfile.write(f'        &GAUXC\n')
+                    inpfile.write(f'          MODEL {path_to_gauxc_model}\n')
+                    inpfile.write(f'        &END GAUXC\n')
+                else:
+                    inpfile.write(f'      &XC_FUNCTIONAL {functional}\n')
 
+                inpfile.write(f'      &END XC_FUNCTIONAL\n')
+            inpfile.write(f'    &END XC\n')
             inpfile.write(f'  &END DFT\n\n')
 
         #QM/MM
