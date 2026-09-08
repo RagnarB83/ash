@@ -877,6 +877,17 @@ class PySCFTheory:
                 print(f"{label} Mulliken spin pops:", mulliken_spinpopulations[1])
         return
 
+    # Get density matrix. Assuming dm has been defined
+    def get_density_matrix(self):
+
+        # Check if self.dm is defined
+        if not hasattr(self, 'dm'):
+            print("Density matrix not defined. Calculating from mf object")
+            dm = self.mf.make_rdm1()
+        else:
+            dm = self.dm
+        return dm
+
     def run_stability_analysis(self):
         def stableprint(stable_i,stable_e):
             if stable_i is True:

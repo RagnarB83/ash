@@ -4,6 +4,8 @@ HybridTheory module:
 
 """
 import time
+from ash.interfaces.interface_pyscf import PySCFTheory
+from ash.interfaces.interface_ORCA import ORCATheory
 import numpy as np
 import os
 import copy
@@ -579,5 +581,130 @@ class WrapTheory(Theory):
             if PC and pc_gradient is not None:
                 return self.energy, self.gradient, pc_gradient
             return self.energy, self.gradient
+        else:
+            return self.energy
+
+
+#########################
+# FractTheory class
+#########################
+
+class FractTheory:
+    def __init__(self,theory=None, eta=None, chargeA=None, chargeB=None, 
+                 multA=None, multB=None, DMinterpol=False):
+
+        self.eta=eta
+        self.chargeA=chargeA
+        self.chargeB=chargeB
+        self.multA=multA
+        self.multB=multB
+        self.theory=theory
+
+        self.theorynamelabel="Fract"
+        self.theorytype="QM"
+        self.analytic_hessian=False
+        self.printlevel=2
+        self.DMinterpol=DMinterpol # density matrix interpolation or not
+
+        # Check for compatibility of theory
+
+        # pyscf
+        if isinstance(self.theory,PySCFTheory):
+            # Defining theory that has density matrix
+            self.dmtheory=self.theory
+        # QM/MM
+        elif self.theory.theorytype == "QM/MM":
+            print("Theory type is QM/MM. Checking if QM theory is compatible")
+            if not isinstance(self.theory.qm_theory, PySCFTheory):
+                print("Error: QM-theory inside QMMMTheory is not yet compatible with FractTheory.")
+                ashexit()
+            self.dmtheory=self.qm_theory
+        # Wraptheory
+        elif self.theory.theorynamelabel == "WrapTheory":
+            print("Theory is WrapTheory. Checking if it contains a compatible QM-theory")
+            # Checking instance of all theories via list comprehension
+            ll = [isinstance(t, PySCFTheory) for t in self.theory.theories]
+            # Check if any of the theories are PySCFTheory
+            if not any(ll):
+                print("Error: No compatible QM-theory found inside WrapTheory.")
+                ashexit()
+            # Defining dm theory the first theory that is compatible
+            self.dmtheory=self.theory.theories[ll.index(True)]
+        elif isinstance(self.theory,ORCATheory):
+            print("Error: ORCATheory is not yet compatible with FractTheory.")
+            ashexit()
+        # xTBTheory or tblitetheory: no dm-based non-SCF possible yet
+        else:
+            print("Error: Incompatible input theory for FractTheory.")
+            ashexit()
+
+
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, pe=False, potfile=None, restart=False, label=None,
+            charge=None, mult=None, Hessian=False):
+
+        print("Running FractTheory")
+
+        # Init
+        print("Now running inital state SCF")
+        res_init = self.theory.run(current_coords=current_coords, elems=elems, charge=self.chargeA, mult=self.multA, Grad=Grad)
+
+        if Grad:
+            E_N = res_init[0]
+            G_N = res_init[1]
+        else:
+            E_N = res_init
+        dm_N = self.dmtheory.get_density_matrix()
+
+        # Ion
+        print("Now running ion-state SCF")
+        res_ion = self.theory.run(current_coords=current_coords, elems=elems, charge=self.chargeB, mult=self.multB, Grad=Grad)
+
+        if Grad:
+            E_ion = res_ion[0]
+            G_ion = res_ion[1]
+        else:
+            E_ion = res_ion
+        dm_Nm1 = self.dmtheory.get_density_matrix()
+
+        # 
+        print("E(N)", E_N)
+        print("E(N-1)", E_ion)
+
+        # Simple interpolated Energy
+        E_eta = (1 - self.eta) * E_N + self.eta * E_ion
+        print("E_eta:", E_eta)
+        self.energy=E_eta
+        # Simple interpolated Gradient
+        if Grad:
+            G_eta = (1 - self.eta) * G_N + self.eta * G_ion
+            print("G_eta:", G_eta)
+            self.gradient=G_eta
+
+        # Derive Fractional energy via interpolated DM
+        if self.DMinterpol is True:
+            # Derive interpolated density matrix
+            print("Deriving fractional density matrix using eta:", self.eta)
+            # Fractional electron ensemble density
+            dm_fne = (1 - self.eta) * dm_N + self.eta * dm_Nm1
+            self.dm=dm_fne
+            print("Deriving new energy from energy of interpolated DM")
+            if isinstance(self.dmtheory,PySCFTheory):
+                interpol_DM_E = float(self.dmtheory.mf.energy_tot(dm_fne))
+                print("Interpol-DM energy:", interpol_DM_E)
+            elif isinstance(self.dmtheory,ORCATheory):
+                ashexit()
+                # Derive new energy from FNE DM
+                # Todo: need Fock matrices, density matrices and 1-el integrals
+            else:
+                print("Error: Incompatible input theory for FractTheory. Currently supporting: PySCFTheory")
+                ashexit()
+            self.energy=interpol_DM_E
+
+        print("FractTheory energy:", self.energy)
+
+        if Grad is True:
+            return self.energy,self.gradient
         else:
             return self.energy
