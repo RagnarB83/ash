@@ -618,12 +618,13 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.restart:
             print("Restarting previous Block job. Will not cleanup")
         else:
+            print("This is not a restarted job. Will cleanup.")
             self.cleanup()
-
-        # Run PySCF to get integrals and MOs. This would probably only be an SCF
-        if self.Block_direct != True:
-            print("Now running input PySCFTheory object")
-            self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
+            # Run PySCF to get integrals and MOs. This would probably only be an SCF
+            if self.Block_direct != True:
+                print("Block_direct is not True. Will run PySCF to get integrals and MOs")
+                print("Now running input PySCFTheory object")
+                self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
         # Get frozen-core
         if self.frozencore is True:
@@ -642,13 +643,14 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("Running Block directly")
             self.write_inputfile(mult)
             self.call_block_directly()
+        elif self.restart is True:
+            print("Restarting previous Block job. Will not setup initial orbitals")
         else:
             if self.runcalls == 1:
                 print("First runcall.")
                 print("Doing initial orbital setup")
                 # Natural orbital 
                 if self.initial_orbitals != "HF":
-                    print
                     mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
                     print("Doing active space setup")
                     self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space

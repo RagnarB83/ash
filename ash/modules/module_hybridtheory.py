@@ -591,7 +591,7 @@ class WrapTheory(Theory):
 
 class FractTheory:
     def __init__(self,theory=None, eta=None, chargeA=None, chargeB=None, 
-                 multA=None, multB=None, DMinterpol=False, return_gap=False,
+                 multA=None, multB=None, DMinterpol=False, 
                  resultfile="fract_theory_gaps.txt"):
 
         self.eta=eta
@@ -606,7 +606,6 @@ class FractTheory:
         self.analytic_hessian=False
         self.printlevel=2
         self.DMinterpol=DMinterpol # density matrix interpolation or not
-        self.return_gap=return_gap # return deltaE instead of E(eta)
         self.resultfile=resultfile
 
         # Check for compatibility of theory
@@ -679,11 +678,7 @@ class FractTheory:
         E_eta = (1 - self.eta) * E_N + self.eta * E_ion
         print("E_eta:", E_eta)
 
-        # deltaE or E(eta)
-        if self.return_gap is True:
-            self.energy=deltaE
-        else:
-            self.energy=E_eta
+        self.energy=E_eta
 
         # Write gap to file
         with open(self.resultfile, 'a') as f:
