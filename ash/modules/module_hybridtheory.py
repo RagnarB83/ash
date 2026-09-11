@@ -612,31 +612,33 @@ class FractTheory:
 
         # pyscf
         if isinstance(self.theory,PySCFTheory):
-            # Defining theory that has density matrix
-            self.dmtheory=self.theory
+            if self.DMinterpol:
+                # Defining theory that has density matrix
+                self.dmtheory=self.theory
         # QM/MM
         elif self.theory.theorytype == "QM/MM":
-            print("Theory type is QM/MM. Checking if QM theory is compatible")
-            if not isinstance(self.theory.qm_theory, PySCFTheory):
-                print("Error: QM-theory inside QMMMTheory is not yet compatible with FractTheory.")
-                ashexit()
-            self.dmtheory=self.qm_theory
+            if self.DMinterpol:
+                print("Theory type is QM/MM and DMinterpol is True. Checking if QM theory is compatible")
+                if not isinstance(self.theory.qm_theory, PySCFTheory):
+                    print("Error: QM-theory inside QMMMTheory is not yet compatible with FractTheory.")
+                    ashexit()
+                self.dmtheory=self.qm_theory
         # Wraptheory
         elif self.theory.theorynamelabel == "WrapTheory":
-            print("Theory is WrapTheory. Checking if it contains a compatible QM-theory")
-            # Checking instance of all theories via list comprehension
-            ll = [isinstance(t, PySCFTheory) for t in self.theory.theories]
-            # Check if any of the theories are PySCFTheory
-            if not any(ll):
-                print("Error: No compatible QM-theory found inside WrapTheory.")
+            if self.DMinterpol:
+                print("Theory is WrapTheory and DMinterpol is True. Checking if it contains a compatible QM-theory")
+                # Checking instance of all theories via list comprehension
+                ll = [isinstance(t, PySCFTheory) for t in self.theory.theories]
+                # Check if any of the theories are PySCFTheory
+                if not any(ll):
+                    print("Error: No compatible QM-theory found inside WrapTheory.")
                 ashexit()
-            # Defining dm theory the first theory that is compatible
-            self.dmtheory=self.theory.theories[ll.index(True)]
+                # Defining dm theory the first theory that is compatible
+                self.dmtheory=self.theory.theories[ll.index(True)]
 
-        # Write gap to file
+        # Results (gaps) writing to file, here header.
         with open(self.resultfile, 'w') as f:
             f.write(f"# eta deltaE (Eh)\n")
-
 
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
@@ -647,55 +649,55 @@ class FractTheory:
 
         # Init
         print("Now running inital state SCF")
-        res_init = self.theory.run(current_coords=current_coords, elems=elems, charge=self.chargeA, mult=self.multA, Grad=Grad)
-
+        res_init = self.theory.run(current_coords=current_coords, elems=elems, 
+                                   charge=self.chargeA, mult=self.multA, Grad=Grad)
         if Grad:
-            E_N = res_init[0]
-            G_N = res_init[1]
+            E_init = res_init[0]
+            G_init = res_init[1]
         else:
-            E_N = res_init
+            E_init = res_init
         if self.DMinterpol:
-            dm_N = self.dmtheory.get_density_matrix()
+            dm_init = self.dmtheory.get_density_matrix()
 
         # Ion
-        print("Now running ion-state SCF")
-        res_ion = self.theory.run(current_coords=current_coords, elems=elems, charge=self.chargeB, mult=self.multB, Grad=Grad)
-
+        print("Now running final-state SCF")
+        res_final = self.theory.run(current_coords=current_coords, elems=elems, charge=self.chargeB, mult=self.multB, Grad=Grad)
         if Grad:
-            E_ion = res_ion[0]
-            G_ion = res_ion[1]
+            E_fin = res_final[0]
+            G_fin = res_final[1]
         else:
-            E_ion = res_ion
+            E_fin = res_final
         if self.DMinterpol:
             dm_Nm1 = self.dmtheory.get_density_matrix()
 
-        # 
-        print("E(N)", E_N)
-        print("E(N-1)", E_ion)
-        deltaE = E_ion - E_N
+        # Printing E(init) and E(final) and gap
+        print("E(init)", E_init)
+        print("E(final)", E_fin)
+        deltaE = E_fin - E_init
         print("deltaE:", deltaE)
-        # Simple interpolated Energy
-        E_eta = (1 - self.eta) * E_N + self.eta * E_ion
+
+        # Interpolated Energy
+        E_eta = (1 - self.eta) * E_init + self.eta * E_fin
         print("E_eta:", E_eta)
 
         self.energy=E_eta
 
+        # Interpolated Gradient
+        if Grad:
+            G_eta = (1 - self.eta) * G_init + self.eta * G_fin
+            print("G_eta:", G_eta)
+            self.gradient=G_eta
+
         # Write gap to file
         with open(self.resultfile, 'a') as f:
             f.write(f"{self.eta} {deltaE}\n")
-
-        # Simple interpolated Gradient
-        if Grad:
-            G_eta = (1 - self.eta) * G_N + self.eta * G_ion
-            print("G_eta:", G_eta)
-            self.gradient=G_eta
 
         # Derive Fractional energy via interpolated DM
         if self.DMinterpol is True:
             # Derive interpolated density matrix
             print("Deriving fractional density matrix using eta:", self.eta)
             # Fractional electron ensemble density
-            dm_fne = (1 - self.eta) * dm_N + self.eta * dm_Nm1
+            dm_fne = (1 - self.eta) * dm_init + self.eta * dm_Nm1
             self.dm=dm_fne
             print("Deriving new energy from energy of interpolated DM")
             if isinstance(self.dmtheory,PySCFTheory):
