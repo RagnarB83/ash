@@ -455,10 +455,12 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             #Creating pyscf CAS-CI object and setting fcisolver to DMRGCI
             self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf, self.norb, self.nelec)
             #print("self.mch:", self.mch)
-            if self.restart is True:
-                print("Restarting DMRG-CASSCF job.")
+
             self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, 
-                                                     maxM=self.maxM, tol=self.tol, restart=self.restart)
+                                                     maxM=self.maxM, tol=self.tol)
+            if self.restart is True:
+                print("Restarting DMRG-CASCI job.")
+                self.mch.fcisolver.restart = True
 
             if self.groupname is not None:
                 print("Setting groupname for mch.fcisolver and orbsym in mch")
@@ -472,10 +474,12 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         else:
             print("This is CASSCF via pyscf and DMRG (orbital optimization)")
             #
-            if self.restart is True:
-                print("Restarting DMRG-CASSCF job.")
+
             self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf,self.norb, self.nelec, 
                                             maxM=self.maxM, tol=self.tol, restart=self.restart)
+            if self.restart is True:
+                print("Restarting DMRG-CASSCF job.")
+                self.mch.fcisolver.restart = True
             self.mch.canonicalization = True
             self.mch.natorb = True
             self.mch.chkfile = f"DMRG-CASSCF_{self.maxM}.chk"
