@@ -591,7 +591,8 @@ class WrapTheory(Theory):
 
 class FractTheory:
     def __init__(self,theory=None, eta=None, chargeA=None, chargeB=None, 
-                 multA=None, multB=None, DMinterpol=False):
+                 multA=None, multB=None, DMinterpol=False, return_gap=False,
+                 resultfile="fract_theory_gaps.txt"):
 
         self.eta=eta
         self.chargeA=chargeA
@@ -605,6 +606,8 @@ class FractTheory:
         self.analytic_hessian=False
         self.printlevel=2
         self.DMinterpol=DMinterpol # density matrix interpolation or not
+        self.return_gap=return_gap # return deltaE instead of E(eta)
+        self.resultfile=resultfile
 
         # Check for compatibility of theory
 
@@ -630,13 +633,10 @@ class FractTheory:
                 ashexit()
             # Defining dm theory the first theory that is compatible
             self.dmtheory=self.theory.theories[ll.index(True)]
-        elif isinstance(self.theory,ORCATheory):
-            print("Error: ORCATheory is not yet compatible with FractTheory.")
-            ashexit()
-        # xTBTheory or tblitetheory: no dm-based non-SCF possible yet
-        else:
-            print("Error: Incompatible input theory for FractTheory.")
-            ashexit()
+
+        # Write gap to file
+        with open(self.resultfile, 'w') as f:
+            f.write(f"# eta deltaE (Eh)\n")
 
 
 
@@ -655,7 +655,8 @@ class FractTheory:
             G_N = res_init[1]
         else:
             E_N = res_init
-        dm_N = self.dmtheory.get_density_matrix()
+        if self.DMinterpol:
+            dm_N = self.dmtheory.get_density_matrix()
 
         # Ion
         print("Now running ion-state SCF")
@@ -666,16 +667,28 @@ class FractTheory:
             G_ion = res_ion[1]
         else:
             E_ion = res_ion
-        dm_Nm1 = self.dmtheory.get_density_matrix()
+        if self.DMinterpol:
+            dm_Nm1 = self.dmtheory.get_density_matrix()
 
         # 
         print("E(N)", E_N)
         print("E(N-1)", E_ion)
-
+        deltaE = E_ion - E_N
+        print("deltaE:", deltaE)
         # Simple interpolated Energy
         E_eta = (1 - self.eta) * E_N + self.eta * E_ion
         print("E_eta:", E_eta)
-        self.energy=E_eta
+
+        # deltaE or E(eta)
+        if self.return_gap is True:
+            self.energy=deltaE
+        else:
+            self.energy=E_eta
+
+        # Write gap to file
+        with open(self.resultfile, 'a') as f:
+            f.write(f"{self.eta} {deltaE}\n")
+
         # Simple interpolated Gradient
         if Grad:
             G_eta = (1 - self.eta) * G_N + self.eta * G_ion
