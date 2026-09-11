@@ -615,7 +615,10 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 qm_elems = elems
 
         # Cleanup before run.
-        self.cleanup()
+        if self.restart:
+            print("Restarting previous Block job. Will not cleanup")
+        else:
+            self.cleanup()
 
         # Run PySCF to get integrals and MOs. This would probably only be an SCF
         if self.Block_direct != True:
