@@ -3952,30 +3952,36 @@ class OpenMM_MDclass:
     def set_sim_reporters(self,simulation,restart=False):
         import openmm
         #CheckpointReporter
-        print("Creating CheckpointReporter that will write a restartable checkpointfile every X steps")
-        checkpointfilename='OpenMM_MD.chk'
-        simulation.reporters.append(openmm.app.CheckpointReporter(checkpointfilename, self.traj_frequency*1))
+        if restart is False:
+            print("Creating CheckpointReporter that will write a restartable checkpointfile every X steps")
+            checkpointfilename='OpenMM_MD.chk'
+            simulation.reporters.append(openmm.app.CheckpointReporter(checkpointfilename, self.traj_frequency*1))
         #StateDataReporter
-        print("Creating StateDataReporter that will write to stdout")
-        statedatareporter_stdout=openmm.app.StateDataReporter(stdout, self.traj_frequency, step=True, time=True,
-                                                    potentialEnergy=True, kineticEnergy=True, volume=self.volume,
-                                                    density=self.density, temperature=True, separator=',')
-        simulation.reporters.append(statedatareporter_stdout)
+        if restart is False:
+            print("Creating StateDataReporter that will write to stdout")
+            statedatareporter_stdout=openmm.app.StateDataReporter(stdout, self.traj_frequency, step=True, time=True,
+                                                        potentialEnergy=True, kineticEnergy=True, volume=self.volume,
+                                                        density=self.density, temperature=True, separator=',')
+
+            simulation.reporters.append(statedatareporter_stdout)
         #Another reporter for writing to file
         if self.dataoutputoption != stdout:
-            print("Creating StateDataReporter that will write to file:", self.datafilename)
-            print("restart:", restart)
-            statedatareporter_file=openmm.app.StateDataReporter(self.dataoutputoption, self.traj_frequency, step=True, time=True,
-                                                            potentialEnergy=True, kineticEnergy=True, volume=self.volume,
-                                                            density=self.density, temperature=True, separator=',', append=restart)
-            simulation.reporters.append(statedatareporter_file)
-            self.dataoutputoption = open(self.datafilename,'a')
+
+            if restart is False:
+                print("Creating StateDataReporter that will write to file:", self.datafilename)
+                print("restart:", restart)
+                statedatareporter_file=openmm.app.StateDataReporter(self.dataoutputoption, self.traj_frequency, step=True, time=True,
+                                                                potentialEnergy=True, kineticEnergy=True, volume=self.volume,
+                                                                density=self.density, temperature=True, separator=',', append=restart)
+                simulation.reporters.append(statedatareporter_file)
+                self.dataoutputoption = open(self.datafilename,'a')
 
         #TODO: See if this can be made to work for simulations with step-by-step
         if self.trajectory_file_option == 'PDB':
-            simulation.reporters.append(
-                openmm.app.PDBReporter(self.trajfilename+'.pdb', self.traj_frequency,
-                                                         enforcePeriodicBox=self.enforcePeriodicBox))
+            if restart is False:
+                simulation.reporters.append(
+                    openmm.app.PDBReporter(self.trajfilename+'.pdb', self.traj_frequency,
+                                                            enforcePeriodicBox=self.enforcePeriodicBox))
         elif self.trajectory_file_option == 'DCD':
             #Note: using append keyword here if restarting
             # Check first if file exists for restart (OpenMM errors otherwise)
@@ -3983,20 +3989,23 @@ class OpenMM_MDclass:
                 print("Warning: restart option was active but trajectory file not existing. Will create new file")
                 restart=False
 
-            simulation.reporters.append(
-                openmm.app.DCDReporter(self.trajfilename+'.dcd', self.traj_frequency, append=restart,
-                                                         enforcePeriodicBox=self.enforcePeriodicBox))
-            print('DCDReporter added')
+            if restart is False:
+                simulation.reporters.append(
+                    openmm.app.DCDReporter(self.trajfilename+'.dcd', self.traj_frequency, append=restart,
+                                                            enforcePeriodicBox=self.enforcePeriodicBox))
+                print('DCDReporter added')
         elif self.trajectory_file_option == 'NetCDFReporter':
             print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import()
-            simulation.reporters.append(
-                mdtraj.reporters.NetCDFReporter(self.trajfilename+'.nc', self.traj_frequency))
+            if restart is False:
+                simulation.reporters.append(
+                    mdtraj.reporters.NetCDFReporter(self.trajfilename+'.nc', self.traj_frequency))
         elif self.trajectory_file_option == 'HDF5Reporter':
             print("HDF5Reporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import()
-            simulation.reporters.append(
-                mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
+            if restart is False:
+                simulation.reporters.append(
+                    mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=self.enforcePeriodicBox))
         elif self.trajectory_file_option =="XYZ":
             print("XYZ trajectory format selected (not available for classical MD). Warning: not very fast")
@@ -4010,7 +4019,8 @@ class OpenMM_MDclass:
         if self.force_file_option != None:
             print("ForceReporter traj format selected.")
             #exit()
-            simulation.reporters.append(ForceReporter(self.trajfilename + '_force.txt', self.traj_frequency, atomic_units=self.atomic_units_force_reporter))
+            if restart is False:
+                simulation.reporters.append(ForceReporter(self.trajfilename + '_force.txt', self.traj_frequency, atomic_units=self.atomic_units_force_reporter))
         if self.energy_file_option != None:
             print("Energyfile  selected.")
             try:
