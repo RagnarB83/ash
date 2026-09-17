@@ -32,7 +32,7 @@ class BlockTheory:
                 block_parallelization='OpenMP', numcores=1, hybrid_num_mpi_procs=None, hybrid_num_threads=None,
                 FIC_MRCI=False, SC_NEVPT2_Wick=False, IC_NEVPT2=False, DMRG_DoRDM=False, DMRG_DoRDM2=False,
                 SC_NEVPT2=False, SC_NEVPT2_Mcompression=None, label="Block", print_WF_coeffs=False,
-                groupname=None, orbsym=None):
+                groupname=None, orbsym=None, restart=False):
 
         self.theorynamelabel="Block"
         self.theorytype="QM"
@@ -106,6 +106,8 @@ class BlockTheory:
                 ashexit()
             self.orbsym=orbsym
 
+        # RESTART
+        self.restart=restart # untested
 
         #SETTING NUMCORES by setting prefix
         self.block_parallelization=block_parallelization
@@ -451,19 +453,15 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
         if self.macroiter == 0:
             print("This is single-iteration CAS-CI via pyscf and DMRG")
             #Creating pyscf CAS-CI object and setting fcisolver to DMRGCI
-            #print("self.pyscftheoryobject.mol:", self.pyscftheoryobject.mol)
-            #print("self.pyscftheoryobject.mol:", self.pyscftheoryobject.mol.__dict__)
-            #print("----------------")
-            #print("self.pyscftheoryobject.mf.mol:", self.pyscftheoryobject.mf.mol)
-            #print("self.pyscftheoryobject.mf.mol:", self.pyscftheoryobject.mf.mol.__dict__)
-            #exit()
-            #print("self.pyscftheoryobject.mf", self.pyscftheoryobject.mf)
             self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf, self.norb, self.nelec)
             #print("self.mch:", self.mch)
-            self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, maxM=self.maxM, tol=self.tol)
-            #print("self.mch.fcisolver:", self.mch.fcisolver)
-            #print("self.mch.fcisolver wfnsym:", self.mch.fcisolver.wfnsym)
-            #print("1self.mch.fcisolver.groupname:", self.mch.fcisolver.groupname)
+
+            self.mch.fcisolver = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mol, 
+                                                     maxM=self.maxM, tol=self.tol)
+            if self.restart is True:
+                print("Restarting DMRG-CASCI job.")
+                self.mch.fcisolver.restart = True
+
             if self.groupname is not None:
                 print("Setting groupname for mch.fcisolver and orbsym in mch")
                 self.mch.fcisolver.groupname=self.groupname
@@ -473,21 +471,15 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             if self.mch.mol.groupname == "N/A":
                 self.mch.mol.groupname = 'C1'
 
-            #print("2self.mch.fcisolver.groupname:", self.mch.fcisolver.groupname)
-            #print("self.mch.orbsym:", self.mch.orbsym)
-            #print("self.mch.mol:", self.mch.mol)
-            #print("self.mch.mol dict:", self.mch.mol.__dict__)
-            #print("self.mch.mol.groupname:", self.mch.mol.groupname)
-            #self.mch = self.pyscf.mcscf.CASCI(self.pyscftheoryobject.mf,self.norb, self.nelec)
-            #self.mch = self.dmrgscf.DMRGCI(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
-            #self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf, self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
-            #print("Turning off canonicalization step in mcscf object")
-            #self.mch.canonicalization = False
-            #self.mch.natorb = True
         else:
             print("This is CASSCF via pyscf and DMRG (orbital optimization)")
             #
-            self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf,self.norb, self.nelec, maxM=self.maxM, tol=self.tol)
+
+            self.mch = self.dmrgscf.DMRGSCF(self.pyscftheoryobject.mf,self.norb, self.nelec, 
+                                            maxM=self.maxM, tol=self.tol, restart=self.restart)
+            if self.restart is True:
+                print("Restarting DMRG-CASSCF job.")
+                self.mch.fcisolver.restart = True
             self.mch.canonicalization = True
             self.mch.natorb = True
             self.mch.chkfile = f"DMRG-CASSCF_{self.maxM}.chk"
@@ -623,12 +615,16 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
                 qm_elems = elems
 
         # Cleanup before run.
-        self.cleanup()
-
-        # Run PySCF to get integrals and MOs. This would probably only be an SCF
-        if self.Block_direct != True:
-            print("Now running input PySCFTheory object")
-            self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
+        if self.restart:
+            print("Restarting previous Block job. Will not cleanup")
+        else:
+            print("This is not a restarted job. Will cleanup.")
+            self.cleanup()
+            # Run PySCF to get integrals and MOs. This would probably only be an SCF
+            if self.Block_direct != True:
+                print("Block_direct is not True. Will run PySCF to get integrals and MOs")
+                print("Now running input PySCFTheory object")
+                self.pyscftheoryobject.run(current_coords=current_coords, elems=qm_elems, charge=charge, mult=mult)
 
         # Get frozen-core
         if self.frozencore is True:
@@ -647,13 +643,14 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             print("Running Block directly")
             self.write_inputfile(mult)
             self.call_block_directly()
+        elif self.restart is True:
+            print("Restarting previous Block job. Will not setup initial orbitals")
         else:
             if self.runcalls == 1:
                 print("First runcall.")
                 print("Doing initial orbital setup")
                 # Natural orbital 
                 if self.initial_orbitals != "HF":
-                    print
                     mo_coeffs, occupations = self.setup_initial_orbitals(elems) #Returns mo-coeffs and occupations of initial orbitals
                     print("Doing active space setup")
                     self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space

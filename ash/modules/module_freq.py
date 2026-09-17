@@ -521,9 +521,9 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
 
     # Use input masses if given, otherwise take from frament
     if hessatoms_masses is None:
-        print("allatoms:", allatoms)
-        print("hessatoms:", hessatoms)
-        print("fragment.list_of_masses:", fragment.list_of_masses)
+        #print("allatoms:", allatoms)
+        #print("hessatoms:", hessatoms)
+        #print("fragment.list_of_masses:", fragment.list_of_masses)
         hessmasses = ash.modules.module_coords.get_partial_list(allatoms, hessatoms, fragment.list_of_masses)
     else:
         hessmasses=hessatoms_masses
@@ -1376,7 +1376,7 @@ def calc_model_Hessian_ORCA(fragment,model='Almloef'):
     #    capping_atom_hessian_indices=[]
 #NOTE: Trans+rot projection off right now
 def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomindices, large_atomindices=None, restHessian='zero', projection=False,
-                                          charge=None, mult=None, xtbmethod="GFN1"):
+                                          charge=None, mult=None, xtbmethod="GFN1", diagonalize_fullhessian=False):
     print("approximate_full_Hessian_from_smaller")
     print()
     write_hessian(hessian_small,hessfile="smallhessian")
@@ -1426,7 +1426,7 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
     fullhessian=np.zeros((hess_size,hess_size))
     print("Initial fullhessian:", fullhessian)
     print("Number of Hessian elements:", fullhessian.size)
-    write_hessian(fullhessian,hessfile="initialfullhessian")
+    #write_hessian(fullhessian,hessfile="initialfullhessian")
 
     #Making sure hessian_small is np array
     hessian_small = np.array(hessian_small)
@@ -1467,7 +1467,7 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
         print("RestHessian is zero.")
     print("Intermediate fullhessian:", fullhessian)
     print("Size:", fullhessian.size)
-    write_hessian(fullhessian,hessfile="intermedfullhessian")
+    #write_hessian(fullhessian,hessfile="intermedfullhessian")
     #Large Hessian indices
     athessindices = [3*i+j for i in correct_small_atomindices for j in [0,1,2]]
     #Looping over and assigning small Hessian values to large
@@ -1475,7 +1475,7 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
         for s_j, j in enumerate(athessindices):
             fullhessian[i,j] = hessian_small[s_i,s_j]
     print("Final fullhessian:", fullhessian)
-    write_hessian(fullhessian,hessfile="intermedfullhessian_after_small_update")
+    #write_hessian(fullhessian,hessfile="intermedfullhessian_after_small_update")
     #NOTE: Diagonalizing full Hessian just to see
     #Checking for linearity. Determines how many Trans+Rot modes
     if detect_linear(coords=fragment.coords,elems=fragment.elems) is True:
@@ -1483,11 +1483,14 @@ def approximate_full_Hessian_from_smaller(fragment, hessian_small, small_atomind
     else:
         TRmodenum=6
 
-    print("Now diagonalizing full Hessian")
-    frequencies, normal_modes, evectors, mode_order = diagonalizeHessian(fragment.coords,fullhessian,usedfragment.masses,usedfragment.elems,TRmodenum=TRmodenum,projection=projection)
-    print("Size:", fullhessian.size)
-    print("Frequencies of full Hessian:", frequencies)
-    write_hessian(fullhessian,hessfile="Finalfullhessian")
+    if diagonalize_fullhessian is True:
+        print("Now diagonalizing full Hessian")
+        frequencies, normal_modes, evectors, mode_order = diagonalizeHessian(fragment.coords,fullhessian,
+                                                                         usedfragment.masses,usedfragment.elems,TRmodenum=TRmodenum,projection=projection)
+        print("Frequencies of full Hessian:", frequencies)
+    print("Size of full Hessian:", fullhessian.size)
+
+    #write_hessian(fullhessian,hessfile="Finalfullhessian")
     return fullhessian
 
 

@@ -372,12 +372,34 @@ end
         dm = grab_dipole_moment(self.filename+'.out')
         print("Dipole moment:", dm)
         return dm
+
     def get_polarizability_tensor(self):
         print("here")
         print("self.filename+'.out':", self.filename+'.out')
         polarizability,diag_pz = grab_polarizability_tensor(self.filename+'.out')
         print("polarizability:", polarizability)
         return polarizability
+
+    # Get density matrix. Assuming dm has been defined
+    def get_density_matrix(self, dmoption=None):
+        print("Calling get_density_matrix")
+        # Create JSON-file from ORCA-GBW and density-files
+        jsonfile = create_ORCA_json_file(self.filename+'.gbw', format="json", fock_matrix=True)
+        #Read the JSON-file
+        data = read_ORCA_json_file(jsonfile)
+        fock = np.array(data.get("F-Matrix", None)[0])
+        #Get densities from data dictionary (from read_ORCA_json_file)
+        DMs = get_densities_from_ORCA_json(data)
+        print("DMs:", DMs)
+        if dmoption is None:
+            print("No dmoption provided to get_density_matrix. Defaulting to 'scfp' density")
+            dmoption = "scfp"
+        #Grab ORCA density from jsonfile or data-dictionary. Returns DM_AO,C,S, MO_occs, MO_energies, AO_basis, AO_order
+        DM_AO,C,S, MO_occs, MO_energies, AO_basis, AO_order = grab_ORCA_wfn(jsonfile=jsonfile, 
+                                                                            density=dmoption)
+        print("DM_AO:", DM_AO)
+        return DM_AO, fock
+
     # Run function. Takes coords, elems etc. arguments and computes E or E+G.
     def run(self, current_coords=None, charge=None, mult=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, Hessian=False, PC=False, numcores=None, label=None):
@@ -3059,7 +3081,8 @@ def create_GBW_from_json_file(jsonfile, orcadir=None):
 #Using orca_2json to create JSON file from ORCA GBW file
 #Format options: json, bson, ubjson, msgpack
 def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_coeffs=True, one_el_integrals=True,
-                          two_el_integrals=False, two_el_integrals_type="ALL", dipole_integrals=False, full_int_transform=False):
+                          two_el_integrals=False, two_el_integrals_type="ALL", dipole_integrals=False, 
+                          full_int_transform=False, fock_matrix=False):
     print("create_ORCA_json_file")
     orcadir = check_ORCA_location(orcadir, modulename="create_ORCA_json_file")
     #orcafile_basename = file.split('.')[0]
@@ -3071,6 +3094,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
     two_el_integrals_line=""
     basis_set_line=""
     mo_coeff_line=""
+    fock_matrix_line=""
     #NOTE: problems with FullTrafo (orca_2json crashes)
     if full_int_transform is True:
         full_transform_integrals_line="\"FullTrafo\": true,"
@@ -3093,6 +3117,9 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
             two_el_integrals_line=f"\"2elIntegrals\": [\"MO_PQRS\", \"MO_PRQS\"],"
         else:
             two_el_integrals_line=f"\"2elIntegrals\": [\"MO_{two_el_integrals_type}\"],"
+    if fock_matrix is True:
+        print("Requesting printout of Fock matrix")
+        fock_matrix_line="\"FockMatrix\": [\"F\"],"
     if mo_coeffs is True:
         print("Requesting printout of MO coefficients")
         mo_coeff_line="\"MOCoefficients\": true,"
@@ -3105,6 +3132,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
 {prop_1e_integrals_line}
 {two_el_integrals_line}
 {full_transform_integrals_line}
+{fock_matrix_line}
 "Densities": ["all"],
 "JSONFormats": ["{format}"]
 }}

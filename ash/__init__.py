@@ -80,7 +80,7 @@ from .interfaces.interface_multiwfn import multiwfn_run
 # Spinprojection
 from .modules.module_spinprojection import SpinProjectionTheory
 # HybridTheory: DualTheory and WrapTheory
-from .modules.module_hybridtheory import DualTheory,WrapTheory
+from .modules.module_hybridtheory import DualTheory,WrapTheory,FractTheory
 #ONIOM
 from .modules.module_oniom import ONIOMTheory
 

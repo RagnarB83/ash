@@ -22,7 +22,8 @@ class ONIOMTheory(Theory):
                  fullregion_charge=None, fullregion_mult=None, fragment=None, label=None, 
                  chargeboundary_method="chargeshift", excludeboundaryatomlist=None,
                  linkatom_method='ratio', linkatom_simple_distance=None, linkatom_forceproj_method="adv",
-                 linkatom_ratio=0.723, linkatom_type='H', printlevel=2, numcores=1):
+                 linkatom_ratio=0.723, linkatom_type='H', printlevel=2, numcores=1,
+                 LL_full_theory=None):
         super().__init__()
         self.theorytype="ONIOM"
         self.printlevel=printlevel
@@ -61,6 +62,17 @@ class ONIOMTheory(Theory):
         self.fragment=fragment
         self.allatoms = self.fragment.allatoms
         self.theories_N=theories_N
+        # Optional separate Theory for the LL-on-Full-system calculation.
+        # If not provided, behavior is unchanged: theories_N[-1] is used for both
+        # the Full-region LL run AND the Model-region LL run (subtraction term).
+        # If provided, theories_N[-1] is used only as LL_model (region subtraction term),
+        # while LL_full_theory is used only for the Full-region run.
+        # This allows LL_full and LL_model to be different theory objects/codes.
+        self.LL_full_theory = LL_full_theory
+        if self.LL_full_theory is not None:
+            print(f"Separate LL_full_theory provided: {self.LL_full_theory.theorynamelabel}")
+            print("This will be used ONLY for the Full-region low-level calculation.")
+            print(f"theories_N[-1] ({theories_N[-1].theorynamelabel}) will still be used as LL_model (region subtraction term).")
         self.regions_N=regions_N
         self.regions_chargemult=regions_chargemult # List of list of charge,mult combos
 
@@ -115,6 +127,11 @@ class ONIOMTheory(Theory):
             for i,t in enumerate(self.theories_N):
                 t.numcores=numcores
                 print(f"Warning: Setting numcores={numcores} for Theory {i+1}: {t.theorynamelabel}")
+                #############################Dipanshu##################
+            if self.LL_full_theory is not None:
+                self.LL_full_theory.numcores=numcores
+                print(f"Warning: Setting numcores={numcores} for LL_full_theory: {self.LL_full_theory.theorynamelabel}")
+                ########################################################
         else:
             print("Warning: numcores attribute was not set for ONIOMTheory.")
             print("This is fine, but check if numcores settings above are appropriate for each Theory object")
@@ -419,9 +436,14 @@ class ONIOMTheory(Theory):
         G_dict={} # (theory,region) -> gradient
         num_theories = len(self.theories_N)
 
-        # First doing LowLevel (LL) theory on Full region
-        ll_theory = self.theories_N[-1]
-        print(f"Running Theory LL ({ll_theory.theorynamelabel}) on Full-region ({len(full_elems)} atoms)")
+                       ###########################Dipanshu############################
+                        # First doing LowLevel (LL) theory on Full region.
+        # Use LL_full_theory if the user provided one, otherwise fall back to theories_N[-1] (unchanged behavior)
+        if self.LL_full_theory is not None:
+            ll_theory = self.LL_full_theory
+        else:
+            ll_theory = self.theories_N[-1]
+        print(f"Running Theory LL_full ({ll_theory.theorynamelabel}) on Full-region ({len(full_elems)} atoms)")
 
         # Derive pointcharges unless full_pointcharges were already provided
         if self.full_pointcharges is None and self.embedding.lower() == "elstat":
@@ -439,6 +461,8 @@ class ONIOMTheory(Theory):
                     ashexit()
             elif isinstance(ll_theory, xTBTheory):
                  print(f"Theory is xTBTheory. Using default xtb charge model")
+            elif ll_theory.__class__.__name__ == "CP2KTheory":
+                print(f"Theory is CP2KTheory. Using {self.chargemodel} charge model")
             else:
                 print("Problem: Theory-level not compatible with pointcharge-creation")
                 ashexit()
@@ -451,10 +475,14 @@ class ONIOMTheory(Theory):
         # Changing filename here for GBW-file creation
         label = "LL_full"
         ll_theory_full.filename = f"{label}"
-        # RUN FULL
+        # RUN FULL (in its own subdirectory)
+        oniom_maindir = os.getcwd()
+        os.makedirs(label, exist_ok=True)
+        os.chdir(label)
         res_full = ll_theory_full.run(current_coords=full_coords,
                                     elems=full_elems, Grad=Grad, numcores=ll_theory.numcores,
                                     label=label, charge=self.fullregion_charge, mult=self.fullregion_mult)
+        os.chdir(oniom_maindir)
         if Grad:
             e_LL_full,g_LL_full = res_full
         else:
@@ -474,6 +502,11 @@ class ONIOMTheory(Theory):
                 # Note: format issue
                 # self.full_pointcharges = grabatomcharges_xTB_output(ll_theory.filename+'.out', chargemodel=self.chargemodel)
                 self.full_pointcharges = grabatomcharges_xTB()
+            elif ll_theory_full.__class__.__name__ == "CP2KTheory":
+                 from ash.interfaces.interface_CP2K import grabatomcharges_CP2K
+                 cp2k_output = os.path.join( label, f"{ll_theory_full.filename}.out")
+                 self.full_pointcharges = grabatomcharges_CP2K(cp2k_output, chargemodel=self.chargemodel)
+
             print("self.full_pointcharges:", self.full_pointcharges)
             print(len(self.full_pointcharges))
 
@@ -630,6 +663,11 @@ class ONIOMTheory(Theory):
                 theory.filename = f"{label}"
                 print(f"Running Theory {i+1} ({theory.theorynamelabel}) on Region {j+1} ({len(region_elems_final)} atoms)")
 
+                # Switch into a dedicated subdirectory for this theory/region combo
+                oniom_maindir = os.getcwd()
+                os.makedirs(label, exist_ok=True)
+                os.chdir(label)
+
                 # For an MM-theory like OpenMM we have to do some special handling
                 if theory.theorytype == "MM":
                     print("Case: Theory is MM")
@@ -705,6 +743,8 @@ class ONIOMTheory(Theory):
                     res = theory.run(current_coords=region_coords_final, elems=region_elems_final, Grad=Grad, numcores=theory.numcores,
                                                     PC=PC, current_MM_coords=pointchargecoords, MMcharges=pointcharges, mm_elems=mm_elems_for_qmprogram,
                                                     label=label, charge=self.regions_chargemult[j][0], mult=self.regions_chargemult[j][1])
+                    os.chdir(oniom_maindir)
+
                 if PC and Grad:
                     e,g,pg = res
                 elif PC and not Grad:
@@ -713,6 +753,7 @@ class ONIOMTheory(Theory):
                     e,g = res
                 elif not PC and not Grad:
                     e = res
+                
                 # Keeping E and G in dicts
                 E_dict[(i,j)] = e
                 if Grad:
