@@ -71,7 +71,7 @@ class CP2KTheory:
                 print("potential_dict keyword is required")
                 ashexit()
             if functional is None:
-                print("functional keyword is required for PW andd GPW ")
+                print("functional keyword is required for PW and GPW ")
                 ashexit()
         else:
             print("This is a CP2K xTB theory")
