@@ -15,7 +15,7 @@ from ash.modules.module_coords import check_charge_mult, print_internal_coordina
 from ash.modules.module_coords_PBC import write_CIF_file, write_XSF_file, write_POSCAR_file, cell_vectors_to_params, cell_volume, align_to_standard_orientation
 from ash.modules.module_theory import NumGradclass
 from ash.modules.module_results import ASH_Results
-from ash.modules.module_freq import NumFreq,AnFreq,calc_hessian_xtb
+from ash.modules.module_freq import NumFreq,AnFreq, approximate_full_Hessian_from_smaller,calc_hessian_xtb
 from ash.modules.module_QMMM import QMMMTheory
 from ash.modules.module_oniom import ONIOMTheory
 
@@ -335,7 +335,14 @@ class DLFIND_optimizerClass:
                                         hessatoms=self.numfreq_hessatoms,force_projection=self.numfreq_force_projection,
                                         runmode='serial', 
                                         numcores=self.theory.numcores)
-                hessian = result_freq.hessian
+
+                if self.numfreq_hessatoms is not None and len(self.numfreq_hessatoms) < self.fragment.numatoms:
+                    print("A partial Hessian was computed. Approximating full Hessian from smaller Hessian")
+                    hessian = approximate_full_Hessian_from_smaller(fragment,result_freq.hessian, 
+                                                                             self.numfreq_hessatoms, large_atomindices=self.fragment.allatoms, 
+                                                                             restHessian=None)
+                else:
+                    hessian = result_freq.hessian
             elif self.hessian_choice == "anfreq":
                 print("AnFreq option requested")
                 result_freq = AnFreq(theory=self.theory, fragment=self.fragment, printlevel=0)

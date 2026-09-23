@@ -561,7 +561,6 @@ def periodic_optimizer_alternating(fragment=None, theory=None, rate=0.5, maxiter
 
 # Cartesian-based periodic cell optimizer
 
-
 # Wrapper function around Cart_optimizer_class
 def Cart_optimizer(fragment=None, theory=None, rate=2.0, 
                                 scaling_rate_cell=1.0, maxiter=50, 
@@ -1084,6 +1083,9 @@ class Cart_optimizer_class:
             # If curvature is bad, reset the Hessian to Identity to avoid exploding
             print("BFGS: Curvature condition not met, resetting Hessian.")
             self.Hess_inv = np.eye(n) * self.rate
+            # Also reset history to avoid stale s/y being used next step
+            self.g_old = g
+            self.x_old = x
 
         # 4. COMPUTE STEP
         # p = -Hess_inv * g
@@ -1164,6 +1166,7 @@ class Cart_optimizer_class:
             effective_gradient = gradient * rate_mask
         else:
             effective_gradient = gradient
+
         # Calculate delta step (in Bohrs)
         if self.step_algo.lower() =="sd":
             print("Taking steepest descent step")
@@ -1186,7 +1189,7 @@ class Cart_optimizer_class:
             delta_au = nesterov_update
         elif self.step_algo.lower() == "bfgs":
             print("Taking BFGS step")
-            delta_au = self.compute_bfgs_step(gradient, currcoords)
+            delta_au = self.compute_bfgs_step(effective_gradient, currcoords)
         elif self.step_algo.lower() == "cg":
             print("Taking conjugate gradient step")
             if self.iteration == 0:
@@ -1204,6 +1207,11 @@ class Cart_optimizer_class:
         else:
             print("Unknown step_algo")
             ashexit()
+
+        # If cell is frozen, explicitly zero those rows in the step too,
+        # so accumulated BFGS state can never leak cell movement back in
+        if self.PBC and self.scaling_rate_cell == 0.0:
+            delta_au[-3:] = 0.0
 
         return delta_au
 
@@ -1463,4 +1471,4 @@ class Cart_optimizer_class:
             #currcoords = currcoords_new_ang
 
         if iteration == self.maxiter-1:
-            print("Number of max iterations reached without reaching convergence. Sad...")
+            print("Number of max iterations reached without reaching convergence. Sad...")# Also reset history to avoid stale s/y being used next step

@@ -71,7 +71,7 @@ class CP2KTheory:
                 print("potential_dict keyword is required")
                 ashexit()
             if functional is None:
-                print("functional keyword is required for PW andd GPW ")
+                print("functional keyword is required for PW and GPW ")
                 ashexit()
         else:
             print("This is a CP2K xTB theory")
@@ -450,7 +450,7 @@ class CP2KTheory:
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              basis_method=self.basis_method, wavelet_scf_type=self.wavelet_scf_type,
                              functional=self.functional, restartfile=None, mgrid_commensurate=True,
-                             Grad=Grad, filename='cp2k', charge=charge, mult=mult,
+                             Grad=Grad, filename=self.filename, charge=charge, mult=mult,
                              coordfile=system_xyzfile,
                              stress_tensor=self.stress_tensor, stress_tensor_algo=self.stress_tensor_algo,
                              user_input_dft=self.user_input_dft, vdwpotential=self.vdwpotential,
@@ -499,7 +499,7 @@ class CP2KTheory:
                              basis_dict=self.basis_dict, potential_dict=self.potential_dict,
                              basis_method=self.basis_method, wavelet_scf_type=self.wavelet_scf_type,
                              functional=self.functional, restartfile=None,
-                             Grad=Grad, filename='cp2k', charge=charge, mult=mult,
+                             Grad=Grad, filename=self.filename, charge=charge, mult=mult,
                              stress_tensor=self.stress_tensor, stress_tensor_algo=self.stress_tensor_algo,
                              user_input_dft=self.user_input_dft, vdwpotential=self.vdwpotential,
                              kpoint_settings=self.kpoint_settings,
@@ -1071,3 +1071,56 @@ def stress_to_cell_gradient(lattice_matrix, stress_tensor):
     grad = -1*V * sigma @ np.linalg.inv(h).T
 
     return grad
+
+
+def grabatomcharges_CP2K(outputfile, chargemodel="Mulliken"):
+
+    with open(outputfile, "r") as f:
+        lines = f.readlines()
+
+        chargemodel = chargemodel.lower()
+        charge_sections = {"mulliken": "Mulliken Population Analysis", "hirshfeld": "Hirshfeld Charges"}
+
+    if chargemodel not in charge_sections:
+        print(f"Unknown CP2K charge model: {chargemodel}")
+        ashexit()
+
+    section = charge_sections[chargemodel]
+
+    # Find last occurrence, since output may contain multiple calculations # Check with multiple single points
+    start = None
+    for i, line in enumerate(lines):
+        if section.lower() in line.lower():
+            start = i
+
+    if start is None:
+        print(f"Could not find {section} in CP2K output")
+        ashexit()
+
+    charges = []
+
+    for line in lines[start + 1:]:
+        parts = line.split()
+
+        if not parts:
+            continue
+
+        # Atom number must be first column
+        try:
+            int(parts[0])
+        except ValueError:
+            if charges:
+                break
+            continue
+
+        # Last column = Net charge
+        try:
+            charge = float(parts[-1])
+        except ValueError:
+            continue
+
+        charges.append(charge)
+
+    print(f"Grabbed {len(charges)} {chargemodel} charges from CP2K")
+
+    return charges

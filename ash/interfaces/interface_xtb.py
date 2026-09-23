@@ -547,6 +547,12 @@ class xTBTheory:
             # Check if finished. Grab energy, gradient, pcgradient, cellgradient
             if Grad is True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)
+
+                # Fix for possible problem getting energy from gradient file (can happen for big systems)
+                if self.energy is None:
+                    # Grabbing energy from main outputfile instead
+                    self.energy=xtbfinalenergygrab(self.filename+'.out')
+
                 if self.periodic:
                     self.cell_gradient = grab_latticegrad()
                     print("cell_gradient:", self.cell_gradient)
@@ -754,7 +760,12 @@ def xtbgradientgrab(numatoms):
     with open('gradient') as f:
         for line in reverse_lines(f):
             if '  cycle =' in line:
-                energy = float(line.split("SCF energy =")[1].split()[0])
+                # Checking if energy is a number or asterisk (can happen for big systems)
+                en_entry = line.split("SCF energy =")[1].split()[0]
+                if '*' in en_entry:
+                    energy = None
+                else: 
+                    energy = float(line.split("SCF energy =")[1].split()[0])
                 return energy, gradient
             if count==numatoms:
                 grab=False
