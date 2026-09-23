@@ -236,7 +236,10 @@ class DLFIND_optimizerClass:
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
                 if self.printlevel >= 1:
-                    print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
+                    if self.icoord >= 100 and self.icoord < 150:
+                        print(f"Current geometry (Å), NEB cycle {self.dlfind_neb_cycles + 1}, image {iimage} (print_atoms_list region)")
+                    else:
+                        print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
                     print("---------------------------------------------------")
                     print_coords_for_atoms(R_phys, self.elems_phys, self.print_atoms_list)
                     print("")
@@ -284,7 +287,10 @@ class DLFIND_optimizerClass:
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
                 if self.printlevel >= 1:
-                    print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
+                    if self.icoord >= 100 and self.icoord < 150:
+                        print(f"Current geometry (Å), NEB cycle {self.dlfind_neb_cycles + 1}, image {iimage} (print_atoms_list region)")
+                    else:
+                        print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
                     print("---------------------------------------------------")
                     print_coords_for_atoms(coordinates_ang, self.fragment.elems, self.print_atoms_list)
                     print("")
@@ -376,7 +382,7 @@ class DLFIND_optimizerClass:
         # Create function to store results from DL-FIND
         #@dlf_put_coords_wrapper
         def store_results(a,nvar,switch, energy, coordinates, iam):
-            print("Called store_results with switch:", switch)
+            print("Called store_results with switch:", switch, flush=True)
             if switch > 0:
                 coords = as_array(coordinates, (nvar,)).reshape(-1, 3)
                 coordinates_ang = coords*0.5291772109303
@@ -385,9 +391,9 @@ class DLFIND_optimizerClass:
                 # Write out NEB path if switch -1
                 if self.icoord >= 100 and self.icoord < 150 and switch == -1:
                     self.dlfind_neb_cycles+=1
-                    print("="*70)
-                    print(f"DLFIND NEB-OPTIMIZATION CYCLE {self.dlfind_neb_cycles}")
-                    print("="*70)
+                    print("="*70, flush=True)
+                    print(f"DLFIND NEB-OPTIMIZATION CYCLE {self.dlfind_neb_cycles}", flush=True)
+                    print("="*70, flush=True)
 
                     for imageid in list(range(1,self.nimage)):
                         if imageid not in self.NEB_energies_dict or imageid not in self.NEB_geometries:
