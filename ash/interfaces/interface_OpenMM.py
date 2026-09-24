@@ -2750,9 +2750,15 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     # Define a forcefield if using XML-files
     if xmlfile is not None:
         print("XMfile:", xmlfile)
-        print("Water model:", watermodel)
-        print("Water xmlfile:", waterxmlfile)
         #Basic checks
+        if watermodel is None:
+            print("Water model not provided, using tip3p as default for solvation")
+            modeller_solvent_name = "tip3p"
+        elif watermodel.lower() == "tip3p":
+            modeller_solvent_name = "tip3p"
+        else:
+            modeller_solvent_name = watermodel
+
         if extraxmlfile is not None:
             print("Using extra XML file:", extraxmlfile)
             #Checking if file exists first before continuing
@@ -2766,16 +2772,24 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile)
         elif extraxmlfile is None and waterxmlfile is not None:
             forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,waterxmlfile)
+            print("Water xmlfile:", waterxmlfile)
         elif extraxmlfile is not None and waterxmlfile is not None:
             forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile,waterxmlfile)
+            print("Water xmlfile:", waterxmlfile)
 
     elif forcefield_object is not None:
         print("Using forcefield object provided")
         forcefield_obj= forcefield_object
-        
-        if watermodel is not None or waterxmlfile is not None:
-            print("Warning: watermodel/waterxmlfile ignored when forcefield_object is supplied")
+        if watermodel is None:
+            print("Water model not provided, using tip3p as default for solvation")
+            modeller_solvent_name = "tip3p"
+        elif watermodel.lower() == "tip3p":
+            modeller_solvent_name = "tip3p"
+        else:
+            modeller_solvent_name = watermodel
 
+        if waterxmlfile is not None:
+            print("Warning: waterxmlfile ignored when forcefield_object is supplied")
 
     else:
         print("You must provide a forcefield name, forcefieldobject or xmlfile keywords!")
@@ -5844,7 +5858,7 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
     if CV2_gridwith == None:
         full_bias=np.zeros((CV1_gridwith))
     else:
-	    full_bias=np.zeros((CV2_gridwith,CV1_gridwith))
+        full_bias=np.zeros((CV2_gridwith,CV1_gridwith))
 
     #Looping over bias-files
     print("full_bias shape:", full_bias.shape)
