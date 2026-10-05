@@ -317,6 +317,12 @@ class QMMMTheory:
                 self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
                 # Updating charges in MM object.
                 self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
+
+                # Also removing QM-MM Coulomb interaction exceptions in OpenMM
+                if self.mm_theory_name == "OpenMMTheory":
+                    # Deleting Coulomb exception interactions involving QM and MM atoms
+                    self.mm_theory.delete_exceptions(self.qmatoms)
+
             elif self.embedding.lower() == "polembed_drude":
                 print("Polembed Drude embedding enabled.")
                 print("This means that QM-atoms will be zeroed for QM-MM interactions calculated by QM program")
