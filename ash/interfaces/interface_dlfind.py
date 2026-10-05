@@ -29,7 +29,7 @@ def DLFIND_optimizer(jobtype=None, theory=None, fragment=None, fragment2=None, c
                      hessian_choice="numfreq", inithessian=0, 
                      numfreq_npoint=1, numfreq_displacement=0.005, numfreq_hessatoms=None,
                      numfreq_force_projection=None, print_atoms_list=None,
-                     force_noPBC=False, PBC_format_option='CIF'):
+                     force_noPBC=False, PBC_format_option='CIF', dump=None, restart=None):
     """
     Wrapper function around DLFIND_optimizerClass
     """
@@ -46,7 +46,7 @@ def DLFIND_optimizer(jobtype=None, theory=None, fragment=None, fragment2=None, c
                                     hessian_choice=hessian_choice, inithessian=inithessian, 
                                     numfreq_npoint=numfreq_npoint,numfreq_displacement=numfreq_displacement,
                                     numfreq_hessatoms=numfreq_hessatoms,numfreq_force_projection=numfreq_force_projection,
-                                    print_atoms_list=print_atoms_list,
+                                    print_atoms_list=print_atoms_list, dump=dump, restart=restart,
                                     force_noPBC=force_noPBC, PBC_format_option=PBC_format_option)
 
     # If NumGrad then we wrap theory object into NumGrad class object
@@ -72,7 +72,7 @@ class DLFIND_optimizerClass:
                  hessian_choice='numfreq', inithessian=None, 
                  numfreq_npoint=1,numfreq_displacement=0.005,numfreq_force_projection=None,
                  numfreq_hessatoms=None, print_atoms_list=None,
-                 force_noPBC=False, PBC_format_option='CIF'):
+                 force_noPBC=False, PBC_format_option='CIF', dump=None, restart=None):
 
         print_line_with_mainheader("DLFIND_optimizer initialization")
         print()
@@ -180,6 +180,11 @@ class DLFIND_optimizerClass:
         self.tolerance_e=tolerance_e
         # NEB
         self.nimage=nimage
+
+        # DL-FIND restart/checkpoint options
+        self.dump=dump
+        self.restart=restart
+
         #Dimer
         self.delta=delta
 
@@ -231,7 +236,10 @@ class DLFIND_optimizerClass:
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
                 if self.printlevel >= 1:
-                    print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
+                    if self.icoord >= 100 and self.icoord < 150:
+                        print(f"Current geometry (Å), NEB cycle {self.dlfind_neb_cycles + 1}, image {iimage} (print_atoms_list region)")
+                    else:
+                        print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
                     print("---------------------------------------------------")
                     print_coords_for_atoms(R_phys, self.elems_phys, self.print_atoms_list)
                     print("")
@@ -279,7 +287,10 @@ class DLFIND_optimizerClass:
                 #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
                 self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
                 if self.printlevel >= 1:
-                    print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
+                    if self.icoord >= 100 and self.icoord < 150:
+                        print(f"Current geometry (Å), NEB cycle {self.dlfind_neb_cycles + 1}, image {iimage} (print_atoms_list region)")
+                    else:
+                        print(f"Current geometry (Å) in step {self.dlfind_opt_cycles} (print_atoms_list region)")
                     print("---------------------------------------------------")
                     print_coords_for_atoms(coordinates_ang, self.fragment.elems, self.print_atoms_list)
                     print("")
@@ -371,7 +382,7 @@ class DLFIND_optimizerClass:
         # Create function to store results from DL-FIND
         #@dlf_put_coords_wrapper
         def store_results(a,nvar,switch, energy, coordinates, iam):
-            print("Called store_results with switch:", switch)
+            print("Called store_results with switch:", switch, flush=True)
             if switch > 0:
                 coords = as_array(coordinates, (nvar,)).reshape(-1, 3)
                 coordinates_ang = coords*0.5291772109303
@@ -380,9 +391,14 @@ class DLFIND_optimizerClass:
                 # Write out NEB path if switch -1
                 if self.icoord >= 100 and self.icoord < 150 and switch == -1:
                     self.dlfind_neb_cycles+=1
-                    print("="*70)
-                    print(f"DLFIND NEB-OPTIMIZATION CYCLE {self.dlfind_neb_cycles}")
-                    print("="*70)
+                    print("="*70, flush=True)
+                    print(f"DLFIND NEB-OPTIMIZATION CYCLE {self.dlfind_neb_cycles}", flush=True)
+                    print("="*70, flush=True)
+
+                    for imageid in list(range(1,self.nimage)):
+                        if imageid not in self.NEB_energies_dict or imageid not in self.NEB_geometries:
+                            print(f"Error: Missing ASH NEB data for image {imageid}")
+                            ashexit()
                     #print("Switch -1, writing out current NEB-path without CI")
                     with open("DLFIND_NEBpath_all.xyz", "a") as trajfile:
                         for imageid in list(range(1,self.nimage)):
@@ -390,12 +406,14 @@ class DLFIND_optimizerClass:
                             trajfile.write(f"Image {imageid}. Energy: {self.NEB_energies_dict[imageid]}  \n")
                             for el, cord in zip(self.fragment.elems, self.NEB_geometries[imageid]):
                                 trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
-                    with open("DLFIND_NEBpath_current.xyz", "w") as trajfile:
+                    with open("DLFIND_NEBpath_current.xyz.tmp", "w") as trajfile:
                         for imageid in list(range(1,self.nimage)):
                             trajfile.write(str(self.fragment.numatoms) + "\n")
                             trajfile.write(f"Image {imageid}. Energy: {self.NEB_energies_dict[imageid]}  \n")
                             for el, cord in zip(self.fragment.elems, self.NEB_geometries[imageid]):
                                 trajfile.write(el + "  " + str(cord[0]) + " " + str(cord[1]) + " " + str(cord[2]) + "\n")
+
+                    os.replace("DLFIND_NEBpath_current.xyz.tmp", "DLFIND_NEBpath_current.xyz")
 
                     # Writing out CI once it has been spawned
                     if nimage in self.NEB_geometries:
@@ -673,24 +691,29 @@ class DLFIND_optimizerClass:
                                                   iopt=self.iopt, maxcycle=self.maxcycle,tolerance=self.tolerance,
                                                   tolerance_e=self.tolerance_e, inithessian=self.inithessian,
                                                   nframe=nframe, nz=nz,
-                                                  ncons=self.numcons, delta=self.delta,
+                                                  ncons=self.numcons, delta=self.delta, dump=self.dump, restart=self.restart,
                                                   spec=self.spec, printl=self.printlevel, nimage=self.nimage)
 
-        # Delete old traj file before beginning
+        # Delete old traj files before beginning, unless this is a restart
         remove_files=['DLFIND_opt_traj.xyz','DLFIND_dimertraj_1.xyz', 'DLFIND_dimertraj_2.xyz','DLFIND_dimertraj_3.xyz','DLFIND_NEBpath_current.xyz', 'DLFIND_NEBpath_all.xyz', 'DLFIND_CIgeo_traj.xyz']
-        print_if_level(f"Removing possible old files: {remove_files}", self.printlevel,2)
-        for rfile in remove_files:
-            try:
-                os.remove(rfile)
-                print_if_level(f"removed {rfile} ", self.printlevel,2)
-            except FileNotFoundError:
-                #print(f"file {rfile} not found")
-                pass
+
+        if self.restart in (None,0):
+            print_if_level(f"Removing possible old files: {remove_files}", self.printlevel,2)
+            for rfile in remove_files:
+                try:
+                    os.remove(rfile)
+                    print_if_level(f"removed {rfile} ", self.printlevel,2)
+                except FileNotFoundError:
+                    pass
+        else:
+            print_if_level("Restart requested. Keeping existing DL-FIND files.", self.printlevel,2)
 
         print_if_level(f"\nArguments passed to DL-FIND:", self.printlevel,2)
         print_if_level(f"icoord: {self.icoord}", self.printlevel,2)
         print_if_level(f"iopt: {self.iopt}", self.printlevel,2)
         print_if_level(f"maxcycle: {self.maxcycle}", self.printlevel,2)
+        print_if_level(f"dump: {self.dump}", self.printlevel,2)
+        print_if_level(f"restart: {self.restart}", self.printlevel,2)
         print_if_level(f"spec ({len(self.spec)}): {self.spec}", self.printlevel,2)
         if self.icoord == 120:
             print_if_level(f"NEB nimage: {self.nimage}", self.printlevel,2)
@@ -706,6 +729,46 @@ class DLFIND_optimizerClass:
         self.dlfind_dimer_cycles = 0
         self.NEB_energies_dict={}
         self.NEB_geometries={}
+
+        # Restore ASH NEB bookkeeping on restart
+        if self.restart not in (None,0) and 100 <= self.icoord < 150:
+            # Restore previous ASH NEB cycle count
+            if os.path.isfile("DLFIND_NEBpath_all.xyz"):
+                with open("DLFIND_NEBpath_all.xyz") as f:
+                    self.dlfind_neb_cycles = sum(1 for line in f if line.startswith("Image 1."))
+                print(f"Restart: restored ASH NEB cycle counter to {self.dlfind_neb_cycles}")
+
+            # Restore energies/geometries of the most recent complete NEB path
+            if os.path.isfile("DLFIND_NEBpath_current.xyz"):
+                print("Restart: restoring ASH NEB energies/geometries from DLFIND_NEBpath_current.xyz")
+                with open("DLFIND_NEBpath_current.xyz") as f:
+                    lines = f.readlines()
+
+                i = 0
+                while i < len(lines):
+                    natoms = int(lines[i].strip())
+                    header = lines[i + 1].split()
+                    imageid = int(header[1].rstrip("."))
+                    energy = float(header[3])
+
+                    coords = []
+                    for j in range(natoms):
+                        parts = lines[i + 2 + j].split()
+                        coords.append([float(parts[1]), float(parts[2]), float(parts[3])])
+
+                    self.NEB_energies_dict[imageid] = energy
+                    self.NEB_geometries[imageid] = np.array(coords)
+
+                    i += natoms + 2
+
+                print("Restored NEB images:", sorted(self.NEB_energies_dict.keys()))
+
+                expected_images = set(range(1,self.nimage))
+                restored_images = set(self.NEB_energies_dict.keys())
+                missing_images = expected_images - restored_images
+                if len(missing_images) > 0:
+                    print(f"Error: Missing NEB restart data for images: {sorted(missing_images)}")
+                    ashexit()
 
         # Runcounter 
         self.runcounter=0
