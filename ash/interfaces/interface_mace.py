@@ -413,7 +413,7 @@ class MACETheory():
         if Hessian:
             Grad=True
 
-        print_if_level("Running on platform/device:", self.printlevel, 2)
+        print_if_level(f"Running on platform/device: {self.device}", self.printlevel, 2)
         # Checking if model is alreadyloaded
         if self.model is None:
             print("A model has not been loaded yet.")
