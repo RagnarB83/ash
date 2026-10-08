@@ -645,6 +645,11 @@ MPIPREFIX = "" # mpi-prefix. Best to leave blank
             self.call_block_directly()
         elif self.restart is True:
             print("Restarting previous Block job. Will not setup initial orbitals")
+
+            print("Setting up DMRG job")
+            self.setup_DMRG_job(verbose=5, rdmoption=None)
+            print("Running DMRG")
+            #self.DMRG_run(mo_coeffs)
         else:
             if self.runcalls == 1:
                 print("First runcall.")
