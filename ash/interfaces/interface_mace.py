@@ -353,6 +353,8 @@ class MACETheory():
         # MACE Polar
         elif self.model_name.lower() in ['mace-polar','mace_polar', 'mace-polar-1']:
             from mace.calculators import mace_polar
+
+            self.polarmace=True
             if self.model_name_subtype is None:
                 print("Loading MACE-Polar model:")
                 #print("Using polar-1-m model by default (use model_name_subtype keyword to choose between polar-1-s, polar-1-m, polar-1-l)")
@@ -360,7 +362,7 @@ class MACETheory():
                     device=self.platform,
                     default_dtype=self.default_dtype) # use float32 for faster MD
             else:
-                print("MACE-MP model with modelname_subtype:", self.model_name_subtype)
+                print("MACE-Polar model with modelname_subtype:", self.model_name_subtype)
                 self.model = mace_polar(model=self.model_name_subtype,
                     device=self.platform,
                     default_dtype=self.default_dtype) # use float32 for faster MD
@@ -473,7 +475,8 @@ class MACETheory():
             # Grab some other attributes if e.g. polarmace
             if self.polarmace:
                 self.charges = self.model.results["charges"]
-                print("PolarMACE: Getting charges:", self.charges)
+                print("PolarMACE: Grabbing charges:", self.charges)
+                print("PolarMACE: Sum of charges:", np.sum(self.charges))
                 # dipole
                 self.properties["dipole"] = self.model.results["dipole"]
                 print("PolarMACE: Getting dipole:", self.properties["dipole"])

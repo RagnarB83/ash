@@ -457,6 +457,7 @@ class WrapTheory(Theory):
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
 
+        module_init_time = time.time()
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
 
         if qm_elems is None:
@@ -577,6 +578,8 @@ class WrapTheory(Theory):
                         print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
                     print("Gradient (Combined):", self.gradient)
 
+
+        print_time_rel(module_init_time, modulename='WrapTheory run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
         if Grad:
             if PC and pc_gradient is not None:
                 return self.energy, self.gradient, pc_gradient

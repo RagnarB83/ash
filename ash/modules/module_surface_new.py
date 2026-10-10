@@ -371,7 +371,7 @@ def calc_surface(
                 print_if_level(f"For an unrelaxed scan we need to modify geometry first (done in serial fashion)",printlevel,2)
                 print_if_level(f"set_geometry_via_restraint: {set_geometry_via_restraint}",printlevel,2)
                 if set_geometry_via_restraint is True:
-                    print_if_level(f"Modifying geometry to set constraints via DL-FIND restraint optimization",printlevel,2)
+                    print_if_level(f"Modifying geometry to set constraints via optimizer restraint optimization",printlevel,2)
                     # NOTE: passing extraconstraints if any
                     _preset_geometry_restraint(fragment, RC_list, rc_values, optimizerobj,
                                 opt_arguments, charge, mult,printlevel=1, extraconstraints=extraconstraints,
@@ -390,7 +390,7 @@ def calc_surface(
                 if presetting_geometry_required:
                     print_if_level(f"For DL-FIND and Cart_optimizer we need to modify geometry first to set constraints.", printlevel,2)
                     if set_geometry_via_restraint is True:
-                        print_if_level(f"Modifying geometry to set constraints via DL-FIND restraint optimization", printlevel,2)
+                        print_if_level(f"Modifying geometry to set constraints via optimizer restraint optimization", printlevel,2)
                         # NOTE: passing extraconstraints if any
                         _preset_geometry_restraint(fragment, RC_list, rc_values, optimizerobj,
                                     opt_arguments, charge, mult,printlevel=1, extraconstraints=extraconstraints,
