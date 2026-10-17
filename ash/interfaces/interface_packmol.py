@@ -239,6 +239,10 @@ end structure
     print("Packmol output can be found in packmol.out")
     print(f"Created file: {result_filename}")
 
+    # Renaming water molecules so that they can be read by OpenMM properly
+    convert_dum_waters("final.pdb", "final.pdb")
+    
+
     if solvent_files and result_filename.endswith(".pdb"):
         print("\nWarning: Packmol-created PDB-files may not contain correct connectivity information!")
         print("Will now try to use ASH function writepdb_with_connectivity to write a new PDB-file with connectivity information.")
@@ -274,3 +278,87 @@ def check_packmol_location(packmoldir, binary_name="packmol", dirname="packmoldi
                 print("For problems: see installation instructions: https://m3g.github.io/packmol/userguide.shtml")
                 ashexit()
     return finaldir
+
+# Function to convert DUM water molecules to WAT water molecules
+def convert_dum_waters(input_pdb_path, output_pdb_path):
+    """
+    Reads an input PDB file, identifies water molecules with residue name 'DUM',
+    and updates them:
+      - Changes residue name 'DUM' to 'WAT'
+      - Changes oxygen atom name ('O1') to 'O'
+      - Changes hydrogen atom names ('H2', 'H3') to 'H1', 'H2'
+    """
+    with open(input_pdb_path, 'r') as f:
+        lines = f.readlines()
+
+    # Step 1: Parse atoms and group them by residue (Chain, ResSeq, iCode, ResName)
+    # We'll store line indices for each residue to process them easily.
+    residues = {}
+    
+    for idx, line in enumerate(lines):
+        if line.startswith(('ATOM', 'HETATM')):
+            # PDB column slicing
+            res_name = line[17:20].strip()
+            chain_id = line[21]
+            res_seq = line[22:26].strip()
+            icode = line[26]
+            
+            res_key = (chain_id, res_seq, icode, res_name)
+            if res_key not in residues:
+                residues[res_key] = []
+            residues[res_key].append(idx)
+
+    # Step 2: Identify DUM water residues and prepare modifications
+    lines_to_modify = {}
+
+    for res_key, indices in residues.items():
+        chain_id, res_seq, icode, res_name = res_key
+        
+        if res_name == 'DUM':
+            # Check if this DUM residue matches the water signature (e.g., O1, H2, H3)
+            atom_names = [lines[idx][12:16].strip() for idx in indices]
+            
+            # Water signature check
+            if set(atom_names) == {'O1', 'H2', 'H3'}:
+                for idx in indices:
+                    line = lines[idx]
+                    atom_name = line[12:16].strip()
+                    
+                    # Determine new atom name
+                    if atom_name == 'O1':
+                        new_atom_name = 'O'
+                    elif atom_name == 'H2':
+                        new_atom_name = 'H1'
+                    elif atom_name == 'H3':
+                        new_atom_name = 'H2'
+                    else:
+                        new_atom_name = atom_name
+                    
+                    # Format PDB line fields:
+                    # - Atom name: columns 13-16 (Python index 12:16), usually left-aligned or centered (e.g., ' O  ', ' H1 ')
+                    # - Residue name: columns 18-20 (Python index 17:20), right-aligned 'WAT'
+                    
+                    # Format 4-character atom name (standard PDB alignment: 1 space before 1-char name, or 0 spaces for 2-char)
+                    if len(new_atom_name) == 1:
+                        formatted_atom_name = f" {new_atom_name}  "
+                    elif len(new_atom_name) == 2:
+                        formatted_atom_name = f" {new_atom_name} "
+                    else:
+                        formatted_atom_name = f"{new_atom_name:<4}"
+
+                    # Reconstruct the line
+                    new_line = (
+                        line[:12] + 
+                        formatted_atom_name + 
+                        line[16:17] + 
+                        'WAT' + 
+                        line[20:]
+                    )
+                    lines_to_modify[idx] = new_line
+
+    # Step 3: Write out the updated PDB file
+    with open(output_pdb_path, 'w') as f:
+        for idx, line in enumerate(lines):
+            f.write(lines_to_modify.get(idx, line))
+
+    print(f"Successfully processed PDB file. Output saved to: {output_pdb_path}")

@@ -3267,7 +3267,7 @@ def write_nonbonded_FF_for_ligand(fragment=None, charge=None, mult=None, coulomb
         coulomb14scale=1.0
         lj14scale=1.0
 
-    if charge_model == "xTB":
+    if charge_model.upper() == "XTB":
         print("Using xTB charges")
         charges = basic_atomcharges_xTB(fragment=fragment, charge=charge, mult=mult, xtbmethod='GFN2')
     elif charge_model == "CM5_ORCA" or charge_model == "CM5":

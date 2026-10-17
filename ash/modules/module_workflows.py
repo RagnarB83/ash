@@ -587,6 +587,7 @@ def calc_xyzfiles(xyzdir=None, theory=None, HL_theory=None, Opt=False, Freq=Fals
     filenames=[frag.label for frag in fragments]
 
     #Now looping over fragments
+    print("Looping over fragments to do calculations")
     for fragment in fragments:
         filename=fragment.label
         print("filename:", filename)
