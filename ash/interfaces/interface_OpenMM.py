@@ -925,10 +925,11 @@ class OpenMMTheory:
     # potential = MLPotential('ani2x')
     #TODO: Check whether system contains all previous settings (frozen atoms, constraints)
     #TODO: May have to check
-    def create_mixed_ML_system(self,potential,mlatoms):
+    def create_mixed_ML_system(self,potential,mlatoms, mlLongRange=None):
         print("Creating a mixed MM/ML system (replaces old MM system)")
         print("MLatom indices:", mlatoms)
-        self.system = potential.createMixedSystem(self.topology, self.system, mlatoms)
+        self.system = potential.createMixedSystem(self.topology, self.system, mlatoms,
+                                                  mlLongRange=mlLongRange)
 
     # Function to write PDB-file if everything is available
     def write_pdbfile(self, positions=None, outputname="system"):
@@ -4366,11 +4367,11 @@ class OpenMM_MDclass:
         pdb_filename=self.trajfilename+"_firstframe.pdb"
         print("Writing intial frame to disk as PDB-file:", pdb_filename)
         blastate = self.simulation.context.getState(getEnergy=True, getPositions=True, 
-                                        getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
+                                    getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
         with open(pdb_filename, 'w') as f:
             openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
             openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology,
-                                                  blastate.getPositions(asNumpy=True).value_in_unit(
+                                                blastate.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
         # PDBx/mmCIF
@@ -4379,7 +4380,7 @@ class OpenMM_MDclass:
         with open(pdbx_filename, 'w') as f:
             openmm.app.pdbxfile.PDBxFile.writeHeader(self.openmmobject.topology, f)
             openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
-                                                  blastate.getPositions(asNumpy=True).value_in_unit(
+                                                blastate.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
 
         ###############################################################################
@@ -4706,7 +4707,7 @@ class OpenMM_MDclass:
                     self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-        
+
         # 
         elif self.theory_runtype == "ONIOM":
             if self.printlevel >= 2:

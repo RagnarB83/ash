@@ -292,7 +292,8 @@ class MACETheory():
             else:
                 print("Using head:", self.model_name_head)
                 self.model = mace_mp(model=self.model_file, default_dtype=self.default_dtype, device=self.platform, head=self.model_name_head,
-                                            dispersion=self.mace_load_dispersion, dispersion_xc=self.mace_dispersion_xc)
+                                            dispersion=self.mace_load_dispersion, dispersion_xc=self.mace_dispersion_xc,
+                                            )
         else:
             print("Loading regular MACE via Pytorch")
             import torch
