@@ -1688,6 +1688,7 @@ class OpenMMTheory:
             print("Coupling frequency:", self.coupling_frequency)
             print("Properties:", self.properties)
             print("Topology:", self.topology)
+            print("Platform:", self.platform_choice)
         printdebug("self.system.getForces() ", self.system.getForces())
 
         #Create integrator object (needed for every update)
@@ -1818,13 +1819,16 @@ class OpenMMTheory:
         module_init_time = time.time()
         timeA = time.time()
         import openmm
+        # timeA = time.time()
+        if self.printlevel > 1:
+            print_line_with_subheader1("Running Single-point OpenMM Interface")
 
         #Need to call create_simulation here in order to get a simulation object
         simulation = self.create_simulation()
 
-        # timeA = time.time()
-        if self.printlevel > 1:
-            print_line_with_subheader1("Running Single-point OpenMM Interface")
+        print_time_rel(timeA, modulename="OpenMMTheory.run: after creating simulation", currprintlevel=self.printlevel, currthreshold=2)
+
+
         # If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply
         # coords). Then try if fragment object was supplied.
         # Otherwise internal coords if they exist
