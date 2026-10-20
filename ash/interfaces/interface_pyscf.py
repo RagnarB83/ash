@@ -3149,8 +3149,9 @@ class PySCFTheory:
                     print("Calculating pointcharge gradient (new way)")
                     checkpoint=time.time()
                     dm = self.mf.make_rdm1()
+                    # Unrestricted: (dm_alpha, dm_beta). grad_hcore_mm is linear in dm and needs the total density
                     if dm.ndim ==3:
-                        dm = dm[0]
+                        dm = dm[0] + dm[1]
                     g_mm_h1 = g.grad_hcore_mm(dm) 
                     g_mm_nuc = g.grad_nuc_mm()
                     self.pcgrad = g_mm_h1 + g_mm_nuc
