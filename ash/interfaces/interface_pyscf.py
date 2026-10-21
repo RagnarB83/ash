@@ -2495,11 +2495,18 @@ class PySCFTheory:
                 self.mf.with_solvent.solvent =self.SMD_solvent
 
 
+    # Set the spin (2S) of the molecule used by the SCF. On GPU, mf.to_gpu() deep-copies the Mole,
+    # so self.mf.mol is not self.mol and both need the new spin
+    def set_BS_spin(self, spin):
+        self.mol.spin = spin
+        if self.mf.mol is not self.mol:
+            self.mf.mol.spin = spin
+
     def run_BS_SCF(self, mult=None, dm=None):
         print("\nBroken-symmetry SCF procedure")
         print(f"First converging HS mult={self.HSmult} solution")
         #HS: Changing spin to HS-spin (num unpaired els)
-        self.mol.spin = self.HSmult-1
+        self.set_BS_spin(self.HSmult-1)
 
         scf_result = self.run_SCF(dm=dm)
         print("High-spin SCF energy:", scf_result.e_tot)
@@ -2539,10 +2546,16 @@ class PySCFTheory:
             dmb_at = dmb[idx_at.reshape(-1,1),idx_at].copy()
             dma[idx_at.reshape(-1,1),idx_at] = dmb_at
             dmb[idx_at.reshape(-1,1),idx_at] = dma_at
-        dm = [dma, dmb]
+        # One (2,nao,nao) array: on GPU dma/dmb are cupy arrays and gpu4pyscf's cupy.asarray(dm0)
+        # cannot convert a list of cupy arrays
+        if hasattr(dma, "get"):
+            import cupy
+            dm = cupy.stack([dma, dmb])
+        else:
+            dm = np.array([dma, dmb])
         print(f"\nStarting BS-SCF with spin multiplicity={mult}")
         #BS
-        self.mol.spin = mult-1
+        self.set_BS_spin(mult-1)
         #scf_result = self.mf.run(dm)
         scf_result = self.run_SCF(dm=dm)
         s2, spinmult = self.mf.spin_square()
