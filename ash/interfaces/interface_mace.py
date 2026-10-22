@@ -735,7 +735,9 @@ def write_mace_config(config_file="config.yml", name="model",model="MACE", platf
                     device= platform,
                     seed= seed,
                     batch_size= batch_size,
-                    max_num_epochs= max_num_epochs)
+                    max_num_epochs= max_num_epochs,
+                    E0s=E0s)
+
     # Regular training
     else:   
         data = dict( model= model,
