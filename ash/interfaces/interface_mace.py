@@ -275,8 +275,14 @@ class MACETheory():
         if self.valid_fraction is not None:
             valid_fraction=self.valid_fraction
 
-
-        self.train_file=train_file
+        if train_file is None:
+            print("Warning: no train_file provided to finetune. Trying to use train_file attribute of object:", self.train_file)
+            if self.train_file is None:
+                print("Error: no train_file attribute of object. You must provide a train_file to finetune")
+                ashexit()
+            self.train_file=train_file
+        else:
+            self.train_file=train_file
         self.valid_fraction=valid_fraction
 
         if device is not None:
@@ -320,7 +326,7 @@ class MACETheory():
         print()
         write_mace_config(config_file=config_file, name=name, model=model, platform=platform, 
                       foundation_model=foundation_model, multiheads_finetuning=multiheads_finetuning, 
-                      lr=lr, weight_decay=0.0, 
+                      lr=lr, weight_decay=weight_decay, 
                       scaling=scaling, 
                       ema=ema, ema_decay=ema_decay, amsgrad=amsgrad, clip_grad=clip_grad, 
                       valid_fraction=valid_fraction, train_file=self.train_file,E0s=E0s,
