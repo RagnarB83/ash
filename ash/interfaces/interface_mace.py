@@ -56,7 +56,7 @@ class MACETheory():
         self.model=None
         #
         self.model_file=model_file
-        self.model_name=model_name #for quickly loading foundational models
+        self.model_name=model_name #for quickly loading foundation models
         self.model_name_subtype=model_name_subtype #subtype of foundational model
         self.model_name_head = model_name_head # choose head of multi-head foundational model
         self.mace_load_dispersion=mace_load_dispersion # activate dispersion 
@@ -253,6 +253,122 @@ class MACETheory():
 
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} train', moduleindex=2)
 
+    def finetune(self, config_file="config.yml", name="model",model="MACE", platform=None, device=None,
+                      foundation_model=None, multiheads_finetuning=False, lr=0.001, weight_decay=0.0, 
+                      scaling="rms_forces_scaling", max_num_epochs=6,
+                      ema=True, ema_decay=0.999, amsgrad=True, clip_grad=1.0, 
+                      valid_fraction=0.05, train_file="train_data_mace.xyz",E0s="estimated",
+                      energy_key='energy_REF', forces_key='forces_REF',        
+                      energy_weight=10, forces_weight=10, seed=42,
+                      swa=True, batch_size=10,
+                      max_L = 0, r_max = 5.0, num_channels=128,  
+                      results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
+                      log_dir ="MACE_models", model_dir="MACE_models"):
+        module_init_time=time.time()
+
+        if self.energy_weight is not None:
+            energy_weight=self.energy_weight
+        if self.forces_weight is not None:
+            forces_weight=self.forces_weight
+        if self.max_num_epochs is not None:
+            max_num_epochs=self.max_num_epochs
+        if self.valid_fraction is not None:
+            valid_fraction=self.valid_fraction
+
+
+        self.train_file=train_file
+        self.valid_fraction=valid_fraction
+
+        if device is not None:
+            print("Warning: device keyword is deprecated. Please use platform instead")
+            ashexit()
+
+        if platform is None:
+            print("Warning: platform not passed to train. Using object's platform attribute:", self.platform)
+            platform=self.platform
+
+        print("Training activated")
+        print("Training parameters:")
+        print("config_file", config_file)
+        print("name:", model)
+        print("model:", model)
+        print("platform:", platform)
+        print("Validation set fraction (valid_fraction):", valid_fraction)
+        print("train_file:", self.train_file)
+        print("E0s:", E0s)
+        print("energy_key:", energy_key)
+        print("forces_key:", forces_key)
+        print("energy_weight:", energy_weight)
+        print("forces_weight:", forces_weight)
+        print("max_num_epochs:", max_num_epochs)
+        print("swa:", swa)
+        print("seed:", seed)
+        print("batch_size:", batch_size)
+        print("max_L:", max_L)
+        print("r_max:", r_max)
+        print("num_channels:", num_channels)
+        print("results_dir:", results_dir)
+        print("checkpoints_dir:", checkpoints_dir)
+        print("log_dir:", log_dir)
+        print("model_dir:", model_dir)
+
+        self.check_file_exists(self.train_file)
+
+        #Write 
+        print("\nWriting MACE config file to disk as as:", self.config_filename)
+        #write_mace_config(config_file=self.config_filename)
+        print()
+        write_mace_config(config_file=config_file, name=name, model=model, platform=platform, 
+                      foundation_model=foundation_model, multiheads_finetuning=multiheads_finetuning, 
+                      lr=lr, weight_decay=0.0, 
+                      scaling=scaling, 
+                      ema=ema, ema_decay=ema_decay, amsgrad=amsgrad, clip_grad=clip_grad, 
+                      valid_fraction=valid_fraction, train_file=self.train_file,E0s=E0s,
+                      energy_key=energy_key, forces_key=forces_key,        
+                      energy_weight=energy_weight, forces_weight=forces_weight,
+                      max_num_epochs=max_num_epochs, swa=swa, batch_size=batch_size,
+                      max_L = max_L, r_max = r_max, seed=seed,
+                      num_channels=num_channels,  
+                      results_dir= results_dir, checkpoints_dir = checkpoints_dir, 
+                      log_dir=log_dir, model_dir=model_dir)
+        print()
+        import logging
+        import sys
+        from mace.cli.run_train import main as mace_run_train_main
+
+        logging.getLogger().handlers.clear()
+        sys.argv = ["program", "--config", self.config_filename]
+        print("="*100)
+        print("MACE BEGINNING")
+        print("="*100)
+        mace_run_train_main()
+        print("="*100)
+        print("MACE DONE")
+        print("="*100)
+        self.training_done=True
+        print("Training by MACE is done. Hopefully it produced something sensible")
+        print(f"The final models are located in directory: {results_dir}")
+        print(f"Recommended model files to use for production: {results_dir}/{name}_compiled.model and {results_dir}/{name}_stagetwo_compiled.model")
+        print()
+        if self.model_file is not None:
+            print("Model_file attribute was previously set at initialization.")
+            print(f"Moving and renaming file {results_dir}/{name}_stagetwo_compiled.model   to :  {self.model_file}")
+            shutil.move(f"{results_dir}/{name}_stagetwo_compiled.model", self.model_file)
+        else:
+            self.model_file=f"{os.path.abspath(os.getcwd())}/{results_dir}/{name}_stagetwo_compiled.model"
+        print("model_file attribute is:", self.model_file )
+        print("MACETheory object can now be used directly.")
+
+        # If we train with a specific device we would want to use that same device for evaluation/prediction
+        self.platform=platform
+        print("Setting platform of object to be ", self.platform)
+
+        #Load model from file
+        self.modelfile_load()
+
+        print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} finetune', moduleindex=2)
+
+
     def check_file_exists(self, file):
         import os
         if file is None:
@@ -303,7 +419,7 @@ class MACETheory():
             self.model = self.model.to(self.platform)  # for possible cuda problems
             print_time_rel(module_init_time, modulename=f'MACE model-load', moduleindex=2)
 
-    # Load foundational model by name
+    # Load foundation model by name
     def modelname_load(self):
         print("Inside modelname_load")
         print("model_name:", self.model_name)
@@ -455,7 +571,7 @@ class MACETheory():
         atoms.info["spin"] = mult
     
         # New simpler MACE interface via ASE
-        # Works for foundational models
+        # Works for foundation models
         print_time_rel(module_init_time, modulename=f'MACE run - after atoms', moduleindex=2)
         if self.new_interface is True:
             # Add loaded model to ASE calculator
@@ -572,6 +688,8 @@ class MACETheory():
 #NOTE: E0s="average" is easiest but not recommended.
 def write_mace_config(config_file="config.yml", name="model",model="MACE", platform='cpu',
                       valid_fraction=0.1, train_file="train_data_mace.xyz",E0s=None,
+                      foundation_model=None, multiheads_finetuning=False, lr=0.001, weight_decay=0.0,
+                      scaling="rms_forces_scaling", ema=True, ema_decay=0.999, amsgrad=True, clip_grad=1.0,
                       energy_key='energy_REF', forces_key='forces_REF',        
                       energy_weight=1, forces_weight=100,
                       max_num_epochs=500, swa=True, batch_size=10,
@@ -582,31 +700,63 @@ def write_mace_config(config_file="config.yml", name="model",model="MACE", platf
 
     import yaml
 
-    data = dict( model= model,
-num_channels= num_channels,
-max_L= max_L,
-r_max= r_max,
-name= name,
-model_dir= model_dir,
-log_dir= log_dir,
-checkpoints_dir= checkpoints_dir,
-results_dir= results_dir,
-train_file= train_file,
-valid_fraction= valid_fraction,
-energy_key= energy_key,
-forces_key= forces_key,
-energy_weight=energy_weight,
-forces_weight=forces_weight,
-device= platform,
-seed= seed,
-batch_size= batch_size,
-max_num_epochs= max_num_epochs,
-swa= swa)
-    # E0 atomic energies should generally be in training set file.
-    # Option to provide as dict here also or use E0="average"
-    if E0s is not None:
-        print("E0s option provided:", E0s)
-        data[E0s] = E0s
+    #Finetuning
+    if foundation_model is not None:
+        data = dict( model= model,
+                    foundation_model= foundation_model,
+                    multiheads_finetuning= multiheads_finetuning,
+                    lr= lr,
+                    weight_decay= weight_decay,
+                    scaling= scaling,
+                    ema= ema,
+                    ema_decay= ema_decay,
+                    amsgrad= amsgrad,
+                    clip_grad= clip_grad,
+                    num_channels= num_channels,
+                    max_L= max_L,
+                    r_max= r_max,
+                    name= name,
+                    model_dir= model_dir,
+                    log_dir= log_dir,
+                    checkpoints_dir= checkpoints_dir,
+                    results_dir= results_dir,
+                    train_file= train_file,
+                    valid_fraction= valid_fraction,
+                    energy_key= energy_key,
+                    forces_key= forces_key,
+                    energy_weight=energy_weight,
+                    forces_weight=forces_weight,
+                    device= platform,
+                    seed= seed,
+                    batch_size= batch_size,
+                    max_num_epochs= max_num_epochs)
+    # Regular training
+    else:   
+        data = dict( model= model,
+                num_channels= num_channels,
+                max_L= max_L,
+                r_max= r_max,
+                name= name,
+                model_dir= model_dir,
+                log_dir= log_dir,
+                checkpoints_dir= checkpoints_dir,
+                results_dir= results_dir,
+                train_file= train_file,
+                valid_fraction= valid_fraction,
+                energy_key= energy_key,
+                forces_key= forces_key,
+                energy_weight=energy_weight,
+                forces_weight=forces_weight,
+                device= platform,
+                seed= seed,
+                batch_size= batch_size,
+                max_num_epochs= max_num_epochs,
+                swa= swa)
+        # E0 atomic energies should generally be in training set file.
+        # Option to provide as dict here also or use E0="average"
+        if E0s is not None:
+            print("E0s option provided:", E0s)
+            data[E0s] = E0s
 
     with open(config_file, 'w') as outfile:
         yaml.dump(data, outfile, default_flow_style=False, sort_keys=False)
