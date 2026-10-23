@@ -107,7 +107,6 @@ class gxTBTheory(Theory):
             return self.energy
 
 # Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
-# TODO: QM/MM pointcharges for library
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None,
@@ -680,6 +679,9 @@ class xTBTheory:
             if self.printlevel >= 2:
                 print("Running xtB using {} cores".format(self.numcores))
             res = self.calcobject.singlepoint()
+            if PC is True:
+                #Releasing charges right away, otherwise they stay on the cached calcobject and mess up the next xtb calc with or without pc-embedding
+                self.calcobject.release_external_charges()
             if self.printlevel >= 2:
                 print("------------xTB calculation done-------------")
             if Grad == True:
@@ -690,21 +692,16 @@ class xTBTheory:
                 if self.printlevel >= 2:
                     print("xtb energy :", self.energy)
                 if PC == True:
-                    #pcgrad
-                    #get pcgrad
-                    print("pc grad is not yet implemented for runmode library ")
-                    print("If you were trying to use xtb in a QM/MM object then you have to switch to runmode='inputfile' instead")
-                    ashexit()
-
-                    #_gradient = np.zeros((len(self), 3))
-                    #_lib.xtb_getGradient(self._env, self._res, _cast("double*", _gradient))
-                    #TODO: Create get_PCgradient function in the Python API
-                    #TODO: Wait for xtb-python to be updated to use xtb version 6.5.1
-                    self.pcgrad =res.get_PCgradient()
-                    print("self.pcgrad:", self.pcgrad)
-                    ashexit()
-                    print("------------ENDING XTB-INTERFACE-------------")
-                    print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
+                    #Grab pointcharge gradient from the Results object (xtb-python names it get_pc_gradient).
+                    pcgrad_method = getattr(res, 'get_pc_gradient', getattr(res, 'get_PCgradient', None))
+                    if pcgrad_method is None:
+                        print(BC.WARNING,"This xtb-python version does not wrap the xtb_getPCGradient C-function, so the pointcharge gradient can not be grabbed.",BC.END)
+                        print("If you were trying to use xtb in a QM/MM object then you have to switch to runmode='inputfile' instead")
+                        ashexit()
+                    self.pcgrad = pcgrad_method(len(MMcharges))
+                    if self.printlevel >= 2:
+                        print("------------ENDING XTB-INTERFACE-------------")
+                        print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                     return self.energy, self.grad, self.pcgrad
                 else:
                     if self.printlevel >= 2:
