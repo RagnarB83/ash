@@ -76,6 +76,16 @@ class gxTBTheory(Theory):
             charge=None, mult=None):
 
         module_init_time=time.time()
+
+        #g-xTB does not support point charge embedding ($pcem), so a QM/MM energy would
+        #silently come back without embedding while a QM/MM gradient would fail on the
+        #missing PC-gradient. Refuse instead.
+        if PC is True:
+            print(BC.FAIL, "Error. gxTBTheory does not support QM/MM point-charge embedding", BC.END)
+            print("g-xTB lists point charge embedding ($pcem) as an unsupported feature.")
+            print("Use xTBTheory(runmode='inputfile') instead for an xTB-based QM-region.")
+            ashexit()
+
         numatoms=len(current_coords)
         write_xyzfile(elems, current_coords, "gxtb", printlevel=2, writemode='w', title="title")
 
