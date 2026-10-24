@@ -1357,6 +1357,7 @@ class OpenMMTheory:
         for i, f in enumerate(forces):
             customforce.setParticleParameters(i, i, f)
         customforce.updateParametersInContext(simulation.context)
+
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
         print("Adding restraints:", restraints)
@@ -1696,6 +1697,7 @@ class OpenMMTheory:
 
         #Create simulation, either as part of OpenMMTheory (not picklable)
         #or not (used by run method)
+        #print_time_rel(timeA, modulename="creating/updating simulation 1a", currprintlevel=self.printlevel)
         if internal is True:
             #NOTE: Not sure if needed anymore
             self.simulation = openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,
@@ -3661,6 +3663,7 @@ class OpenMM_MDclass:
             #If nothing found then we create:
             if self.openmmobject is None:
                 #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
+                print("Creating OpenMMTheory object to drive simulation")
                 self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
                                 hydrogenmass=hydrogenmass, constraints=constraints,
                                 periodic=force_periodic,
@@ -4366,10 +4369,10 @@ class OpenMM_MDclass:
                     print(f"Will use atoms {wrapping_atoms} for wrapping")
 
         ########################################
-        # Writing intial frame to disk as PDB.
+        # Writing initial frame to disk as PDB.
         ########################################
         pdb_filename=self.trajfilename+"_firstframe.pdb"
-        print("Writing intial frame to disk as PDB-file:", pdb_filename)
+        print("Writing initial frame to disk as PDB-file:", pdb_filename)
         blastate = self.simulation.context.getState(getEnergy=True, getPositions=True, 
                                     getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
         with open(pdb_filename, 'w') as f:
@@ -4380,7 +4383,7 @@ class OpenMM_MDclass:
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
         # PDBx/mmCIF
         pdbx_filename=self.trajfilename+"_firstframe.cif"
-        print("Writing intial frame to disk as PDBx/mmCIF-file:", pdbx_filename)
+        print("Writing initial frame to disk as PDBx/mmCIF-file:", pdbx_filename)
         with open(pdbx_filename, 'w') as f:
             openmm.app.pdbxfile.PDBxFile.writeHeader(self.openmmobject.topology, f)
             openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
@@ -4439,10 +4442,11 @@ class OpenMM_MDclass:
                             print_time_rel(checkpoint, modulename="set positions update", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                             checkpoint = time.time()
 
-                # Run WrapTheory step to get full system QM+PC gradient.
+                # Run WrapTheory step to get full system gradient.
+                # First making sure Wraptheory does not compute the OpenMM part of the gradient (which is handled self.openmmobject)
+                self.wraptheory_object.skip_openmmtheory_run=True
                 wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
                                       charge=self.charge, mult=self.mult)
-                
                 #NOTE: if WrapTheory contains QMMMTheory then wrapgradient does not have MM contribution (only QM_PC from QM/MM and other theory contributino)
                 print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 

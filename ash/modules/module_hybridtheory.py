@@ -6,6 +6,7 @@ HybridTheory module:
 import time
 from ash.interfaces.interface_pyscf import PySCFTheory
 from ash.interfaces.interface_ORCA import ORCATheory
+from ash.interfaces.interface_OpenMM import OpenMMTheory
 import numpy as np
 import os
 import copy
@@ -376,7 +377,7 @@ class WrapTheory(Theory):
     def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None,
                  theory1_atoms=None, theory2_atoms=None, theory3_atoms=None, theory4_atoms=None,
                  theory5_atoms=None,
-                 theory_operators=None,
+                 theory_operators=None, skip_openmmtheory_run=False,
                  periodic=False, periodic_cell_vectors=None, periodic_cell_dimensions=None):
         super().__init__()
 
@@ -394,6 +395,9 @@ class WrapTheory(Theory):
         self.theory3_atoms=theory3_atoms
         self.theory4_atoms=theory4_atoms
         self.theory5_atoms=theory5_atoms
+
+        # Whether to skip the OpenMM theory run or not (applies to MD)
+        self.skip_openmmtheory_run=skip_openmmtheory_run
 
         # PBC
         self.periodic=periodic
@@ -475,6 +479,14 @@ class WrapTheory(Theory):
         chosen_elems=qm_elems
         for i,theory in enumerate(self.theories):
             print(f"Now running Theory: {theory.theorynamelabel}")
+
+            if isinstance(theory, OpenMMTheory) and self.skip_openmmtheory_run is True:
+                print("skip_openmmtheory_run is True. Skipping OpenMMTheory run. Setting to zero energy and zero gradient.")
+                energy = 0.0
+                grad = np.zeros((full_dimension,3))
+                energies.append(energy)
+                gradients.append(grad)
+                continue
 
             # If theory_atoms have been set then we only pass part of coordinates over
             if i+1 == 1 and self.theory1_atoms is not None:
