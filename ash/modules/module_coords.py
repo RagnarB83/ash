@@ -3491,7 +3491,11 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
     else:
         print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
     #Dict of linkatom distances for different elements
-    linkdistances_dict = {('C', 'H'): 1.09, ('O', 'H'): 0.98, ('N', 'H'): 0.99}
+    linkdistances_dict = {('B', 'H'): 1.19, ('C', 'H'): 1.09, ('N', 'H'): 0.99, ('O', 'H'): 0.98, 
+                          ('Al', 'H'): 1.65, ('Si', 'H'): 1.48, ('P', 'H'): 1.42, ('S', 'H'): 1.34,
+                          ('Ga', 'H'): 1.66, ('Ge', 'H'): 1.53, ('As', 'H'): 1.52, ('Se', 'H'): 1.46,
+                          ('Fe','H'): 1.59}
+
     print("Linkatom distance dictionary:", linkdistances_dict)
     # If dictionary of linkatom-distances provided then use that instead
     if linkatom_method == 'ratio':

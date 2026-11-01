@@ -951,14 +951,18 @@ class QMMMTheory:
                         QM1grad_contrib, MM1grad_contrib = linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad)
                     elif self.linkatom_forceproj_method == "lever": 
                         QM1grad_contrib, MM1grad_contrib = linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad)
-                    elif self.linkatom_forceproj_method == "chain":
-                        QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
+                    #elif self.linkatom_forceproj_method == "chain":
+                    #    print("linkatom_forceproj_method=chain is disabled.")
+                    #    ashexit()
+                    #    #QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
                     elif self.linkatom_forceproj_method.lower() == "none" or self.linkatom_forceproj_method == None:
                         QM1grad_contrib = np.zeros(3)
                         MM1grad_contrib = np.zeros(3)
                     else:
                         print("Unknown linkatom_forceproj_method. Exiting")
                         ashexit()
+                    if self.printlevel > 2:
+                        print(f"Linkatom {pair}: QM1 contrib {QM1grad_contrib}, MM1 contrib {MM1grad_contrib}")
                     # Updating full QM_MM_gradient
                     self.QM_MM_gradient[fullatomindex_qm] += QM1grad_contrib
                     self.QM_MM_gradient[fullatomindex_mm] += MM1grad_contrib
@@ -1366,8 +1370,8 @@ class QMMMTheory:
                         QM1grad_contrib, MM1grad_contrib = linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad)
                     elif self.linkatom_forceproj_method == "lever": 
                         QM1grad_contrib, MM1grad_contrib = linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad)
-                    elif self.linkatom_forceproj_method == "chain":
-                        QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
+                    #elif self.linkatom_forceproj_method == "chain":
+                    #    QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
                     elif self.linkatom_forceproj_method.lower() == "none" or self.linkatom_forceproj_method == None:
                         QM1grad_contrib = np.zeros(3)
                         MM1grad_contrib = np.zeros(3)
@@ -1904,22 +1908,23 @@ def linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad):
     return gradQM, gradMM
 
 # simplistic, unused 
-def linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad):
-    # QM1-L and QM1-MM1 distances
-    QLdistance=ash.modules.module_coords.distance(Qcoord,Lcoord)*ash.constants.ang2bohr
-    vec = (Mcoord - Qcoord)*ash.constants.ang2bohr
-    R2 = vec[0]*vec[0]+vec[1]*vec[1]+vec[2]*vec[2]
-    oneR = 1.0 / math.sqrt(R2)
-    lnk_dis_oneR = QLdistance*oneR
-    vec = vec*oneR
-    dotprod = Lgrad[0]*(-1)*vec[0]+Lgrad[1]*(-1)*vec[1]+Lgrad[2]*(-1)*vec[2]
-    forcemod=np.zeros(3)
-    forcemod[0] = lnk_dis_oneR*(-1*Lgrad[0]-(dotprod*vec[0])) 
-    forcemod[1] = lnk_dis_oneR*(-1*Lgrad[1]-(dotprod*vec[1])) 
-    forcemod[2] = lnk_dis_oneR*(-1*Lgrad[2]-(dotprod*vec[2]))
-    #Returning forcemod as QM1 and MM1 contributions
-    # subtract from QM1,  add to MM1
-    return -1*forcemod,forcemod
+# Disabled: small numerical issue
+# def linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad):
+#     # QM1-L and QM1-MM1 distances
+#     QLdistance=ash.modules.module_coords.distance(Qcoord,Lcoord)*ash.constants.ang2bohr
+#     vec = (Mcoord - Qcoord)*ash.constants.ang2bohr
+#     R2 = vec[0]*vec[0]+vec[1]*vec[1]+vec[2]*vec[2]
+#     oneR = 1.0 / math.sqrt(R2)
+#     lnk_dis_oneR = QLdistance*oneR
+#     vec = vec*oneR
+#     dotprod = Lgrad[0]*(-1)*vec[0]+Lgrad[1]*(-1)*vec[1]+Lgrad[2]*(-1)*vec[2]
+#     forcemod=np.zeros(3)
+#     forcemod[0] = lnk_dis_oneR*(-1*Lgrad[0]-(dotprod*vec[0])) 
+#     forcemod[1] = lnk_dis_oneR*(-1*Lgrad[1]-(dotprod*vec[1])) 
+#     forcemod[2] = lnk_dis_oneR*(-1*Lgrad[2]-(dotprod*vec[2]))
+#     #Returning forcemod as QM1 and MM1 contributions
+#     # subtract from QM1,  add to MM1
+#     return -1*forcemod,forcemod
 
 
 # Convenient function to calculate and decompose the QM/MM energy of a system and QMMMTheory object

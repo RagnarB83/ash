@@ -17,8 +17,8 @@ from ash.modules.module_theory import Theory
 from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
 from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB_output
-import ash.constants
-import ash.functions.functions_elstructure
+from ash.modules.module_QMMM import linkatom_force_adv, linkatom_force_lever
+from ash.modules.module_coords import print_coords_for_atoms,get_boundary_atoms,get_linkatom_positions,distance,get_connected_atoms, write_coords_all
 
 class Correction_handler:
     def __init__(self):
@@ -376,11 +376,13 @@ class WrapTheory(Theory):
     """
     def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None,
                  theory1_atoms=None, theory2_atoms=None, theory3_atoms=None, theory4_atoms=None,
-                 theory5_atoms=None,
+                 theory5_atoms=None, theories_chargemult=None,
                  theory_operators=None, skip_openmmtheory_run=False,
-                 periodic=False, periodic_cell_vectors=None, periodic_cell_dimensions=None):
+                 periodic=False, periodic_cell_vectors=None, periodic_cell_dimensions=None,
+                 use_linkatoms=True,
+                 linkatom_method='ratio', linkatom_simple_distance=None, linkatom_forceproj_method="adv",
+                 linkatom_ratio=0.723, linkatom_type='H', linkatom_conn_scale=1.0, linkatom_conn_tolerance=0.4):
         super().__init__()
-
         self.theorytype="QM"
         self.theory1=theory1
         self.theory2=theory2
@@ -389,6 +391,37 @@ class WrapTheory(Theory):
         self.filename=""
         self.theorynamelabel="WrapTheory"
         self.theories=theories
+
+        print_line_with_mainheader(f"{self.theorynamelabel} initialization")
+        print("Creating WrapTheory object")
+
+
+        if theories is not None :
+            print("Theories defined by keyword:", theories)
+            if theory1 is not None or theory2 is not None:
+                print("Error: Both theory1/theory2 keywords and theories keyword cannot be defined")
+                print("Choose either to define: theory1 and theory2       or provide a list of all theories using the theories keyword")
+                ashexit()
+        else:
+            if theory1 is None or theory2 is None:
+                print("Error: Either theories keyword or theory1 and theory2 have to be provided to WrapTheory")
+                ashexit()
+            self.theories=[theory1,theory2]
+
+        # Charge/mult for each theory. e.g. [[0,1],[1,2]]
+        self.theories_chargemult=theories_chargemult
+
+        print("Checking if theories_chargemult information has been provided and has correct length (should be a list of lists, e.g. [[0,1],[1,2]]) . ")
+        if self.theories_chargemult is not None:
+            print(f"theories_chargemult information provided: {self.theories_chargemult}")
+            print("Checking if complete")
+            if len(self.theories_chargemult) != len(self.theories):
+                print(f"Error: Number of theories_chargemult {len(self.theories_chargemult)} is not equal to number of theories specified {len(self.theories)}")
+                ashexit()
+        else:
+            print("Warning: theories_chargemult information not provided.")
+            print("This means that each theory will assume the same charge/mult information for all theories. Charge/mult information needs to be provided via either Fragment or Job-function in this case")
+
         # Option to have theory only calculate certain atoms
         self.theory1_atoms=theory1_atoms
         self.theory2_atoms=theory2_atoms
@@ -396,8 +429,25 @@ class WrapTheory(Theory):
         self.theory4_atoms=theory4_atoms
         self.theory5_atoms=theory5_atoms
 
+
         # Whether to skip the OpenMM theory run or not (applies to MD)
         self.skip_openmmtheory_run=skip_openmmtheory_run
+
+        # Linkatoms False by default. Later checked.
+        self.linkatoms = use_linkatoms
+        self.conn_scale = linkatom_conn_scale
+        self.conn_tolerance = linkatom_conn_tolerance
+        self._boundary_cache = {}
+        # Linkatom method strategy to determine linkatom position or QM-L distance
+        self.linkatom_type=linkatom_type # Usually 'H'
+        self.linkatom_method = linkatom_method # Options: 'simple' or 'ratio'
+        self.linkatom_simple_distance = linkatom_simple_distance # For method simple, Default 1.09 Angstrom
+        # For method ratio. see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
+        self.linkatom_ratio=linkatom_ratio
+        # Linkatom projection method Options: 'adv', 'lever', 'chain', 'none'
+        self.linkatom_forceproj_method = linkatom_forceproj_method
+        if self.linkatom_forceproj_method is None:
+            self.linkatom_forceproj_method="none"
 
         # PBC
         self.periodic=periodic
@@ -411,20 +461,9 @@ class WrapTheory(Theory):
                 self.periodic_cell_vectors = periodic_cell_vectors
                 self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
 
-        print_line_with_mainheader(f"{self.theorynamelabel} initialization")
-        print("Creating WrapTheory object")
 
-        if theories is not None :
-            print("Theories defined by keyword")
-            if theory1 is not None or theory2 is not None:
-                print("Error: Both theory1/theory2 keywords and theories keyword cannot be defined")
-                print("Choose either to define: theory1 and theory2       or provide a list of all theories using the theories keyword")
-                exit()
-        else:
-            if theory1 is None or theory2 is None:
-                print("Error: Either theories keyword or theory1 and theory2 have to be provided to WrapTheory")
-                ashexit()
-            self.theories=[theory1,theory2]
+
+
 
         # Operators: '+' or '-' for each theory
         # By default we sum
@@ -457,6 +496,67 @@ class WrapTheory(Theory):
 
             self.periodic_cell_vectors = cell_params_to_vectors(periodic_cell_dimensions)
 
+    def _get_theory_atoms(self, i):
+        atoms_list = [self.theory1_atoms, self.theory2_atoms, self.theory3_atoms,
+                    self.theory4_atoms, self.theory5_atoms]
+        return atoms_list[i] if i < len(atoms_list) else None
+
+    def _get_boundaryatoms(self, i, region_atoms, current_coords, elems):
+        """Boundary atoms (QM1:MM1 dict) for theory i, determined once and cached"""
+        if i not in self._boundary_cache:
+            self._boundary_cache[i] = get_boundary_atoms(
+                region_atoms, current_coords, elems, self.conn_scale, self.conn_tolerance,
+                excludeboundaryatomlist=None, unusualboundary=None)
+            print(f"Theory {i+1}: boundary atoms (region:outside):", self._boundary_cache[i])
+        return self._boundary_cache[i]
+
+    def create_linkatoms(self, boundaryatoms, current_coords, region_atoms, elems):
+        checkpoint = time.time()
+        linkatoms_dict = get_linkatom_positions(
+            boundaryatoms, region_atoms, current_coords, elems,
+            linkatom_type=self.linkatom_type, linkatom_method=self.linkatom_method,
+            linkatom_simple_distance=self.linkatom_simple_distance,
+            linkatom_ratio=self.linkatom_ratio)
+        pairs = sorted(linkatoms_dict.keys())   # defines linkatom ordering (appended after region atoms)
+        coords = np.array([linkatoms_dict[p] for p in pairs])
+        print_time_rel(checkpoint, modulename='create_linkatoms', moduleindex=3,
+                    currprintlevel=self.printlevel, currthreshold=2)
+        return linkatoms_dict, pairs, coords
+
+    def linkatom_force_projection(self, pairs, linkatoms_dict, region_atoms, regiongrad, 
+                                  fullgrad, current_coords):
+        """Project linkatom gradients onto the QM1 (in region) and MM1 (outside region) atoms.
+    regiongrad: gradient from theory, shape (n_region + n_linkatoms, 3)
+    fullgrad:   (N_full,3) array already holding regiongrad[:n_region] at region_atoms
+        """
+
+        nreg = len(region_atoms)
+        for i, pair in enumerate(pairs):
+            print(f"i: {i}, pair: {pair}")
+            Lgrad = regiongrad[nreg + i]
+            Lcoord = linkatoms_dict[pair]
+            Qcoord = current_coords[pair[0]]
+            Mcoord = current_coords[pair[1]]
+            method = self.linkatom_forceproj_method.lower()
+            if method == "adv":
+                print("adv")
+                QM1grad, MM1grad = linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad)
+            elif method == "lever":
+                QM1grad, MM1grad = linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad)
+            #elif method == "chain":
+            #    QM1grad, MM1grad = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
+            elif method == "none":
+                QM1grad = MM1grad = np.zeros(3)
+            else:
+                print("Unknown linkatom_forceproj_method:", self.linkatom_forceproj_method)
+                ashexit()
+            if self.printlevel > 2:
+                print(f"Linkatom {pair}: QM1 contrib {QM1grad}, MM1 contrib {MM1grad}")
+            fullgrad[pair[0]] += QM1grad
+            fullgrad[pair[1]] += MM1grad
+        return fullgrad
+
+
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None,
             charge=None, mult=None):
@@ -475,8 +575,9 @@ class WrapTheory(Theory):
         energies=[]
         gradients=[]
         pc_gradient=None
-        chosen_coords=current_coords
-        chosen_elems=qm_elems
+        current_coords = np.asarray(current_coords)
+        #chosen_coords=current_coords
+        #chosen_elems=qm_elems
         for i,theory in enumerate(self.theories):
             print(f"Now running Theory: {theory.theorynamelabel}")
 
@@ -488,62 +589,66 @@ class WrapTheory(Theory):
                 gradients.append(grad)
                 continue
 
-            # If theory_atoms have been set then we only pass part of coordinates over
-            if i+1 == 1 and self.theory1_atoms is not None:
-                print("theory1_atoms has been set:", self.theory1_atoms)
-                chosen_coords = np.take(current_coords, self.theory1_atoms, axis=0)
-                chosen_elems = [qm_elems[i] for i in self.theory1_atoms]
-            elif i+1 == 2 and self.theory2_atoms is not None:
-                print("theory2_atoms has been set:", self.theory2_atoms)
-                chosen_coords = np.take(current_coords, self.theory2_atoms, axis=0)
-                chosen_elems = [qm_elems[i] for i in self.theory2_atoms]
-            elif i+1 == 3 and self.theory3_atoms is not None:
-                print("theory3_atoms has been set:", self.theory3_atoms)
-                chosen_coords = np.take(current_coords, self.theory3_atoms, axis=0)
-                chosen_elems = [qm_elems[i] for i in self.theory3_atoms]
-            elif i+1 == 4 and self.theory4_atoms is not None:
-                print("theory4_atoms has been set:", self.theory4_atoms)
-                chosen_coords = np.take(current_coords, self.theory4_atoms, axis=0)
-                chosen_elems = [qm_elems[i] for i in self.theory4_atoms]
-            elif i+1 == 5 and self.theory5_atoms is not None:
-                print("theory5_atoms has been set:", self.theory5_atoms)
-                chosen_coords = np.take(current_coords, self.theory5_atoms, axis=0)
-                chosen_elems = [qm_elems[i] for i in self.theory5_atoms]
-            eg_tuple = theory.run(current_coords=chosen_coords,
-                                                current_MM_coords=current_MM_coords,
-                                                MMcharges=MMcharges, qm_elems=chosen_elems,
-                                                elems=elems, Grad=Grad, PC=PC, numcores=numcores,
-                                                label=label, charge=charge, mult=mult)
+            # Reset every iteration (fixes leaking between theories)
+            atoms = self._get_theory_atoms(i)
+            chosen_coords, chosen_elems = current_coords, qm_elems
+            linkinfo = None
+
+            if atoms is not None:
+                print(f"theory{i+1}_atoms has been set:", atoms)
+                chosen_coords = np.take(current_coords, atoms, axis=0)
+                chosen_elems = [qm_elems[j] for j in atoms]
+                if self.linkatoms:
+                    boundaryatoms = self._get_boundaryatoms(i, atoms, current_coords, qm_elems)
+                    if len(boundaryatoms) > 0:
+                        ldict, pairs, lcoords = self.create_linkatoms(boundaryatoms, current_coords,
+                                                                    atoms, qm_elems)
+                        linkinfo = (ldict, pairs)
+                        chosen_coords = np.append(chosen_coords, lcoords, axis=0)
+                        chosen_elems = chosen_elems + [self.linkatom_type]*len(pairs)
+                        print(f"Theory {i+1}: added {len(pairs)} linkatoms")
+            # Charge/mult information for each theory. If not provided, use the charge/mult of the system
+            if self.theories_chargemult is not None:
+                theory_charge, theory_mult = self.theories_chargemult[i]
+
+                if theory_charge is None or theory_mult is None:
+                    print("Error: Charge or multiplicity for theory", i+1, "has not been correctly specified in theories_chargemult. Please provide charge/mult for each theory.")
+                    ashexit()
+                print(f"Using charge={theory_charge} and mult={theory_mult} for this theory")
+            else:
+                print("Warning: theories_chargemult information was not provided. Checking if charge/mult was provided to WrapTheory.run()")
+                if charge is None or mult is None:
+                    print("Error: Charge or multiplicity has not been specified for WrapTheory.run(). Please provide charge/mult for each theory using theories_chargemult keyword.")
+                    ashexit()
+                print(f"Warning: Using charge={charge} and mult={mult} for this theory")
+                theory_charge, theory_mult = charge, mult
+
+            # Run theory calculation
+            eg_tuple = theory.run(current_coords=chosen_coords, current_MM_coords=current_MM_coords,
+                                MMcharges=MMcharges, qm_elems=chosen_elems, elems=chosen_elems,
+                                Grad=Grad, PC=PC, numcores=numcores, label=label,
+                                charge=theory_charge, mult=theory_mult)
+
             if Grad:
-                #print(f"Theory: {theory.theorynamelabel}  gradient shape", eg_tuple[1].shape)
-                energy = eg_tuple[0]
-                tempgrad = eg_tuple[1]
+                energy, tempgrad = eg_tuple[0], eg_tuple[1]
                 if PC and len(eg_tuple) == 3:
                     pc_gradient = eg_tuple[2]
-                # Assemble gradient of correct dimension
-                if i+1 == 1 and self.theory1_atoms is not None:
-                    fullgrad=np.zeros((full_dimension,3))
-                    fullgrad[self.theory1_atoms] = tempgrad
-                    grad=fullgrad
-                elif i+1 == 2 and self.theory2_atoms is not None:
-                    fullgrad=np.zeros((full_dimension,3))
-                    fullgrad[self.theory2_atoms] = tempgrad
-                    grad=fullgrad
-                elif i+1 == 3 and self.theory3_atoms is not None:
-                    fullgrad=np.zeros((full_dimension,3))
-                    fullgrad[self.theory3_atoms] = tempgrad
-                    grad=fullgrad
+                if atoms is not None:
+                    nreg = len(atoms)
+                    grad = np.zeros((full_dimension, 3))
+                    grad[atoms] = tempgrad[:nreg]
+                    if linkinfo is not None:
+                        grad = self.linkatom_force_projection(linkinfo[1], linkinfo[0], atoms,
+                                                            tempgrad, grad, current_coords)
                 else:
-                    grad=tempgrad
+                    grad = tempgrad
                 energies.append(energy)
                 gradients.append(grad)
             else:
-                energy = eg_tuple
-                energies.append(energy)  
+                energies.append(eg_tuple)
         print("\nAll WrapTheory calculations are done!\n")
 
         # Combine energy and gradient
-
         # Regular summation
         if self.theory_operators is None:
             self.energy = sum(energies)
@@ -589,6 +694,13 @@ class WrapTheory(Theory):
                     for count,g in enumerate(gradients):
                         print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
                     print("Gradient (Combined):", self.gradient)
+
+        if self.printlevel > 2:
+            print("Writing out gradient")
+            from ash.modules.module_coords import write_coords_all
+            write_coords_all(self.gradient, qm_elems, indices=[i for i in range(len(qm_elems))], 
+                                        file=f"Wrapgradient", 
+                                        description=f"WrapTheory gradient {label} (au/Bohr):")
 
 
         print_time_rel(module_init_time, modulename='WrapTheory run', moduleindex=2, currprintlevel=self.printlevel, currthreshold=1)
