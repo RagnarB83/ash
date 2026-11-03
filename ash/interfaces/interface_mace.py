@@ -692,6 +692,102 @@ class MACETheory():
             return self.energy
 
 
+##############################
+# MACE via fastatomstruct
+##############################
+
+class fastatomstruct_MACETheory():
+    def __init__(self, model_file=None, model_name=None, model_name_subtype=None, model_name_head=None,
+                 platform='cpu', periodic=False, periodic_cell_vectors=None, label=None, numcores=1,
+                 periodic_cell_dimensions=None, printlevel=1):
+
+        self.theorytype = 'QM'
+        self.theorynamelabel = 'fsMACE'
+        self.analytic_hessian = False
+        self.numcores = numcores
+        self.printlevel = printlevel
+        self.properties = {}
+
+        print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
+
+        self.model_file=model_file
+        self.model_name=model_name
+        self.model_name_subtype=model_name_subtype
+        self.model_name_head=model_name_head
+        self.platform=platform
+        self.periodic=periodic
+        self.periodic_cell_vectors=periodic_cell_vectors
+        self.periodic_cell_dimensions=periodic_cell_dimensions
+        self.printlevel=printlevel
+
+        try:
+            import fastatomstruct as fs
+        except ImportError:
+            print("Error: fastatomstruct is not installed. Please install it via pip install fastatomstruct")
+            ashexit()
+
+        if self.model_file is not None:
+            self.calc = fs.MACECalculator(self.model_file, device=self.platform)
+        elif self.model_name is not None:
+            self.calc = fs.MACECalculator(self.model_name, device=self.platform)
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
+            charge=None, mult=None):
+        module_init_time = time.time()
+
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
+
+        #Create atoms object
+        use_ase=True
+        if use_ase is True:
+            import ase
+            if self.periodic:
+                atoms = ase.atoms.Atoms(qm_elems,positions=current_coords, cell=self.periodic_cell_vectors,
+                                        pbc=True)
+            else:
+                atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
+            atoms.info["charge"] = charge
+            atoms.info["spin"] = mult
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run-after-aseatoms-creation', moduleindex=2)
+        else:
+            # fs atoms object. No charge/mult 
+            import fastatomstruct as fs
+            if self.periodic_cell_vectors is None:
+                print("Warning: periodic_cell_vectors is None. Setting to 10x10x10 Ang cube")
+                self.periodic_cell_vectors = np.eye(3) * 10.0
+
+            # Create list of fs Element object
+            fs_elems = [getattr(fs.Element, el) for el in qm_elems]
+            atoms = fs.Atoms(current_coords, self.periodic_cell_vectors, fs_elems)
+            atoms.charge = charge
+            atoms.spin = mult
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run-after-atoms-creation', moduleindex=2)
+
+        # Run
+        result = self.calc.calculate(atoms)
+    
+        self.energy = result.energy.in_units_of('Ha')
+        print("fsMACE energy:", self.energy)
+        self.gradient = -result.forces.in_units_of('Ha/a0')
+
+        # Return E and G if Grad
+        if Grad:
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+            return self.energy, self.gradient
+        # Returning E only
+        else:
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+            return self.energy
+
+
+
 ###################################
 # Function to write config file
 ###################################

@@ -4448,7 +4448,7 @@ class OpenMM_MDclass:
                 wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
                                       charge=self.charge, mult=self.mult)
                 #NOTE: if WrapTheory contains QMMMTheory then wrapgradient does not have MM contribution (only QM_PC from QM/MM and other theory contributino)
-                print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                #print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
                 # Now need to update OpenMM external force with new force
                 CheckpointTime = time.time()
