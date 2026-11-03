@@ -656,8 +656,8 @@ class WrapTheory(Theory):
                     grad = np.zeros((full_dimension, 3))
                     grad[atoms] = tempgrad[:nreg]
                     if linkinfo is not None:
-                    grad = self.linkatom_force_projection(linkinfo[1], linkinfo[0], atoms,
-                                    tempgrad, grad, current_coords)
+                        grad = self.linkatom_force_projection(linkinfo[1], linkinfo[0], atoms,
+                                        tempgrad, grad, current_coords)
                 else:
                     grad = tempgrad
                 energies.append(energy)
