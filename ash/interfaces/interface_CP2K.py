@@ -366,12 +366,14 @@ class CP2KTheory:
         #Case: QM/MM CP2K job
         if PC is True:
             print("PC true")
-            if self.coupling == 'COULUMB':
+            if self.coupling == 'COULOMB' and self.basis_method != 'XTB':
                 print("Error: Coupling option is COULOMB (regular electrostatic embedding)")
                 print("This option is not compatible with CP2K GPW/GAPW option which is the main reason to use CP2K")
                 print("Set coupling to GAUSS or S-WAVE instead")
                 print("Exiting")
                 ashexit()
+            elif self.coupling == 'COULOMB' and self.basis_method == 'XTB':
+                print("Using COULOMB (regular electrostatic embedding) with xTB!")
             elif self.coupling == 'GAUSS':
                 print("Using Gaussian GEEP embedding")
                 print("Number of Gaussians used:", self.GEEP_num_gauss)
