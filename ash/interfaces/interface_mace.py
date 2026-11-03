@@ -698,7 +698,7 @@ class MACETheory():
 
 class fastatomstruct_MACETheory():
     def __init__(self, model_file=None, model_name=None, model_name_subtype=None, model_name_head=None,
-                 platform='cpu', periodic=False, periodic_cell_vectors=None, label=None, numcores=1,
+                 platform='cpu', enable_cueq=False, periodic=False, periodic_cell_vectors=None, label=None, numcores=1,
                  periodic_cell_dimensions=None, printlevel=1):
 
         self.theorytype = 'QM'
@@ -720,6 +720,8 @@ class fastatomstruct_MACETheory():
         self.periodic_cell_dimensions=periodic_cell_dimensions
         self.printlevel=printlevel
 
+        self.enable_cueq=enable_cueq
+
         try:
             import fastatomstruct as fs
         except ImportError:
@@ -727,9 +729,9 @@ class fastatomstruct_MACETheory():
             ashexit()
 
         if self.model_file is not None:
-            self.calc = fs.MACECalculator(self.model_file, device=self.platform)
+            self.calc = fs.MACECalculator(self.model_file, device=self.platform, enable_cueq=self.enable_cueq)
         elif self.model_name is not None:
-            self.calc = fs.MACECalculator(self.model_name, device=self.platform)
+            self.calc = fs.MACECalculator(self.model_name, device=self.platform, enable_cueq=self.enable_cueq)
 
     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
