@@ -633,6 +633,7 @@ class WrapTheory(Theory):
                 #print(f"Theory: {theory.theorynamelabel}  gradient shape", eg_tuple[1].shape)
                 energy = eg_tuple[0]
                 tempgrad = eg_tuple[1]
+                energy, tempgrad = eg_tuple[0], eg_tuple[1]
                 if PC and len(eg_tuple) >= 3 and eg_tuple[2] is not None:
                     component_pc_gradient = np.asarray(eg_tuple[2], dtype=np.float64)
 
@@ -649,19 +650,14 @@ class WrapTheory(Theory):
                         sign = 1.0 if self.theory_operators[i] == "+" else -1.0
 
                     pc_gradient += sign * component_pc_gradient
-                # Assemble gradient of correct dimension
-                if i+1 == 1 and self.theory1_atoms is not None:
-                    fullgrad=np.zeros((full_dimension,3))
-                    fullgrad[self.theory1_atoms] = tempgrad
-                    grad=fullgrad
-                elif i+1 == 2 and self.theory2_atoms is not None:
-                    fullgrad=np.zeros((full_dimension,3))
-                    fullgrad[self.theory2_atoms] = tempgrad
-                    grad=fullgrad
-                elif i+1 == 3 and self.theory3_atoms is not None:
-                    fullgrad=np.zeros((full_dimension,3))
-                    fullgrad[self.theory3_atoms] = tempgrad
-                    grad=fullgrad
+                # If region
+                if atoms is not None:
+                    nreg = len(atoms)
+                    grad = np.zeros((full_dimension, 3))
+                    grad[atoms] = tempgrad[:nreg]
+                    if linkinfo is not None:
+                    grad = self.linkatom_force_projection(linkinfo[1], linkinfo[0], atoms,
+                                    tempgrad, grad, current_coords)
                 else:
                     grad = tempgrad
                 energies.append(energy)
