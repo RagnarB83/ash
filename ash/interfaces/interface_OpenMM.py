@@ -925,10 +925,11 @@ class OpenMMTheory:
     # potential = MLPotential('ani2x')
     #TODO: Check whether system contains all previous settings (frozen atoms, constraints)
     #TODO: May have to check
-    def create_mixed_ML_system(self,potential,mlatoms):
+    def create_mixed_ML_system(self,potential,mlatoms, mlLongRange=None):
         print("Creating a mixed MM/ML system (replaces old MM system)")
         print("MLatom indices:", mlatoms)
-        self.system = potential.createMixedSystem(self.topology, self.system, mlatoms)
+        self.system = potential.createMixedSystem(self.topology, self.system, mlatoms,
+                                                  mlLongRange=mlLongRange)
 
     # Function to write PDB-file if everything is available
     def write_pdbfile(self, positions=None, outputname="system"):
@@ -1356,6 +1357,7 @@ class OpenMMTheory:
         for i, f in enumerate(forces):
             customforce.setParticleParameters(i, i, f)
         customforce.updateParametersInContext(simulation.context)
+
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
         print("Adding restraints:", restraints)
@@ -1687,6 +1689,7 @@ class OpenMMTheory:
             print("Coupling frequency:", self.coupling_frequency)
             print("Properties:", self.properties)
             print("Topology:", self.topology)
+            print("Platform:", self.platform_choice)
         printdebug("self.system.getForces() ", self.system.getForces())
 
         #Create integrator object (needed for every update)
@@ -1694,6 +1697,7 @@ class OpenMMTheory:
 
         #Create simulation, either as part of OpenMMTheory (not picklable)
         #or not (used by run method)
+        #print_time_rel(timeA, modulename="creating/updating simulation 1a", currprintlevel=self.printlevel)
         if internal is True:
             #NOTE: Not sure if needed anymore
             self.simulation = openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,
@@ -1817,13 +1821,16 @@ class OpenMMTheory:
         module_init_time = time.time()
         timeA = time.time()
         import openmm
+        # timeA = time.time()
+        if self.printlevel > 1:
+            print_line_with_subheader1("Running Single-point OpenMM Interface")
 
         #Need to call create_simulation here in order to get a simulation object
         simulation = self.create_simulation()
 
-        # timeA = time.time()
-        if self.printlevel > 1:
-            print_line_with_subheader1("Running Single-point OpenMM Interface")
+        print_time_rel(timeA, modulename="OpenMMTheory.run: after creating simulation", currprintlevel=self.printlevel, currthreshold=2)
+
+
         # If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply
         # coords). Then try if fragment object was supplied.
         # Otherwise internal coords if they exist
@@ -3281,7 +3288,7 @@ def write_nonbonded_FF_for_ligand(fragment=None, charge=None, mult=None, coulomb
         coulomb14scale=1.0
         lj14scale=1.0
 
-    if charge_model == "xTB":
+    if charge_model.upper() == "XTB":
         print("Using xTB charges")
         charges = basic_atomcharges_xTB(fragment=fragment, charge=charge, mult=mult, xtbmethod='GFN2')
     elif charge_model == "CM5_ORCA" or charge_model == "CM5":
@@ -3670,6 +3677,7 @@ class OpenMM_MDclass:
             #If nothing found then we create:
             if self.openmmobject is None:
                 #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
+                print("Creating OpenMMTheory object to drive simulation")
                 self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
                                 hydrogenmass=hydrogenmass, constraints=constraints,
                                 periodic=force_periodic,
@@ -4375,25 +4383,25 @@ class OpenMM_MDclass:
                     print(f"Will use atoms {wrapping_atoms} for wrapping")
 
         ########################################
-        # Writing intial frame to disk as PDB.
+        # Writing initial frame to disk as PDB.
         ########################################
         pdb_filename=self.trajfilename+"_firstframe.pdb"
-        print("Writing intial frame to disk as PDB-file:", pdb_filename)
+        print("Writing initial frame to disk as PDB-file:", pdb_filename)
         blastate = self.simulation.context.getState(getEnergy=True, getPositions=True, 
-                                        getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
+                                    getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
         with open(pdb_filename, 'w') as f:
             openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
             openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology,
-                                                  blastate.getPositions(asNumpy=True).value_in_unit(
+                                                blastate.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
         # PDBx/mmCIF
         pdbx_filename=self.trajfilename+"_firstframe.cif"
-        print("Writing intial frame to disk as PDBx/mmCIF-file:", pdbx_filename)
+        print("Writing initial frame to disk as PDBx/mmCIF-file:", pdbx_filename)
         with open(pdbx_filename, 'w') as f:
             openmm.app.pdbxfile.PDBxFile.writeHeader(self.openmmobject.topology, f)
             openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
-                                                  blastate.getPositions(asNumpy=True).value_in_unit(
+                                                blastate.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
 
         ###############################################################################
@@ -4448,12 +4456,13 @@ class OpenMM_MDclass:
                             print_time_rel(checkpoint, modulename="set positions update", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                             checkpoint = time.time()
 
-                # Run WrapTheory step to get full system QM+PC gradient.
+                # Run WrapTheory step to get full system gradient.
+                # First making sure Wraptheory does not compute the OpenMM part of the gradient (which is handled self.openmmobject)
+                self.wraptheory_object.skip_openmmtheory_run=True
                 wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
                                       charge=self.charge, mult=self.mult)
-                
                 #NOTE: if WrapTheory contains QMMMTheory then wrapgradient does not have MM contribution (only QM_PC from QM/MM and other theory contributino)
-                print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                #print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
                 # Now need to update OpenMM external force with new force
                 CheckpointTime = time.time()
@@ -4720,7 +4729,7 @@ class OpenMM_MDclass:
                     self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-        
+
         # 
         elif self.theory_runtype == "ONIOM":
             if self.printlevel >= 2:

@@ -19,7 +19,7 @@ class QMMMTheory:
                 qm_charge=None, qm_mult=None, chargeboundary_method="shift", exit_after_customexternalforce_update=False,
                 dipole_correction=True, linkatom_method='simple', linkatom_simple_distance=None,
                 linkatom_forceproj_method="adv", linkatom_ratio=0.723, linkatom_type='H',
-                update_QMregion_charges=False):
+                update_QMregion_charges=False, dipole_shift=0.15):
 
         module_init_time = time.time()
         timeA = time.time()
@@ -187,6 +187,7 @@ class QMMMTheory:
         # Note: For regular electrostatic embedding this should be True
         # Turn off for charge-shifting
         self.dipole_correction=dipole_correction
+        self.dipole_shift=dipole_shift # Default shift 
 
         # Whether MM-shifted performed or not. Will be set to True by self.ShiftMMCharges
         self.chargeshifting_done=False
@@ -317,6 +318,12 @@ class QMMMTheory:
                 self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
                 # Updating charges in MM object.
                 self.mm_theory.update_charges(self.qmatoms,[0.0 for i in self.qmatoms])
+
+                # Also removing QM-MM Coulomb interaction exceptions in OpenMM
+                if self.mm_theory_name == "OpenMMTheory":
+                    # Deleting Coulomb exception interactions involving QM and MM atoms
+                    self.mm_theory.delete_exceptions(self.qmatoms)
+
             elif self.embedding.lower() == "polembed_drude":
                 print("Polembed Drude embedding enabled.")
                 print("This means that QM-atoms will be zeroed for QM-MM interactions calculated by QM program")
@@ -409,6 +416,21 @@ class QMMMTheory:
         print_time_rel(timeA, modulename="ZeroQMCharges")
 
     def RCD_shifting_prep(self, charges_qmregionzeroed):
+
+        # Extract charges for MM boundary atoms
+        MM1_charges = [self.charges[i] for i in self.MMboundary_indices]
+
+        # RCD_shifting_prep: index the FULL array, compress at the end
+        pc = np.array(charges_qmregionzeroed, dtype=float)
+        pc[self.MMboundary_indices] = 0.0
+        extra = []
+        for (MM1, MMx), fract in zip(self.MMboundarydict.items(), MM1_charges / self.MMboundary_counts):
+            for i in MMx:
+                pc[i] -= fract
+                extra.append(2.0 * fract)
+        return np.append(pc[self.mmatoms], extra), extra
+
+    def oldRCD_shifting_prep(self, charges_qmregionzeroed):
         timeA=time.time()
         if self.printlevel > 1:
             print("Shifting MM charges at QM/MM boundary by RCD.")
@@ -447,17 +469,9 @@ class QMMMTheory:
         if self.printlevel > 1:
             print("Adding updated RCD charges at QM/MM boundary by RCD.")
 
-        # Distribute charge fractions to neighboring MM atoms
-        for MM1index, MM2indices in zip(self.MMboundarydict.keys(), self.MMboundarydict.values()):
-            # Looping over MM2 atoms
-            for i in MM2indices:
-                # Add new RCD sites to pointchargecoords and pointcharges
-                newsite = (fullcoords[i] + fullcoords[MM1index])/2
-                pointchargecoords = np.append(used_mmcoords, [newsite], axis=0)
-            # print("RCD-modified pointchargecoords:", pointchargecoords)
-
-        print_time_rel(timeA, modulename="RCD_shifting_update", currprintlevel=self.printlevel, currthreshold=1)
-        return pointchargecoords
+        # RCD_shifting_update: accumulate all sites
+        sites = [(fullcoords[i] + fullcoords[MM1]) / 2.0 for MM1, MMx in self.MMboundarydict.items() for i in MMx]
+        return np.append(used_mmcoords, np.array(sites), axis=0)
 
     def ShiftMMCharges(self):
         if self.chargeshifting_done is False:
@@ -538,7 +552,7 @@ class QMMMTheory:
         return
 
     # Create dipole charge (twice) for each MM2 atom that gets fraction of MM1 charge
-    def get_dipole_charge(self,delq,direction,mm1index,mm2index,current_coords):
+    def get_dipole_charge(self,delq,direction,mm1index,mm2index,current_coords, shift=0.15):
         # oldMM_distance = ash.modules.module_coords.distance_between_atoms(fragment=self.fragment,
         #                                                               atoms=[mm1index, mm2index])
         # Coordinates and distance
@@ -546,7 +560,6 @@ class QMMMTheory:
         mm2coords=np.array(current_coords[mm2index])
         MM_distance = ash.modules.module_coords.distance(mm1coords,mm2coords) # Distance between MM1 and MM2
 
-        SHIFT=0.15
         # Normalize vector
         def vnorm(p1):
             r = math.sqrt((p1[0]*p1[0])+(p1[1]*p1[1])+(p1[2]*p1[2]))
@@ -558,9 +571,9 @@ class QMMMTheory:
         # Dipole
         d = delq*2.5
         # Charge (abs value)
-        q0 = 0.5 * d / SHIFT
+        q0 = 0.5 * d / shift
         # Actual shift
-        shift = direction * SHIFT * ( MM_distance / 2.5 )
+        shift = direction * shift * ( MM_distance / 2.5 )
         # Position
         pos = mm2coords+np.array((shift*normdiffvector))
         # Returning charge with sign based on direction and position
@@ -583,8 +596,8 @@ class QMMMTheory:
             MM1charge_fract=MM1charge/len(MMx)
 
             for MM in MMx:
-                q_d1, pos_d1 = self.get_dipole_charge(MM1charge_fract,1,MM1,MM,current_coords)
-                q_d2, pos_d2 = self.get_dipole_charge(MM1charge_fract,-1,MM1,MM,current_coords)
+                q_d1, pos_d1 = self.get_dipole_charge(MM1charge_fract,1,MM1,MM,current_coords, shift=self.dipole_shift)
+                q_d2, pos_d2 = self.get_dipole_charge(MM1charge_fract,-1,MM1,MM,current_coords, shift=self.dipole_shift)
                 self.dipole_charges.append(q_d1)
                 self.dipole_charges.append(q_d2)
                 self.dipole_coords.append(pos_d1)
@@ -603,7 +616,29 @@ class QMMMTheory:
     # Faster version. Also, uses precalculated mask.
     def make_QM_PC_gradient(self):
         self.QM_PC_gradient[self.xatom_mask] = self.QMgradient_wo_linkatoms
-        self.QM_PC_gradient[~self.xatom_mask] = self.PCgradient[:self.num_allatoms - self.sum_xatom_mask]
+        num_realatoms = self.num_allatoms - self.sum_xatom_mask
+        self.QM_PC_gradient[~self.xatom_mask] = self.PCgradient[:num_realatoms]
+
+        # Adding dipole charges to gradient if they exist
+        if self.linkatoms is True and self.PCgradient is not None:
+                extra = np.asarray(self.PCgradient)[num_realatoms:]
+                k = 0
+                if self.chargeboundary_method == "shift" and self.dipole_correction is True:
+                    # dipole charges: pos = x_MMx + c*(x_MMx - x_MM1),  c = direction*SHIFT/2.5
+                    for MM1, MMx in self.MMboundarydict.items():
+                        for MM in MMx:
+                            for direction in (1, -1):               # order used in SetDipoleCharges
+                                c = direction * self.dipole_shift / 2.5   #
+                                g = extra[k]; k += 1
+                                self.QM_PC_gradient[MM]  += (1.0 + c) * g
+                                self.QM_PC_gradient[MM1] += -c * g
+                elif self.chargeboundary_method == "rcd":
+                    # RC sites: pos = (x_MM1 + x_MMx)/2
+                    for MM1, MMx in self.MMboundarydict.items():
+                        for MM in MMx:
+                            g = extra[k]; k += 1
+                            self.QM_PC_gradient[MM]  += 0.5 * g
+                            self.QM_PC_gradient[MM1] += 0.5 * g
         return
     # make_QM_PC_gradient=make_QM_PC_gradient_optimized
     # TruncatedPCfunction control flow for pointcharge field passed to QM program
@@ -916,14 +951,18 @@ class QMMMTheory:
                         QM1grad_contrib, MM1grad_contrib = linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad)
                     elif self.linkatom_forceproj_method == "lever": 
                         QM1grad_contrib, MM1grad_contrib = linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad)
-                    elif self.linkatom_forceproj_method == "chain":
-                        QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
+                    #elif self.linkatom_forceproj_method == "chain":
+                    #    print("linkatom_forceproj_method=chain is disabled.")
+                    #    ashexit()
+                    #    #QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
                     elif self.linkatom_forceproj_method.lower() == "none" or self.linkatom_forceproj_method == None:
                         QM1grad_contrib = np.zeros(3)
                         MM1grad_contrib = np.zeros(3)
                     else:
                         print("Unknown linkatom_forceproj_method. Exiting")
                         ashexit()
+                    if self.printlevel > 2:
+                        print(f"Linkatom {pair}: QM1 contrib {QM1grad_contrib}, MM1 contrib {MM1grad_contrib}")
                     # Updating full QM_MM_gradient
                     self.QM_MM_gradient[fullatomindex_qm] += QM1grad_contrib
                     self.QM_MM_gradient[fullatomindex_mm] += MM1grad_contrib
@@ -1331,8 +1370,8 @@ class QMMMTheory:
                         QM1grad_contrib, MM1grad_contrib = linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad)
                     elif self.linkatom_forceproj_method == "lever": 
                         QM1grad_contrib, MM1grad_contrib = linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad)
-                    elif self.linkatom_forceproj_method == "chain":
-                        QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
+                    #elif self.linkatom_forceproj_method == "chain":
+                    #    QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
                     elif self.linkatom_forceproj_method.lower() == "none" or self.linkatom_forceproj_method == None:
                         QM1grad_contrib = np.zeros(3)
                         MM1grad_contrib = np.zeros(3)
@@ -1869,22 +1908,23 @@ def linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad):
     return gradQM, gradMM
 
 # simplistic, unused 
-def linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad):
-    # QM1-L and QM1-MM1 distances
-    QLdistance=ash.modules.module_coords.distance(Qcoord,Lcoord)*ash.constants.ang2bohr
-    vec = (Mcoord - Qcoord)*ash.constants.ang2bohr
-    R2 = vec[0]*vec[0]+vec[1]*vec[1]+vec[2]*vec[2]
-    oneR = 1.0 / math.sqrt(R2)
-    lnk_dis_oneR = QLdistance*oneR
-    vec = vec*oneR
-    dotprod = Lgrad[0]*(-1)*vec[0]+Lgrad[1]*(-1)*vec[1]+Lgrad[2]*(-1)*vec[2]
-    forcemod=np.zeros(3)
-    forcemod[0] = lnk_dis_oneR*(-1*Lgrad[0]-(dotprod*vec[0])) 
-    forcemod[1] = lnk_dis_oneR*(-1*Lgrad[1]-(dotprod*vec[1])) 
-    forcemod[2] = lnk_dis_oneR*(-1*Lgrad[2]-(dotprod*vec[2]))
-    #Returning forcemod as QM1 and MM1 contributions
-    # subtract from QM1,  add to MM1
-    return -1*forcemod,forcemod
+# Disabled: small numerical issue
+# def linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad):
+#     # QM1-L and QM1-MM1 distances
+#     QLdistance=ash.modules.module_coords.distance(Qcoord,Lcoord)*ash.constants.ang2bohr
+#     vec = (Mcoord - Qcoord)*ash.constants.ang2bohr
+#     R2 = vec[0]*vec[0]+vec[1]*vec[1]+vec[2]*vec[2]
+#     oneR = 1.0 / math.sqrt(R2)
+#     lnk_dis_oneR = QLdistance*oneR
+#     vec = vec*oneR
+#     dotprod = Lgrad[0]*(-1)*vec[0]+Lgrad[1]*(-1)*vec[1]+Lgrad[2]*(-1)*vec[2]
+#     forcemod=np.zeros(3)
+#     forcemod[0] = lnk_dis_oneR*(-1*Lgrad[0]-(dotprod*vec[0])) 
+#     forcemod[1] = lnk_dis_oneR*(-1*Lgrad[1]-(dotprod*vec[1])) 
+#     forcemod[2] = lnk_dis_oneR*(-1*Lgrad[2]-(dotprod*vec[2]))
+#     #Returning forcemod as QM1 and MM1 contributions
+#     # subtract from QM1,  add to MM1
+#     return -1*forcemod,forcemod
 
 
 # Convenient function to calculate and decompose the QM/MM energy of a system and QMMMTheory object
