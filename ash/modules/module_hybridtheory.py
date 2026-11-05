@@ -372,7 +372,7 @@ class DualTheory:
 
 class WrapTheory(Theory):
     """ASH WrapTheory theory.
-    Combines 2 theories to give a modified energy and modified gradient
+    Combines multiple theories to give a modified energy and modified gradient
     """
     def __init__(self, theory1=None, theory2=None, theories=None, printlevel=2, label=None,
                  theory1_atoms=None, theory2_atoms=None, theory3_atoms=None, theory4_atoms=None,
@@ -462,17 +462,18 @@ class WrapTheory(Theory):
                 self.periodic_cell_dimensions = cell_vectors_to_params(periodic_cell_vectors)
 
 
-
-
-
         # Operators: '+' or '-' for each theory
         # By default we sum
         self.theory_operators=theory_operators
         if self.theory_operators is not None:
             print("self.theory_operators option active!")
-            if len(self.theory_operators) != len(self.theories):
-                print(f"Error: Number of theory-operators {len(self.theory_operators)} is not equal to number of theories {len(self.theories)}")
-                ashexit()
+            if self.theory_operators == "average" or self.theory_operators == "ensemble":
+                print("Using average/ensemble operator. This means that the energies and gradients of all theories will be averaged.")
+            else:
+                print("self.theory_operators:", self.theory_operators)
+                if len(self.theory_operators) != len(self.theories):
+                    print(f"Error: Number of theory-operators {len(self.theory_operators)} is not equal to number of theories {len(self.theories)}")
+                    ashexit()
 
     # Return cell gradient if periodic is True
     # Find first theory that has a cell gradient and return it
@@ -646,7 +647,8 @@ class WrapTheory(Theory):
                         )
 
                     sign = 1.0
-                    if self.theory_operators is not None:
+                    # Check to make sure theory_operators is a list of strings with '+' or '-' for each theory
+                    if isinstance(self.theory_operators, list):
                         sign = 1.0 if self.theory_operators[i] == "+" else -1.0
 
                     pc_gradient += sign * component_pc_gradient
@@ -676,6 +678,23 @@ class WrapTheory(Theory):
                 print("Energy (Combined):", self.energy)
             if Grad:
                 self.gradient = sum(gradients)
+                if self.printlevel > 2:
+                    for count,g in enumerate(gradients):
+                        print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
+                    print("Gradient (Combined):", self.gradient)
+        elif self.theory_operators == "average" or self.theory_operators == "ensemble":
+            print("theory_operators option is set to 'average'.")
+            self.energy = sum(energies) / len(energies)
+
+            if self.printlevel > 1:
+                for count,e in enumerate(energies):
+                    print(f"Energy ({self.theories[count].theorynamelabel}):", e)
+                print("Energy (Combined):", self.energy)
+                # Print standard deviation of energies
+                std_energy = np.std(energies)
+                print("Energy (Standard Deviation):", std_energy)
+            if Grad:
+                self.gradient = sum(gradients) / len(gradients)
                 if self.printlevel > 2:
                     for count,g in enumerate(gradients):
                         print(f"Gradient ({self.theories[count].theorynamelabel}):", g)

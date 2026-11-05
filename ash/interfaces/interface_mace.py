@@ -789,6 +789,96 @@ class fastatomstruct_MACETheory():
             return self.energy
 
 
+##############################
+# MACE via llmlip.rs
+##############################
+
+
+class llmliprs_MACETheory():
+    def __init__(self, model_file=None, model_name_subtype=None, model_name_head=None,
+                 platform='cpu', periodic=False, periodic_cell_vectors=None, label=None, numcores=1,
+                 periodic_cell_dimensions=None, printlevel=1, stress_boolean=False, dtype='float64', mace_mh1_wigner_mode='true_float64'):
+
+        self.theorytype = 'QM'
+        self.theorynamelabel = 'llmliprsMACE'
+        self.analytic_hessian = False
+        self.numcores = numcores
+        self.printlevel = printlevel
+        self.properties = {}
+
+        print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
+
+        self.model_file=model_file
+        self.model_name_subtype=model_name_subtype
+        self.model_name_head=model_name_head
+        self.platform=platform
+        self.periodic=periodic
+        self.periodic_cell_vectors=periodic_cell_vectors
+        self.periodic_cell_dimensions=periodic_cell_dimensions
+        self.printlevel=printlevel
+
+        self.dtype=dtype
+        self.stress_boolean = stress_boolean
+        self.mace_mh1_wigner_mode=mace_mh1_wigner_mode
+
+        try:
+            import llmlip
+        except ImportError:
+            print("Error: llmlip is not installed. Please install it (https://github.com/mizukami-group/llmlip.rs)")
+            ashexit()
+
+        self.model = llmlip.Model(self.model_file)
+
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
+            charge=None, mult=None):
+        module_init_time = time.time()
+
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
+
+        if self.periodic_cell_vectors is None:
+            pbc = (False, False, False)
+        else:
+            pbc = (True, True, True)
+
+        # Run
+        prediction = self.model.predict(
+            species=qm_elems,
+            positions=current_coords,          # shape (n, 3), Angstrom
+            cell=self.periodic_cell_vectors,                    # or shape (3, 3), row-major cell vectors
+            pbc=pbc,
+            energy=True,
+            forces=True,
+            stress=self.stress_boolean,
+            virial=False,
+            dtype=self.dtype,              # "float64", "float32", "f64", "f32"
+            head=self.model_name_head,
+            total_charge=charge,
+            spin_multiplicity=mult,
+            mace_mh1_wigner_mode=mace_mh1_wigner_mode,
+        )
+
+    
+        self.energy = prediction.energy/ash.constants.evtohar
+        print(f"{self.theorynamelabel} energy:", self.energy)
+        self.gradient = -prediction.forces/(51.422067090480645)
+
+        # Return E and G if Grad
+        if Grad:
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+            return self.energy, self.gradient
+        # Returning E only
+        else:
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+            return self.energy
+
 
 ###################################
 # Function to write config file
