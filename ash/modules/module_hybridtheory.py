@@ -433,7 +433,7 @@ class WrapTheory(Theory):
         # Whether to skip the OpenMM theory run or not (applies to MD)
         self.skip_openmmtheory_run=skip_openmmtheory_run
 
-        # Linkatoms False by default. Later checked.
+        # Linkatoms True by default, applies if theory-region is used. Later checked if linkatoms are actually needed.
         self.linkatoms = use_linkatoms
         self.conn_scale = linkatom_conn_scale
         self.conn_tolerance = linkatom_conn_tolerance
@@ -596,7 +596,9 @@ class WrapTheory(Theory):
                 chosen_coords = np.take(current_coords, atoms, axis=0)
                 chosen_elems = [qm_elems[j] for j in atoms]
                 if self.linkatoms:
+                    print("use_linkatoms set to True (default). Checking if linkatoms are needed for region")
                     boundaryatoms = self._get_boundaryatoms(i, atoms, current_coords, qm_elems)
+                    print("boundaryatoms", boundaryatoms)
                     if len(boundaryatoms) > 0:
                         ldict, pairs, lcoords = self.create_linkatoms(boundaryatoms, current_coords,
                                                                     atoms, qm_elems)

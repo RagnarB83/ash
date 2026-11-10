@@ -182,10 +182,7 @@ def EMLE_run(atomic_numbers, charges_mm, xyz_qm, xyz_mm, cell, charge,
         # Preparing results
         _BOHR_TO_ANGSTROM = 0.529177210903
         dE_dxyz_qm_bohr = dE_dxyz_qm.cpu().numpy() * _BOHR_TO_ANGSTROM
-        dE_dxyz_mm_bohr = (
-            dE_dxyz_mm.cpu().numpy() * _BOHR_TO_ANGSTROM
-            if dE_dxyz_mm is not None
-            else _np.zeros_like(xyz_mm.cpu().numpy()))
+        dE_dxyz_mm_bohr = (dE_dxyz_mm.cpu().numpy() * _BOHR_TO_ANGSTROM if dE_dxyz_mm is not None else np.zeros_like(xyz_mm.cpu().numpy()))
     if Grad:
         return energy, dE_dxyz_qm_bohr, dE_dxyz_mm_bohr
     else:
