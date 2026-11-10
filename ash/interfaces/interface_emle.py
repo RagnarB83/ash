@@ -21,7 +21,6 @@ class EMLETheory():
                  label=None, numcores=1, printlevel=1, platform="cpu", fragment=None,
                  charges=None,
                  ):
-
         # Indicate that this is a hybrid QM/MM type theory
         self.theorytype = "QM/MM"
         self.theorynamelabel="EMLETheory"
@@ -30,6 +29,9 @@ class EMLETheory():
         self.numcores = numcores
         self.printlevel = printlevel
         self.properties = {}
+
+        print_line_with_mainheader(f"{self.theorynamelabel} initialization")
+        print("Creating EMLETheory object")
 
         # Book-keeping
         self.fragment=fragment
@@ -75,7 +77,7 @@ class EMLETheory():
 
         # Check for MM charges.
         if MMcharges is None:
-            print(BC.WARNING, "Warning. MM charges are not provide to run. THis is normally the case.", BC.END)
+            print(BC.WARNING, "Warning. MM charges are not provided to run. THis is normally the case.", BC.END)
             if self.charges is None:
                 print(BC.FAIL,"Error: No charges were found in EMLETheory object either.", BC.END)
                 ashexit()
@@ -85,13 +87,13 @@ class EMLETheory():
             
         # Importing libraries
         try:
-            import torch
             from emle.models._emle import EMLE
-        except ImportError:
-            print(BC.FAIL, "Error. EMLE is not installed. Please install EMLE to use this interface.", BC.END)
+        except ImportError as e:
+            print("Excepection error:", e)
+            print(BC.FAIL, "Error. EMLE is either not installed or the wrong torch/torchani version", BC.END)
             print("Also make sure the correct torch and torchani versions are installed")
+            print("Also pygit2 needs to be installed")
             ashexit()
-
         # Convert to nuclear charges
         atomic_numbers = elemstonuccharges(self.qmelems)
 
