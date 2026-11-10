@@ -13,15 +13,12 @@ from ash.interfaces.interface_xtb import grabatomcharges_xTB,grabatomcharges_xTB
 from ash.modules.module_QMMM import linkatom_force_adv, linkatom_force_lever
 from ash.modules.module_coords import print_coords_for_atoms,get_boundary_atoms,get_linkatom_positions,distance,get_connected_atoms
 
-#TODO: deal with GBW file and ORCA autostart mismatching for different regions and theory-levels
-# Keep separate GBW files for each region and theory-level
-
 class ONIOMTheory(Theory):
     def __init__(self, theories_N=None, regions_N=None, regions_chargemult=None,
                  embedding="mechanical", full_pointcharges=None, chargemodel="CM5", dipole_correction=False,
                  fullregion_charge=None, fullregion_mult=None, fragment=None, label=None, 
                  chargeboundary_method="chargeshift", excludeboundaryatomlist=None,
-                 linkatom_method='ratio', linkatom_simple_distance=None, linkatom_forceproj_method="adv",
+                 linkatom_method='ratio', linkatom_simple_distance=None,
                  linkatom_ratio=0.723, linkatom_type='H', printlevel=2, numcores=1,
                  LL_full_theory=None):
         super().__init__()
@@ -85,10 +82,10 @@ class ONIOMTheory(Theory):
         self.linkatom_simple_distance = linkatom_simple_distance # For method simple, Default 1.09 Angstrom
         # For method ratio. see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
         self.linkatom_ratio=linkatom_ratio
-        # Linkatom projection method Options: 'adv', 'lever', 'chain', 'none'
-        self.linkatom_forceproj_method = linkatom_forceproj_method
-        if self.linkatom_forceproj_method is None:
-            self.linkatom_forceproj_method="none"
+        if self.linkatom_method == "simple":
+            self.linkatom_forceproj_method="adv"
+        elif self.linkatom_method == "ratio":
+            self.linkatom_forceproj_method="lever"
 
         # Embedding
         # Note: by default no embedding, meaning LL theory for everything
@@ -501,7 +498,7 @@ class ONIOMTheory(Theory):
                 print(f"{ll_theory_full.filename}.out")
                 # Note: format issue
                 # self.full_pointcharges = grabatomcharges_xTB_output(ll_theory.filename+'.out', chargemodel=self.chargemodel)
-                self.full_pointcharges = grabatomcharges_xTB()
+                self.full_pointcharges = grabatomcharges_xTB(filepath=f"LL_full/charges")
             elif ll_theory_full.__class__.__name__ == "CP2KTheory":
                  from ash.interfaces.interface_CP2K import grabatomcharges_CP2K
                  cp2k_output = os.path.join( label, f"{ll_theory_full.filename}.out")
@@ -814,11 +811,6 @@ class ONIOMTheory(Theory):
                             QM1grad_contrib, MM1grad_contrib = linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad)
                         elif self.linkatom_forceproj_method == "lever": 
                             QM1grad_contrib, MM1grad_contrib = linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad)
-                        #elif self.linkatom_forceproj_method == "chain":
-                        #    QM1grad_contrib, MM1grad_contrib = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
-                        elif self.linkatom_forceproj_method.lower() == "none" or self.linkatom_forceproj_method == None:
-                            QM1grad_contrib = np.zeros(3)
-                            MM1grad_contrib = np.zeros(3)
                         else:
                             print("Unknown linkatom_forceproj_method. Exiting")
                             ashexit()

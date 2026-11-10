@@ -155,7 +155,7 @@ class OpenMMTheory:
         # TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded = delete_QM1_MM1_bonded
         # Platform (CPU, CUDA, OpenCL) and Parallelization
-        self.platform_choice = platform
+        self.platform_choice = platform.upper()
 
         if properties is None:
             self.properties = {}
@@ -910,6 +910,20 @@ class OpenMMTheory:
 
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
+
+    # New method to easily modify interactions for a particular region
+    # Useful for electrostatic QM/MM, ML/MM etc.
+    def zero_all_interactions_in_region(self,atomlist):
+        print("zero_interactions_in_region")
+        # Removes all QM-QM nonbonded interations
+        self.addexceptions(atomlist)
+        # Removes all bonded QM-QM interactions
+        self.modify_bonded_forces(atomlist)
+        # Zero-ing QM-charges: Sets most QM-MM Coulomb interactions to zero
+        self.update_charges(atomlist,[0.0 for i in atomlist])
+        # Delete exceptions involving QM and MM atoms (1-4). Also needed.
+        self.delete_exceptions(atomlist)
+
 
     def define_mm_elements(self,topology):
         try:

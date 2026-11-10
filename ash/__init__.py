@@ -125,6 +125,7 @@ from .interfaces.interface_Grimme_corrections import DFTD4Theory, calc_DFTD4, ca
 from .interfaces.interface_torch import TorchTheory
 from .interfaces.interface_mace import MACETheory, fastatomstruct_MACETheory
 from .interfaces.interface_fairchem import FairchemTheory
+from .interfaces.interface_emle import EMLETheory
 from .interfaces.interface_packmol import packmol_solvate
 from .interfaces.interface_openbabel import OpenBabelTheory, pdb_to_smiles, mol_to_pdb, sdf_to_pdb, writepdb_with_connectivity, \
                                             xyz_to_pdb_with_connectivity

@@ -134,7 +134,7 @@ class xTBTheory:
         # If hardness is set to 'elements', xtb's element-specific hardness is used (see https://xtb-docs.readthedocs.io/en/latest/pcem.html).
         self.hardness=hardness_PC
 
-        # Accuracy (0.1 it quite tight)
+        # Accuracy (0.1 is quite tight)
         self.accuracy=accuracy
 
         # Printlevel
@@ -1100,9 +1100,9 @@ def xtbpcgradientgrab(numatoms, file="pcgrad"):
     return gradient
 
 # Grab xTB charges. Assuming default xTB charges that are inside file charges
-def grabatomcharges_xTB():
+def grabatomcharges_xTB(filepath="charges"):
     charges=[]
-    with open('charges') as file:
+    with open(filepath) as file:
         for line in file:
             charges.append(float(line.split()[0]))
     return charges

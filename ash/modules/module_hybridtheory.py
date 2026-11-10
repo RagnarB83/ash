@@ -12,7 +12,7 @@ import os
 import copy
 from collections import defaultdict
 
-from ash.functions.functions_general import BC, ashexit, print_time_rel,print_line_with_mainheader,listdiff
+from ash.functions.functions_general import BC, ashexit, print_time_rel,print_line_with_mainheader,listdiff, printdebug
 from ash.modules.module_theory import Theory
 from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 from ash.interfaces.interface_ORCA import grabatomcharges_ORCA
@@ -380,7 +380,7 @@ class WrapTheory(Theory):
                  theory_operators=None, skip_openmmtheory_run=False,
                  periodic=False, periodic_cell_vectors=None, periodic_cell_dimensions=None,
                  use_linkatoms=True,
-                 linkatom_method='ratio', linkatom_simple_distance=None, linkatom_forceproj_method="adv",
+                 linkatom_method='ratio', linkatom_simple_distance=None,
                  linkatom_ratio=0.723, linkatom_type='H', linkatom_conn_scale=1.0, linkatom_conn_tolerance=0.4):
         super().__init__()
         self.theorytype="QM"
@@ -444,10 +444,10 @@ class WrapTheory(Theory):
         self.linkatom_simple_distance = linkatom_simple_distance # For method simple, Default 1.09 Angstrom
         # For method ratio. see https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
         self.linkatom_ratio=linkatom_ratio
-        # Linkatom projection method Options: 'adv', 'lever', 'chain', 'none'
-        self.linkatom_forceproj_method = linkatom_forceproj_method
-        if self.linkatom_forceproj_method is None:
-            self.linkatom_forceproj_method="none"
+        if self.linkatom_method == "simple":
+            self.linkatom_forceproj_method="adv"
+        elif self.linkatom_method == "ratio":
+            self.linkatom_forceproj_method="lever"
 
         # PBC
         self.periodic=periodic
@@ -533,7 +533,7 @@ class WrapTheory(Theory):
 
         nreg = len(region_atoms)
         for i, pair in enumerate(pairs):
-            print(f"i: {i}, pair: {pair}")
+            printdebug(f"i: {i}, pair: {pair}")
             Lgrad = regiongrad[nreg + i]
             Lcoord = linkatoms_dict[pair]
             Qcoord = current_coords[pair[0]]
@@ -544,10 +544,6 @@ class WrapTheory(Theory):
                 QM1grad, MM1grad = linkatom_force_adv(Qcoord, Mcoord, Lcoord, Lgrad)
             elif method == "lever":
                 QM1grad, MM1grad = linkatom_force_lever(Qcoord, Mcoord, Lcoord, Lgrad)
-            #elif method == "chain":
-            #    QM1grad, MM1grad = linkatom_force_chainrule(Qcoord, Mcoord, Lcoord, Lgrad)
-            elif method == "none":
-                QM1grad = MM1grad = np.zeros(3)
             else:
                 print("Unknown linkatom_forceproj_method:", self.linkatom_forceproj_method)
                 ashexit()
@@ -682,6 +678,7 @@ class WrapTheory(Theory):
                     for count,g in enumerate(gradients):
                         print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
                     print("Gradient (Combined):", self.gradient)
+        # AVERAGE/ENSEMBLE OPTION
         elif self.theory_operators == "average" or self.theory_operators == "ensemble":
             print("theory_operators option is set to 'average'.")
             self.energy = sum(energies) / len(energies)
@@ -732,7 +729,7 @@ class WrapTheory(Theory):
                         print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
                     print("Gradient (Combined):", self.gradient)
 
-        if self.printlevel > 2:
+        if Grad and self.printlevel > 2:
             print("Writing out gradient")
             from ash.modules.module_coords import write_coords_all
             write_coords_all(self.gradient, qm_elems, indices=[i for i in range(len(qm_elems))], 

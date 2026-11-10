@@ -605,13 +605,14 @@ class MACETheory():
                 print("PolarMACE: Getting dipole:", self.properties["dipole"])
 
                 # Spin
-                p_spin = self.model.results["spin_charge_density"]
-                charges_up   = p_spin[:, 0, 0]
-                charges_down = p_spin[:, 1, 0]
-                print("Spin-up charges:", charges_up)
-                print("Spin-down charges:", charges_down)
-                print("Spin-up sum:", np.sum(charges_up))
-                print("Spin-down sum:", np.sum(charges_down))
+                if "spin_charge_density" in self.model.results:
+                    p_spin = self.model.results["spin_charge_density"]
+                    charges_up   = p_spin[:, 0, 0]
+                    charges_down = p_spin[:, 1, 0]
+                    print("Spin-up charges:", charges_up)
+                    print("Spin-down charges:", charges_down)
+                    print("Spin-up sum:", np.sum(charges_up))
+                    print("Spin-down sum:", np.sum(charges_down))
 
         # Older interface: suitable for loading user-trained regular MACE models
         else:
