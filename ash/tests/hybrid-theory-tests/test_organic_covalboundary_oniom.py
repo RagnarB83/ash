@@ -1,3 +1,6 @@
+import numpy as np
+import pytest
+
 from functions import transvar_check, numgrad_check
 from ash import *
 
@@ -60,5 +63,44 @@ def test_oniom_coval_elstat_rcd():
         result = Singlepoint(theory=theory, fragment=frag, Grad=True)
         #transvar_check(result.gradient, label=label, tolerance=tolerance)
         numgrad_check(frag, theory, label=label, TOL=tolerance)
+
+def test_oniom_rcd_shifting_uses_pc_region_indices():
+    """RCD must map full atom indices into the filtered point-charge array."""
+    theory = ONIOMTheory.__new__(ONIOMTheory)
+    theory.printlevel = 0
+    theory.charges = np.array([0.0, 0.4, 0.1, 0.2, 0.3, 0.5])
+    theory.MMboundary_indices = [1]
+    theory.MMboundary_counts = np.array([1])
+    theory.MMboundarydict = {1: [4]}
+    theory.chargeshifting_done = False
+
+    fullcoords = np.arange(18, dtype=float).reshape(6, 3)
+    pc_region = [0, 2, 3, 4, 5]
+    pointchargecoords = fullcoords[pc_region].copy()
+    charges_qmregionzeroed = np.array([0.0, 0.0, 0.1, 0.2, 0.3, 0.5])
+
+    pointcharges, shifted_coords = theory.RCD_shifting(
+        charges_qmregionzeroed, pointchargecoords, fullcoords, pc_region
+    )
+
+    np.testing.assert_allclose(pointcharges, [0.0, 0.1, 0.2, -0.1, 0.5, 0.8])
+    np.testing.assert_allclose(shifted_coords[-1], (fullcoords[4] + fullcoords[1]) / 2)
+
+def test_oniom_rcd_shifting_requires_boundary_atoms_in_pc_region():
+    theory = ONIOMTheory.__new__(ONIOMTheory)
+    theory.printlevel = 0
+    theory.charges = np.array([0.0, 0.4, 0.1, 0.2, 0.3, 0.5])
+    theory.MMboundary_indices = [1]
+    theory.MMboundary_counts = np.array([1])
+    theory.MMboundarydict = {1: [4]}
+    theory.chargeshifting_done = False
+
+    with pytest.raises(ValueError, match="MM atom 4 in PCregion"):
+        theory.RCD_shifting(
+            np.array([0.0, 0.0, 0.1, 0.2, 0.3, 0.5]),
+            np.zeros((4, 3)),
+            np.zeros((6, 3)),
+            [0, 2, 3, 5],
+        )
 
 #test_oniom_theory_swap()

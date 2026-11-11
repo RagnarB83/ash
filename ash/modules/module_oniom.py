@@ -406,18 +406,25 @@ class ONIOMTheory(Theory):
         # Calculate charge fractions to distribute
         MM1charge_fract = MM1_charges / self.MMboundary_counts
 
-        # Only keep pointcharges for PC region
-        pointcharges=[pointcharges[x] for x in PCregion]
+        # Only keep pointcharges for PC region, while retaining the mapping
+        # from full-system atom indices to point-charge array indices.
+        pc_region_index = {atom_index: pc_index for pc_index, atom_index in enumerate(PCregion)}
+        pointcharges = pointcharges[PCregion]
 
         # Distribute charge fractions to neighboring MM atoms
         for MM1index, MM2indices, fract in zip(self.MMboundarydict.keys(), self.MMboundarydict.values(), MM1charge_fract):
             newfract = fract*2 #q0*2
             # Looping over MM2 atoms
             for i in MM2indices:
+                if i not in pc_region_index:
+                    raise ValueError(
+                        f"ONIOM RCD shifting requires MM atom {i} in PCregion, "
+                        "but it is missing."
+                    )
                 # RC/RCD: Instead of adding the M1 charge to the M2 atoms we create new RC/RCD sites wi
                 pointcharges = np.append(pointcharges,newfract)
                 # RCD: Reduce the MM2 charge by q0
-                pointcharges[i] -= fract
+                pointcharges[pc_region_index[i]] -= fract
                 # Add new RCD sites to pointchargecoords and pointcharges
                 newsite = (fullcoords[i] + fullcoords[MM1index])/2
                 pointchargecoords = np.append(pointchargecoords, [newsite], axis=0)
