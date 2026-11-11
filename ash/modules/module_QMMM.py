@@ -56,6 +56,11 @@ class QMMMTheory:
 
         # Linkatoms False by default. Later checked.
         self.linkatoms = False
+        # Keep boundary data defined even when the QM region has no covalent
+        # boundary. Boundary correction methods such as RCD then become no-ops.
+        self.MMboundarydict = {}
+        self.MMboundary_indices = []
+        self.MMboundary_counts = np.array([], dtype=int)
 
         # Linkatom method strategy to determine linkatom position or QM-L distance
         self.linkatom_type=linkatom_type # Usually 'H'
@@ -479,6 +484,8 @@ class QMMMTheory:
 
         # RCD_shifting_update: accumulate all sites
         sites = [(fullcoords[i] + fullcoords[MM1]) / 2.0 for MM1, MMx in self.MMboundarydict.items() for i in MMx]
+        if not sites:
+            return np.asarray(used_mmcoords)
         return np.append(used_mmcoords, np.array(sites), axis=0)
 
     def ShiftMMCharges(self):
