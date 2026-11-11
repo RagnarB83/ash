@@ -328,6 +328,47 @@ class ONIOMTheory(Theory):
         print_time_rel(checkpoint, modulename='SetDipoleCharges', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
         return dipole_charges, dipole_coords
 
+    def _pointcharge_gradient_site_map(self, pc_region, dipole_correction=False, rcd=False):
+        """Map point-charge-site coordinate gradients onto full-system atoms.
+
+        The first sites are the original atoms outside the model region. Charge
+        shifting can append dipole sites or RCD midpoint sites, whose positions
+        depend on the boundary atoms and therefore need their coordinate
+        derivatives projected back as well.
+        """
+        site_map = [{atom: 1.0} for atom in pc_region]
+
+        if rcd:
+            for mm1, mmx_atoms in self.MMboundarydict.items():
+                for mmx in mmx_atoms:
+                    site_map.append({mm1: 0.5, mmx: 0.5})
+        elif dipole_correction:
+            shift_fraction = 0.15 / 2.5
+            for mm1, mmx_atoms in self.MMboundarydict.items():
+                for mmx in mmx_atoms:
+                    # SetDipoleCharges(v2) appends direction -1, direction +1,
+                    # then a site located directly on the MMx atom.
+                    for direction in (-1, 1):
+                        c = direction * shift_fraction
+                        site_map.append({mmx: 1.0 + c, mm1: -c})
+                    site_map.append({mmx: 1.0})
+
+        return site_map
+
+    @staticmethod
+    def _add_pointcharge_gradient(full_gradient, pc_gradient, site_map, sign):
+        """Accumulate a PC-site gradient through its coordinate map."""
+        pc_gradient = np.asarray(pc_gradient, dtype=float)
+        if pc_gradient.shape != (len(site_map), 3):
+            raise ValueError(
+                "ONIOM point-charge gradient shape does not match the "
+                f"point-charge coordinate map: {pc_gradient.shape} vs "
+                f"({len(site_map)}, 3)"
+            )
+        for site_gradient, atom_weights in zip(pc_gradient, site_map):
+            for atom, weight in atom_weights.items():
+                full_gradient[atom] += sign * weight * site_gradient
+
     # Standard chargeshifting, modifies pointcharges list (no additional charges)
     def ShiftMMCharges(self, charges_qmregionzeroed):
         if self.printlevel > 1:
@@ -431,6 +472,8 @@ class ONIOMTheory(Theory):
         # Dicts to keep energy and gradient for each theory-region combo
         E_dict={} # (theory,region) -> energy
         G_dict={} # (theory,region) -> gradient
+        PC_G_dict={} # (theory,region) -> point-charge gradient
+        PC_site_map_dict={} # (theory,region) -> site-to-atom coordinate map
         num_theories = len(self.theories_N)
 
                        ###########################Dipanshu############################
@@ -579,6 +622,7 @@ class ONIOMTheory(Theory):
                     # Which region?
                     PCregion=listdiff(self.allatoms,region)
                     print("PCregion:", PCregion)
+                    pc_site_map = [{atom: 1.0} for atom in PCregion]
 
                     if self.printlevel > 1:
                         print("Doing charge-shifting...")
@@ -622,6 +666,8 @@ class ONIOMTheory(Theory):
                                 print("pointcharges after dipole addition:", pointcharges)
 
                                 pointchargecoords = np.append(pointchargecoords, np.array(dipole_coords), axis=0)
+                                pc_site_map = self._pointcharge_gradient_site_map(
+                                    PCregion, dipole_correction=True)
                                 print("Num pointchargecoords after dipole addition", len(pointchargecoords))
                                 print("pointchargecoords after dipole addition:", pointchargecoords)
                                 # Using element H for dipole charges. Only matters for CP2K GEEP
@@ -637,6 +683,7 @@ class ONIOMTheory(Theory):
                         elif self.chargeboundary_method.lower() == "rcd":
                             print("Chargeshiftmethod is: rcd")
                             pointcharges, pointchargecoords = self.RCD_shifting(charges_qmregionzeroed, pointchargecoords, current_coords, PCregion)
+                            pc_site_map = self._pointcharge_gradient_site_map(PCregion, rcd=True)
                     else:
                         print("Case: Electrostatic embedding but no linkatoms")
                         pointcharges = np.array(charges_qmregionzeroed)
@@ -755,6 +802,9 @@ class ONIOMTheory(Theory):
                 E_dict[(i,j)] = e
                 if Grad:
                     G_dict[(i,j)] = g
+                    if PC:
+                        PC_G_dict[(i,j)] = pg
+                        PC_site_map_dict[(i,j)] = pc_site_map
 
         # COMBINING ENERGY AND GRADIENTS
         # 2-layer ONIOM Energy and Gradient expression
@@ -777,6 +827,15 @@ class ONIOMTheory(Theory):
                 # Subtracting LL theory on region1
                 for at, g in zip(self.regions_N[0], G_dict[(1,0)]):
                     self.gradient[at] -= g
+
+                # The region QM gradients do not include derivatives with
+                # respect to external point-charge coordinates. Add the HL
+                # contribution and subtract the LL model contribution, just
+                # as in the ONIOM energy expression.
+                for key, sign in (((0, 0), 1.0), ((1, 0), -1.0)):
+                    if key in PC_G_dict:
+                        self._add_pointcharge_gradient(
+                            self.gradient, PC_G_dict[key], PC_site_map_dict[key], sign)
 
                 # Linkatom force projection
                 if self.linkatoms is True:

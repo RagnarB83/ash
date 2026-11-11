@@ -32,7 +32,7 @@ def test_oniom_coval_mech():
         numgrad_check(frag, theory, label=label, TOL=tolerance)
 
 # Electrostatic embedding ONIOM: looping over linkatom methods
-def Xtest_oniom_coval_elstat():
+def test_oniom_coval_elstat():
     label="ONIOM-covalboundary_elstat"
 
     for lsetting in [("simple",False),("simple",True), ("ratio", False),("ratio", True)]:
@@ -47,7 +47,7 @@ def Xtest_oniom_coval_elstat():
         numgrad_check(frag, theory, label=label, TOL=tolerance)
 
 # Electrostatic embedding with RCD ONIOM: looping over linkatom methods
-def Xtest_oniom_coval_elstat_rcd():
+def test_oniom_coval_elstat_rcd():
     label="ONIOM-covalboundary_elstat_rcd"
 
     for lsetting in ["simple", "ratio"]:
@@ -62,6 +62,3 @@ def Xtest_oniom_coval_elstat_rcd():
         numgrad_check(frag, theory, label=label, TOL=tolerance)
 
 #test_oniom_theory_swap()
-#test_oniom_coval_mech()
-#test_oniom_coval_elstat()
-#test_oniom_coval_elstat_rcd()
