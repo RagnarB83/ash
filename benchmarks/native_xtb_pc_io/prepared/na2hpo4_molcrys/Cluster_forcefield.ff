@@ -1,0 +1,18 @@
+#UFF Lennard-Jones parameters (R0 in Angstrom and eps in kcal/mol) 
+LennardJones_i_R0 UFF_H      0.000000       0.000000
+LennardJones_i_R0 UFF_Na      2.983000       0.030000
+LennardJones_i_R0 UFF_O      3.500000       0.060000
+LennardJones_i_R0 UFF_P      4.147000       0.305000
+# Residues (fragmenttypes)
+resid0_atomtypes UFF_P UFF_O UFF_O UFF_O UFF_O UFF_H
+resid0_charges 0.217142 -0.685944 -0.68234 -0.663222 -0.403358 0.217732
+resid0_elements P O O O O H
+resid1_atomtypes UFF_Na
+resid1_charges 1.0
+resid1_elements Na
+# Charges for each atomtype
+# Elements for each atomtype
+element  UFF_P P
+element  UFF_O O
+element  UFF_H H
+element  UFF_Na Na

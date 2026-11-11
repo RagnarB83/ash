@@ -1,0 +1,24 @@
+{
+  "source": "ash/tests/unfinished/xtb-qm_mm_test_xtb640.py",
+  "fixture": "ash/tests/xyzfiles/phenoldonor-r1.8-withH2O.xyz",
+  "xtb_version": "6.8.0",
+  "method": "GFN2",
+  "system_atoms": 16,
+  "qm_atoms": 13,
+  "point_charges": 3,
+  "gradient_requested": false,
+  "modes": {
+    "native": {
+      "energy_Eh": -20.035435559249,
+      "elapsed_s": 0.020814371993765235,
+      "writer_s": 2.2365013137459755e-05
+    },
+    "fast_io": {
+      "energy_Eh": -20.035435559249,
+      "elapsed_s": 0.021764569013612345,
+      "writer_s": 9.606400271877646e-05
+    }
+  },
+  "energy_exact": true,
+  "delta_energy_Eh": 0.0
+}

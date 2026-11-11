@@ -1,0 +1,1024 @@
+{
+  "results": [
+    {
+      "case": "meoh_water",
+      "source_example": "ash/tests/test_QM_MM_openmm.py (fixture/settings); ash/tests/unfinished/8b_QMMM_SP_xtb.py; ash/tests/unfinished/9b_QMMM_OPTKNARR-xtb.py; examples/QM-MM-examples/QM-MM-ORCA-nonbondedtheory/H2O-MeOH.py",
+      "adaptation": "xTB example settings; old absolute paths adapted",
+      "native": {
+        "elapsed_s": 0.01924567300011404,
+        "energy_Eh": -8.527163289850565,
+        "gradient_shape": [
+          9,
+          3
+        ],
+        "gradient_norm": 0.1578026185837104,
+        "gradient_sha256": "cdf9d32c6db98bdfa67c72a289fcdd470022aa0ca5955722cc2a469d285650ae",
+        "writer_s": [
+          7.238399120979011e-05
+        ],
+        "reader_s": [
+          2.1527986973524094e-05
+        ],
+        "system_atoms": 9,
+        "qm_atoms": 6,
+        "point_charges": 3,
+        "call": "energy_gradient"
+      },
+      "fast_io": {
+        "elapsed_s": 0.01973844799795188,
+        "energy_Eh": -8.527163289850565,
+        "gradient_shape": [
+          9,
+          3
+        ],
+        "gradient_norm": 0.1578026185837104,
+        "gradient_sha256": "cdf9d32c6db98bdfa67c72a289fcdd470022aa0ca5955722cc2a469d285650ae",
+        "writer_s": [
+          0.00011875000200234354
+        ],
+        "reader_s": [
+          2.1269021090120077e-05
+        ],
+        "system_atoms": 9,
+        "qm_atoms": 6,
+        "point_charges": 3,
+        "call": "energy_gradient"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 3.336899681016803e-05,
+          "min_s": 3.2132986234501004e-05,
+          "max_s": 4.965599509887397e-05,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 4.454300506040454e-05,
+          "min_s": 4.042001091875136e-05,
+          "max_s": 0.00017223999020643532,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 1.0425981599837542e-05,
+          "min_s": 1.0023999493569136e-05,
+          "max_s": 3.525501233525574e-05,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 8.380011422559619e-06,
+          "min_s": 8.058006642386317e-06,
+          "max_s": 1.7710000975057483e-05,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 189,
+        "pcgrad_bytes": 147
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN2",
+      "qm_charge": 0,
+      "qm_mult": 1
+    },
+    {
+      "case": "rubredoxin",
+      "source_example": "examples/OpenMM_Modeller-setups/rubredoxin/3-Semiempirical-QM_MM-MD/3-QMMM_MD.py; 4-QM_MM-Optimization/4-QMMM_Opt-smallact-XTB.py; 4-QMMM_Opt-bigact-XTB.py; QM-MM-boundary-setup/QMMM_SP_QMregion-II.py",
+      "adaptation": "as written (QM-II region, GFN1)",
+      "native": {
+        "elapsed_s": 3.4049320250051096,
+        "energy_Eh": -117.97764414663692,
+        "gradient_shape": [
+          16027,
+          3
+        ],
+        "gradient_norm": 2.5263046767316357,
+        "gradient_sha256": "cfbe3522262ca638c285a722cef53b8c042a3a3b5ddc8a207d5581a7aabe67f4",
+        "writer_s": [
+          0.02390050602843985
+        ],
+        "reader_s": [
+          0.009609233995433897
+        ],
+        "system_atoms": 16027,
+        "qm_atoms": 17,
+        "point_charges": 16034,
+        "call": "energy_gradient"
+      },
+      "fast_io": {
+        "elapsed_s": 3.4020376699918415,
+        "energy_Eh": -117.97764414663692,
+        "gradient_shape": [
+          16027,
+          3
+        ],
+        "gradient_norm": 2.5263046767316357,
+        "gradient_sha256": "cfbe3522262ca638c285a722cef53b8c042a3a3b5ddc8a207d5581a7aabe67f4",
+        "writer_s": [
+          0.02366676100064069
+        ],
+        "reader_s": [
+          0.003348157013533637
+        ],
+        "system_atoms": 16027,
+        "qm_atoms": 17,
+        "point_charges": 16034,
+        "call": "energy_gradient"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.025195750989951193,
+          "min_s": 0.025041786982910708,
+          "max_s": 0.02540834399405867,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.022993110003881156,
+          "min_s": 0.022787480003898963,
+          "max_s": 0.023342445987509564,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.009670490020653233,
+          "min_s": 0.009646030986914411,
+          "max_s": 0.00986331098829396,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.0029608900076709688,
+          "min_s": 0.0028830539959017187,
+          "max_s": 0.0033286960097029805,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 689944,
+        "pcgrad_bytes": 785666
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN1",
+      "qm_charge": -1,
+      "qm_mult": 6
+    },
+    {
+      "case": "rubredoxin_qm1",
+      "source_example": "examples/OpenMM_Modeller-setups/rubredoxin/QM-MM-boundary-setup/QMMM_SP_QMregion-I.py",
+      "adaptation": "ORCA r2SCAN-3c replaced by xTB GFN1",
+      "native": {
+        "elapsed_s": 3.3932015909813344,
+        "energy_Eh": -105.3892622655592,
+        "gradient_shape": [
+          16027,
+          3
+        ],
+        "gradient_norm": 2.527535948110622,
+        "gradient_sha256": "07d3803e3393e3e4eaf4367e36837c4fd55aae3e4941090bb221289d722cb9d6",
+        "writer_s": [
+          0.02322683500824496
+        ],
+        "reader_s": [
+          0.00961360297515057
+        ],
+        "system_atoms": 16027,
+        "qm_atoms": 5,
+        "point_charges": 16046,
+        "call": "energy_gradient"
+      },
+      "fast_io": {
+        "elapsed_s": 3.400908294977853,
+        "energy_Eh": -105.3892622655592,
+        "gradient_shape": [
+          16027,
+          3
+        ],
+        "gradient_norm": 2.527535948110622,
+        "gradient_sha256": "07d3803e3393e3e4eaf4367e36837c4fd55aae3e4941090bb221289d722cb9d6",
+        "writer_s": [
+          0.023512043990194798
+        ],
+        "reader_s": [
+          0.003519849997246638
+        ],
+        "system_atoms": 16027,
+        "qm_atoms": 5,
+        "point_charges": 16046,
+        "call": "energy_gradient"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.0254449539934285,
+          "min_s": 0.025281953014200553,
+          "max_s": 0.025851276994217187,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.022934545995667577,
+          "min_s": 0.022741426015272737,
+          "max_s": 0.025151857000309974,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.009715825988678262,
+          "min_s": 0.00969143200200051,
+          "max_s": 0.009956690017133951,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.0029951820033602417,
+          "min_s": 0.0029247889760881662,
+          "max_s": 0.0034825309994630516,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 690440,
+        "pcgrad_bytes": 786254
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN1",
+      "qm_charge": -1,
+      "qm_mult": 6
+    },
+    {
+      "case": "rubredoxin_qm4",
+      "source_example": "examples/OpenMM_Modeller-setups/rubredoxin/QM-MM-boundary-setup/QMMM_SP_QMregion-IV.py",
+      "adaptation": "ORCA r2SCAN-3c replaced by xTB GFN1",
+      "native": {
+        "elapsed_s": 3.456647688988596,
+        "energy_Eh": -131.79264772270005,
+        "gradient_shape": [
+          16027,
+          3
+        ],
+        "gradient_norm": 2.526390245645368,
+        "gradient_sha256": "5298a25507130c80c3fe154fb1bc320a5a843a570d9a436dd39893e0b0bc44f6",
+        "writer_s": [
+          0.023528814024757594
+        ],
+        "reader_s": [
+          0.009614443988539279
+        ],
+        "system_atoms": 16027,
+        "qm_atoms": 23,
+        "point_charges": 16032,
+        "call": "energy_gradient"
+      },
+      "fast_io": {
+        "elapsed_s": 3.4075430369994137,
+        "energy_Eh": -131.79264772270005,
+        "gradient_shape": [
+          16027,
+          3
+        ],
+        "gradient_norm": 2.526390245645368,
+        "gradient_sha256": "5298a25507130c80c3fe154fb1bc320a5a843a570d9a436dd39893e0b0bc44f6",
+        "writer_s": [
+          0.023423335020197555
+        ],
+        "reader_s": [
+          0.003759029001230374
+        ],
+        "system_atoms": 16027,
+        "qm_atoms": 23,
+        "point_charges": 16032,
+        "call": "energy_gradient"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.02527881000423804,
+          "min_s": 0.02509362099226564,
+          "max_s": 0.025571687991032377,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.02298673798213713,
+          "min_s": 0.022820378973847255,
+          "max_s": 0.023255945008713752,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.009512121992884204,
+          "min_s": 0.009478239982854575,
+          "max_s": 0.009862181002972648,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.002996314986376092,
+          "min_s": 0.002958205994218588,
+          "max_s": 0.0035284679906908423,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 689887,
+        "pcgrad_bytes": 785568
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN1",
+      "qm_charge": -1,
+      "qm_mult": 6
+    },
+    {
+      "case": "rubredoxin_qm5",
+      "source_example": "examples/OpenMM_Modeller-setups/rubredoxin/QM-MM-boundary-setup/QMMM_SP_QMregion-V.py",
+      "adaptation": "ORCA r2SCAN-3c replaced by xTB GFN1",
+      "native": {
+        "elapsed_s": 3.4504250670142937,
+        "energy_Eh": -153.4641513050635,
+        "gradient_shape": [
+          16027,
+          3
+        ],
+        "gradient_norm": 2.526537582221661,
+        "gradient_sha256": "3a59f0133bbda38b46244b840c8e79f7223f2e2a03f8d2ea69a0d74cec9c3e8b",
+        "writer_s": [
+          0.023627692979061976
+        ],
+        "reader_s": [
+          0.009602890000678599
+        ],
+        "system_atoms": 16027,
+        "qm_atoms": 33,
+        "point_charges": 16028,
+        "call": "energy_gradient"
+      },
+      "fast_io": {
+        "elapsed_s": 3.437098505994072,
+        "energy_Eh": -153.4641513050635,
+        "gradient_shape": [
+          16027,
+          3
+        ],
+        "gradient_norm": 2.526537582221661,
+        "gradient_sha256": "3a59f0133bbda38b46244b840c8e79f7223f2e2a03f8d2ea69a0d74cec9c3e8b",
+        "writer_s": [
+          0.02325828099856153
+        ],
+        "reader_s": [
+          0.0035368429962545633
+        ],
+        "system_atoms": 16027,
+        "qm_atoms": 33,
+        "point_charges": 16028,
+        "call": "energy_gradient"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.02522115400643088,
+          "min_s": 0.025062444008653983,
+          "max_s": 0.02547110099112615,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.022843554994324222,
+          "min_s": 0.02274072202271782,
+          "max_s": 0.023118824989069253,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.009502967004664242,
+          "min_s": 0.009470121003687382,
+          "max_s": 0.009668454993516207,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.002976930991280824,
+          "min_s": 0.0029236309928819537,
+          "max_s": 0.003478052996797487,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 689997,
+        "pcgrad_bytes": 785372
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN1",
+      "qm_charge": -1,
+      "qm_mult": 6
+    },
+    {
+      "case": "lysozyme",
+      "source_example": "ash/tests/test_QM_MM_openmm.py (commented xTB variant; same fixture and QM region)",
+      "adaptation": "xTB GFN2 in place of the active PySCF theory",
+      "native": {
+        "elapsed_s": 5.484097873006249,
+        "energy_Eh": -29.475841091408366,
+        "gradient_shape": [
+          26131,
+          3
+        ],
+        "gradient_norm": 89.1452267962775,
+        "gradient_sha256": "d5a6de391a6183ca1c8b972d1ecee0e43c31f98bdb60f1aca0827e07a918b328",
+        "writer_s": [
+          0.03830934301367961
+        ],
+        "reader_s": [
+          0.015471388003788888
+        ],
+        "system_atoms": 26131,
+        "qm_atoms": 6,
+        "point_charges": 26131,
+        "call": "energy_gradient"
+      },
+      "fast_io": {
+        "elapsed_s": 5.442231466004159,
+        "energy_Eh": -29.475841091408366,
+        "gradient_shape": [
+          26131,
+          3
+        ],
+        "gradient_norm": 89.1452267962775,
+        "gradient_sha256": "d5a6de391a6183ca1c8b972d1ecee0e43c31f98bdb60f1aca0827e07a918b328",
+        "writer_s": [
+          0.03775619200314395
+        ],
+        "reader_s": [
+          0.005673167004715651
+        ],
+        "system_atoms": 26131,
+        "qm_atoms": 6,
+        "point_charges": 26131,
+        "call": "energy_gradient"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.042377044999739155,
+          "min_s": 0.04205428800196387,
+          "max_s": 0.04832199399243109,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.03763214801438153,
+          "min_s": 0.03743829901213758,
+          "max_s": 0.03845188699779101,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.015521159977652133,
+          "min_s": 0.015407571016112342,
+          "max_s": 0.01806361900526099,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.004854591010371223,
+          "min_s": 0.004790095001226291,
+          "max_s": 0.006412918999558315,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 1151808,
+        "pcgrad_bytes": 1280419
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN2",
+      "qm_charge": -1,
+      "qm_mult": 1
+    },
+    {
+      "case": "lysozyme_modeller",
+      "source_example": "examples/OpenMM_Modeller-setups/lysozyme/protein-prep-MM_MD-andQMMM.py (example-setup-truncated/finalsystem.pdb)",
+      "adaptation": "ORCA r2SCAN-3c replaced by xTB GFN2",
+      "native": {
+        "elapsed_s": 5.4079206549795344,
+        "energy_Eh": -34.82984253350081,
+        "gradient_shape": [
+          25825,
+          3
+        ],
+        "gradient_norm": 74.05277617832864,
+        "gradient_sha256": "ff46d782fa3f284914863623537f9f9261339db4073e93d5b36e271b5b781bfb",
+        "writer_s": [
+          0.038099844998214394
+        ],
+        "reader_s": [
+          0.018330936989514157
+        ],
+        "system_atoms": 25825,
+        "qm_atoms": 6,
+        "point_charges": 25825,
+        "call": "energy_gradient"
+      },
+      "fast_io": {
+        "elapsed_s": 5.386151918995893,
+        "energy_Eh": -34.82984253350081,
+        "gradient_shape": [
+          25825,
+          3
+        ],
+        "gradient_norm": 74.05277617832864,
+        "gradient_sha256": "ff46d782fa3f284914863623537f9f9261339db4073e93d5b36e271b5b781bfb",
+        "writer_s": [
+          0.03716270599397831
+        ],
+        "reader_s": [
+          0.007233942014863715
+        ],
+        "system_atoms": 25825,
+        "qm_atoms": 6,
+        "point_charges": 25825,
+        "call": "energy_gradient"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.041293963993666694,
+          "min_s": 0.04100390398525633,
+          "max_s": 0.041901517019141465,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.037120204011444,
+          "min_s": 0.03690843298682012,
+          "max_s": 0.03735846100607887,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.015227912983391434,
+          "min_s": 0.015176298009464517,
+          "max_s": 0.015520622982876375,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.004800562979653478,
+          "min_s": 0.00475525000365451,
+          "max_s": 0.0059484879893716425,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 1137916,
+        "pcgrad_bytes": 1265425
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN2",
+      "qm_charge": -1,
+      "qm_mult": 1
+    },
+    {
+      "case": "dhfr_charmm",
+      "source_example": "examples/QM-MM-examples/QM-MM-CHARMM-example/QM_MM_ORCA_OpenMM-CHARMM-dhfr.py",
+      "adaptation": "ORCA HF-3c replaced by xTB GFN2",
+      "native": {
+        "elapsed_s": 1.0693449999962468,
+        "energy_Eh": -272.055618887614,
+        "gradient_shape": [
+          48112,
+          3
+        ],
+        "gradient_norm": 1.6093534472253035,
+        "gradient_sha256": "457167686414d4b360a805d21548873e10dcb74675c0e2cf831fbd8d49e8592d",
+        "writer_s": [
+          0.07357859201147221
+        ],
+        "reader_s": [
+          0.030408860999159515
+        ],
+        "system_atoms": 48112,
+        "qm_atoms": 8,
+        "point_charges": 48110,
+        "call": "energy_gradient"
+      },
+      "fast_io": {
+        "elapsed_s": 1.3298798400210217,
+        "energy_Eh": -272.055618887614,
+        "gradient_shape": [
+          48112,
+          3
+        ],
+        "gradient_norm": 1.6093534472253035,
+        "gradient_sha256": "457167686414d4b360a805d21548873e10dcb74675c0e2cf831fbd8d49e8592d",
+        "writer_s": [
+          0.07301581298816018
+        ],
+        "reader_s": [
+          0.010562081006355584
+        ],
+        "system_atoms": 48112,
+        "qm_atoms": 8,
+        "point_charges": 48110,
+        "call": "energy_gradient"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.08011635101865977,
+          "min_s": 0.07924943100078963,
+          "max_s": 0.0856726769998204,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.10688608401687816,
+          "min_s": 0.07403877199976705,
+          "max_s": 0.14992985400022008,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.028673569002421573,
+          "min_s": 0.02839101300924085,
+          "max_s": 0.029034423001576215,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.009448470023926347,
+          "min_s": 0.009228245995473117,
+          "max_s": 0.011108474980574101,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 2582845,
+        "pcgrad_bytes": 2357390
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN2",
+      "qm_charge": 0,
+      "qm_mult": 1
+    },
+    {
+      "case": "gaba_water",
+      "source_example": "examples/metadynamics/2CV-3FGABA/explicit-solvent/mtd.py",
+      "adaptation": "amber/tip3p_standard.xml (not installed) replaced by ASH's tip3p_water_ions.xml, the water file ASH's solvate_small_molecule selects for this LIG.xml",
+      "native": {
+        "elapsed_s": 0.19753416400635615,
+        "energy_Eh": -30.588465957286875,
+        "gradient_shape": [
+          33799,
+          3
+        ],
+        "gradient_norm": 0.09809607483137991,
+        "gradient_sha256": "5070940fc512bf1a5a52293ce513ea51c8a1a05d0215385481d4fef412e41556",
+        "writer_s": [
+          0.041480865998892114
+        ],
+        "reader_s": [
+          0.02018722999491729
+        ],
+        "system_atoms": 33799,
+        "qm_atoms": 16,
+        "point_charges": 33783,
+        "call": "md_force"
+      },
+      "fast_io": {
+        "elapsed_s": 0.22377655800664797,
+        "energy_Eh": -30.588465957286875,
+        "gradient_shape": [
+          33799,
+          3
+        ],
+        "gradient_norm": 0.09809607483137991,
+        "gradient_sha256": "5070940fc512bf1a5a52293ce513ea51c8a1a05d0215385481d4fef412e41556",
+        "writer_s": [
+          0.049971802975051105
+        ],
+        "reader_s": [
+          0.0080434629926458
+        ],
+        "system_atoms": 33799,
+        "qm_atoms": 16,
+        "point_charges": 33783,
+        "call": "md_force"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.058066263009095564,
+          "min_s": 0.048964886023895815,
+          "max_s": 0.06356069500907324,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.07211255098809488,
+          "min_s": 0.056749538984149694,
+          "max_s": 0.077494277007645,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.020208062982419506,
+          "min_s": 0.02009139399160631,
+          "max_s": 0.021321209002053365,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.006496069981949404,
+          "min_s": 0.006340320978779346,
+          "max_s": 0.007618401985382661,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 1102466,
+        "pcgrad_bytes": 1655367
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN1",
+      "qm_charge": 0,
+      "qm_mult": 1
+    },
+    {
+      "case": "isobutyraldehyde_water",
+      "source_example": "examples/explicit-solvation/1-expl-water-openff/run_qmmm_md.py",
+      "adaptation": "input generated by the example's solvate.py and run_mm_md.py; amber/tip3p_standard.xml replaced by amber14/tip3p.xml",
+      "native": {
+        "elapsed_s": 0.032202792004682124,
+        "energy_Eh": -16.75083686781287,
+        "gradient_shape": [
+          2632,
+          3
+        ],
+        "gradient_norm": 0.11159234519079626,
+        "gradient_sha256": "df4ea49a622d640e646d3d8e853b2d79c2813757bc157b1629d2fee999ac1a09",
+        "writer_s": [
+          0.003823135979473591
+        ],
+        "reader_s": [
+          0.0016447000089101493
+        ],
+        "system_atoms": 2632,
+        "qm_atoms": 13,
+        "point_charges": 2619,
+        "call": "md_force"
+      },
+      "fast_io": {
+        "elapsed_s": 0.04195676199742593,
+        "energy_Eh": -16.75083686781287,
+        "gradient_shape": [
+          2632,
+          3
+        ],
+        "gradient_norm": 0.11159234519079626,
+        "gradient_sha256": "df4ea49a622d640e646d3d8e853b2d79c2813757bc157b1629d2fee999ac1a09",
+        "writer_s": [
+          0.004042666987515986
+        ],
+        "reader_s": [
+          0.0006663129897788167
+        ],
+        "system_atoms": 2632,
+        "qm_atoms": 13,
+        "point_charges": 2619,
+        "call": "md_force"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.004243558010784909,
+          "min_s": 0.00417572699370794,
+          "max_s": 0.004800833004992455,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.0037800459831487387,
+          "min_s": 0.0037474540004041046,
+          "max_s": 0.003931426996132359,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.0016107419796753675,
+          "min_s": 0.0016022339987102896,
+          "max_s": 0.0017537910025566816,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.0005082199932076037,
+          "min_s": 0.0004976920026820153,
+          "max_s": 0.0006369449838530272,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 114149,
+        "pcgrad_bytes": 128331
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN2",
+      "qm_charge": 0,
+      "qm_mult": 1
+    },
+    {
+      "case": "fecl4_water",
+      "source_example": "examples/explicit-solvation/2-expl-tmc-nonb/run_qmmm_md.py",
+      "adaptation": "input generated by the example's solvate.py and run_mm_md.py; amber/tip3p_standard.xml replaced by amber14/tip3p.xml; QM charge/mult -1/6 from solvate.py (run_qmmm_md.py says 0/1)",
+      "native": {
+        "elapsed_s": 0.0355738090001978,
+        "energy_Eh": -22.1944950012538,
+        "gradient_shape": [
+          2610,
+          3
+        ],
+        "gradient_norm": 0.08951154870657645,
+        "gradient_sha256": "f50d41bd9f4a96648567cc2fe1d6cb97884b17208e027de5730cdfbd60d10b49",
+        "writer_s": [
+          0.003620868024881929
+        ],
+        "reader_s": [
+          0.0016311279905494303
+        ],
+        "system_atoms": 2610,
+        "qm_atoms": 5,
+        "point_charges": 2605,
+        "call": "md_force"
+      },
+      "fast_io": {
+        "elapsed_s": 0.03805596299935132,
+        "energy_Eh": -22.1944950012538,
+        "gradient_shape": [
+          2610,
+          3
+        ],
+        "gradient_norm": 0.08951154870657645,
+        "gradient_sha256": "f50d41bd9f4a96648567cc2fe1d6cb97884b17208e027de5730cdfbd60d10b49",
+        "writer_s": [
+          0.003938815003493801
+        ],
+        "reader_s": [
+          0.000646455999230966
+        ],
+        "system_atoms": 2610,
+        "qm_atoms": 5,
+        "point_charges": 2605,
+        "call": "md_force"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.004196135996608064,
+          "min_s": 0.004144025995628908,
+          "max_s": 0.004415629984578118,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.0038113970076665282,
+          "min_s": 0.003737432009074837,
+          "max_s": 0.003960856993217021,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.0016014089924283326,
+          "min_s": 0.0015969449887052178,
+          "max_s": 0.001685030001681298,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.0005007449944969267,
+          "min_s": 0.0004884969966951758,
+          "max_s": 0.0006105710053816438,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 112683,
+        "pcgrad_bytes": 127645
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN2",
+      "qm_charge": -1,
+      "qm_mult": 6
+    },
+    {
+      "case": "na2hpo4_molcrys",
+      "source_example": "examples/Molcrys-QM-MM-example/Na2HPO4-xtl-file/molcrys-test.py",
+      "adaptation": "cluster and force field generated by the example's molcrys step; ORCA BP86 replaced by xTB GFN2 in the QM/MM step",
+      "native": {
+        "elapsed_s": 0.4458339280099608,
+        "energy_Eh": 2444.135277034836,
+        "gradient_shape": [
+          502,
+          3
+        ],
+        "gradient_norm": 733.0077886982237,
+        "gradient_sha256": "aaa8bae1734338347779cfd32a1dd35e7541eef35448ba5cfe7360aa53dee2ae",
+        "writer_s": [
+          0.0007763640023767948
+        ],
+        "reader_s": [
+          0.0003221890074200928
+        ],
+        "system_atoms": 502,
+        "qm_atoms": 6,
+        "point_charges": 496,
+        "call": "energy_gradient"
+      },
+      "fast_io": {
+        "elapsed_s": 0.4407926140120253,
+        "energy_Eh": 2444.135277034836,
+        "gradient_shape": [
+          502,
+          3
+        ],
+        "gradient_norm": 733.0077886982237,
+        "gradient_sha256": "aaa8bae1734338347779cfd32a1dd35e7541eef35448ba5cfe7360aa53dee2ae",
+        "writer_s": [
+          0.0008755590242799371
+        ],
+        "reader_s": [
+          0.00015043499297462404
+        ],
+        "system_atoms": 502,
+        "qm_atoms": 6,
+        "point_charges": 496,
+        "call": "energy_gradient"
+      },
+      "delta_energy_Eh": 0.0,
+      "max_abs_delta_gradient": 0.0,
+      "energy_exact": true,
+      "gradient_exact": true,
+      "pc_gradient_exact": true,
+      "max_abs_delta_pc_gradient": 0.0,
+      "repeated_io": {
+        "repetitions": 25,
+        "writer_native": {
+          "median_s": 0.000825586001155898,
+          "min_s": 0.0008176960109267384,
+          "max_s": 0.0009146360098384321,
+          "repetitions": 25
+        },
+        "writer_fast_io": {
+          "median_s": 0.0007342720055021346,
+          "min_s": 0.0007266129832714796,
+          "max_s": 0.000837733008665964,
+          "repetitions": 25
+        },
+        "reader_native": {
+          "median_s": 0.0003068980004172772,
+          "min_s": 0.0003045730118174106,
+          "max_s": 0.00036175601417198777,
+          "repetitions": 25
+        },
+        "reader_fast_io": {
+          "median_s": 0.00010128901340067387,
+          "min_s": 0.00010003501665778458,
+          "max_s": 0.0001469129929319024,
+          "repetitions": 25
+        },
+        "pcharge_bytes": 26384,
+        "pcgrad_bytes": 24304
+      },
+      "pointcharge_records_exact": true,
+      "max_abs_delta_pointcharge_record": 0.0,
+      "xtb_method": "GFN2",
+      "qm_charge": -2,
+      "qm_mult": 1
+    }
+  ]
+}
