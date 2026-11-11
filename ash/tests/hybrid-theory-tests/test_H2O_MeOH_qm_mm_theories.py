@@ -45,3 +45,11 @@ def test_qm_mm_nocovalboundary_elstat2():
     result= Singlepoint(theory=theory, fragment=frag, Grad=True)
     transvar_check(result.gradient, label=label, tolerance=tolerance)
     numgrad_check(frag, theory, TOL=tolerance)
+
+def test_qm_mm_nocovalboundary_elstat_rcd():
+    """RCD boundary correction should be a no-op without a covalent boundary."""
+    theory = QMMMTheory(fragment=frag, qm_theory=hl, mm_theory=omm, qmatoms=region1,
+                        embedding='elstat', qm_charge=0, qm_mult=1,
+                        chargeboundary_method='rcd')
+    result = Singlepoint(theory=theory, fragment=frag, Grad=True)
+    assert result.gradient.shape == frag.coords.shape
