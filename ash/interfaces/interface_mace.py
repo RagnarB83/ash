@@ -56,7 +56,7 @@ class MACETheory():
         self.model=None
         #
         self.model_file=model_file
-        self.model_name=model_name #for quickly loading foundational models
+        self.model_name=model_name #for quickly loading foundation models
         self.model_name_subtype=model_name_subtype #subtype of foundational model
         self.model_name_head = model_name_head # choose head of multi-head foundational model
         self.mace_load_dispersion=mace_load_dispersion # activate dispersion 
@@ -253,6 +253,128 @@ class MACETheory():
 
         print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} train', moduleindex=2)
 
+    def finetune(self, config_file="config.yml", name="model",model="MACE", platform=None, device=None,
+                      foundation_model=None, multiheads_finetuning=False, lr=0.001, weight_decay=0.0, 
+                      scaling="rms_forces_scaling", max_num_epochs=6,
+                      ema=True, ema_decay=0.999, amsgrad=True, clip_grad=1.0, 
+                      valid_fraction=0.05, train_file="train_data_mace.xyz",E0s="estimated",
+                      energy_key='energy_REF', forces_key='forces_REF',        
+                      energy_weight=10, forces_weight=10, seed=42,
+                      swa=True, batch_size=10,
+                      max_L = 0, r_max = 5.0, num_channels=128,  
+                      results_dir= "MACE_models", checkpoints_dir = "MACE_models", 
+                      log_dir ="MACE_models", model_dir="MACE_models"):
+        module_init_time=time.time()
+
+        if self.energy_weight is not None:
+            energy_weight=self.energy_weight
+        if self.forces_weight is not None:
+            forces_weight=self.forces_weight
+        if self.max_num_epochs is not None:
+            max_num_epochs=self.max_num_epochs
+        if self.valid_fraction is not None:
+            valid_fraction=self.valid_fraction
+
+        if train_file is None:
+            print("Warning: no train_file provided to finetune. Trying to use train_file attribute of object:", self.train_file)
+            if self.train_file is None:
+                print("Error: no train_file attribute of object. You must provide a train_file to finetune")
+                ashexit()
+            self.train_file=train_file
+        else:
+            self.train_file=train_file
+        self.valid_fraction=valid_fraction
+
+        if device is not None:
+            print("Warning: device keyword is deprecated. Please use platform instead")
+            ashexit()
+
+        if platform is None:
+            print("Warning: platform not passed to train. Using object's platform attribute:", self.platform)
+            platform=self.platform
+
+        print("Training activated")
+        print("Training parameters:")
+        print("config_file", config_file)
+        print("name:", model)
+        print("model:", model)
+        print("platform:", platform)
+        print("Validation set fraction (valid_fraction):", valid_fraction)
+        print("train_file:", self.train_file)
+        print("E0s:", E0s)
+        print("energy_key:", energy_key)
+        print("forces_key:", forces_key)
+        print("energy_weight:", energy_weight)
+        print("forces_weight:", forces_weight)
+        print("max_num_epochs:", max_num_epochs)
+        print("swa:", swa)
+        print("seed:", seed)
+        print("batch_size:", batch_size)
+        print("max_L:", max_L)
+        print("r_max:", r_max)
+        print("num_channels:", num_channels)
+        print("results_dir:", results_dir)
+        print("checkpoints_dir:", checkpoints_dir)
+        print("log_dir:", log_dir)
+        print("model_dir:", model_dir)
+
+        self.check_file_exists(self.train_file)
+
+        #Write 
+        print("\nWriting MACE config file to disk as as:", self.config_filename)
+        #write_mace_config(config_file=self.config_filename)
+        print()
+        write_mace_config(config_file=config_file, name=name, model=model, platform=platform, 
+                      foundation_model=foundation_model, multiheads_finetuning=multiheads_finetuning, 
+                      lr=lr, weight_decay=weight_decay, 
+                      scaling=scaling, 
+                      ema=ema, ema_decay=ema_decay, amsgrad=amsgrad, clip_grad=clip_grad, 
+                      valid_fraction=valid_fraction, train_file=self.train_file,E0s=E0s,
+                      energy_key=energy_key, forces_key=forces_key,        
+                      energy_weight=energy_weight, forces_weight=forces_weight,
+                      max_num_epochs=max_num_epochs, swa=swa, batch_size=batch_size,
+                      max_L = max_L, r_max = r_max, seed=seed,
+                      num_channels=num_channels,  
+                      results_dir= results_dir, checkpoints_dir = checkpoints_dir, 
+                      log_dir=log_dir, model_dir=model_dir)
+        print()
+        import logging
+        import sys
+        from mace.cli.run_train import main as mace_run_train_main
+
+        logging.getLogger().handlers.clear()
+        sys.argv = ["program", "--config", self.config_filename]
+        print("="*100)
+        print("MACE BEGINNING")
+        print("="*100)
+        mace_run_train_main()
+        print("="*100)
+        print("MACE DONE")
+        print("="*100)
+        self.training_done=True
+        print("Training by MACE is done. Hopefully it produced something sensible")
+        print(f"The final models are located in directory: {results_dir}")
+        print(f"Recommended model files to use for production: {results_dir}/{name}_compiled.model and {results_dir}/{name}_stagetwo_compiled.model")
+        print()
+        if self.model_file is not None:
+            print("Model_file attribute was previously set at initialization.")
+            print(f"Moving and renaming file {results_dir}/{name}_stagetwo_compiled.model   to :  {self.model_file}")
+            shutil.move(f"{results_dir}/{name}_stagetwo_compiled.model", self.model_file)
+        else:
+            self.model_file=f"{os.path.abspath(os.getcwd())}/{results_dir}/{name}_stagetwo_compiled.model"
+        print("model_file attribute is:", self.model_file )
+        print("MACETheory object can now be used directly.")
+
+        # If we train with a specific device we would want to use that same device for evaluation/prediction
+        self.platform=platform
+        print("Setting platform of object to be ", self.platform)
+
+        #Load model from file
+        self.modelfile_load()
+
+        print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} finetune', moduleindex=2)
+
+
     def check_file_exists(self, file):
         import os
         if file is None:
@@ -292,7 +414,8 @@ class MACETheory():
             else:
                 print("Using head:", self.model_name_head)
                 self.model = mace_mp(model=self.model_file, default_dtype=self.default_dtype, device=self.platform, head=self.model_name_head,
-                                            dispersion=self.mace_load_dispersion, dispersion_xc=self.mace_dispersion_xc)
+                                            dispersion=self.mace_load_dispersion, dispersion_xc=self.mace_dispersion_xc,
+                                            )
         else:
             print("Loading regular MACE via Pytorch")
             import torch
@@ -302,7 +425,7 @@ class MACETheory():
             self.model = self.model.to(self.platform)  # for possible cuda problems
             print_time_rel(module_init_time, modulename=f'MACE model-load', moduleindex=2)
 
-    # Load foundational model by name
+    # Load foundation model by name
     def modelname_load(self):
         print("Inside modelname_load")
         print("model_name:", self.model_name)
@@ -353,6 +476,8 @@ class MACETheory():
         # MACE Polar
         elif self.model_name.lower() in ['mace-polar','mace_polar', 'mace-polar-1']:
             from mace.calculators import mace_polar
+
+            self.polarmace=True
             if self.model_name_subtype is None:
                 print("Loading MACE-Polar model:")
                 #print("Using polar-1-m model by default (use model_name_subtype keyword to choose between polar-1-s, polar-1-m, polar-1-l)")
@@ -360,7 +485,7 @@ class MACETheory():
                     device=self.platform,
                     default_dtype=self.default_dtype) # use float32 for faster MD
             else:
-                print("MACE-MP model with modelname_subtype:", self.model_name_subtype)
+                print("MACE-Polar model with modelname_subtype:", self.model_name_subtype)
                 self.model = mace_polar(model=self.model_name_subtype,
                     device=self.platform,
                     default_dtype=self.default_dtype) # use float32 for faster MD
@@ -398,7 +523,7 @@ class MACETheory():
             print("no coordinates. Exiting")
             ashexit()
         if PC is True:
-            print("PC is not supported")
+            print("Error: PC (electrostatic embedding) is not supported by MACETheory for now. Exiting.")
             ashexit()
 
         # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
@@ -413,7 +538,7 @@ class MACETheory():
         if Hessian:
             Grad=True
 
-        print_if_level("Running on platform/device:", self.printlevel, 2)
+        print_if_level(f"Running on platform/device: {self.platform}", self.printlevel, 2)
         # Checking if model is alreadyloaded
         if self.model is None:
             print("A model has not been loaded yet.")
@@ -452,7 +577,7 @@ class MACETheory():
         atoms.info["spin"] = mult
     
         # New simpler MACE interface via ASE
-        # Works for foundational models
+        # Works for foundation models
         print_time_rel(module_init_time, modulename=f'MACE run - after atoms', moduleindex=2)
         if self.new_interface is True:
             # Add loaded model to ASE calculator
@@ -473,10 +598,21 @@ class MACETheory():
             # Grab some other attributes if e.g. polarmace
             if self.polarmace:
                 self.charges = self.model.results["charges"]
-                print("PolarMACE: Getting charges:", self.charges)
+                print("PolarMACE: Grabbing charges:", self.charges)
+                print("PolarMACE: Sum of charges:", np.sum(self.charges))
                 # dipole
                 self.properties["dipole"] = self.model.results["dipole"]
                 print("PolarMACE: Getting dipole:", self.properties["dipole"])
+
+                # Spin
+                if "spin_charge_density" in self.model.results:
+                    p_spin = self.model.results["spin_charge_density"]
+                    charges_up   = p_spin[:, 0, 0]
+                    charges_down = p_spin[:, 1, 0]
+                    print("Spin-up charges:", charges_up)
+                    print("Spin-down charges:", charges_down)
+                    print("Spin-up sum:", np.sum(charges_up))
+                    print("Spin-down sum:", np.sum(charges_down))
 
         # Older interface: suitable for loading user-trained regular MACE models
         else:
@@ -557,6 +693,194 @@ class MACETheory():
             return self.energy
 
 
+##############################
+# MACE via fastatomstruct
+##############################
+
+class fastatomstruct_MACETheory():
+    def __init__(self, model_file=None, model_name=None, model_name_subtype=None, model_name_head=None,
+                 platform='cpu', enable_cueq=False, periodic=False, periodic_cell_vectors=None, label=None, numcores=1,
+                 periodic_cell_dimensions=None, printlevel=1):
+
+        self.theorytype = 'QM'
+        self.theorynamelabel = 'fsMACE'
+        self.analytic_hessian = False
+        self.numcores = numcores
+        self.printlevel = printlevel
+        self.properties = {}
+
+        print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
+
+        self.model_file=model_file
+        self.model_name=model_name
+        self.model_name_subtype=model_name_subtype
+        self.model_name_head=model_name_head
+        self.platform=platform
+        self.periodic=periodic
+        self.periodic_cell_vectors=periodic_cell_vectors
+        self.periodic_cell_dimensions=periodic_cell_dimensions
+        self.printlevel=printlevel
+
+        self.enable_cueq=enable_cueq
+
+        try:
+            import fastatomstruct as fs
+        except ImportError:
+            print("Error: fastatomstruct is not installed. Please install it via pip install fastatomstruct")
+            ashexit()
+
+        if self.model_file is not None:
+            self.calc = fs.MACECalculator(self.model_file, device=self.platform, enable_cueq=self.enable_cueq)
+        elif self.model_name is not None:
+            self.calc = fs.MACECalculator(self.model_name, device=self.platform, enable_cueq=self.enable_cueq)
+
+    def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+            elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
+            charge=None, mult=None):
+        module_init_time = time.time()
+
+        # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+        if qm_elems is None:
+            if elems is None:
+                print("No elems provided")
+                ashexit()
+            else:
+                qm_elems = elems
+
+        #Create atoms object
+        use_ase=True
+        if use_ase is True:
+            import ase
+            if self.periodic:
+                atoms = ase.atoms.Atoms(qm_elems,positions=current_coords, cell=self.periodic_cell_vectors,
+                                        pbc=True)
+            else:
+                atoms = ase.atoms.Atoms(qm_elems,positions=current_coords)
+            atoms.info["charge"] = charge
+            atoms.info["spin"] = mult
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run-after-aseatoms-creation', moduleindex=2)
+        else:
+            # fs atoms object. No charge/mult 
+            import fastatomstruct as fs
+            if self.periodic_cell_vectors is None:
+                print("Warning: periodic_cell_vectors is None. Setting to 10x10x10 Ang cube")
+                self.periodic_cell_vectors = np.eye(3) * 10.0
+
+            # Create list of fs Element object
+            fs_elems = [getattr(fs.Element, el) for el in qm_elems]
+            atoms = fs.Atoms(current_coords, self.periodic_cell_vectors, fs_elems)
+            atoms.charge = charge
+            atoms.spin = mult
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run-after-atoms-creation', moduleindex=2)
+
+        # Run
+        result = self.calc.calculate(atoms)
+    
+        self.energy = result.energy.in_units_of('Ha')
+        print("fsMACE energy:", self.energy)
+        self.gradient = -result.forces.in_units_of('Ha/a0')
+
+        # Return E and G if Grad
+        if Grad:
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+            return self.energy, self.gradient
+        # Returning E only
+        else:
+            print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+            return self.energy
+
+
+##############################
+# MACE via llmlip.rs
+##############################
+
+
+# class llmliprs_MACETheory():
+#     def __init__(self, model_file=None, model_name_subtype=None, model_name_head=None,
+#                  platform='cpu', periodic=False, periodic_cell_vectors=None, label=None, numcores=1,
+#                  periodic_cell_dimensions=None, printlevel=1, stress_boolean=False, dtype='float64', mace_mh1_wigner_mode='true_float64'):
+
+#         self.theorytype = 'QM'
+#         self.theorynamelabel = 'llmliprsMACE'
+#         self.analytic_hessian = False
+#         self.numcores = numcores
+#         self.printlevel = printlevel
+#         self.properties = {}
+
+#         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
+
+#         self.model_file=model_file
+#         self.model_name_subtype=model_name_subtype
+#         self.model_name_head=model_name_head
+#         self.platform=platform
+#         self.periodic=periodic
+#         self.periodic_cell_vectors=periodic_cell_vectors
+#         self.periodic_cell_dimensions=periodic_cell_dimensions
+#         self.printlevel=printlevel
+
+#         self.dtype=dtype
+#         self.stress_boolean = stress_boolean
+#         self.mace_mh1_wigner_mode=mace_mh1_wigner_mode
+
+#         try:
+#             import llmlip
+#         except ImportError:
+#             print("Error: llmlip is not installed. Please install it (https://github.com/mizukami-group/llmlip.rs)")
+#             ashexit()
+
+#         self.model = llmlip.Model(self.model_file)
+
+
+#     def run(self, current_coords=None, current_MM_coords=None, MMcharges=None, qm_elems=None, mm_elems=None,
+#             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
+#             charge=None, mult=None):
+#         module_init_time = time.time()
+
+#         # What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
+#         if qm_elems is None:
+#             if elems is None:
+#                 print("No elems provided")
+#                 ashexit()
+#             else:
+#                 qm_elems = elems
+
+#         if self.periodic_cell_vectors is None:
+#             pbc = (False, False, False)
+#         else:
+#             pbc = (True, True, True)
+
+#         # Run
+#         prediction = self.model.predict(
+#             species=qm_elems,
+#             positions=current_coords,          # shape (n, 3), Angstrom
+#             cell=self.periodic_cell_vectors,                    # or shape (3, 3), row-major cell vectors
+#             pbc=pbc,
+#             energy=True,
+#             forces=True,
+#             stress=self.stress_boolean,
+#             virial=False,
+#             dtype=self.dtype,              # "float64", "float32", "f64", "f32"
+#             head=self.model_name_head,
+#             total_charge=charge,
+#             spin_multiplicity=mult,
+#             mace_mh1_wigner_mode=mace_mh1_wigner_mode,
+#         )
+
+    
+#         self.energy = prediction.energy/ash.constants.evtohar
+#         print(f"{self.theorynamelabel} energy:", self.energy)
+#         self.gradient = -prediction.forces/(51.422067090480645)
+
+#         # Return E and G if Grad
+#         if Grad:
+#             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+#             return self.energy, self.gradient
+#         # Returning E only
+#         else:
+#             print_time_rel(module_init_time, modulename=f'{self.theorynamelabel} run', moduleindex=2)
+#             return self.energy
+
+
 ###################################
 # Function to write config file
 ###################################
@@ -568,6 +892,8 @@ class MACETheory():
 #NOTE: E0s="average" is easiest but not recommended.
 def write_mace_config(config_file="config.yml", name="model",model="MACE", platform='cpu',
                       valid_fraction=0.1, train_file="train_data_mace.xyz",E0s=None,
+                      foundation_model=None, multiheads_finetuning=False, lr=0.001, weight_decay=0.0,
+                      scaling="rms_forces_scaling", ema=True, ema_decay=0.999, amsgrad=True, clip_grad=1.0,
                       energy_key='energy_REF', forces_key='forces_REF',        
                       energy_weight=1, forces_weight=100,
                       max_num_epochs=500, swa=True, batch_size=10,
@@ -578,31 +904,65 @@ def write_mace_config(config_file="config.yml", name="model",model="MACE", platf
 
     import yaml
 
-    data = dict( model= model,
-num_channels= num_channels,
-max_L= max_L,
-r_max= r_max,
-name= name,
-model_dir= model_dir,
-log_dir= log_dir,
-checkpoints_dir= checkpoints_dir,
-results_dir= results_dir,
-train_file= train_file,
-valid_fraction= valid_fraction,
-energy_key= energy_key,
-forces_key= forces_key,
-energy_weight=energy_weight,
-forces_weight=forces_weight,
-device= platform,
-seed= seed,
-batch_size= batch_size,
-max_num_epochs= max_num_epochs,
-swa= swa)
-    # E0 atomic energies should generally be in training set file.
-    # Option to provide as dict here also or use E0="average"
-    if E0s is not None:
-        print("E0s option provided:", E0s)
-        data[E0s] = E0s
+    #Finetuning
+    if foundation_model is not None:
+        data = dict( model= model,
+                    foundation_model= foundation_model,
+                    multiheads_finetuning= multiheads_finetuning,
+                    lr= lr,
+                    weight_decay= weight_decay,
+                    scaling= scaling,
+                    ema= ema,
+                    ema_decay= ema_decay,
+                    amsgrad= amsgrad,
+                    clip_grad= clip_grad,
+                    num_channels= num_channels,
+                    max_L= max_L,
+                    r_max= r_max,
+                    name= name,
+                    model_dir= model_dir,
+                    log_dir= log_dir,
+                    checkpoints_dir= checkpoints_dir,
+                    results_dir= results_dir,
+                    train_file= train_file,
+                    valid_fraction= valid_fraction,
+                    energy_key= energy_key,
+                    forces_key= forces_key,
+                    energy_weight=energy_weight,
+                    forces_weight=forces_weight,
+                    device= platform,
+                    seed= seed,
+                    batch_size= batch_size,
+                    max_num_epochs= max_num_epochs,
+                    E0s=E0s)
+
+    # Regular training
+    else:   
+        data = dict( model= model,
+                num_channels= num_channels,
+                max_L= max_L,
+                r_max= r_max,
+                name= name,
+                model_dir= model_dir,
+                log_dir= log_dir,
+                checkpoints_dir= checkpoints_dir,
+                results_dir= results_dir,
+                train_file= train_file,
+                valid_fraction= valid_fraction,
+                energy_key= energy_key,
+                forces_key= forces_key,
+                energy_weight=energy_weight,
+                forces_weight=forces_weight,
+                device= platform,
+                seed= seed,
+                batch_size= batch_size,
+                max_num_epochs= max_num_epochs,
+                swa= swa)
+        # E0 atomic energies should generally be in training set file.
+        # Option to provide as dict here also or use E0="average"
+        if E0s is not None:
+            print("E0s option provided:", E0s)
+            data[E0s] = E0s
 
     with open(config_file, 'w') as outfile:
         yaml.dump(data, outfile, default_flow_style=False, sort_keys=False)

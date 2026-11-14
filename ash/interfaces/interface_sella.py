@@ -260,6 +260,11 @@ class SellaoptimizerClass:
                 if conv:
                     print("Converged")
                     break
+
+            # Updating coordinates in Fragment object if using Active Region
+            if self.actatoms is not None:
+                fragment.coords = atoms.calc.full_fragment.coords
+            
             if conv is False:
                 print()
                 print(f"Sella Geometry optimization did not converge in {self.maxiter} steps. Exiting.")
@@ -290,7 +295,7 @@ class SellaoptimizerClass:
             print()
 
             #Active region XYZ-file
-            if self.actatoms is None:
+            if self.actatoms is not None:
                 write_XYZ_for_atoms(fragment.coords, fragment.elems, self.actatoms, 
                                     "Fragment-optimized_Active")
 
