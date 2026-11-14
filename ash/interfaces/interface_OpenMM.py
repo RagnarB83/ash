@@ -155,7 +155,10 @@ class OpenMMTheory:
         # TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded = delete_QM1_MM1_bonded
         # Platform (CPU, CUDA, OpenCL) and Parallelization
-        self.platform_choice = platform.upper()
+        # The name is accepted in any case and stored with the spelling OpenMM registered it under
+        # (openmm.Platform.getPlatformByName is case-sensitive, e.g. 'OpenCL' and 'Reference')
+        registered_platforms = [openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())]
+        self.platform_choice = next((p for p in registered_platforms if p.upper() == platform.upper()), platform)
 
         if properties is None:
             self.properties = {}
