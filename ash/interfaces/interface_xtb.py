@@ -1089,14 +1089,17 @@ def create_xtb_pcfile_general(coords,pchargelist,hardness=1000):
 
 # Grab pointcharge gradient (Eh/Bohr) from xtb pcgrad file
 def xtbpcgradientgrab(numatoms, file="pcgrad"):
-    gradient = np.zeros((numatoms, 3))
     with open(file) as pgradfile:
-        for count,line in enumerate(pgradfile):
-            val_x=float(line.split()[0])
-            val_y = float(line.split()[1])
-            val_z = float(line.split()[2])
-            #gradient[count-1] = [val_x,val_y,val_z]
-            gradient[count] = [val_x,val_y,val_z]
+        text = pgradfile.read()
+    # Fast path: a file of exactly numatoms x 3 numbers is converted in one go
+    values = text.split()
+    if len(values) == 3*numatoms:
+        return np.array(values, dtype=float).reshape(numatoms, 3)
+    # Otherwise (extra columns or fewer lines) read the first 3 columns line by line
+    gradient = np.zeros((numatoms, 3))
+    for count,line in enumerate(text.splitlines()):
+        val_x, val_y, val_z = line.split()[:3]
+        gradient[count] = [float(val_x), float(val_y), float(val_z)]
     return gradient
 
 # Grab xTB charges. Assuming default xTB charges that are inside file charges
