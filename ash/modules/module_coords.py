@@ -610,7 +610,14 @@ class Fragment:
             ashexit()
         pdb = openmm.app.PDBxFile(filename)
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
-        self.elems = [atom.element.symbol for atom in pdb.topology.atoms()]
+        self.elems=[]
+        for atom in pdb.topology.atoms():
+            try:
+                self.elems.append(atom.element.symbol)
+            except AttributeError:
+                print("Warning: could not fully parse element information from PDBx/mmCIF-topology for atom:", atom)
+                print("This may be a virtual site. Adding 'M' as dummy element for this atom.")
+                self.elems.append('M')
 
         # Topology
         self.pdb_topology = pdb.topology
