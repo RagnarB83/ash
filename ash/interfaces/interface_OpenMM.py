@@ -565,9 +565,9 @@ class OpenMMTheory:
                 if self.printlevel > 0:
                     print("System is periodic.")
                     print_line_with_subheader1("Setting up periodicity.")
-                    #Inspect and set PBC in self.topology and self.forcefield
-                    #Necessary for system creation with periodics (otherwise failure)
-                    self.set_periodics_before_system_creation(periodic_cell_vectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed,)
+                #Inspect and set PBC in self.topology and self.forcefield
+                #Necessary for system creation with periodics (otherwise failure)
+                self.set_periodics_before_system_creation(periodic_cell_vectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed,)
 
                 #Nonbonded method to use for PBC
                 if self.nonbondedMethod_PBC == 'PME':
