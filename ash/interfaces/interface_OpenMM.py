@@ -1238,12 +1238,14 @@ class OpenMMTheory:
         self.system.removeForce(forceindex)
     def remove_force_by_name(self,forcename):
         print(f"Searching forces and removing a force name: {forcename}")
-        for i, force in enumerate(self.system.getForces()):
-            #print("force:", force)
-            print("force name:", force.getName())
-            if force.getName() == forcename:
-                print(f"Removing force-index {i}: {forcename}")
-                self.system.removeForce(i)
+        #NOTE: indices shift when a force is removed, hence removal from the back
+        indices_to_remove = [i for i, force in enumerate(self.system.getForces())
+                             if force.getName() == forcename]
+        if len(indices_to_remove) == 0:
+            print(f"No force with name {forcename} found in system")
+        for i in reversed(indices_to_remove):
+            print(f"Removing force-index {i}: {forcename}")
+            self.system.removeForce(i)
 # Bond restraint force, e.g. for umbrella sampling
 # TODO : unit check
     def add_custom_bond_force(self,i,j,value,forceconstant):
@@ -2339,6 +2341,32 @@ class ForceReporter(object):
 # 2. Go through the 1-4 interactions and not exclude but scale somehow manually. But maybe we can't do that in
 # CustomNonbonded Force?
 # Presumably not but maybe can add a special force object just for 1-4 interactions. We
+def remove_forces_from_system(system, forcenames):
+    """Remove all forces whose class-name is in forcenames from an OpenMM system.
+
+    Removing a force shifts the index of every force after it, so the indices are
+    collected first and the forces are then removed from the back. Removing them in
+    increasing index order (as was done before) removes the wrong force as soon as more
+    than one force matches, e.g. deleting a NonbondedForce instead of an AndersenThermostat.
+
+    Args:
+        system: OpenMM System object.
+        forcenames (list/str): class-name(s) of the forces to remove, e.g. "MonteCarloBarostat".
+
+    Returns:
+        list: names of the forces that were removed.
+    """
+    if isinstance(forcenames, str):
+        forcenames = [forcenames]
+    indices_to_remove = [i for i, force in enumerate(system.getForces())
+                         if force.__class__.__name__ in forcenames]
+    removed = []
+    for i in reversed(indices_to_remove):
+        removed.append(system.getForces()[i].__class__.__name__)
+        system.removeForce(i)
+    return list(reversed(removed))
+
+
 def create_cnb(original_nbforce,system_numparticles):
     import openmm
     """Creates a CustomNonbondedForce object that mimics the original nonbonded force
@@ -3903,10 +3931,10 @@ class OpenMM_MDclass:
                                                         integrator=self.integrator, coupling_frequency=self.coupling_frequency)
         else:
             # Deleting barostat and Andersen thermostat if present from previous sims
-            for i, forcename in enumerate(forceclassnames):
-                if forcename == "MonteCarloBarostat" or forcename == "AndersenThermostat":
-                    print("Removing old force:", forcename)
-                    self.openmmobject.system.removeForce(i)
+            removed_forces = remove_forces_from_system(self.openmmobject.system,
+                                                       ["MonteCarloBarostat", "AndersenThermostat"])
+            for forcename in removed_forces:
+                print("Removing old force:", forcename)
 
             # Regular thermostat or integrator without barostat
             # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
