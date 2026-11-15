@@ -1,5 +1,6 @@
 import subprocess as sp
 import os
+import re
 import shutil
 
 from ash.functions.functions_general import BC,ashexit, writestringtofile, pygrep, print_line_with_mainheader
@@ -20,6 +21,38 @@ import ash.settings_ash
 
 def multiwfn_run(moldenfile, fchkfile=None, option='density', num_frozen_orbs='Auto', mrccoutputfile=None, mrccdensityfile=None, multiwfndir=None, grid=3, numcores=1,
                  fragmentfiles=None, fockfile=None, openshell=False, printlevel=2):
+    """Run the Multiwfn program on a Molden file and process the output.
+
+    Args:
+        moldenfile (str): Molden wavefunction file (from ORCA, MRCC etc.) used as Multiwfn input.
+        fchkfile (str): fchk file (not yet supported).
+        option (str): type of analysis. Available options:
+            Cube-file generation: 'density', 'valence-density', 'spin-density'/'spindensity', 'elf'
+            Atomic charges (main function 7): 'hirshfeld', 'adch', 'chelpg', 'mk'
+            Bond orders (main function 9): 'mayerbondorder'/'MBO', 'fuzzy_bondorder'/'FBO',
+                'laplacianbondorder'/'LBO'
+            Other: 'nocv', 'mrcc-density'
+        num_frozen_orbs (str/int): number of frozen orbitals for option='valence-density'
+            ('Auto' determines it from the atom_core_electrons dictionary).
+        mrccoutputfile (str): MRCC outputfile (for MRCC densities).
+        mrccdensityfile (str): MRCC density file, e.g. CCDENSITIES.
+        multiwfndir (str): directory containing the Multiwfn executable. If None, the
+            multiwfndir setting or the PATH is used.
+        grid (int): Multiwfn grid-quality setting used for Cube-file generation.
+        numcores (int): number of cores used by Multiwfn.
+        fragmentfiles (list): fragment files for option='nocv'.
+        fockfile (str): file containing a Fock-matrix printout for option='nocv'.
+        openshell (bool): whether the system is open-shell (option='nocv').
+        printlevel (int): ASH printlevel.
+
+    Returns:
+        For Cube-file options: the name of the created Cube-file (str).
+        For charge options: a list of atomic charges (in electrons), or None if no .chg
+            file was created.
+        For bond-order options: a dict {(atom_i, atom_j): bondorder} with 1-based atom
+            indices, or None if nothing could be parsed.
+        For other options: None.
+    """
     print_line_with_mainheader("multiwfn_run")
 
     multiwfn_citation_string="""\nDon't forget to to cite Multiwfn if you use it in your work:
@@ -163,7 +196,6 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         print("Multiwfn is done!")
     print()
 
-    print("option:",option)
     ############################
     #POST-PROCESSING OUTPUT
     ############################
@@ -202,17 +234,64 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         print("NOCV option was chosen.")
         print("Relevant Cube-files were created and NOCV output can be found in: NOCV.txt")
         print("See multiwfn.out for a log-file of the Multiwfn call.")
-    elif option =="hirshfeld":
-        print("Hirshfeld option was chosen.")
-
-        #read file:
-        outputfile=moldenfile+'.chg'
-        print(f"A file: {outputfile} was created")
+    elif option in multiwfn_charge_options:
+        if printlevel >= 2:
+            print(f"Atomic-charge option ({option}) was chosen.")
+        #Multiwfn writes the charges to [basename of inputfile].chg
+        chgfile=originputbasename+'.chg'
+        if os.path.isfile(chgfile) is False:
+            print(BC.WARNING,f"No charge file ({chgfile}) was created by Multiwfn.",BC.END)
+            print(BC.WARNING,"See multiwfn.out for details.",BC.END)
+            return None
+        elems, coords, charges = read_multiwfn_chgfile(chgfile)
+        if printlevel >= 2:
+            print(f"Charge file written by Multiwfn: {chgfile}")
+            print(f"\n{option} atomic charges (electrons):")
+            for i,(el,q) in enumerate(zip(elems,charges)):
+                print(f"{i:<6d} {el:<4s} {q:12.6f}")
+            print(f"{'Sum of charges:':<20s}{sum(charges):12.6f}")
+        return charges
+    elif option in multiwfn_bondorder_options:
+        if printlevel >= 2:
+            print(f"Bond-order option ({option}) was chosen.")
+        bondorders=read_multiwfn_bondorders("multiwfn.out")
+        if len(bondorders) == 0:
+            print(BC.WARNING,"No bond orders could be parsed from multiwfn.out.",BC.END)
+            #Mayer and Wiberg bond orders need basis-function information, which e.g. a
+            #wfn/wfx file does not carry. Multiwfn then returns to its main menu
+            if os.path.isfile("multiwfn.out"):
+                with open("multiwfn.out") as f:
+                    if "does not contain basis function information" in f.read():
+                        print(BC.WARNING,f"Multiwfn reports that {moldenfile} contains no basis-function information.",BC.END)
+                        print(BC.WARNING,f"The {option} model requires it. Use a file with basis-set information (e.g. a Molden or fch file),",BC.END)
+                        print(BC.WARNING,"or a density-based model instead (fuzzy_bondorder/FBO or laplacianbondorder/LBO).",BC.END)
+            return None
+        if printlevel >= 2:
+            print(f"\n{option} bond orders (only bonds above the Multiwfn print-threshold):")
+            for (i,j),bo in bondorders.items():
+                print(f"{i:<6d} {j:<6d} {bo:12.6f}")
+        return bondorders
 
 
 #This function creates an inputfile of numbers that defines what Multiwfn does
 def write_multiwfn_input_option(option=None, grid=3, frozenorbitals=None, densityfile=None,
                                 fragmentfiles=None,fockfile=None, file4=None, openshell=False, printlevel=2):
+    """Write the file of Multiwfn menu-answers (mwfnoptions) that defines what Multiwfn does.
+
+    Args:
+        option (str): analysis type, see multiwfn_run for the list of options.
+        grid (int): Multiwfn grid-quality setting.
+        frozenorbitals (int): number of frozen orbitals (valence-density, mrcc-density).
+        densityfile (str): correlated density file (mrcc-density).
+        fragmentfiles (list): fragment files (nocv).
+        fockfile (str): file containing a Fock-matrix printout (nocv).
+        file4 (str): unused.
+        openshell (bool): whether the system is open-shell (nocv).
+        printlevel (int): ASH printlevel.
+
+    Returns:
+        None. Writes the file 'mwfnoptions' to the current directory.
+    """
     #Create input formula as file
     if option == 'density':
         denstype=1
@@ -321,10 +400,12 @@ q
 -10
 q
         """
-    elif option == 'hirshfeld':
+    elif option in multiwfn_charge_options:
+        submenu, extra_answers = multiwfn_charge_options[option]
+        extralines = "\n".join(extra_answers)
         inputformula=f"""7
-1
-1
+{submenu}
+{extralines}
 y
 0
 q
@@ -407,3 +488,80 @@ def read_fchkfile(file):
     #For open-shell choose different NOs
 
     pass
+
+
+#Atomic-charge models supported via Multiwfn main function 7 (Population analysis).
+#Key: ASH option name. Value: (Multiwfn submenu number, list of extra answers before the export prompt)
+#Submenu numbers and prompt sequences follow the Multiwfn manual (Section 3.9 and examples 4.7.1/4.7.2):
+# 1: Hirshfeld (asks for atomic-density method; 1 = built-in atomic densities)
+# 11: ADCH (identical procedure to Hirshfeld)
+# 12: CHELPG and 13: Merz-Kollman (ESP-fitting; a settings menu appears, 1 = start calculation)
+multiwfn_charge_options = {
+    "hirshfeld": (1, ["1"]),
+    "adch": (11, ["1"]),
+    "chelpg": (12, ["1"]),
+    "mk": (13, ["1"]),
+}
+
+#Bond-order models supported via Multiwfn main function 9 (Bond order analysis)
+multiwfn_bondorder_options = {
+    "mayerbondorder": 1, "MBO": 1,
+    "fuzzy_bondorder": 7, "FBO": 7,
+    "laplacianbondorder": 8, "LBO": 8,
+}
+
+
+def read_multiwfn_chgfile(chgfile):
+    """Read a Multiwfn .chg file (element, x, y, z, charge per line).
+
+    Args:
+        chgfile (str): path to the .chg file written by Multiwfn.
+
+    Returns:
+        tuple: (elems, coords, charges) where elems is a list of element symbols,
+            coords a list of [x,y,z] in Angstrom and charges a list of floats.
+    """
+    elems = []
+    coords = []
+    charges = []
+    with open(chgfile) as f:
+        for line in f:
+            fields = line.split()
+            if len(fields) < 5:
+                continue
+            try:
+                x, y, z, q = (float(i) for i in fields[1:5])
+            except ValueError:
+                continue
+            elems.append(fields[0])
+            coords.append([x, y, z])
+            charges.append(q)
+    return elems, coords, charges
+
+
+#Matches e.g.:  #    1:       1(C )      2(H )     0.95583
+bondorder_re = re.compile(r"#\s*\d+:\s*(\d+)\(\s*([A-Za-z]+)\s*\)\s*-*\s*(\d+)\(\s*([A-Za-z]+)\s*\)\s*:?\s*(-?\d+\.\d+)")
+
+
+def read_multiwfn_bondorders(outputfile="multiwfn.out"):
+    """Parse bond orders from a Multiwfn outputfile (main function 9).
+
+    Only bonds printed by Multiwfn are returned (controlled by the bndordthres
+    parameter in settings.ini, 0.05 by default).
+
+    Args:
+        outputfile (str): Multiwfn outputfile to parse.
+
+    Returns:
+        dict: {(atomindex_i, atomindex_j): bondorder}. Atom indices are 1-based,
+            as printed by Multiwfn.
+    """
+    bondorders = {}
+    with open(outputfile) as f:
+        for line in f:
+            match = bondorder_re.search(line)
+            if match is not None:
+                i = int(match.group(1))
+                j = int(match.group(3))
+                bondorders[(i, j)] = float(match.group(5))
+    return bondorders
