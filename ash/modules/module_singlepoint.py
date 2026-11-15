@@ -35,9 +35,12 @@ def Singlepoint(fragment=None, theory=None, Grad=False, charge=None, mult=None, 
         mult (int, optional): Specify mult of system. Overrides fragment charge information.
 
     Returns:
-        float: Energy
-        or
-        float,np.array : Energy and gradient array
+        ASH_Results: object with the attribute energy (float) and, if Grad is True, also
+            gradient (np.array). For a QM/MM theory the attributes qm_energy, mm_energy
+            and qmmm_energy are set as well.
+
+    Note: the theory.run method that is called inside returns bare values instead, i.e.
+    energy (float) or, with Grad=True, the tuple (energy, gradient).
     """
     if printlevel >= 1:
         print_line_with_mainheader("Singlepoint function")
