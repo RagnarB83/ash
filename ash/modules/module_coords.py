@@ -624,42 +624,23 @@ class Fragment:
         self.pdb_topology = pdb.topology
 
     def read_xyzfile(self, filename, scale=None, tol=None, readchargemult=False, conncalc=True):
+        """Read an XYZ-file into the fragment.
+
+        Uses the module-level read_xyzfile function so that there is only a single
+        XYZ-file parser in ASH.
+        """
         if self.printlevel >= 2:
             print("Reading coordinates from XYZ file '{}' into fragment.".format(filename))
-        coords = []
-        with open(filename) as f:
-            for count, line in enumerate(f):
-                if count == 0:
-                    self.numatoms = int(line.split()[0])
-                elif count == 1:
-                    if readchargemult is True:
-                        if self.printlevel >= 2:
-                            print("Reading charge/mult from file header.")
-                        try:
-                            self.charge = int(line.split()[0])
-                            self.mult = int(line.split()[1])
-                        except ValueError:
-                            print(f"Error: XYZ-file {filename} does not have a valid charge/mult in 2nd-line of header:")
-                            print("Line:", line)
-                            ashexit()
-                elif count > 1:
-                    if len(line) > 3:
-                        # Grabbing element and reformatting
-                        if isint(line.split()[0]) is True:
-                            # Grabbing element as atomnumber and reformatting
-                            # el=dictionaries_lists.element_dict_atnum[int(line.split()[0])].symbol
-                            el = reformat_element(int(line.split()[0]), isatomnum=True)
-                            self.elems.append(el)
-                        else:
-                            el = line.split()[0]
-                            self.elems.append(reformat_element(el))
-                        # self.coords = np.append(self.coords,[float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-                        coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-        # Convert to numpy
+        if readchargemult is True:
+            elems, coords, charge, mult = read_xyzfile(filename, printlevel=self.printlevel,
+                                                       readchargemult=True)
+            self.charge = charge
+            self.mult = mult
+        else:
+            elems, coords = read_xyzfile(filename, printlevel=self.printlevel)
+        self.elems = elems
         self.coords = reformat_list_to_array(coords)
-        if self.numatoms != len(self.coords):
-            print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
-            ashexit()
+        self.numatoms = len(self.coords)
 
 
     def set_energy(self, energy):
@@ -1929,26 +1910,38 @@ def molformulatolist(formulastring):
 
 
 # Read XYZ file
-def read_xyzfile(filename,printlevel=2):
-    # Will accept atom-numbers as well as symbols
-    elements = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
-                'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
-                'Rb',
-                'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe',
-                'Cs',
-                'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf',
-                'Ta',
-                'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
-                'Pa',
-                'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
+def read_xyzfile(filename,printlevel=2,readchargemult=False):
+    """Read an XYZ-file. Accepts both element symbols and atom-numbers.
+
+    Args:
+        filename (str): XYZ-file to read.
+        printlevel (int): ASH printlevel.
+        readchargemult (bool): also read charge and multiplicity from the
+            title-line (2nd line) of the file.
+
+    Returns:
+        (elems, coords) or, if readchargemult is True, (elems, coords, charge, mult).
+    """
     if printlevel >= 2:
         print("Reading coordinates from XYZ file '{}'.".format(filename))
     coords = []
     elems = []
+    charge = None
+    mult = None
     with open(filename) as f:
         for count, line in enumerate(f):
             if count == 0:
                 numatoms = int(line.split()[0])
+            if count == 1 and readchargemult is True:
+                if printlevel >= 2:
+                    print("Reading charge/mult from file header.")
+                try:
+                    charge = int(line.split()[0])
+                    mult = int(line.split()[1])
+                except (ValueError, IndexError):
+                    print(BC.FAIL,f"Error: XYZ-file {filename} does not have a valid charge/mult in the 2nd line of the header:",BC.END)
+                    print("Line:", line)
+                    ashexit()
             if count > 1:
                 if len(line.strip()) > 0:
                     if isint(line.split()[0]) is True:
@@ -1967,6 +1960,8 @@ def read_xyzfile(filename,printlevel=2):
     if len(coords) != len(elems):
         print("Number of coordinates does not match elements. Something wrong with XYZ-file?: ", filename)
         ashexit()
+    if readchargemult is True:
+        return elems, coords, charge, mult
     return elems, coords
 
 #Read all XYZ-files from directory
