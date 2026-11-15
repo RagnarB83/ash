@@ -145,18 +145,38 @@ def print_theories_table(theories,energies,fragment):
 
 #Pretty table of fragments and energies
 def print_fragments_table(fragments,energies,tabletitle="Singlepoint_fragments: ", unit='Eh'):
+    # Column contents as strings
+    formulas = [str(frag.formula) for frag in fragments]
+    labels = ["None" if frag.label is None else str(frag.label) for frag in fragments]
+    charges = [str(frag.charge) for frag in fragments]
+    mults = [str(frag.mult) for frag in fragments]
+    energystrings = ["{:.10f}".format(e) for e in energies]
+    energyheader = "Energy({})".format(unit)
+
+    # Column widths taken from the widest entry, header included. Fixed widths used to
+    # break the table whenever a formula or label was longer than the hardcoded width
+    def colwidth(header, entries):
+        return max([len(header)] + [len(entry) for entry in entries])
+
+    w_f = colwidth("Formula", formulas)
+    w_l = colwidth("Label", labels)
+    w_c = colwidth("Charge", charges)
+    w_m = colwidth("Mult", mults)
+    w_e = colwidth(energyheader, energystrings)
+    # 4 single-space column separators
+    totalwidth = w_f + w_l + w_c + w_m + w_e + 4
+
+    rowformat = "{:<" + str(w_f) + "} {:<" + str(w_l) + "} {:>" + str(w_c) + "} {:>" + str(w_m) + "} {:>" + str(w_e) + "}"
+
     print()
-    print("="*100)
+    print("="*totalwidth)
     print("{}Table of energies of each fragment:".format(tabletitle))
-    print("="*100)
-    print("{:15} {:<25} {:>7} {:>7} {:>30}".format("Formula", "Label", "Charge","Mult", f"Energy({unit})"))
-    print("-"*100)
-    for frag, e in zip(fragments,energies):
-        if frag.label==None:
-            label="None"
-        else:
-            label=frag.label
-        print("{:15} {:<25} {:>7} {:>7} {:>30.10f}".format(frag.formula, label, frag.charge, frag.mult, e))
+    print("="*totalwidth)
+    print(rowformat.format("Formula", "Label", "Charge", "Mult", energyheader))
+    print("-"*totalwidth)
+    for formula, label, charge, mult, energystring in zip(formulas, labels, charges, mults, energystrings):
+        print(rowformat.format(formula, label, charge, mult, energystring))
+    print("-"*totalwidth)
     print()
 
 #Single-point energy function that runs calculations on multiple fragments. Returns a list of energies.
