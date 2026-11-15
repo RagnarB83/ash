@@ -1938,6 +1938,14 @@ def read_xyzfile(filename,printlevel=2,readchargemult=False):
                     ashexit()
             if count > 1:
                 if len(line.strip()) > 0:
+                    #A coordinate line must have an element and 3 coordinates. A multi-frame
+                    #trajectory file, for example, has a bare atomcount line here
+                    if len(line.split()) < 4:
+                        print(BC.FAIL,f"Error: line {count+1} of XYZ-file {filename} is not a valid atom-line (element and x,y,z expected):",BC.END)
+                        print("Line:", line.rstrip())
+                        print("Note: multi-frame/trajectory XYZ-files cannot be read as a single fragment.")
+                        print("Use split_multimolxyzfile or get_molecules_from_trajectory for those.")
+                        ashexit()
                     if isint(line.split()[0]) is True:
                         # Grabbing element as atomnumber and reformatting
                         # el=dictionaries_lists.element_dict_atnum[int(line.split()[0])].symbol
