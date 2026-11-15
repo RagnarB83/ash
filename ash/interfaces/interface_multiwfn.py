@@ -257,6 +257,14 @@ http://onlinelibrary.wiley.com/doi/10.1002/jcc.22885/abstract
         bondorders=read_multiwfn_bondorders("multiwfn.out")
         if len(bondorders) == 0:
             print(BC.WARNING,"No bond orders could be parsed from multiwfn.out.",BC.END)
+            #Mayer and Wiberg bond orders need basis-function information, which e.g. a
+            #wfn/wfx file does not carry. Multiwfn then returns to its main menu
+            if os.path.isfile("multiwfn.out"):
+                with open("multiwfn.out") as f:
+                    if "does not contain basis function information" in f.read():
+                        print(BC.WARNING,f"Multiwfn reports that {moldenfile} contains no basis-function information.",BC.END)
+                        print(BC.WARNING,f"The {option} model requires it. Use a file with basis-set information (e.g. a Molden or fch file),",BC.END)
+                        print(BC.WARNING,"or a density-based model instead (fuzzy_bondorder/FBO or laplacianbondorder/LBO).",BC.END)
             return None
         if printlevel >= 2:
             print(f"\n{option} bond orders (only bonds above the Multiwfn print-threshold):")
