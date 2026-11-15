@@ -1847,14 +1847,18 @@ def create_coords_string(elems, coords):
 
 
 # Takes list of elements and gives formula
-def elemlisttoformula(list):
-    # This dict comprehension was slow for large systems. Using set to reduce iterations
-    elemdict = {i: list.count(i) for i in set(list)}
+def elemlisttoformula(elemlist):
+    """Convert a list of elements into a molecular-formula string, e.g. ['H','F'] -> 'H1F1'.
+
+    Elements appear in the order they first occur in elemlist. Note: iterating over a set
+    here (as was done previously) makes the formula depend on the Python hash seed, i.e.
+    the same system could give either 'H1F1' or 'F1H1' from run to run.
+    """
+    # dict.fromkeys gives the unique elements in first-appearance order (and keeps the
+    # number of count() calls down for large systems)
+    elemdict = {el: elemlist.count(el) for el in dict.fromkeys(elemlist)}
     formula = ""
-    for item in elemdict.items():
-        el = item[0]
-        count = item[1]
-        # string=el+str(count)
+    for el, count in elemdict.items():
         formula = formula + el + str(count)
     return formula
 
