@@ -586,7 +586,8 @@ class Fragment:
         pdb = openmm.app.PDBFile(filename)
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
         self.elems=[]
-        print(pdb.topology)
+        if self.printlevel >= 2:
+            print(pdb.topology)
         for atom in pdb.topology.atoms():
 
             try:
