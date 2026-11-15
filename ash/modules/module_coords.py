@@ -3722,6 +3722,41 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     print("remove_atoms_from_system_CHARMM: Done!")
 
 
+# Read the segment names that are already present in a PSF-file (field 2 of each
+# line in the !NATOM block)
+def get_segment_names_from_PSF(psffile):
+    segnames = []
+    with open(psffile) as f:
+        inside_atomblock = False
+        numatoms = 0
+        for line in f:
+            if '!NATOM' in line:
+                inside_atomblock = True
+                numatoms = int(line.split()[0])
+                continue
+            if inside_atomblock:
+                if len(segnames) == numatoms:
+                    break
+                linesplit = line.split()
+                # Blank line or a new section header ends the atom block
+                if len(linesplit) < 2 or line.lstrip().startswith('!') or '!' in line:
+                    break
+                segnames.append(linesplit[1])
+    # Order-preserving unique list
+    return list(dict.fromkeys(segnames))
+
+
+# Find a segment name not already used in the PSF-file: ADD1, ADD2, etc.
+# A segment name that already exists in the PSF would make psfgen fail, so a
+# random name is not safe here
+def find_free_segment_name(psffile, prefix="ADD"):
+    existing = get_segment_names_from_PSF(psffile)
+    index = 1
+    while prefix + str(index) in existing:
+        index += 1
+    return prefix + str(index)
+
+
 def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, num_added_atoms=None):
     print("Finding resgroup {} in topfile {} ".format(resgroup, topfile))
     # Checking if resgroup present in topfile
@@ -3754,12 +3789,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
         ashexit()
 
     # Dummy segmentname. Can't be something existing. Using ADD1, ADD2 etc.
-    import random
-    import string
-    dummysegname="AD" + random.choice(string.ascii_uppercase) + str(random.randint(0, 9))
-    #matches = pygrep2(dummysegname, psffile)
-    #segname = dummysegname + str(len(matches) + 1)
-    #print("segname:", segname)
+    dummysegname = find_free_segment_name(psffile)
     print("dummysegname:", dummysegname)
     psf_script = """
     topology {}
