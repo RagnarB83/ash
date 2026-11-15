@@ -677,7 +677,7 @@ class PySCFTheory:
         elif method =='FCI':
             print("Running FCI natural orbital calculation")
             print("not ready")
-            exit()
+            ashexit()
             #TODO: FCI https://github.com/pyscf/pyscf/blob/master/examples/fci/14-density_matrix.py
             # FCI solver
             #cisolver = pyscf.fci.FCI(mol, myhf.mo_coeff)
@@ -2464,14 +2464,11 @@ class PySCFTheory:
             import pyscf.solvent
             print(BC.OKGREEN, "Polarizable Embedding Option On! Using CPPE module inside PySCF", BC.END)
             print(BC.WARNING, "Potfile: ", self.potfile, BC.END)
-            try:
-                if os.path.exists(self.potfile):
-                    print(BC.FAIL, "Potfile: ", self.potfile, "exists!", BC.END)
-            except:
+            if self.potfile is None or not os.path.isfile(self.potfile):
                 print(BC.FAIL, "Potfile: ", self.potfile, "does not exist!", BC.END)
                 ashexit()
-            # TODO: Adapt to RKS vs. UKS etc.
-            self.mf = pyscf.solvent.PE(pyscf.scf.RKS(self.mol), self.potfile)
+            # Wrap the already configured mf object (functional, grids, DF, SCF settings are kept)
+            self.mf = pyscf.solvent.PE(self.mf, self.potfile)
         # Continuum solvation
         elif self.solvation is not None:
             print("Adding continuum solvation to mf object")
@@ -2978,7 +2975,7 @@ class PySCFTheory:
                 self.num_scf_orbitals_alpha=len(scf_result.mo_occ[0])
                 if self.printlevel >1:
                     print("Total num. orbitals:", self.num_scf_orbitals_alpha)
-                if self.printlevel >1:
+                if self.printlevel >1 and self.do_pop_analysis:
                     self.run_population_analysis(self.mf, dm=None, unrestricted=True, type='Mulliken', label='SCF')
                 s2, spinmult = self.mf.spin_square()
                 print("UHF/UKS <S**2>:", s2)
@@ -3108,17 +3105,18 @@ class PySCFTheory:
                     if self.CC:
                         if self.CCmethod == "CCSD(T)":
                             from pyscf.grad import ccsd_t as ccsd_t_grad
-                            g = ccsd_t_grad.Gradients(self.ccobject).kernel()
-                            print('CCSD(T) nuclear gradient:', g)
+                            self.gradient = ccsd_t_grad.Gradients(self.ccobject).kernel()
+                            print('CCSD(T) nuclear gradient:', self.gradient)
                         elif self.CCmethod == "CCSD":
                             from pyscf.grad import ccsd as ccsd_grad
-                            g = ccsd_grad.Gradients(self.ccobject).kernel()
-                            print('CCSD nuclear gradient:', g)
+                            self.gradient = ccsd_grad.Gradients(self.ccobject).kernel()
+                            print('CCSD nuclear gradient:', self.gradient)
                         else:
-                            print("CC method not recognized for gradient calculation. No gradient calculated.")
+                            print(BC.FAIL, f"No gradient available for CCmethod={self.CCmethod}. Exiting.", BC.END)
+                            ashexit()
                     else:
-                            print("No post-SCF method recognized for gradient calculation. No gradient calculated.")
-                            self.gradient=None
+                        print(BC.FAIL, "No gradient available for the requested post-SCF method. Exiting.", BC.END)
+                        ashexit()
                         
             #Calculate regular SCF gradient
             else:
@@ -3152,6 +3150,9 @@ class PySCFTheory:
 
             #Pointcharge-gradient (separate)
             if PC is True:
+                if self.postSCF is True:
+                    print(BC.FAIL, "Pointcharge gradient is only implemented for SCF (not post-SCF) densities. Exiting.", BC.END)
+                    ashexit()
                 if self.printlevel >=1:
                     print("Calculating pointcharge gradient")
                 from ash.constants import ang2bohr
@@ -3196,14 +3197,14 @@ class PySCFTheory:
                 freq, intensity = ir.eval_ir_freq_intensity(self.mf, self.hessian_obj)
                 self.ir_intensities=intensity
             else:
+                print("Attempting IR intensity calculation (requires pyscf.prop library)")
                 try:
-                    print("Attempting IR intensity calculation (requires pyscf.prop library)")
+                    from pyscf.prop.infrared.rhf import Infrared
                 except ModuleNotFoundError:
                     print("pyscf IR intensity requires installation of pyscf.prop module")
                     print("See: https://github.com/pyscf/properties")
                     print("You can install with: pip install git+https://github.com/pyscf/properties")
                     ashexit()
-                from pyscf.prop.infrared.rhf import Infrared
                 mf_ir = Infrared(self.mf)
                 mf_ir.mf_hess=self.hessian_obj
                 mf_ir.run()
@@ -3677,7 +3678,7 @@ def KS_inversion_kspies(pyscftheoryobj, dm, numcores=1,
                     ax = chosen_axes[0]
         else:
             print("Something is wrong")
-            exit()
+            ashexit()
         if plotdim == 1:
             print("plotdim: 1")
             if x_axis_in_Bohr is True:
