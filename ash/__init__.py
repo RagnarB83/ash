@@ -114,6 +114,7 @@ from .interfaces.interface_BigDFT import BigDFTTheory
 from .interfaces.interface_deMon import deMon2kTheory
 from .interfaces.interface_ccpy import ccpyTheory
 from .interfaces.interface_MNDO import MNDOTheory
+from .interfaces.interface_MOPAC import MOPACTheory
 
 from .interfaces.interface_CFour import CFourTheory, run_CFour_HLC_correction, run_CFour_DBOC_correction, convert_CFour_Molden_file
 from .interfaces.interface_xtb import xTBTheory, gxTBTheory,tbliteTheory

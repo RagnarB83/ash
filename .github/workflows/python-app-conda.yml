@@ -35,6 +35,11 @@ jobs:
           printenv | sort
           conda env update --file environment.yml --name base
           conda list
+      - name: Install MOPAC (used by ash/tests/test_MOPAC.py)
+        run: |
+          # Pinned: the MOPAC test reference values were generated with MOPAC 23.2.5
+          conda install -y -c conda-forge mopac=23.2.5
+          which mopac
       - name: check stuff
         run: |
            which python
