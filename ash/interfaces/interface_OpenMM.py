@@ -30,6 +30,21 @@ import ash.modules.module_plotting
 from ash.interfaces.interface_openbabel import pdb_to_smiles,xyz_to_pdb_with_connectivity,writepdb_with_connectivity,mol_to_pdb
 
 
+# PDB residue names commonly used for standard amino acids and frequent
+# force-field variants. Users can pass a custom set for other residue names.
+_PROTEIN_RESIDUE_NAMES = {
+    "ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "GLY", "HIS", "ILE",
+    "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL",
+    "ASX", "GLX", "SEC", "PYL", "MSE", "HYP", "PCA", "PTR", "TPO", "SEP",
+    "CSO", "CSD", "CYM", "CYX", "HID", "HIE", "HIP", "HSD", "HSE", "HSP",
+    "ACE", "NME",
+}
+_SOLVENT_RESIDUE_NAMES = {
+    "HOH", "WAT", "H2O", "SOL", "TIP3", "TIP3P", "TIP4", "TIP4P", "TIP5P",
+    "SPC", "SPCE",
+}
+
+
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=1, topoforce=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None, label="OpenMM",
@@ -1524,6 +1539,65 @@ class OpenMMTheory:
                 todelete.append(i)
         for d in reversed(todelete):
             self.system.removeConstraint(d)
+
+    def _get_topology_atom_metadata(self):
+        """Return (atom index, residue name, element symbol) from the topology."""
+        topology = getattr(self, "topology", None)
+        if topology is not None and hasattr(topology, "atoms"):
+            atoms = list(topology.atoms())
+            metadata = []
+            for fallback_index, atom in enumerate(atoms):
+                atom_index = getattr(atom, "index", fallback_index)
+                residue = getattr(atom, "residue", None)
+                residue_name = getattr(residue, "name", None)
+                element = getattr(atom, "element", None)
+                element_symbol = getattr(element, "symbol", None)
+                if element_symbol is None:
+                    mm_elements = getattr(self, "mm_elements", [])
+                    if fallback_index < len(mm_elements):
+                        element_symbol = mm_elements[fallback_index]
+                metadata.append((int(atom_index), residue_name, element_symbol))
+            return metadata
+
+        resnames = getattr(self, "resnames", [])
+        elements = getattr(self, "mm_elements", [])
+        if len(resnames) == len(elements) and resnames:
+            return [(index, resnames[index], elements[index]) for index in range(len(resnames))]
+        raise ValueError("OpenMM topology with residue and element information is required for atom selection")
+
+    @staticmethod
+    def _normalize_residue_names(residue_names, defaults):
+        if residue_names is None:
+            residue_names = defaults
+        elif isinstance(residue_names, str):
+            residue_names = [residue_names]
+        return {str(name).strip().upper() for name in residue_names}
+
+    def get_nonH_atomindices(self):
+        """Return indices of all non-hydrogen atoms in the OpenMM topology."""
+        return [index for index, _, element in self._get_topology_atom_metadata()
+                if element is not None and str(element).upper() not in {"H", "D"}]
+
+    def get_protein_heavy_atomindices(self, residue_names=None):
+        """Return heavy-atom indices for standard protein residues.
+
+        ``residue_names`` can override the built-in PDB residue-name set for
+        force fields that use custom amino-acid residue names.
+        """
+        protein_names = self._normalize_residue_names(residue_names, _PROTEIN_RESIDUE_NAMES)
+        return [index for index, resname, element in self._get_topology_atom_metadata()
+                if resname is not None and resname.strip().upper() in protein_names
+                and element is not None and str(element).upper() not in {"H", "D"}]
+
+    def get_solvent_atomindices(self, residue_names=None):
+        """Return all atom indices in recognized water residues.
+
+        ``residue_names`` can override the built-in water residue-name set to
+        support nonstandard solvent labels. Ions are not included by default.
+        """
+        solvent_names = self._normalize_residue_names(residue_names, _SOLVENT_RESIDUE_NAMES)
+        return [index for index, resname, _ in self._get_topology_atom_metadata()
+                if resname is not None and resname.strip().upper() in solvent_names]
 
     # Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential
     # energy-function.
