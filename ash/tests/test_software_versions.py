@@ -30,6 +30,12 @@ def test_grab_version_from_output_returns_none_without_match(tmp_path):
     assert grab_version_from_output(str(output), r"version\s+([0-9.]+)") is None
 
 
+def test_grab_version_from_output_returns_none_when_file_is_missing(tmp_path):
+    missing_output = tmp_path / "missing.out"
+
+    assert grab_version_from_output(str(missing_output), r"version\s+([0-9.]+)") is None
+
+
 def test_grab_version_from_output_supports_nwchem_banner(tmp_path):
     output = tmp_path / "nwchem.out"
     output.write_text(

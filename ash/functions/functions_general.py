@@ -70,7 +70,8 @@ def module_version(module, distribution_names=None):
     from importlib.metadata import PackageNotFoundError, version
 
     if distribution_names is None:
-        distribution_names = [module.__name__.split(".", maxsplit=1)[0]]
+        module_name = getattr(module, "__name__", module.__class__.__name__).split(".", maxsplit=1)[0]
+        distribution_names = [module_name]
     for distribution_name in distribution_names:
         try:
             return version(distribution_name)
@@ -91,11 +92,14 @@ def grab_version_from_output(output_file, pattern):
     """Return the first captured version from a program output file."""
     import re
 
-    with open(output_file, encoding="utf-8", errors="replace") as output:
-        for line in output:
-            match = re.search(pattern, line, flags=re.IGNORECASE)
-            if match:
-                return match.group(1)
+    try:
+        with open(output_file, encoding="utf-8", errors="replace") as output:
+            for line in output:
+                match = re.search(pattern, line, flags=re.IGNORECASE)
+                if match:
+                    return match.group(1)
+    except FileNotFoundError:
+        return None
     return None
 
 #Create ASH environment shell-file in home-dir
