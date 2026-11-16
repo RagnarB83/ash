@@ -129,9 +129,9 @@ def ashexit(errormessage=None, code=1):
 
     #If in Jupyter notebook, then we do a softer return
     if is_interactive():
-        raise SystemExit("ASH exiting due to error")
+        raise SystemExit(code)
     else:
-        sys.exit(1)
+        sys.exit(code)
 
 def basename(filename):
     return os.path.splitext(filename)[0]
