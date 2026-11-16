@@ -22,6 +22,12 @@ from ash.modules.module_theory import NumGradclass
 # NEW Interface to geomeTRIC Optimization Library
 ##################################################
 
+
+def _geometric_verbose_from_printlevel(printlevel):
+    """Map ASH's 0-based verbosity tiers to geomeTRIC's verbose flag."""
+    return max(0, int(printlevel) - 1)
+
+
 #Wrapper function around GeomeTRICOptimizerClass
 def geomeTRICOptimizer(theory=None, fragment=None, charge=None, mult=None, coordsystem='tric', force_coordsystem=False, frozenatoms=None, 
                        constraints=None, constraintsinputfile=None, irc=False, rigid=False, enforce_constraints=None,
@@ -701,7 +707,8 @@ class GeomeTRICOptimizerClass:
             print("self.constraintsfile:",self.constraintsfile)
             final_geometric_args=geomeTRICArgsObject(ashengine,self.constraintsfile,coordsys=self.coordsystem,
                 maxiter=self.maxiter, conv_criteria=self.conv_criteria, transition=self.TSOpt, hessian=self.hessian, subfrctor=self.subfrctor,
-                verbose=0, irc=self.irc,rigid=self.rigid,enforce_constraints=self.enforce_constraints, bothre=self.bothre)
+                verbose=_geometric_verbose_from_printlevel(self.printlevel), irc=self.irc,rigid=self.rigid,
+                enforce_constraints=self.enforce_constraints, bothre=self.bothre)
 
             if self.printlevel >= 1:
                 print("Convergence criteria:", self.conv_criteria)
