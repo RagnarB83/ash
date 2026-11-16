@@ -72,6 +72,28 @@ optimizer = {"OPTIM_METHOD": "LBFGS", "MAX_ITER": 200, "TOL_MAX_FORCE": 0.01,
 
 #NEB-TS: NEB-CI + OptTS
 #Threshold settings for CI-NEB part are the same as in the NEB-TS of ORCA
+def _print_neb_ts_energy_summary(energies_dict, images, free_end, climbing_image):
+    """Print NEB-CI image energies and the optimized transition-state energy."""
+    print("\n\nNEB-CI image energies and optimized TS energy")
+    print(f"{'Image':>8} {'Energy (Eh)':>16} {'Relative (kcal/mol)':>22} {'Status':>12}")
+    print("-"*62)
+
+    for image in range(images + 2):
+        status = ""
+        if not free_end and image in (0, images + 1):
+            status = "frozen"
+        elif image == climbing_image:
+            status = "climbing"
+        relative_energy = (energies_dict[image] - energies_dict[0]) * ash.constants.hartokcal
+        print(f"{image:>8} {energies_dict[image]:16.6f} {relative_energy:22.2f} {status:>12}")
+
+    ts_relative_energy = (energies_dict[-1] - energies_dict[0]) * ash.constants.hartokcal
+    print(f"{'TS':>8} {energies_dict[-1]:16.6f} {ts_relative_energy:22.2f} {'optimized':>12}")
+    print("-"*62)
+    print()
+    return ts_relative_energy
+
+
 def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=False, maxiter=100, Singleiter=False,
         conv_type="ALL", tol_scale=10, tol_max_fci=0.10, tol_rms_fci=0.05, cichange_freqcheck=5,
         tol_turn_on_ci=1.0,  runmode='serial', numcores=1, charge=None, mult=None, printlevel=1, ActiveRegion=False, actatoms=None,
@@ -306,23 +328,7 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     CI_num = max(energies_dict, key=energies_dict.get) #Getting CI number as HEI
     #Add TS geometry to energies_dict as -1
     energies_dict[-1] = SP.energy
-    print("\n\nNEB-CI image energies and optimized TS energy")
-    print(f"{'Image':>8} {'Energy (Eh)':>16} {'Relative (kcal/mol)':>22} {'Status':>12}")
-    print("-"*62)
-
-    for i in range(0,images+2):
-        status = ""
-        if free_end == False and (i == 0 or i == images+1):
-            status = "frozen"
-        elif i == CI_num:
-            status = "climbing"
-        relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
-        print(f"{i:>8} {energies_dict[i]:16.6f} {relenergy:22.2f} {status:>12}")
-
-    SP_relenergy=(energies_dict[-1]-energies_dict[0])*ash.constants.hartokcal
-    print(f"{'TS':>8} {energies_dict[-1]:16.6f} {SP_relenergy:22.2f} {'optimized':>12}")
-    print("-"*62)
-    print()
+    SP_relenergy = _print_neb_ts_energy_summary(energies_dict, images, free_end, CI_num)
     #Writing final geometries for clarity
     SP.write_xyzfile(xyzfilename='Saddlepoint-OptTS.xyz')
 
