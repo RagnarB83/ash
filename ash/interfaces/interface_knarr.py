@@ -306,29 +306,22 @@ def NEBTS(reactant=None, product=None, theory=None, images=8, CI=True, free_end=
     CI_num = max(energies_dict, key=energies_dict.get) #Getting CI number as HEI
     #Add TS geometry to energies_dict as -1
     energies_dict[-1] = SP.energy
-    print("\n\nFinal energies of all NEB-CI images and final saddlepoint (in Eh and kcal/mol)")
-    print("-"*80)
+    print("\n\nNEB-CI image energies and optimized TS energy")
+    print(f"{'Image':>8} {'Energy (Eh)':>16} {'Relative (kcal/mol)':>22} {'Status':>12}")
+    print("-"*62)
 
     for i in range(0,images+2):
-        label="Image:"
+        status = ""
         if free_end == False and (i == 0 or i == images+1):
-            #If image was frozen
-            relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
-            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f} (frozen)")
+            status = "frozen"
         elif i == CI_num:
-            #Printing CI
-            relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
-            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f} (CI)")
-            #Printing TS
-            label="TS"
-            relenergy=(energies_dict[-1]-energies_dict[0])*ash.constants.hartokcal
-            print(f"{label:<8} {label:<4}Energy:{energies_dict[-1]:12.6f}  {relenergy:8.2f} (TS)")
-            SP_relenergy=relenergy
-        else:
-            #If regular image
-            relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
-            print(f"{label:<8} {i:<4}Energy:{energies_dict[i]:12.6f}  {relenergy:8.2f}")
-    print("-"*80)
+            status = "climbing"
+        relenergy=(energies_dict[i]-energies_dict[0])*ash.constants.hartokcal
+        print(f"{i:>8} {energies_dict[i]:16.6f} {relenergy:22.2f} {status:>12}")
+
+    SP_relenergy=(energies_dict[-1]-energies_dict[0])*ash.constants.hartokcal
+    print(f"{'TS':>8} {energies_dict[-1]:16.6f} {SP_relenergy:22.2f} {'optimized':>12}")
+    print("-"*62)
     print()
     #Writing final geometries for clarity
     SP.write_xyzfile(xyzfilename='Saddlepoint-OptTS.xyz')
