@@ -123,6 +123,59 @@ def test_numfreq_IR_intensities_serial_vs_parallel():
 
 
 ##############################################
+# The same thing with a real QM program
+##############################################
+
+@pytest.mark.skipif(shutil.which("orca") is None, reason="ORCA not available")
+def test_parallel_worker_keeps_both_properties_orca():
+    """Same as the stub test, with a QM program that really returns both properties.
+
+    ORCA is asked for the polarizability through "%elprop Polar 1", so
+    get_dipole_moment and get_polarizability_tensor both succeed. Before the fix only
+    the polarizability came back and NumFreq(runmode='parallel') produced
+    IR_intensities=None for this theory while runmode='serial' produced them.
+    """
+    from ash import ORCATheory
+
+    theory = ORCATheory(orcasimpleinput="! HF STO-3G TightSCF",
+                        orcablocks="%elprop Polar 1 end", numcores=1, printlevel=0)
+    fragments = [Fragment(elems=ELEMS, coords=COORDS, charge=0, mult=1,
+                          label=f"disp{i}", printlevel=0) for i in range(2)]
+
+    result = Job_parallel(fragments=fragments, theories=[theory], numcores=2,
+                          allow_theory_parallelization=True, Grad=True,
+                          printlevel=0, copytheory=True)
+
+    assert len(result.displacement_dipole_dictionary) == len(fragments)
+    assert len(result.displacement_polarizability_dictionary) == len(fragments)
+    for properties in result.properties.values():
+        assert "dipole_moment" in properties
+        assert "polarizability" in properties
+
+
+@pytest.mark.skipif(shutil.which("orca") is None, reason="ORCA not available")
+def test_numfreq_parallel_gives_IR_intensities_orca():
+    """End-to-end with ORCA: parallel mode must produce IR intensities, not None."""
+    from ash import ORCATheory
+
+    def orca_theory():
+        return ORCATheory(orcasimpleinput="! HF STO-3G TightSCF",
+                          orcablocks="%elprop Polar 1 end", numcores=1, printlevel=0)
+
+    serial = NumFreq(theory=orca_theory(), fragment=water_fragment(),
+                     runmode="serial", numcores=1, printlevel=0, IR=True)
+    parallel = NumFreq(theory=orca_theory(), fragment=water_fragment(),
+                       runmode="parallel", numcores=2, printlevel=0, IR=True)
+
+    assert serial.IR_intensities is not None
+    assert parallel.IR_intensities is not None
+    # Loose tolerance: the displacements are separate SCF runs, so serial and parallel
+    # do not start from the same orbital guess and the intensities differ slightly
+    assert np.allclose(np.array(serial.IR_intensities),
+                       np.array(parallel.IR_intensities), atol=0.1)
+
+
+##############################################
 # Hessian agreement with a real QM program
 ##############################################
 
