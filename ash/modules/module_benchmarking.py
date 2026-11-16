@@ -342,7 +342,7 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
 
                 result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
                 energy = result.energy
-                rho, deltaEQ = grab_Mossbauer_parameters(theory.filename+'.out')
+                _, deltaEQ = grab_Mossbauer_parameters(theory.filename+'.out')
                 if deltaEQ is None:
                     raise RuntimeError(
                         "Could not read Mossbauer Delta-EQ from "
