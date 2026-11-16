@@ -13,8 +13,12 @@ Three things were wrong in Singlepoint_fragments:
 result.labels is now always set, not only when relative_energies=True, so the energies
 can be matched to the fragments in the default case too.
 
-A stub theory is used so no QM program is needed.
+A stub theory is used for the bookkeeping, so most of this needs no QM program. The
+final tests repeat the same checks with xTB so the behaviour is also confirmed against
+real energies.
 """
+import shutil
+
 import numpy as np
 import pytest
 
@@ -160,3 +164,49 @@ def test_unknown_unit_not_checked_without_relative_energies():
                                    unit='hartree')
 
     assert result.energies == STUB_ENERGIES
+
+
+##############################################
+# The same checks with a real QM program
+##############################################
+
+@pytest.mark.skipif(shutil.which("xtb") is None, reason="xtb executable not available")
+def test_mixed_chargemult_with_xtb():
+    """Real energies: a mixed set must not inherit the last fragment's charge/mult."""
+    from ash import xTBTheory
+
+    fragments = mixed_fragments()
+    result = Singlepoint_fragments(theory=xTBTheory(xtbmethod="GFN1", numcores=1),
+                                   fragments=fragments, relative_energies=True,
+                                   unit='kcal/mol')
+
+    assert result.charge is None
+    assert result.mult is None
+    assert result.labels == ["neutral", "anion", "dication"]
+    assert len(result.energies) == len(fragments)
+    # Real energies, so only the relationships are asserted.
+    # Neutral H2 is the lowest; H2(2+) has no electrons left, so it is the highest and
+    # is positive (bare proton-proton repulsion).
+    assert result.energies.index(min(result.energies)) == 0
+    assert result.energies.index(max(result.energies)) == 2
+    assert result.energies[2] > 0.0
+    assert min(result.relative_energies) == 0.0
+    assert result.relative_energies[0] == 0.0
+
+
+@pytest.mark.skipif(shutil.which("xtb") is None, reason="xtb executable not available")
+def test_conformers_with_xtb_keep_charge_mult():
+    """Conformers all share charge/mult, so those must still be reported."""
+    from ash import xTBTheory
+
+    fragments = same_chargemult_fragments()
+    result = Singlepoint_fragments(theory=xTBTheory(xtbmethod="GFN1", numcores=1),
+                                   fragments=fragments, relative_energies=True,
+                                   unit='kcal/mol')
+
+    assert result.charge == 0
+    assert result.mult == 1
+    # Relative energies must reproduce the energy differences in kcal/mol
+    lowest = min(result.energies)
+    expected = [(e - lowest) * EXPECTED_FACTORS["kcal/mol"] for e in result.energies]
+    assert np.allclose(result.relative_energies, expected)
