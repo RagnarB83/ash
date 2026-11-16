@@ -987,6 +987,15 @@ class ASHengineclass:
             print("Maxiter reached. ASH is stopping.")
             exit()
 
+        # geomeTRIC writes its Step line after the preceding engine callback returns.
+        # Read it at the start of this callback so the geometry printed below is
+        # labeled with the optimizer iteration that is now being evaluated.
+        if os.path.isfile("geometric_OPTtraj.log"):
+            step_lines = pygrep2("Step ", "geometric_OPTtraj.log", print_output=False, errors=None)
+            if len(step_lines) > 0:
+                iteration = int(step_lines[-1].split("Step", 1)[1].split(":", 1)[0].strip())
+                self.iteration_count = iteration
+
         #print("read_data:", read_data)
         #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
         if self.printlevel >= 1:
@@ -1088,11 +1097,6 @@ class ASHengineclass:
             #print_time_rel(timeA, modulename='geometric ASHcalc.calc writetraj full', moduleindex=2)
             timeA=time.time()
 
-            # Read last line of geometric_OPTtraj.log to get step
-            step_lines = pygrep2("Step ", "geometric_OPTtraj.log", print_output=False, errors=None)
-            if len(step_lines) > 0:
-                iteration=int(step_lines[-1].split("Step", 1)[1].split(":", 1)[0].strip())
-                self.iteration_count=int(iteration)
             self.EG_count += 1
 
             return {'energy': E, 'gradient': Grad_act.flatten()}
@@ -1110,11 +1114,6 @@ class ASHengineclass:
             print("")
             print("Note: printed only print_atoms_list (this is not necessarily all atoms) ")
         E,Grad=self.theory.run(current_coords=currcoords, elems=self.M.elem, charge=self.charge, mult=self.mult, Grad=True)
-        # Read last line of geometric_OPTtraj.log to get step
-        step_lines = pygrep2("Step ", "geometric_OPTtraj.log", print_output=False, errors=None)
-        if len(step_lines) > 0:
-            iteration=int(step_lines[-1].split("Step", 1)[1].split(":", 1)[0].strip())
-            self.iteration_count=int(iteration)
         self.EG_count += 1
         self.energy = E
         return {'energy': E, 'gradient': Grad.flatten()}
@@ -1159,12 +1158,6 @@ class ASHengineclass:
                                      charge=self.charge, mult=self.mult, Grad=True)
         self.EG_count += 1
         self.energy = E
-
-        # Read last line of geometric_OPTtraj.log to get step
-        step_lines = pygrep2("Step ", "geometric_OPTtraj.log", print_output=False, errors=None)
-        if len(step_lines) > 0:
-            iteration=int(step_lines[-1].split("Step", 1)[1].split(":", 1)[0].strip())
-            self.iteration_count=int(iteration)
 
         # Transformation
         # M is the transformation matrix: R_phys = R_geo @ M
