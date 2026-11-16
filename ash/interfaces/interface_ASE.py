@@ -16,6 +16,12 @@ def Dynamics_ASE(fragment=None, PBC=False, theory=None, temperature=300, timeste
                  frozen_angles=None, frozen_dihedrals=None, plumed_object=None, multiple_walkers=False, numwalkers=None,
                  ttime_nosehoover=5, safires=False, safires_solute=None, safires_inner_region=None, safires_solvent_atomsnum=3,
                  gpaw_rattle_constraints=False, charge=None, mult=None):
+    if safires:
+        ashexit(
+            "SAFIRES support is disabled in Dynamics_ASE; set safires=False "
+            "to run ASE dynamics without SAFIRES."
+        )
+
     module_init_time = time.time()
     print_line_with_mainheader("ASE MOLECULAR DYNAMICS")
 
