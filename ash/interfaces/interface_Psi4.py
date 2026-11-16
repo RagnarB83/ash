@@ -137,6 +137,7 @@ class Psi4Theory:
                 print(BC.FAIL,"Problem importing psi4. Make sure psi4 has been installed as part of same Python as ASH", BC.END)
                 print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface instead.", BC.END)
                 ashexit(code=9)
+            print(f"Psi4 version: {psi4.__version__}")
             #Changing namespace may prevent crashes due to multiple jobs running at same time
             if self.filename=='psi4_':
                 psi4.core.IO.set_default_namespace("psi4job_ygg")
