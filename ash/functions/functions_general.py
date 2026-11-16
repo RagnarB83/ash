@@ -41,6 +41,16 @@ else:
 
 
 def check_program_location(directory,directory_name, bin_name):
+    """Resolve a program directory from an argument, ASH settings, or PATH.
+
+    Args:
+        directory: Explicit directory to use, or None to search settings and PATH.
+        directory_name: ASH settings key and display name for the program.
+        bin_name: Executable name to locate on PATH when no setting is available.
+
+    Returns:
+        The selected directory path. Calls :func:`ashexit` if no location is found.
+    """
     if directory != None:
         finaldirectory = directory
         print(BC.OKGREEN,f"Using directory path provided: {finaldirectory}", BC.END)
@@ -63,6 +73,11 @@ def check_program_location(directory,directory_name, bin_name):
 #Create ASH environment shell-file in home-dir
 #Simple shell script to active ASH environment for future calcs
 def create_ash_env_file():
+    """Write a shell helper for the current ASH and Python installation.
+
+    Creates `~/set_environment_ash.sh` and prints instructions for sourcing it.
+    This legacy helper then exits the current process.
+    """
     ash_dir=ash.ashpath
     path_to_python3_dir=os.path.dirname(sys.executable)
     #Create set_environment_ash.sh file
@@ -108,6 +123,11 @@ echo \"The Python interpreter that you should be using is located in $python3pat
 julia_loaded = False
 
 def is_interactive() -> bool:
+    """Return whether the current IPython shell is a terminal or notebook shell.
+
+    Returns:
+        True for IPython's terminal and ZMQ shells; otherwise False.
+    """
     try:
         shell = get_ipython().__class__.__name__
         if shell == 'ZMQInteractiveShell':
@@ -122,6 +142,16 @@ def is_interactive() -> bool:
 #General function to exit ASH
 #NOTE: By default we exit with errorcode 1
 def ashexit(errormessage=None, code=1):
+    """Print an ASH error and terminate the current process.
+
+    In an IPython shell this raises SystemExit with an ASH message. In a regular
+    Python process it exits with status 1. The `code` argument is printed in the
+    message; the regular-process exit status remains 1.
+
+    Args:
+        errormessage: Optional detail to print before exiting.
+        code: Code displayed in the exit message.
+    """
     print(BC.FAIL,"ASH exiting with code:", code, BC.END)
 
     if errormessage != None:
@@ -134,11 +164,30 @@ def ashexit(errormessage=None, code=1):
         sys.exit(1)
 
 def basename(filename):
+    """Return a path without its final filename extension.
+
+    Args:
+        filename: Path or filename to split.
+
+    Returns:
+        The path with the final extension removed.
+    """
     return os.path.splitext(filename)[0]
 
 #Attempt to generally find a 3rd-party program based on path, exename etc.
 #Either programdir variable is already set, else we try to find based on programdirname or exename
 def find_program(programdir,programdirname,exename,theorynamelabel):
+    """Resolve a program directory from an argument, ASH settings, or PATH.
+
+    Args:
+        programdir: Explicit program directory, or None to search settings and PATH.
+        programdirname: Settings key that contains the program directory.
+        exename: Executable name used for the PATH lookup.
+        theorynamelabel: Theory label used in diagnostic messages.
+
+    Returns:
+        The selected program directory. Calls :func:`ashexit` if lookup fails.
+    """
     if programdir == None:
         print(BC.WARNING, f"No {programdirname} argument passed to {theorynamelabel}Theory. Attempting to find {programdir} variable inside settings_ash", BC.END)
         try:
@@ -164,6 +213,11 @@ def find_program(programdir,programdirname,exename,theorynamelabel):
     return finalpath
 
 def load_pythoncall():
+    """Load Julia through juliacall and include ASH's Julia helper file.
+
+    Returns:
+        The juliacall Julia main module.
+    """
     print("Now trying pythoncall/juliacall package. This will fail if :\n\
             - Juliacall Python package has not been installed (via pip)\n")
             #- PythonCall julia packages has not been installed (via Julia Pkg)\n")
@@ -182,6 +236,14 @@ def load_pythoncall():
 #    return JuliaMain
 
 def load_julia_interface(julia_library=None):
+    """Load the configured Python-to-Julia interface once and return its helpers.
+
+    Args:
+        julia_library: Interface name to load. When None, uses the ASH setting.
+
+    Returns:
+        The Julia `Juliafunctions` helper object.
+    """
     print("\nCalling Julia interface")
 
     #If not set (rare) then get the settings_ash value
@@ -239,6 +301,17 @@ def load_julia_interface(julia_library=None):
 # example: input: [1,2,3,4,5,6,20,21,22,23,500,700,701,702,1000,1100,1101]
 # output: '1-6,20-23,500,700-702,1000,1100-1101'
 def int_ranges(nums):
+    """Compress integer values into a comma-separated range string.
+
+    Duplicate values are removed and values are sorted before grouping. Consecutive
+    values become an inclusive range, for example `[1, 2, 4]` becomes `1-2,4`.
+
+    Args:
+        nums: Iterable of integers.
+
+    Returns:
+        A comma-separated string of integers and inclusive ranges.
+    """
     nums = sorted(set(nums))
     gaps = [[s, e] for s, e in zip(nums, nums[1:]) if s + 1 < e]
     edges = iter(nums[:1] + sum(gaps, []) + nums[-1:])
@@ -256,6 +329,17 @@ def int_ranges(nums):
 
 
 def timefn(fn):
+    """Decorate a function to print its elapsed runtime after a successful call.
+
+    The wrapped function's return value is passed through unchanged. If it raises,
+    the timing message is not printed.
+
+    Args:
+        fn: Function to wrap.
+
+    Returns:
+        A wrapped function that prints the elapsed time for each call.
+    """
     @wraps(fn)
     def measure_time(*args, **kwargs):
         t1 = time.time()
@@ -270,6 +354,16 @@ def timefn(fn):
 # Grep-style function to find a line in file and return a list of words
 # TODO: Make more advanced
 def pygrep(string, file, errors=None):
+    """Return whitespace-separated words from the first line containing a string.
+
+    Args:
+        string: Substring to search for.
+        file: Path to the text file.
+        errors: Text decoding error policy passed to `open`.
+
+    Returns:
+        Words from the first matching line, or None if no line matches.
+    """
     with open(file, errors=errors) as f:
         for line in f:
             if string in line:
@@ -279,6 +373,17 @@ def pygrep(string, file, errors=None):
 
 # Multiple match version. Replace pygrep ?
 def pygrep2(string, file, print_output=False, errors=None):
+    """Collect all lines in a file that contain a substring.
+
+    Args:
+        string: Substring to search for.
+        file: Path to the text file.
+        print_output: If True, also print the matching lines.
+        errors: Text decoding error policy passed to `open`.
+
+    Returns:
+        Matching lines, including their original line endings.
+    """
     l = []
     with open(file, errors=errors) as f:
         for line in f:
@@ -290,6 +395,13 @@ def pygrep2(string, file, print_output=False, errors=None):
 
 #Simple function to do find and replace string in file
 def find_replace_string_in_file(file,findstring,replstring):
+    """Replace every occurrence of a string in a text file in place.
+
+    Args:
+        file: Path to the file to read and overwrite.
+        findstring: Text to replace.
+        replstring: Replacement text.
+    """
     with open(file, 'r') as f:
         filedata = f.read()
     # Replace the target string
@@ -301,6 +413,17 @@ def find_replace_string_in_file(file,findstring,replstring):
 
 # Give difference of two lists, sorted. List1: Bigger list
 def listdiff(list1, list2):
+    """Return the sorted set difference of two lists.
+
+    Duplicate values are removed from the result.
+
+    Args:
+        list1: Values from which to subtract.
+        list2: Values to remove.
+
+    Returns:
+        Sorted values that occur in list1 but not list2.
+    """
     diff = (list(set(list1) - set(list2)))
     diff.sort()
     return diff
@@ -309,6 +432,20 @@ def listdiff(list1, list2):
 # Range function for floats
 # Using round to deal with floating-point problem : 0.6+0.3 =0.89999
 def frange(start, stop=None, step=None, rounddigits=4):
+    """Yield rounded floating-point values over a half-open interval.
+
+    The stop value is excluded. If stop is omitted, values run from zero up to
+    start. The default step is 1.0; positive and negative steps are supported.
+
+    Args:
+        start: First value, or stop value when stop is omitted.
+        stop: Exclusive endpoint, or None to start at zero.
+        step: Increment between values. Defaults to 1.0.
+        rounddigits: Decimal places used to reduce floating-point accumulation.
+
+    Yields:
+        Rounded float values.
+    """
     # if stop and step argument is None set start=0.0 and step = 1.0
     start = float(start)
     if stop is None:
@@ -332,6 +469,15 @@ def frange(start, stop=None, step=None, rounddigits=4):
 #Function to find n highest max values and indices
 #Quite ugly
 def n_max_values(l,num):
+    """Return indexes of the requested number of largest list values.
+
+    Args:
+        l: Sequence of non-negative numeric values.
+        num: Number of indexes to return.
+
+    Returns:
+        Indexes ordered from the largest value to the next largest values.
+    """
     maxweight=max(l)
     maxweight_index=l.index(max(l))
     current_indices=[maxweight_index]
@@ -355,6 +501,13 @@ def n_max_values(l,num):
 
 # Print string if printlevel equals or larger than reference
 def print_if_level(var, printlevel,refprintlevel):
+    """Print a value when the current print level meets a threshold.
+
+    Args:
+        var: Object to pass to `print` when enabled.
+        printlevel: Current verbosity level.
+        refprintlevel: Minimum level required for printing.
+    """
     if printlevel >= refprintlevel:
         print(var)
     #else:
@@ -362,11 +515,22 @@ def print_if_level(var, printlevel,refprintlevel):
 
 # Debug print. Behaves like print but reads global debug var first
 def printdebug(string, var=''):
+    """Print a debug message only when ASH's debug setting is enabled.
+
+    Args:
+        string: Main message.
+        var: Optional additional value to print with the message.
+    """
     if ash.settings_ash.settings_dict["debugflag"] is True:
         print(BC.OKRED, string, var, BC.END)
 
 # mainmodule header
 def print_line_with_mainheader(line):
+    """Print a centered, green main-section header.
+
+    Args:
+        line: Header text displayed inside the banner.
+    """
     length = len(line)
     offset = 12
     outer_line = f"{BC.OKGREEN}{'#' * (length + offset)}{BC.END}"
@@ -383,6 +547,11 @@ def print_line_with_mainheader(line):
 
 # Submodule header
 def print_line_with_subheader1(line):
+    """Print a blue, centered section header.
+
+    Args:
+        line: Header text.
+    """
     print("")
     print(f"{BC.OKBLUE}{'-' * 80}{BC.END}")
     print(f"{BC.OKBLUE}{BC.BOLD}{line.center(80)}{BC.END}")
@@ -391,11 +560,17 @@ def print_line_with_subheader1(line):
 
 # Submodule header
 def print_line_with_subheader1_end():
+    """Print the closing blue divider for a section header."""
     print("")
     print(f"{BC.OKBLUE}{'-' * 80}{BC.END}")
 
 # Smaller header
 def print_line_with_subheader2(line):
+    """Print a compact blue header with dividers sized to its text.
+
+    Args:
+        line: Header text.
+    """
     print("")
     length = len(line)
     print(f"{BC.OKBLUE}{'-' * length}{BC.END}")
