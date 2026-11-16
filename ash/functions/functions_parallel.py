@@ -86,6 +86,13 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
     :type list: list of ASH theory objects
     :param Grad: whether to do Gradient or not.
     :type Grad: Boolean.
+
+    When multiple theories and multiple fragments (or fragment files) are
+    supplied, every theory is run on every fragment. The returned energy and
+    worker-directory dictionaries use keys of the form
+    ``theory0_fragment0``. ``mofilesdir`` is not supported for this Cartesian
+    combination because its existing scan-label naming does not identify a
+    theory/fragment pair.
     '''
     print()
     print_line_with_subheader1("Job_parallel function")
@@ -140,6 +147,16 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
             print("Number of fragmentfiles:", len(fragmentfiles))
     else:
         fragmentfiles=[]
+
+    multiple_theories_multiple_inputs = len(theories) > 1 and (
+        len(fragments) > 1 or len(fragmentfiles) > 1
+    )
+    if multiple_theories_multiple_inputs and fragments and fragmentfiles:
+        print(BC.FAIL, "Provide fragments or fragmentfiles, not both, for a multi-theory job.", BC.END)
+        ashexit()
+    if multiple_theories_multiple_inputs and mofilesdir is not None:
+        print(BC.FAIL, "mofilesdir is not supported for multiple theories and multiple fragments.", BC.END)
+        ashexit()
 
 
     ###############################
@@ -211,6 +228,40 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
                 results.append(pool.apply_async(Worker_par, kwds=dict(theory=theory,fragmentfile=fragmentfile,label=fragmentfile,mofilesdir=mofilesdir, version=version,
                                                                       event=event, Grad=Grad, printlevel=printlevel, copytheory=copytheory, optimizer=optimizer),
                     error_callback=Terminate_Pool_processes))
+    # Cartesian product: evaluate every theory for every fragment/file.
+    elif (len(fragments) > 1 or len(fragmentfiles) > 1) and len(theories) > 1:
+        jobs = fragments if fragments else fragmentfiles
+        if printlevel >= 2:
+            print("Case: Multiple theories and multiple fragments")
+            print(f"Launching {len(theories) * len(jobs)} theory/fragment jobs")
+
+        for theory_index, theory in enumerate(theories):
+            for fragment_index, fragment in enumerate(jobs):
+                # Keep result keys and worker directories distinct even when
+                # input fragments or theories have duplicate labels.
+                job_label = f"theory{theory_index}_fragment{fragment_index}"
+                worker_kwargs = dict(
+                    theory=theory,
+                    label=job_label,
+                    mofilesdir=mofilesdir,
+                    version=version,
+                    event=event,
+                    Grad=Grad,
+                    printlevel=printlevel,
+                    copytheory=copytheory,
+                    optimizer=optimizer,
+                )
+                if fragments:
+                    worker_kwargs["fragment"] = fragment
+                else:
+                    worker_kwargs["fragmentfile"] = fragment
+                results.append(
+                    pool.apply_async(
+                        Worker_par,
+                        kwds=worker_kwargs,
+                        error_callback=Terminate_Pool_processes,
+                    )
+                )
     # Case: Multiple theories, 1 fragment
     elif len(fragments) == 1:
         if printlevel >= 2:
@@ -323,11 +374,6 @@ def Job_parallel(fragments=None, fragmentfiles=None, theories=None, numcores=Non
 #TODO: This function contains 2 many QM-code specifics. Needs to be generalized (QM-specifics moved to QMtheory class)
 def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofilesdir=None, event=None, charge=None,
                mult=None, Grad=False, printlevel=2, copytheory=False, optimizer=None, version='multiprocessing'):
-    #Should not be necessary to import
-    #import multiprocess as mp
-    #from multiprocess.pool import Pool
-    #Check charge/mult.
-    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Worker_par", theory=theory, printlevel=printlevel)
     #BASIC PRINTING
     if printlevel >= 2:
         print("Fragment:", fragment)
@@ -349,6 +395,9 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         if printlevel >= 2:
             print("Reading fragmentfile from disk")
         fragment=Fragment(fragfile=fragmentfile)
+
+    # Load file-based fragments before resolving their charge and multiplicity.
+    charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "Worker_par", theory=theory, printlevel=printlevel)
 
     ###############################
     # Labels distinguishing jobs
