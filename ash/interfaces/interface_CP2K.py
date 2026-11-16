@@ -4,7 +4,7 @@ import shutil
 import time
 import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader, grab_version_from_output
 import ash.settings_ash
 from ash.modules.module_coords import write_xyzfile, write_pdbfile
 from ash.modules.module_coords_PBC import cubic_box_size,bounding_box_dimensions
@@ -559,6 +559,12 @@ class CP2KTheory:
                      mixed_mpi_procs=self.mixed_mpi_procs, mixed_omp_threads=self.mixed_omp_threads)
         else:
             run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores,paramethod=self.parallelization)
+
+        cp2k_version = grab_version_from_output(
+            self.filename + '.out', r"CP2K\|\s+version string:\s+CP2K version\s+([^\s(]+)"
+        )
+        if cp2k_version is not None:
+            print(f"CP2K version: {cp2k_version}")
 
         # Grab energy
         self.energy=grab_energy_cp2k(self.filename+'.out',method=self.method)

@@ -4,7 +4,7 @@ import shutil
 import time
 import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,check_program_location
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,check_program_location, grab_version_from_output
 from ash.modules.module_coords import elematomnumbers, write_xyzfile
 from ash.modules.module_coords_PBC import cell_params_to_vectors, cell_vectors_to_params
 import ash.settings_ash
@@ -184,6 +184,12 @@ class DFTBTheory():
         print_time_rel(module_init_time, modulename=f'DFTB prep-run', moduleindex=3)
         # Run DFTB
         run_DFTB(self.dftbdir, inputfile="dftb_in.hsd", outputfile="dftb+.out")
+        dftb_version = grab_version_from_output(
+            "dftb+.out",
+            r"DFTB\+\s+(?:release\s+)?(?:development version\s+\(commit:[^,]+,\s*base:\s*)?([0-9]+(?:\.[0-9]+)+)",
+        )
+        if dftb_version is not None:
+            print(f"DFTB+ version: {dftb_version}")
         print_time_rel(module_init_time, modulename=f'DFTB run-done', moduleindex=3)
 
         # Grab energy

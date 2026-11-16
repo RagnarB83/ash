@@ -60,6 +60,44 @@ def check_program_location(directory,directory_name, bin_name):
                 ashexit()
     return finaldirectory
 
+
+def module_version(module, distribution_names=None):
+    """Return a Python module's version, using package metadata as fallback."""
+    module_version_string = getattr(module, "__version__", None)
+    if module_version_string:
+        return str(module_version_string)
+
+    from importlib.metadata import PackageNotFoundError, version
+
+    if distribution_names is None:
+        distribution_names = [module.__name__.split(".", maxsplit=1)[0]]
+    for distribution_name in distribution_names:
+        try:
+            return version(distribution_name)
+        except PackageNotFoundError:
+            continue
+    return None
+
+
+def print_module_version(module, program_name, distribution_names=None):
+    """Print a Python library version when the module exposes one."""
+    version_string = module_version(module, distribution_names=distribution_names)
+    if version_string is not None:
+        print(f"{program_name} version: {version_string}")
+    return version_string
+
+
+def grab_version_from_output(output_file, pattern):
+    """Return the first captured version from a program output file."""
+    import re
+
+    with open(output_file, encoding="utf-8", errors="replace") as output:
+        for line in output:
+            match = re.search(pattern, line, flags=re.IGNORECASE)
+            if match:
+                return match.group(1)
+    return None
+
 #Create ASH environment shell-file in home-dir
 #Simple shell script to active ASH environment for future calcs
 def create_ash_env_file():

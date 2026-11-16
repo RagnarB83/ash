@@ -6,7 +6,7 @@ import glob
 import time
 
 import ash.modules.module_coords
-from ash.functions.functions_general import ashexit, BC,print_time_rel
+from ash.functions.functions_general import ashexit, BC,print_time_rel, print_module_version
 
 
 #Psi4 Theory object.
@@ -137,7 +137,7 @@ class Psi4Theory:
                 print(BC.FAIL,"Problem importing psi4. Make sure psi4 has been installed as part of same Python as ASH", BC.END)
                 print(BC.WARNING,"If problematic, switch to inputfile based Psi4 interface instead.", BC.END)
                 ashexit(code=9)
-            print(f"Psi4 version: {psi4.__version__}")
+            print_module_version(psi4, "Psi4")
             #Changing namespace may prevent crashes due to multiple jobs running at same time
             if self.filename=='psi4_':
                 psi4.core.IO.set_default_namespace("psi4job_ygg")
