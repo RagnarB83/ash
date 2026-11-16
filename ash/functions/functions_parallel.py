@@ -442,14 +442,16 @@ def Worker_par(fragment=None, fragmentfile=None, theory=None, label=None, mofile
         energy,gradient = theory.run(current_coords=fragment.coords, elems=fragment.elems, label=label, charge=charge, mult=mult, Grad=Grad)
 
         #Dipole and polarizability
+        #NOTE: adding to the properties dict, not replacing it.
+        #Replacing would drop the dipole moment whenever a theory provides both.
         try:
             dm = theory.get_dipole_moment()
-            properties = {"dipole_moment": dm}
+            properties["dipole_moment"] = dm
         except:
             pass
         try:
             polarizability = theory.get_polarizability_tensor()
-            properties = {"polarizability": polarizability}
+            properties["polarizability"] = polarizability
         except:
             pass
 
