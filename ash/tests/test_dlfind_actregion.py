@@ -7,7 +7,7 @@ ActiveRegion=True only the active-region representation is passed, as in the geo
 interface, so the Hessian covers the active region instead.
 
 These tests cover the index bookkeeping and the dimensions; an end-to-end DL-FIND run is
-in examples/Optimizations/DLFIND-ActiveRegion.py.
+in examples/interfaces/DLFIND/DLFIND-ActiveRegion.py.
 """
 import numpy as np
 import pytest
