@@ -67,7 +67,7 @@ def mixed_fragments():
     """Fragments with different charge and mult, as in a spin-state/redox series."""
     return [make_fragment("neutral", 0.74, 0, 1),
             make_fragment("anion", 0.80, -1, 2),
-            make_fragment("dication", 0.70, 2, 3)]
+            make_fragment("dication", 0.70, 2, 1)]
 
 
 def same_chargemult_fragments():
@@ -185,8 +185,7 @@ def test_mixed_chargemult_with_xtb():
     assert result.labels == ["neutral", "anion", "dication"]
     assert len(result.energies) == len(fragments)
     # Real energies, so only the relationships are asserted.
-    # Neutral H2 is the lowest; H2(2+) has no electrons left, so it is the highest and
-    # is positive (bare proton-proton repulsion).
+    # Neutral H2 is the lowest; H2(2+) is a closed-shell singlet with bare proton-proton repulsion, so it is the highest.
     assert result.energies.index(min(result.energies)) == 0
     assert result.energies.index(max(result.energies)) == 2
     assert result.energies[2] > 0.0
