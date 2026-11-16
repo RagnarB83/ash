@@ -195,6 +195,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
 
     #Looping through fragments
     for i,frag in enumerate(fragments):
+        fragment_init_time = time.time()
 
         if frag.charge == None or frag.mult == None:
             print(BC.FAIL,"Error: Singlepoint_fragments requires charge/mult information to be associated with each fragment.", BC.END)
@@ -210,6 +211,8 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
 
         #Running single-point
         result = Singlepoint(theory=theory, fragment=frag, charge=charge, mult=mult)
+
+        print_time_rel(fragment_init_time, modulename=f'Singlepoint_fragments fragment {i + 1}', moduleindex=1)
 
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, result.energy))
 
@@ -317,6 +320,7 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
     list_of_componentsdicts=[]
     componentsdict={}
     for i,frag in enumerate(reaction.fragments):
+        fragment_init_time = time.time()
         #Orbital file for ORCATheory, PySCFTheory, DiceTheory or any other using moreadfile
         try:
             theory.moreadfile=reaction.orbital_dictionary[moreadfiles][i]
@@ -329,6 +333,7 @@ def Singlepoint_reaction(theory=None, reaction=None, moreadfiles=None):
                 pass
         #Running single-point
         result = Singlepoint(theory=theory, fragment=frag, charge=frag.charge, mult=frag.mult)
+        print_time_rel(fragment_init_time, modulename=f'Singlepoint_reaction fragment {i + 1}', moduleindex=1)
         energy = result.energy
         print("Fragment {} . Label: {} Energy: {} Eh".format(frag.formula, frag.label, energy))
         #Preserve outputfile
