@@ -18,7 +18,9 @@ def test_seminario_uses_fragment_bonds_and_converts_force_constant_units():
     result = seminario(fragment=fragment, hessian=hessian)
 
     expected = force_constant_au * ash.constants.harkcal / ash.constants.bohr2ang**2
-    assert result["bonds"] == pytest.approx([(0, 1, expected)])
+    assert len(result["bonds"]) == 1
+    assert result["bonds"][0][:2] == (0, 1)
+    assert result["bonds"][0][2] == pytest.approx(expected)
     assert result["angles"] == []
     assert result["dihedrals"] == []
 
