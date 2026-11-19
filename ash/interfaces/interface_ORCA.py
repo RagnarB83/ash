@@ -1197,6 +1197,12 @@ def scfenergygrab(file):
 #Note: CC-12 untested
 def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
     edict = {}
+
+    def read_energy_value(line):
+        fields = line.split()
+        value = fields[-2] if fields[-1] == "Eh" else fields[-1]
+        return float(value)
+
     with open(file) as f:
         for line in f:
             #Reference energy found in CC output. To be made more general. Works for CC and DLPNO-CC
@@ -1204,50 +1210,53 @@ def grab_HF_and_corr_energies(file, DLPNO=False, F12=False):
             if F12 is True:
                 #F12 has a basis set correction for HF energy
                 if 'Corrected 0th order energy                 ...' in line:
-                    HF_energy=float(line.split()[-1])
+                    HF_energy=read_energy_value(line)
                     edict['HF'] = HF_energy
             else:
                 if 'E(0)                                       ...' in line:
-                    HF_energy=float(line.split()[-1])
+                    HF_energy=read_energy_value(line)
                     edict['HF'] = HF_energy
 
 
             if DLPNO is True:
                 if F12 is True:
                     if 'Final F12 correlation energy               ...' in line:
-                        CCSDcorr_energy=float(line.split()[-1])
+                        CCSDcorr_energy=read_energy_value(line)
                         edict['CCSD_corr'] = CCSDcorr_energy
                         edict['full_corr'] = CCSDcorr_energy
                 else:
                     if 'E(CORR)(corrected)                         ...' in line:
-                        CCSDcorr_energy=float(line.split()[-1])
+                        CCSDcorr_energy=read_energy_value(line)
                         edict['CCSD_corr'] = CCSDcorr_energy
                         edict['full_corr'] = CCSDcorr_energy
             else:
                 if F12 is True:
                     if 'Final F12 correlation energy               ...' in line:
-                        CCSDcorr_energy=float(line.split()[-1])
+                        CCSDcorr_energy=read_energy_value(line)
                         edict['CCSD_corr'] = CCSDcorr_energy
                         edict['full_corr'] = CCSDcorr_energy
                 else:
                     if 'E(CORR)                                    ...' in line:
-                        CCSDcorr_energy=float(line.split()[-1])
+                        CCSDcorr_energy=read_energy_value(line)
                         edict['CCSD_corr'] = CCSDcorr_energy
                         edict['full_corr'] = CCSDcorr_energy
 
 
             if DLPNO is True:
                 if 'Triples Correction (T)                     ...' in line:
-                    CCSDTcorr_energy=float(line.split()[-1])
+                    CCSDTcorr_energy=read_energy_value(line)
                     edict['CCSD(T)_corr'] = CCSDTcorr_energy
                     edict['full_corr'] = CCSDcorr_energy+CCSDTcorr_energy
             else:
-                if 'Scaled triples correction (T)              ...' in line:
-                    CCSDTcorr_energy=float(line.split()[-1])
+                if (
+                    'Scaled triples correction (T)              ...' in line
+                    or '(T) correction                             ...' in line
+                ):
+                    CCSDTcorr_energy=read_energy_value(line)
                     edict['CCSD(T)_corr'] = CCSDTcorr_energy
                     edict['full_corr'] = CCSDcorr_energy+CCSDTcorr_energy
             if 'T1 diagnostic                              ...' in line:
-                T1diag = float(line.split()[-1])
+                T1diag = read_energy_value(line)
                 edict['T1diag'] = T1diag
     return edict
 
