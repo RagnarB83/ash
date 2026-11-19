@@ -160,10 +160,12 @@ class OpenMMTheory:
         registered_platforms = [openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())]
         self.platform_choice = next((p for p in registered_platforms if p.upper() == platform.upper()), platform)
 
+        # Copy the dict: OpenMMTheory adds entries such as Threads below, and without a
+        # copy those writes would land in the caller's own dictionary
         if properties is None:
             self.properties = {}
         else:
-            self.properties = properties
+            self.properties = dict(properties)
         if self.platform_choice == 'CPU':
             if self.printlevel > 0:
                 print("Using platform: CPU")
