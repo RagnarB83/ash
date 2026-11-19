@@ -694,6 +694,11 @@ class WrapTheory(Theory):
                 print("Energy (Standard Deviation):", std_energy)
             if Grad:
                 self.gradient = sum(gradients) / len(gradients)
+                # pc_gradient was accumulated as a sum over the theories above, so it has
+                # to be averaged as well. Otherwise the force on the pointcharges is
+                # len(theories) times too large while the energy and gradient are averages
+                if pc_gradient is not None:
+                    pc_gradient = pc_gradient / len(gradients)
                 if self.printlevel > 2:
                     for count,g in enumerate(gradients):
                         print(f"Gradient ({self.theories[count].theorynamelabel}):", g)
