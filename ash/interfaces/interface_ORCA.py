@@ -632,6 +632,9 @@ end"""
         outfile=self.filename+'.out'
         engradfile=self.filename+'.engrad'
         pcgradfile=self.filename+'.pcgrad'
+        orca_version = ORCAversiongrab(outfile)
+        if orca_version is not None:
+            print(f"ORCA version: {orca_version}")
 
         # Checking if finished.
         if self.ignore_ORCA_error is False:
@@ -857,6 +860,16 @@ def check_ORCA_location(orcadir, modulename="ORCATheory"):
                 print(BC.FAIL,"Found no orca binary in PATH environment variable either. Giving up.", BC.END)
                 ashexit()
     return finalorcadir
+
+
+def ORCAversiongrab(outfile):
+    """Return the version from an ORCA output banner, if present."""
+    with open(outfile, encoding="utf-8", errors="replace") as output:
+        for line in output:
+            fields = line.split()
+            if len(fields) >= 3 and fields[:2] == ["Program", "Version"]:
+                return fields[2]
+    return None
 
 def check_ORCAbinary(orcadir):
     """Checks if this is a proper working ORCA quantum chemistry binary

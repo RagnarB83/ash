@@ -1,6 +1,6 @@
 import time
 
-from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff
+from ash.functions.functions_general import ashexit, BC,print_time_rel, print_line_with_mainheader,listdiff, print_module_version
 import ash.modules.module_coords
 from ash.modules.module_results import ASH_Results
 from ash.modules.module_theory import QMTheory
@@ -100,8 +100,10 @@ class GPAWTheory(QMTheory):
             print("Run-label:", label)
 
         # Load gpaw and ase
+        import gpaw
         from gpaw import GPAW
         from ase import Atoms
+        print_module_version(gpaw, "GPAW")
 
         if mult > 1:
             spinpol = True

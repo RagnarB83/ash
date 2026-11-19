@@ -5,7 +5,7 @@ import subprocess as sp
 import time
 import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, print_time_rel, print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC, print_time_rel, print_line_with_mainheader, grab_version_from_output
 import ash.constants
 import ash.settings_ash
 
@@ -203,6 +203,11 @@ class MOPACTheory:
                         os.remove('mol.in')
                     except FileNotFoundError:
                         pass
+        mopac_version = grab_version_from_output(
+            self.filename + ".out", r"\*\*\s+Site#:.+?\bVersion\s+([0-9]+(?:\.[0-9]+)+(?:[A-Za-z0-9.-]*))\s+\*\*"
+        )
+        if mopac_version is not None:
+            print(f"MOPAC version: {mopac_version}")
         print_time_rel(module_init_time, modulename='mopac run-done', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
 
         # Grab energy, gradient (at fixed potential if pointcharges) and atomic charges

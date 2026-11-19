@@ -4,7 +4,7 @@ import os
 import time
 import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel,writestringtofile
+from ash.functions.functions_general import ashexit, BC, pygrep, print_time_rel,writestringtofile, grab_version_from_output
 import ash.settings_ash
 
 CFour_basis_dict={'DZ':'PVDZ', 'TZ':'PVTZ', 'QZ':'PVQZ', '5Z':'PV5Z', 'ADZ':'AUG-PVDZ', 'ATZ':'AUG-PVTZ', 'AQZ':'AUG-PVQZ',
@@ -182,6 +182,11 @@ class CFourTheory:
                 os.environ['OMP_NUM_THREADS'] = str(1)
                 process = sp.run([f"{self.cfourdir}/xcfour"], env=os.environ, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
+        cfour_version = grab_version_from_output(
+            self.filename + ".out", r"^\s*Version\s+([0-9]+(?:\.[0-9]+)+[A-Za-z0-9.-]*)\s*$"
+        )
+        if cfour_version is not None:
+            print(f"CFOUR version: {cfour_version}")
 
     def cleanup(self):
         print("Cleaning up old CFOUR files")
