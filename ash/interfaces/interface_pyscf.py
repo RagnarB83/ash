@@ -14,6 +14,68 @@ from functools import reduce
 import random
 import copy
 
+
+def _gpu4pyscf_version():
+    """Read GPU4PySCF's version without importing its CUDA runtime."""
+    import ast
+    import importlib.util
+
+    loaded_module = sys.modules.get("gpu4pyscf")
+    if loaded_module is not None:
+        return getattr(loaded_module, "__version__", None)
+
+    spec = importlib.util.find_spec("gpu4pyscf")
+    if spec is None or spec.origin is None:
+        return None
+    with open(spec.origin, encoding="utf-8") as source_file:
+        module_ast = ast.parse(source_file.read(), filename=spec.origin)
+    for node in module_ast.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "__version__"
+            for target in node.targets
+        ):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                return node.value.value
+    return None
+
+
+def _validate_soc_cas(scf_type, x2c, cas):
+    """Reject CAS methods that do not support a generalized SOC reference."""
+    if x2c and scf_type in ("GHF", "GKS") and cas:
+        raise NotImplementedError(
+            "PySCF does not currently provide generalized CAS/CASSCF methods "
+            "for X2C spin-orbit references. Use scalar-relativistic RHF/RKS X2C "
+            "for CAS/CASSCF; GHF/GKS X2C SOC is available for supported "
+            "single-reference calculations."
+        )
+
+
+def _validate_gpu_x2c_soc(platform, scf_type, x2c):
+    """Validate GPU4PySCF support for spin-orbit X2C calculations."""
+    if str(platform).upper() != "GPU" or not x2c:
+        return
+
+    if scf_type != "GHF":
+        raise NotImplementedError(
+            "GPU X2C spin-orbit calculations in ASH currently require scf_type='GHF'. "
+            "GPU4PySCF's GKS-to-GPU conversion is not implemented; use the CPU "
+            "platform for GKS or scalar-relativistic X2C."
+        )
+
+    try:
+        from packaging.version import Version
+    except ImportError as exc:
+        raise ImportError("GPU X2C SOC version checks require the packaging module.") from exc
+
+    gpu_version = _gpu4pyscf_version()
+    if gpu_version is None:
+        raise ImportError("GPU X2C spin-orbit calculations require GPU4PySCF >= 1.8.0.")
+    if Version(gpu_version) < Version("1.8.0"):
+        raise RuntimeError(
+            "GPU X2C spin-orbit calculations require GPU4PySCF >= 1.8.0 "
+            "for GHF X2C support; found version {}.".format(gpu_version)
+        )
+
 #PySCF Theory object.
 #TODO: Somehow support reading in user mf object ?
 #Easier now than before. However, each run calls both prepare_run and actual_run
@@ -274,6 +336,9 @@ class PySCFTheory:
         self.CASSCF_weights=CASSCF_weights
         self.CASSCF_mults=CASSCF_mults
         self.CASSCF_wfnsyms=CASSCF_wfnsyms
+
+        _validate_soc_cas(scf_type=self.scf_type, x2c=self.x2c, cas=CAS)
+        _validate_gpu_x2c_soc(platform=self.platform, scf_type=self.scf_type, x2c=self.x2c)
 
         #Auto-CAS options
         self.APC=APC
