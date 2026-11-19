@@ -9,7 +9,7 @@ import ash
 #import ash.modules.module_coords
 from ash.functions.functions_general import ashexit, isint,isfloat,is_same_sign,BC,print_time_rel,pygrep
 from ash.functions.functions_elstructure import check_cores_vs_electrons
-from ash.interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output
+from ash.interfaces.interface_ORCA import ORCATheory, grab_EFG_from_ORCA_output, grab_Mossbauer_parameters
 from ash.modules.module_highlevel_workflows import ORCA_CC_CBS_Theory
 
 #BenchReaction class. Used for benchmarking
@@ -335,13 +335,20 @@ def run_benchmark(set=None, theory=None, numcores=None, reuseorbs=False, correct
                 propertyvalue=max(efg, key=abs)
                 print("propertyvalue:", propertyvalue)
             elif property == 'Mossbauer':
-                pass
-                Proptype='Mossbauer'
-                theory.propertyblock="\n%eprnmr\nnuclei = all Fe {rho,fgrad}\n"
+                # Delta-EQ is reported directly by ORCA. RHO(0) is also parsed,
+                # but converting it to an isomer shift requires a calibration model.
+                Proptype='Mossbauer Delta-EQ'
+                theory.propertyblock="\n%eprnmr\nnuclei = all Fe {rho,fgrad}\nend\n"
 
                 result = ash.Singlepoint(fragment=frag, theory=theory, charge=charge, mult=mult)
                 energy = result.energy
-                #grab_Mossbauer_from_ORCA_output(theory.filename)
+                _, deltaEQ = grab_Mossbauer_parameters(theory.filename+'.out')
+                if deltaEQ is None:
+                    raise RuntimeError(
+                        "Could not read Mossbauer Delta-EQ from "
+                        + theory.filename + ".out"
+                    )
+                propertyvalue = deltaEQ
 
             # elif property == 'NMR':
             #     ashexit()
