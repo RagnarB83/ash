@@ -445,7 +445,21 @@ class OpenMMTheory:
             resid_index = 1
             residlabels = []
             residue_types_full = []
+            prev_fragtypelabel = None
             for i, fragtypelabel in enumerate(cluster_fragment.fragmenttype_labels):
+                # New molecule also whenever the fragmenttype changes, not only when the
+                # atomcount of the previous fragmenttype has been reached. Otherwise the
+                # per-residue atomname counter (jindex) desynchronizes as soon as
+                # fragmenttypes of different size follow each other, and the residues in the
+                # PDB-file no longer match the residue-templates in the XML-file.
+                if prev_fragtypelabel is not None and fragtypelabel != prev_fragtypelabel and jindex != 0:
+                    jindex = 0
+                    resid_index += 1
+                prev_fragtypelabel = fragtypelabel
+                if fragtypelabel >= len(atomnames_res):
+                    print(BC.FAIL, f"Error: fragmenttype label {fragtypelabel} of the cluster fragment has no "
+                          f"matching residue in the forcefield file (which defines {len(atomnames_res)} residues).", BC.END)
+                    ashexit()
                 atomnames_full.append(atomnames_res[fragtypelabel][jindex])
                 residlabels.append(resid_index)
                 jindex += 1

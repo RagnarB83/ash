@@ -456,7 +456,13 @@ def MMforcefield_read(file):
                 if line.startswith("resid"):
                     if 'atomtypes' in line:
                         residname=line.split()[0].replace("_atomtypes","")
-                        MM_forcefield["residues"].append(residname)
+                        #NOTE: Molcrys appends to Cluster_forcefield.ff, so a file written by
+                        #repeated runs in the same directory may contain the same residue
+                        #multiple times. Keeping only the first occurrence (later lines still
+                        #update the atomtype/charge/element data below) avoids duplicate
+                        #residue-templates when the file is converted to an OpenMM XML file.
+                        if residname not in MM_forcefield["residues"]:
+                            MM_forcefield["residues"].append(residname)
                         #adding atomtypes for residue
                         lsplit=line.split()
                         MM_forcefield[residname+'_atomtypes']=lsplit[1:]
