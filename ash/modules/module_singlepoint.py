@@ -15,6 +15,11 @@ from ash.functions.functions_general import ashexit, BC,print_time_rel,print_lin
 from ash.modules.module_coords import check_charge_mult
 from ash.modules.module_results import ASH_Results
 
+# Eh -> unit conversion factors, shared by Singlepoint_fragments and ReactionEnergy
+# (the same dict used to be written out separately in both places)
+energy_conversion_factors = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
+                    'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
+
 
 # Single-point energy function
 def Singlepoint_gradient(fragment=None, theory=None, charge=None, mult=None):
@@ -191,6 +196,15 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
     print("Will run single-point calculation on each fragment")
     print("Theory:", theory.__class__.__name__)
 
+    #Basic checks
+    if fragments is None or len(fragments) == 0:
+        print(BC.FAIL,"Error: Singlepoint_fragments requires a list of one or more ASH fragments.", BC.END)
+        ashexit()
+    if relative_energies is True and unit not in energy_conversion_factors:
+        print(BC.FAIL,f"Error: unknown unit '{unit}' for relative energies.", BC.END)
+        print("Valid units:", ", ".join(energy_conversion_factors))
+        ashexit()
+
     energies=[];filenames=[]
 
     #Looping through fragments
@@ -230,7 +244,14 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
         print("")
 
     #Create Results object
-    result = ASH_Results(label="Singlepoint_fragments", energies=energies, charge=charge, mult=mult)
+    #NOTE: charge/mult are single-job attributes. Only set here if all fragments agree,
+    #otherwise they would report whichever fragment happened to be last.
+    charges=[f.charge for f in fragments]; mults=[f.mult for f in fragments]
+    common_charge = charges[0] if len(set(charges)) == 1 else None
+    common_mult = mults[0] if len(set(mults)) == 1 else None
+    result = ASH_Results(label="Singlepoint_fragments", energies=energies,
+                         charge=common_charge, mult=common_mult)
+    result.labels = [f.label for f in fragments]
 
     #Print table
     print_fragments_table(fragments,energies)
@@ -239,13 +260,11 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
     if relative_energies is True:
         print()
         print("relative_energies option is True!")
-        conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
-                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
-        convfactor=conversionfactor[unit]
+        convfactor=energy_conversion_factors[unit]
         relenergies=[(i - min(energies)) * convfactor for i in energies]
-        print_fragments_table(fragments,relenergies, unit=unit)
+        print_fragments_table(fragments,relenergies, tabletitle="Singlepoint_fragments: relative ",
+                              unit=unit)
         result.relative_energies = relenergies
-        result.labels = [f.label for f in fragments]
 
     #Printing reaction energy if stoichiometry was provided
     if stoichiometry != None:
@@ -586,8 +605,7 @@ def ReactionEnergy(list_of_energies=None, stoichiometry=None, list_of_fragments=
     Returns:
         tuple : energy and error in chosen unit
     """
-    conversionfactor = { 'kcal/mol' : 627.50946900, 'kcalpermol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
-                        'eV' : 27.211386245988, 'cm-1' : 219474.6313702, 'Eh' : 1.0, 'mEh' : 1000, 'meV' : 27211.386245988 }
+    conversionfactor = energy_conversion_factors
     if label is None:
         label=''
     reactant_energy=0.0 #hartree
