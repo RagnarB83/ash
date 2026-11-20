@@ -113,6 +113,42 @@ def test_residues_are_renumbered_for_the_active_region(fragment):
     assert opt.spec[:len(ACTATOMS)] == [1, 1, 2, 2, 1, 1]
 
 
+def test_pdb_residues_are_used_when_active_region_residues_are_omitted(fragment):
+    """PDB-backed ActiveRegion runs retain their real residue grouping by default."""
+    fragment.pdb_chainlabels = ["A"] * fragment.numatoms
+    fragment.pdb_residlabels = ["1", "1", "2", "2", "1", "1",
+                                "1", "2", "2", "3", "3", "3"]
+    fragment.pdb_resnames = ["RES"] * 9 + ["HOH"] * 3
+    opt = make_optimizer(fragment, ActiveRegion=True, actatoms=list(ACTATOMS))
+    opt.setup_active_region_geometry()
+    opt.setup_constraints_act_frozen()
+    assert opt.spec[:len(ACTATOMS)] == [1, 1, 2, 2, 1, 1]
+    assert opt.residues == [[0, 1, 4, 5, 6], [2, 3, 7, 8], [9, 10, 11]]
+
+
+def test_openmm_pdb_topology_residues_are_used_for_active_region(fragment):
+    """PDB fragments parsed through OpenMM expose residue groups via topology."""
+    class Residue:
+        def __init__(self, indices):
+            self._atoms = [type("Atom", (), {"index": i})() for i in indices]
+
+        def atoms(self):
+            return iter(self._atoms)
+
+    class Topology:
+        def residues(self):
+            return iter([Residue([0, 1, 4, 5, 6]),
+                         Residue([2, 3, 7, 8]),
+                         Residue([9, 10, 11])])
+
+    fragment.pdb_topology = Topology()
+    opt = make_optimizer(fragment, ActiveRegion=True, actatoms=list(ACTATOMS))
+    opt.setup_active_region_geometry()
+    opt.setup_constraints_act_frozen()
+    assert opt.spec[:len(ACTATOMS)] == [1, 1, 2, 2, 1, 1]
+    assert opt.residues == [[0, 1, 4, 5, 6], [2, 3, 7, 8], [9, 10, 11]]
+
+
 def test_constraints_are_reindexed(fragment):
     """Constraint atom indices must be translated into active-region indices."""
     actatoms = [0, 2, 5, 7]

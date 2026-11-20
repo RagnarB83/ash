@@ -576,6 +576,42 @@ class DLFIND_optimizerClass:
             print(BC.FAIL,"Error: actatoms list contains duplicate atom indices. Exiting.",BC.END)
             ashexit()
 
+        # HDLC benefits from meaningful residue groups. If the caller did not
+        # supply them, reuse the PDB residue metadata already stored on Fragment.
+        # This matters for large ActiveRegion optimizations: treating the entire
+        # active region as one residue can make DL-FIND's constraint setup fail.
+        if self.residues is None:
+            pdb_resnames = getattr(self.fragment, "pdb_resnames", None)
+            pdb_residlabels = getattr(self.fragment, "pdb_residlabels", None)
+            pdb_chainlabels = getattr(self.fragment, "pdb_chainlabels", None)
+            residue_groups = None
+            if (pdb_resnames is not None and pdb_residlabels is not None
+                    and len(pdb_resnames) == self.fragment.numatoms
+                    and len(pdb_residlabels) == self.fragment.numatoms):
+                if pdb_chainlabels is None or len(pdb_chainlabels) != self.fragment.numatoms:
+                    pdb_chainlabels = [""] * self.fragment.numatoms
+                residue_atoms = {}
+                for atom_index, (chain, resid, resname) in enumerate(
+                        zip(pdb_chainlabels, pdb_residlabels, pdb_resnames)):
+                    residue_atoms.setdefault((chain, resid, resname), []).append(atom_index)
+                residue_groups = list(residue_atoms.values())
+            else:
+                # Fragment(pdbfile=...) commonly stores PDB metadata as an
+                # OpenMM topology instead of the parallel pdb_* arrays.
+                topology = getattr(self.fragment, "pdb_topology", None)
+                if topology is not None:
+                    topology_groups = [
+                        [atom.index for atom in residue.atoms()]
+                        for residue in topology.residues()
+                    ]
+                    topology_groups = [group for group in topology_groups if group]
+                    topology_indices = sorted(index for group in topology_groups for index in group)
+                    if topology_indices == list(range(self.fragment.numatoms)):
+                        residue_groups = topology_groups
+            if residue_groups:
+                self.residues = residue_groups
+                print(f"Using {len(self.residues)} residue groups from PDB metadata for DL-FIND.")
+
         print("ActiveRegion option is True. Passing only active-region coordinates to DL-FIND.")
         print("Number of active atoms:", len(self.actatoms))
         print("Number of atoms in full system:", self.fragment.numatoms)
