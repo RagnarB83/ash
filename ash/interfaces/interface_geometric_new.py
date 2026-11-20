@@ -855,6 +855,7 @@ class ASHengineclass:
         self.full_current_coords=[]
         #E+G count 
         self.EG_count=0
+        self.calculation_directory=None
         # Proper iteration count
         self.iteration_count=0
 
@@ -950,12 +951,21 @@ class ASHengineclass:
         if self.printlevel >= 1:
             print("geometric called clearCalcs option for ASHengineclass.")
             print("This option is currently unsupported in ASH. Continuing.")
+
+    def _evaluation_label(self):
+        """Describe this calculator call separately from optimizer iterations."""
+        evaluation = self.EG_count + 1
+        directory_parts = os.path.normpath(self.calculation_directory or "").lower().split(os.sep)
+        if "hessian" in directory_parts:
+            return f"evaluation {evaluation} (Hessian displacement)"
+        return f"evaluation {evaluation}"
+
     #Writing out trajectory file for full system in case of ActiveRegion. Note: Actregion coordinates are done done by GeomeTRIC
     def write_trajectory_full(self):
         print("Writing trajectory for Full system to file: geometric_OPTtraj_Full.xyz")
         with open("geometric_OPTtraj_Full.xyz", "a") as trajfile:
             trajfile.write(str(self.fragment.numatoms)+"\n")
-            trajfile.write(f"Iteration {self.iteration_count} Energy {self.energy} \n")
+            trajfile.write(f"{self._evaluation_label()} OptimizerIteration {self.iteration_count} Energy {self.energy} \n")
             for el,cor in zip(self.fragment.elems,self.full_current_coords):
                 trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
                             "\n")
@@ -964,7 +974,7 @@ class ASHengineclass:
         print("Writing trajectory for QM-region to file: geometric_OPTtraj_QMregion.xyz")
         with open("geometric_OPTtraj_QMregion.xyz", "a") as trajfile:
             trajfile.write(str(len(self.theory.qmatoms))+"\n")
-            trajfile.write(f"Iteration {self.iteration_count} Energy {self.energy} \n")
+            trajfile.write(f"{self._evaluation_label()} OptimizerIteration {self.iteration_count} Energy {self.energy} \n")
             qm_coords, qm_elems = self.fragment.get_coords_for_atoms(self.theory.qmatoms)
             for el,cor in zip(qm_elems,qm_coords):
                 trajfile.write(el + "  " + str(cor[0]) + " " + str(cor[1]) + " " + str(cor[2]) +
@@ -973,7 +983,7 @@ class ASHengineclass:
         #QM/MM: Writing out logfile containing QM-energy, MM-energy, QM/MM-energy
         print("Writing logfile with energies: optimization_energies.log")
         with open("optimization_energies.log", "a") as trajfile:
-            if self.iteration_count == 0:
+            if self.EG_count == 0:
                 trajfile.write(f"Iteration QM-energy       (Eh) MM-Energy (Eh)  QM/MM-Energy (Eh)\n")
             trajfile.write(f"{self.iteration_count}         {self.theory.QMenergy} {self.theory.MMenergy} {self.theory.QM_MM_energy}\n")
 
@@ -989,6 +999,7 @@ class ASHengineclass:
     #Defining calculator.
     #Read_data and copydir not used (dummy variables)
     def calc(self,coords,tmp, read_data=None, copydir=None):
+        self.calculation_directory = tmp
         print("")
         if self.iteration_count == self.maxiter:
             print("Maxiter reached. ASH is stopping.")
@@ -1004,7 +1015,7 @@ class ASHengineclass:
                 self.iteration_count = iteration
 
         #print("read_data:", read_data)
-        #Note: tmp and read_data not used. Needed for geomeTRIC version compatibility
+        # tmp identifies Hessian displacement evaluations; read_data is unused.
         if self.printlevel >= 1:
             print("Convergence criteria:", self.conv_criteria)
 
@@ -1053,7 +1064,7 @@ class ASHengineclass:
 
             #PRINTING TO OUTPUT SPECIFIC GEOMETRY IN EACH GEOMETRIC ITERATION (now: self.print_atoms_list)
             if self.printlevel >= 1:
-                print(f"Current geometry (Å) in step {self.iteration_count} (print_atoms_list region)")
+                print(f"Current geometry (Å) for {self._evaluation_label()} (print_atoms_list region)")
                 print("-------------------------------------------------")
 
             #print_atoms_list
@@ -1115,7 +1126,7 @@ class ASHengineclass:
         #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
         self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
         if self.printlevel >= 1:
-            print(f"Current geometry (Å) in step {self.iteration_count} (print_atoms_list region)")
+            print(f"Current geometry (Å) for {self._evaluation_label()} (print_atoms_list region)")
             print("---------------------------------------------------")
             print_coords_for_atoms(currcoords, self.fragment.elems, self.print_atoms_list)
             print("")
@@ -1152,7 +1163,7 @@ class ASHengineclass:
         #PRINTING ACTIVE GEOMETRY IN EACH GEOMETRIC ITERATION
         self.fragment.write_xyzfile(xyzfilename="Fragment-currentgeo.xyz")
         if self.printlevel >= 1:
-            print(f"Current geometry (Å) in step {self.iteration_count} (print_atoms_list region)")
+            print(f"Current geometry (Å) for {self._evaluation_label()} (print_atoms_list region)")
             print("---------------------------------------------------")
             print_coords_for_atoms(R_phys, self.elems_phys, self.print_atoms_list)
             print("")
