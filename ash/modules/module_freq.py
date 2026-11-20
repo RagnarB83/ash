@@ -359,8 +359,6 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
     # TODO: Dipole moment/polarizability grab for parallel mode
     elif runmode == 'parallel':
 
-        if isinstance(theory,ash.QMMMTheory):
-            print("Numfreq in runmode='parallel' with QM/MM is quite experimental")
 
         print(f"Starting Numfreq calculations in parallel mode (numcores={numcores}) using Singlepoint_parallel")
         print(f"There are {len(all_disp_fragments)} displacements")
@@ -2225,7 +2223,6 @@ def project_rot_and_trans(coords,mass,Hessian, rotmode_threshold=1e-4):
     # Obtain the number of rotational degrees of freedom
     RotDOF = 0
     for i in range(3):
-        print("Ivals[i]:", Ivals[i])
         if abs(Ivals[i]) > rotmode_threshold:
             RotDOF += 1
     TR_DOF = 3 + RotDOF

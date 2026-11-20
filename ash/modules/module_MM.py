@@ -929,6 +929,7 @@ def seminario(fragment=None, hessian=None, method="original"):
     Equilibrium distances and angles are those in ``fragment``. Torsional and
     nonbonded parameters are not determined by the Seminario bond/angle method.
     """
+    print("Seminario function")
     if fragment is None or hessian is None:
         raise ValueError("seminario requires both fragment and hessian")
     if not isinstance(method, str) or method.lower() != "original":
