@@ -4593,9 +4593,16 @@ class OpenMM_MDclass:
 
                 # Run WrapTheory step to get full system gradient.
                 # First making sure Wraptheory does not compute the OpenMM part of the gradient (which is handled self.openmmobject)
+                # The previous value is restored afterwards: the WrapTheory object belongs to the
+                # user and may be used for a singlepoint or an optimization after the MD run, where
+                # the OpenMM component has to be calculated again
+                previous_skip_openmmtheory_run = self.wraptheory_object.skip_openmmtheory_run
                 self.wraptheory_object.skip_openmmtheory_run=True
-                wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
-                                      charge=self.charge, mult=self.mult)
+                try:
+                    wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
+                                          charge=self.charge, mult=self.mult)
+                finally:
+                    self.wraptheory_object.skip_openmmtheory_run = previous_skip_openmmtheory_run
                 #NOTE: if WrapTheory contains QMMMTheory then wrapgradient does not have MM contribution (only QM_PC from QM/MM and other theory contributino)
                 #print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
