@@ -69,7 +69,7 @@ import ash.constants
 
 # functions related to electronic structure
 import ash.functions.functions_elstructure
-from .functions.functions_elstructure import read_cube, write_cube, write_cube_diff, diffdens_tool, create_cubefile_from_orbfile, diffdens_of_cubefiles,  \
+from .functions.functions_elstructure import read_cube, write_cube, write_cube_diff, cube_planar_profile, diffdens_tool, create_cubefile_from_orbfile, diffdens_of_cubefiles,  \
     NOCV_density_ORCA, difference_density_ORCA, NOCV_Multiwfn,write_cube_sum,write_cube_product,create_density_from_orb, make_molden_file, \
     diagonalize_DM_AO, diagonalize_DM, DM_AO_to_MO, DM_AO_to_MO, DM_MO_to_AO, select_space_from_occupations,select_indices_from_occupations, ASH_write_integralfile, \
     density_sensitivity_metric, localized_orbital_analysis
@@ -95,6 +95,7 @@ from .interfaces.interface_ORCA import ORCATheory, counterpoise_calculation_ORCA
 import ash.interfaces.interface_ORCA
 
 from .interfaces.interface_Psi4 import Psi4Theory
+from .interfaces.interface_BSE import get_basis_from_bse, write_basis_from_bse
 from .interfaces.interface_dalton import DaltonTheory
 from .interfaces.interface_pyscf import PySCFTheory, pyscf_MR_correction, pyscf_CCSD_T_natorb_selection,KS_inversion_kspies,DFA_error_analysis,pySCF_write_Moldenfile
 density_potential_inversion=KS_inversion_kspies #Temporary
@@ -147,7 +148,7 @@ OpenMM_box_relaxation = OpenMM_box_equilibration
 small_molecule_parameterizor=small_molecule_parameterizer
 
 from .modules.module_MM import NonBondedTheory, UFFdict, UFF_modH_dict, LJCoulpy, coulombcharge, LennardJones, \
-    LJCoulombv2, LJCoulomb, MMforcefield_read
+    LJCoulombv2, LJCoulomb, MMforcefield_read, seminario
 #MDtraj
 from .interfaces.interface_mdtraj import MDtraj_imagetraj, MDtraj_slice, MDtraj_RMSF, MDtraj_RMSD, MDtraj_coord_analyze
 

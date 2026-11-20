@@ -33,6 +33,19 @@ from ash.interfaces.interface_openbabel import pdb_to_smiles,xyz_to_pdb_with_con
 # Options supported by OpenMM_MDclass.set_sim_reporters. Keep this list next to
 # the implementation so invalid values fail before a potentially long run.
 valid_trajectory_file_options = ('PDB', 'DCD', 'NetCDFReporter', 'HDF5Reporter', 'XYZ')
+# PDB residue names commonly used for standard amino acids and frequent
+# force-field variants. Users can pass a custom set for other residue names.
+_PROTEIN_RESIDUE_NAMES = {
+    "ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "GLY", "HIS", "ILE",
+    "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL",
+    "ASX", "GLX", "SEC", "PYL", "MSE", "HYP", "PCA", "PTR", "TPO", "SEP",
+    "CSO", "CSD", "CYM", "CYX", "HID", "HIE", "HIP", "HSD", "HSE", "HSP",
+    "ACE", "NME",
+}
+_SOLVENT_RESIDUE_NAMES = {
+    "HOH", "WAT", "H2O", "SOL", "TIP3", "TIP3P", "TIP4", "TIP4P", "TIP5P",
+    "SPC", "SPCE",
+}
 
 
 class OpenMMTheory:
@@ -165,10 +178,12 @@ class OpenMMTheory:
         registered_platforms = [openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())]
         self.platform_choice = next((p for p in registered_platforms if p.upper() == platform.upper()), platform)
 
+        # Copy the dict: OpenMMTheory adds entries such as Threads below, and without a
+        # copy those writes would land in the caller's own dictionary
         if properties is None:
             self.properties = {}
         else:
-            self.properties = properties
+            self.properties = dict(properties)
         if self.platform_choice == 'CPU':
             if self.printlevel > 0:
                 print("Using platform: CPU")
@@ -450,7 +465,21 @@ class OpenMMTheory:
             resid_index = 1
             residlabels = []
             residue_types_full = []
+            prev_fragtypelabel = None
             for i, fragtypelabel in enumerate(cluster_fragment.fragmenttype_labels):
+                # New molecule also whenever the fragmenttype changes, not only when the
+                # atomcount of the previous fragmenttype has been reached. Otherwise the
+                # per-residue atomname counter (jindex) desynchronizes as soon as
+                # fragmenttypes of different size follow each other, and the residues in the
+                # PDB-file no longer match the residue-templates in the XML-file.
+                if prev_fragtypelabel is not None and fragtypelabel != prev_fragtypelabel and jindex != 0:
+                    jindex = 0
+                    resid_index += 1
+                prev_fragtypelabel = fragtypelabel
+                if fragtypelabel >= len(atomnames_res):
+                    print(BC.FAIL, f"Error: fragmenttype label {fragtypelabel} of the cluster fragment has no "
+                          f"matching residue in the forcefield file (which defines {len(atomnames_res)} residues).", BC.END)
+                    ashexit()
                 atomnames_full.append(atomnames_res[fragtypelabel][jindex])
                 residlabels.append(resid_index)
                 jindex += 1
@@ -1529,6 +1558,65 @@ class OpenMMTheory:
                 todelete.append(i)
         for d in reversed(todelete):
             self.system.removeConstraint(d)
+
+    def _get_topology_atom_metadata(self):
+        """Return (atom index, residue name, element symbol) from the topology."""
+        topology = getattr(self, "topology", None)
+        if topology is not None and hasattr(topology, "atoms"):
+            atoms = list(topology.atoms())
+            metadata = []
+            for fallback_index, atom in enumerate(atoms):
+                atom_index = getattr(atom, "index", fallback_index)
+                residue = getattr(atom, "residue", None)
+                residue_name = getattr(residue, "name", None)
+                element = getattr(atom, "element", None)
+                element_symbol = getattr(element, "symbol", None)
+                if element_symbol is None:
+                    mm_elements = getattr(self, "mm_elements", [])
+                    if fallback_index < len(mm_elements):
+                        element_symbol = mm_elements[fallback_index]
+                metadata.append((int(atom_index), residue_name, element_symbol))
+            return metadata
+
+        resnames = getattr(self, "resnames", [])
+        elements = getattr(self, "mm_elements", [])
+        if len(resnames) == len(elements) and resnames:
+            return [(index, resnames[index], elements[index]) for index in range(len(resnames))]
+        raise ValueError("OpenMM topology with residue and element information is required for atom selection")
+
+    @staticmethod
+    def _normalize_residue_names(residue_names, defaults):
+        if residue_names is None:
+            residue_names = defaults
+        elif isinstance(residue_names, str):
+            residue_names = [residue_names]
+        return {str(name).strip().upper() for name in residue_names}
+
+    def get_nonH_atomindices(self):
+        """Return indices of all non-hydrogen atoms in the OpenMM topology."""
+        return [index for index, _, element in self._get_topology_atom_metadata()
+                if element is not None and str(element).upper() not in {"H", "D"}]
+
+    def get_protein_heavy_atomindices(self, residue_names=None):
+        """Return heavy-atom indices for standard protein residues.
+
+        ``residue_names`` can override the built-in PDB residue-name set for
+        force fields that use custom amino-acid residue names.
+        """
+        protein_names = self._normalize_residue_names(residue_names, _PROTEIN_RESIDUE_NAMES)
+        return [index for index, resname, element in self._get_topology_atom_metadata()
+                if resname is not None and resname.strip().upper() in protein_names
+                and element is not None and str(element).upper() not in {"H", "D"}]
+
+    def get_solvent_atomindices(self, residue_names=None):
+        """Return all atom indices in recognized water residues.
+
+        ``residue_names`` can override the built-in water residue-name set to
+        support nonstandard solvent labels. Ions are not included by default.
+        """
+        solvent_names = self._normalize_residue_names(residue_names, _SOLVENT_RESIDUE_NAMES)
+        return [index for index, resname, _ in self._get_topology_atom_metadata()
+                if resname is not None and resname.strip().upper() in solvent_names]
 
     # Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential
     # energy-function.
@@ -4518,9 +4606,16 @@ class OpenMM_MDclass:
 
                 # Run WrapTheory step to get full system gradient.
                 # First making sure Wraptheory does not compute the OpenMM part of the gradient (which is handled self.openmmobject)
+                # The previous value is restored afterwards: the WrapTheory object belongs to the
+                # user and may be used for a singlepoint or an optimization after the MD run, where
+                # the OpenMM component has to be calculated again
+                previous_skip_openmmtheory_run = self.wraptheory_object.skip_openmmtheory_run
                 self.wraptheory_object.skip_openmmtheory_run=True
-                wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
-                                      charge=self.charge, mult=self.mult)
+                try:
+                    wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
+                                          charge=self.charge, mult=self.mult)
+                finally:
+                    self.wraptheory_object.skip_openmmtheory_run = previous_skip_openmmtheory_run
                 #NOTE: if WrapTheory contains QMMMTheory then wrapgradient does not have MM contribution (only QM_PC from QM/MM and other theory contributino)
                 #print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 

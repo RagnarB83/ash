@@ -187,12 +187,15 @@ def read_cube (cubefile):
         if count == 4:
             nx=int(line.split()[0])
             dx=float(line.split()[1])
+            xvec=[float(value) for value in line.split()[1:4]]
         if count == 5:
             ny=int(line.split()[0])
             dy=float(line.split()[2])
+            yvec=[float(value) for value in line.split()[1:4]]
         if count == 6:
             nz=int(line.split()[0])
             dz=float(line.split()[3])
+            zvec=[float(value) for value in line.split()[1:4]]
         #Grabbing molecular coordinates
         if count > 6 and count <= 6+numatoms:
             elems.append(int(line.split()[0]))
@@ -220,8 +223,10 @@ def read_cube (cubefile):
             grabpoints = True
     if LargePrint is True:
         print("Number of orb/density points:", len(vals))
+    grid_vectors = [xvec, yvec, zvec]
     finaldict={'rlowx':rlowx,'dx':dx,'nx':nx,'orgx':orgx,'rlowy':rlowy,'dy':dy,'ny':ny,'orgy':orgy,'rlowz':rlowz,'dz':dz,'nz':nz,'orgz':orgz,'elems':elems,
-        'coords':coords,'coords_ang':coords_ang,'numatoms':numatoms,'filebase':filebase,'vals':vals}
+        'coords':coords,'coords_ang':coords_ang,'numatoms':numatoms,'filebase':filebase,'vals':vals,
+        'grid_vectors':grid_vectors}
     if grab_deset_id is True:
         #In case we use it later
         finaldict['DSET_IDS_1']=DSET_IDS_1
@@ -230,7 +235,7 @@ def read_cube (cubefile):
     #Sum of values
     sum_vals= sum([sum(i) for i in vals])
     #Integration volume
-    int_vol = dx*dy*dz
+    int_vol = abs(float(np.linalg.det(grid_vectors)))
     #Integration
     num_el_val = sum_vals*int_vol
 
@@ -238,6 +243,70 @@ def read_cube (cubefile):
     if "density" in description:
         print("Number of electrons:", num_el_val)
     return  finaldict
+
+
+def cube_planar_profile(cubedict, axis="z"):
+    """Return the integrated cube data in planes of constant grid index.
+
+    The returned two-column array contains the projected plane coordinate and
+    the plane-integrated data. For an electron-density cube, the second column
+    is electrons per unit of the cube file's coordinate length. The coordinate
+    and data units are otherwise inherited from the input cube.
+
+    Args:
+        cubedict (dict): Cube data returned by :func:`read_cube`.
+        axis (str): Grid axis to profile: ``"x"``, ``"y"``, or ``"z"``.
+
+    Returns:
+        numpy.ndarray: Rows of ``(plane_coordinate, plane_integral)``.
+
+    Raises:
+        ValueError: If the axis, grid vectors, or value count is invalid.
+    """
+    axis_indices = {"x": 0, "y": 1, "z": 2}
+    if axis not in axis_indices:
+        raise ValueError("axis must be one of 'x', 'y', or 'z'")
+    axis_index = axis_indices[axis]
+
+    dimensions = tuple(abs(int(cubedict[key])) for key in ("nx", "ny", "nz"))
+    values = np.fromiter(
+        (value for row in cubedict["vals"] for value in row), dtype=float
+    )
+    expected_values = int(np.prod(dimensions))
+    if values.size != expected_values:
+        raise ValueError(
+            f"Cube has {values.size} grid values, expected {expected_values} "
+            f"for grid dimensions {dimensions}"
+        )
+
+    if "grid_vectors" in cubedict:
+        grid_vectors = np.asarray(cubedict["grid_vectors"], dtype=float)
+    else:
+        grid_vectors = np.diag([cubedict["dx"], cubedict["dy"], cubedict["dz"]])
+    if grid_vectors.shape != (3, 3):
+        raise ValueError("grid_vectors must contain three 3D voxel vectors")
+
+    voxel_volume = abs(float(np.linalg.det(grid_vectors)))
+    axis_vector = grid_vectors[axis_index]
+    plane_axes = [(axis_index + 1) % 3, (axis_index + 2) % 3]
+    plane_normal = np.cross(grid_vectors[plane_axes[0]], grid_vectors[plane_axes[1]])
+    plane_area = float(np.linalg.norm(plane_normal))
+    if voxel_volume == 0.0 or plane_area == 0.0:
+        raise ValueError("Cube voxel vectors must span a non-zero volume")
+    if np.dot(plane_normal, axis_vector) < 0.0:
+        plane_normal = -plane_normal
+    unit_normal = plane_normal / plane_area
+    axis_step = voxel_volume / plane_area
+
+    density = values.reshape(dimensions)
+    other_axes = tuple(index for index in range(3) if index != axis_index)
+    plane_sums = density.sum(axis=other_axes)
+    plane_integrals = plane_sums * plane_area
+
+    origin = np.asarray([cubedict["orgx"], cubedict["orgy"], cubedict["orgz"]])
+    start_coordinate = float(np.dot(origin, unit_normal))
+    coordinates = start_coordinate + np.arange(dimensions[axis_index]) * axis_step
+    return np.column_stack((coordinates, plane_integrals))
 
 
 #Write Cube dictionary into file

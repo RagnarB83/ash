@@ -200,6 +200,12 @@ class QMMMTheory:
         self.dipole_correction=dipole_correction
         self.dipole_shift=dipole_shift # Default shift 
 
+        # The RCD charge-boundary scheme replaces the charge-shift scheme and its dipole
+        # correction, so dipole_correction has no effect when chargeboundary_method is rcd
+        if self.chargeboundary_method == "rcd" and self.dipole_correction is True:
+            print(BC.WARNING,"Warning: dipole_correction is True while chargeboundary_method is 'rcd'.",BC.END)
+            print(BC.WARNING,"The RCD scheme does not use the dipole correction, so the dipole_correction option is ignored here.",BC.END)
+
         # Whether MM-shifted performed or not. Will be set to True by self.ShiftMMCharges
         self.chargeshifting_done=False
 

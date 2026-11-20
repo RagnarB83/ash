@@ -456,7 +456,13 @@ def MMforcefield_read(file):
                 if line.startswith("resid"):
                     if 'atomtypes' in line:
                         residname=line.split()[0].replace("_atomtypes","")
-                        MM_forcefield["residues"].append(residname)
+                        #NOTE: Molcrys appends to Cluster_forcefield.ff, so a file written by
+                        #repeated runs in the same directory may contain the same residue
+                        #multiple times. Keeping only the first occurrence (later lines still
+                        #update the atomtype/charge/element data below) avoids duplicate
+                        #residue-templates when the file is converted to an OpenMM XML file.
+                        if residname not in MM_forcefield["residues"]:
+                            MM_forcefield["residues"].append(residname)
                         #adding atomtypes for residue
                         lsplit=line.split()
                         MM_forcefield[residname+'_atomtypes']=lsplit[1:]
@@ -913,144 +919,94 @@ def LJCoulpy(coords,atomtypes, charges, LJPairpotentials, connectivity=None):
 # Seminario implementation
 
 
-# Given optimized fragment and Hessian, derive FF parameters using Seminario method.
 def seminario(fragment=None, hessian=None, method="original"):
-    print("Inside Seminario function")
+    """Derive harmonic bond and angle force constants from a QM Hessian.
+
+    The fragment must contain the optimized Cartesian geometry and elements, and
+    ``hessian`` must be the Cartesian Hessian in Hartree/Bohr^2. The returned
+    bond and angle tuples contain zero-based atom indices followed by force
+    constants in kcal/mol/Angstrom^2 and kcal/mol/radian^2, respectively.
+    Equilibrium distances and angles are those in ``fragment``. Torsional and
+    nonbonded parameters are not determined by the Seminario bond/angle method.
+    """
     if fragment is None or hessian is None:
-        print("fragment and hessian must be provided for Seminario method")
-        ashexit()
-    # 
-    if method == "original":
-        print("Using original Seminario method")
-    elif method == "modified":
-        print("Using modified Seminario method (to be implemented)")
-        ashexit()
-    else:
-        print("Unknown method for Seminario. Use 'original' or 'modified'")
-        ashexit()
+        raise ValueError("seminario requires both fragment and hessian")
+    if not isinstance(method, str) or method.lower() != "original":
+        raise ValueError("seminario currently supports only method='original'")
 
-    # Bonds
-    # Distance matrix from fragment coordinates. and partial
-    coords_au = fragment.coords*ash.constants.ang2bohr
-    num_atoms = len(coords_au)
+    coords = np.asarray(fragment.coords, dtype=float)
+    num_atoms = len(fragment.elems)
+    hessian = np.asarray(hessian, dtype=float)
+    expected_shape = (3 * num_atoms, 3 * num_atoms)
+    if coords.shape != (num_atoms, 3):
+        raise ValueError("fragment coordinates must have shape (number of atoms, 3)")
+    if hessian.shape != expected_shape:
+        raise ValueError("Hessian shape {} does not match expected {}".format(hessian.shape, expected_shape))
+    if not np.all(np.isfinite(coords)) or not np.all(np.isfinite(hessian)):
+        raise ValueError("coordinates and Hessian must contain only finite values")
+    if num_atoms < 2:
+        return {"bonds": [], "angles": [], "dihedrals": []}
 
-    # Get distance matrix for coords 
-    def distance_matrix(coords):
-        """ Calculate the distance matrix for a set of coordinates. """
-        diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
-        dist = np.sqrt(np.sum(diff ** 2, axis=-1))
-        return dist
+    # Use the same covalent-radius connectivity and global tolerances as Fragment.
+    scale = getattr(fragment, "scale", ash.settings_ash.settings_dict["scale"])
+    tol = getattr(fragment, "tol", ash.settings_ash.settings_dict["tol"])
+    from ash.modules.module_coords import get_connected_atoms_dict
+    adjacency = get_connected_atoms_dict(coords, fragment.elems, scale, tol)
+    bonds = sorted((i, j) for i, neighbors in adjacency.items() for j in neighbors if i < j)
+    if not bonds:
+        raise ValueError("no bonds were found from the fragment coordinates")
 
-    #dist_matrix = np.zeros((num_atoms, num_atoms))
+    # Hessians from ASH QM interfaces are in Hartree/Bohr^2; transform coordinates
+    # to Bohr because the original Seminario projection is evaluated in atomic units.
+    coords_bohr = coords * ash.constants.ang2bohr
+    hessian = 0.5 * (hessian + hessian.T)
+    distance_matrix = np.linalg.norm(coords_bohr[:, None, :] - coords_bohr[None, :, :], axis=2)
 
-    def sum_seminario(unitvec,eigenvecs,eigenvals):
-        fc_au=0.0
-        for h in range(3):
-            projection = abs(np.dot(unitvec, eigenvecs[:, h]))
-            fc_au += np.abs(eigenvals[h]) * (projection)
-        return fc_au
-
-    def get_partial_hessian(hessian, i, j):
+    def partial(i, j):
         return hessian[3 * i:3 * i + 3, 3 * j:3 * j + 3]
 
-    def do_bond(i, j, coords_au, hessian):
-        # distance vec
-        vec = coords_au[i] - coords_au[j]
-        unitvec = vec / np.linalg.norm(vec)
-        # Partial Hessian
-        partial_hessian = get_partial_hessian(hessian, i, j)
-        # Diagonalize partial Hessian
-        evals, evecs = np.linalg.eig(-partial_hessian)
-        fc_au = sum_seminario(unitvec,evecs,evals)
-        return fc_au
+    def projected_force_constant(vector, block):
+        norm = np.linalg.norm(vector)
+        if norm <= 1.0e-12:
+            raise ValueError("coincident atoms cannot be used in Seminario projections")
+        eigenvalues, eigenvectors = np.linalg.eigh(-0.5 * (block + block.T))
+        return float(np.sum(np.abs(eigenvalues) * np.abs((vector / norm) @ eigenvectors)))
 
-    def do_bonds(list_of_bonds, coords_au, hessian):
-        bond_FCs=[]
-        for bond in list_of_bonds:
-            i=bond[0]
-            j=bond[1]
-            fc_au = do_bond(i, j, coords_au, hessian)
-            factor=ash.constants.harkcal / (ash.constants.bohr2ang ** 2)
-            fc_kcal = abs(fc_au * factor)
-            print("Force constant for bond between atoms {} and {}: {} kcal/mol/Å^2".format(i, j, fc_kcal))
-            bond_FCs.append((i, j, fc_kcal))
+    bond_constants = []
+    for i, j in bonds:
+        fc_au = projected_force_constant(coords_bohr[i] - coords_bohr[j], partial(i, j))
+        fc_kcal = fc_au * ash.constants.harkcal / ash.constants.bohr2ang ** 2
+        bond_constants.append((i, j, float(fc_kcal)))
 
-        return bond_FCs
-    # Angles
-    def do_angle(i,j,k,coords_au, hessian, dist_matrix):
-        print("coords_au[i]:", coords_au[i])
-        vec_ij = coords_au[j] - coords_au[i]
-        print("vec_ij:", vec_ij)
-        print()
-        print("coords_au[j]:", coords_au[j])
-        print("coords_au[k]:", coords_au[k])
-        vec_kj = coords_au[j] - coords_au[k]
-        print("vec_kj:", vec_kj)
-        unitvec_ij = vec_ij / np.linalg.norm(vec_ij)
-        print("unitvec_ij:", unitvec_ij)
-        unitvec_kj = vec_kj / np.linalg.norm(vec_kj)
-        print("unitvec_kj:", unitvec_kj)
-        parthess_ij = get_partial_hessian(hessian, i, j)
-        parthess_kj = get_partial_hessian(hessian, k, j)
-        # Diagonalize partial Hessian for each pair
-        evals_ij, evecs_ij = np.linalg.eig(-parthess_ij)
-        evals_kj, evecs_kj = np.linalg.eig(-parthess_kj)
+    angles = []
+    for center, neighbors in adjacency.items():
+        for pos, i in enumerate(sorted(neighbors)):
+            for k in sorted(neighbors)[pos + 1:]:
+                vec_i = coords_bohr[i] - coords_bohr[center]
+                vec_k = coords_bohr[k] - coords_bohr[center]
+                r_i = distance_matrix[i, center]
+                r_k = distance_matrix[k, center]
+                normal = np.cross(vec_i, vec_k)
+                normal_norm = np.linalg.norm(normal)
+                if normal_norm <= 1.0e-10:
+                    # The original out-of-plane projection is undefined for a linear angle.
+                    continue
+                normal /= normal_norm
+                tangent_i = np.cross(normal, vec_i) / r_i
+                tangent_k = np.cross(vec_k, normal) / r_k
+                s_i = projected_force_constant(tangent_i, partial(i, center))
+                s_k = projected_force_constant(tangent_k, partial(k, center))
+                if s_i <= 1.0e-14 or s_k <= 1.0e-14:
+                    continue
+                # Seminario's angular force constant combines the projected
+                # bond-stretching constants with each bond length squared.
+                denominator = 1.0 / (r_i**2 * s_i) + 1.0 / (r_k**2 * s_k)
+                if denominator <= 0 or not np.isfinite(denominator):
+                    continue
+                fc_kcal = ash.constants.harkcal / denominator
+                angles.append((i, center, k, float(fc_kcal)))
 
-        un = np.cross(vec_kj, vec_ij)
-        print("un:", un)
-        un = un / np.linalg.norm(un)
-        print("un:", un)
-        upa = np.cross(un, vec_ij)
-        print("upa:", upa)
-        upc = np.cross(vec_kj, un)
-        print("upc:", upc)
-
-        sum1 = sum_seminario(upa, evecs_ij, evals_ij)
-        print("sum1:", sum1)
-        sum2 = sum_seminario(upc, evecs_kj, evals_kj)
-        print("sum2:", sum2)
-        lenij = dist_matrix[i, j]
-        print("lenij:", lenij)
-        lenkj = dist_matrix[k, j]
-        print("lenkj:", lenkj)
-        #fc_au = ( 1 / ( (lenij**2) * sum1) ) + ( 1 / ( (lenkj**2) * sum2) ) 
-        #fc_au = 1/fc_au
-        fc_au = 1.0 / (1.0/(sum1*lenij*lenij)+1.0/(sum2*lenkj*lenkj))
-        print("fc_au:", fc_au)
-        return fc_au
-
-    def do_angles(list_of_angles, coords_au, hessian, dist_matrix):
-        angle_FCs=[]
-        for angle in list_of_angles:
-            print("angle:", angle)
-            i=angle[0]
-            j=angle[1]
-            k=angle[2]
-            fc_au = do_angle(i,j,k, coords_au, hessian, dist_matrix)
-            factor=ash.constants.harkcal
-            print("factor:", factor)
-            fc_kcal = abs(fc_au * factor)
-            print("Force constant for angle between atoms {}, {} and {}: {} kcal/mol/rad^2".format(i, j, k, fc_kcal))
-            angle_FCs.append((i,j,k,fc_kcal))
-        return angle_FCs
-    
-    # Distance matrix in bohrs
-    dist_matrix = distance_matrix(coords_au)
-    # Do bonds
-    list_of_bonds=[[0,1]] # Placeholder. To be replaced by actual bond list from fragment connectivity
-    # TODO: Do both i-j and j-i pairs and average 
-    bond_FCs = do_bonds(list_of_bonds, coords_au, hessian)
-    print("")
-    # Do angles
-    list_of_angles=[[1,0,2],[0,1,2]] # Placeholder. To be replaced by actual angle list from fragment connectivity
-    angle_FCs = do_angles(list_of_angles, coords_au, hessian, dist_matrix)
-    #Dihedrals
-
-
-    #Define FF dictionary to store parameters
-    bondedFF = {"bonds": bond_FCs, "angles": angle_FCs, "dihedrals": []}
-
-    return bondedFF
+    return {"bonds": bond_constants, "angles": angles, "dihedrals": []}
 
 # def derive_FF_parameters(fragment=None, theory=None, anfreq=False,
 #                          hessian=None, charge_model=None, charges=None, method="original"):

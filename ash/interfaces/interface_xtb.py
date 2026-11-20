@@ -10,7 +10,7 @@ import ash.settings_ash
 from ash.modules.module_theory import Theory
 from ash.functions.functions_general import (
     ashexit, blankline, reverse_lines, print_time_rel, BC, 
-    print_line_with_mainheader, print_if_level
+    print_line_with_mainheader, print_if_level, print_module_version, grab_version_from_output
 )
 import ash.modules.module_coords
 from ash.modules.module_coords import (
@@ -191,6 +191,7 @@ class xTBTheory:
         self.xtbmethod = xtbmethod
         self.maxiter = maxiter
         self.runmode = runmode
+        self._version_printed = False
 
         self.electronic_temp = electronic_temp
 
@@ -464,7 +465,11 @@ class xTBTheory:
         module_init_time=time.time()
         
         if self.runmode == 'library':
+            import xtb
             from xtb.interface import Calculator, Param
+            if not self._version_printed:
+                version_string = print_module_version(xtb, "xTB", distribution_names=["xtb", "xtb-python"])
+                self._version_printed = version_string is not None
 
         if MMcharges is None:
             MMcharges=[]
@@ -541,6 +546,13 @@ class xTBTheory:
             run_xtb_SP(self.xtbdir, self.xtbmethod, coordfile, charge, mult, printlevel=self.printlevel, PC=PC, solvent=self.solvent,
                                     Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores,
                                     use_tblite=self.use_tblite, extraflag=self.extraflag)
+
+            xtb_version = None
+            if not self._version_printed:
+                xtb_version = grab_version_from_output(self.filename + '.out', r"\*\s*xtb version\s+([^\s(]+)")
+            if xtb_version is not None:
+                print(f"xTB version: {xtb_version}")
+                self._version_printed = True
 
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
@@ -1245,6 +1257,7 @@ class tbliteTheory(Theory):
             print("Cell vectors (Å)", self.periodic_cell_vectors)
         try:
             import tblite
+            print_module_version(tblite, "tblite", distribution_names=["tblite", "tblite-python"])
         except Exception as e:
             print("Problem importing tblite library. Have you installed tblite properly ?")
             print("See: https://github.com/tblite/tblite")

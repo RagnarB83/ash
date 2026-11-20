@@ -5,7 +5,7 @@ import time
 import numpy as np
 import pathlib
 from ash.modules.module_theory import Theory
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader, writestringtofile
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader, writestringtofile, print_module_version
 from ash.modules.module_coords import nucchargelist
 from ash.modules.module_coords_PBC import cell_vectors_to_params, cell_params_to_vectors
 import ash.settings_ash
@@ -47,6 +47,7 @@ class VeloxchemTheory(Theory):
             elems=None, Grad=False, PC=False, numcores=None, restart=False, label=None, Hessian=False,
             charge=None, mult=None):
         import veloxchem as vlx
+        print_module_version(vlx, "VeloxChem", distribution_names=["veloxchem", "velox-chem"])
         module_init_time=time.time()
         if numcores is None:
             numcores = self.numcores

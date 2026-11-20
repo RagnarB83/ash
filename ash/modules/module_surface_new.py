@@ -1066,40 +1066,48 @@ def _handle_pbc(theory, fragment, pointlabel, convert_to_pbcfile):
     shutil.move(pbcfile, f"surface_pbcfiles/{pointlabel}.{ext}")
 
 def _handle_output_files(theory, pointlabel, keepoutputfiles, keepmofiles, printlevel=2):
-    """Copy QM output / MO files to their surface subdirectories."""
+    """Copy QM output / MO files to their surface subdirectories.
+
+    Modified: for QM/MM (hybrid) theories, use the inner QM theory
+    (theory.qm_theory) instead of skipping the files. Also keeps the
+    ORCA orbital files (.uco, .uno, .qro, .unso) next to the .gbw.
+    """
+    # Pick the theory that actually owns the .out/.gbw files
+    qmtheory = theory
     if not hasattr(theory, 'theorytype') or theory.theorytype != "QM":
-        if keepoutputfiles or keepmofiles:
-            print("Warning: For hybrid theories, outputfiles and MO-files are not kept")
-        return
+        inner = getattr(theory, "qm_theory", None)
+        if inner is None or not hasattr(inner, "filename"):
+            if keepoutputfiles or keepmofiles:
+                print("Warning: could not find inner QM theory (qm_theory.filename); "
+                      "outputfiles and MO-files are not kept")
+            return
+        qmtheory = inner
+
     if keepoutputfiles:
+        os.makedirs("surface_outfiles", exist_ok=True)
         try:
             shutil.copyfile(
-                theory.filename + '.out',
-                f'surface_outfiles/{theory.filename}_{pointlabel}.out',
+                qmtheory.filename + '.out',
+                f'surface_outfiles/{qmtheory.filename}_{pointlabel}.out',
             )
         except TypeError:
-            print_if_level("Theory has no outputfile, probably. ignoring", printlevel,2)
-            pass
+            print_if_level("Theory has no outputfile, probably. ignoring", printlevel, 2)
         except FileNotFoundError:
-            print_if_level("Outputfile might have been deleted. ignoring", printlevel,2)
-            pass
+            print_if_level("Outputfile might have been deleted. ignoring", printlevel, 2)
         except AttributeError:
-            print_if_level("Theory has no outputfile, probably. ignoring", printlevel,2)
-            pass
+            print_if_level("Theory has no outputfile, probably. ignoring", printlevel, 2)
     if keepmofiles:
-        try:
-            shutil.copyfile(
-                theory.filename + '.gbw',
-                f'surface_mofiles/{theory.filename}_{pointlabel}.gbw',
-            )
-        except FileNotFoundError:
-            pass
-
-
-
-
-
-
+        os.makedirs("surface_mofiles", exist_ok=True)
+        # .gbw plus the other orbital files, whichever ORCA wrote
+        for ext in ("gbw", "uco", "uno", "qro", "unso"):
+            src_file = f"{qmtheory.filename}.{ext}"
+            if os.path.exists(src_file):
+                shutil.copyfile(
+                    src_file,
+                    f"surface_mofiles/{qmtheory.filename}_{pointlabel}.{ext}",
+                )
+            elif ext == "gbw":
+                print_if_level("GBW file not found. ignoring", printlevel, 2)
 
 
 # ---------------------------------------------------------------------------
