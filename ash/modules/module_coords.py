@@ -586,7 +586,8 @@ class Fragment:
         pdb = openmm.app.PDBFile(filename)
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
         self.elems=[]
-        print(pdb.topology)
+        if self.printlevel >= 2:
+            print(pdb.topology)
         for atom in pdb.topology.atoms():
 
             try:
@@ -610,48 +611,36 @@ class Fragment:
             ashexit()
         pdb = openmm.app.PDBxFile(filename)
         self.coords = np.array([[i.x*10,i.y*10,i.z*10] for i in pdb.positions])
-        self.elems = [atom.element.symbol for atom in pdb.topology.atoms()]
+        self.elems=[]
+        for atom in pdb.topology.atoms():
+            try:
+                self.elems.append(atom.element.symbol)
+            except AttributeError:
+                print("Warning: could not fully parse element information from PDBx/mmCIF-topology for atom:", atom)
+                print("This may be a virtual site. Adding 'M' as dummy element for this atom.")
+                self.elems.append('M')
 
         # Topology
         self.pdb_topology = pdb.topology
 
     def read_xyzfile(self, filename, scale=None, tol=None, readchargemult=False, conncalc=True):
+        """Read an XYZ-file into the fragment.
+
+        Uses the module-level read_xyzfile function so that there is only a single
+        XYZ-file parser in ASH.
+        """
         if self.printlevel >= 2:
             print("Reading coordinates from XYZ file '{}' into fragment.".format(filename))
-        coords = []
-        with open(filename) as f:
-            for count, line in enumerate(f):
-                if count == 0:
-                    self.numatoms = int(line.split()[0])
-                elif count == 1:
-                    if readchargemult is True:
-                        if self.printlevel >= 2:
-                            print("Reading charge/mult from file header.")
-                        try:
-                            self.charge = int(line.split()[0])
-                            self.mult = int(line.split()[1])
-                        except ValueError:
-                            print(f"Error: XYZ-file {filename} does not have a valid charge/mult in 2nd-line of header:")
-                            print("Line:", line)
-                            ashexit()
-                elif count > 1:
-                    if len(line) > 3:
-                        # Grabbing element and reformatting
-                        if isint(line.split()[0]) is True:
-                            # Grabbing element as atomnumber and reformatting
-                            # el=dictionaries_lists.element_dict_atnum[int(line.split()[0])].symbol
-                            el = reformat_element(int(line.split()[0]), isatomnum=True)
-                            self.elems.append(el)
-                        else:
-                            el = line.split()[0]
-                            self.elems.append(reformat_element(el))
-                        # self.coords = np.append(self.coords,[float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-                        coords.append([float(line.split()[1]), float(line.split()[2]), float(line.split()[3])])
-        # Convert to numpy
+        if readchargemult is True:
+            elems, coords, charge, mult = read_xyzfile(filename, printlevel=self.printlevel,
+                                                       readchargemult=True)
+            self.charge = charge
+            self.mult = mult
+        else:
+            elems, coords = read_xyzfile(filename, printlevel=self.printlevel)
+        self.elems = elems
         self.coords = reformat_list_to_array(coords)
-        if self.numatoms != len(self.coords):
-            print("Number of atoms in header not equal to number of coordinate-lines. Check XYZ file!")
-            ashexit()
+        self.numatoms = len(self.coords)
 
 
     def set_energy(self, energy):
@@ -1071,8 +1060,6 @@ class Fragment:
                     if 'Fragment:' not in line:
                         print("This is not a valid ASH fragment file. Exiting.")
                         ashexit()
-                if 'Num atoms:' in line:
-                    numatoms = int(line.split()[-1])
                 if 'charge :' in line:
                     self.charge=int(line.split()[-1])
                 if 'mult :' in line:
@@ -1764,7 +1751,6 @@ def get_molecule_members_loop_np2(coords, elems, loopnumber, scale, tol, atomind
     if membs is None:
         membs = []
         membs.append(atomindex)
-        timestampA = time.time()
         membs = get_connected_atoms_np(coords, elems, scale, tol, atomindex)
         # ash.print_time_rel(timestampA, modulename='membs first py')
 
@@ -1869,14 +1855,18 @@ def create_coords_string(elems, coords):
 
 
 # Takes list of elements and gives formula
-def elemlisttoformula(list):
-    # This dict comprehension was slow for large systems. Using set to reduce iterations
-    elemdict = {i: list.count(i) for i in set(list)}
+def elemlisttoformula(elemlist):
+    """Convert a list of elements into a molecular-formula string, e.g. ['H','F'] -> 'H1F1'.
+
+    Elements appear in the order they first occur in elemlist. Note: iterating over a set
+    here (as was done previously) makes the formula depend on the Python hash seed, i.e.
+    the same system could give either 'H1F1' or 'F1H1' from run to run.
+    """
+    # dict.fromkeys gives the unique elements in first-appearance order (and keeps the
+    # number of count() calls down for large systems)
+    elemdict = {el: elemlist.count(el) for el in dict.fromkeys(elemlist)}
     formula = ""
-    for item in elemdict.items():
-        el = item[0]
-        count = item[1]
-        # string=el+str(count)
+    for el, count in elemdict.items():
         formula = formula + el + str(count)
     return formula
 
@@ -1921,28 +1911,48 @@ def molformulatolist(formulastring):
 
 
 # Read XYZ file
-def read_xyzfile(filename,printlevel=2):
-    # Will accept atom-numbers as well as symbols
-    elements = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
-                'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
-                'Rb',
-                'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe',
-                'Cs',
-                'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf',
-                'Ta',
-                'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac', 'Th',
-                'Pa',
-                'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr']
+def read_xyzfile(filename,printlevel=2,readchargemult=False):
+    """Read an XYZ-file. Accepts both element symbols and atom-numbers.
+
+    Args:
+        filename (str): XYZ-file to read.
+        printlevel (int): ASH printlevel.
+        readchargemult (bool): also read charge and multiplicity from the
+            title-line (2nd line) of the file.
+
+    Returns:
+        (elems, coords) or, if readchargemult is True, (elems, coords, charge, mult).
+    """
     if printlevel >= 2:
         print("Reading coordinates from XYZ file '{}'.".format(filename))
     coords = []
     elems = []
+    charge = None
+    mult = None
     with open(filename) as f:
         for count, line in enumerate(f):
             if count == 0:
                 numatoms = int(line.split()[0])
+            if count == 1 and readchargemult is True:
+                if printlevel >= 2:
+                    print("Reading charge/mult from file header.")
+                try:
+                    charge = int(line.split()[0])
+                    mult = int(line.split()[1])
+                except (ValueError, IndexError):
+                    print(BC.FAIL,f"Error: XYZ-file {filename} does not have a valid charge/mult in the 2nd line of the header:",BC.END)
+                    print("Line:", line)
+                    ashexit()
             if count > 1:
                 if len(line.strip()) > 0:
+                    #A coordinate line must have an element and 3 coordinates. A multi-frame
+                    #trajectory file, for example, has a bare atomcount line here
+                    if len(line.split()) < 4:
+                        print(BC.FAIL,f"Error: line {count+1} of XYZ-file {filename} is not a valid atom-line (element and x,y,z expected):",BC.END)
+                        print("Line:", line.rstrip())
+                        print("Note: multi-frame/trajectory XYZ-files cannot be read as a single fragment.")
+                        print("Use split_multimolxyzfile or get_molecules_from_trajectory for those.")
+                        ashexit()
                     if isint(line.split()[0]) is True:
                         # Grabbing element as atomnumber and reformatting
                         # el=dictionaries_lists.element_dict_atnum[int(line.split()[0])].symbol
@@ -1959,6 +1969,8 @@ def read_xyzfile(filename,printlevel=2):
     if len(coords) != len(elems):
         print("Number of coordinates does not match elements. Something wrong with XYZ-file?: ", filename)
         ashexit()
+    if readchargemult is True:
+        return elems, coords, charge, mult
     return elems, coords
 
 #Read all XYZ-files from directory
@@ -2272,7 +2284,6 @@ def read_gromacsfile(grofile):
     elems = []
     coords = []
     # TODO: Change coords to numpy array instead
-    grabcoords = False
     numatoms = "unset"
     box_dims = None
     with open(grofile) as cfile:
@@ -2325,7 +2336,6 @@ def read_ambercoordinates(prmtopfile=None, inpcrdfile=None):
     elems = []
     coords = []
     # TODO: Change coords to numpy array instead
-    grabcoords = False
     numatoms = "unset"
     box_dims=[]
     with open(inpcrdfile) as cfile:
@@ -2518,7 +2528,6 @@ def nucchargexyz(file):
 # Calculate total nuclear charge from list of elements
 def nucchargelist(ellist):
     totnuccharge = 0
-    els = []
     warning_issued=False
     for e in ellist:
         try:
@@ -2877,7 +2886,6 @@ def coord2xyz(inputfile):
         x = []
         y = []
         z = []
-        atom = []
         for line in coord[1:-1]:
             x=float(line.split()[0]) * ash.constants.bohr2ang
             y=float(line.split()[1]) * ash.constants.bohr2ang
@@ -3288,7 +3296,6 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
     if fragment is None or initial_atoms is None or radius is None:
         print("Provide fragment, initial_atoms and radius keyword arguments to QMregionfragexpand!")
         ashexit()
-    subsetelems = [fragment.elems[i] for i in initial_atoms]
     # subsetcoords=[fragment.coords[i]for i in initial_atoms ]
     subsetcoords = np.take(fragment.coords, initial_atoms, axis=0)
     if len(fragment.connectivity) == 0:
@@ -3296,9 +3303,7 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
     atomlist = []
 
     for i, c in enumerate(subsetcoords):
-        el = subsetelems[i]
         for index, allc in enumerate(fragment.coords):
-            all_el = fragment.elems[index]
             if index >= len(subsetcoords):
                 dist = distance(c, allc)
                 if dist < radius:
@@ -3318,7 +3323,6 @@ def QMregionfragexpand(fragment=None, initial_atoms=None, radius=None):
                                 wholemol = q
                                 break
 
-                    elematoms = [fragment.elems[i] for i in wholemol]
                     atomlist = atomlist + wholemol
     atomlist = np.unique(atomlist).tolist()
     return atomlist
@@ -3481,7 +3485,6 @@ def get_boundary_atoms(qmatoms, coords, elems, scale, tol, excludeboundaryatomli
 # Using linkatom distance of 1.09 Å for now as default. Makes sense for C-H link atoms.
 def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom_method='simple', linkatom_type='H',
                            linkatom_simple_distance=None, bondpairs_eq_dict=None, linkatom_ratio=0.723):
-    timeA = time.time()
     print("Inside get_linkatom_positions")
     print("linkatom_type:", linkatom_type)
     print("linkatom_method:", linkatom_method)
@@ -3491,7 +3494,11 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
     else:
         print("linkatom_simple_distance was set by user:", linkatom_simple_distance)
     #Dict of linkatom distances for different elements
-    linkdistances_dict = {('C', 'H'): 1.09, ('O', 'H'): 0.98, ('N', 'H'): 0.99}
+    linkdistances_dict = {('B', 'H'): 1.19, ('C', 'H'): 1.09, ('N', 'H'): 0.99, ('O', 'H'): 0.98, 
+                          ('Al', 'H'): 1.65, ('Si', 'H'): 1.48, ('P', 'H'): 1.42, ('S', 'H'): 1.34,
+                          ('Ga', 'H'): 1.66, ('Ge', 'H'): 1.53, ('As', 'H'): 1.52, ('Se', 'H'): 1.46,
+                          ('Fe','H'): 1.59}
+
     print("Linkatom distance dictionary:", linkdistances_dict)
     # If dictionary of linkatom-distances provided then use that instead
     if linkatom_method == 'ratio':
@@ -3525,7 +3532,6 @@ def get_linkatom_positions(qm_mm_boundary_dict, qmatoms, coords, elems, linkatom
                     print("Determined ratio:", linkatom_ratio)
                     print("not yet ready")
                     ashexit()
-                r_QM1_MM1 = distance(qmatom_coords, mmatom_coords)
                 # See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9314059/
                 linkatom_coords = linkatom_ratio *(mmatom_coords - qmatom_coords) + qmatom_coords
                 #linkatom_distance =  r_QM1_MM1 * (bondpairs_eq_dict[(elems[dict_item[0]], 'H')] / bondpairs_eq_dict[(elems[dict_item[0]], elems[dict_item[1]])])
@@ -3645,7 +3651,7 @@ writepdb new-system.pdb
         f.write(psf_script)
 
     # Running PSFgen. Writing to stdout
-    process = sp.run([psfgendir + '/psfgen', 'psfinput.tcl'])
+    sp.run([psfgendir + '/psfgen', 'psfinput.tcl'])
 
 
 def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, atomindices=None, psfgendir=None,
@@ -3673,8 +3679,6 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     print("")
     # Deleting element and coords for each atom index
     atomindices.sort(reverse=True)
-    lowest_atomindex = atomindices[-1]
-    highest_atomindex = atomindices[0]
     for atomindex in atomindices:
         fragment.delete_atom(atomindex)
     print("")
@@ -3718,6 +3722,41 @@ def remove_atoms_from_system_CHARMM(fragment=None, psffile=None, topfile=None, a
     print("remove_atoms_from_system_CHARMM: Done!")
 
 
+# Read the segment names that are already present in a PSF-file (field 2 of each
+# line in the !NATOM block)
+def get_segment_names_from_PSF(psffile):
+    segnames = []
+    with open(psffile) as f:
+        inside_atomblock = False
+        numatoms = 0
+        for line in f:
+            if '!NATOM' in line:
+                inside_atomblock = True
+                numatoms = int(line.split()[0])
+                continue
+            if inside_atomblock:
+                if len(segnames) == numatoms:
+                    break
+                linesplit = line.split()
+                # Blank line or a new section header ends the atom block
+                if len(linesplit) < 2 or line.lstrip().startswith('!') or '!' in line:
+                    break
+                segnames.append(linesplit[1])
+    # Order-preserving unique list
+    return list(dict.fromkeys(segnames))
+
+
+# Find a segment name not already used in the PSF-file: ADD1, ADD2, etc.
+# A segment name that already exists in the PSF would make psfgen fail, so a
+# random name is not safe here
+def find_free_segment_name(psffile, prefix="ADD"):
+    existing = get_segment_names_from_PSF(psffile)
+    index = 1
+    while prefix + str(index) in existing:
+        index += 1
+    return prefix + str(index)
+
+
 def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, num_added_atoms=None):
     print("Finding resgroup {} in topfile {} ".format(resgroup, topfile))
     # Checking if resgroup present in topfile
@@ -3750,12 +3789,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
         ashexit()
 
     # Dummy segmentname. Can't be something existing. Using ADD1, ADD2 etc.
-    import random
-    import string
-    dummysegname="AD" + random.choice(string.ascii_uppercase) + str(random.randint(0, 9))
-    #matches = pygrep2(dummysegname, psffile)
-    #segname = dummysegname + str(len(matches) + 1)
-    #print("segname:", segname)
+    dummysegname = find_free_segment_name(psffile)
     print("dummysegname:", dummysegname)
     psf_script = """
     topology {}
@@ -3774,7 +3808,7 @@ def add_atoms_to_PSF(resgroup=None, topfile=None, psffile=None, psfgendir=None, 
         f.write(psf_script)
 
     # Running PSFgen. Writing to stdout
-    process = sp.run([psfgendir + '/psfgen', 'psfinput.tcl'])
+    sp.run([psfgendir + '/psfgen', 'psfinput.tcl'])
 
     return
 
@@ -3860,7 +3894,6 @@ def getwaterconstraintslist(openmmtheoryobject=None, atomlist=None, watermodel='
         print("unknown watermodel")
         ashexit()
 
-    atomtypes=openmmtheoryobject.atomtypes
     resnames=openmmtheoryobject.resnames
     elements=openmmtheoryobject.mm_elements
 

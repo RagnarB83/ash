@@ -4,7 +4,7 @@ import shutil
 import time
 import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader, grab_version_from_output
 import ash.settings_ash
 
 # Very basic interface to Gaussian.
@@ -130,6 +130,12 @@ class GaussianTheory:
         # Run Gaussian
         print(self.gauss_executable)
         run_Gaussian(self.gaussiandir,gauss_exe=self.gauss_executable, filename=self.filename, file_extension=self.file_extension)
+
+        gaussian_version = grab_version_from_output(
+            self.filename + '.log', r"(Gaussian\s+(?:09|16):.*?Rev[A-Z]\.\d+)"
+        )
+        if gaussian_version is not None:
+            print(f"Gaussian version: {gaussian_version}")
 
         # Grab energy
         self.energy_dict=grab_energy_gaussian(self.filename+'.log')

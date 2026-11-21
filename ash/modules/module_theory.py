@@ -341,4 +341,6 @@ class MicroIterativeclass:
         if Grad:
             return self.energy, self.gradient
         else:
-            return self.energy,
+            #NOTE: must return the energy itself, not a 1-element tuple, like all other
+            #ASH theory run-methods do
+            return self.energy

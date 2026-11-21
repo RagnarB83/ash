@@ -1,4 +1,13 @@
 from ash import *
+from ash.interfaces.interface_OpenMM import OpenMM_MDclass
+import pytest
+
+
+def test_openmm_md_rejects_unknown_trajectory_option():
+    # Validate before dereferencing the fragment or theory, so this test needs
+    # no OpenMM system construction and cannot launch an MD simulation.
+    with pytest.raises(SystemExit):
+        OpenMM_MDclass(fragment=None, theory=None, trajectory_file_option="NetCDF")
 
 
 #Read solvated PDB-file, create OpenMMTheory job and run MM singlepoint

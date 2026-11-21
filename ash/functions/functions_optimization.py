@@ -559,12 +559,25 @@ def periodic_optimizer_alternating(fragment=None, theory=None, rate=0.5, maxiter
         print("new_cartesian_coords:", new_cart_coords)
         fragment.coords=new_cart_coords
 
-# Cartesian-based periodic cell optimizer
+# Cartesian-based molecule/periodic  optimizer
+
+# For possible internal coordinates
+class InternalCoords:
+    def __init__(self, elems, coords_ang):
+        from geometric.molecule import Molecule
+        from geometric.internal import DelocalizedInternalCoordinates
+        M = Molecule(); M.elem = list(elems); M.xyzs = [np.array(coords_ang, float)]
+        M.build_topology()
+        self.IC = DelocalizedInternalCoordinates(M, build=True, connect=False, addcart=False)
+
+    def grad_to_q(self, x, gx):   return np.array(self.IC.calcGrad(x, gx)).flatten()
+    def diff(self, x1, x0):       return np.array(self.IC.calcDiff(x1, x0)).flatten()   # handles torsion wrap
+    def q_step_to_x(self, x, dq): return np.array(self.IC.newCartesian(x, dq, verbose=0)).flatten()
 
 # Wrapper function around Cart_optimizer_class
 def Cart_optimizer(fragment=None, theory=None, rate=2.0, 
                                 scaling_rate_cell=1.0, maxiter=50, 
-                                step_algo="bfgs",
+                                step_algo="bfgs", coordsys='cart', max_step_internal=0.3,
                                 max_step=0.25, momentum=0.5, constrain_method='soft',
                                 printlevel=2, conv_criteria=None, PBC_format_option="CIF",
                                 constraints=None, frozen_atoms=None, result_write_to_disk=True,
@@ -579,7 +592,7 @@ def Cart_optimizer(fragment=None, theory=None, rate=2.0,
         print("Cart_optimizer requires theory and fragment objects provided. Exiting.")
         ashexit()
     optimizer=Cart_optimizer_class(fragment=fragment, theory=theory, rate=rate, scaling_rate_cell=scaling_rate_cell, 
-                                            maxiter=maxiter, step_algo=step_algo,
+                                            maxiter=maxiter, step_algo=step_algo, coordsys=coordsys, max_step_internal=max_step_internal,
                                             max_step=max_step, momentum=momentum, PBC_format_option=PBC_format_option,
                                             constrain_method=constrain_method,
                                             printlevel=printlevel, conv_criteria=conv_criteria, constraints=constraints, 
@@ -595,7 +608,8 @@ def Cart_optimizer(fragment=None, theory=None, rate=2.0,
 
 class Cart_optimizer_class:
 
-    def __init__(self,fragment=None, theory=None, rate=2.0, scaling_rate_cell=1.0, maxiter=50, step_algo="bfgs",
+    def __init__(self,fragment=None, theory=None, rate=2.0, scaling_rate_cell=1.0, maxiter=50, step_algo="bfgs", 
+                                coordsys='cart', max_step_internal=0.3,
                                 max_step=0.25, momentum=0.5, printlevel=2, conv_criteria=None, print_atoms_list=None,
                                 PBC_format_option="CIF", constraints=None, constrain_method='soft',
                                 frozen_atoms=None, result_write_to_disk=True,
@@ -608,6 +622,8 @@ class Cart_optimizer_class:
         self.scaling_rate_cell = scaling_rate_cell
         self.maxiter = maxiter
         self.step_algo=step_algo
+        self.coordsys=coordsys
+
         self.max_step=max_step
         self.momentum=momentum
         self.printlevel=printlevel
@@ -621,6 +637,16 @@ class Cart_optimizer_class:
         self.kf_bonds = kf_bonds
         self.kf_angles = kf_angles
         self.kf_dihedrals = kf_dihedrals
+
+        # Coordinate system: 'cart' (default) or 'tric' (geomeTRIC TRIC internal coordinates)
+        self.coordsys = coordsys.lower()
+        if self.coordsys not in ('cart', 'tric'):
+            print(f"Unknown coordsys '{coordsys}'. Use 'cart' or 'tric'")
+            ashexit()
+        # Max step in internal space (largest |dq| component, mixed Bohr/radian)
+        self.max_step_internal = max_step_internal
+        self.ICs = None
+
         # Frozen atoms
         self.frozen_atoms = frozen_atoms if frozen_atoms is not None else []
         if self.frozen_atoms:
@@ -646,6 +672,9 @@ class Cart_optimizer_class:
         print("Constraints:", self.constraints)
         for con in self.constraints:
             print("con:",con)
+        print("Coordinate system:", self.coordsys)
+        if self.coordsys == 'tric':
+            print("Max internal step (Bohr/rad):", self.max_step_internal)
         print("Constrain method:", self.constrain_method)
         print("Constraint force constants:")
         print(f"  Bonds: {self.kf_bonds} Eh/Bohr^2")
@@ -672,6 +701,7 @@ class Cart_optimizer_class:
         #---- NON-PERIODIC -----
         else:
             print("Theory object is not periodic.")
+
 
     def setup_PBC(self):
         # Align to standard orientation
@@ -1065,7 +1095,10 @@ class Cart_optimizer_class:
             return -(self.rate * g).reshape(current_grad.shape)
 
         # 2. COMPUTE DIFFERENCES
-        s = x - self.x_old  # Change in coordinates
+        if self.ICs is not None:
+            s = self.ICs.diff(x, self.x_old)
+        else:
+            s = x - self.x_old  # Change in coordinates
         y = g - self.g_old  # Change in gradient
 
         # 3. UPDATE INVERSE HESSIAN (Sherman-Morrison-Woodbury formula)
@@ -1158,6 +1191,9 @@ class Cart_optimizer_class:
 
     def compute_step(self,gradient,currcoords):
 
+        if self.velocity is None or self.velocity.shape != gradient.shape:
+            self.velocity = np.zeros_like(gradient)
+
         if self.PBC:
             # 1. Separate rates for Atoms vs Cell (Preconditioning)
             # Often the cell needs a rate ~10x smaller than atoms in Cartesian space
@@ -1242,6 +1278,8 @@ class Cart_optimizer_class:
 
         self.charge, self.mult = check_charge_mult(charge, mult, self.theory.theorytype, self.fragment, 
                                          "CartOptimizer", theory=self.theory, printlevel=self.printlevel)
+
+
         # Defining coordinates to use, PBC vs. non-PBC
         if self.PBC:
             print("Cart_optimizer: Running periodic optimization in Cartesian coordinates with cell optimization")
@@ -1257,8 +1295,21 @@ class Cart_optimizer_class:
             currcoords = self.fragment.coords
             opt_type_label="NonPBC"
 
+        # Change to internal coordinates if requested
+        # Internal coordinates (TRIC via geomeTRIC)
+        self.ICs = None
+        if self.coordsys == 'tric':
+            cartesian_keys = ['xyz', 'x', 'y', 'z', 'xy', 'yz', 'xz']
+            has_cart_con = isinstance(self.constraints, dict) and any(k in self.constraints for k in cartesian_keys)
+            if self.PBC or self.frozen_atoms or has_cart_con:
+                print("Error: coordsys='tric' does not yet support PBC, frozen_atoms or Cartesian (x/y/z/xyz) constraints. Use coordsys='cart'.")
+                ashexit()
+            print("Setting up TRIC internal coordinates (geomeTRIC)")
+            self.ICs = InternalCoords(self.elems_phys, self.fragment.coords)
+
         # Initialize velocity for momentum-based step algorithms
-        self.velocity = np.zeros((len(currcoords),3))
+        #self.velocity = np.zeros((len(currcoords),3))
+        self.velocity = None
 
         for file in ["Fragment-currentgeo.xyz", "PBC_opt_traj.xyz", "NonPBC_opt_traj.xyz"]:
             try:
@@ -1307,6 +1358,12 @@ class Cart_optimizer_class:
             else:
                 energy, supergradient = self.calculate_reg_gradient(currcoords)
                 prev_supgrad = supergradient.copy()
+
+            # For ICs: Initialize velocity properly in 1st step
+            #if iteration == 0 and self.ICs is not None:
+            #    x  = currcoords_au.flatten()
+            #    self.velocity = np.zeros_like(self.ICs.grad_to_q(x, supergradient.flatten()))
+            
             #print("Cart_opt: time until after e+g step:", time.time()-self.run_init_time, "seconds")
             # 1b. Apply all constraints
             self.all_cartesian_constraints={}
@@ -1440,26 +1497,52 @@ class Cart_optimizer_class:
             # 3. Take step
             #########################################
             # Compute step
-            #print("Cart_opt: time until before  compute step:", time.time()-self.run_init_time, "seconds")
-            delta_au = self.compute_step(supergradient, currcoords)
-            print_if_level(f"Computed step: {delta_au}", self.printlevel,2)
+            if self.ICs is None:
+                # ---- Cartesian step (unchanged) ----
+                delta_au = self.compute_step(supergradient, currcoords)
+                print_if_level(f"Computed step: {delta_au}", self.printlevel,2)
 
-            if self.PBC:
-                # Separate check for the lattice part (last 3 rows of delta_au)
-                lattice_step = delta_au[-3:]
-                if np.max(np.abs(lattice_step)) > (0.05 * self.ang2bohr): # Cap lattice at 0.05 Å
-                    scale_latt = (0.05 * self.ang2bohr) / np.max(np.abs(lattice_step))
-                    delta_au[-3:] *= scale_latt
-                    print_if_level(f"Lattice-specific scaling applied: {scale_latt:.3f}", self.printlevel,2)
+                if self.PBC:
+                    # Separate check for the lattice part (last 3 rows of delta_au)
+                    lattice_step = delta_au[-3:]
+                    if np.max(np.abs(lattice_step)) > (0.05 * self.ang2bohr): # Cap lattice at 0.05 Å
+                        scale_latt = (0.05 * self.ang2bohr) / np.max(np.abs(lattice_step))
+                        delta_au[-3:] *= scale_latt
+                        print_if_level(f"Lattice-specific scaling applied: {scale_latt:.3f}", self.printlevel,2)
 
-            # Scale down step if required
-            if np.max(np.abs(delta_au)) > self.max_step_au:
-                print_if_level(f"Step scale down:  {np.max(np.abs(delta_au))}  > max_step_au: {self.max_step_au})", self.printlevel,2)
-                delta_au = delta_au * (self.max_step_au / np.max(np.abs(delta_au)))
-            print_if_level(f"Actual step: {delta_au}", self.printlevel,2)
+                # Scale down step if required
+                if np.max(np.abs(delta_au)) > self.max_step_au:
+                    print_if_level(f"Step scale down:  {np.max(np.abs(delta_au))}  > max_step_au: {self.max_step_au})", self.printlevel,2)
+                    delta_au = delta_au * (self.max_step_au / np.max(np.abs(delta_au)))
+                print_if_level(f"Actual step: {delta_au}", self.printlevel,2)
 
-            # Take the step
-            currcoords_au += delta_au
+                # Take the step
+                currcoords_au += delta_au
+            else:
+                # ---- Internal-coordinate (TRIC) step ----
+                x = currcoords_au.flatten()                          # Bohr
+                gq = self.ICs.grad_to_q(x, supergradient.flatten())  # gradient in internal space
+                dq = self.compute_step(gq, x)                        # same algorithms, now in q-space
+                dqmax = np.max(np.abs(dq))
+                if dqmax > self.max_step_internal:
+                    print_if_level(f"Internal step scale down: {dqmax} > {self.max_step_internal}", self.printlevel,2)
+                    dq = dq * (self.max_step_internal / dqmax)
+                # Back-transform. If it fails or moves atoms too far: halve step, reset BFGS and retry
+                for attempt in range(6):
+                    x_new = self.ICs.q_step_to_x(x, dq)
+                    disp = np.max(np.abs(x_new - x))
+                    if not self.ICs.IC.bork and disp <= self.max_step_au:
+                        break
+                    print_if_level(f"Back-transformation problem (bork={self.ICs.IC.bork}, max disp={disp:.3f} Bohr). Halving step", self.printlevel,1)
+                    dq = dq * 0.5
+                    self.Hess_inv = None
+                    self.velocity = None
+                else:
+                    print("Warning: could not obtain a good back-transformation after 6 attempts")
+                currcoords_au = x_new.reshape(-1, 3)
+
+
+
             print_if_level(f"Cart_opt: time until after step: {time.time()-self.run_init_time} seconds", self.printlevel,2)
             # Converting coordinates from Bohr to Angstrom
             currcoords = currcoords_au / self.ang2bohr
