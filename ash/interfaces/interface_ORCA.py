@@ -1896,8 +1896,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             if i in extrabasisatoms:
                 orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))
             #Atom-specific basis-dict option (new basis set definition for each atom)
-            elif atom_specific_basis_dict is not None:
-                print("Writing atom-specific basis for atom:", i)
+            elif atom_specific_basis_dict is not None and (el,i) in atom_specific_basis_dict:
                 #Regular line
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
                 for bline in atom_specific_basis_dict[(el,i)]:
@@ -1975,8 +1974,7 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             if i in extrabasisatoms:
                 orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))
             #Atom-specific basis-dict option (new basis set definition for each atom)
-            elif atom_specific_basis_dict is not None:
-                print("Writing atom-specific basis for atom:", i)
+            elif atom_specific_basis_dict is not None and (el,i) in atom_specific_basis_dict:
                 #Regular line
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
                 for bline in atom_specific_basis_dict[(el,i)]:
