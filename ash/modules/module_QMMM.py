@@ -19,7 +19,8 @@ class QMMMTheory:
                 qm_charge=None, qm_mult=None, chargeboundary_method="shift", exit_after_customexternalforce_update=False,
                 dipole_correction=True, linkatom_method='simple', linkatom_simple_distance=None,
                 linkatom_ratio=0.723, linkatom_type='H',
-                update_QMregion_charges=False, dipole_shift=0.15):
+                update_QMregion_charges=False, dipole_shift=0.15,
+                drude_scf_tolerance=1.0e-5, drude_scf_maxiter=100):
 
         module_init_time = time.time()
         timeA = time.time()
@@ -199,6 +200,20 @@ class QMMMTheory:
         # Turn off for charge-shifting
         self.dipole_correction=dipole_correction
         self.dipole_shift=dipole_shift # Default shift 
+        self.drude_scf_tolerance = drude_scf_tolerance
+        self.drude_scf_maxiter = drude_scf_maxiter
+        if (not np.isfinite(self.drude_scf_tolerance) or self.drude_scf_tolerance <= 0
+                or not isinstance(self.drude_scf_maxiter, (int, np.integer))
+                or isinstance(self.drude_scf_maxiter, bool) or self.drude_scf_maxiter < 1):
+            raise ValueError("drude_scf_tolerance and drude_scf_maxiter must be positive")
+        self.drude_particle_indices = []
+        self.drude_site_indices = []
+        self.drude_parent_by_shell = {}
+        self.mm_point_site_indices = []
+        self.dipole_source_indices = []
+        self.dipole_target_indices = []
+        self.dipole_directions = []
+        self._drude_scf_coords = None
 
         # The RCD charge-boundary scheme replaces the charge-shift scheme and its dipole
         # correction, so dipole_correction has no effect when chargeboundary_method is rcd
@@ -253,6 +268,11 @@ class QMMMTheory:
         # self.charges_qmregionzeroed will have QM-charges zeroed (but not removed)
         self.charges_qmregionzeroed = []
 
+        # Discover Drude sites before detecting covalent QM/MM boundaries. A
+        # Drude shell is a point-charge degree of freedom, not a bonded atom.
+        if self.embedding.lower() == "polembed_drude":
+            self._prepare_drude_embedding()
+
         # Self.pointcharges are pointcharges that the QM-program will see (but not the MM program)
         # They have QM-atoms zeroed, zero-charges removed, dipole-charges added etc.
         # Defined later
@@ -291,7 +311,8 @@ class QMMMTheory:
             print("QM-region coordinates (before linkatoms):")
             ash.modules.module_coords.print_coords_for_atoms(self.coords, self.elems, self.qmatoms, labels=self.qmatoms)
             print()
-            self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.qmatoms, self.coords, self.elems, conn_scale,
+            boundary_coords = self._coords_for_boundary_detection(self.coords)
+            self.boundaryatoms = ash.modules.module_coords.get_boundary_atoms(self.qmatoms, boundary_coords, self.elems, conn_scale,
                 conn_tolerance, excludeboundaryatomlist=self.excludeboundaryatomlist, unusualboundary=self.unusualboundary)
             if len(self.boundaryatoms) >0:
                 print("Found covalent QM-MM boundary. Linkatoms option set to True")
@@ -344,15 +365,10 @@ class QMMMTheory:
                     self.mm_theory.delete_exceptions(self.qmatoms)
 
             elif self.embedding.lower() == "polembed_drude":
-                print("Polembed Drude embedding enabled.")
-                print("This means that QM-atoms will be zeroed for QM-MM interactions calculated by QM program")
-                print("But MM program will have charged defined for QM-region")
-                print("Not implemented yet. Exiting")
-                ashexit()
+                print("Drude polarizable embedding enabled.")
                 self.ZeroQMCharges() #Modifies self.charges_qmregionzeroed
-                # Also removing QM-MM Coulomb interaction exceptions in OpenMM
                 if self.mm_theory_name == "OpenMMTheory":
-                    # Deleting Coulomb exception interactions involving QM and MM atoms
+                    self.mm_theory.update_charges(self.qmatoms, [0.0 for _ in self.qmatoms])
                     self.mm_theory.delete_exceptions(self.qmatoms)
             elif self.embedding.lower() == "pbcmm-elstat":
                 print("PBC Electrostatic embedding enabled.")
@@ -389,6 +405,14 @@ class QMMMTheory:
 
 
     # From QM1:MM1 boundary dict, get MM1:MMx boundary dict (atoms connected to MM1)
+    def _coords_for_boundary_detection(self, coords):
+        """Return coordinates with MM charge-only sites excluded from bonding."""
+        if self.embedding.lower() != "polembed_drude" or not self.mm_point_site_indices:
+            return coords
+        boundary_coords = np.array(coords, copy=True)
+        boundary_coords[self.mm_point_site_indices] = 1.0e9
+        return boundary_coords
+
     def get_MMboundary(self,scale,tol):
         timeA=time.time()
         # if boundarydict is not empty we need to zero MM1 charge and distribute charge from MM1 atom to MM2,MM3,MM4
@@ -397,14 +421,16 @@ class QMMMTheory:
         for (QM1atom,MM1atom) in self.boundaryatoms.items():
             if isinstance(MM1atom,list):
                 for mat in MM1atom:
-                    connatoms = ash.modules.module_coords.get_connected_atoms(self.coords, self.elems, scale,tol, mat)
+                    connatoms = ash.modules.module_coords.get_connected_atoms(
+                        self._coords_for_boundary_detection(self.coords), self.elems, scale, tol, mat)
                     #Deleting QM-atom from connatoms list
                     connatoms.remove(QM1atom)
                     self.MMboundarydict[mat] = connatoms
             # OLD: should never apply anymore, we always have a list
             # TODO: delete
             else:
-                connatoms = ash.modules.module_coords.get_connected_atoms(self.coords, self.elems, scale,tol, MM1atom)
+                connatoms = ash.modules.module_coords.get_connected_atoms(
+                    self._coords_for_boundary_detection(self.coords), self.elems, scale, tol, MM1atom)
                 # Deleting QM-atom from connatoms list
                 connatoms.remove(QM1atom)
                 self.MMboundarydict[MM1atom] = connatoms
@@ -556,17 +582,19 @@ class QMMMTheory:
         self.charges=np.array(self.charges)
 
         print_time_rel(timeA, modulename="x1", currprintlevel=self.printlevel, currthreshold=1)
-        # Extract charges for MM boundary atoms
-        MM1_charges = self.charges[self.MMboundary_indices]
-        # Set charges of MM boundary atoms to 0
-        self.pointcharges[self.MMboundary_indices] = 0.0
-
-        # Calculate charge fractions to distribute
-        MM1charge_fract = MM1_charges / self.MMboundary_counts
-
-        # Distribute charge fractions to neighboring MM atoms
-        for indices, fract in zip(self.MMboundarydict.values(), MM1charge_fract):
-            self.pointcharges[[indices]] += fract
+        for MM1, MMx in self.MMboundarydict.items():
+            # A CHARMM Drude shell is a separate charge at a displaced site.
+            # Shift it with its parent boundary atom, otherwise it can sit on
+            # the QM link atom and produce a singular point-charge field.
+            boundary_sites = [MM1]
+            if self.embedding.lower() == "polembed_drude":
+                boundary_sites.extend(
+                    shell for shell, parent in self.drude_parent_by_shell.items()
+                    if parent == MM1)
+            group_charge = float(np.sum(self.charges[boundary_sites]))
+            self.pointcharges[boundary_sites] = 0.0
+            fraction = group_charge / len(MMx)
+            self.pointcharges[list(MMx)] += fraction
 
         self.chargeshifting_done=True
         print_time_rel(timeA, modulename="ShiftMMCharges-new2", currprintlevel=self.printlevel, currthreshold=1)
@@ -609,20 +637,29 @@ class QMMMTheory:
         # Adding 2 dipole pointcharges for each MM2 atom
         self.dipole_charges = []
         self.dipole_coords = []
+        self.dipole_source_indices = []
+        self.dipole_target_indices = []
+        self.dipole_directions = []
 
 
         for MM1,MMx in self.MMboundarydict.items():
-            # Getting original MM1 charge (before set to 0)
-            MM1charge = self.charges[MM1]
-            MM1charge_fract=MM1charge/len(MMx)
-
-            for MM in MMx:
-                q_d1, pos_d1 = self.get_dipole_charge(MM1charge_fract,1,MM1,MM,current_coords, shift=self.dipole_shift)
-                q_d2, pos_d2 = self.get_dipole_charge(MM1charge_fract,-1,MM1,MM,current_coords, shift=self.dipole_shift)
-                self.dipole_charges.append(q_d1)
-                self.dipole_charges.append(q_d2)
-                self.dipole_coords.append(pos_d1)
-                self.dipole_coords.append(pos_d2)
+            boundary_sites = [MM1]
+            if self.embedding.lower() == "polembed_drude":
+                boundary_sites.extend(
+                    shell for shell, parent in self.drude_parent_by_shell.items()
+                    if parent == MM1)
+            for source in boundary_sites:
+                source_charge = self.charges[source] / len(MMx)
+                for MM in MMx:
+                    q_d1, pos_d1 = self.get_dipole_charge(source_charge, 1, source, MM,
+                                                          current_coords, shift=self.dipole_shift)
+                    q_d2, pos_d2 = self.get_dipole_charge(source_charge, -1, source, MM,
+                                                          current_coords, shift=self.dipole_shift)
+                    self.dipole_charges.extend((q_d1, q_d2))
+                    self.dipole_coords.extend((pos_d1, pos_d2))
+                    self.dipole_source_indices.extend((source, source))
+                    self.dipole_target_indices.extend((MM, MM))
+                    self.dipole_directions.extend((1, -1))
         print_time_rel(checkpoint, modulename='SetDipoleCharges', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
 
     # Reasonably efficient version (this dominates QM/MM gradient prepare)
@@ -645,14 +682,15 @@ class QMMMTheory:
                 extra = np.asarray(self.PCgradient)[num_realatoms:]
                 k = 0
                 if self.chargeboundary_method == "shift" and self.dipole_correction is True:
-                    # dipole charges: pos = x_MMx + c*(x_MMx - x_MM1),  c = direction*SHIFT/2.5
-                    for MM1, MMx in self.MMboundarydict.items():
-                        for MM in MMx:
-                            for direction in (1, -1):               # order used in SetDipoleCharges
-                                c = direction * self.dipole_shift / 2.5   #
-                                g = extra[k]; k += 1
-                                self.QM_PC_gradient[MM]  += (1.0 + c) * g
-                                self.QM_PC_gradient[MM1] += -c * g
+                    # Each site is x_target+c*(x_target-x_source). Explicit
+                    # source/target order also handles multiple Drude sources.
+                    for k, (source, target, direction) in enumerate(zip(
+                            self.dipole_source_indices, self.dipole_target_indices,
+                            self.dipole_directions)):
+                        c = direction * self.dipole_shift / 2.5
+                        g = extra[k]
+                        self.QM_PC_gradient[target] += (1.0 + c) * g
+                        self.QM_PC_gradient[source] += -c * g
                 elif self.chargeboundary_method == "rcd":
                     # RC sites: pos = (x_MM1 + x_MMx)/2
                     for MM1, MMx in self.MMboundarydict.items():
@@ -842,11 +880,169 @@ class QMMMTheory:
             return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
                 label=label, charge=charge, mult=mult)
         elif self.embedding.lower() == "polembed_drude":
-            return self.elstat_run(current_coords=current_coords, elems=elems, Grad=Grad, numcores=numcores, exit_after_customexternalforce_update=exit_after_customexternalforce_update,
-                label=label, charge=charge, mult=mult)
+            if self.openmm_externalforce is True or exit_after_customexternalforce_update is True:
+                raise NotImplementedError("Drude embedding cannot be combined with openmm_externalforce mode")
+            if self.TruncatedPC is True:
+                raise NotImplementedError("Drude embedding currently requires the full point-charge field")
+            return self.drude_scf_run(current_coords=current_coords, elems=elems, Grad=Grad,
+                numcores=numcores, label=label, charge=charge, mult=mult)
         else:
             print("Unknown embedding. Exiting")
             ashexit()
+
+    def _prepare_drude_embedding(self):
+        """Keep Drude oscillators in the MM environment and remove QM-site oscillators.
+
+        The QM electron density replaces the classical polarizability of QM atoms.
+        Drude particles attached to QM atoms therefore have to be disabled, while
+        the remaining MM Drudes are variationally relaxed against the QM/MM energy.
+        """
+        if self.mm_theory_name != "OpenMMTheory":
+            raise ValueError("embedding='drude' requires OpenMMTheory with a DrudeForce")
+
+        import openmm
+
+        system = self.mm_theory.system
+        force_indices = [i for i, force in enumerate(system.getForces())
+                         if isinstance(force, openmm.DrudeForce)]
+        if not force_indices:
+            raise ValueError("embedding='drude' requires an OpenMM system containing DrudeForce")
+
+        qm_atoms = set(self.qmatoms)
+        active_drudes = []
+        qm_polarization_sites = []
+        all_drude_sites = set()
+        for force_index in sorted(force_indices, reverse=True):
+            force = system.getForce(force_index)
+            particles = [force.getParticleParameters(i) for i in range(force.getNumParticles())]
+            shell_indices = {int(parameters[0]) for parameters in particles}
+            all_drude_sites.update(shell_indices)
+            qm_shells = shell_indices.intersection(qm_atoms)
+            if qm_shells:
+                raise ValueError(
+                    "qmatoms must contain physical atoms, not Drude particles; "
+                    f"found Drude indices in qmatoms: {sorted(qm_shells)}")
+            excluded = {int(parameters[0]) for parameters in particles
+                        if int(parameters[1]) in qm_atoms}
+            qm_polarization_sites.extend(sorted(excluded))
+            active_drudes.extend(int(parameters[0]) for parameters in particles
+                                 if int(parameters[0]) not in excluded)
+            for parameters in particles:
+                shell_index = int(parameters[0])
+                if shell_index not in excluded:
+                    self.drude_parent_by_shell[shell_index] = int(parameters[1])
+            if not excluded:
+                continue
+
+            # Rebuild the DrudeForce without oscillators whose parent is in the QM
+            # region; retaining those would count classical QM-site polarization
+            # in addition to the QM electronic response.
+            replacement = openmm.DrudeForce()
+            replacement.setName(force.getName())
+            replacement.setForceGroup(force.getForceGroup())
+            replacement.setUsesPeriodicBoundaryConditions(force.usesPeriodicBoundaryConditions())
+            kept_drudes = set()
+            for parameters in particles:
+                if int(parameters[0]) not in excluded:
+                    replacement.addParticle(*parameters)
+                    kept_drudes.add(int(parameters[0]))
+            for pair_index in range(force.getNumScreenedPairs()):
+                p1, p2, thole = force.getScreenedPairParameters(pair_index)
+                if int(p1) in kept_drudes and int(p2) in kept_drudes:
+                    replacement.addScreenedPair(p1, p2, thole)
+
+            system.removeForce(force_index)
+            if kept_drudes:
+                system.addForce(replacement)
+
+        # Virtual lone-pair sites attached to QM atoms also represent classical
+        # polarization and must be removed along with the QM Drude oscillators.
+        qm_virtual_sites = []
+        for atom_index in range(system.getNumParticles()):
+            if not system.isVirtualSite(atom_index):
+                continue
+            virtual_site = system.getVirtualSite(atom_index)
+            parent_indices = [virtual_site.getParticle(i)
+                              for i in range(virtual_site.getNumParticles())]
+            if qm_atoms.intersection(parent_indices):
+                qm_virtual_sites.append(atom_index)
+        qm_polarization_sites.extend(qm_virtual_sites)
+
+        qm_polarization_sites = sorted(set(qm_polarization_sites))
+        if qm_polarization_sites:
+            self.mm_theory.update_charges(qm_polarization_sites,
+                                          [0.0] * len(qm_polarization_sites))
+            self.mm_theory.delete_exceptions(qm_polarization_sites)
+            for atom_index in qm_polarization_sites:
+                self.charges[atom_index] = 0.0
+
+        self.drude_particle_indices = sorted(set(active_drudes))
+        self.drude_site_indices = sorted(all_drude_sites)
+        virtual_site_indices = {index for index in range(system.getNumParticles())
+                                if system.isVirtualSite(index)}
+        self.mm_point_site_indices = sorted(all_drude_sites.union(virtual_site_indices))
+        if not self.drude_particle_indices:
+            raise ValueError("embedding='drude' found no Drude particles in the MM region")
+
+    def drude_scf_run(self, current_coords=None, elems=None, Grad=False, numcores=1,
+                      label=None, charge=None, mult=None):
+        """Relax MM Drude coordinates to self-consistency with the QM/MM energy."""
+        from scipy.optimize import minimize
+
+        if current_coords is None:
+            current_coords = self.fragment.coords
+        current_coords = np.array(current_coords, dtype=float, copy=True)
+        drude_indices = np.asarray(self.drude_particle_indices, dtype=int)
+        bohr_per_angstrom = 1.8897261254578281
+
+        if (self._drude_scf_coords is None
+                or not np.array_equal(current_coords[drude_indices],
+                                      self.fragment.coords[drude_indices])):
+            initial = current_coords[drude_indices] * bohr_per_angstrom
+        else:
+            initial = self._drude_scf_coords.copy()
+
+        last = {}
+
+        def objective(drude_coords_bohr):
+            trial_coords = current_coords.copy()
+            trial_coords[drude_indices] = drude_coords_bohr.reshape((-1, 3)) / bohr_per_angstrom
+            energy, gradient = self.elstat_run(
+                current_coords=trial_coords, elems=elems, Grad=True, numcores=numcores,
+                label=label, charge=charge, mult=mult)
+            last["energy"] = energy
+            last["gradient"] = gradient
+            return energy, gradient[drude_indices].reshape(-1)
+
+        result = minimize(objective, initial.reshape(-1), jac=True, method="L-BFGS-B",
+                          options={"maxiter": self.drude_scf_maxiter,
+                                   "gtol": self.drude_scf_tolerance,
+                                   "ftol": 1.0e-15, "maxls": 40})
+        objective(result.x)
+        # L-BFGS-B can stop on relative energy change with a small but nonzero
+        # force. Validate the actual Drude gradient instead of trusting success.
+        if "gradient" not in last:
+            raise RuntimeError("Drude self-consistent optimization did not evaluate the energy")
+        residual = np.max(np.abs(last["gradient"][drude_indices]))
+        if residual > self.drude_scf_tolerance:
+            raise RuntimeError(
+                "Drude self-consistent optimization did not converge: "
+                f"max |gradient|={residual:.3e} Eh/Bohr after {result.nit} iterations "
+                f"({result.message})")
+
+        self._drude_scf_coords = result.x.reshape((-1, 3)).copy()
+        self.drude_scf_iterations = result.nit
+        self.drude_scf_residual = residual
+        final_gradient = last["gradient"].copy()
+        # These are minimized internal coordinates; report their stationary
+        # gradient as zero to callers optimizing only the nuclear coordinates.
+        final_gradient[drude_indices] = 0.0
+        # Keep the optimized Drude coordinates available to the caller without
+        # mutating nuclear coordinates supplied explicitly to run().
+        self.fragment.coords[drude_indices] = self._drude_scf_coords / bohr_per_angstrom
+        if Grad:
+            return last["energy"], final_gradient
+        return last["energy"]
 
     # Mechanical embedding run
     def mech_run(self, current_coords=None, elems=None, Grad=False, numcores=1, exit_after_customexternalforce_update=False, label=None, charge=None, mult=None):
@@ -1115,6 +1311,14 @@ class QMMMTheory:
         # Set basic element lists
         self.qmelems = [self.elems[i] for i in self.qmatoms]
         self.mmelems = [self.elems[i] for i in self.mmatoms]
+        self.mm_elems_for_qmprogram = self.mmelems
+        if self.embedding.lower() == "polembed_drude":
+            # Some QM point-charge interfaces (e.g. CP2K GEEP) require an
+            # element label for every charge; Drude sites are charge-only sites.
+            drude_sites = set(self.mm_point_site_indices)
+            self.mm_elems_for_qmprogram = [
+                "H" if atom_index in drude_sites else self.elems[atom_index]
+                for atom_index in self.mmatoms]
 
         # LINKATOMS (both mech and elstat)
         check_before_linkatoms=time.time()
@@ -1125,8 +1329,8 @@ class QMMMTheory:
                 print("Number of MM atoms:", len(self.mmatoms))
                 print(f"There are {self.num_linkatoms} linkatoms")
             # Do possible Charge-shifting. MM1 charge distributed to MM2 atoms
-            if self.embedding.lower() == "elstat" or self.embedding.lower() == "emle-elstat":
-                self.mm_elems_for_qmprogram = self.mmelems # Overwritten later, only matters for CP2K GEEP
+            if self.embedding.lower() in ("elstat", "emle-elstat", "polembed_drude"):
+                # Overwritten later, only matters for CP2K GEEP
                 if self.printlevel > 1:
                     print("Doing charge-shifting...")
 
@@ -1148,7 +1352,7 @@ class QMMMTheory:
                         # Adding dipole charges to MM charges list (given to QM code)
                         self.pointcharges = list(self.pointcharges)+list(self.dipole_charges)
                         # Using element H for dipole charges. Only matters for CP2K GEEP
-                        self.mm_elems_for_qmprogram = self.mmelems + ['H']*len(self.dipole_charges)
+                        self.mm_elems_for_qmprogram += ['H']*len(self.dipole_charges)
                         if self.printlevel > 1: print("Number of pointcharges after dipole addition: ", len(self.pointcharges))
                         print_time_rel(check_before_linkatoms, modulename='Linkatom-dipolecorrection', moduleindex=3, currprintlevel=self.printlevel, currthreshold=2)
                     else:
@@ -1158,7 +1362,7 @@ class QMMMTheory:
                 elif self.chargeboundary_method == "rcd":
                     print("Chargeboundary method is:  rcd  ")
                     self.pointcharges, RCD_additional_charges = self.RCD_shifting_prep(self.charges_qmregionzeroed)
-                    self.mm_elems_for_qmprogram = self.mmelems + ['H']*len(RCD_additional_charges)
+                    self.mm_elems_for_qmprogram += ['H']*len(RCD_additional_charges)
                 else:
                     print(f"Unknown chargeboundary_method: {self.chargeboundary_method} . Exiting")
                     ashexit()
@@ -1170,7 +1374,7 @@ class QMMMTheory:
 
         # CASE: No Linkatoms
         else:
-            self.mm_elems_for_qmprogram = self.mmelems
+            # The base point-charge element list was set above.
             self.num_linkatoms = 0
             # If no linkatoms then use original self.qmelems
             self.current_qmelems = self.qmelems
@@ -1263,6 +1467,21 @@ class QMMMTheory:
             print("Number of charge coordinates:", len(self.pointchargecoords))
         if self.printlevel >= 2:
             print("Running QM/MM object with {} cores available".format(numcores))
+
+        qm_pc_coords = self.pointchargecoords
+        qm_pc_charges = self.pointcharges
+        qm_pc_elems = self.mm_elems_for_qmprogram
+        active_pc_indices = None
+        qm_pc_enabled = self.PC
+        if self.embedding.lower() == "polembed_drude" and self.PC and not use_emle:
+            # Drude PSFs include charge-only sites and QM atoms whose MM charges
+            # have been zeroed. Omitting zero charges avoids singular xTB PC
+            # gradients at coincident sites; restore the full gradient shape below.
+            active_pc_indices = np.flatnonzero(np.asarray(self.pointcharges, dtype=float) != 0.0)
+            qm_pc_coords = np.asarray(self.pointchargecoords)[active_pc_indices]
+            qm_pc_charges = np.asarray(self.pointcharges)[active_pc_indices]
+            qm_pc_elems = [self.mm_elems_for_qmprogram[i] for i in active_pc_indices]
+            qm_pc_enabled = len(active_pc_indices) > 0
         ################
         # QMTheory.run
         ################
@@ -1278,7 +1497,7 @@ class QMMMTheory:
 
             #Calling QM theory, providing current QM and MM coordinates.
             if Grad is True:
-                if self.PC is True:
+                if qm_pc_enabled is True:
 
                     if use_emle:
                         print("EMLE elstat embedding")
@@ -1306,15 +1525,20 @@ class QMMMTheory:
                     else:
                         # Regular elstat
                         QMenergy, QMgradient, PCgradient = self.qm_theory.run(current_coords=used_qmcoords,
-                                                                                         current_MM_coords=self.pointchargecoords,
-                                                                                         MMcharges=self.pointcharges,
-                                                                                         qm_elems=self.current_qmelems, mm_elems=self.mm_elems_for_qmprogram,
+                                                                                         current_MM_coords=qm_pc_coords,
+                                                                                         MMcharges=qm_pc_charges,
+                                                                                         qm_elems=self.current_qmelems, mm_elems=qm_pc_elems,
                                                                                          charge=charge, mult=mult,
-                                                                                         Grad=True, PC=True, numcores=numcores)
+                                                                                         Grad=True, PC=qm_pc_enabled, numcores=numcores)
+                    if active_pc_indices is not None:
+                        full_pcgradient = np.zeros((len(self.pointcharges), 3))
+                        full_pcgradient[active_pc_indices] = PCgradient
+                        PCgradient = full_pcgradient
                 else:
                     QMenergy, QMgradient = self.qm_theory.run(current_coords=used_qmcoords,
-                                                      current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges,
+                                                      current_MM_coords=qm_pc_coords, MMcharges=qm_pc_charges,
                                                       qm_elems=self.current_qmelems, Grad=True, PC=False, numcores=numcores, charge=charge, mult=mult)
+                    PCgradient = np.zeros((len(self.pointcharges), 3))
             else:
                 if use_emle:
                     print("EMLE elstat embedding (Grad=False)")
@@ -1334,8 +1558,8 @@ class QMMMTheory:
                     print("Polarized QM-energy:", QMenergy)
                 else:
                     QMenergy = self.qm_theory.run(current_coords=used_qmcoords,
-                                                        current_MM_coords=self.pointchargecoords, MMcharges=self.pointcharges, mm_elems=self.mm_elems_for_qmprogram,
-                                                        qm_elems=self.current_qmelems, Grad=False, PC=self.PC, numcores=numcores, charge=charge, mult=mult)
+                                                        current_MM_coords=qm_pc_coords, MMcharges=qm_pc_charges, mm_elems=qm_pc_elems,
+                                                        qm_elems=self.current_qmelems, Grad=False, PC=qm_pc_enabled, numcores=numcores, charge=charge, mult=mult)
 
         print_time_rel(CheckpointTime, modulename='QM step', moduleindex=2,currprintlevel=self.printlevel, currthreshold=1)
         CheckpointTime = time.time()
