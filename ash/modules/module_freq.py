@@ -47,7 +47,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
         # Check charge/mult
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "AnFreq", theory=theory)
         # Do single-point theory run with Hessian=True
-        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True)
+        theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True)
 
         # Grab Hessian from theory object
         print("Getting analytic Hessian from theory object")
