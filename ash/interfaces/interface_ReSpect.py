@@ -2,11 +2,8 @@ import subprocess as sp
 import os
 import shutil
 import time
-import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader, \
-writestringtofile, check_program_location
-import ash.settings_ash
+from ash.functions.functions_general import ashexit, BC, print_time_rel, print_line_with_mainheader, check_program_location
 from ash.functions.functions_parallel import check_OpenMPI
 
 # ReSpectTheory object.
@@ -160,7 +157,7 @@ class ReSpectTheory:
 # jobtype: scf, gt
 def run_respect(respectdir=None, jobtype='scf', inputfile='', numcores=1, scratchdir='.'):
     with open('respect_.out', 'w') as ofile:
-        process = sp.run([respectdir + '/respect', f'--{jobtype}', f'--inp={inputfile}', f"--nt={numcores}", f"--scratch={scratchdir}"],
+        sp.run([respectdir + '/respect', f'--{jobtype}', f'--inp={inputfile}', f"--nt={numcores}", f"--scratch={scratchdir}"],
                         check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
 
 
