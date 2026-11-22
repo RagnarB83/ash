@@ -164,7 +164,6 @@ class MECPGradclass:
 
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} WRAPPER -------------", BC.END)
 
-        numatoms = len(current_coords)
         # Theory 1
         #Creating dir
         try:

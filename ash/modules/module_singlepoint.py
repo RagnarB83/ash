@@ -566,7 +566,7 @@ class ScriptTheory:
         #Execute script
         #NOTE: Script should be executable and create file called energy, file called gradient
         #Note: Should allow both full path to script or local script (should contain ./ if so)
-        p = sp.call([self.scriptpath])
+        sp.call([self.scriptpath])
 
         #Grab energy from file energy
         with open("energy") as f: self.energy = float(f.readlines()[0])
