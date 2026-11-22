@@ -327,8 +327,8 @@ def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axis
     print(f"Relative energies({finalunit}): {finalvalues}")
 
     # Write relative energies to file:
-    print(f"Writing relative energies to file: surface_results_relE.txt")
-    with open(f'surface_results_relE.txt', 'w') as relfile:
+    print("Writing relative energies to file: surface_results_relE.txt")
+    with open('surface_results_relE.txt', 'w') as relfile:
         for i,j in zip(coords, finalvalues):
             relfile.write("{:13.10f} {:13.10f} \n".format(i,j))
 

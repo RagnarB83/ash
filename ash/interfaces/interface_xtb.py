@@ -913,7 +913,7 @@ def run_xtb_SP(xtbdir, xtbmethod, coordfile, charge, mult, Grad=False, Opt=False
         with open(basename+'.out', 'w') as ofile:
             process = sp.run(command_list, check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             if process.returncode == 0:
-                print_if_level(f"xTB job succeeded.",printlevel,2)
+                print_if_level("xTB job succeeded.",printlevel,2)
                 return
     except sp.CalledProcessError:
         print("xTB subprocess gave error.")

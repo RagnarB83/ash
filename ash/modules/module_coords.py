@@ -1457,8 +1457,8 @@ def print_coords_all(coords, elems, indices=None, labels=None, labels2=None):
                                                                                coords[i][2], labels[i]))
             else:
                 for i in range(len(elems)):
-                    print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6".format(elems[i], coords[i][0], coords[i][1],
-                                                                                   coords[i][2], labels[i], labels2[i]))
+                    print("{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} {:>6}".format(elems[i], coords[i][0], coords[i][1],
+                                                                                    coords[i][2], labels[i], labels2[i]))
     else:
         if labels is None:
             for i in range(len(elems)):
@@ -1499,8 +1499,8 @@ def write_coords_all(coords, elems, indices=None, labels=None, labels2=None, fil
             else:
                 for i in range(len(elems)):
                     f.write(
-                        "{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} :>6\n".format(elems[i], coords[i][0], coords[i][1],
-                                                                                   coords[i][2], labels[i], labels2[i]))
+                        "{:>4} {:>12.8f}  {:>12.8f}  {:>12.8f} {:>6} {:>6}\n".format(elems[i], coords[i][0], coords[i][1],
+                                                                                    coords[i][2], labels[i], labels2[i]))
     else:
         if labels is None:
             for i in range(len(elems)):
@@ -2898,7 +2898,7 @@ def coord2xyz(inputfile):
     numatoms=len(elems)
     with open("fromcoord.xyz", 'w') as cfile:
         cfile.write(f"{numatoms}\n")
-        cfile.write(f"title\n")
+        cfile.write("title\n")
         for e,c in zip(elems,coords):
             cfile.write(" {:13} {:20.16f} {:20.16f} {:20.16f}\n".format(e,c[0],c[1],c[2]))
     return
@@ -2918,10 +2918,10 @@ def xyz2coord(inputfile):
                 elems.append(el)
                 coords.append([x,y,z])
     with open("coord", 'w') as cfile:
-        cfile.write(f"$coord\n")
+        cfile.write("$coord\n")
         for e,c in zip(elems,coords):
             cfile.write("   {:20.16f} {:20.16f} {:20.16f} {:>13}\n".format(c[0],c[1],c[2],e))
-        cfile.write(f"$end\n")
+        cfile.write("$end\n")
 
 
     return
@@ -2955,7 +2955,6 @@ def scipy_hungarian(A, B):
 # Hungarian algorithm to reorder coordinates. Uses Julia to calculates distances between coordinate-arrays A and B and then Hungarian Julia package.
 def hungarian_julia(A, B):
     from scipy.spatial.distance import cdist
-    from scipy.optimize import linear_sum_assignment
     try:
         # Calculating distances via Julia
         # print("Here. Calling Julia distances")

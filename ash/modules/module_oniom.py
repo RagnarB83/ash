@@ -512,7 +512,7 @@ class ONIOMTheory(Theory):
                     print("Unknown charge model")
                     ashexit()
             elif isinstance(ll_theory, xTBTheory):
-                 print(f"Theory is xTBTheory. Using default xtb charge model")
+                 print("Theory is xTBTheory. Using default xtb charge model")
             elif ll_theory.__class__.__name__ == "CP2KTheory":
                 print(f"Theory is CP2KTheory. Using {self.chargemodel} charge model")
             else:
@@ -553,7 +553,7 @@ class ONIOMTheory(Theory):
                 print(f"{ll_theory_full.filename}.out")
                 # Note: format issue
                 # self.full_pointcharges = grabatomcharges_xTB_output(ll_theory.filename+'.out', chargemodel=self.chargemodel)
-                self.full_pointcharges = grabatomcharges_xTB(filepath=f"LL_full/charges")
+                self.full_pointcharges = grabatomcharges_xTB(filepath="LL_full/charges")
             elif ll_theory_full.__class__.__name__ == "CP2KTheory":
                  from ash.interfaces.interface_CP2K import grabatomcharges_CP2K
                  cp2k_output = os.path.join( label, f"{ll_theory_full.filename}.out")

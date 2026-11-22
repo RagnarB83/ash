@@ -248,7 +248,7 @@ def creating_displaced_geos(current_coords,elems,displacement,npoint, charge, mu
         #Original geo
         if disp == 'Originalgeo':
             calclabel = 'Originalgeo'
-            stringlabel=f"Originalgeo"
+            stringlabel="Originalgeo"
         #Displacements
         else:
             atom_disp = disp[0]

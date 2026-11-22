@@ -205,7 +205,7 @@ def Singlepoint_fragments(theory=None, fragments=None, stoichiometry=None, relat
         print("Valid units:", ", ".join(energy_conversion_factors))
         ashexit()
 
-    energies=[];filenames=[]
+    energies=[]
 
     #Looping through fragments
     for i,frag in enumerate(fragments):
