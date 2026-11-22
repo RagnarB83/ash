@@ -1,6 +1,5 @@
 import numpy as np
-from ash.functions.functions_general import print_line_with_mainheader,print_line_with_subheader1,ashexit
-from ash.constants import hartokcal
+from ash.functions.functions_general import print_line_with_mainheader, ashexit
 
 #Relative energy conversion (if RelativeEnergy is True)
 conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
@@ -213,8 +212,6 @@ class ASH_plot():
             #Avoid legend for line if scatter is enabled
             if scatter is True:
                 label='_nolegend_'
-            else:
-                legendlabel=label
             curraxes.plot(x, y, linestyle=linestyle, color=color, linewidth=line_linewidth, label=label)
         if bar is True:
             if barcolors is None:
