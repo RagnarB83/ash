@@ -606,7 +606,6 @@ def read_ciffile(file):
     symmops=[]
     newmol=False
     fractgrab=False
-    symmopgrab=False
     symmopgrab_oldsyntax=False
     cellunits=None
     atomsitecolumns=[]
@@ -631,25 +630,19 @@ def read_ciffile(file):
                     cell_beta=float(line.split()[-1].split('(')[0])
                 if '_cell_angle_gamma' in line:
                         cell_gamma =float(line.split()[-1].split('(')[0])
-            #symmops
-            if symmopgrab is True:
-                if 'space' not in line and len(line) > 2:
-                    if 'x' in line or 'X' in line:
-                        symmops.append(line.split('\'')[1])
-                if len(line) < 2:
-                    symmopgrab=False
-                if 'x' not in line:
-                    if 'X' not in line:
-                        symmopgrab=False
+            # Symmetry-operation tags contain "space_group" themselves, so
+            # looking for that substring as a section marker can accidentally
+            # try to parse the tag name as a quoted operation.
             if symmopgrab_oldsyntax==True:
-                if 'x' not in line:
+                stripped_line = line.strip()
+                if 'x' not in stripped_line.lower():
                     symmopgrab_oldsyntax=False
                 else:
-                    #Removing number from beginning if present
-                    if line[0].isdigit():
-                        line=line[1:]
-                    line2=line.replace("'","").replace(" ","").replace("\n","")
-                    symmops.append(line2)
+                    # CIF loops commonly store an integer id before a quoted
+                    # operation (for example: 1 'x,y,z').
+                    operation = stripped_line.split()[-1].strip("'\" ")
+                    if operation.count(",") == 2:
+                        symmops.append(operation.replace(" ", ""))
             if fractgrab is True:
                 # If empty line encountered then coordinates-lines should be over
                 if len(line.replace(' ','')) < 2:
@@ -694,21 +687,17 @@ def read_ciffile(file):
             if '_atom_site_fract_z' in line:
                 fractgrab=True
                 print("Grabbing coordinates")
-            if '_space_group_s' in line:
-                symmopgrab=True
-            if '_symmetry_equiv_pos_as_xyz' in line:
+            if '_space_group_symop_operation_xyz' in line or '_symmetry_equiv_pos_as_xyz' in line:
                 symmopgrab_oldsyntax=True
 
 
-    #Checking if "_atom_site_symmetry_multiplicity" or "_atom_site_Wyckoff_symbol" in atom_site lines
-    #If so then we have more complicated symmettry, not coded yet.
-    #TODO: We should finish this at some point
+    # Site multiplicity and Wyckoff labels are descriptive metadata. Unit-cell
+    # expansion is performed from the CIF symmetry operations below, and
+    # duplicate positions are removed by molcrys after expansion.
     if '_atom_site_symmetry_multiplicity' in atomsitecolumns or '_atom_site_site_symmetry_multiplicity' in atomsitecolumns:
-        print("Warning: site_symmetry_multiplicity information in file. May not be handled correctly. Check results...")
+        print("CIF site symmetry multiplicities will be expanded using the listed symmetry operations.")
     if '_atom_site_Wyckoff_symbol' in atomsitecolumns:
-        print("Wyckoff_symbols found in CIF-file. We do not handle this correctly. Exiting.")
-        print("Please use another format than CIF-file, e.g. XTL.")
-        ashexit()
+        print("CIF Wyckoff symbols found; unit-cell positions will be generated from the listed symmetry operations.")
 
 
     #Removing any numbers from atomlabels in order to get element information

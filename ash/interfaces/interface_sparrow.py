@@ -6,6 +6,7 @@ import numpy as np
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
 from ash.constants import ang2bohr
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.functions.functions_general import print_module_version
 
 
 class SparrowTheory:
@@ -27,6 +28,11 @@ class SparrowTheory:
             import scine_sparrow as scine_sparrow
             self.su=su
             self.scine_sparrow=scine_sparrow
+            print_module_version(
+                scine_sparrow,
+                "Sparrow",
+                distribution_names=["scine-sparrow-python", "scine-sparrow"],
+            )
         except:
             print("Problem importing sparrow. Did you install correctly? See: https://github.com/qcscine/sparrow")
             print("Try: conda install scine-sparrow-python")

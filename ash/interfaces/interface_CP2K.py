@@ -4,7 +4,7 @@ import shutil
 import time
 import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader, grab_version_from_output
 import ash.settings_ash
 from ash.modules.module_coords import write_xyzfile, write_pdbfile
 from ash.modules.module_coords_PBC import cubic_box_size,bounding_box_dimensions
@@ -24,7 +24,7 @@ element_radii_for_cp2k = {'H': 0.44, 'He': 0.44, 'Li': 0.6, 'Be': 0.6,
                           'Zn': 1.6, 'Br': 1.6, 'Mo': 1.7}
 
 # CP2K Theory object.
-# CP2K embedding options: coupling='COULOMB' (regular elstat-embed) or 'GAUSSIAN' (GEEP) or S-WAVE
+# CP2K embedding options: coupling='COULOMB' (regular elstat-embed) or 'GAUSS' (GEEP) or S-WAVE
 # Periodic: True (periodic_type='XYZ) or False (periodic_type='NONE')
 # NOTE: Currently not supporting 2D or 1D periodicity
 # Psolvers: 'PERIODIC', 'MT', 'MULTIPOLE' or 'wavelet'
@@ -51,7 +51,9 @@ class CP2KTheory:
                 kpoint_settings=None, 
                 method='QUICKSTEP', numcores=1, parallelization='OMP', mixed_mpi_procs=None, mixed_omp_threads=None,
                 center_coords=False, scf_maxiter=50, outer_scf_maxiter=10, scf_convergence=1e-6, eps_default=1e-10,
-                coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
+                tblite_mixer_iterations=None,
+                QMMM_centering=None, coupling='GAUSS', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
+                spherical_cutoff1=None, spherical_cutoff2=None,
                 OT=True, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL',
                 OT_linesearch='3PNT', outer_SCF=True, outer_SCF_optimizer='SD', OT_energy_gap=0.08,
                 path_to_gauxc_model=None):
@@ -71,7 +73,7 @@ class CP2KTheory:
                 print("potential_dict keyword is required")
                 ashexit()
             if functional is None:
-                print("functional keyword is required for PW andd GPW ")
+                print("functional keyword is required for PW and GPW ")
                 ashexit()
         else:
             print("This is a CP2K xTB theory")
@@ -207,6 +209,7 @@ class CP2KTheory:
         self.qm_periodic_type=qm_periodic_type
         self.xtb_type=xtb_type # xTB method to use. Options: 'GFN2', 'GFN1', 'GFN0'
         self.xtb_tblite=xtb_tblite # Boolean, whether to use the tblite-library version of xTB
+        self.tblite_mixer_iterations=tblite_mixer_iterations
         # self.cell_length=cell_length #Total cell length (full system including MM if QM/MM)
         self.cell_dimensions=cell_dimensions #Cell dimensions. For full system
         self.cell_vectors=cell_vectors #Cell vectors. For full system
@@ -249,10 +252,17 @@ class CP2KTheory:
         self.kpoint_settings=kpoint_settings
 
         #QM/MM
+        self.QMMM_centering=QMMM_centering
         self.coupling=coupling
         self.GEEP_num_gauss=GEEP_num_gauss
         self.MM_radius_scaling=MM_radius_scaling #Scale the MM radii by this factor
         self.mm_radii=mm_radii #Optional dictionary of MM radii for GEEP. If not provided then element_radii_for_cp2k
+        self.spherical_cutoff1=spherical_cutoff1
+        self.spherical_cutoff2=spherical_cutoff2
+        if self.spherical_cutoff1 is None and self.spherical_cutoff2 is not None:
+            self.spherical_cutoff1=-5.29177209e-1
+        if self.spherical_cutoff2 is None and self.spherical_cutoff1 is not None:
+            self.spherical_cutoff2=0.0e0
 
         print("CP2KTheory settings:\n")
         print("")
@@ -366,16 +376,20 @@ class CP2KTheory:
         #Case: QM/MM CP2K job
         if PC is True:
             print("PC true")
-            if self.coupling == 'COULUMB':
+            if self.coupling == 'COULOMB' and self.basis_method != 'XTB':
                 print("Error: Coupling option is COULOMB (regular electrostatic embedding)")
                 print("This option is not compatible with CP2K GPW/GAPW option which is the main reason to use CP2K")
                 print("Set coupling to GAUSS or S-WAVE instead")
                 print("Exiting")
                 ashexit()
+            elif self.coupling == 'COULOMB' and self.basis_method == 'XTB':
+                print("Using COULOMB (regular electrostatic embedding) with xTB!")
             elif self.coupling == 'GAUSS':
                 print("Using Gaussian GEEP embedding")
                 print("Number of Gaussians used:", self.GEEP_num_gauss)
                 print("Scaling MM radii by factor:", self.MM_radius_scaling)
+            elif self.coupling == 'NONE':
+                print("Warning: Using CP2K coupling option NONE. Use for testing purposes only!")
             else:
                 print("Unknown coupling option. Exiting")
                 ashexit()
@@ -421,11 +435,12 @@ class CP2KTheory:
             #print_time_rel(module_init_time, modulename=f'CP2K run-prep3b', moduleindex=2)
             #Telling CP2K which atoms are QM
             #Dictionary with QM-atom indices (for full system), grouped by element
-            qm_kind_dict={}
+            self.qm_kind_dict={}
             for el in set(qm_elems):
                 #CP2K starts counting from 1
-                qm_kind_dict[el]= [i+1 for i, x in enumerate(qm_elems) if x == el]
-            print("qm_kind_dict:",qm_kind_dict)
+                self.qm_kind_dict[el]= [i+1 for i, x in enumerate(qm_elems) if x == el]
+            self.qm_kind_dict = dict(sorted(self.qm_kind_dict.items()))
+            print("qm_kind_dict:",self.qm_kind_dict)
             #MM-kind list
             #NOTE: This controls Gaussian radii for GEEP. Currently using same parameters for element
             #Could be made more flexible
@@ -458,10 +473,12 @@ class CP2KTheory:
                              xtb_periodic=self.xtb_periodic, xtb_type=self.xtb_type, xtb_tblite=self.xtb_tblite,
                              basis_file=self.basis_file,
                              potential_file=self.potential_file, periodic_type=self.periodic_type,
-                             psolver=self.psolver, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
+                             psolver=self.psolver, QMMM_centering=self.QMMM_centering, coupling=self.coupling, GEEP_num_gauss=self.GEEP_num_gauss,
                              MM_radius_scaling=self.MM_radius_scaling, mm_radii=self.mm_radii,
-                             qm_kind_dict=qm_kind_dict, mm_kind_list=mm_kind_list,
+                             spherical_cutoff1=self.spherical_cutoff1, spherical_cutoff2=self.spherical_cutoff2,
+                             qm_kind_dict=self.qm_kind_dict, mm_kind_list=mm_kind_list,
                              scf_convergence=self.scf_convergence, eps_default=self.eps_default,
+                             tblite_mixer_iterations=self.tblite_mixer_iterations,
                              scf_maxiter=self.scf_maxiter, outer_scf_maxiter=self.outer_scf_maxiter,
                              ngrids=self.ngrids, xc_finer_grid=self.xc_finer_grid, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel,
                              OT=self.OT, OT_minimizer=self.OT_minimizer, OT_preconditioner=self.OT_preconditioner, OT_linesearch=self.OT_linesearch,
@@ -502,6 +519,7 @@ class CP2KTheory:
                              user_input_dft=self.user_input_dft, vdwpotential=self.vdwpotential,
                              kpoint_settings=self.kpoint_settings,
                              coordfile=system_xyzfile, scf_convergence=self.scf_convergence, eps_default=self.eps_default,
+                             tblite_mixer_iterations=self.tblite_mixer_iterations,
                              scf_maxiter=self.scf_maxiter, outer_scf_maxiter=self.outer_scf_maxiter,
                              ngrids=self.ngrids, xc_finer_grid=self.xc_finer_grid, cutoff=self.cutoff, rel_cutoff=self.rel_cutoff, printlevel=self.printlevel,
                              periodic_type=self.periodic_type,
@@ -557,6 +575,12 @@ class CP2KTheory:
                      mixed_mpi_procs=self.mixed_mpi_procs, mixed_omp_threads=self.mixed_omp_threads)
         else:
             run_CP2K(self.cp2kdir,self.cp2k_bin_name,self.filename,numcores=self.numcores,paramethod=self.parallelization)
+
+        cp2k_version = grab_version_from_output(
+            self.filename + '.out', r"CP2K\|\s+version string:\s+CP2K version\s+([^\s(]+)"
+        )
+        if cp2k_version is not None:
+            print(f"CP2K version: {cp2k_version}")
 
         # Grab energy
         self.energy=grab_energy_cp2k(self.filename+'.out',method=self.method)
@@ -634,6 +658,7 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     charge=None, mult=None, basis_method='GAPW',
                     mgrid_commensurate=False, scf_maxiter=50, outer_scf_maxiter=10,
                     scf_guess='RESTART', scf_convergence=1e-6, eps_default=1e-10,
+                    tblite_mixer_iterations=None,
                     periodic_type="XYZ", cell_vectors=None,
                     stress_tensor=False, stress_tensor_algo='DIAGONAL_ANALYTICAL',
                     kpoint_settings=None,
@@ -642,7 +667,9 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     basis_file='BASIS', potential_file='POTENTIAL',
                     psolver='wavelet', wavelet_scf_type=40,
                     ngrids=4, xc_finer_grid=False, cutoff=250, rel_cutoff=60,
-                    coupling='GAUSSIAN', GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
+                    spherical_cutoff1=None, spherical_cutoff2=None,
+                    QMMM_centering=None, coupling='GAUSS', 
+                    GEEP_num_gauss=6, MM_radius_scaling=1, mm_radii=None,
                     qm_kind_dict=None, mm_kind_list=None,
                     mm_ewald_type='NONE', mm_ewald_alpha=0.35, mm_ewald_gmax="21 21 21", printlevel=2,
                     OT=False, OT_minimizer='DIIS', OT_preconditioner='FULL_ALL', OT_linesearch='3PNT',
@@ -759,6 +786,10 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
                     inpfile.write(f'          &TBLITE\n')
                     inpfile.write(f'            METHOD {xtb_type}\n')
                     inpfile.write(f'          &END\n')
+                    if tblite_mixer_iterations is not None:
+                        inpfile.write(f'          &TBLITE_MIXER\n')
+                        inpfile.write(f'            ITERATIONS {tblite_mixer_iterations}\n')
+                        inpfile.write(f'          &END\n')
                 else:
                     inpfile.write(f'          GFN_TYPE  {xtbcode}\n') #NOTE
                 inpfile.write(f'          CHECK_ATOMIC_CHARGES F\n')
@@ -844,7 +875,11 @@ def write_CP2K_input(method='QUICKSTEP', jobname='ash-CP2K', center_coords=True,
             inpfile.write(f'    &END MM\n')
             #QM/MM
             inpfile.write(f'    &QMMM\n')
+            if QMMM_centering is not None:
+                inpfile.write(f'      CENTER {QMMM_centering}\n')
             inpfile.write(f'      ECOUPL {coupling}\n')
+            if spherical_cutoff1 is not None and spherical_cutoff2 is not None:
+                inpfile.write(f'      SPHERICAL_CUTOFF {spherical_cutoff1} {spherical_cutoff2}\n')
             if coupling == 'GAUSS':
                 inpfile.write(f'      USE_GEEP_LIB {GEEP_num_gauss}\n')
                 #Unclear whether useful or not

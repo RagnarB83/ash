@@ -193,9 +193,12 @@ class BigDFTTheory:
             print(" self.inp:",  self.inp)
 
         #Create system
+        import BigDFT
         from BigDFT.Systems import System
         from BigDFT.Fragments import Fragment
         from BigDFT.IO import read_xyz
+        from ash.functions.functions_general import print_module_version
+        print_module_version(BigDFT, "BigDFT", distribution_names=["BigDFT", "bigdft"])
         #Create system
         sys = System()
         #Add a fragment to System

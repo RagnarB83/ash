@@ -4,7 +4,7 @@ import shutil
 import time
 import numpy as np
 
-from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader
+from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader, grab_version_from_output
 import ash.settings_ash
 from ash.functions.functions_parallel import check_OpenMPI
 
@@ -133,6 +133,13 @@ class NWChemTheory:
 
         #Run NWChem
         run_NWChem(self.nwchemdir,self.filename,numcores=self.numcores)
+
+        nwchem_version = grab_version_from_output(
+            self.filename + '.out',
+            r"Northwest Computational Chemistry Package \(NWChem\)\s+([0-9]+(?:\.[0-9]+)+)",
+        )
+        if nwchem_version is not None:
+            print(f"NWChem version: {nwchem_version}")
 
         #Grab energy
         self.energy=grab_energy_nwchem(self.filename+'.out',method=self.method, tce=self.tce)

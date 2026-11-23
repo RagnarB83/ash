@@ -14,6 +14,68 @@ from functools import reduce
 import random
 import copy
 
+
+def _gpu4pyscf_version():
+    """Read GPU4PySCF's version without importing its CUDA runtime."""
+    import ast
+    import importlib.util
+
+    loaded_module = sys.modules.get("gpu4pyscf")
+    if loaded_module is not None:
+        return getattr(loaded_module, "__version__", None)
+
+    spec = importlib.util.find_spec("gpu4pyscf")
+    if spec is None or spec.origin is None:
+        return None
+    with open(spec.origin, encoding="utf-8") as source_file:
+        module_ast = ast.parse(source_file.read(), filename=spec.origin)
+    for node in module_ast.body:
+        if isinstance(node, ast.Assign) and any(
+            isinstance(target, ast.Name) and target.id == "__version__"
+            for target in node.targets
+        ):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                return node.value.value
+    return None
+
+
+def _validate_soc_cas(scf_type, x2c, cas):
+    """Reject CAS methods that do not support a generalized SOC reference."""
+    if x2c and scf_type in ("GHF", "GKS") and cas:
+        raise NotImplementedError(
+            "PySCF does not currently provide generalized CAS/CASSCF methods "
+            "for X2C spin-orbit references. Use scalar-relativistic RHF/RKS X2C "
+            "for CAS/CASSCF; GHF/GKS X2C SOC is available for supported "
+            "single-reference calculations."
+        )
+
+
+def _validate_gpu_x2c_soc(platform, scf_type, x2c):
+    """Validate GPU4PySCF support for spin-orbit X2C calculations."""
+    if str(platform).upper() != "GPU" or not x2c:
+        return
+
+    if scf_type != "GHF":
+        raise NotImplementedError(
+            "GPU X2C spin-orbit calculations in ASH currently require scf_type='GHF'. "
+            "GPU4PySCF's GKS-to-GPU conversion is not implemented; use the CPU "
+            "platform for GKS or scalar-relativistic X2C."
+        )
+
+    try:
+        from packaging.version import Version
+    except ImportError as exc:
+        raise ImportError("GPU X2C SOC version checks require the packaging module.") from exc
+
+    gpu_version = _gpu4pyscf_version()
+    if gpu_version is None:
+        raise ImportError("GPU X2C spin-orbit calculations require GPU4PySCF >= 1.8.0.")
+    if Version(gpu_version) < Version("1.8.0"):
+        raise RuntimeError(
+            "GPU X2C spin-orbit calculations require GPU4PySCF >= 1.8.0 "
+            "for GHF X2C support; found version {}.".format(gpu_version)
+        )
+
 #PySCF Theory object.
 #TODO: Somehow support reading in user mf object ?
 #Easier now than before. However, each run calls both prepare_run and actual_run
@@ -48,7 +110,7 @@ class PySCFTheory:
                   loscpath=None, LOSC_window=None,
                   mcpdft=False, mcpdft_functional=None,
                   PBC_lattice_vectors=None,rcut_ewald=8, rcut_hcore=6, radii=None,
-                  neo=False, nuc_basis=None,
+                  neo=False, nuc_basis=None, quantum_nuc_indices=None, df_ne=False,
                   periodic=False, periodic_cell_vectors=None, periodic_cell_dimensions=None,
                   ke_cutoff=None, kpoints=None,
                   hubbard_U=None):
@@ -207,6 +269,8 @@ class PySCFTheory:
         # NEO (requires special pyscf)
         self.neo=neo
         self.nuc_basis=nuc_basis
+        self.quantum_nuc_indices=quantum_nuc_indices
+        self.df_ne=df_ne
 
         # SCF
         self.platform=platform
@@ -274,6 +338,9 @@ class PySCFTheory:
         self.CASSCF_weights=CASSCF_weights
         self.CASSCF_mults=CASSCF_mults
         self.CASSCF_wfnsyms=CASSCF_wfnsyms
+
+        _validate_soc_cas(scf_type=self.scf_type, x2c=self.x2c, cas=CAS)
+        _validate_gpu_x2c_soc(platform=self.platform, scf_type=self.scf_type, x2c=self.x2c)
 
         #Auto-CAS options
         self.APC=APC
@@ -1967,7 +2034,7 @@ class PySCFTheory:
 
     #Create mol object (self.mol) via method
     def create_mol(self, qm_elems, current_coords, charge, mult, cartesian_basis=None, neo=False,
-                   nuc_basis=None,quantum_nuc=None):
+                   nuc_basis=None,quantum_nuc=None, current_MM_coords=None, MMcharges=None):
         if self.printlevel >= 1:
             print("Creating mol object")
         import pyscf
@@ -1982,9 +2049,13 @@ class PySCFTheory:
             print("pyscf.neo imported")
             print("quantum_nuc:", quantum_nuc)
             print("nuc_basis:",nuc_basis)
+            mm_mol=None
+            if MMcharges is not None:
+                print("MMcharges found. Setting up mm_mol object for NEO-QMMM")
+                import pyscf.qmmm
+                mm_mol = pyscf.qmmm.mm_mole.create_mm_mol(current_MM_coords, charges=MMcharges, radii=self.radii)
             self.mol = neo.M(atom=coords_string, charge=charge, spin=mult-1, nuc_basis=nuc_basis, 
-                             quantum_nuc=['H'],verbose=4)
-            print("self.mol", self.mol)
+                            quantum_nuc=quantum_nuc,verbose=4, mm_mol=mm_mol)
         else:
             #Defining pyscf mol object and populating
             self.mol = pyscf.gto.Mole()
@@ -2370,6 +2441,9 @@ class PySCFTheory:
                 import density_functional_approximation_dm21 as dm21
                 self.mf._numint = dm21.NeuralNumInt(dm21.Functional.DM21)
             else:
+                print("self.mf:", self.mf)
+                print("self.mf.grids", self.mf.grids)
+                print("self.mf.grids.level:", self.mf.grids.level)
                 #Setting functional
                 self.mf.xc = self.functional
                 #TODO: libxc vs. xcfun interface control here
@@ -2495,11 +2569,18 @@ class PySCFTheory:
                 self.mf.with_solvent.solvent =self.SMD_solvent
 
 
+    # Set the spin (2S) of the molecule used by the SCF. On GPU, mf.to_gpu() deep-copies the Mole,
+    # so self.mf.mol is not self.mol and both need the new spin
+    def set_BS_spin(self, spin):
+        self.mol.spin = spin
+        if self.mf.mol is not self.mol:
+            self.mf.mol.spin = spin
+
     def run_BS_SCF(self, mult=None, dm=None):
         print("\nBroken-symmetry SCF procedure")
         print(f"First converging HS mult={self.HSmult} solution")
         #HS: Changing spin to HS-spin (num unpaired els)
-        self.mol.spin = self.HSmult-1
+        self.set_BS_spin(self.HSmult-1)
 
         scf_result = self.run_SCF(dm=dm)
         print("High-spin SCF energy:", scf_result.e_tot)
@@ -2539,10 +2620,16 @@ class PySCFTheory:
             dmb_at = dmb[idx_at.reshape(-1,1),idx_at].copy()
             dma[idx_at.reshape(-1,1),idx_at] = dmb_at
             dmb[idx_at.reshape(-1,1),idx_at] = dma_at
-        dm = [dma, dmb]
+        # One (2,nao,nao) array: on GPU dma/dmb are cupy arrays and gpu4pyscf's cupy.asarray(dm0)
+        # cannot convert a list of cupy arrays
+        if hasattr(dma, "get"):
+            import cupy
+            dm = cupy.stack([dma, dmb])
+        else:
+            dm = np.array([dma, dmb])
         print(f"\nStarting BS-SCF with spin multiplicity={mult}")
         #BS
-        self.mol.spin = mult-1
+        self.set_BS_spin(mult-1)
         #scf_result = self.mf.run(dm)
         scf_result = self.run_SCF(dm=dm)
         s2, spinmult = self.mf.spin_square()
@@ -2618,6 +2705,12 @@ class PySCFTheory:
         else:
             if isinstance(self.mf, pyscf.scf.hf.RHF) or isinstance(self.mf, pyscf.dft.rks.RKS):
                 self.num_orbs = len(self.mf.mo_occ) # Restricted
+            # NEO
+            elif hasattr(self.mf.mol,'nuclear_basis'):
+                if self.mf.mo_occ['e'].ndim == 2:
+                    self.num_orbs = len(self.mf.mo_occ['e'][0]) # Unrestricted                
+                else:
+                    self.num_orbs = len(self.mf.mo_occ['e']) # Restricted
             elif self.periodic:
                 import pyscf.pbc
                 if isinstance(self.mf, pyscf.pbc.dft.rks.RKS):
@@ -2737,7 +2830,7 @@ class PySCFTheory:
             self.molcellobject=self.cell
         else:
             self.create_mol(qm_elems, current_coords, charge, mult, cartesian_basis=self.cartesian_basis,
-                            neo=self.neo, quantum_nuc=qH_atoms, nuc_basis=self.nuc_basis)
+                            neo=self.neo, quantum_nuc=qH_atoms, nuc_basis=self.nuc_basis, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
             # General mol/cell object
             self.molcellobject=self.mol
         #####################
@@ -2746,20 +2839,16 @@ class PySCFTheory:
 
         #Only define basis set if regular job (not FCIDUMP or read-in MF)
         if self.fcidumpfile is None and self.mf_object is None:
-            #if self.periodic:
-            # CELL
+
             self.define_basis(elems=qm_elems)
-            print("Building pyscf cell object")
-            self.molcellobject.build()
+            if self.neo:
+                print("neo: skipping mol build")
+            else:
+                print("Building pyscf mol/cell object")
+                self.molcellobject.build()
             # Defining number of basis functions
             self.num_basis_functions=len(self.molcellobject.ao_labels())
-            #else:
-            #    # MOL
-            #    self.define_basis(elems=qm_elems)
-            #    print("Building pyscf mol object")
-            #    self.mol.build()
-            #    # Defining number of basis functions
-            #    self.num_basis_functions=len(self.mol.ao_labels())
+
         
         if self.printlevel >= 1:
             print("Number of basis functions:", self.num_basis_functions)
@@ -2817,7 +2906,8 @@ class PySCFTheory:
         #####################
         #DFT
         #####################
-        self.set_DFT_options()
+        if self.neo is False:
+            self.set_DFT_options()
         
         # Multigrid for PBC
         if self.periodic:
@@ -3149,8 +3239,9 @@ class PySCFTheory:
                     print("Calculating pointcharge gradient (new way)")
                     checkpoint=time.time()
                     dm = self.mf.make_rdm1()
+                    # Unrestricted: (dm_alpha, dm_beta). grad_hcore_mm is linear in dm and needs the total density
                     if dm.ndim ==3:
-                        dm = dm[0]
+                        dm = dm[0] + dm[1]
                     g_mm_h1 = g.grad_hcore_mm(dm) 
                     g_mm_nuc = g.grad_nuc_mm()
                     self.pcgrad = g_mm_h1 + g_mm_nuc

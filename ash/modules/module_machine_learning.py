@@ -56,7 +56,9 @@ def write_mace_xyz_file(filename, atom_energies, energies, gradients, fragments,
 # Function to create ML training data given XYZ-files and 2 ASH theories
 def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=None, xyz_files=None, num_snapshots=None, random_snapshots=True,
                                 dcd_pdb_topology=None, nth_frame_in_traj=1, printlevel=2,
-                               theory_1=None, theory_2=None, charge=0, mult=1, Grad=True, runmode="serial", numcores=1,
+                               theory_1=None, theory_2=None, 
+                               charge=0, mult=1, readcharge_mult_from_xyz=False,
+                               Grad=True, runmode="serial", numcores=1,
                                energies_atoms_dict=None, random_seed_set=None):
     print("-"*50)
     print("create_ML_training_data function")
@@ -266,7 +268,13 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
             print(f"\nNow running file ({n+1}/{len(list_of_xyz_files)}): {file}")
             basefile=os.path.basename(file)
             label=basefile.split(".")[0]
-            frag = Fragment(xyzfile=file, charge=charge, mult=mult,printlevel=printlevel)
+            if readcharge_mult_from_xyz is True:
+                print("Reading charge and multiplicity from XYZ-file")
+                frag = Fragment(xyzfile=file, readchargemult=True, printlevel=printlevel)
+                print(f"Read charge: {frag.charge}, multiplicity: {frag.mult} from file: {file}")
+            else:
+                print(f"Assuming global charge={charge } and multiplicity={mult} for all files")
+                frag = Fragment(xyzfile=file, charge=charge, mult=mult,printlevel=printlevel)
             frag.label=label
             # 1: gas 2:solv  or 1: LL  or 2: HL
             print("Now running Theory 1")

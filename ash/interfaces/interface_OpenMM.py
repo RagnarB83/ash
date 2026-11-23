@@ -30,6 +30,24 @@ import ash.modules.module_plotting
 from ash.interfaces.interface_openbabel import pdb_to_smiles,xyz_to_pdb_with_connectivity,writepdb_with_connectivity,mol_to_pdb
 
 
+# Options supported by OpenMM_MDclass.set_sim_reporters. Keep this list next to
+# the implementation so invalid values fail before a potentially long run.
+valid_trajectory_file_options = ('PDB', 'DCD', 'NetCDFReporter', 'HDF5Reporter', 'XYZ')
+# PDB residue names commonly used for standard amino acids and frequent
+# force-field variants. Users can pass a custom set for other residue names.
+_PROTEIN_RESIDUE_NAMES = {
+    "ALA", "ARG", "ASN", "ASP", "CYS", "GLN", "GLU", "GLY", "HIS", "ILE",
+    "LEU", "LYS", "MET", "PHE", "PRO", "SER", "THR", "TRP", "TYR", "VAL",
+    "ASX", "GLX", "SEC", "PYL", "MSE", "HYP", "PCA", "PTR", "TPO", "SEP",
+    "CSO", "CSD", "CYM", "CYX", "HID", "HIE", "HIP", "HSD", "HSE", "HSP",
+    "ACE", "NME",
+}
+_SOLVENT_RESIDUE_NAMES = {
+    "HOH", "WAT", "H2O", "SOL", "TIP3", "TIP3P", "TIP4", "TIP4P", "TIP5P",
+    "SPC", "SPCE",
+}
+
+
 class OpenMMTheory:
     def __init__(self, printlevel=2, platform='CPU', numcores=1, topoforce=False, forcefield=None, topology=None,
                  CHARMMfiles=False, psffile=None, charmmtopfile=None, charmmprmfile=None, label="OpenMM",
@@ -155,12 +173,17 @@ class OpenMMTheory:
         # TODO: Move option to module_QMMM instead
         self.delete_QM1_MM1_bonded = delete_QM1_MM1_bonded
         # Platform (CPU, CUDA, OpenCL) and Parallelization
-        self.platform_choice = platform
+        # The name is accepted in any case and stored with the spelling OpenMM registered it under
+        # (openmm.Platform.getPlatformByName is case-sensitive, e.g. 'OpenCL' and 'Reference')
+        registered_platforms = [openmm.Platform.getPlatform(i).getName() for i in range(openmm.Platform.getNumPlatforms())]
+        self.platform_choice = next((p for p in registered_platforms if p.upper() == platform.upper()), platform)
 
+        # Copy the dict: OpenMMTheory adds entries such as Threads below, and without a
+        # copy those writes would land in the caller's own dictionary
         if properties is None:
             self.properties = {}
         else:
-            self.properties = properties
+            self.properties = dict(properties)
         if self.platform_choice == 'CPU':
             if self.printlevel > 0:
                 print("Using platform: CPU")
@@ -442,7 +465,21 @@ class OpenMMTheory:
             resid_index = 1
             residlabels = []
             residue_types_full = []
+            prev_fragtypelabel = None
             for i, fragtypelabel in enumerate(cluster_fragment.fragmenttype_labels):
+                # New molecule also whenever the fragmenttype changes, not only when the
+                # atomcount of the previous fragmenttype has been reached. Otherwise the
+                # per-residue atomname counter (jindex) desynchronizes as soon as
+                # fragmenttypes of different size follow each other, and the residues in the
+                # PDB-file no longer match the residue-templates in the XML-file.
+                if prev_fragtypelabel is not None and fragtypelabel != prev_fragtypelabel and jindex != 0:
+                    jindex = 0
+                    resid_index += 1
+                prev_fragtypelabel = fragtypelabel
+                if fragtypelabel >= len(atomnames_res):
+                    print(BC.FAIL, f"Error: fragmenttype label {fragtypelabel} of the cluster fragment has no "
+                          f"matching residue in the forcefield file (which defines {len(atomnames_res)} residues).", BC.END)
+                    ashexit()
                 atomnames_full.append(atomnames_res[fragtypelabel][jindex])
                 residlabels.append(resid_index)
                 jindex += 1
@@ -562,9 +599,9 @@ class OpenMMTheory:
                 if self.printlevel > 0:
                     print("System is periodic.")
                     print_line_with_subheader1("Setting up periodicity.")
-                    #Inspect and set PBC in self.topology and self.forcefield
-                    #Necessary for system creation with periodics (otherwise failure)
-                    self.set_periodics_before_system_creation(periodic_cell_vectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed,)
+                #Inspect and set PBC in self.topology and self.forcefield
+                #Necessary for system creation with periodics (otherwise failure)
+                self.set_periodics_before_system_creation(periodic_cell_vectors,pdb_pbc_vectors,periodic_cell_dimensions,CHARMMfiles,Amberfiles,use_parmed,)
 
                 #Nonbonded method to use for PBC
                 if self.nonbondedMethod_PBC == 'PME':
@@ -911,6 +948,20 @@ class OpenMMTheory:
 
         print_time_rel(module_init_time, modulename="OpenMM object creation", moduleindex=3,currprintlevel=self.printlevel)
 
+    # New method to easily modify interactions for a particular region
+    # Useful for electrostatic QM/MM, ML/MM etc.
+    def zero_all_interactions_in_region(self,atomlist):
+        print("zero_interactions_in_region")
+        # Removes all QM-QM nonbonded interations
+        self.addexceptions(atomlist)
+        # Removes all bonded QM-QM interactions
+        self.modify_bonded_forces(atomlist)
+        # Zero-ing QM-charges: Sets most QM-MM Coulomb interactions to zero
+        self.update_charges(atomlist,[0.0 for i in atomlist])
+        # Delete exceptions involving QM and MM atoms (1-4). Also needed.
+        self.delete_exceptions(atomlist)
+
+
     def define_mm_elements(self,topology):
         try:
             self.mm_elements = [i.element.symbol for i in topology.atoms()]
@@ -925,10 +976,11 @@ class OpenMMTheory:
     # potential = MLPotential('ani2x')
     #TODO: Check whether system contains all previous settings (frozen atoms, constraints)
     #TODO: May have to check
-    def create_mixed_ML_system(self,potential,mlatoms):
+    def create_mixed_ML_system(self,potential,mlatoms, mlLongRange=None):
         print("Creating a mixed MM/ML system (replaces old MM system)")
         print("MLatom indices:", mlatoms)
-        self.system = potential.createMixedSystem(self.topology, self.system, mlatoms)
+        self.system = potential.createMixedSystem(self.topology, self.system, mlatoms,
+                                                  mlLongRange=mlLongRange)
 
     # Function to write PDB-file if everything is available
     def write_pdbfile(self, positions=None, outputname="system"):
@@ -1206,12 +1258,14 @@ class OpenMMTheory:
         self.system.removeForce(forceindex)
     def remove_force_by_name(self,forcename):
         print(f"Searching forces and removing a force name: {forcename}")
-        for i, force in enumerate(self.system.getForces()):
-            #print("force:", force)
-            print("force name:", force.getName())
-            if force.getName() == forcename:
-                print(f"Removing force-index {i}: {forcename}")
-                self.system.removeForce(i)
+        #NOTE: indices shift when a force is removed, hence removal from the back
+        indices_to_remove = [i for i, force in enumerate(self.system.getForces())
+                             if force.getName() == forcename]
+        if len(indices_to_remove) == 0:
+            print(f"No force with name {forcename} found in system")
+        for i in reversed(indices_to_remove):
+            print(f"Removing force-index {i}: {forcename}")
+            self.system.removeForce(i)
 # Bond restraint force, e.g. for umbrella sampling
 # TODO : unit check
     def add_custom_bond_force(self,i,j,value,forceconstant):
@@ -1356,6 +1410,7 @@ class OpenMMTheory:
         for i, f in enumerate(forces):
             customforce.setParticleParameters(i, i, f)
         customforce.updateParametersInContext(simulation.context)
+
     # Function to add restraints to system before MD
     def add_bondrestraints(self, restraints=None):
         print("Adding restraints:", restraints)
@@ -1503,6 +1558,65 @@ class OpenMMTheory:
                 todelete.append(i)
         for d in reversed(todelete):
             self.system.removeConstraint(d)
+
+    def _get_topology_atom_metadata(self):
+        """Return (atom index, residue name, element symbol) from the topology."""
+        topology = getattr(self, "topology", None)
+        if topology is not None and hasattr(topology, "atoms"):
+            atoms = list(topology.atoms())
+            metadata = []
+            for fallback_index, atom in enumerate(atoms):
+                atom_index = getattr(atom, "index", fallback_index)
+                residue = getattr(atom, "residue", None)
+                residue_name = getattr(residue, "name", None)
+                element = getattr(atom, "element", None)
+                element_symbol = getattr(element, "symbol", None)
+                if element_symbol is None:
+                    mm_elements = getattr(self, "mm_elements", [])
+                    if fallback_index < len(mm_elements):
+                        element_symbol = mm_elements[fallback_index]
+                metadata.append((int(atom_index), residue_name, element_symbol))
+            return metadata
+
+        resnames = getattr(self, "resnames", [])
+        elements = getattr(self, "mm_elements", [])
+        if len(resnames) == len(elements) and resnames:
+            return [(index, resnames[index], elements[index]) for index in range(len(resnames))]
+        raise ValueError("OpenMM topology with residue and element information is required for atom selection")
+
+    @staticmethod
+    def _normalize_residue_names(residue_names, defaults):
+        if residue_names is None:
+            residue_names = defaults
+        elif isinstance(residue_names, str):
+            residue_names = [residue_names]
+        return {str(name).strip().upper() for name in residue_names}
+
+    def get_nonH_atomindices(self):
+        """Return indices of all non-hydrogen atoms in the OpenMM topology."""
+        return [index for index, _, element in self._get_topology_atom_metadata()
+                if element is not None and str(element).upper() not in {"H", "D"}]
+
+    def get_protein_heavy_atomindices(self, residue_names=None):
+        """Return heavy-atom indices for standard protein residues.
+
+        ``residue_names`` can override the built-in PDB residue-name set for
+        force fields that use custom amino-acid residue names.
+        """
+        protein_names = self._normalize_residue_names(residue_names, _PROTEIN_RESIDUE_NAMES)
+        return [index for index, resname, element in self._get_topology_atom_metadata()
+                if resname is not None and resname.strip().upper() in protein_names
+                and element is not None and str(element).upper() not in {"H", "D"}]
+
+    def get_solvent_atomindices(self, residue_names=None):
+        """Return all atom indices in recognized water residues.
+
+        ``residue_names`` can override the built-in water residue-name set to
+        support nonstandard solvent labels. Ions are not included by default.
+        """
+        solvent_names = self._normalize_residue_names(residue_names, _SOLVENT_RESIDUE_NAMES)
+        return [index for index, resname, _ in self._get_topology_atom_metadata()
+                if resname is not None and resname.strip().upper() in solvent_names]
 
     # Function to freeze atoms during OpenMM MD simulation. Sets masses to zero. Does not modify potential
     # energy-function.
@@ -1687,6 +1801,7 @@ class OpenMMTheory:
             print("Coupling frequency:", self.coupling_frequency)
             print("Properties:", self.properties)
             print("Topology:", self.topology)
+            print("Platform:", self.platform_choice)
         printdebug("self.system.getForces() ", self.system.getForces())
 
         #Create integrator object (needed for every update)
@@ -1694,6 +1809,7 @@ class OpenMMTheory:
 
         #Create simulation, either as part of OpenMMTheory (not picklable)
         #or not (used by run method)
+        #print_time_rel(timeA, modulename="creating/updating simulation 1a", currprintlevel=self.printlevel)
         if internal is True:
             #NOTE: Not sure if needed anymore
             self.simulation = openmm.app.simulation.Simulation(self.topology, self.system, self.integrator,
@@ -1817,13 +1933,16 @@ class OpenMMTheory:
         module_init_time = time.time()
         timeA = time.time()
         import openmm
+        # timeA = time.time()
+        if self.printlevel > 1:
+            print_line_with_subheader1("Running Single-point OpenMM Interface")
 
         #Need to call create_simulation here in order to get a simulation object
         simulation = self.create_simulation()
 
-        # timeA = time.time()
-        if self.printlevel > 1:
-            print_line_with_subheader1("Running Single-point OpenMM Interface")
+        print_time_rel(timeA, modulename="OpenMMTheory.run: after creating simulation", currprintlevel=self.printlevel, currthreshold=2)
+
+
         # If no coords given to run then a single-point job probably (not part of Optimizer or MD which would supply
         # coords). Then try if fragment object was supplied.
         # Otherwise internal coords if they exist
@@ -2301,6 +2420,32 @@ class ForceReporter(object):
 # 2. Go through the 1-4 interactions and not exclude but scale somehow manually. But maybe we can't do that in
 # CustomNonbonded Force?
 # Presumably not but maybe can add a special force object just for 1-4 interactions. We
+def remove_forces_from_system(system, forcenames):
+    """Remove all forces whose class-name is in forcenames from an OpenMM system.
+
+    Removing a force shifts the index of every force after it, so the indices are
+    collected first and the forces are then removed from the back. Removing them in
+    increasing index order (as was done before) removes the wrong force as soon as more
+    than one force matches, e.g. deleting a NonbondedForce instead of an AndersenThermostat.
+
+    Args:
+        system: OpenMM System object.
+        forcenames (list/str): class-name(s) of the forces to remove, e.g. "MonteCarloBarostat".
+
+    Returns:
+        list: names of the forces that were removed.
+    """
+    if isinstance(forcenames, str):
+        forcenames = [forcenames]
+    indices_to_remove = [i for i, force in enumerate(system.getForces())
+                         if force.__class__.__name__ in forcenames]
+    removed = []
+    for i in reversed(indices_to_remove):
+        removed.append(system.getForces()[i].__class__.__name__)
+        system.removeForce(i)
+    return list(reversed(removed))
+
+
 def create_cnb(original_nbforce,system_numparticles):
     import openmm
     """Creates a CustomNonbondedForce object that mimics the original nonbonded force
@@ -2750,9 +2895,15 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
     # Define a forcefield if using XML-files
     if xmlfile is not None:
         print("XMfile:", xmlfile)
-        print("Water model:", watermodel)
-        print("Water xmlfile:", waterxmlfile)
         #Basic checks
+        if watermodel is None:
+            print("Water model not provided, using tip3p as default for solvation")
+            modeller_solvent_name = "tip3p"
+        elif watermodel.lower() == "tip3p":
+            modeller_solvent_name = "tip3p"
+        else:
+            modeller_solvent_name = watermodel
+
         if extraxmlfile is not None:
             print("Using extra XML file:", extraxmlfile)
             #Checking if file exists first before continuing
@@ -2766,16 +2917,24 @@ def OpenMM_Modeller(pdbfile=None, forcefield_object=None, forcefield=None, xmlfi
             forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile)
         elif extraxmlfile is None and waterxmlfile is not None:
             forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,waterxmlfile)
+            print("Water xmlfile:", waterxmlfile)
         elif extraxmlfile is not None and waterxmlfile is not None:
             forcefield_obj = openmm_app.forcefield.ForceField(xmlfile,extraxmlfile,waterxmlfile)
+            print("Water xmlfile:", waterxmlfile)
 
     elif forcefield_object is not None:
         print("Using forcefield object provided")
         forcefield_obj= forcefield_object
-        
-        if watermodel is not None or waterxmlfile is not None:
-            print("Warning: watermodel/waterxmlfile ignored when forcefield_object is supplied")
+        if watermodel is None:
+            print("Water model not provided, using tip3p as default for solvation")
+            modeller_solvent_name = "tip3p"
+        elif watermodel.lower() == "tip3p":
+            modeller_solvent_name = "tip3p"
+        else:
+            modeller_solvent_name = watermodel
 
+        if waterxmlfile is not None:
+            print("Warning: waterxmlfile ignored when forcefield_object is supplied")
 
     else:
         print("You must provide a forcefield name, forcefieldobject or xmlfile keywords!")
@@ -3267,7 +3426,7 @@ def write_nonbonded_FF_for_ligand(fragment=None, charge=None, mult=None, coulomb
         coulomb14scale=1.0
         lj14scale=1.0
 
-    if charge_model == "xTB":
+    if charge_model.upper() == "XTB":
         print("Using xTB charges")
         charges = basic_atomcharges_xTB(fragment=fragment, charge=charge, mult=mult, xtbmethod='GFN2')
     elif charge_model == "CM5_ORCA" or charge_model == "CM5":
@@ -3531,6 +3690,13 @@ class OpenMM_MDclass:
                  centerforce_atoms=None, centerforce_constant=1.0, centerforce_distance=10.0, centerforce_center=None,
                  barostat_frequency=25, 
                  chkfile=None, statefile=None):
+        # Reject unsupported formats before constructing OpenMM state or doing
+        # any other potentially expensive initialization.
+        if trajectory_file_option is not None and trajectory_file_option not in valid_trajectory_file_options:
+            print(BC.FAIL,f"Error: unknown trajectory_file_option '{trajectory_file_option}'.",BC.END)
+            print("Valid options:", ", ".join(valid_trajectory_file_options))
+            print("Use trajectory_file_option=None if no trajectory file should be written.")
+            ashexit()
         module_init_time = time.time()
         import openmm
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
@@ -3656,6 +3822,7 @@ class OpenMM_MDclass:
             #If nothing found then we create:
             if self.openmmobject is None:
                 #Creating dummy OpenMMTheory (basic topology, particle masses, no forces except CMMRemoval)
+                print("Creating OpenMMTheory object to drive simulation")
                 self.openmmobject = OpenMMTheory(fragment=fragment, dummysystem=True, platform=platform, printlevel=printlevel,
                                 hydrogenmass=hydrogenmass, constraints=constraints,
                                 periodic=force_periodic,
@@ -3758,7 +3925,10 @@ class OpenMM_MDclass:
         print("Barostat:", barostat)
 
         print("")
-        print("Will write trajectory in format:", self.trajectory_file_option)
+        if self.trajectory_file_option is None:
+            print("Trajectory output disabled.")
+        else:
+            print("Will write trajectory in format:", self.trajectory_file_option)
         print("Trajectory write frequency:", self.traj_frequency)
         print("enforcePeriodicBox:", self.enforcePeriodicBox)
         print("special_wrapping:", self.special_wrapping)
@@ -3850,10 +4020,10 @@ class OpenMM_MDclass:
                                                         integrator=self.integrator, coupling_frequency=self.coupling_frequency)
         else:
             # Deleting barostat and Andersen thermostat if present from previous sims
-            for i, forcename in enumerate(forceclassnames):
-                if forcename == "MonteCarloBarostat" or forcename == "AndersenThermostat":
-                    print("Removing old force:", forcename)
-                    self.openmmobject.system.removeForce(i)
+            removed_forces = remove_forces_from_system(self.openmmobject.system,
+                                                       ["MonteCarloBarostat", "AndersenThermostat"])
+            for forcename in removed_forces:
+                print("Removing old force:", forcename)
 
             # Regular thermostat or integrator without barostat
             # Integrators: LangevinIntegrator, LangevinMiddleIntegrator, NoseHooverIntegrator, VerletIntegrator,
@@ -3952,30 +4122,36 @@ class OpenMM_MDclass:
     def set_sim_reporters(self,simulation,restart=False):
         import openmm
         #CheckpointReporter
-        print("Creating CheckpointReporter that will write a restartable checkpointfile every X steps")
-        checkpointfilename='OpenMM_MD.chk'
-        simulation.reporters.append(openmm.app.CheckpointReporter(checkpointfilename, self.traj_frequency*1))
+        if restart is False:
+            print("Creating CheckpointReporter that will write a restartable checkpointfile every X steps")
+            checkpointfilename='OpenMM_MD.chk'
+            simulation.reporters.append(openmm.app.CheckpointReporter(checkpointfilename, self.traj_frequency*1))
         #StateDataReporter
-        print("Creating StateDataReporter that will write to stdout")
-        statedatareporter_stdout=openmm.app.StateDataReporter(stdout, self.traj_frequency, step=True, time=True,
-                                                    potentialEnergy=True, kineticEnergy=True, volume=self.volume,
-                                                    density=self.density, temperature=True, separator=',')
-        simulation.reporters.append(statedatareporter_stdout)
+        if restart is False:
+            print("Creating StateDataReporter that will write to stdout")
+            statedatareporter_stdout=openmm.app.StateDataReporter(stdout, self.traj_frequency, step=True, time=True,
+                                                        potentialEnergy=True, kineticEnergy=True, volume=self.volume,
+                                                        density=self.density, temperature=True, separator=',')
+
+            simulation.reporters.append(statedatareporter_stdout)
         #Another reporter for writing to file
         if self.dataoutputoption != stdout:
-            print("Creating StateDataReporter that will write to file:", self.datafilename)
-            print("restart:", restart)
-            statedatareporter_file=openmm.app.StateDataReporter(self.dataoutputoption, self.traj_frequency, step=True, time=True,
-                                                            potentialEnergy=True, kineticEnergy=True, volume=self.volume,
-                                                            density=self.density, temperature=True, separator=',', append=restart)
-            simulation.reporters.append(statedatareporter_file)
-            self.dataoutputoption = open(self.datafilename,'a')
+
+            if restart is False:
+                print("Creating StateDataReporter that will write to file:", self.datafilename)
+                print("restart:", restart)
+                statedatareporter_file=openmm.app.StateDataReporter(self.dataoutputoption, self.traj_frequency, step=True, time=True,
+                                                                potentialEnergy=True, kineticEnergy=True, volume=self.volume,
+                                                                density=self.density, temperature=True, separator=',', append=restart)
+                simulation.reporters.append(statedatareporter_file)
+                self.dataoutputoption = open(self.datafilename,'a')
 
         #TODO: See if this can be made to work for simulations with step-by-step
         if self.trajectory_file_option == 'PDB':
-            simulation.reporters.append(
-                openmm.app.PDBReporter(self.trajfilename+'.pdb', self.traj_frequency,
-                                                         enforcePeriodicBox=self.enforcePeriodicBox))
+            if restart is False:
+                simulation.reporters.append(
+                    openmm.app.PDBReporter(self.trajfilename+'.pdb', self.traj_frequency,
+                                                            enforcePeriodicBox=self.enforcePeriodicBox))
         elif self.trajectory_file_option == 'DCD':
             #Note: using append keyword here if restarting
             # Check first if file exists for restart (OpenMM errors otherwise)
@@ -3983,20 +4159,23 @@ class OpenMM_MDclass:
                 print("Warning: restart option was active but trajectory file not existing. Will create new file")
                 restart=False
 
-            simulation.reporters.append(
-                openmm.app.DCDReporter(self.trajfilename+'.dcd', self.traj_frequency, append=restart,
-                                                         enforcePeriodicBox=self.enforcePeriodicBox))
-            print('DCDReporter added')
+            if restart is False:
+                simulation.reporters.append(
+                    openmm.app.DCDReporter(self.trajfilename+'.dcd', self.traj_frequency, append=restart,
+                                                            enforcePeriodicBox=self.enforcePeriodicBox))
+                print('DCDReporter added')
         elif self.trajectory_file_option == 'NetCDFReporter':
             print("NetCDFReporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import()
-            simulation.reporters.append(
-                mdtraj.reporters.NetCDFReporter(self.trajfilename+'.nc', self.traj_frequency))
+            if restart is False:
+                simulation.reporters.append(
+                    mdtraj.reporters.NetCDFReporter(self.trajfilename+'.nc', self.traj_frequency))
         elif self.trajectory_file_option == 'HDF5Reporter':
             print("HDF5Reporter traj format selected. This requires mdtraj. Importing.")
             mdtraj = MDtraj_import()
-            simulation.reporters.append(
-                mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
+            if restart is False:
+                simulation.reporters.append(
+                    mdtraj.reporters.HDF5Reporter(self.trajfilename+'.lh5', self.traj_frequency,
                                               enforcePeriodicBox=self.enforcePeriodicBox))
         elif self.trajectory_file_option =="XYZ":
             print("XYZ trajectory format selected (not available for classical MD). Warning: not very fast")
@@ -4010,7 +4189,8 @@ class OpenMM_MDclass:
         if self.force_file_option != None:
             print("ForceReporter traj format selected.")
             #exit()
-            simulation.reporters.append(ForceReporter(self.trajfilename + '_force.txt', self.traj_frequency, atomic_units=self.atomic_units_force_reporter))
+            if restart is False:
+                simulation.reporters.append(ForceReporter(self.trajfilename + '_force.txt', self.traj_frequency, atomic_units=self.atomic_units_force_reporter))
         if self.energy_file_option != None:
             print("Energyfile  selected.")
             try:
@@ -4351,25 +4531,25 @@ class OpenMM_MDclass:
                     print(f"Will use atoms {wrapping_atoms} for wrapping")
 
         ########################################
-        # Writing intial frame to disk as PDB.
+        # Writing initial frame to disk as PDB.
         ########################################
         pdb_filename=self.trajfilename+"_firstframe.pdb"
-        print("Writing intial frame to disk as PDB-file:", pdb_filename)
+        print("Writing initial frame to disk as PDB-file:", pdb_filename)
         blastate = self.simulation.context.getState(getEnergy=True, getPositions=True, 
-                                        getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
+                                    getForces=True, enforcePeriodicBox=self.enforcePeriodicBox)
         with open(pdb_filename, 'w') as f:
             openmm.app.pdbfile.PDBFile.writeHeader(self.openmmobject.topology, f)
             openmm.app.pdbfile.PDBFile.writeModel(self.openmmobject.topology,
-                                                  blastate.getPositions(asNumpy=True).value_in_unit(
+                                                blastate.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
         # PDBx/mmCIF
         pdbx_filename=self.trajfilename+"_firstframe.cif"
-        print("Writing intial frame to disk as PDBx/mmCIF-file:", pdbx_filename)
+        print("Writing initial frame to disk as PDBx/mmCIF-file:", pdbx_filename)
         with open(pdbx_filename, 'w') as f:
             openmm.app.pdbxfile.PDBxFile.writeHeader(self.openmmobject.topology, f)
             openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
-                                                  blastate.getPositions(asNumpy=True).value_in_unit(
+                                                blastate.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
 
         ###############################################################################
@@ -4424,12 +4604,20 @@ class OpenMM_MDclass:
                             print_time_rel(checkpoint, modulename="set positions update", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                             checkpoint = time.time()
 
-                # Run WrapTheory step to get full system QM+PC gradient.
-                wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
-                                      charge=self.charge, mult=self.mult)
-                
+                # Run WrapTheory step to get full system gradient.
+                # First making sure Wraptheory does not compute the OpenMM part of the gradient (which is handled self.openmmobject)
+                # The previous value is restored afterwards: the WrapTheory object belongs to the
+                # user and may be used for a singlepoint or an optimization after the MD run, where
+                # the OpenMM component has to be calculated again
+                previous_skip_openmmtheory_run = self.wraptheory_object.skip_openmmtheory_run
+                self.wraptheory_object.skip_openmmtheory_run=True
+                try:
+                    wrap_energy,wrapgradient = self.wraptheory_object.run(current_coords=current_coords, elems=self.fragment.elems, Grad=True,
+                                          charge=self.charge, mult=self.mult)
+                finally:
+                    self.wraptheory_object.skip_openmmtheory_run = previous_skip_openmmtheory_run
                 #NOTE: if WrapTheory contains QMMMTheory then wrapgradient does not have MM contribution (only QM_PC from QM/MM and other theory contributino)
-                print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
+                #print_time_rel(checkpoint, modulename="WrapTheory run", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
 
                 # Now need to update OpenMM external force with new force
                 CheckpointTime = time.time()
@@ -4696,7 +4884,7 @@ class OpenMM_MDclass:
                     self.simulation.step(1)
                 print_time_rel(checkpoint, modulename="OpenMM sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
                 print_time_rel(checkpoint_begin_step, modulename="Total sim step", moduleindex=2, currprintlevel=self.printlevel, currthreshold=2)
-        
+
         # 
         elif self.theory_runtype == "ONIOM":
             if self.printlevel >= 2:
@@ -4938,7 +5126,8 @@ class OpenMM_MDclass:
                                                   self.state.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
-        print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
+        if self.trajectory_file_option is not None:
+            print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
         # PDBx/mmCIF
         pdbx_filename=self.trajfilename+"_lastframe.cif"
         print("Writing final frame to disk as PDBx/mmCIF-file:", pdbx_filename)
@@ -4947,7 +5136,8 @@ class OpenMM_MDclass:
             openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
                                                   self.state.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
-        print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
+        if self.trajectory_file_option is not None:
+            print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
 
 
         # Saving state to disk
@@ -5040,6 +5230,19 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
                         datafilename=datafilename, trajectory_file_option=trajectory_file_option,
                         dummyatomrestraint=dummyatomrestraint, solute_indices=solute_indices,
                         barostat_frequency=barostat_frequency)
+    # Sanity-check coordinates before the first NPT cycle by minimizing a temporary simulation.
+    # This avoids carrying potentially unstable positions/velocities from a preceding warm-up into NPT.
+    import openmm
+    try:
+        tmp_simulation = md.openmmobject.create_simulation()
+        md.openmmobject.set_positions(fragment.coords, tmp_simulation)
+        tmp_simulation.minimizeEnergy(maxIterations=200, tolerance=1.0)
+        state = tmp_simulation.context.getState(getPositions=True)
+        minimized_coords = state.getPositions(asNumpy=True).value_in_unit(openmm.unit.angstrom)
+        fragment.coords = minimized_coords
+        md.positions = minimized_coords
+    except Exception as e:
+        print("OpenMM_box_equilibration pre-minimization failed:", type(e).__name__, e)
     restart=False
     #while volume_std >= volume_threshold and density_std >= density_threshold:
     for i in range(max_NPT_cycles):
@@ -5093,7 +5296,14 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
 
 
     print(f"Final PDB file: {trajfilename}.pdb")
-    print(f"NPT trajectory: {trajfilename}.{trajectory_file_option.lower()}")
+    if trajectory_file_option is not None:
+        trajectory_extension = {
+            'PDB': 'pdb', 'DCD': 'dcd', 'NetCDFReporter': 'nc',
+            'HDF5Reporter': 'lh5', 'XYZ': 'xyz',
+        }[trajectory_file_option]
+        print(f"NPT trajectory: {trajfilename}.{trajectory_extension}")
+    else:
+        print("NPT trajectory output disabled.")
 
     #Running mdtraj
     if use_mdtraj is True:
@@ -5821,7 +6031,7 @@ def get_free_energy_from_biasfiles(temperature,biasfactor,CV1_gridwith,CV2_gridw
     if CV2_gridwith == None:
         full_bias=np.zeros((CV1_gridwith))
     else:
-	    full_bias=np.zeros((CV2_gridwith,CV1_gridwith))
+        full_bias=np.zeros((CV2_gridwith,CV1_gridwith))
 
     #Looping over bias-files
     print("full_bias shape:", full_bias.shape)
@@ -6337,7 +6547,7 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
         import openff
 
         from openmmforcefields.generators import SMIRNOFFTemplateGenerator
-        smirnoff = SMIRNOFFTemplateGenerator(molecules=molecule)
+        smirnoff = SMIRNOFFTemplateGenerator(molecules=molecule, forcefield=openff_file)
 
         forcefield = ForceField('amber/protein.ff14SB.xml', 'amber/tip3p_standard.xml', 'amber/tip3p_HFE_multivalent.xml')
         # Register the SMIRNOFF template generator

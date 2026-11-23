@@ -5,6 +5,7 @@ import shutil
 import math
 import copy
 import time
+import re
 
 from collections import defaultdict
 
@@ -499,6 +500,36 @@ maxiter 150\nend
     def cleanup(self):
         print("Cleanup called")
 
+    def _run_hf_gradient(self, theory, current_coords, elems, charge, mult, numcores, label):
+        """Run the SCF gradient matching one canonical CCSD(T) basis level."""
+        hf_input = theory.orcasimpleinput.replace(self.ccsdtkeyword, "HF", 1)
+        if hf_input == theory.orcasimpleinput:
+            raise RuntimeError("Could not construct the matching HF input for CBS gradients.")
+        hf_blocks = re.sub(
+            r"(?ms)^%mdci\s*\n.*?^end\s*$\n?", "", theory.orcablocks
+        )
+        hf_theory = ash.interfaces.interface_ORCA.ORCATheory(
+            orcadir=self.orcadir,
+            orcasimpleinput=hf_input,
+            orcablocks=hf_blocks,
+            numcores=numcores,
+            printlevel=theory.printlevel,
+            filename=label,
+        )
+        _, gradient = hf_theory.run(
+            elems=elems,
+            current_coords=current_coords,
+            charge=charge,
+            mult=mult,
+            Grad=True,
+            numcores=numcores,
+        )
+        gradient = np.asarray(gradient, dtype=float)
+        hf_gbw_file = hf_theory.filename + ".gbw"
+        if os.path.exists(hf_gbw_file):
+            os.remove(hf_gbw_file)
+        return gradient
+
 
     #MP2 CPS correction step (A. Kubas and coworkers JCTC 2023)
     def MP2correction_Step(self, current_coords, elems,calc_label, numcores, charge=None, mult=None, basis=None, pnosetting='NormalPNO', PC=None, current_MM_coords=None, MMcharges=None):
@@ -765,6 +796,31 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             print(BC.FAIL, "Error. charge and mult has not been defined for ORCATheory.run method", BC.END)
             ashexit()
 
+        if Grad:
+            unsupported_options = []
+            for enabled, option in (
+                (self.DLPNO, "DLPNO/PNO extrapolation"),
+                (self.F12, "F12 methods"),
+                (self.OOCC, "OO-CC methods"),
+                (self.Triplesextrapolation, "separate triples extrapolation"),
+                (self.MP2_PNO_correction, "MP2-PNO correction"),
+                (self.T1, "T1 correction"),
+                (self.T1correction, "T1 correction"),
+                (self.CVSR, "core-valence/relativistic correction"),
+                (self.HOCCcorrection, "higher-order coupled-cluster correction"),
+                (self.DBOCcorrection, "DBOC correction"),
+                (self.FCI, "FCI correction"),
+                (self.atomicSOcorrection, "atomic spin-orbit correction"),
+                (PC is True, "point-charge embedding"),
+            ):
+                if enabled:
+                    unsupported_options.append(option)
+            if unsupported_options:
+                raise NotImplementedError(
+                    "Analytic CBS gradients currently support canonical ORCA "
+                    "CCSD(T) only; unsupported options: {}.".format(", ".join(unsupported_options))
+                )
+
 
         #Used by CFour and MRCC
         if mult > 1:
@@ -777,10 +833,6 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             elems=qm_elems
             #Creating PC file. Unnecessary
             #create_orca_pcfile("orca.pc", current_MM_coords, MMcharges)
-
-        if Grad == True:
-            print(BC.FAIL,"No gradient available for ORCA_CC_CBS_Theory yet! Exiting", BC.END)
-            ashexit()
 
         #Checking that there is a basis set defined for each element provided here
         #NOTE: ORCA will use default SVP basis set if basis set not defined for element
@@ -808,6 +860,8 @@ TCutMKN {thresholdsetting["TCutMKN"]}
             'E_corr_CBS' : 0.0, 'E_SO' : 0.0, 'E_corecorr_and_SR' : 0.0, 'E_HOCC': 0.0, 'E_DBOC': 0.0, 'E_FCIcorrection': 0.0}
 
             self.energy_components=E_dict
+            if Grad:
+                return E_total, np.zeros((numatoms, 3))
             return E_total
 
         #Defining initial label here based on element and charge/mult of system
@@ -940,7 +994,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         else:
             #SINGLE BASIS CORRELATION JOB
             if self.singlebasis is True:
-                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
+                self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges, Grad=Grad)
                 CCSDT_1_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO, F12=self.F12)
                 shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                 shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
@@ -1034,7 +1088,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
 
                 #REGULAR DIRECT CCSD(T) EXTRAPOLATION
                 else:
-                    self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
+                    self.ccsdt_1.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges, Grad=Grad)
                     CCSDT_1_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_1.filename+'.out', DLPNO=self.DLPNO)
                     shutil.copyfile(self.ccsdt_1.filename+'.out', './' + calc_label + 'CCSDT_1' + '.out')
                     shutil.copyfile(self.ccsdt_1.filename+'.gbw', './' + calc_label + 'CCSDT_1' + '.gbw')
@@ -1046,7 +1100,7 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                     else:
                         CCSDT_1_MP2corr=0.0
 
-                    self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges)
+                    self.ccsdt_2.run(elems=elems, current_coords=current_coords, numcores=numcores, charge=charge, mult=mult, PC=PC, current_MM_coords=current_MM_coords, MMcharges=MMcharges, Grad=Grad)
                     CCSDT_2_dict = ash.interfaces.interface_ORCA.grab_HF_and_corr_energies(self.ccsdt_2.filename+'.out', DLPNO=self.DLPNO)
                     shutil.copyfile(self.ccsdt_2.filename+'.out', './' + calc_label + 'CCSDT_2' + '.out')
                     shutil.copyfile(self.ccsdt_2.filename+'.gbw', './' + calc_label + 'CCSDT_2' + '.gbw')
@@ -1245,6 +1299,36 @@ TCutMKN {thresholdsetting["TCutMKN"]}
         print("FINAL ENERGY :", E_FINAL, "Eh")
         #Setting energy_components as an accessible attribute
         self.energy_components=E_dict
+
+        if Grad:
+            if self.singlebasis:
+                final_gradient = np.asarray(self.ccsdt_1.grad, dtype=float)
+            else:
+                hf_gradient_1 = self._run_hf_gradient(
+                    self.ccsdt_1, current_coords, elems, charge, mult, numcores,
+                    calc_label + "HF_gradient_cardinal1",
+                )
+                hf_gradient_2 = self._run_hf_gradient(
+                    self.ccsdt_2, current_coords, elems, charge, mult, numcores,
+                    calc_label + "HF_gradient_cardinal2",
+                )
+                scf_gradient = Extrapolation_twopoint_SCF(
+                    [hf_gradient_1, hf_gradient_2], self.cardinals, self.basisfamily,
+                    alpha=self.alpha, SCFextrapolation=self.SCFextrapolation,
+                )
+                correlation_gradients = [
+                    np.asarray(self.ccsdt_1.grad, dtype=float) - hf_gradient_1,
+                    np.asarray(self.ccsdt_2.grad, dtype=float) - hf_gradient_2,
+                ]
+                correlation_gradient = Extrapolation_twopoint_corr(
+                    correlation_gradients, self.cardinals, self.basisfamily, beta=self.beta,
+                )
+                final_gradient = scf_gradient + correlation_gradient
+            self.grad = final_gradient
+            gbwfile = self.ccsdt_1.filename + '.gbw'
+            if os.path.exists(gbwfile):
+                os.remove(gbwfile)
+            return E_FINAL, final_gradient
 
         #Cleanup GBW file. Full cleanup ??
         # TODO: Keep output files for each step

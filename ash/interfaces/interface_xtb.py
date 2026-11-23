@@ -10,7 +10,7 @@ import ash.settings_ash
 from ash.modules.module_theory import Theory
 from ash.functions.functions_general import (
     ashexit, blankline, reverse_lines, print_time_rel, BC, 
-    print_line_with_mainheader, print_if_level
+    print_line_with_mainheader, print_if_level, print_module_version, grab_version_from_output
 )
 import ash.modules.module_coords
 from ash.modules.module_coords import (
@@ -76,6 +76,16 @@ class gxTBTheory(Theory):
             charge=None, mult=None):
 
         module_init_time=time.time()
+
+        #g-xTB does not support point charge embedding ($pcem), so a QM/MM energy would
+        #silently come back without embedding while a QM/MM gradient would fail on the
+        #missing PC-gradient. Refuse instead.
+        if PC is True:
+            print(BC.FAIL, "Error. gxTBTheory does not support QM/MM point-charge embedding", BC.END)
+            print("g-xTB lists point charge embedding ($pcem) as an unsupported feature.")
+            print("Use xTBTheory(runmode='inputfile') instead for an xTB-based QM-region.")
+            ashexit()
+
         numatoms=len(current_coords)
         write_xyzfile(elems, current_coords, "gxtb", printlevel=2, writemode='w', title="title")
 
@@ -107,7 +117,6 @@ class gxTBTheory(Theory):
             return self.energy
 
 # Now supports 2 runmodes: 'library' (fast Python C-API) or 'inputfile'
-# TODO: QM/MM pointcharges for library
 class xTBTheory:
     def __init__(self, xtbdir=None, xtbmethod='GFN1', runmode='inputfile', numcores=1, printlevel=2, filename='xtb_',
                  maxiter=500, electronic_temp=300, label=None, accuracy=0.1, hardness_PC=1000, solvent=None,
@@ -125,7 +134,7 @@ class xTBTheory:
         # If hardness is set to 'elements', xtb's element-specific hardness is used (see https://xtb-docs.readthedocs.io/en/latest/pcem.html).
         self.hardness=hardness_PC
 
-        # Accuracy (0.1 it quite tight)
+        # Accuracy (0.1 is quite tight)
         self.accuracy=accuracy
 
         # Printlevel
@@ -182,6 +191,7 @@ class xTBTheory:
         self.xtbmethod = xtbmethod
         self.maxiter = maxiter
         self.runmode = runmode
+        self._version_printed = False
 
         self.electronic_temp = electronic_temp
 
@@ -455,7 +465,11 @@ class xTBTheory:
         module_init_time=time.time()
         
         if self.runmode == 'library':
+            import xtb
             from xtb.interface import Calculator, Param
+            if not self._version_printed:
+                version_string = print_module_version(xtb, "xTB", distribution_names=["xtb", "xtb-python"])
+                self._version_printed = version_string is not None
 
         if MMcharges is None:
             MMcharges=[]
@@ -533,6 +547,13 @@ class xTBTheory:
                                     Grad=Grad, maxiter=self.maxiter, electronic_temp=self.electronic_temp, accuracy=self.accuracy, numcores=numcores,
                                     use_tblite=self.use_tblite, extraflag=self.extraflag)
 
+            xtb_version = None
+            if not self._version_printed:
+                xtb_version = grab_version_from_output(self.filename + '.out', r"\*\s*xtb version\s+([^\s(]+)")
+            if xtb_version is not None:
+                print(f"xTB version: {xtb_version}")
+                self._version_printed = True
+
             if self.printlevel >= 2:
                 print("------------xTB calculation done-----")
 
@@ -547,6 +568,12 @@ class xTBTheory:
             # Check if finished. Grab energy, gradient, pcgradient, cellgradient
             if Grad is True:
                 self.energy,self.grad=xtbgradientgrab(num_qmatoms)
+
+                # Fix for possible problem getting energy from gradient file (can happen for big systems)
+                if self.energy is None:
+                    # Grabbing energy from main outputfile instead
+                    self.energy=xtbfinalenergygrab(self.filename+'.out')
+
                 if self.periodic:
                     self.cell_gradient = grab_latticegrad()
                     print("cell_gradient:", self.cell_gradient)
@@ -674,6 +701,9 @@ class xTBTheory:
             if self.printlevel >= 2:
                 print("Running xtB using {} cores".format(self.numcores))
             res = self.calcobject.singlepoint()
+            if PC is True:
+                #Releasing charges right away, otherwise they stay on the cached calcobject and mess up the next xtb calc with or without pc-embedding
+                self.calcobject.release_external_charges()
             if self.printlevel >= 2:
                 print("------------xTB calculation done-------------")
             if Grad == True:
@@ -684,21 +714,16 @@ class xTBTheory:
                 if self.printlevel >= 2:
                     print("xtb energy :", self.energy)
                 if PC == True:
-                    #pcgrad
-                    #get pcgrad
-                    print("pc grad is not yet implemented for runmode library ")
-                    print("If you were trying to use xtb in a QM/MM object then you have to switch to runmode='inputfile' instead")
-                    ashexit()
-
-                    #_gradient = np.zeros((len(self), 3))
-                    #_lib.xtb_getGradient(self._env, self._res, _cast("double*", _gradient))
-                    #TODO: Create get_PCgradient function in the Python API
-                    #TODO: Wait for xtb-python to be updated to use xtb version 6.5.1
-                    self.pcgrad =res.get_PCgradient()
-                    print("self.pcgrad:", self.pcgrad)
-                    ashexit()
-                    print("------------ENDING XTB-INTERFACE-------------")
-                    print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
+                    #Grab pointcharge gradient from the Results object (xtb-python names it get_pc_gradient).
+                    pcgrad_method = getattr(res, 'get_pc_gradient', getattr(res, 'get_PCgradient', None))
+                    if pcgrad_method is None:
+                        print(BC.WARNING,"This xtb-python version does not wrap the xtb_getPCGradient C-function, so the pointcharge gradient can not be grabbed.",BC.END)
+                        print("If you were trying to use xtb in a QM/MM object then you have to switch to runmode='inputfile' instead")
+                        ashexit()
+                    self.pcgrad = pcgrad_method(len(MMcharges))
+                    if self.printlevel >= 2:
+                        print("------------ENDING XTB-INTERFACE-------------")
+                        print_time_rel(module_init_time, modulename='xTBlib run', moduleindex=2)
                     return self.energy, self.grad, self.pcgrad
                 else:
                     if self.printlevel >= 2:
@@ -754,7 +779,12 @@ def xtbgradientgrab(numatoms):
     with open('gradient') as f:
         for line in reverse_lines(f):
             if '  cycle =' in line:
-                energy = float(line.split("SCF energy =")[1].split()[0])
+                # Checking if energy is a number or asterisk (can happen for big systems)
+                en_entry = line.split("SCF energy =")[1].split()[0]
+                if '*' in en_entry:
+                    energy = None
+                else: 
+                    energy = float(line.split("SCF energy =")[1].split()[0])
                 return energy, gradient
             if count==numatoms:
                 grab=False
@@ -1071,20 +1101,23 @@ def create_xtb_pcfile_general(coords,pchargelist,hardness=1000):
 
 # Grab pointcharge gradient (Eh/Bohr) from xtb pcgrad file
 def xtbpcgradientgrab(numatoms, file="pcgrad"):
-    gradient = np.zeros((numatoms, 3))
     with open(file) as pgradfile:
-        for count,line in enumerate(pgradfile):
-            val_x=float(line.split()[0])
-            val_y = float(line.split()[1])
-            val_z = float(line.split()[2])
-            #gradient[count-1] = [val_x,val_y,val_z]
-            gradient[count] = [val_x,val_y,val_z]
+        text = pgradfile.read()
+    # Fast path: a file of exactly numatoms x 3 numbers is converted in one go
+    values = text.split()
+    if len(values) == 3*numatoms:
+        return np.array(values, dtype=float).reshape(numatoms, 3)
+    # Otherwise (extra columns or fewer lines) read the first 3 columns line by line
+    gradient = np.zeros((numatoms, 3))
+    for count,line in enumerate(text.splitlines()):
+        val_x, val_y, val_z = line.split()[:3]
+        gradient[count] = [float(val_x), float(val_y), float(val_z)]
     return gradient
 
 # Grab xTB charges. Assuming default xTB charges that are inside file charges
-def grabatomcharges_xTB():
+def grabatomcharges_xTB(filepath="charges"):
     charges=[]
-    with open('charges') as file:
+    with open(filepath) as file:
         for line in file:
             charges.append(float(line.split()[0]))
     return charges
@@ -1224,6 +1257,7 @@ class tbliteTheory(Theory):
             print("Cell vectors (Å)", self.periodic_cell_vectors)
         try:
             import tblite
+            print_module_version(tblite, "tblite", distribution_names=["tblite", "tblite-python"])
         except Exception as e:
             print("Problem importing tblite library. Have you installed tblite properly ?")
             print("See: https://github.com/tblite/tblite")
