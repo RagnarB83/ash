@@ -897,12 +897,41 @@ def _normalise_rc_list(RC_list):
     return out
 
 def _build_rc_value_lists(RC_list):
-    """Return a list of value-lists, one per RC dimension."""
+    """Return a list of value-lists, one per RC dimension.
+
+    Exits if any RC has a malformed range or yields fewer than 2 points,
+    which almost always means a user mistake (e.g. wrong sign of the step).
+    """
     result = []
-    for rc in RC_list:
-        r = rc['range']
-        vals = list(frange(r[0], r[1], r[2]))
-        vals.append(float(r[1]))  # always include the endpoint
+    for n, rc in enumerate(RC_list, start=1):
+        r = rc.get('range')
+        if r is None or len(r) != 3:
+            print(BC.FAIL,
+                  f"Error: RC{n} ({rc['type']} {rc['indices']}) needs a range of the "
+                  f"form [start, stop, step]. Got: {r}", BC.END)
+            ashexit()
+
+        start, stop, step = r
+        if step == 0:
+            print(BC.FAIL, f"Error: RC{n} has a step size of 0 in range {r}.", BC.END)
+            ashexit()
+
+        vals = list(frange(start, stop, step))
+        vals.append(float(stop))  # always include the endpoint
+
+        if len(vals) < 2:
+            print(BC.FAIL,
+                  f"Error: RC{n} ({rc['type']} {rc['indices']}) with range {r} "
+                  f"defines only {len(vals)} surfacepoint(s).", BC.END)
+            if (stop - start) * step < 0:
+                print(BC.FAIL,
+                      f"The step has the wrong sign: going from {start} to {stop} "
+                      f"requires a {'negative' if stop < start else 'positive'} step "
+                      f"(e.g. {-abs(step) if stop < start else abs(step)}).", BC.END)
+            elif start == stop:
+                print(BC.FAIL, "Start and stop values are identical.", BC.END)
+            ashexit()
+
         result.append(vals)
     return result
 
