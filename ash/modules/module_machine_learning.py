@@ -135,7 +135,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         os.chdir("xyz_traj_split")
         split_multimolxyzfile(f"../{xyztraj}", writexyz=True, skipindex=nth_frame_in_traj,return_fragments=False)        
         # Getting list of XYZ-files in directory, properly sorted
-        full_list_of_xyz_files=natural_sort(glob.glob(f"molecule*.xyz"))
+        full_list_of_xyz_files=natural_sort(glob.glob("molecule*.xyz"))
         print("Created directory xyz_traj_split")
         print("Number of XYZ-files in directory:", len(full_list_of_xyz_files))
         if num_snapshots is None:
@@ -205,7 +205,7 @@ def create_ML_training_data(xyz_dir=None, dcd_trajectory=None, xyz_trajectory=No
         print("Splitting trajectory")
         split_multimolxyzfile(xyz_trajectory, writexyz=True, skipindex=1,return_fragments=False)
         # Getting list of XYZ-files in directory, properly sorted
-        full_list_of_xyz_files=natural_sort(glob.glob(f"molecule*.xyz"))
+        full_list_of_xyz_files=natural_sort(glob.glob("molecule*.xyz"))
         if num_snapshots is None:
             print("num_snapshots has not been set by user")
             print("This means that we will take all snapshots")

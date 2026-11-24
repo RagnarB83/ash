@@ -378,7 +378,7 @@ class MACETheory():
     def check_file_exists(self, file):
         import os
         if file is None:
-            print(f"Error: File is None. Exiting")
+            print("Error: File is None. Exiting")
             ashexit()
         if self.printlevel >= 2:
             print(f"A filename-string ({file}) was provided, checking if file exists")
@@ -423,7 +423,7 @@ class MACETheory():
             print(f"Loading model from file {self.model_file}. Platform is: {self.platform}")
             self.model = torch.load(f=self.model_file, map_location=torch.device(self.platform))
             self.model = self.model.to(self.platform)  # for possible cuda problems
-            print_time_rel(module_init_time, modulename=f'MACE model-load', moduleindex=2)
+            print_time_rel(module_init_time, modulename='MACE model-load', moduleindex=2)
 
     # Load foundation model by name
     def modelname_load(self):
@@ -554,17 +554,17 @@ class MACETheory():
                 # Checking first f file exists
                 self.check_file_exists(self.model_file)
                 #Load model
-                print_time_rel(module_init_time, modulename=f'MACE run - before modelfile_load', moduleindex=2)
+                print_time_rel(module_init_time, modulename='MACE run - before modelfile_load', moduleindex=2)
                 self.modelfile_load()
             elif self.model_name is not None:
                 print("Loading via model_name:", self.model_name)
-                print_time_rel(module_init_time, modulename=f'MACE run - before modelname_load', moduleindex=2)
+                print_time_rel(module_init_time, modulename='MACE run - before modelname_load', moduleindex=2)
                 self.modelname_load()
             else:
                 print("Error: Neither modelfile or modelname was defined.")
                 ashexit()
 
-        print_time_rel(module_init_time, modulename=f'MACE run - after model-load', moduleindex=2)
+        print_time_rel(module_init_time, modulename='MACE run - after model-load', moduleindex=2)
 
         # Creating ASE atoms object (MACE has ASE has dependency anyway)
         import ase
@@ -578,17 +578,17 @@ class MACETheory():
     
         # New simpler MACE interface via ASE
         # Works for foundation models
-        print_time_rel(module_init_time, modulename=f'MACE run - after atoms', moduleindex=2)
+        print_time_rel(module_init_time, modulename='MACE run - after atoms', moduleindex=2)
         if self.new_interface is True:
             # Add loaded model to ASE calculator
             atoms.calc = self.model
 
             # Run energy
             self.energy = atoms.get_potential_energy() * ash.constants.evtohar
-            print_time_rel(module_init_time, modulename=f'MACE run - after energy', moduleindex=2)
+            print_time_rel(module_init_time, modulename='MACE run - after energy', moduleindex=2)
             print("Energy:", self.energy)
             forces = atoms.get_forces()
-            print_time_rel(module_init_time, modulename=f'MACE run - after forces', moduleindex=2)
+            print_time_rel(module_init_time, modulename='MACE run - after forces', moduleindex=2)
             self.gradient = forces/-51.422067090480645
             if self.stress:
                 stress_ev_ang3 = atoms.get_stress(voigt=False)
@@ -646,7 +646,7 @@ class MACETheory():
                 print("RuntimeError occurred. Trying type changes. Message", e)
                 self.model = self.model.float() # sometimes necessary to avoid type problems
                 output = self.model(batch.to_dict(), compute_stress=self.stress, compute_force=Grad)
-            print_time_rel(module_init_time, modulename=f'MACE run - after energy', moduleindex=2)
+            print_time_rel(module_init_time, modulename='MACE run - after energy', moduleindex=2)
             # Grab energy
             en = torch_tools.to_numpy(output["energy"])[0]
             self.energy = float(en*ash.constants.evtohar)
@@ -670,7 +670,7 @@ class MACETheory():
                 hess = compute_hessians_vmap(forces_tensor,batch["positions"])
                 hessian = torch_tools.to_numpy(hess)
                 print("hessian:", hessian)
-                print_time_rel(module_init_time, modulename=f'MACE run - after hessian', moduleindex=2)
+                print_time_rel(module_init_time, modulename='MACE run - after hessian', moduleindex=2)
                 self.hessian = hessian*0.010291772
 
         print_if_level(f"Single-point {self.theorynamelabel} energy: {self.energy}", self.printlevel, 1)

@@ -4,10 +4,7 @@ import sys
 import numpy as np
 import time
 from functools import wraps
-import math
 import shutil
-import re
-import atexit
 
 import ash.settings_ash
 from ash import ashpath
@@ -1055,12 +1052,12 @@ def print_pretty_table(list_of_objects=None, list_of_labels=None, title=None,  s
     print("="*divider_line_length)
     print(f"{title}")
     print("="*divider_line_length)
-    headerstring=f""
+    headerstring=""
     for label in list_of_labels:
         headerstring+= f"{label:>{format_spec_string}}"
     print(headerstring)
     print("-"*divider_line_length)
-    tablestring=f""
+    tablestring=""
     for i in range(len(list_of_objects[0])):
         for j in range(len(list_of_objects)):
             val = list_of_objects[j][i]
@@ -1068,7 +1065,7 @@ def print_pretty_table(list_of_objects=None, list_of_labels=None, title=None,  s
                 tablestring+=f"{val:>{format_spec_float}}"
             else:
                 tablestring+=f"{val:>{format_spec_string}}"
-        tablestring+=f"\n"
+        tablestring+="\n"
     print(tablestring)
     print("-"*divider_line_length)
     print()

@@ -6,9 +6,9 @@ import sys
 import copy
 import time
 
-from ash.functions.functions_general import ashexit, listdiff, clean_number, blankline,BC,print_time_rel, print_line_with_mainheader,isodd, isint
+from ash.functions.functions_general import ashexit, listdiff, clean_number, blankline,BC,print_time_rel, print_line_with_mainheader, isint
 import ash.modules.module_coords
-from ash.modules.module_coords import check_charge_mult, check_multiplicity,read_xyzfile,write_multi_xyz_file, Fragment
+from ash.modules.module_coords import check_charge_mult,read_xyzfile,write_multi_xyz_file, Fragment
 from ash.modules.module_results import ASH_Results
 import ash.interfaces.interface_ORCA
 from ash.modules.module_QMMM import QMMMTheory
@@ -47,7 +47,7 @@ def AnFreq(fragment=None, theory=None, charge=None, mult=None, temp=298.15, mass
         # Check charge/mult
         charge,mult = check_charge_mult(charge, mult, theory.theorytype, fragment, "AnFreq", theory=theory)
         # Do single-point theory run with Hessian=True
-        energy = theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True)
+        theory.run(current_coords=fragment.coords, elems=fragment.elems, charge=charge, mult=mult, Hessian=True)
 
         # Grab Hessian from theory object
         print("Getting analytic Hessian from theory object")
@@ -282,7 +282,7 @@ def NumFreq(fragment=None, theory=None, charge=None, mult=None, npoint=2, displa
         #Original geo
         if disp == 'Originalgeo':
             calclabel = 'Originalgeo'
-            stringlabel=f"Originalgeo"
+            stringlabel="Originalgeo"
         #Displacements
         else:
             atom_disp = disp[0]
@@ -1208,7 +1208,7 @@ Thus, these vectors are normalized but *not* orthogonal"""
                     elif left == 3:
                         line = "{:>6d} {:>14.6f} {:>10.6f} {:>10.6f}".format(i, val1, val2, val3)
                     elif left ==2:
-                        line = "{:>6d}} {:>14.6f} {:>10.6f}".format(i, val1, val2)
+                        line = "{:>6d} {:>14.6f} {:>10.6f}".format(i, val1, val2)
                     elif left == 1:
                         line = "{:>6d} {:>14.6f}".format(i, val1)
             else:
@@ -2124,7 +2124,7 @@ def wigner_distribution(fragment=None, hessian=None, temperature=300, num_sample
 
     #Importing wigner_sample
     print("Importing wigner_sample from geometric library")
-    from geometric.normal_modes import frequency_analysis, wigner_sample
+    from geometric.normal_modes import wigner_sample
     try:
         shutil.rmtree(dirname)
     except:

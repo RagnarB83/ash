@@ -741,7 +741,7 @@ class WrapTheory(Theory):
             print("Writing out gradient")
             from ash.modules.module_coords import write_coords_all
             write_coords_all(self.gradient, qm_elems, indices=[i for i in range(len(qm_elems))], 
-                                        file=f"Wrapgradient", 
+                                        file="Wrapgradient",
                                         description=f"WrapTheory gradient {label} (au/Bohr):")
 
 
@@ -795,7 +795,7 @@ class FractTheory:
 
         # Results (gaps) writing to file, here header.
         with open(self.resultfile, 'w') as f:
-            f.write(f"# eta deltaE (Eh)\n")
+            f.write("# eta deltaE (Eh)\n")
 
     def _get_dmtheory(self, th):
         """Return the PySCFTheory inside th (needed for density matrices)."""
