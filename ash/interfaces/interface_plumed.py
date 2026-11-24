@@ -759,8 +759,8 @@ def read_plumed_inputfile(plumedinputfile="plumed.in"):
 #PLUMED_ASH class: Works with ASE but not confirmed to work with OpenMM at present.
 
 class plumed_ASH():
-    def __init__(self, path_to_plumed_kernel=None, bias_type="MTD", fragment=None, CV1_type=None, CV1_indices=None,
-                CV2_type=None, CV2_indices=None,
+    def __init__(self, path_to_plumed_kernel=None, bias_type="MTD", fragment=None, CV1_type=None, CV1_indices=None, CV1_component=None,
+                CV2_type=None, CV2_indices=None, CV2_component=None,
                 temperature=300.0, hills_file="HILLS", colvar_file="COLVAR", height=0.01243, sigma1=None, sigma2=None, biasfactor=6.0, timestep=None,
                 stride_num=10, pace_num=500, dynamics_program=None,
                 numwalkers=None, debug=False):
@@ -843,20 +843,30 @@ class plumed_ASH():
         print("Gaussian height: {} {}".format(height, self.plumed_energy_unit))
 
 
-        if self.CV1_type.upper() == "DISTANCE" or self.CV1_type.upper() == "RMSD":
+        if self.CV1_type.upper() in ("DISTANCE", "RMSD"):
             print("Gaussian sigma for CV1: {} {}".format(sigma1,self.plumed_length_unit))
-        elif self.CV1_type.upper() == "TORSION" or self.CV1_type.upper() == "ANGLE":
+        elif self.CV1_type.upper() in ("TORSION", "ANGLE"):
             print("Gaussian sigma for CV1: {} {}".format(sigma1,"rad"))
+        elif self.CV1_type.upper() == "PUCKERING":
+            if CV1_component is None:
+                print("Error: PUCKERING CV requires CV1_component (e.g. 'theta', 'phi', 'amplitude')")
+                ashexit()
+            print("Gaussian sigma for CV1 (puckering {}): {} rad".format(CV1_component, sigma1))
         else:
-            print("unknown CV1 type. Exiting")
+            print("unknown CV1 type: {}. Exiting".format(self.CV1_type))
             ashexit()
         if self.CV2_type != None:
-            if self.CV2_type.upper() == "DISTANCE" or self.CV2_type.upper() == "RMSD":
+            if self.CV2_type.upper() in ("DISTANCE", "RMSD"):
                 print("Gaussian sigma for CV2: {} {}".format(sigma2,self.plumed_length_unit))
-            elif self.CV2_type.upper() == "TORSION" or self.CV2_type.upper() == "ANGLE":
+            elif self.CV2_type.upper() in ("TORSION", "ANGLE"):
                 print("Gaussian sigma for CV2: {} {}".format(sigma2,"rad"))
+            elif self.CV2_type.upper() == "PUCKERING":
+                if CV2_component is None:
+                    print("Error: PUCKERING CV requires CV2_component (e.g. 'theta', 'phi', 'amplitude')")
+                    ashexit()
+                print("Gaussian sigma for CV2 (puckering {}): {} rad".format(CV2_component, sigma2))
             else:
-                print("unknown CV2 type. Exiting")
+                print("unknown CV2 type: {}. Exiting".format(self.CV2_type))
                 ashexit()
         print("Bias factor:", biasfactor)
         print("Timestep: {} {}".format(timestep, self.plumed_time_unit))
@@ -875,13 +885,16 @@ class plumed_ASH():
             #1D metadynamics
             CV1_indices_string = ','.join(map(str, [i+1 for i in CV1_indices])) #Change from 0 to 1 based indexing and converting to text-string
             self.plumedobj.cmd("readInputLine","cv1: {} ATOMS={}".format(self.CV1_type.upper(), CV1_indices_string))
-            CV_string="cv1"
+            # For multi-component CVs (e.g. PUCKERING), select the component to bias
+            cv1_arg = "cv1.{}".format(CV1_component) if CV1_component is not None else "cv1"
+            CV_string=cv1_arg
             sigma_string=sigma1
             #2D metadynamics if CV2_type has been set
             if CV2_type != None:
                 CV2_indices_string = ','.join(map(str, [i+1 for i in CV2_indices]))
                 self.plumedobj.cmd("readInputLine","cv2: {} ATOMS={}".format(self.CV2_type.upper(), CV2_indices_string))
-                CV_string="cv1,cv2"
+                cv2_arg = "cv2.{}".format(CV2_component) if CV2_component is not None else "cv2"
+                CV_string="{},{}".format(cv1_arg, cv2_arg)
                 sigma_string=str(sigma1)+","+str(sigma2)
 
             self.plumedobj.cmd("readInputLine","METAD LABEL=MTD ARG={} PACE={} HEIGHT={} SIGMA={} FILE={} BIASFACTOR={} TEMP={}".format(CV_string,pace_num,
@@ -904,9 +917,13 @@ class plumed_ASH():
             pfile.write("path_to_plumed {}\n".format(self.path_to_plumed))
             pfile.write("CV1_type {}\n".format(self.CV1_type))
             pfile.write("CV1_indices {}\n".format(self.CV1_indices))
+            if CV1_component is not None:
+                pfile.write("CV1_component {}\n".format(CV1_component))
             if self.CV2_type != None:
                 pfile.write("CV2_type {}\n".format(self.CV2_type))
                 pfile.write("CV2_indices {}\n".format(self.CV2_indices))
+                if CV2_component is not None:
+                    pfile.write("CV2_component {}\n".format(CV2_component))
             pfile.write("temperature {}\n".format(self.temperature))
             pfile.write("plumed_length_unit {}\n".format(self.plumed_length_unit))
             pfile.write("plumed_energy_unit {}\n".format(self.plumed_energy_unit))

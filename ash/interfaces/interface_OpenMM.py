@@ -30,6 +30,9 @@ import ash.modules.module_plotting
 from ash.interfaces.interface_openbabel import pdb_to_smiles,xyz_to_pdb_with_connectivity,writepdb_with_connectivity,mol_to_pdb
 
 
+# Options supported by OpenMM_MDclass.set_sim_reporters. Keep this list next to
+# the implementation so invalid values fail before a potentially long run.
+valid_trajectory_file_options = ('PDB', 'DCD', 'NetCDFReporter', 'HDF5Reporter', 'XYZ')
 # PDB residue names commonly used for standard amino acids and frequent
 # force-field variants. Users can pass a custom set for other residue names.
 _PROTEIN_RESIDUE_NAMES = {
@@ -3687,6 +3690,13 @@ class OpenMM_MDclass:
                  centerforce_atoms=None, centerforce_constant=1.0, centerforce_distance=10.0, centerforce_center=None,
                  barostat_frequency=25, 
                  chkfile=None, statefile=None):
+        # Reject unsupported formats before constructing OpenMM state or doing
+        # any other potentially expensive initialization.
+        if trajectory_file_option is not None and trajectory_file_option not in valid_trajectory_file_options:
+            print(BC.FAIL,f"Error: unknown trajectory_file_option '{trajectory_file_option}'.",BC.END)
+            print("Valid options:", ", ".join(valid_trajectory_file_options))
+            print("Use trajectory_file_option=None if no trajectory file should be written.")
+            ashexit()
         module_init_time = time.time()
         import openmm
         print_line_with_mainheader("OpenMM Molecular Dynamics Initialization")
@@ -3915,7 +3925,10 @@ class OpenMM_MDclass:
         print("Barostat:", barostat)
 
         print("")
-        print("Will write trajectory in format:", self.trajectory_file_option)
+        if self.trajectory_file_option is None:
+            print("Trajectory output disabled.")
+        else:
+            print("Will write trajectory in format:", self.trajectory_file_option)
         print("Trajectory write frequency:", self.traj_frequency)
         print("enforcePeriodicBox:", self.enforcePeriodicBox)
         print("special_wrapping:", self.special_wrapping)
@@ -5113,7 +5126,8 @@ class OpenMM_MDclass:
                                                   self.state.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
             openmm.app.pdbfile.PDBFile.writeFooter(self.openmmobject.topology,f)
-        print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
+        if self.trajectory_file_option is not None:
+            print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
         # PDBx/mmCIF
         pdbx_filename=self.trajfilename+"_lastframe.cif"
         print("Writing final frame to disk as PDBx/mmCIF-file:", pdbx_filename)
@@ -5122,7 +5136,8 @@ class OpenMM_MDclass:
             openmm.app.pdbxfile.PDBxFile.writeModel(self.openmmobject.topology,
                                                   self.state.getPositions(asNumpy=True).value_in_unit(
                                                                         openmm.unit.angstrom), f)
-        print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
+        if self.trajectory_file_option is not None:
+            print(f"Trajectory : {self.trajfilename}.{self.trajectory_file_option}")
 
 
         # Saving state to disk
@@ -5281,7 +5296,14 @@ def OpenMM_box_equilibration(fragment=None, theory=None, datafilename="nptsim.cs
 
 
     print(f"Final PDB file: {trajfilename}.pdb")
-    print(f"NPT trajectory: {trajfilename}.{trajectory_file_option.lower()}")
+    if trajectory_file_option is not None:
+        trajectory_extension = {
+            'PDB': 'pdb', 'DCD': 'dcd', 'NetCDFReporter': 'nc',
+            'HDF5Reporter': 'lh5', 'XYZ': 'xyz',
+        }[trajectory_file_option]
+        print(f"NPT trajectory: {trajfilename}.{trajectory_extension}")
+    else:
+        print("NPT trajectory output disabled.")
 
     #Running mdtraj
     if use_mdtraj is True:
