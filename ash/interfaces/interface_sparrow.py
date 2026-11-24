@@ -1,6 +1,3 @@
-import subprocess as sp
-import os
-import shutil
 import time
 import numpy as np
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
@@ -15,7 +12,7 @@ class SparrowTheory:
 
         self.theorynamelabel="Sparrow"
         self.theorytype="QM"
-        self.analytic_hessian=False
+        self.analytic_hessian=True
         self.label=label
         print_line_with_mainheader(f"{self.theorynamelabel}Theory initialization")
 
@@ -33,9 +30,12 @@ class SparrowTheory:
                 "Sparrow",
                 distribution_names=["scine-sparrow-python", "scine-sparrow"],
             )
-        except:
-            print("Problem importing sparrow. Did you install correctly? See: https://github.com/qcscine/sparrow")
-            print("Try: conda install scine-sparrow-python")
+        except ImportError as error:
+            raise ImportError(
+                "SparrowTheory requires the SCINE Sparrow Python bindings. "
+                "Install them with `conda install -c conda-forge scine-sparrow-python`. "
+                "See https://github.com/qcscine/sparrow."
+            ) from error
 
 
         #Printlevel
@@ -43,18 +43,21 @@ class SparrowTheory:
         self.filename=filename
         self.method=method
         self.numcores=numcores
+        self.calculator=None
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
-    def cleanup():
-        print("Sparrow cleanup not yet implemented.")
+    def cleanup(self):
+        self.calculator=None
     #TODO: Parallelization is enabled most easily by OMP_NUM_THREADS AND MKL_NUM_THREADS. NOt sure if we can control this here
     #NOTE: Should be possible by adding to subprocess call
 
     #Request Hessian calculation. Will call run.
     def Hessian(self, fragment=None, Hessian=None, numcores=None, label=None, charge=None, mult=None):
         #Check charge/mult
-        charge,mult = check_charge_mult(charge, mult, self.theorytype, fragment, "xTBTheory.Opt", theory=self)
+        charge,mult = check_charge_mult(
+            charge, mult, self.theorytype, fragment, "SparrowTheory.Hessian", theory=self
+        )
 
         self.run (current_coords=fragment.coords, qm_elems=fragment.elems,
             Grad=True, Hessian=True, numcores=numcores, label=label,
@@ -72,37 +75,49 @@ class SparrowTheory:
 
         print(BC.OKBLUE, BC.BOLD, f"------------RUNNING {self.theorynamelabel} INTERFACE-------------", BC.END)
         #Checking if charge and mult has been provided
-        if charge == None or mult == None:
-            print(BC.FAIL, "Error. charge and mult has not been defined for SparrowTheory.run method", BC.END)
-            ashexit()
+        if charge is None or mult is None:
+            raise ValueError("SparrowTheory.run requires charge and multiplicity")
 
         print("Job label:", label)
 
         #Coords provided to run
-        if current_coords is not None:
-            pass
-        else:
-            print("no current_coords")
-            ashexit()
+        if current_coords is None:
+            raise ValueError("SparrowTheory.run requires current_coords")
+
+        has_mm_charges = MMcharges is not None and np.any(np.asarray(MMcharges, dtype=float))
+        if PC or has_mm_charges:
+            raise NotImplementedError(
+                "SparrowTheory does not support external point-charge embedding"
+            )
 
         #What elemlist to use. If qm_elems provided then QM/MM job, otherwise use elems list
         if qm_elems is None:
             if elems is None:
-                print("No elems provided")
-                ashexit()
+                raise ValueError("SparrowTheory.run requires qm_elems or elems")
             else:
                 qm_elems = elems
+
+        coordinates = np.asarray(current_coords, dtype=float)
+        if coordinates.shape != (len(qm_elems), 3):
+            raise ValueError(
+                "SparrowTheory coordinates must have shape "
+                f"({len(qm_elems)}, 3); received {coordinates.shape}"
+            )
+        if not np.all(np.isfinite(coordinates)):
+            raise ValueError("SparrowTheory coordinates must be finite")
 
         #Creating Sparrow objects
         #Geometry
         structure = self.su.AtomCollection(len(qm_elems))
         structure.elements = [self.su.ElementType(elematomnumbers[q.lower()]) for q in qm_elems]
-        structure.positions = current_coords*ang2bohr
+        structure.positions = np.ascontiguousarray(coordinates * ang2bohr)
         #Manager
         manager = self.su.core.ModuleManager()
         #Creating Calculator
         self.calculator = manager.get('calculator', self.method)
         self.calculator.structure = structure
+        self.calculator.settings["molecular_charge"] = int(charge)
+        self.calculator.settings["spin_multiplicity"] = int(mult)
 
         #Run energy
         self.calculator.set_required_properties([self.su.Property.Energy])
@@ -129,10 +144,7 @@ class SparrowTheory:
         if Grad == True:
             print("Single-point Sparrow energy:", self.energy)
             print_time_rel(module_init_time, modulename='Sparrow run', moduleindex=2)
-            if PC is True:
-                return self.energy, self.gradient, self.pcgradient
-            else:
-                return self.energy, self.gradient
+            return self.energy, self.gradient
         else:
             print("Single-point Sparrow energy:", self.energy)
             print_time_rel(module_init_time, modulename='Sparrow run', moduleindex=2)
