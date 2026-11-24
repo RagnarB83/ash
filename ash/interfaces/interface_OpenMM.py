@@ -1480,19 +1480,19 @@ class OpenMMTheory:
         elif cvtype == "angle":
             print("Adding CV restraints for angles is not available!")
             ashexit()
-            energy_expression = f"(k/2)*max(0, var-var_max)^2"
+            energy_expression = "(k/2)*max(0, var-var_max)^2"
             print("CV type: angle")
             print("Note: unit assumed to be in radians")
             var_unit = openmm.unit.radian
             var_unit_label="radians"
         elif cvtype == "bond" or cvtype == "distance" or cvtype == "rmsd" :
-            energy_expression = f"(k/2)*max(0, var-var_max)^2"
+            energy_expression = "(k/2)*max(0, var-var_max)^2"
             print("CV type: bond/rmsd")
             print("Note: unit assumed be in Angstrom")
             var_unit = openmm.unit.angstroms
             var_unit_label="Å"
         elif cvtype.lower() == "cn":
-            energy_expression = f"(k/2)*max(0, var-var_max)^2"
+            energy_expression = "(k/2)*max(0, var-var_max)^2"
             print("CV type: CN")
             var_unit = 1.0
             var_unit_label=" "
@@ -4222,7 +4222,7 @@ class OpenMM_MDclass:
             elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
                 cv2scaling=180/np.pi
             currtime = step*self.timestep #Time in ps
-            with open(f'colvar', 'a') as f:
+            with open('colvar', 'a') as f:
                 if metadyn_settings["numCVs"] == 2:
                     f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
                 elif metadyn_settings["numCVs"] == 1:
@@ -4412,9 +4412,9 @@ class OpenMM_MDclass:
             print("Checking Initial PBC vectors.")
             self.state = self.simulation.context.getState()
             a, b, c = self.state.getPeriodicBoxVectors()
-            print(f"A: ", a)
-            print(f"B: ", b)
-            print(f"C: ", c)
+            print("A: ", a)
+            print("B: ", b)
+            print("C: ", c)
             boxlength = a[0].value_in_unit(openmm.unit.angstrom) #Box length in Angstrom
             print(f"Boxlength: {boxlength} Angstrom")
         else:
@@ -4875,7 +4875,7 @@ class OpenMM_MDclass:
                         elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
                             cv2scaling=180/np.pi
                         currtime = step*self.timestep #Time in ps
-                        with open(f'colvar', 'a') as f:
+                        with open('colvar', 'a') as f:
                             if metadyn_settings["numCVs"] == 2:
                                 f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
                             elif metadyn_settings["numCVs"] == 1:
@@ -4988,7 +4988,7 @@ class OpenMM_MDclass:
                         elif metadyn_settings["CV2_type"] == "dihedral" or metadyn_settings["CV2_type"] == "torsion" or metadyn_settings["CV2_type"] == "angle":
                             cv2scaling=180/np.pi
                         currtime = step*self.timestep #Time in ps
-                        with open(f'colvar', 'a') as f:
+                        with open('colvar', 'a') as f:
                             if metadyn_settings["numCVs"] == 2:
                                 f.write(f"{currtime} {current_cv[0]*cv1scaling} {current_cv[1]*cv2scaling}\n")
                             elif metadyn_settings["numCVs"] == 1:
@@ -5102,9 +5102,9 @@ class OpenMM_MDclass:
         if self.openmmobject.periodic is True:
             print("Checking PBC vectors:")
             a, b, c = self.state.getPeriodicBoxVectors()
-            print(f"A: ", a)
-            print(f"B: ", b)
-            print(f"C: ", c)
+            print("A: ", a)
+            print("B: ", b)
+            print("C: ", c)
             print("a 0", a[0])
             # Set new PBC vectors since they may have changed
             print("Updating PBC vectors in simulation.context, OpenMM system and OpenMM topology")
@@ -6584,8 +6584,8 @@ def small_molecule_parameterizer(charge=None, xyzfile=None, pdbfile=None, molfil
     #Modifying XML-files
     print("A new XML-file for molecule has been created:", final_xmlfilename)
     print(f"Modifying 1-4 scaling parameters in XML-file to match Amber14 FF (coul14={expected_coul14}  and lj14={expected_lj14})")
-    find_replace_string_in_file(final_xmlfilename,f"coulomb14scale=\"1.0\"", f"coulomb14scale=\"{expected_coul14}\"")
-    find_replace_string_in_file(final_xmlfilename,f"lj14scale=\"1.0\"", f"lj14scale=\"{expected_lj14}\"")
+    find_replace_string_in_file(final_xmlfilename,"coulomb14scale=\"1.0\"", f"coulomb14scale=\"{expected_coul14}\"")
+    find_replace_string_in_file(final_xmlfilename,"lj14scale=\"1.0\"", f"lj14scale=\"{expected_lj14}\"")
 
     print("Now checking whether the 1-4 scaling is consistent in the XML-file vs. OpenMM system")
     system_from_xml = create_sys_and_check_14_scaling_nonbonding(topology=topology, xml_file=final_xmlfilename, expected_coul14=expected_coul14,

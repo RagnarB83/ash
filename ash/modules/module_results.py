@@ -89,7 +89,7 @@ class ASH_Results:
                 # Check for nans in array
                 if np.any(np.isnan(v)):
                     print_if_level(f"Warning: nan in array {k}", printlevel,2)
-                    print_if_level(f"Skipping writing to disk", printlevel,2)
+                    print_if_level("Skipping writing to disk", printlevel,2)
                     #exit()
                 else:
                     newv= v.tolist()
@@ -105,7 +105,7 @@ class ASH_Results:
                 else:
                     newdict[k]=v
             elif isinstance(v,Fragment):
-                print_if_level(f"Warning: Fragment object is not included in ASH.result on disk", printlevel,2)
+                print_if_level("Warning: Fragment object is not included in ASH.result on disk", printlevel,2)
             else:
                 newdict[k]=v
 

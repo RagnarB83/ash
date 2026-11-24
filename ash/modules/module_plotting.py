@@ -1,6 +1,5 @@
 import numpy as np
-from ash.functions.functions_general import print_line_with_mainheader,print_line_with_subheader1,ashexit
-from ash.constants import hartokcal
+from ash.functions.functions_general import print_line_with_mainheader, ashexit
 
 #Relative energy conversion (if RelativeEnergy is True)
 conversionfactor = { 'kcal/mol' : 627.50946900, 'kcal/mol' : 627.50946900, 'kJ/mol' : 2625.499638, 'kJpermol' : 2625.499638,
@@ -213,8 +212,6 @@ class ASH_plot():
             #Avoid legend for line if scatter is enabled
             if scatter is True:
                 label='_nolegend_'
-            else:
-                legendlabel=label
             curraxes.plot(x, y, linestyle=linestyle, color=color, linewidth=line_linewidth, label=label)
         if bar is True:
             if barcolors is None:
@@ -327,8 +324,8 @@ def reactionprofile_plot(surfacedictionary, finalunit=None,label='Label', x_axis
     print(f"Relative energies({finalunit}): {finalvalues}")
 
     # Write relative energies to file:
-    print(f"Writing relative energies to file: surface_results_relE.txt")
-    with open(f'surface_results_relE.txt', 'w') as relfile:
+    print("Writing relative energies to file: surface_results_relE.txt")
+    with open('surface_results_relE.txt', 'w') as relfile:
         for i,j in zip(coords, finalvalues):
             relfile.write("{:13.10f} {:13.10f} \n".format(i,j))
 

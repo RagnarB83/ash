@@ -164,7 +164,6 @@ class MECPGradclass:
 
         print(BC.OKBLUE,BC.BOLD, f"------------RUNNING {self.theorynamelabel} WRAPPER -------------", BC.END)
 
-        numatoms = len(current_coords)
         # Theory 1
         #Creating dir
         try:
@@ -248,7 +247,7 @@ def creating_displaced_geos(current_coords,elems,displacement,npoint, charge, mu
         #Original geo
         if disp == 'Originalgeo':
             calclabel = 'Originalgeo'
-            stringlabel=f"Originalgeo"
+            stringlabel="Originalgeo"
         #Displacements
         else:
             atom_disp = disp[0]

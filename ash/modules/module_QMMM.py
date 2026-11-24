@@ -4,7 +4,7 @@ import numpy as np
 import math
 
 import ash.modules.module_coords
-from ash.modules.module_coords import Fragment, write_pdbfile, elemstonuccharges
+from ash.modules.module_coords import Fragment, elemstonuccharges
 from ash.functions.functions_general import ashexit, BC, blankline, listdiff, print_time_rel,printdebug,print_line_with_mainheader,writelisttofile,print_if_level
 import ash.settings_ash
 from ash.modules.module_MM import coulombcharge
@@ -1026,7 +1026,7 @@ class QMMMTheory:
                 # print("QM/MM Grad is True")
                 # Provide self.QM_MM_gradient to OpenMMTheory
                 if self.openmm_externalforce is True:
-                    print_if_level(f"OpenMM externalforce is True", self.printlevel,2)
+                    print_if_level("OpenMM externalforce is True", self.printlevel,2)
                     # Calculate energy associated with external force so that we can subtract it later
                     # self.extforce_energy = 3 * np.mean(np.sum(self.QM_MM_gradient * current_coords * 1.88972612546, axis=0))
                     scaled_current_coords = current_coords * 1.88972612546
@@ -1036,7 +1036,7 @@ class QMMMTheory:
                     # NOTE: Now moved mm_theory.update_custom_external_force call to MD simulation instead
                     # as we don't have access to simulation object here anymore. Uses self.QM_PC_gradient
                     if exit_after_customexternalforce_update is True:
-                        print_if_level(f"OpenMM custom external force updated. Exit requested", self.printlevel,2)
+                        print_if_level("OpenMM custom external force updated. Exit requested", self.printlevel,2)
                         # This is used if OpenMM MD is handling forces and dynamics
                         return  self.QMenergy,self.QM_MM_gradient
 
@@ -1487,7 +1487,7 @@ class QMMMTheory:
                 #Provide QM_PC_gradient to OpenMMTheory
 
                 if self.openmm_externalforce is True:
-                    print_if_level(f"OpenMM externalforce is True", self.printlevel,2)
+                    print_if_level("OpenMM externalforce is True", self.printlevel,2)
                     #Calculate energy associated with external force so that we can subtract it later
                     #self.extforce_energy = 3 * np.mean(np.sum(self.QM_PC_gradient * current_coords * 1.88972612546, axis=0))
                     scaled_current_coords = current_coords * 1.88972612546
@@ -1497,7 +1497,7 @@ class QMMMTheory:
                     #NOTE: Now moved mm_theory.update_custom_external_force call to MD simulation instead
                     # as we don't have access to simulation object here anymore. Uses self.QM_PC_gradient
                     if exit_after_customexternalforce_update is True:
-                        print_if_level(f"OpenMM custom external force updated. Exit requested", self.printlevel,2)
+                        print_if_level("OpenMM custom external force updated. Exit requested", self.printlevel,2)
                         #This is used if OpenMM MD is handling forces and dynamics
                         return self.QMenergy-self.extforce_energy, self.QM_PC_gradient
 

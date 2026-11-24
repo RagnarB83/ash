@@ -61,7 +61,7 @@ def call_plumed_sum_hills(hillsfile=None, path_to_plumed=None, ndim=None, binsg=
         if ndim == None:
             #Default grid
             print("Calling plumed sum_hills with default grid settings")
-            os.system(f'plumed sum_hills --hills HILLS')
+            os.system('plumed sum_hills --hills HILLS')
         elif ndim == 1:
             print(f"Calling plumed sum_hills with  grid settings: --bin {binsg[0]} --min {ming[0]} --max {maxg[0]}")
             os.system(f'plumed sum_hills --hills HILLS --bin {binsg[0]} --min {ming[0]} --max {maxg[0]}')

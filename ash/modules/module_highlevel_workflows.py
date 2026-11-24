@@ -32,6 +32,51 @@ NormalPNOreduced_thresholds={'TCutPNO': 1e-6, 'TCutPairs': 1e-4, 'TCutDO': 1e-2,
 TightPNO_thresholds={'TCutPNO': 1e-7, 'TCutPairs': 1e-5, 'TCutDO': 5e-3, 'TCutMKN': 1e-3}
 
 
+def _normalize_locally_dense_atoms(atom_indices):
+    """Validate and normalize zero-based atom indices for a locally dense CBS run."""
+    if atom_indices is None:
+        return ()
+    if isinstance(atom_indices, (int, np.integer)) and not isinstance(atom_indices, bool):
+        atom_indices = [atom_indices]
+    try:
+        indices = list(atom_indices)
+    except TypeError as exc:
+        raise TypeError("locally_dense_atoms must be an integer or iterable of atom indices") from exc
+    if any(not isinstance(index, (int, np.integer)) or isinstance(index, bool) or index < 0
+           for index in indices):
+        raise ValueError("locally_dense_atoms must contain non-negative integer atom indices")
+    if len(set(indices)) != len(indices):
+        raise ValueError("locally_dense_atoms cannot contain duplicate atom indices")
+    return tuple(sorted(int(index) for index in indices))
+
+
+def _build_locally_dense_basis_overrides(elems, atom_indices, basisfamily, cardinal, cardinal_offset=1):
+    """Build sparse ORCA per-atom basis overrides for one CBS cardinal stage.
+
+    The selected atoms receive ``cardinal + cardinal_offset`` while all other
+    atoms retain the nominal cardinal basis already specified in the CBS block.
+    """
+    overrides = {}
+    for atom_index in atom_indices:
+        if atom_index >= len(elems):
+            raise ValueError(
+                f"locally_dense_atoms contains index {atom_index}, but the run has only {len(elems)} atoms")
+        element = elems[atom_index]
+        local_cardinal = cardinal + cardinal_offset
+        try:
+            local_basis, local_ecp = basis_for_element(element, basisfamily, local_cardinal)
+            _, nominal_ecp = basis_for_element(element, basisfamily, cardinal)
+        except (KeyError, SystemExit) as exc:
+            raise ValueError(
+                f"No locally dense {basisfamily} basis is available for atom {atom_index} ({element}) "
+                f"at cardinal {local_cardinal}") from exc
+        if local_ecp != nominal_ecp:
+            raise NotImplementedError(
+                "Locally dense basis overrides cannot change the ECP between CBS cardinals")
+        overrides[(element, atom_index)] = [f'newgto "{local_basis}" end\n']
+    return overrides
+
+
 #Flexible ORCA CCSD(T)/CBS protocol class.
 # Regular CC, DLPNO-CC, DLPNO-CC with PNO extrapolation etc.
 #pnoextrapolation=[6,7]  pnoextrapolation=[1e-6,1e-7,1.5,'TightPNO']   pnoextrapolation=[1e-6,3.33e-7,2.38,'NormalPNO']
@@ -39,6 +84,15 @@ TightPNO_thresholds={'TCutPNO': 1e-7, 'TCutPairs': 1e-5, 'TCutDO': 5e-3, 'TCutMK
 
 #TODO: CV correction. More general basis set for 3d TM and ligand systems. cc-pwCVTZ-DK (M) ?
 class ORCA_CC_CBS_Theory:
+    """ORCA CCSD(T)/CBS protocol with an optional locally dense basis.
+
+    ``locally_dense_atoms`` contains zero-based indices into the ordered atom
+    list passed to :meth:`run`. At each CBS stage those atoms use a basis
+    ``locally_dense_cardinal_offset`` cardinal levels above the nominal stage.
+    This mixed-basis CBS option currently excludes correction methods that
+    evaluate energies in separate calculations.
+    """
+
     def __init__(self, elements=None, scfsetting='TightSCF', extrainputkeyword='', extrablocks='', guessmode='Cmatrix', memory=5000, numcores=1,
             cardinals=None, basisfamily=None, Triplesextrapolation=False, SCFextrapolation=True, alpha=None, beta=None,
             stabilityanalysis=False, CVSR=False, CVbasis="W1-mtsmall", F12=False, Openshellreference=None, DFTreference=None, DFT_RI=False, auxbasis="autoaux-max",
@@ -46,7 +100,8 @@ class ORCA_CC_CBS_Theory:
             OOCC=False,T1=False, T1correction=False, T1corrbasis_size='Small', T1corrpnosetting='NormalPNOreduced',
             relativity=None, orcadir=None, FCI=False, atomicSOcorrection=False,
             HOCCcorrection=False, HOCC_program='CFour', HOCC_method='CCSDT', HOCC_basis='DZ', HOCC_ref='RHF',
-            DBOCcorrection=False, DBOC_program='CFour', DBOC_method='RHF', DBOC_basis='TZ', DBOC_ref='RHF'):
+            DBOCcorrection=False, DBOC_program='CFour', DBOC_method='RHF', DBOC_basis='TZ', DBOC_ref='RHF',
+            locally_dense_atoms=None, locally_dense_cardinal_offset=1):
 
         print_line_with_mainheader("ORCA_CC_CBS_Theory")
 
@@ -62,6 +117,29 @@ class ORCA_CC_CBS_Theory:
         else:
             #Removing redundant symbols (in case fragment.elems list was passed for example)
             elements = list(set(elements))
+
+        self.locally_dense_atoms = _normalize_locally_dense_atoms(locally_dense_atoms)
+        if (not isinstance(locally_dense_cardinal_offset, (int, np.integer))
+                or isinstance(locally_dense_cardinal_offset, bool)
+                or locally_dense_cardinal_offset < 1):
+            raise ValueError("locally_dense_cardinal_offset must be a positive integer")
+        self.locally_dense_cardinal_offset = int(locally_dense_cardinal_offset)
+        if self.locally_dense_atoms:
+            unsupported_local_dense_options = []
+            for enabled, option in (
+                (F12, "F12"), (OOCC, "OO-CC"), (T1, "T1 correction"),
+                (T1correction, "T1 correction"), (MP2_PNO_correction, "MP2-PNO correction"),
+                (CVSR, "core-valence/relativistic correction"),
+                (HOCCcorrection, "higher-order coupled-cluster correction"),
+                (DBOCcorrection, "DBOC correction"), (FCI, "FCI correction"),
+                (atomicSOcorrection, "atomic spin-orbit correction"),
+            ):
+                if enabled:
+                    unsupported_local_dense_options.append(option)
+            if unsupported_local_dense_options:
+                raise NotImplementedError(
+                    "Locally dense CBS currently does not support: {}".format(
+                        ", ".join(unsupported_local_dense_options)))
 
         #Check if F12 is chosen correctly
         if F12 == False and basisfamily == "cc-f12":
@@ -145,6 +223,9 @@ class ORCA_CC_CBS_Theory:
         print("Settings:")
         print("Cardinals chosen:", self.cardinals)
         print("Basis set family chosen:", self.basisfamily)
+        if self.locally_dense_atoms:
+            print("Locally dense atom indices (zero-based):", self.locally_dense_atoms)
+            print("Local cardinal offset per CBS stage:", self.locally_dense_cardinal_offset)
         print("SCF extrapolation:", self.SCFextrapolation)
         print("Separate Triples extrapolation:", self.Triplesextrapolation)
         if self.Triplesextrapolation == True:
@@ -497,6 +578,40 @@ maxiter 150\nend
                 self.ccsdt_1 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks1, numcores=self.numcores)
                 self.ccsdt_2 = ash.interfaces.interface_ORCA.ORCATheory(orcadir=self.orcadir, orcasimpleinput=self.ccsdt_line, orcablocks=self.blocks2, numcores=self.numcores)
 
+        # Keep the nominal CBS cardinal associated with each ORCA theory object;
+        # the selected atoms receive a higher basis through ORCA's native
+        # atom-specific newgto coordinate syntax immediately before each run.
+        if self.singlebasis is True:
+            self._basis_stages = [(self.ccsdt_1, self.cardinals[0])]
+        elif self.Triplesextrapolation is True:
+            self._basis_stages = [
+                (self.ccsdt_0, self.cardinals[0]),
+                (self.ccsdt_1, self.cardinals[1]),
+                (self.ccsd_1, self.cardinals[1]),
+                (self.ccsd_2, self.cardinals[2]),
+            ]
+        else:
+            self._basis_stages = [
+                (self.ccsdt_1, self.cardinals[0]),
+                (self.ccsdt_2, self.cardinals[1]),
+            ]
+
+    def _set_locally_dense_basis_overrides(self, elems):
+        """Apply this run's sparse atom-specific basis maps to CBS stage theories."""
+        if not self.locally_dense_atoms:
+            return
+        for atom_index in self.locally_dense_atoms:
+            if atom_index >= len(elems):
+                raise ValueError(
+                    f"locally_dense_atoms contains index {atom_index}, but the run has only {len(elems)} atoms")
+            if elems[atom_index] not in self.Calc1_basis_dict:
+                raise ValueError(
+                    f"No basis set was configured for locally dense atom {atom_index} ({elems[atom_index]})")
+        for theory, nominal_cardinal in self._basis_stages:
+            theory.atom_specific_basis_dict = _build_locally_dense_basis_overrides(
+                elems, self.locally_dense_atoms, self.basisfamily, nominal_cardinal,
+                self.locally_dense_cardinal_offset)
+
     def cleanup(self):
         print("Cleanup called")
 
@@ -515,6 +630,7 @@ maxiter 150\nend
             numcores=numcores,
             printlevel=theory.printlevel,
             filename=label,
+            atom_specific_basis_dict=theory.atom_specific_basis_dict,
         )
         _, gradient = hf_theory.run(
             elems=elems,
@@ -842,6 +958,8 @@ TCutMKN {thresholdsetting["TCutMKN"]}
                 print("Make sure to pass a list of all elements of molecule/benchmark-database when creating ORCA_CC_CBS_Theory object")
                 print("Example: ORCA_CC_CBS_Theory(elements=[\"{}\" ] ".format(element))
                 ashexit()
+
+        self._set_locally_dense_basis_overrides(elems)
 
         #Number of atoms and number of electrons
         numatoms=len(elems)

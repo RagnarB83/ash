@@ -374,10 +374,7 @@ end
         return dm
 
     def get_polarizability_tensor(self):
-        print("here")
-        print("self.filename+'.out':", self.filename+'.out')
         polarizability,diag_pz = grab_polarizability_tensor(self.filename+'.out')
-        print("polarizability:", polarizability)
         return polarizability
 
     # Get density matrix. Assuming dm has been defined
@@ -503,7 +500,7 @@ end"""
                         print_if_level("Yes. Copying file to current dir", self.printlevel,2)
                         shutil.copy(f"../{self.moreadfile}", f"./{self.moreadfile}")
         else:
-            print_if_level(f"Moreadfile option not active", self.printlevel,2)
+            print_if_level("Moreadfile option not active", self.printlevel,2)
             if os.path.isfile(f"{self.filename}.gbw") is False:
                 print_if_level(f"No {self.filename}.gbw file is present in dir.", self.printlevel,2)
                 if self.path_to_last_gbwfile_used != None:
@@ -939,7 +936,7 @@ def run_orca_SP_ORCApar(orcadir, inpfile, numcores=1, check_for_warnings=True, c
         try:
             if bind_to_core_option is True:
                 #f"\"-x {orcadir} --bind-to none\""
-                process = sp.run([orcadir + '/orca', inpfile, f"--bind-to none"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
+                process = sp.run([orcadir + '/orca', inpfile, "--bind-to none"], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             else:
                 process = sp.run([orcadir + '/orca', inpfile], check=True, stdout=ofile, stderr=ofile, universal_newlines=True)
             if check_for_errors:
@@ -1896,8 +1893,7 @@ def create_orca_input_pc(name,elems,coords,orcasimpleinput,orcablockinput,charge
             if i in extrabasisatoms:
                 orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))
             #Atom-specific basis-dict option (new basis set definition for each atom)
-            elif atom_specific_basis_dict is not None:
-                print("Writing atom-specific basis for atom:", i)
+            elif atom_specific_basis_dict is not None and (el,i) in atom_specific_basis_dict:
                 #Regular line
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
                 for bline in atom_specific_basis_dict[(el,i)]:
@@ -1975,8 +1971,7 @@ def create_orca_input_plain(name,elems,coords,orcasimpleinput,orcablockinput,cha
             if i in extrabasisatoms:
                 orcafile.write('{} {} {} {} newgto \"{}\" end\n'.format(el,c[0], c[1], c[2], extrabasis))
             #Atom-specific basis-dict option (new basis set definition for each atom)
-            elif atom_specific_basis_dict is not None:
-                print("Writing atom-specific basis for atom:", i)
+            elif atom_specific_basis_dict is not None and (el,i) in atom_specific_basis_dict:
                 #Regular line
                 orcafile.write('{} {} {} {} \n'.format(el,c[0], c[1], c[2]))
                 for bline in atom_specific_basis_dict[(el,i)]:
@@ -2766,7 +2761,7 @@ end
         o.write(f"{ORCA_blockinput}")
         o.write(f"{constraintsblock}")
         o.write("%method\n")
-        o.write(f"ProgExt \"otool_external\"\n")
+        o.write("ProgExt \"otool_external\"\n")
         #o.write(f"Ext_Params \"\"\n")
         o.write("end\n")
         o.write("*xyzfile {} {} {}\n".format(charge,mult,xyzfile))
@@ -3136,7 +3131,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
         print("Requesting printout of 2-electron integrals")
         if two_el_integrals_type == "ALL":
             print("Warning: two_el_integrals_type set to ALL. This means all 2-electron integrals (a lot!)")
-            two_el_integrals_line=f"\"2elIntegrals\": [\"MO_PQRS\", \"MO_PRQS\"],"
+            two_el_integrals_line="\"2elIntegrals\": [\"MO_PQRS\", \"MO_PRQS\"],"
         else:
             two_el_integrals_line=f"\"2elIntegrals\": [\"MO_{two_el_integrals_type}\"],"
     if fock_matrix is True:
@@ -3145,7 +3140,6 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
     if mo_coeffs is True:
         print("Requesting printout of MO coefficients")
         mo_coeff_line="\"MOCoefficients\": true,"
-    print("here")
     confstring=f"""{{
 
 {mo_coeff_line}
@@ -3174,7 +3168,7 @@ def create_ORCA_json_file(file, orcadir=None, format="json", basis_set=True, mo_
 
     # This is better when filename contains multiple .
     jsonfile='.'.join(file.split(".")[0:-1])+f'.{format}'
-    print(f"Created file:", jsonfile)
+    print("Created file:", jsonfile)
     mb_size = (os.path.getsize(jsonfile))/(1024*1024)
     print(f"Size: {mb_size:7.1f} MB")
     return jsonfile
@@ -4106,8 +4100,8 @@ def create_ORCA_FCIDUMP(gbwfile, header_format="FCIDUMP", filename="FCIDUMP_ORCA
     twoint = datadict["2elIntegrals"]
     #print("twoint:", twoint)
     #exit()
-    mo_COUL_aa = np.array(datadict["2elIntegrals"][f"MO_PQRS"]["alpha/alpha"])
-    mo_EXCH_aa = np.array(datadict["2elIntegrals"][f"MO_PRQS"]["alpha/alpha"])
+    mo_COUL_aa = np.array(datadict["2elIntegrals"]["MO_PQRS"]["alpha/alpha"])
+    mo_EXCH_aa = np.array(datadict["2elIntegrals"]["MO_PRQS"]["alpha/alpha"])
 
     print_time_rel(module_init_time, modulename='create_ORCA_FCIDUMP: after int', moduleindex=3)
     # Creating integral tensor

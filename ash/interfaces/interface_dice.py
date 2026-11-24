@@ -5,6 +5,7 @@ import numpy as np
 import os
 import sys
 import glob
+import re
 from ash.modules.module_coords import elematomnumbers, check_charge_mult
 from ash.constants import ang2bohr, harkcal
 from ash.functions.functions_general import ashexit, BC, print_time_rel,print_line_with_mainheader,pygrep,pygrep2
@@ -12,8 +13,7 @@ from ash.functions.functions_parallel import check_OpenMPI
 import ash.settings_ash
 from ash.interfaces.interface_pyscf import pySCF_read_MOs
 
-#Interface to Dice: SHCI, QMC (single-det or SHCI multi-det) and NEVPT2
-#TODO: fix nevpt2
+#Interface to Dice: SHCI, phaseless/free-projection AFQMC, and NEVPT2
 #TODO: Add proper frozen core to mch object setup (instead of relying on nmax threshold)
 #Straightforward: https://pyscf.org/user/mcscf.html#frozen-orbital-mcscf
 #Add also to pyscf part
@@ -29,7 +29,14 @@ class DiceTheory:
                 SHCI_cas_nmin=1.999, SHCI_cas_nmax=0.0, SHCI_active_space=None, SHCI_active_space_range=None,
                 SHCI_active_all_but_core=None,
                 Dice_SHCI_direct=None, fcidumpfile=None, Dice_refdeterminant=None,
-                QMC_trialWF=None, QMC_SHCI_numdets=1000, QMC_dt=0.005, QMC_nsteps=50, QMC_nblocks=1000, QMC_nwalkers_per_proc=5):
+                QMC_trialWF=None, QMC_SHCI_numdets=1000, QMC_dt=0.005, QMC_nsteps=50, QMC_nblocks=1000, QMC_nwalkers_per_proc=5,
+                NEVPT2_numdets=100, NEVPT2_stochasticIterNorms=10000,
+                NEVPT2_nIterFindInitDets=1000, NEVPT2_numSCSamples=20000,
+                AFQMC_free_projection=False, FP_AFQMC_dt=0.05, FP_AFQMC_nsteps=60,
+                FP_AFQMC_eneSteps=(20, 40, 50, 60),
+                FP_AFQMC_errorTargets=(0.8e-3, 0.8e-3, 0.8e-3, 0.8e-3),
+                FP_AFQMC_stochasticIter=100000, FP_AFQMC_choleskyThreshold=0.5e-4,
+                FP_AFQMC_orthoSteps=5):
 
         self.theorynamelabel="Dice"
         self.theorytype="QM"
@@ -71,9 +78,25 @@ class DiceTheory:
         if NEVPT2 is True and AFQMC is True:
             print("NEVPT2 and AFQMC can not both be True")
             ashexit()
+        if AFQMC_free_projection and not AFQMC:
+            raise ValueError("AFQMC_free_projection=True requires AFQMC=True")
+        if AFQMC_free_projection:
+            if not FP_AFQMC_eneSteps or len(FP_AFQMC_eneSteps) != len(FP_AFQMC_errorTargets):
+                raise ValueError("FP_AFQMC_eneSteps and FP_AFQMC_errorTargets must have the same nonzero length")
+            if FP_AFQMC_dt <= 0 or FP_AFQMC_nsteps < 1 or FP_AFQMC_stochasticIter < 1:
+                raise ValueError("Free-projection time step and iteration counts must be positive")
+            if FP_AFQMC_orthoSteps < 1 or FP_AFQMC_choleskyThreshold <= 0:
+                raise ValueError("FP_AFQMC_orthoSteps and FP_AFQMC_choleskyThreshold must be positive")
+            if any(step < 0 for step in FP_AFQMC_eneSteps) or any(target <= 0 for target in FP_AFQMC_errorTargets):
+                raise ValueError("Free-projection energy steps must be nonnegative and error targets positive")
         if NEVPT2 is False and AFQMC is False and SHCI is False:
             print("Either NEVPT2, SHCI or AFQMC option needs to be True")
             ashexit()
+        if NEVPT2 is True and SHCI_DoRDM is False:
+            print("NEVPT2 requires the SHCI two-particle RDM. Enabling SHCI_DoRDM.")
+            SHCI_DoRDM = True
+        if NEVPT2_numdets < 1:
+            raise ValueError("NEVPT2_numdets must be a positive integer")
         if QMC_trialWF == 'SHCI' and SHCI is False:
             print("QMC_trialWF='SHCI' requires SHCI to be True, turning on.")
             SHCI=True
@@ -98,6 +121,8 @@ class DiceTheory:
         if NEVPT2 is True or AFQMC is True:
             print("NEVPT2 or AFQMC is True. This requires QMCUtils module to be installed.")
             self.load_qmcutils()
+        if AFQMC_free_projection:
+            self.load_fp_helper()
 
         if numcores > 1:
             try:
@@ -113,7 +138,19 @@ class DiceTheory:
         self.numcores=numcores
         self.pyscftheoryobject=pyscftheoryobject
         self.NEVPT2=NEVPT2
+        self.NEVPT2_numdets=int(NEVPT2_numdets)
+        self.NEVPT2_stochasticIterNorms=NEVPT2_stochasticIterNorms
+        self.NEVPT2_nIterFindInitDets=NEVPT2_nIterFindInitDets
+        self.NEVPT2_numSCSamples=NEVPT2_numSCSamples
         self.AFQMC=AFQMC
+        self.AFQMC_free_projection=AFQMC_free_projection
+        self.FP_AFQMC_dt=FP_AFQMC_dt
+        self.FP_AFQMC_nsteps=FP_AFQMC_nsteps
+        self.FP_AFQMC_eneSteps=tuple(FP_AFQMC_eneSteps)
+        self.FP_AFQMC_errorTargets=tuple(FP_AFQMC_errorTargets)
+        self.FP_AFQMC_stochasticIter=FP_AFQMC_stochasticIter
+        self.FP_AFQMC_choleskyThreshold=FP_AFQMC_choleskyThreshold
+        self.FP_AFQMC_orthoSteps=FP_AFQMC_orthoSteps
         self.SHCI=SHCI
         self.Dice_SHCI_direct=Dice_SHCI_direct
         self.moreadfile=moreadfile
@@ -196,6 +233,7 @@ class DiceTheory:
             print("SHCI CAS NO nmax", self.SHCI_cas_nmax)
         if self.AFQMC is True:
             print("QMC_trialWF:", self.QMC_trialWF)
+            print("Free projection AFQMC:", self.AFQMC_free_projection)
             if self.QMC_trialWF == 'SHCI':
                 print("QMC_SHCI_numdets:", self.QMC_SHCI_numdets)
             print("QMC settings:")
@@ -241,6 +279,154 @@ MPIPREFIX=""
             print("Problem importing QMCUtils. Dice directory may be incorrectly set")
             print("Or: QMCUtils requires another module (pandas?). Please install it via conda or pip.")
             ashexit()
+
+    def load_fp_helper(self):
+        """Load Dice's native free-projection AFQMC driver."""
+        try:
+            import fp_helper
+            self.fp_helper = fp_helper
+        except ModuleNotFoundError as error:
+            if error.name != "fp_helper":
+                raise
+            raise ModuleNotFoundError(
+                "Free-projection AFQMC requires fp_helper.py from the Dice scripts directory"
+            ) from error
+
+    def grab_nevpt2_energy(self, filename="nevpt2.out"):
+        """Read the total SC-NEVPT2 energy and stochastic error from Dice output."""
+        energy, error = self.QMCUtils.get_nevptEnergy(
+            fname=filename, printNevpt2=True
+        )
+        if not np.isfinite(energy):
+            raise ValueError(f"Dice returned a non-finite NEVPT2 energy in {filename}")
+        self.energy = float(energy)
+        self.error = float(error) if np.isfinite(error) else None
+        if self.error is None:
+            print("Warning: Dice did not provide a finite NEVPT2 error estimate. "
+                  "Use at least two MPI processes for an error estimate.")
+
+    def validate_nevpt2_space(self):
+        """Fail early when Dice's ICPT path has no external virtual orbitals."""
+        mo_coeff = np.asarray(self.mch.mo_coeff)
+        ncore = int(self.mch.ncore)
+        ncas = int(self.mch.ncas)
+        nvir = mo_coeff.shape[1] - ncore - ncas
+        if nvir < 1:
+            raise ValueError(
+                "Dice NEVPT2 requires at least one external virtual orbital; "
+                "use a basis with virtual orbitals outside the frozen-core and active spaces."
+            )
+
+    def write_nevpt2_dets(self, filename="output.dat", nroot=0):
+        """Convert Dice's printed determinant table to VMC's `dets` format."""
+        with open(filename, "r") as output:
+            lines = output.readlines()
+        state_line = None
+        for index, line in enumerate(lines):
+            fields = line.split()
+            if not fields or fields[0] != "State":
+                continue
+            if (len(fields) >= 3 and fields[1] == ":" and fields[2] == str(nroot)) or (
+                len(fields) >= 2 and fields[1] == f":{nroot}"
+            ):
+                state_line = index
+                break
+        if state_line is None:
+            raise ValueError(f"Could not find Dice state {nroot} in {filename}")
+
+        determinants = []
+        for line in lines[state_line + 1:]:
+            fields = line.split()
+            if not fields:
+                continue
+            try:
+                int(fields[0])
+                float(fields[1])
+            except (ValueError, IndexError):
+                break
+            occupations = fields[2:]
+            if not occupations or any(value not in {"0", "2", "a", "b"} for value in occupations):
+                break
+            determinants.append(" ".join(fields[1:]))
+        if not determinants:
+            raise ValueError(f"No determinants found for Dice state {nroot} in {filename}")
+        with open("dets", "w") as output:
+            output.write("\n".join(determinants) + "\n")
+
+    def grab_dice_variational_energy(self, filename="output.dat"):
+        """Read the variational energy printed by a Dice SHCI calculation."""
+        reading_energies = False
+        with open(filename, "r") as output:
+            for line in output:
+                fields = line.split()
+                if fields[:2] == ["Root", "Energy"]:
+                    reading_energies = True
+                    continue
+                if not reading_energies:
+                    continue
+                if not fields:
+                    continue
+                try:
+                    int(fields[0])
+                    energy = float(fields[1])
+                except (ValueError, IndexError):
+                    if fields[0].startswith("Printing"):
+                        break
+                    continue
+                if np.isfinite(energy):
+                    return energy
+        raise ValueError(f"No finite Dice variational energy found in {filename}")
+
+    def grab_fpafqmc_energy(self, filename="dqmc.out"):
+        """Read the final free-projection AFQMC real energy and its error."""
+        row_pattern = re.compile(
+            r"^\s*[-+\d.eE]+\s+\(\s*([-+\d.eE]+)\s*,\s*([-+\d.eE]+)\s*\)"
+            r"\s+\(\s*([-+\d.eE]+)"
+        )
+        rows = []
+        with open(filename, "r") as output:
+            for line in output:
+                match = row_pattern.match(line)
+                if match:
+                    rows.append(tuple(float(value) for value in match.groups()))
+        if not rows:
+            raise ValueError(f"No free-projection AFQMC energy rows found in {filename}")
+        energy, imag_energy, error = rows[-1]
+        if not np.isfinite(energy):
+            raise ValueError(f"Dice returned a non-finite free-projection energy in {filename}")
+        self.energy = float(energy)
+        self.error = float(error) if np.isfinite(error) else None
+        self.imaginary_energy = float(imag_energy)
+
+    def run_fp_afqmc(self, trial_object, energy_guess, ndets=None):
+        """Run Dice's free-projection driver using the current ASH trial state."""
+        output_filename = "dqmc.out"
+        if ndets is not None:
+            actual_ndets = min(int(ndets), int(self.num_var_determinants))
+            output_filename = f"dqmc_{actual_ndets}.out"
+        if os.path.exists(output_filename):
+            os.remove(output_filename)
+        self.fp_helper.run_fpafqmc(
+            trial_object,
+            norb_frozen=self.frozen_core_orbs,
+            vmc_root=self.dicedir,
+            ene0Guess=energy_guess,
+            nproc=self.numcores,
+            dt=self.FP_AFQMC_dt,
+            nsteps=self.FP_AFQMC_nsteps,
+            eneSteps=list(self.FP_AFQMC_eneSteps),
+            errorTargets=list(self.FP_AFQMC_errorTargets),
+            stochasticIter=self.FP_AFQMC_stochasticIter,
+            choleskyThreshold=self.FP_AFQMC_choleskyThreshold,
+            orthoSteps=self.FP_AFQMC_orthoSteps,
+            ndets=ndets,
+        )
+        if not os.path.isfile(output_filename):
+            raise RuntimeError(
+                "Dice free-projection AFQMC did not produce "
+                f"{output_filename}; check the Dice/MPI output for the underlying error."
+            )
+        self.grab_fpafqmc_energy(filename=output_filename)
     #Set numcores method
     def set_numcores(self,numcores):
         self.numcores=numcores
@@ -382,10 +568,11 @@ noio
         import pyscf
         module_init_time=time.time()
         print("\n INITIAL ORBITAL OPTION")
-        if len(self.pyscftheoryobject.mf.mo_occ) == 2:
-            totnumborb=len(self.pyscftheoryobject.mf.mo_occ[0])
+        mo_occupations = np.asarray(self.pyscftheoryobject.mf.mo_occ)
+        if mo_occupations.ndim == 2:
+            totnumborb = mo_occupations.shape[1]
         else:
-            totnumborb=len(self.pyscftheoryobject.mf.mo_occ)
+            totnumborb = mo_occupations.size
         print(f"There are {totnumborb} orbitals in the system")
         #READ ORBITALS OR DO natural orbitals with MP2/CCSD/CCSD(T)
         if self.moreadfile == None:
@@ -543,6 +730,8 @@ noio
             self.mch = pyscf.mcscf.CASSCF(self.pyscftheoryobject.mf,self.norb, self.nelec)
         #Settings
         self.mch.fcisolver = self.shci.SHCI(self.pyscftheoryobject.mol)
+        if self.NEVPT2:
+            self.mch.fcisolver.printbestdeterminants = self.NEVPT2_numdets
         self.mch.fcisolver.mpiprefix = f'mpirun -np {self.numcores}'
         self.mch.fcisolver.stochastic = self.SHCI_stochastic
         self.mch.fcisolver.nPTiter = self.SHCI_PTiter
@@ -567,7 +756,7 @@ noio
     #This sets MO coefficients of mch object unless None (then)
     def SHCI_object_set_mos(self,mo_coeffs=None):
         print("Updating MO coefficients in mch object")
-        self.mch.mo_coeffs=mo_coeffs
+        self.mch.mo_coeff=mo_coeffs
 
     #Run the defined pyscf mch object
     def SHCI_object_run(self, write_det_CASCI=False,numdets=None):
@@ -689,23 +878,31 @@ noio
             self.setup_active_space(occupations=occupations) #This will define self.norb and self.nelec active space
             self.setup_SHCI_job() #Creates the self.mch CAS-CI/CASSCF object
             self.SHCI_object_set_mos(mo_coeffs=mo_coeffs) #Sets the MO coeffs of mch object
+            self.validate_nevpt2_space()
             self.SHCI_object_run() #Runs the self.mch object
-            #NOTE: Pretty sure we have to do full CASSCF here
 
             print(f"Now running NEVPT2 on SHCI reference WF: CAS({self.nelec},{self.norb})")
             module_init_time=time.time()
-            self.QMCUtils.run_nevpt2(self.mch, nelecAct=self.nelec, numAct=self.norb, norbFrozen=self.frozen_core_orbs,
-               integrals="FCIDUMP.h5", nproc=numcores, seed=None, vmc_root=self.dicedir,
-               fname="nevpt2.json", foutname='nevpt2.out', nroot=0,
-               spatialRDMfile=None, spinRDMfile=None, stochasticIterNorms=1000,
-               nIterFindInitDets=100, numSCSamples=10000, stochasticIterEachSC=100,
-               fixedResTimeNEVPT_Ene=False, epsilon=1.0e-8, efficientNEVPT_2=True,
-               determCCVV=True, SCEnergiesBurnIn=50, SCNormsBurnIn=50,
-               diceoutfile="output.dat")
+            original_get_dets = self.QMCUtils.getDets
+            self.QMCUtils.getDets = lambda fname="dice.out", nroot=0: self.write_nevpt2_dets(fname, nroot)
+            try:
+                self.QMCUtils.run_nevpt2(self.mch, nelecAct=self.nelec, numAct=self.norb, norbFrozen=self.frozen_core_orbs,
+                   integrals="FCIDUMP.h5", nproc=numcores, seed=None, vmc_root=self.dicedir,
+                   fname="nevpt2.json", foutname='nevpt2.out', nroot=0,
+                   spatialRDMfile=None, spinRDMfile=None,
+                   stochasticIterNorms=self.NEVPT2_stochasticIterNorms,
+                   nIterFindInitDets=self.NEVPT2_nIterFindInitDets,
+                   numSCSamples=self.NEVPT2_numSCSamples, stochasticIterEachSC=100,
+                   fixedResTimeNEVPT_Ene=False, epsilon=1.0e-8, efficientNEVPT_2=True,
+                   determCCVV=True, SCEnergiesBurnIn=50, SCNormsBurnIn=50,
+                   diceoutfile="output.dat")
+            finally:
+                self.QMCUtils.getDets = original_get_dets
             print_time_rel(module_init_time, modulename='Dice-NEVPT2-run', moduleindex=2)
-            #TODO: Grab energy from function call
-            self.energy=0.0
+            self.grab_nevpt2_energy(filename="nevpt2.out")
             print("Final Dice NEVPT2 energy:", self.energy)
+            if self.error is not None:
+                print(f"Dice NEVPT2 stochastic error: {self.error} Eh ({self.error*harkcal} kcal/mol)")
         #AFQMC
         elif self.AFQMC is True:
             print("Running Dice AFQMC")
@@ -731,33 +928,46 @@ noio
                 print(f"{self.QMC_SHCI_numdets} variational determinants were written to disk (dets.bin)")
                 print(f"{self.QMC_SHCI_numdets} determinants will be used in multi-determinant AFQMC job")
 
-                #Phaseless AFQMC with hci trial
                 module_init_time=time.time()
-                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(self.mch, mpi_prefix=f"mpirun -np {numcores}",
-                                norb_frozen=self.frozen_core_orbs, chol_cut=1e-5,
-                                ndets=self.QMC_SHCI_numdets, nroot=0, seed=None,
-                                dt=self.QMC_dt, steps_per_block=self.QMC_nsteps, nwalk_per_proc=self.QMC_nwalkers_per_proc,
-                                nblocks=self.QMC_nblocks, ortho_steps=20, burn_in=50,
-                                cholesky_threshold=1.0e-3, weight_cap=None, write_one_rdm=False,
-                                use_eri=False, dry_run=False)
-                e_afqmc=e_afqmc[0]
-                err_afqmc=err_afqmc[0]
+                if self.AFQMC_free_projection:
+                    self.run_fp_afqmc(
+                        self.mch, energy_guess=self.grab_dice_variational_energy(),
+                        ndets=self.QMC_SHCI_numdets,
+                    )
+                else:
+                    # Phaseless AFQMC with HCI trial
+                    e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mc(self.mch, mpi_prefix=f"mpirun -np {numcores}",
+                                    norb_frozen=self.frozen_core_orbs, chol_cut=1e-5,
+                                    ndets=self.QMC_SHCI_numdets, nroot=0, seed=None,
+                                    dt=self.QMC_dt, steps_per_block=self.QMC_nsteps, nwalk_per_proc=self.QMC_nwalkers_per_proc,
+                                    nblocks=self.QMC_nblocks, ortho_steps=20, burn_in=50,
+                                    cholesky_threshold=1.0e-3, weight_cap=None, write_one_rdm=False,
+                                    use_eri=False, dry_run=False)
+                    e_afqmc=e_afqmc[0]
+                    err_afqmc=err_afqmc[0]
                 print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
             #Single determinant trial wavefunction
             else:
                 print("Using single-determinant WF from PySCF object")
-                #Phaseless AFQMC with simple mf trial
                 module_init_time=time.time()
-                e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mf(self.pyscftheoryobject.mf, mpi_prefix=f"mpirun -np {numcores}",
-                    norb_frozen=self.frozen_core_orbs, chol_cut=1e-5, seed=None, dt=self.QMC_dt,
-                    steps_per_block=self.QMC_nsteps, nwalk_per_proc=self.QMC_nwalkers_per_proc, nblocks=self.QMC_nblocks,
-                    ortho_steps=20, burn_in=50, cholesky_threshold=1.0e-3,
-                    weight_cap=None, write_one_rdm=False, dry_run=False)
+                if self.AFQMC_free_projection:
+                    mf = self.pyscftheoryobject.mf
+                    self.run_fp_afqmc(mf, energy_guess=mf.e_tot)
+                else:
+                    # Phaseless AFQMC with a single-determinant trial
+                    e_afqmc, err_afqmc = self.QMCUtils.run_afqmc_mf(self.pyscftheoryobject.mf, mpi_prefix=f"mpirun -np {numcores}",
+                        norb_frozen=self.frozen_core_orbs, chol_cut=1e-5, seed=None, dt=self.QMC_dt,
+                        steps_per_block=self.QMC_nsteps, nwalk_per_proc=self.QMC_nwalkers_per_proc, nblocks=self.QMC_nblocks,
+                        ortho_steps=20, burn_in=50, cholesky_threshold=1.0e-3,
+                        weight_cap=None, write_one_rdm=False, dry_run=False)
                 print_time_rel(module_init_time, modulename='Dice-AFQMC-run', moduleindex=2)
-            self.energy=e_afqmc
-            self.error=err_afqmc
+            if not self.AFQMC_free_projection:
+                self.energy=e_afqmc
+                self.error=err_afqmc
             ##Analysis
             print("Final Dice AFQMC energy:", self.energy)
+            if self.AFQMC_free_projection:
+                print("Final Dice free-projection imaginary energy:", self.imaginary_energy)
             if self.error != None:
                 print(f"Error: {self.error} Eh ({self.error*harkcal} kcal/mol)")
             else:
